@@ -24,11 +24,12 @@ This docs tree is the canonical home for concepts, API references, engine archit
 3. Read [Engine Overview](engine/index.md) to understand the engine model.
 4. Read [Metric Spaces](concepts/metric-space.md) and [Finite Metric Spaces](concepts/finite-metric-space.md).
 5. Read [Explicit Representations](concepts/explicit-representations.md) to understand matrix, graph, and tree execution forms.
-6. Use the [Python API](api/python.md) or [C++ API](api/cpp.md) for implementation.
-7. Use [API Surface](stability.md) to understand core, expert, compatibility, extension APIs, and the module status matrix.
-8. Use [Testing and CI Scope](testing-and-ci.md) to understand release gates versus historical coverage.
-9. Use [Research Roadmap](research-roadmap.md) to understand which research directions can be promoted after deterministic fixtures and release gates exist.
-10. Use [Revival Status](revival-status.md) to distinguish local revival completion from external release actions.
+6. Read [Graph Representation Terminology](concepts/graph-representations.md) before promoting sparse graph construction.
+7. Use the [Python API](api/python.md) or [C++ API](api/cpp.md) for implementation.
+8. Use [API Surface](stability.md) to understand core, expert, compatibility, extension APIs, and the module status matrix.
+9. Use [Testing and CI Scope](testing-and-ci.md) to understand release gates versus historical coverage.
+10. Use [Research Roadmap](research-roadmap.md) to understand which research directions can be promoted after deterministic fixtures and release gates exist.
+11. Use [Revival Status](revival-status.md) to distinguish local revival completion from external release actions.
 
 ## Concepts
 
@@ -38,6 +39,7 @@ This docs tree is the canonical home for concepts, API references, engine archit
 - [Metrics as Recoding Costs](concepts/metrics-as-recoding-costs.md)
 - [Vector Space as a Special Case](concepts/vector-space-as-special-case.md)
 - [Explicit Representations](concepts/explicit-representations.md)
+- [Graph Representation Terminology](concepts/graph-representations.md)
 
 ## Examples
 
