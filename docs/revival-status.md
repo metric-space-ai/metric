@@ -18,6 +18,7 @@ The current local tree implements the first revival slice:
 - Python core facade modules under `metric.metrics`, `metric.spaces`, and `metric.operators`
 - Python engine-style Space grouping intent with KMedoids and DBSCAN strategies
 - Python engine-style Space intent facade methods for representatives and structure diagnostics
+- Python engine-style Space compare/correlate intent with a deterministic distance-profile correlation strategy
 - Python beta compatibility bridge modules under `metric.mappings` and `metric.transforms`
 - promoted C++ examples under `examples/core/`
 - promoted Python examples under `python/examples/metric_space/`
@@ -227,6 +228,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - CI-tested C++ and Python engine flagship examples for strings, process curves, histograms, and cross-space dependency, merged as `9d9d89dad779c836fe2f1334b68000938d76c9c6`
 - Python engine-style Space intent facade methods for representatives and structure diagnostics with named result objects and core test coverage, merged as `1849c29a25122b31605945295c91710cfc6a126f`
 - Python engine-style Space grouping intent with KMedoids and DBSCAN strategies, named `ClusteringResult` objects, and core test coverage, merged as `fe2641f8f14e660a994c94ca18d9f5feb426fb2b`
+- Python engine-style Space compare/correlate intent with named `CorrelationResult` objects and distance-profile strategy coverage, merged as `103d680a395ddd748017a1619be0580ffd5607cc`
 
 ## Historical Code Policy
 
