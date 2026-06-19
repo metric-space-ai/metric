@@ -6,6 +6,7 @@ import operator
 
 from metric.exceptions import (
     AmbiguousIntentError,
+    IncompatibleSpaceError,
     MissingMetricError,
     StaleRepresentationError,
     StrategyUnavailableError,
@@ -446,22 +447,32 @@ class Space(FiniteMetricSpace):
     def describe_structure(self, *, runtime=None):
         return self.describe(runtime=runtime)
 
-    def compare(self, other, strategy=None, *, runtime=None):
+    def _compare_records(self, other, align):
+        if align == "position":
+            return self.records, other.records
+        if align != "ids":
+            raise ValueError("align must be 'position' or 'ids'")
+        if set(self.ids) != set(other.ids):
+            raise IncompatibleSpaceError("align='ids' requires both spaces to have the same ids")
+        return self.records, [other.record(record_id) for record_id in self.ids]
+
+    def compare(self, other, strategy=None, *, align="position", runtime=None):
         require_exact_runtime(runtime)
         from metric.operators import compare_spaces
 
+        left_records, right_records = self._compare_records(other, align)
         return compare_spaces(
-            self.records,
+            left_records,
             self.metric,
-            other.records,
+            right_records,
             other.metric,
             strategy,
             left_representation="metric_space",
             right_representation="metric_space",
         )
 
-    def correlate(self, other, strategy=None, *, runtime=None):
-        return self.compare(other, strategy=strategy, runtime=runtime)
+    def correlate(self, other, strategy=None, *, align="position", runtime=None):
+        return self.compare(other, strategy=strategy, align=align, runtime=runtime)
 
 
 MatrixSpace = FiniteMetricSpace

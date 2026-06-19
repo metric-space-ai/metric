@@ -9,6 +9,7 @@ import numpy as np
 from metric import exceptions, intent, mappings, representations, runtime, transforms
 from metric.exceptions import (
     AmbiguousIntentError,
+    IncompatibleSpaceError,
     MetricError,
     MissingMetricError,
     StaleRepresentationError,
@@ -737,8 +738,27 @@ class RevivalApiTest(unittest.TestCase):
             compare_spaces(process_space.records, process_space.metric, quality_space.records, quality_space.metric),
             correlate_spaces(process_space.records, process_space.metric, quality_space.records, quality_space.metric),
         )
+        shuffled_quality_space = Space(
+            [25, 0, 16, 1, 9, 4],
+            metric=lambda lhs, rhs: abs(lhs - rhs),
+            ids=[5, 0, 4, 1, 3, 2],
+        )
+        id_aligned_dependency = process_space.compare(shuffled_quality_space, align="ids")
+        self.assertEqual(id_aligned_dependency, dependency)
+        self.assertEqual(process_space.correlate(shuffled_quality_space, align="ids"), dependency)
+        self.assertAlmostEqual(
+            process_space.compare(shuffled_quality_space, align="position").value,
+            0.1505759459175673,
+        )
         with self.assertRaises(ValueError):
             process_space.compare(Space([0, 1, 2], metric=lambda lhs, rhs: abs(lhs - rhs)))
+        with self.assertRaisesRegex(IncompatibleSpaceError, "same ids"):
+            process_space.compare(
+                Space([0, 1, 4, 9, 16, 25], metric=lambda lhs, rhs: abs(lhs - rhs), ids=[10, 11, 12, 13, 14, 15]),
+                align="ids",
+            )
+        with self.assertRaisesRegex(ValueError, "align must be"):
+            process_space.compare(quality_space, align="time")
         with self.assertRaises(TypeError):
             process_space.compare(quality_space, strategy=KMedoids(groups=2))
         with self.assertRaises(ValueError):

@@ -73,8 +73,9 @@ space.denoise()
 space.denoise(count=2)
 space.denoise(strategy=DBSCAN(radius=1, min_points=2))
 space.compare(other_space, strategy=DistanceProfileCorrelation())
+space.compare(other_space, align="ids")
 space.compare(other_space, runtime=RuntimePolicy(exact=True))
-space.correlate(other_space)
+space.correlate(other_space, align="ids")
 space.representatives(k=3)
 space.representatives(k=3, strategy=FarthestFirst(seed_index=1))
 space.reduce(count=3)
@@ -212,7 +213,7 @@ structure = describe_structure(records, Edit())
 
 `embed_space` returns an `EmbeddingResult` backed by deterministic classical MDS over the exact finite distance matrix. The result includes NumPy `coordinates`, an `embedded_space` over coordinate records with a Euclidean metric, the original `source_space`, source-record IDs, exact/operator/representation metadata, a small `EmbeddingModel`, normalized stress, local-neighbor trustworthiness, distance-profile correlation, and finite-coordinate diagnostics. `Space.embed(...)` exposes the same derived coordinate view from the `Space` facade.
 
-`compare_spaces` returns a `CorrelationResult` for two aligned finite metric spaces with the same record count. The first Python-core strategy is `DistanceProfileCorrelation`, which computes the Pearson correlation of upper-triangular pairwise distance profiles. `Space.compare(...)` and `Space.correlate(...)` expose the same result with metric-space representation metadata.
+`compare_spaces` returns a `CorrelationResult` for two aligned finite metric spaces with the same record count. The first Python-core strategy is `DistanceProfileCorrelation`, which computes the Pearson correlation of upper-triangular pairwise distance profiles. `Space.compare(...)` and `Space.correlate(...)` expose the same result with metric-space representation metadata. The facade defaults to `align="position"` for compatibility. Pass `align="ids"` to compare spaces with the same stable IDs even when the right-hand space is in a different order; mismatched ID sets raise `metric.IncompatibleSpaceError`.
 
 `representative_indices` and `representatives` use deterministic farthest-first traversal over the finite metric space. They select existing records rather than vector centroids, start from `seed_index=0` by default, and resolve equal-distance ties by record order.
 
