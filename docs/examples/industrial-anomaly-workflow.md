@@ -19,20 +19,21 @@ Possible metric choices:
 - image patches: SSIM-derived or task-specific structured metric
 - numeric summaries: Euclidean, Manhattan, Chebyshev, or a standardized variant
 
-## Target Workflow Shape
+## Workflow Shape
 
 ```python
-from metric import Space, metrics
+from metric import Space
+from metric.strategies import DBSCAN, DistanceProfileCorrelation
 
-curves = Space(curve_windows, metric=metrics.TWED())
-events = Space(event_sequences, metric=metrics.Edit())
+curves = Space(curve_windows, metric=curve_distance)
+events = Space(event_sequences, metric=event_distance)
 
-curve_outliers = curves.outliers(method="local_density")
-event_groups = events.groups(method="density")
-cross_modal = curves.compare(events, method="mgc")
+curve_outliers = curves.outliers(DBSCAN(radius=2.0, min_points=3))
+event_groups = events.groups(DBSCAN(radius=1.0, min_points=2))
+cross_modal = curves.compare(events, DistanceProfileCorrelation())
 
 mapper = curves.map(preserve="diffusion_geometry", learn_mapping=True)
 latent = mapper.transform(new_curve_windows)
 ```
 
-This target shape describes the revived engine facade, not the current minimal Python core. The embedding step is optional. The primary model is the metric space; learned maps and vector coordinates are downstream representations.
+The first three calls are current Python core intent methods. The `map` calls show the target mapping shape: mapping and embedding remain optional downstream representations. The primary model is the metric space.
