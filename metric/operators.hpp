@@ -70,6 +70,18 @@ struct GraphDegreeDiagnostics {
 	std::string degree_policy;
 };
 
+struct GraphConnectivityDiagnostics {
+	std::size_t record_count{};
+	std::size_t edge_count{};
+	bool directed{true};
+	std::vector<std::size_t> component_labels;
+	std::size_t component_count{};
+	std::size_t isolated_count{};
+	std::size_t largest_component_size{};
+	bool connected{true};
+	std::string connectivity_policy;
+};
+
 template <typename Container, typename Metric>
 auto pairwise_distance_matrix(const Container &records, Metric distance)
 	-> std::vector<std::vector<typename detail::finite_space_t<Container, Metric>::distance_type>>
@@ -391,6 +403,84 @@ auto graph_degree_diagnostics(const GraphConstructionResult<Distance, RadiusValu
 	if (result.record_count != 0) {
 		result.average_degree = static_cast<double>(total_degree) / static_cast<double>(result.record_count);
 	}
+
+	return result;
+}
+
+template <typename Distance, typename RadiusValue>
+auto graph_connectivity_diagnostics(const GraphConstructionResult<Distance, RadiusValue> &graph)
+	-> GraphConnectivityDiagnostics
+{
+	GraphConnectivityDiagnostics result;
+	result.record_count = graph.metadata.record_count;
+	result.edge_count = graph.edges.size();
+	result.directed = graph.metadata.directed;
+	result.component_labels.assign(result.record_count, 0);
+	result.connectivity_policy =
+		graph.metadata.directed ? "weak_undirected_reachability" : "undirected_reachability";
+
+	std::vector<std::size_t> parents(result.record_count);
+	std::vector<bool> has_incident_edge(result.record_count, false);
+	for (std::size_t index = 0; index < result.record_count; ++index) {
+		parents[index] = index;
+	}
+
+	auto find_root = [&parents](std::size_t index) -> std::size_t {
+		while (parents[index] != index) {
+			parents[index] = parents[parents[index]];
+			index = parents[index];
+		}
+		return index;
+	};
+
+	auto union_components = [&parents, &find_root](std::size_t lhs, std::size_t rhs) {
+		const auto lhs_root = find_root(lhs);
+		const auto rhs_root = find_root(rhs);
+		if (lhs_root == rhs_root) {
+			return;
+		}
+		if (lhs_root < rhs_root) {
+			parents[rhs_root] = lhs_root;
+		} else {
+			parents[lhs_root] = rhs_root;
+		}
+	};
+
+	for (const auto &edge : graph.edges) {
+		const auto source_index = std::get<0>(edge);
+		const auto target_index = std::get<1>(edge);
+		if (source_index >= result.record_count || target_index >= result.record_count) {
+			throw std::invalid_argument("graph edge index exceeds metadata record_count");
+		}
+		has_incident_edge[source_index] = true;
+		has_incident_edge[target_index] = true;
+		union_components(source_index, target_index);
+	}
+
+	std::map<std::size_t, std::size_t> root_labels;
+	std::vector<std::size_t> component_sizes;
+	for (std::size_t index = 0; index < result.record_count; ++index) {
+		const auto root = find_root(index);
+		auto label_it = root_labels.find(root);
+		if (label_it == root_labels.end()) {
+			const auto label = root_labels.size();
+			label_it = root_labels.emplace(root, label).first;
+			component_sizes.push_back(0);
+		}
+
+		const auto label = label_it->second;
+		result.component_labels[index] = label;
+		++component_sizes[label];
+		if (!has_incident_edge[index]) {
+			++result.isolated_count;
+		}
+	}
+
+	result.component_count = component_sizes.size();
+	for (const auto component_size : component_sizes) {
+		result.largest_component_size = std::max(result.largest_component_size, component_size);
+	}
+	result.connected = result.component_count <= 1;
 
 	return result;
 }

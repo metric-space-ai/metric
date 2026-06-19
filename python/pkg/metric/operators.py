@@ -52,6 +52,21 @@ class GraphDegreeDiagnostics:
     degree_policy: str
 
 
+@dataclass(frozen=True)
+class GraphConnectivityDiagnostics:
+    """Connectivity diagnostics for a graph construction result."""
+
+    record_count: int
+    edge_count: int
+    directed: bool
+    component_labels: tuple
+    component_count: int
+    isolated_count: int
+    largest_component_size: int
+    connected: bool
+    connectivity_policy: str
+
+
 def pairwise_distance_matrix(records, metric):
     return FiniteMetricSpace(records, metric).pairwise_distances()
 
@@ -344,6 +359,77 @@ def graph_degree_diagnostics(graph):
     )
 
 
+def graph_connectivity_diagnostics(graph):
+    """Compute deterministic connectivity diagnostics for a graph construction result."""
+    record_count = graph.metadata.record_count
+    parents = list(range(record_count))
+    has_incident_edge = [False] * record_count
+
+    def find_root(index):
+        while parents[index] != index:
+            parents[index] = parents[parents[index]]
+            index = parents[index]
+        return index
+
+    def union_components(lhs, rhs):
+        lhs_root = find_root(lhs)
+        rhs_root = find_root(rhs)
+        if lhs_root == rhs_root:
+            return
+        if lhs_root < rhs_root:
+            parents[rhs_root] = lhs_root
+        else:
+            parents[lhs_root] = rhs_root
+
+    for source_index, target_index, _distance in graph.edges:
+        if (
+            source_index < 0
+            or target_index < 0
+            or source_index >= record_count
+            or target_index >= record_count
+        ):
+            raise ValueError("graph edge index exceeds metadata record_count")
+
+        has_incident_edge[source_index] = True
+        has_incident_edge[target_index] = True
+        union_components(source_index, target_index)
+
+    root_labels = {}
+    component_labels = [0] * record_count
+    component_sizes = []
+    isolated_count = 0
+    for index in range(record_count):
+        root = find_root(index)
+        if root not in root_labels:
+            root_labels[root] = len(root_labels)
+            component_sizes.append(0)
+
+        label = root_labels[root]
+        component_labels[index] = label
+        component_sizes[label] += 1
+        if not has_incident_edge[index]:
+            isolated_count += 1
+
+    component_count = len(component_sizes)
+    connectivity_policy = (
+        "weak_undirected_reachability"
+        if graph.metadata.directed
+        else "undirected_reachability"
+    )
+
+    return GraphConnectivityDiagnostics(
+        record_count=record_count,
+        edge_count=len(graph.edges),
+        directed=graph.metadata.directed,
+        component_labels=tuple(component_labels),
+        component_count=component_count,
+        isolated_count=isolated_count,
+        largest_component_size=max(component_sizes, default=0),
+        connected=component_count <= 1,
+        connectivity_policy=connectivity_policy,
+    )
+
+
 def representative_indices(records, metric, k, seed_index=0):
     """Select representative record IDs with deterministic farthest-first traversal."""
     records = list(records)
@@ -515,9 +601,11 @@ def intrinsic_dimension_from_distances(distances):
 
 
 __all__ = [
+    "GraphConnectivityDiagnostics",
     "GraphDegreeDiagnostics",
     "GraphConstructionMetadata",
     "GraphConstructionResult",
+    "graph_connectivity_diagnostics",
     "graph_degree_diagnostics",
     "intrinsic_dimension",
     "intrinsic_dimension_from_distances",
