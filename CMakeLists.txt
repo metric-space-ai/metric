@@ -241,6 +241,7 @@ endif ()
 if (METRIC_BUILD_CORE_EXAMPLES)
     message(STATUS "Core examples enabled")
     add_subdirectory(examples/core)
+    add_subdirectory(examples/engine)
 endif ()
 
 if (METRIC_BUILD_TESTS)

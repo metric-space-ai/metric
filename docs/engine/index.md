@@ -10,6 +10,16 @@ This model is the public architecture of the engine.
 
 The first implementation slices are documented in [Engine Mental Model](mental-model.md).
 
+## Flagship Examples
+
+The first CI-tested engine demos live under `examples/engine/` and `python/examples/engine/`.
+They start with non-vector records and use the engine vocabulary directly:
+
+- strings with edit distance for neighbor search and grouping
+- process curves with an alignment metric, representative selection, and graph construction
+- histograms with cumulative transport distance, matrix materialization, and grouping
+- cross-space dependency over two aligned finite metric spaces
+
 ## Core Idea
 
 A metric space is not a vector matrix. It is a set of records with a distance function.

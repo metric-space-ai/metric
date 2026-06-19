@@ -19,6 +19,7 @@
 - Add initial C++ runtime policy objects for exact lazy/materialized neighbor execution and representation-cache staleness checks.
 - Add a C++ engine `describe_structure` intent with exact finite-space diagnostics and intrinsic-dimension metadata.
 - Add a C++ engine `find_representatives` intent backed by deterministic farthest-first selection.
+- Add Python `Space.to_matrix()` for an explicit finite matrix representation view.
 - Add Python `Space.describe()` and `Space.representatives()` intent methods with named result objects and a `FarthestFirst` strategy.
 - Add Python `Space.groups()` and `find_groups` intent methods with named `ClusteringResult` objects and `KMedoids` / `DBSCAN` strategies.
 
@@ -50,6 +51,7 @@
 - Extend promoted representative-selection examples with separated representatives.
 - Add graph representation terminology for exact, approximate, directed, symmetrized, weighted, and normalized graph construction.
 - Add exact graph edge fixture documentation for k-nearest-neighbor and radius edge lists.
+- Add CI-tested C++ and Python engine flagship examples for strings, process curves, histograms, and cross-space dependency.
 
 ## [0.3.2] - 2026-06-19
 

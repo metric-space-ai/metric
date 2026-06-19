@@ -1,6 +1,6 @@
 # C++ API
 
-The current C++ core API exposes metric constructors, a minimal `metric::Metric` wrapper for custom callables, a minimal `metric::Space` facade, the first `metric::MetricSpace` engine layer, and explicit finite-space representations. The broader intent facade is part of the engine roadmap; promoted examples use the CI-tested core surface.
+The current C++ core API exposes metric constructors, a minimal `metric::Metric` wrapper for custom callables, a minimal `metric::Space` facade, the first `metric::MetricSpace` engine layer, and explicit finite-space representations. Promoted examples include both the revived core surface under `examples/core/` and intent-first engine demos under `examples/engine/`.
 
 Recommended includes:
 

@@ -13,7 +13,9 @@ format_scope = tracked_files.select do |path|
     path.start_with?('.github/workflows/') ||
     path.start_with?('docs/') ||
     path.start_with?('examples/core/') ||
+    path.start_with?('examples/engine/') ||
     path.start_with?('python/examples/metric_space/') ||
+    path.start_with?('python/examples/engine/') ||
     path.start_with?('python/pkg/metric/') ||
     path.start_with?('python/tests/core/') ||
     path.start_with?('scripts/') ||
