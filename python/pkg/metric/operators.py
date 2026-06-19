@@ -1,9 +1,36 @@
 """Small metric-space operators covered by the core Python smoke path."""
 
+from dataclasses import dataclass
 import math
 import operator
 
 from metric.spaces import FiniteMetricSpace
+
+
+@dataclass(frozen=True)
+class GraphConstructionMetadata:
+    """Metadata for a promoted graph-construction result."""
+
+    strategy: str
+    record_count: int
+    edge_count: int
+    directed: bool
+    self_loops: bool
+    exact: bool
+    k: object = None
+    radius: object = None
+    edge_payload: str = ""
+    symmetrization: str = ""
+    normalization: str = ""
+    tie_break: str = ""
+
+
+@dataclass(frozen=True)
+class GraphConstructionResult:
+    """Graph construction result with directed edge tuples and metadata."""
+
+    edges: tuple
+    metadata: GraphConstructionMetadata
 
 
 def pairwise_distance_matrix(records, metric):
@@ -18,22 +45,27 @@ def range_neighbors(records, metric, query, radius):
     return FiniteMetricSpace(records, metric).rnn(query, radius)
 
 
-def exact_knn_graph_edges(records, metric, k):
-    """Build exact directed kNN graph edges as source, target, distance tuples."""
-    records = list(records)
+def _coerce_graph_k(k):
     try:
-        k = operator.index(k)
+        return operator.index(k)
     except TypeError:
         raise TypeError("k must be an integer") from None
 
+
+def _validate_graph_k(records, k):
     if k < 0:
         raise ValueError("k must be non-negative")
     if k == 0:
-        return []
+        return
 
     max_neighbors = max(0, len(records) - 1)
     if k > max_neighbors:
         raise ValueError("k cannot exceed the number of non-self neighbors")
+
+
+def _build_exact_knn_graph_edges(records, metric, k):
+    if k == 0:
+        return []
 
     space = FiniteMetricSpace(records, metric)
     edges = []
@@ -55,9 +87,37 @@ def exact_knn_graph_edges(records, metric, k):
     return edges
 
 
-def exact_radius_graph_edges(records, metric, radius):
-    """Build exact directed radius graph edges as source, target, distance tuples."""
+def exact_knn_graph(records, metric, k):
+    """Build an exact directed kNN graph result with construction metadata."""
     records = list(records)
+    k = _coerce_graph_k(k)
+    _validate_graph_k(records, k)
+    edges = _build_exact_knn_graph_edges(records, metric, k)
+
+    return GraphConstructionResult(
+        edges=tuple(edges),
+        metadata=GraphConstructionMetadata(
+            strategy="exact_knn",
+            record_count=len(records),
+            edge_count=len(edges),
+            directed=True,
+            self_loops=False,
+            exact=True,
+            k=k,
+            edge_payload="metric_distance",
+            symmetrization="none",
+            normalization="none",
+            tie_break="distance_then_target_index",
+        ),
+    )
+
+
+def exact_knn_graph_edges(records, metric, k):
+    """Build exact directed kNN graph edges as source, target, distance tuples."""
+    return list(exact_knn_graph(records, metric, k).edges)
+
+
+def _build_exact_radius_graph_edges(records, metric, radius):
     if radius < 0:
         raise ValueError("radius must be non-negative")
 
@@ -73,6 +133,34 @@ def exact_radius_graph_edges(records, metric, radius):
                 edges.append((source_index, target_index, distance))
 
     return edges
+
+
+def exact_radius_graph(records, metric, radius):
+    """Build an exact directed radius graph result with construction metadata."""
+    records = list(records)
+    edges = _build_exact_radius_graph_edges(records, metric, radius)
+
+    return GraphConstructionResult(
+        edges=tuple(edges),
+        metadata=GraphConstructionMetadata(
+            strategy="exact_radius",
+            record_count=len(records),
+            edge_count=len(edges),
+            directed=True,
+            self_loops=False,
+            exact=True,
+            radius=radius,
+            edge_payload="metric_distance",
+            symmetrization="none",
+            normalization="none",
+            tie_break="source_then_target_index",
+        ),
+    )
+
+
+def exact_radius_graph_edges(records, metric, radius):
+    """Build exact directed radius graph edges as source, target, distance tuples."""
+    return list(exact_radius_graph(records, metric, radius).edges)
 
 
 def representative_indices(records, metric, k, seed_index=0):
@@ -246,11 +334,15 @@ def intrinsic_dimension_from_distances(distances):
 
 
 __all__ = [
+    "GraphConstructionMetadata",
+    "GraphConstructionResult",
     "intrinsic_dimension",
     "intrinsic_dimension_from_distances",
     "coverage_representative_indices",
     "coverage_representatives",
+    "exact_knn_graph",
     "exact_knn_graph_edges",
+    "exact_radius_graph",
     "exact_radius_graph_edges",
     "medoid",
     "medoid_index",

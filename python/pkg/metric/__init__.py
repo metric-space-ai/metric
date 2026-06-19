@@ -20,9 +20,13 @@ except ModuleNotFoundError:
 from . import mappings, metrics, operators, spaces, transforms
 from .metrics import Edit
 from .operators import (
+    GraphConstructionMetadata,
+    GraphConstructionResult,
     coverage_representative_indices,
     coverage_representatives,
+    exact_knn_graph,
     exact_knn_graph_edges,
+    exact_radius_graph,
     exact_radius_graph_edges,
     intrinsic_dimension,
     medoid,

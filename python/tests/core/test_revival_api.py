@@ -9,9 +9,13 @@ import numpy as np
 from metric.metrics import Edit, available
 from metric import mappings, transforms
 from metric.operators import (
+    GraphConstructionMetadata,
+    GraphConstructionResult,
     coverage_representative_indices,
     coverage_representatives,
+    exact_knn_graph,
     exact_knn_graph_edges,
+    exact_radius_graph,
     exact_radius_graph_edges,
     intrinsic_dimension,
     medoid,
@@ -56,7 +60,11 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.spaces.FiniteMetricSpace, FiniteMetricSpace)
         self.assertIs(metric.operators.nearest_neighbors, nearest_neighbors)
         self.assertIs(metric.operators.range_neighbors, range_neighbors)
+        self.assertIs(metric.operators.GraphConstructionMetadata, GraphConstructionMetadata)
+        self.assertIs(metric.operators.GraphConstructionResult, GraphConstructionResult)
+        self.assertIs(metric.operators.exact_knn_graph, exact_knn_graph)
         self.assertIs(metric.operators.exact_knn_graph_edges, exact_knn_graph_edges)
+        self.assertIs(metric.operators.exact_radius_graph, exact_radius_graph)
         self.assertIs(metric.operators.exact_radius_graph_edges, exact_radius_graph_edges)
         self.assertIs(metric.operators.intrinsic_dimension, intrinsic_dimension)
         self.assertIs(metric.operators.medoid_index, medoid_index)
@@ -70,7 +78,11 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.mappings, mappings)
         self.assertIs(metric.transforms, transforms)
         self.assertIs(metric.Edit, Edit)
+        self.assertIs(metric.GraphConstructionMetadata, GraphConstructionMetadata)
+        self.assertIs(metric.GraphConstructionResult, GraphConstructionResult)
+        self.assertIs(metric.exact_knn_graph, exact_knn_graph)
         self.assertIs(metric.exact_knn_graph_edges, exact_knn_graph_edges)
+        self.assertIs(metric.exact_radius_graph, exact_radius_graph)
         self.assertIs(metric.exact_radius_graph_edges, exact_radius_graph_edges)
         self.assertIs(metric.intrinsic_dimension, intrinsic_dimension)
         self.assertIs(metric.medoid_index, medoid_index)
@@ -88,7 +100,11 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("Space", metric.__all__)
         self.assertIn("mappings", metric.__all__)
         self.assertIn("transforms", metric.__all__)
+        self.assertIn("GraphConstructionMetadata", metric.__all__)
+        self.assertIn("GraphConstructionResult", metric.__all__)
+        self.assertIn("exact_knn_graph", metric.__all__)
         self.assertIn("exact_knn_graph_edges", metric.__all__)
+        self.assertIn("exact_radius_graph", metric.__all__)
         self.assertIn("exact_radius_graph_edges", metric.__all__)
         self.assertIn("medoid_index", metric.__all__)
         self.assertIn("medoid", metric.__all__)
@@ -184,10 +200,41 @@ class RevivalApiTest(unittest.TestCase):
             exact_knn_graph_edges(records, cumulative_transport_distance, 1),
             [(0, 3, 0.5), (1, 3, 0.5), (2, 4, 1.5), (3, 0, 0.5), (4, 1, 0.5)],
         )
+        knn_graph = exact_knn_graph(records, cumulative_transport_distance, 1)
+        self.assertIsInstance(knn_graph, GraphConstructionResult)
+        self.assertEqual(list(knn_graph.edges), exact_knn_graph_edges(records, cumulative_transport_distance, 1))
+        self.assertIsInstance(knn_graph.metadata, GraphConstructionMetadata)
+        self.assertEqual(knn_graph.metadata.strategy, "exact_knn")
+        self.assertEqual(knn_graph.metadata.record_count, len(records))
+        self.assertEqual(knn_graph.metadata.edge_count, len(knn_graph.edges))
+        self.assertTrue(knn_graph.metadata.directed)
+        self.assertFalse(knn_graph.metadata.self_loops)
+        self.assertTrue(knn_graph.metadata.exact)
+        self.assertEqual(knn_graph.metadata.k, 1)
+        self.assertIsNone(knn_graph.metadata.radius)
+        self.assertEqual(knn_graph.metadata.edge_payload, "metric_distance")
+        self.assertEqual(knn_graph.metadata.symmetrization, "none")
+        self.assertEqual(knn_graph.metadata.normalization, "none")
+        self.assertEqual(knn_graph.metadata.tie_break, "distance_then_target_index")
         self.assertEqual(
             exact_radius_graph_edges(records, cumulative_transport_distance, 0.5),
             [(0, 3, 0.5), (1, 3, 0.5), (1, 4, 0.5), (3, 0, 0.5), (3, 1, 0.5), (4, 1, 0.5)],
         )
+        radius_graph = exact_radius_graph(records, cumulative_transport_distance, 0.5)
+        self.assertIsInstance(radius_graph, GraphConstructionResult)
+        self.assertEqual(list(radius_graph.edges), exact_radius_graph_edges(records, cumulative_transport_distance, 0.5))
+        self.assertEqual(radius_graph.metadata.strategy, "exact_radius")
+        self.assertEqual(radius_graph.metadata.record_count, len(records))
+        self.assertEqual(radius_graph.metadata.edge_count, len(radius_graph.edges))
+        self.assertTrue(radius_graph.metadata.directed)
+        self.assertFalse(radius_graph.metadata.self_loops)
+        self.assertTrue(radius_graph.metadata.exact)
+        self.assertIsNone(radius_graph.metadata.k)
+        self.assertEqual(radius_graph.metadata.radius, 0.5)
+        self.assertEqual(radius_graph.metadata.edge_payload, "metric_distance")
+        self.assertEqual(radius_graph.metadata.symmetrization, "none")
+        self.assertEqual(radius_graph.metadata.normalization, "none")
+        self.assertEqual(radius_graph.metadata.tie_break, "source_then_target_index")
         self.assertEqual(coverage_representative_indices(records, cumulative_transport_distance, 1.5), [0, 2])
         self.assertEqual(
             coverage_representatives(records, cumulative_transport_distance, 1.5),
@@ -226,6 +273,8 @@ class RevivalApiTest(unittest.TestCase):
             [(0, 1, 1), (0, 2, 2), (1, 0, 1), (1, 2, 1), (2, 0, 2), (2, 1, 1)],
         )
         self.assertEqual(exact_knn_graph_edges(records, absolute_distance, 0), [])
+        self.assertEqual(exact_knn_graph(records, absolute_distance, 0).edges, ())
+        self.assertEqual(exact_knn_graph(records, absolute_distance, 0).metadata.k, 0)
         self.assertEqual(coverage_representative_indices(records, absolute_distance, 2), [0, 3])
         self.assertEqual(coverage_representatives(records, absolute_distance, 2), [0, 10])
         self.assertEqual(coverage_representative_indices(records, absolute_distance, 20), [0])

@@ -140,6 +140,22 @@ int main()
     };
     assert(exact_knn_edges == expected_knn_edges);
 
+    const auto knn_graph = metric::operators::exact_knn_graph(line, AbsoluteDistance{}, 2);
+    assert(knn_graph.edges == expected_knn_edges);
+    assert(knn_graph.metadata.strategy == "exact_knn");
+    assert(knn_graph.metadata.record_count == line.size());
+    assert(knn_graph.metadata.edge_count == expected_knn_edges.size());
+    assert(knn_graph.metadata.directed);
+    assert(!knn_graph.metadata.self_loops);
+    assert(knn_graph.metadata.exact);
+    assert(knn_graph.metadata.k.has_value());
+    assert(knn_graph.metadata.k.value() == 2);
+    assert(!knn_graph.metadata.radius.has_value());
+    assert(knn_graph.metadata.edge_payload == "metric_distance");
+    assert(knn_graph.metadata.symmetrization == "none");
+    assert(knn_graph.metadata.normalization == "none");
+    assert(knn_graph.metadata.tie_break == "distance_then_target_index");
+
     const auto exact_radius_edges = metric::operators::exact_radius_graph_edges(line, AbsoluteDistance{}, 1);
     const std::vector<std::tuple<std::size_t, std::size_t, int>> expected_radius_edges = {
         {0, 1, 1},
@@ -152,6 +168,22 @@ int main()
         {4, 3, 1},
     };
     assert(exact_radius_edges == expected_radius_edges);
+
+    const auto radius_graph = metric::operators::exact_radius_graph(line, AbsoluteDistance{}, 1);
+    assert(radius_graph.edges == expected_radius_edges);
+    assert(radius_graph.metadata.strategy == "exact_radius");
+    assert(radius_graph.metadata.record_count == line.size());
+    assert(radius_graph.metadata.edge_count == expected_radius_edges.size());
+    assert(radius_graph.metadata.directed);
+    assert(!radius_graph.metadata.self_loops);
+    assert(radius_graph.metadata.exact);
+    assert(!radius_graph.metadata.k.has_value());
+    assert(radius_graph.metadata.radius.has_value());
+    assert(radius_graph.metadata.radius.value() == 1);
+    assert(radius_graph.metadata.edge_payload == "metric_distance");
+    assert(radius_graph.metadata.symmetrization == "none");
+    assert(radius_graph.metadata.normalization == "none");
+    assert(radius_graph.metadata.tie_break == "source_then_target_index");
 
     bool rejected_large_graph_k = false;
     try {
