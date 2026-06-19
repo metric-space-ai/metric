@@ -8,6 +8,7 @@
 - Add first C++ engine representation adapters for implicit distance lookup, matrix caching, exact neighbor-index scaffolds, kNN graph adjacency, and graph topology edges over `MetricSpace`.
 - Add first C++ engine nearest operators with `NeighborSet`, `operators::knn`, and `operators::range` overloads for spaces, distance providers, and neighbor indexes.
 - Add first C++ engine clustering operator with `ClusteringResult` and `operators::kmedoids` overloads for spaces and distance providers.
+- Add deterministic C++ engine density clustering with `operators::dbscan` overloads for spaces and distance providers.
 
 ### Algorithm Changes
 
