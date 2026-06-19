@@ -9,7 +9,7 @@ Intent APIs are named by what users want to do, not by the algorithm used to do 
 | Find representatives | `find_representatives` | `Space.representatives` | Core Revival |
 | Compare spaces | `compare`, `correlate` | `Space.compare`, `Space.correlate` | Core Revival |
 | Describe a space | `describe_structure` | `Space.describe` | Core Revival |
-| Find outliers | `find_outliers` | roadmap | C++ DBSCAN-noise path |
+| Find outliers | `find_outliers` | `Space.outliers` | C++ and Python DBSCAN-noise path |
 | Reduce complexity | `reduce` | roadmap | C++ PCFA-backed path |
 | Map to another space | `metric::mappings::*` | roadmap | C++ initial mapping conventions |
 | Denoise a space | roadmap | roadmap | Target Engine API |
@@ -31,10 +31,11 @@ auto structure = metric::describe_structure(space);
 
 ```python
 from metric import DistanceProfileCorrelation, Space
-from metric.strategies import KMedoids
+from metric.strategies import DBSCAN, KMedoids
 
 space = Space(records, metric)
 groups = space.groups(KMedoids(groups=2))
+outliers = space.outliers(DBSCAN(radius=2.0, min_points=2))
 dependency = space.compare(other_space, DistanceProfileCorrelation())
 structure = space.describe()
 ```

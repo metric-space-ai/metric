@@ -71,6 +71,11 @@ class Space(FiniteMetricSpace):
 
         return find_groups(self.records, self.metric, strategy)
 
+    def outliers(self, strategy):
+        from metric.operators import find_outliers
+
+        return find_outliers(self.records, self.metric, strategy)
+
     def representatives(self, k, strategy=None):
         from metric.operators import find_representatives
 

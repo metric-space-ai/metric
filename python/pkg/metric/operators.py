@@ -106,6 +106,28 @@ class ClusteringResult:
 
 
 @dataclass(frozen=True)
+class Outlier:
+    """One outlier record ID with a deterministic isolation score."""
+
+    record_id: int
+    score: object
+
+
+@dataclass(frozen=True)
+class OutlierResult:
+    """Engine-style outlier result with strategy and representation metadata."""
+
+    outliers: tuple
+    record_count: int
+    cluster_count: int
+    noise_count: int
+    exact: bool
+    operator_name: str
+    strategy: str
+    representation: str
+
+
+@dataclass(frozen=True)
 class RepresentativeSet:
     """Representative-selection result with coverage diagnostics."""
 
@@ -948,6 +970,62 @@ def find_groups(records, metric, strategy):
     raise TypeError("unsupported grouping strategy")
 
 
+def _coerce_outlier_strategy(strategy):
+    if isinstance(strategy, DBSCAN):
+        return strategy
+    if hasattr(strategy, "radius") and hasattr(strategy, "min_points"):
+        return DBSCAN(radius=strategy.radius, min_points=strategy.min_points)
+    raise TypeError("strategy must be a DBSCAN strategy")
+
+
+def _nearest_reference_distance(space, record_index, references):
+    if references:
+        return min(space.distance(record_index, reference_index) for reference_index in references)
+
+    candidates = [
+        candidate_index
+        for candidate_index in range(len(space.records))
+        if candidate_index != record_index
+    ]
+    if not candidates:
+        return 0
+    return min(space.distance(record_index, candidate_index) for candidate_index in candidates)
+
+
+def find_outliers(records, metric, strategy):
+    """Find unusual records and return an engine-style result object."""
+    strategy = _coerce_outlier_strategy(strategy)
+    records = list(records)
+    groups = dbscan(records, metric, strategy.radius, strategy.min_points)
+    space = FiniteMetricSpace(records, metric)
+    references = [
+        record_index
+        for record_index, assignment in enumerate(groups.assignments)
+        if assignment != ClusteringResult.noise_label
+    ]
+
+    outliers = [
+        Outlier(
+            record_id=record_index,
+            score=_nearest_reference_distance(space, record_index, references),
+        )
+        for record_index in groups.noise_records
+    ]
+    outliers.sort(key=lambda outlier: outlier.record_id)
+    outliers.sort(key=lambda outlier: outlier.score, reverse=True)
+
+    return OutlierResult(
+        outliers=tuple(outliers),
+        record_count=groups.record_count,
+        cluster_count=groups.cluster_count,
+        noise_count=groups.noise_count,
+        exact=True,
+        operator_name="find_outliers",
+        strategy="dbscan_noise",
+        representation=groups.representation,
+    )
+
+
 def representative_indices(records, metric, k, seed_index=0):
     """Select representative record IDs with deterministic farthest-first traversal."""
     selected, _nearest_selected_distances, _records = _farthest_first_selection(records, metric, k, seed_index)
@@ -1278,6 +1356,8 @@ __all__ = [
     "GraphStretchDiagnostics",
     "GraphConstructionMetadata",
     "GraphConstructionResult",
+    "Outlier",
+    "OutlierResult",
     "RepresentativeSet",
     "StructureDescription",
     "compare_spaces",
@@ -1285,6 +1365,7 @@ __all__ = [
     "dbscan",
     "describe_structure",
     "find_groups",
+    "find_outliers",
     "find_representatives",
     "graph_connectivity_diagnostics",
     "graph_degree_diagnostics",

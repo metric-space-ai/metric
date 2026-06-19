@@ -16,6 +16,8 @@ from metric.operators import (
     GraphStretchDiagnostics,
     GraphConstructionMetadata,
     GraphConstructionResult,
+    Outlier,
+    OutlierResult,
     RepresentativeSet,
     StructureDescription,
     coverage_representative_indices,
@@ -29,6 +31,7 @@ from metric.operators import (
     exact_radius_graph,
     exact_radius_graph_edges,
     find_groups,
+    find_outliers,
     find_representatives,
     graph_connectivity_diagnostics,
     graph_degree_diagnostics,
@@ -86,10 +89,13 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.operators.GraphConstructionMetadata, GraphConstructionMetadata)
         self.assertIs(metric.operators.GraphConstructionResult, GraphConstructionResult)
         self.assertIs(metric.operators.ClusteringResult, ClusteringResult)
+        self.assertIs(metric.operators.Outlier, Outlier)
+        self.assertIs(metric.operators.OutlierResult, OutlierResult)
         self.assertIs(metric.operators.CorrelationResult, CorrelationResult)
         self.assertIs(metric.operators.RepresentativeSet, RepresentativeSet)
         self.assertIs(metric.operators.StructureDescription, StructureDescription)
         self.assertIs(metric.operators.find_groups, find_groups)
+        self.assertIs(metric.operators.find_outliers, find_outliers)
         self.assertIs(metric.operators.compare_spaces, compare_spaces)
         self.assertIs(metric.operators.correlate_spaces, correlate_spaces)
         self.assertIs(metric.operators.describe_structure, describe_structure)
@@ -124,9 +130,12 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.GraphConstructionMetadata, GraphConstructionMetadata)
         self.assertIs(metric.GraphConstructionResult, GraphConstructionResult)
         self.assertIs(metric.ClusteringResult, ClusteringResult)
+        self.assertIs(metric.Outlier, Outlier)
+        self.assertIs(metric.OutlierResult, OutlierResult)
         self.assertIs(metric.RepresentativeSet, RepresentativeSet)
         self.assertIs(metric.StructureDescription, StructureDescription)
         self.assertIs(metric.find_groups, find_groups)
+        self.assertIs(metric.find_outliers, find_outliers)
         self.assertIs(metric.describe_structure, describe_structure)
         self.assertIs(metric.find_representatives, find_representatives)
         self.assertIs(metric.kmedoids, kmedoids)
@@ -169,10 +178,13 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("GraphConstructionMetadata", metric.__all__)
         self.assertIn("GraphConstructionResult", metric.__all__)
         self.assertIn("ClusteringResult", metric.__all__)
+        self.assertIn("Outlier", metric.__all__)
+        self.assertIn("OutlierResult", metric.__all__)
         self.assertIn("CorrelationResult", metric.__all__)
         self.assertIn("RepresentativeSet", metric.__all__)
         self.assertIn("StructureDescription", metric.__all__)
         self.assertIn("find_groups", metric.__all__)
+        self.assertIn("find_outliers", metric.__all__)
         self.assertIn("compare_spaces", metric.__all__)
         self.assertIn("correlate_spaces", metric.__all__)
         self.assertIn("describe_structure", metric.__all__)
@@ -278,6 +290,23 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(density_groups.cluster_count, 2)
         self.assertEqual(density_groups.noise_count, 0)
         self.assertEqual(density_groups.algorithm, "dbscan")
+
+        outlier_space = Space([0, 1, 10, 11, 30], metric=lambda lhs, rhs: abs(lhs - rhs))
+        outliers = outlier_space.outliers(DBSCAN(radius=2, min_points=2))
+        self.assertIsInstance(outliers, OutlierResult)
+        self.assertEqual(outliers.outliers, (Outlier(record_id=4, score=19),))
+        self.assertEqual(outliers.record_count, 5)
+        self.assertEqual(outliers.cluster_count, 2)
+        self.assertEqual(outliers.noise_count, 1)
+        self.assertTrue(outliers.exact)
+        self.assertEqual(outliers.operator_name, "find_outliers")
+        self.assertEqual(outliers.strategy, "dbscan_noise")
+        self.assertEqual(outliers.representation, "metric_space")
+        self.assertEqual(
+            find_outliers([0, 1, 10, 11, 30], lambda lhs, rhs: abs(lhs - rhs), DBSCAN(radius=2, min_points=2)),
+            outliers,
+        )
+        self.assertEqual(outlier_space.outliers(DBSCAN(radius=100, min_points=2)).outliers, ())
 
         representatives_result = space.representatives(3)
         self.assertIsInstance(representatives_result, RepresentativeSet)
@@ -666,6 +695,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(space.within_radius("cut", 1), [(0, 1), (1, 1)])
         self.assertTrue(callable(space.compare))
         self.assertTrue(callable(space.correlate))
+        self.assertTrue(callable(space.outliers))
 
     def test_numpy_record_arrays_use_custom_metric_callable(self):
         records = np.array([[0.0, 0.0], [3.0, 4.0], [6.0, 8.0]])
