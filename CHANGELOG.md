@@ -55,7 +55,7 @@
 - The target intent facade for `groups`, `embed`, `map`, `reduce`, `denoise`, `outliers`, and `compare` remains roadmap API until backed by stable strategies, result contracts, examples, and CI.
 - Mapping and transform algorithms remain beta or compatibility surfaces; `metric.mappings` and `metric.transforms` only expose installed legacy names.
 - The default Python core wheel intentionally exposes a narrow revived surface; broader legacy bindings require separate restoration.
-- Public relaunch still requires external actions: release tag creation, release artifact workflow run from that final tag, GitHub release publication, and PyPI publishing for `metric-space`.
+- GitHub release `v0.3.0` is published with release artifacts; PyPI publishing for `metric-space` remains pending until package ownership or Trusted Publishing is confirmed.
 
 ## [0.2.1] - 2022-05-16
 

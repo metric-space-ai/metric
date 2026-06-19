@@ -1,6 +1,6 @@
 # Revival Status
 
-This page tracks the current execution status of [REVIVAL_PLAN.md](../REVIVAL_PLAN.md). It is not a replacement for the plan; it records which revival requirements are implemented on `master` and which release actions still require package-index or release publication state.
+This page tracks the current execution status of [REVIVAL_PLAN.md](../REVIVAL_PLAN.md). It is not a replacement for the plan; it records which revival requirements are implemented on `master` and which release actions still require package-index state.
 
 ## Local Revival Scope
 
@@ -81,6 +81,8 @@ The release metadata therefore uses `metric-space` to avoid colliding with both 
 
 The revival branch landed through [pull request #326](https://github.com/metric-space-ai/metric/pull/326), merged into `master` as commit `c1bc86f035e132617a111bbf91577f92070ff22e`.
 
+The release metadata update landed through [pull request #327](https://github.com/metric-space-ai/metric/pull/327), merged into `master` as commit `84e87eaf45ef8726f2248f0da761b9d8b59695d6`.
+
 The GitHub repository metadata was checked on 2026-06-19 with `gh repo view metric-space-ai/metric`.
 
 - repository description: `Numerical computing framework for finite metric spaces in C++ and Python.`
@@ -89,12 +91,11 @@ The GitHub repository metadata was checked on 2026-06-19 with `gh repo view metr
 
 GitHub Pages was checked on 2026-06-19 with `gh api repos/metric-space-ai/metric/pages`. Pages is public, uses `build_type: workflow`, and is built at <https://metric-space-ai.github.io/metric/>.
 
-GitHub Actions was checked on 2026-06-19 with `gh run list --repo metric-space-ai/metric --branch master`. The following `master` runs completed successfully on commit `c1bc86f035e132617a111bbf91577f92070ff22e`:
+GitHub Actions was checked on 2026-06-19 with `gh run list --repo metric-space-ai/metric --branch master`. The following `master` runs completed successfully on commit `84e87eaf45ef8726f2248f0da761b9d8b59695d6`:
 
 - Core C++ smoke
 - Python core wheel
 - Docs and formatting
-- Pages
 - Dependency Graph
 
 The manual release-artifact rehearsal was checked on 2026-06-19 with `gh run view 27798350044`. It completed successfully on `master` and uploaded:
@@ -102,14 +103,17 @@ The manual release-artifact rehearsal was checked on 2026-06-19 with `gh run vie
 - `metric-source-archive`
 - `metric-python-artifacts`
 
-## External Release Work
+## External Release State
 
-These plan items cannot be proven by local files alone and remain external release actions:
+The final release tag and GitHub release were checked on 2026-06-19:
 
-- create the final `v0.3.0` release tag from `master`
-- run `.github/workflows/release-artifacts.yml` from that final release tag
-- publish the GitHub release using the [CHANGELOG.md](../CHANGELOG.md) `0.3.0` entry as release notes
-- publish the `metric-space` Python source distribution and wheel to PyPI after confirming package ownership or Trusted Publishing
+- tag `v0.3.0` points at commit `84e87eaf45ef8726f2248f0da761b9d8b59695d6`
+- [GitHub release `v0.3.0`](https://github.com/metric-space-ai/metric/releases/tag/v0.3.0) is published as a non-draft, non-prerelease release
+- release artifact workflow run `27798995987` completed successfully from tag `v0.3.0`
+- tag CI runs for docs/formatting, C++ core smoke, and Python core wheels completed successfully
+- the release assets include `metric-v0.3.0.tar.gz`, `metric_space-0.3.0.tar.gz`, and `metric_space-0.3.0-cp312-cp312-linux_x86_64.whl`
+
+The remaining external release action is to publish the `metric-space` Python source distribution and wheel to PyPI after confirming package ownership or Trusted Publishing. The repository still contains only a legacy manual TestPyPI workflow, and no local Twine credentials were present during the 2026-06-19 release check.
 
 ## Historical Code Policy
 

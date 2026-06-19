@@ -20,11 +20,13 @@ The same objects are also available as convenience imports from `metric` for sho
 
 The Python package is in revival. The current supported CPython targets for the core wheel are 3.10, 3.11, 3.12, 3.13, and 3.14.
 
-After the release is published, install the core package with:
+After the package is published to PyPI, install the core package with:
 
 ```shell
 python -m pip install metric-space
 ```
+
+Until PyPI publishing is completed, build from source with the instructions below.
 
 Packaging now uses `pyproject.toml` with isolated PEP 517 builds and PEP 621 project metadata. `setup.py` provides the CMake extension build hook and the source-distribution hook that carries the required C++ headers into the Python sdist. The build prefers the `pybind11` package from the build environment (`pybind11>=3.0.0`) and falls back to a current FetchContent copy when no CMake package is available.
 
