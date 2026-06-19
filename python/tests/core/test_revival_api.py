@@ -16,6 +16,7 @@ from metric.operators import (
     GraphStretchDiagnostics,
     GraphConstructionMetadata,
     GraphConstructionResult,
+    MappingResult,
     Outlier,
     OutlierResult,
     RepresentativeSet,
@@ -39,6 +40,7 @@ from metric.operators import (
     graph_stretch_diagnostics,
     intrinsic_dimension,
     kmedoids,
+    map_space,
     medoid,
     medoid_index,
     nearest_neighbors,
@@ -90,6 +92,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.operators.GraphStretchDiagnostics, GraphStretchDiagnostics)
         self.assertIs(metric.operators.GraphConstructionMetadata, GraphConstructionMetadata)
         self.assertIs(metric.operators.GraphConstructionResult, GraphConstructionResult)
+        self.assertIs(metric.operators.MappingResult, MappingResult)
         self.assertIs(metric.operators.ClusteringResult, ClusteringResult)
         self.assertIs(metric.operators.Outlier, Outlier)
         self.assertIs(metric.operators.OutlierResult, OutlierResult)
@@ -114,6 +117,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.operators.graph_degree_diagnostics, graph_degree_diagnostics)
         self.assertIs(metric.operators.graph_stretch_diagnostics, graph_stretch_diagnostics)
         self.assertIs(metric.operators.intrinsic_dimension, intrinsic_dimension)
+        self.assertIs(metric.operators.map_space, map_space)
         self.assertIs(metric.operators.prune_graph_out_degree, prune_graph_out_degree)
         self.assertIs(metric.operators.medoid_index, medoid_index)
         self.assertIs(metric.operators.medoid, medoid)
@@ -133,6 +137,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.GraphStretchDiagnostics, GraphStretchDiagnostics)
         self.assertIs(metric.GraphConstructionMetadata, GraphConstructionMetadata)
         self.assertIs(metric.GraphConstructionResult, GraphConstructionResult)
+        self.assertIs(metric.MappingResult, MappingResult)
         self.assertIs(metric.ClusteringResult, ClusteringResult)
         self.assertIs(metric.Outlier, Outlier)
         self.assertIs(metric.OutlierResult, OutlierResult)
@@ -161,6 +166,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.graph_degree_diagnostics, graph_degree_diagnostics)
         self.assertIs(metric.graph_stretch_diagnostics, graph_stretch_diagnostics)
         self.assertIs(metric.intrinsic_dimension, intrinsic_dimension)
+        self.assertIs(metric.map_space, map_space)
         self.assertIs(metric.prune_graph_out_degree, prune_graph_out_degree)
         self.assertIs(metric.medoid_index, medoid_index)
         self.assertIs(metric.medoid, medoid)
@@ -183,6 +189,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("GraphStretchDiagnostics", metric.__all__)
         self.assertIn("GraphConstructionMetadata", metric.__all__)
         self.assertIn("GraphConstructionResult", metric.__all__)
+        self.assertIn("MappingResult", metric.__all__)
         self.assertIn("ClusteringResult", metric.__all__)
         self.assertIn("Outlier", metric.__all__)
         self.assertIn("OutlierResult", metric.__all__)
@@ -210,6 +217,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("graph_connectivity_diagnostics", metric.__all__)
         self.assertIn("graph_degree_diagnostics", metric.__all__)
         self.assertIn("graph_stretch_diagnostics", metric.__all__)
+        self.assertIn("map_space", metric.__all__)
         self.assertIn("prune_graph_out_degree", metric.__all__)
         self.assertIn("medoid_index", metric.__all__)
         self.assertIn("medoid", metric.__all__)
@@ -356,6 +364,25 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(medoid_reduction.strategy, "kmedoids")
         self.assertEqual(medoid_reduction.space.records, [1, 10])
 
+        mapped = space.map(lambda record: {"value": record}, metric=lambda lhs, rhs: abs(lhs["value"] - rhs["value"]))
+        self.assertIsInstance(mapped, MappingResult)
+        self.assertIsInstance(mapped.space, Space)
+        self.assertEqual(mapped.space.records, [{"value": 0}, {"value": 1}, {"value": 2}, {"value": 3}, {"value": 4}])
+        self.assertEqual(mapped.source_record_ids, (0, 1, 2, 3, 4))
+        self.assertEqual(mapped.source_record_count, 5)
+        self.assertEqual(mapped.target_record_count, 5)
+        self.assertTrue(mapped.exact)
+        self.assertEqual(mapped.operator_name, "map")
+        self.assertEqual(mapped.mapping, "deterministic_transform")
+        self.assertEqual(mapped.strategy, "deterministic_transform")
+        self.assertEqual(mapped.representation, "metric_space")
+        self.assertFalse(mapped.inverse_supported)
+        self.assertEqual(mapped.space.distance(0, 4), 4)
+        self.assertEqual(
+            map_space([0, 1, 2], lambda record: record * record, lambda lhs, rhs: abs(lhs - rhs)).space.records,
+            [0, 1, 4],
+        )
+
         description = space.describe()
         self.assertIsInstance(description, StructureDescription)
         self.assertEqual(description.record_count, 5)
@@ -399,6 +426,10 @@ class RevivalApiTest(unittest.TestCase):
             space.reduce(strategy=FarthestFirst())
         with self.assertRaises(ValueError):
             space.reduce(3, strategy=KMedoids(groups=2))
+        with self.assertRaises(TypeError):
+            space.map(3)
+        with self.assertRaises(TypeError):
+            map_space([0, 1], lambda record: record, metric=3)
 
     def test_intrinsic_dimension_estimates_distance_growth(self):
         records = [0, 1, 2, 3, 4]
@@ -739,6 +770,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertTrue(callable(space.correlate))
         self.assertTrue(callable(space.outliers))
         self.assertTrue(callable(space.reduce))
+        self.assertTrue(callable(space.map))
 
     def test_numpy_record_arrays_use_custom_metric_callable(self):
         records = np.array([[0.0, 0.0], [3.0, 4.0], [6.0, 8.0]])
