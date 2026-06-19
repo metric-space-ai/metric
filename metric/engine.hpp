@@ -15,6 +15,7 @@
 #include "intent/describe.hpp"
 #include "intent/groups.hpp"
 #include "intent/neighbors.hpp"
+#include "intent/outliers.hpp"
 #include "intent/representatives.hpp"
 #include "intent/reduce.hpp"
 #include "mappings/clustered_space.hpp"
