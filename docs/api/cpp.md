@@ -106,6 +106,8 @@ auto structure = metric::describe_structure(space);
 
 These helpers keep algorithm names in `metric::strategies` while returning the same engine result objects as the lower-level operator layer.
 
+The first runtime policy surface is available through `<metric/engine.hpp>` under `metric::runtime`. `metric::runtime::exact()` uses the lazy metric-space path for neighbor lookup. `metric::runtime::materialized(metric::runtime::exact())` uses a `MatrixCache` for `RecordId` neighbor lookup and reports `representation == "matrix_cache"` in the returned `NeighborSet`. `metric::runtime::approximate()` is a reserved policy value and currently throws for neighbor lookup rather than silently selecting an approximate algorithm. `metric::runtime::cache(...)` wraps representation objects and delegates `is_stale()` to their `space.version()` checks.
+
 `describe_structure` returns `metric::StructureDescription<Distance>` from `<metric/engine.hpp>` with exact all-pairs metadata: record count, evaluated pair count, zero-distance pair count, minimum nonzero distance, maximum distance, average distance, and intrinsic-dimension estimate.
 
 `find_representatives` returns `metric::RepresentativeSet<Distance>` from `<metric/engine.hpp>` with selected source `RecordId`s, nearest-representative distances for every record, coverage radius, and average nearest-representative distance. The first promoted strategy is `metric::strategies::farthest_first`.
