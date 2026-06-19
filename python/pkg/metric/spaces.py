@@ -258,8 +258,7 @@ class Space(FiniteMetricSpace):
 
     def groups(self, strategy=None, *, count="auto", radius=None, min_size=1, representation=None, runtime=None):
         require_exact_runtime(runtime)
-        if representation is not None:
-            representation.ensure_fresh()
+        representation_name = self._representation_name(representation)
         if strategy is not None and (count != "auto" or radius is not None):
             raise ValueError("use either strategy or count/radius, not both")
 
@@ -274,7 +273,7 @@ class Space(FiniteMetricSpace):
                     count = 1 if len(self.records) <= 2 else 2
                 strategy = KMedoids(groups=count)
 
-        return find_groups(self.records, self.metric, strategy)
+        return find_groups(self.records, self.metric, strategy, representation=representation_name)
 
     def _nearest_other_distance(self, source_index):
         candidates = [

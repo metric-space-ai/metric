@@ -916,7 +916,7 @@ def _compute_cluster_medoids(space, assignments, cluster_count):
     return medoids
 
 
-def kmedoids(records, metric, groups, max_iterations=100):
+def kmedoids(records, metric, groups, max_iterations=100, *, representation="metric_space"):
     """Group records with deterministic k-medoids over exact pairwise distances."""
     records = list(records)
     if not records:
@@ -961,7 +961,7 @@ def kmedoids(records, metric, groups, max_iterations=100):
         iterations=iterations,
         converged=converged,
         algorithm="kmedoids",
-        representation="metric_space",
+        representation=representation,
     )
 
 
@@ -1005,7 +1005,7 @@ def _expand_dbscan_cluster(space, seed_neighbors, radius, min_points, cluster, v
             assigned[candidate_index] = True
 
 
-def dbscan(records, metric, radius, min_points):
+def dbscan(records, metric, radius, min_points, *, representation="metric_space"):
     """Group records with deterministic DBSCAN over exact pairwise distances."""
     records = list(records)
     if not records:
@@ -1065,7 +1065,7 @@ def dbscan(records, metric, radius, min_points):
         iterations=1,
         converged=True,
         algorithm="dbscan",
-        representation="metric_space",
+        representation=representation,
     )
 
 
@@ -1087,13 +1087,19 @@ def _coerce_grouping_strategy(strategy):
         raise TypeError("strategy must be a KMedoids, DBSCAN, or integer group count") from None
 
 
-def find_groups(records, metric, strategy):
+def find_groups(records, metric, strategy, *, representation="metric_space"):
     """Group records and return an engine-style result object."""
     strategy = _coerce_grouping_strategy(strategy)
     if isinstance(strategy, KMedoids):
-        return kmedoids(records, metric, strategy.groups, strategy.max_iterations)
+        return kmedoids(
+            records,
+            metric,
+            strategy.groups,
+            strategy.max_iterations,
+            representation=representation,
+        )
     if isinstance(strategy, DBSCAN):
-        return dbscan(records, metric, strategy.radius, strategy.min_points)
+        return dbscan(records, metric, strategy.radius, strategy.min_points, representation=representation)
     raise TypeError("unsupported grouping strategy")
 
 
@@ -1123,7 +1129,7 @@ def find_outliers(records, metric, strategy, *, representation="metric_space"):
     """Find unusual records and return an engine-style result object."""
     strategy = _coerce_outlier_strategy(strategy)
     records = list(records)
-    groups = dbscan(records, metric, strategy.radius, strategy.min_points)
+    groups = dbscan(records, metric, strategy.radius, strategy.min_points, representation=representation)
     space = FiniteMetricSpace(records, metric)
     references = [
         record_index
@@ -1165,7 +1171,7 @@ def denoise_space(records, metric, strategy, *, representation="metric_space"):
     """Filter DBSCAN noise records and return a derived metric space."""
     strategy = _coerce_denoise_strategy(strategy)
     records = list(records)
-    groups = dbscan(records, metric, strategy.radius, strategy.min_points)
+    groups = dbscan(records, metric, strategy.radius, strategy.min_points, representation=representation)
     kept_record_ids = tuple(
         record_index
         for record_index, assignment in enumerate(groups.assignments)
@@ -1382,7 +1388,7 @@ def reduce_space(records, metric, count=None, strategy=None, *, representation="
         source_record_ids = representatives_result.representatives
         strategy_name = "farthest_first"
     elif isinstance(strategy, KMedoids):
-        groups = find_groups(records, metric, strategy)
+        groups = find_groups(records, metric, strategy, representation=representation)
         source_record_ids = groups.medoids
         strategy_name = "kmedoids"
     else:

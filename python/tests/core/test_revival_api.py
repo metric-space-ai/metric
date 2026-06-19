@@ -485,6 +485,9 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(find_groups([0, 1, 2, 10, 11], lambda lhs, rhs: abs(lhs - rhs), 2), groups)
         self.assertEqual(group_space.groups(count=2), groups)
         self.assertEqual(group_space.groups(), groups)
+        matrix_groups = group_space.groups(count=2, representation=group_space.to_matrix())
+        self.assertEqual(matrix_groups.representation, "matrix")
+        self.assertEqual(matrix_groups.assignments, groups.assignments)
 
         density_groups = group_space.groups(DBSCAN(radius=1, min_points=2))
         self.assertIsInstance(density_groups, ClusteringResult)
@@ -497,6 +500,9 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(density_groups.noise_count, 0)
         self.assertEqual(density_groups.algorithm, "dbscan")
         self.assertEqual(group_space.groups(radius=1, min_size=2), density_groups)
+        matrix_density_groups = group_space.groups(radius=1, min_size=2, representation=group_space.to_matrix())
+        self.assertEqual(matrix_density_groups.representation, "matrix")
+        self.assertEqual(matrix_density_groups.assignments, density_groups.assignments)
         with self.assertRaises(ValueError):
             group_space.groups(KMedoids(groups=2), count=2)
 
@@ -835,6 +841,8 @@ class RevivalApiTest(unittest.TestCase):
         space.touch()
         with self.assertRaises(StaleRepresentationError):
             space.embed(representation=stale_matrix)
+        with self.assertRaises(StaleRepresentationError):
+            space.groups(count=2, representation=stale_matrix)
         with self.assertRaises(StaleRepresentationError):
             space.describe(representation=stale_matrix)
         with self.assertRaises(StaleRepresentationError):
