@@ -68,6 +68,8 @@ Strategies select algorithms:
 
 Algorithm names live here. A normal user can use the engine without learning the algorithm catalog first; an expert can choose strategies explicitly.
 
+The first C++ strategy objects are available under `metric::strategies` for implemented engine paths: `brute_force`, `matrix_cache`, `cover_tree`, `knn_graph`, `k_medoids`, and `dbscan`.
+
 ### Representation
 
 Representations are execution structures over the same metric space:
@@ -109,6 +111,8 @@ Result objects preserve:
 - source-to-target lineage when a derived space or mapping is produced
 
 The first engine operator results are `metric::NeighborSet<Distance>`, returned by nearest-neighbor operators over spaces, distance providers, and neighbor indexes, and `metric::ClusteringResult<Distance>`, returned by k-medoids and DBSCAN grouping operators.
+
+The first C++ intent helpers are `metric::find_neighbors` and `metric::find_groups`. They keep the user-facing vocabulary semantic while routing to explicit strategy objects such as `metric::strategies::cover_tree`, `metric::strategies::matrix_cache`, `metric::strategies::k_medoids`, and `metric::strategies::dbscan`.
 
 ## Capabilities
 

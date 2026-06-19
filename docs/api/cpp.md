@@ -92,6 +92,17 @@ The promoted C++ operator helpers are `pairwise_distance_matrix`, `nearest_neigh
 
 The engine operator layer also exposes `metric::operators::knn`, `metric::operators::range`, `metric::operators::kmedoids`, and `metric::operators::dbscan` through `<metric/engine.hpp>` or the specific headers under `<metric/operators/>`. These overloads accept `metric::MetricSpace`, engine distance providers such as `MatrixCache`, and neighbor indexes such as `CoverTreeIndex` where appropriate. They return named results such as `metric::NeighborSet<Distance>` and `metric::ClusteringResult<Distance>` with stable `RecordId` payloads.
 
+The engine intent layer exposes semantic helpers for the same building blocks:
+
+```cpp
+auto neighbors = metric::find_neighbors(space, std::string("cut"), 2);
+auto indexed = metric::find_neighbors(space, std::string("cut"), 2, metric::strategies::cover_tree{});
+auto groups = metric::find_groups(space, metric::strategies::k_medoids(2));
+auto density_groups = metric::find_groups(space, metric::strategies::dbscan(1.0, 2));
+```
+
+These helpers keep algorithm names in `metric::strategies` while returning the same engine result objects as the lower-level operator layer.
+
 `representative_indices` and `representatives` use deterministic farthest-first traversal over the finite metric space. They select existing records rather than vector centroids, start from `seed_index=0` by default, and resolve equal-distance ties by record order.
 
 `medoid_index` and `medoid` select the existing record with the smallest total distance to all records. Equal total-distance ties are resolved by record order.

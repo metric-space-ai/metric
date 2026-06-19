@@ -9,6 +9,7 @@
 - Add first C++ engine nearest operators with `NeighborSet`, `operators::knn`, and `operators::range` overloads for spaces, distance providers, and neighbor indexes.
 - Add first C++ engine clustering operator with `ClusteringResult` and `operators::kmedoids` overloads for spaces and distance providers.
 - Add deterministic C++ engine density clustering with `operators::dbscan` overloads for spaces and distance providers.
+- Add first C++ engine intent helpers and strategy objects for semantic neighbor and grouping workflows.
 
 ### Algorithm Changes
 

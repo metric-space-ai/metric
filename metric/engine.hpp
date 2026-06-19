@@ -11,6 +11,8 @@
 #include "core/neighbor.hpp"
 #include "core/record_id.hpp"
 #include "core/result.hpp"
+#include "intent/groups.hpp"
+#include "intent/neighbors.hpp"
 #include "operators/clustering.hpp"
 #include "operators/nearest.hpp"
 #include "representations/cover_tree_index.hpp"
@@ -18,5 +20,7 @@
 #include "representations/implicit.hpp"
 #include "representations/knn_graph_index.hpp"
 #include "representations/matrix_cache.hpp"
+#include "strategies/clustering.hpp"
+#include "strategies/search.hpp"
 
 #endif
