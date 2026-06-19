@@ -33,6 +33,7 @@ template <typename Record, typename Metric> class MetricSpace {
 	auto size() const -> std::size_t { return records_.size(); }
 	auto empty() const -> bool { return records_.empty(); }
 	auto version() const -> std::size_t { return version_; }
+	auto touch() -> void { ++version_; }
 
 	auto id(std::size_t index) const -> RecordId
 	{

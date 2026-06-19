@@ -1,6 +1,6 @@
 # C++ API
 
-The current C++ core API exposes metric constructors, a minimal `metric::Metric` wrapper for custom callables, a minimal `metric::Space` facade, and explicit finite-space representations. The broader intent facade is part of the engine roadmap; promoted examples use the CI-tested core surface.
+The current C++ core API exposes metric constructors, a minimal `metric::Metric` wrapper for custom callables, a minimal `metric::Space` facade, the first `metric::MetricSpace` engine layer, and explicit finite-space representations. The broader intent facade is part of the engine roadmap; promoted examples use the CI-tested core surface.
 
 Recommended includes:
 
@@ -128,7 +128,17 @@ Algorithms that require metric-space guarantees assume non-negativity, identity,
 
 ## Representations
 
-The core can materialize explicit representations when a workflow needs control over memory, speed, approximation, or reproducibility.
+The engine exposes representation adapters over one `metric::MetricSpace`:
+
+- `metric::representations::ImplicitDistanceProvider<Space>`
+- `metric::representations::MatrixCache<Space>`
+- `metric::representations::CoverTreeIndex<Space>`
+- `metric::representations::KnnGraphIndex<Space>`
+- `metric::representations::GraphTopology<Space>`
+
+These adapters preserve stable `RecordId` values. `MatrixCache` returns cached pairwise distances, neighbor indexes return `metric::Neighbor<Distance>` records, and every adapter reports stale state when the source space version changes.
+
+The compatibility core can also materialize explicit representations when a workflow needs control over memory, speed, approximation, or reproducibility.
 
 - `metric::MatrixSpace<Record, Metric>`
 - `metric::GraphSpace<Record, Metric>`
