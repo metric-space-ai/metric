@@ -8,7 +8,7 @@ RecordSet + Metric -> MetricSpace -> Intent -> Strategy -> Representation -> Run
 
 This model is the public architecture of the engine.
 
-The first implementation slice is documented in [Engine Mental Model](mental-model.md).
+The first implementation slices are documented in [Engine Mental Model](mental-model.md).
 
 ## Core Idea
 
@@ -80,6 +80,8 @@ Representations are execution structures over the same metric space:
 - learned mapping model
 
 Representations are runtime choices and expert controls. They are not separate user concepts.
+
+The first engine representation adapters are available in C++ under `metric::representations`. They cover implicit distance lookup, eager matrix caching, exact neighbor-index scaffolds, kNN graph adjacency, and graph topology edges over one `MetricSpace`.
 
 ### Runtime
 

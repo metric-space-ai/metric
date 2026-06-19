@@ -5,10 +5,12 @@
 #ifndef _METRIC_CORE_CONCEPTS_HPP
 #define _METRIC_CORE_CONCEPTS_HPP
 
+#include <cstddef>
 #include <type_traits>
 #include <utility>
 
 #include "metric_traits.hpp"
+#include "record_id.hpp"
 
 namespace metric::core {
 
@@ -42,14 +44,67 @@ struct MetricSpaceLike<Space,
 template <typename Space>
 constexpr bool MetricSpaceLike_v = MetricSpaceLike<Space>::value;
 
+template <typename Provider, typename = void> struct DistanceProvider : std::false_type {
+};
+
+template <typename Provider>
+struct DistanceProvider<Provider,
+						std::void_t<typename Provider::distance_type,
+									decltype(std::declval<const Provider &>().distance(std::declval<RecordId>(),
+																					   std::declval<RecordId>())),
+									decltype(std::declval<const Provider &>().record_count()),
+									decltype(std::declval<const Provider &>().version()),
+									decltype(std::declval<const Provider &>().is_stale())>> : std::true_type {
+};
+
+template <typename Provider>
+constexpr bool DistanceProvider_v = DistanceProvider<Provider>::value;
+
+template <typename Index, typename = void> struct NeighborSearchIndex : std::false_type {
+};
+
+template <typename Index>
+struct NeighborSearchIndex<Index,
+						   std::void_t<typename Index::record_type, typename Index::distance_type,
+									   decltype(std::declval<const Index &>().knn(
+										   std::declval<const typename Index::record_type &>(), std::declval<std::size_t>())),
+									   decltype(std::declval<const Index &>().record_count()),
+									   decltype(std::declval<const Index &>().version()),
+									   decltype(std::declval<const Index &>().is_stale())>> : std::true_type {
+};
+
+template <typename Index>
+constexpr bool NeighborSearchIndex_v = NeighborSearchIndex<Index>::value;
+
+template <typename Topology, typename = void> struct GraphTopology : std::false_type {
+};
+
+template <typename Topology>
+struct GraphTopology<Topology,
+					 std::void_t<typename Topology::edge_type, typename Topology::distance_type,
+								 decltype(std::declval<const Topology &>().edges()),
+								 decltype(std::declval<const Topology &>().record_count()),
+								 decltype(std::declval<const Topology &>().version()),
+								 decltype(std::declval<const Topology &>().is_stale())>> : std::true_type {
+};
+
+template <typename Topology>
+constexpr bool GraphTopology_v = GraphTopology<Topology>::value;
+
 } // namespace metric::core
 
 namespace metric {
+using core::DistanceProvider;
+using core::DistanceProvider_v;
+using core::GraphTopology;
+using core::GraphTopology_v;
 using core::metric_result_t;
 using core::MetricCallable;
 using core::MetricCallable_v;
 using core::MetricSpaceLike;
 using core::MetricSpaceLike_v;
+using core::NeighborSearchIndex;
+using core::NeighborSearchIndex_v;
 } // namespace metric
 
 #endif

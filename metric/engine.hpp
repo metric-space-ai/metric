@@ -10,5 +10,10 @@
 #include "core/metric_traits.hpp"
 #include "core/neighbor.hpp"
 #include "core/record_id.hpp"
+#include "representations/cover_tree_index.hpp"
+#include "representations/graph_topology.hpp"
+#include "representations/implicit.hpp"
+#include "representations/knn_graph_index.hpp"
+#include "representations/matrix_cache.hpp"
 
 #endif
