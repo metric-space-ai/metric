@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### API Changes
+
+- Add the first C++ engine core skeleton with `metric::MetricSpace`, `RecordId`, `Neighbor`, metric traits, engine concept traits, and `make_space`.
+
 ### Algorithm Changes
 
 - Run every promoted Python metric-space example from the core Python API tests so wheel and PyPI build gates share the same example coverage.

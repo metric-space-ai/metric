@@ -7,6 +7,7 @@ Recommended includes:
 ```cpp
 #include <metric/concepts.hpp>
 #include <metric/distance.hpp>
+#include <metric/engine.hpp>
 #include <metric/operators.hpp>
 #include <metric/space.hpp>
 ```
