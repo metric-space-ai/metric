@@ -22,6 +22,7 @@ from metric.operators import (
     medoid_index,
     nearest_neighbors,
     pairwise_distance_matrix,
+    prune_graph_out_degree,
     range_neighbors,
     representative_indices,
     representatives,
@@ -68,6 +69,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.operators.exact_radius_graph, exact_radius_graph)
         self.assertIs(metric.operators.exact_radius_graph_edges, exact_radius_graph_edges)
         self.assertIs(metric.operators.intrinsic_dimension, intrinsic_dimension)
+        self.assertIs(metric.operators.prune_graph_out_degree, prune_graph_out_degree)
         self.assertIs(metric.operators.medoid_index, medoid_index)
         self.assertIs(metric.operators.medoid, medoid)
         self.assertIs(metric.operators.representative_indices, representative_indices)
@@ -87,6 +89,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.exact_radius_graph, exact_radius_graph)
         self.assertIs(metric.exact_radius_graph_edges, exact_radius_graph_edges)
         self.assertIs(metric.intrinsic_dimension, intrinsic_dimension)
+        self.assertIs(metric.prune_graph_out_degree, prune_graph_out_degree)
         self.assertIs(metric.medoid_index, medoid_index)
         self.assertIs(metric.medoid, medoid)
         self.assertIs(metric.range_neighbors, range_neighbors)
@@ -109,6 +112,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("exact_knn_graph_edges", metric.__all__)
         self.assertIn("exact_radius_graph", metric.__all__)
         self.assertIn("exact_radius_graph_edges", metric.__all__)
+        self.assertIn("prune_graph_out_degree", metric.__all__)
         self.assertIn("medoid_index", metric.__all__)
         self.assertIn("medoid", metric.__all__)
         self.assertIn("representative_indices", metric.__all__)
@@ -218,9 +222,25 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIsNone(knn_graph.metadata.radius)
         self.assertEqual(knn_graph.metadata.edge_payload, "metric_distance")
         self.assertEqual(knn_graph.metadata.weighting, "none")
+        self.assertIsNone(knn_graph.metadata.max_out_degree)
+        self.assertEqual(knn_graph.metadata.sparsification, "none")
         self.assertEqual(knn_graph.metadata.symmetrization, "none")
         self.assertEqual(knn_graph.metadata.normalization, "none")
         self.assertEqual(knn_graph.metadata.tie_break, "distance_then_target_index")
+
+        wide_knn_graph = exact_knn_graph(records, cumulative_transport_distance, 2)
+        pruned_graph = prune_graph_out_degree(wide_knn_graph, max_out_degree=1)
+        self.assertEqual(
+            list(pruned_graph.edges),
+            [(0, 3, 0.5), (1, 3, 0.5), (2, 4, 1.5), (3, 0, 0.5), (4, 1, 0.5)],
+        )
+        self.assertTrue(pruned_graph.metadata.directed)
+        self.assertEqual(pruned_graph.metadata.edge_count, len(pruned_graph.edges))
+        self.assertEqual(pruned_graph.metadata.k, 2)
+        self.assertEqual(pruned_graph.metadata.max_out_degree, 1)
+        self.assertEqual(pruned_graph.metadata.sparsification, "out_degree")
+        self.assertEqual(pruned_graph.metadata.tie_break, "source_index_then_distance_then_target_index")
+        self.assertEqual(prune_graph_out_degree(wide_knn_graph, 0).edges, ())
 
         union_graph = symmetrize_graph(knn_graph, policy="union", weighting="minimum_distance")
         self.assertEqual(
@@ -230,8 +250,11 @@ class RevivalApiTest(unittest.TestCase):
         self.assertFalse(union_graph.metadata.directed)
         self.assertEqual(union_graph.metadata.edge_count, len(union_graph.edges))
         self.assertEqual(union_graph.metadata.weighting, "minimum_distance")
+        self.assertEqual(union_graph.metadata.sparsification, "none")
         self.assertEqual(union_graph.metadata.symmetrization, "union")
         self.assertEqual(union_graph.metadata.tie_break, "source_index_then_target_index")
+        with self.assertRaises(ValueError):
+            prune_graph_out_degree(union_graph, 1)
 
         mutual_graph = symmetrize_graph(knn_graph, policy="mutual", weighting="minimum_distance")
         self.assertEqual(list(mutual_graph.edges), [(0, 3, 0.5)])
@@ -248,6 +271,7 @@ class RevivalApiTest(unittest.TestCase):
                 exact=True,
                 edge_payload="metric_distance",
                 weighting="none",
+                sparsification="none",
                 symmetrization="none",
                 normalization="none",
             ),
@@ -282,6 +306,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(radius_graph.metadata.radius, 0.5)
         self.assertEqual(radius_graph.metadata.edge_payload, "metric_distance")
         self.assertEqual(radius_graph.metadata.weighting, "none")
+        self.assertIsNone(radius_graph.metadata.max_out_degree)
+        self.assertEqual(radius_graph.metadata.sparsification, "none")
         self.assertEqual(radius_graph.metadata.symmetrization, "none")
         self.assertEqual(radius_graph.metadata.normalization, "none")
         self.assertEqual(radius_graph.metadata.tie_break, "source_then_target_index")
@@ -350,8 +376,12 @@ class RevivalApiTest(unittest.TestCase):
             exact_knn_graph_edges(records, absolute_distance, 4)
         with self.assertRaises(TypeError):
             exact_knn_graph_edges(records, absolute_distance, 1.5)
+        with self.assertRaises(TypeError):
+            prune_graph_out_degree(exact_knn_graph(records, absolute_distance, 1), 1.5)
         with self.assertRaises(ValueError):
             exact_radius_graph_edges(records, absolute_distance, -1)
+        with self.assertRaises(ValueError):
+            prune_graph_out_degree(exact_knn_graph(records, absolute_distance, 1), -1)
         with self.assertRaises(IndexError):
             representative_indices(records, absolute_distance, 1, seed_index=-1)
         with self.assertRaises(IndexError):

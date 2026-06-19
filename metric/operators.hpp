@@ -44,6 +44,8 @@ template <typename Distance, typename RadiusValue = Distance> struct GraphConstr
 	std::string symmetrization;
 	std::string normalization;
 	std::string tie_break;
+	std::optional<std::size_t> max_out_degree;
+	std::string sparsification;
 };
 
 template <typename Distance, typename RadiusValue = Distance> struct GraphConstructionResult {
@@ -91,6 +93,7 @@ auto exact_knn_graph(const Container &records, Metric distance, std::size_t k)
 	result.metadata.k = k;
 	result.metadata.edge_payload = "metric_distance";
 	result.metadata.weighting = "none";
+	result.metadata.sparsification = "none";
 	result.metadata.symmetrization = "none";
 	result.metadata.normalization = "none";
 	result.metadata.tie_break = "distance_then_target_index";
@@ -168,6 +171,7 @@ auto exact_radius_graph(const Container &records, Metric distance, Radius radius
 	result.metadata.radius = static_cast<comparison_type>(radius);
 	result.metadata.edge_payload = "metric_distance";
 	result.metadata.weighting = "none";
+	result.metadata.sparsification = "none";
 	result.metadata.symmetrization = "none";
 	result.metadata.normalization = "none";
 	result.metadata.tie_break = "source_then_target_index";
@@ -277,6 +281,55 @@ auto symmetrize_graph(const GraphConstructionResult<Distance, RadiusValue> &grap
 			result.edges.emplace_back(key.first, key.second, accumulator.forward.value());
 		} else {
 			result.edges.emplace_back(key.first, key.second, accumulator.reverse.value());
+		}
+	}
+
+	result.metadata.edge_count = result.edges.size();
+	return result;
+}
+
+template <typename Distance, typename RadiusValue>
+auto prune_graph_out_degree(const GraphConstructionResult<Distance, RadiusValue> &graph,
+							std::size_t max_out_degree) -> GraphConstructionResult<Distance, RadiusValue>
+{
+	if (!graph.metadata.directed) {
+		throw std::invalid_argument("out-degree pruning requires a directed graph result");
+	}
+
+	GraphConstructionResult<Distance, RadiusValue> result;
+	result.metadata = graph.metadata;
+	result.metadata.max_out_degree = max_out_degree;
+	result.metadata.sparsification = "out_degree";
+	result.metadata.tie_break = "source_index_then_distance_then_target_index";
+
+	if (max_out_degree == 0) {
+		result.metadata.edge_count = 0;
+		return result;
+	}
+
+	std::map<std::size_t, std::vector<typename GraphConstructionResult<Distance, RadiusValue>::edge_type>>
+		edges_by_source;
+	for (const auto &edge : graph.edges) {
+		edges_by_source[std::get<0>(edge)].push_back(edge);
+	}
+
+	for (auto &entry : edges_by_source) {
+		auto &source_edges = entry.second;
+		std::sort(source_edges.begin(), source_edges.end(), [](const auto &lhs, const auto &rhs) {
+			const auto lhs_distance = std::get<2>(lhs);
+			const auto rhs_distance = std::get<2>(rhs);
+			if (lhs_distance < rhs_distance) {
+				return true;
+			}
+			if (rhs_distance < lhs_distance) {
+				return false;
+			}
+			return std::get<1>(lhs) < std::get<1>(rhs);
+		});
+
+		const auto selected_count = std::min(max_out_degree, source_edges.size());
+		for (std::size_t edge_index = 0; edge_index < selected_count; ++edge_index) {
+			result.edges.push_back(source_edges[edge_index]);
 		}
 	}
 

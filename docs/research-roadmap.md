@@ -81,10 +81,11 @@ Current promoted base:
 - C++ and Python `exact_knn_graph_edges` / `exact_radius_graph_edges` expose deterministic directed edge-list fixtures backed by exhaustive pairwise distances.
 - C++ and Python `exact_knn_graph` / `exact_radius_graph` return graph construction result objects with directed edge lists and construction metadata.
 - C++ and Python `symmetrize_graph` promotes deterministic `union` and `mutual` policies with minimum-distance and maximum-distance reciprocal weighting.
+- C++ and Python `prune_graph_out_degree` promotes deterministic out-degree sparsification for directed graph construction results.
 
 Candidate strategies:
 
-- sparsification primitives with documented assumptions
+- additional sparsification primitives with documented connectivity or stretch assumptions
 - graph diagnostics such as connectivity, degree distribution, and edge stretch
 
 Promotion evidence:
@@ -183,6 +184,6 @@ The revival should not:
 Near-term branches should stay small and evidence-driven:
 
 - add k-medoids or compression-summary representative fixtures now that farthest-first, medoid, separated, and radius-coverage fixtures exist
-- add graph sparsification primitives with documented assumptions
+- add graph diagnostics such as connectivity and degree distribution
 - add MGC interpretation docs for paired metric spaces
 - add an industrial-record fixture that combines strings, process curves, histograms, and numeric penalties

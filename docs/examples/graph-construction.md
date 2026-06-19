@@ -27,12 +27,15 @@ auto radius_graph = metric::operators::exact_radius_graph(records, AbsoluteDista
 auto knn_edges = knn_graph.edges;
 auto radius_edges = radius_graph.edges;
 auto undirected = metric::operators::symmetrize_graph(knn_graph, "union", "minimum_distance");
+auto pruned = metric::operators::prune_graph_out_degree(
+    metric::operators::exact_knn_graph(records, AbsoluteDistance{}, 2),
+    1);
 ```
 
 Python shape:
 
 ```python
-from metric import exact_knn_graph, exact_radius_graph, symmetrize_graph
+from metric import exact_knn_graph, exact_radius_graph, prune_graph_out_degree, symmetrize_graph
 
 records = [0, 1, 2, 3, 4]
 
@@ -45,9 +48,10 @@ radius_graph = exact_radius_graph(records, absolute_distance, radius=1)
 knn_edges = knn_graph.edges
 radius_edges = radius_graph.edges
 undirected = symmetrize_graph(knn_graph, policy="union", weighting="minimum_distance")
+pruned = prune_graph_out_degree(exact_knn_graph(records, absolute_distance, k=2), max_out_degree=1)
 ```
 
-`knn_graph.metadata` records strategy `exact_knn`, `record_count`, `edge_count`, `directed=True`, `self_loops=False`, `exact=True`, `k`, `edge_payload="metric_distance"`, `weighting="none"`, `symmetrization="none"`, `normalization="none"`, and the tie-breaking rule. `radius_graph.metadata` records the same policy fields with `radius` instead of `k`. `undirected.metadata` records `directed=False`, `symmetrization="union"`, and `weighting="minimum_distance"`.
+`knn_graph.metadata` records strategy `exact_knn`, `record_count`, `edge_count`, `directed=True`, `self_loops=False`, `exact=True`, `k`, `edge_payload="metric_distance"`, `weighting="none"`, `sparsification="none"`, `symmetrization="none"`, `normalization="none"`, and the tie-breaking rule. `radius_graph.metadata` records the same policy fields with `radius` instead of `k`. `undirected.metadata` records `directed=False`, `symmetrization="union"`, and `weighting="minimum_distance"`. `pruned.metadata` records `sparsification="out_degree"` and `max_out_degree=1` while preserving the source graph construction strategy.
 
 For `records = [0, 1, 2, 3, 4]`, the exact radius graph with radius `1` has directed edges:
 
@@ -71,4 +75,14 @@ For `records = [0, 1, 2, 3, 4]`, symmetrizing the exact kNN graph with `k=1` and
 (1, 2, 1)
 (2, 3, 1)
 (3, 4, 1)
+```
+
+For the same records, pruning the exact kNN graph from `k=2` to `max_out_degree=1` produces directed edges:
+
+```text
+(0, 1, 1)
+(1, 0, 1)
+(2, 1, 1)
+(3, 2, 1)
+(4, 3, 1)
 ```
