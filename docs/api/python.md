@@ -24,6 +24,8 @@ The records are strings. Edit distance defines the geometry without an embedding
 - `Space`: minimal intent-first finite metric space facade
 - `FiniteMetricSpace`: finite metric space over records
 - `MatrixSpace`: compatibility alias for `FiniteMetricSpace`
+- `intent`: semantic helper aliases for promoted intent operations
+- `representations`: explicit representation helpers, starting with matrix materialization
 - `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, exact graph results and edges, graph connectivity diagnostics, graph degree diagnostics, graph stretch diagnostics, graph pruning, grouping, outlier detection, DBSCAN-noise filtering, representative selection, representative reduction, deterministic mapping, cross-space comparison, medoids, separated representatives, and intrinsic-dimension diagnostics
 - `strategies`: strategy objects for intent methods, starting with `KMedoids`, `DBSCAN`, `FarthestFirst`, and `DistanceProfileCorrelation`
 - `mappings`: beta compatibility bridge for installed mapping bindings
@@ -214,6 +216,8 @@ print(space.distance(0, 1))
 `pairwise_distances()` and `metric.operators.pairwise_distance_matrix()` currently return Python lists of lists. Use `np.asarray(...)` in user code when an ndarray result is needed.
 
 `to_matrix()` returns an independent `FiniteMetricSpace` / `MatrixSpace` view with its own cached pairwise distances. It is useful when code wants to make materialization explicit while keeping the same records and metric callable.
+
+`metric.representations.matrix(space)` exposes the same explicit matrix materialization through the representation facade. `metric.intent` provides semantic aliases such as `find_neighbors`, `groups`, `denoise`, `reduce`, `map`, `compare`, and `describe` over the promoted operator functions for workflows that prefer module-level intent names.
 
 ## Engine Roadmap
 

@@ -35,4 +35,4 @@ auto distance = matrix.distance(space.id(0), space.id(1));
 
 ## Python
 
-The stable Python facade currently exposes `Space.to_matrix()` for explicit materialization. Graph helpers in `metric.operators` return named graph-construction result objects rather than persistent graph representation classes.
+The stable Python facade currently exposes `Space.to_matrix()` and `metric.representations.matrix(space)` for explicit matrix materialization. Graph helpers in `metric.operators` return named graph-construction result objects rather than persistent graph representation classes.

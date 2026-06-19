@@ -17,7 +17,7 @@ try:
 except ModuleNotFoundError:
     pass
 
-from . import mappings, metrics, operators, spaces, strategies, transforms
+from . import intent, mappings, metrics, operators, representations, spaces, strategies, transforms
 from .metrics import Edit
 from .operators import (
     ClusteringResult,

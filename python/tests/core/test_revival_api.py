@@ -7,7 +7,7 @@ from pathlib import Path
 import metric
 import numpy as np
 from metric.metrics import Edit, available
-from metric import mappings, transforms
+from metric import intent, mappings, representations, transforms
 from metric.operators import (
     ClusteringResult,
     CorrelationResult,
@@ -86,6 +86,10 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(MatrixSpace, FiniteMetricSpace)
         self.assertIs(metric.metrics.Edit, Edit)
         self.assertIs(metric.spaces.FiniteMetricSpace, FiniteMetricSpace)
+        self.assertIs(metric.intent.find_groups, find_groups)
+        self.assertIs(metric.intent.find_neighbors, nearest_neighbors)
+        self.assertIs(metric.intent.denoise, denoise_space)
+        self.assertIs(metric.representations.MatrixSpace, MatrixSpace)
         self.assertIs(metric.operators.nearest_neighbors, nearest_neighbors)
         self.assertIs(metric.operators.range_neighbors, range_neighbors)
         self.assertIs(metric.operators.GraphConnectivityDiagnostics, GraphConnectivityDiagnostics)
@@ -131,6 +135,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.operators.coverage_representative_indices, coverage_representative_indices)
         self.assertIs(metric.operators.coverage_representatives, coverage_representatives)
         self.assertIs(metric.mappings, mappings)
+        self.assertIs(metric.intent, intent)
+        self.assertIs(metric.representations, representations)
         self.assertIs(metric.strategies.FarthestFirst, FarthestFirst)
         self.assertIs(metric.transforms, transforms)
         self.assertIs(metric.Edit, Edit)
@@ -185,7 +191,9 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.Space, Space)
         self.assertIn("FiniteMetricSpace", metric.__all__)
         self.assertIn("Space", metric.__all__)
+        self.assertIn("intent", metric.__all__)
         self.assertIn("mappings", metric.__all__)
+        self.assertIn("representations", metric.__all__)
         self.assertIn("transforms", metric.__all__)
         self.assertIn("GraphConnectivityDiagnostics", metric.__all__)
         self.assertIn("GraphDegreeDiagnostics", metric.__all__)
@@ -234,6 +242,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("coverage_representatives", metric.__all__)
         self.assertEqual(mappings.STABILITY, "beta")
         self.assertEqual(transforms.STABILITY, "beta")
+        self.assertIsInstance(representations.matrix(Space(self.records, self.metric)), MatrixSpace)
+        self.assertIsInstance(representations.matrix_space(self.records, self.metric), MatrixSpace)
         self.assertIsInstance(mappings.available(), tuple)
         self.assertIsInstance(transforms.available(), tuple)
 

@@ -30,6 +30,7 @@
 - Add Python `Space.reduce()` and `reduce_space` intent methods backed by representative and medoid reduction with named `ReductionResult` objects.
 - Add Python `Space.map()` and `map_space` intent methods for deterministic transforms with named `MappingResult` objects.
 - Add Python `Space.denoise()` and `denoise_space` intent methods backed by DBSCAN noise filtering with named `MappingResult` objects.
+- Add Python `metric.intent` and `metric.representations` facade modules over the promoted semantic intents and matrix representation path.
 
 ### Algorithm Changes
 
