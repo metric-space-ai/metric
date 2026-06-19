@@ -1,6 +1,7 @@
 #ifndef LAYER_FULLYCONNECTED_H_
 #define LAYER_FULLYCONNECTED_H_
 
+#include <cassert>
 #include <iostream>
 #include <random>
 #include <stdexcept>
@@ -168,7 +169,12 @@ template <typename Scalar, typename Activation> class FullyConnected : public La
 		parameters[0].resize(blaze::size(m_weight));
 		parameters[1].resize(m_bias.size());
 
-		std::copy(m_weight.data(), m_weight.data() + blaze::size(m_weight), parameters[0].begin());
+		size_t offset = 0;
+		for (size_t column = 0; column < m_weight.columns(); ++column) {
+			for (size_t row = 0; row < m_weight.rows(); ++row) {
+				parameters[0][offset++] = m_weight(row, column);
+			}
+		}
 		std::copy(m_bias.data(), m_bias.data() + m_bias.size(), parameters[1].begin());
 
 		return parameters;
@@ -181,7 +187,15 @@ template <typename Scalar, typename Activation> class FullyConnected : public La
 			throw std::invalid_argument("Parameter size does not match");
 		}*/
 
-		std::copy(parameters[0].begin(), parameters[0].begin() + blaze::size(m_weight), m_weight.data());
+		assert(parameters[0].size() == blaze::size(m_weight));
+		assert(parameters[1].size() == blaze::size(m_bias));
+
+		size_t offset = 0;
+		for (size_t column = 0; column < m_weight.columns(); ++column) {
+			for (size_t row = 0; row < m_weight.rows(); ++row) {
+				m_weight(row, column) = parameters[0][offset++];
+			}
+		}
 		std::copy(parameters[1].begin(), parameters[1].begin() + blaze::size(m_bias), m_bias.data());
 	}
 

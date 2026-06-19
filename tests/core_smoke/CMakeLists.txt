@@ -68,6 +68,9 @@ target_link_libraries(engine_outliers_intent_smoke PRIVATE ${METRIC_TARGET_NAME}
 add_executable(engine_runtime_policy_smoke engine_runtime_policy_smoke.cpp)
 target_link_libraries(engine_runtime_policy_smoke PRIVATE ${METRIC_TARGET_NAME})
 
+add_executable(native_dnn_baseline_smoke native_dnn_baseline_smoke.cpp)
+target_link_libraries(native_dnn_baseline_smoke PRIVATE ${METRIC_TARGET_NAME})
+
 add_test(NAME metric_core_smoke COMMAND metric_core_smoke)
 add_test(NAME metric_mgc_smoke COMMAND metric_mgc_smoke)
 if (METRIC_BUILD_CORE_ENTROPY)
@@ -94,3 +97,4 @@ add_test(NAME engine_representatives_intent_smoke COMMAND engine_representatives
 add_test(NAME engine_compress_intent_smoke COMMAND engine_compress_intent_smoke)
 add_test(NAME engine_outliers_intent_smoke COMMAND engine_outliers_intent_smoke)
 add_test(NAME engine_runtime_policy_smoke COMMAND engine_runtime_policy_smoke)
+add_test(NAME native_dnn_baseline_smoke COMMAND native_dnn_baseline_smoke)
