@@ -31,6 +31,22 @@ struct dbscan {
 	std::size_t min_points{};
 };
 
+struct affinity_propagation {
+	explicit affinity_propagation(double preference = 0.5, int max_iterations = 200, double tolerance = 1.0e-6,
+								  double damping = 0.5)
+		: preference(preference)
+		, max_iterations(max_iterations)
+		, tolerance(tolerance)
+		, damping(damping)
+	{
+	}
+
+	double preference{0.5};
+	int max_iterations{200};
+	double tolerance{1.0e-6};
+	double damping{0.5};
+};
+
 } // namespace metric::strategies
 
 #endif

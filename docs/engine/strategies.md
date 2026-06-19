@@ -18,6 +18,7 @@ The current C++ strategy objects include:
 - `metric::strategies::knn_graph`
 - `metric::strategies::k_medoids`
 - `metric::strategies::dbscan`
+- `metric::strategies::affinity_propagation`
 - `metric::strategies::farthest_first`
 - `metric::strategies::mgc`
 - `metric::strategies::pcfa`

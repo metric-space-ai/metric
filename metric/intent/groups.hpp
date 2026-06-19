@@ -33,6 +33,14 @@ auto find_groups(const Space &space, strategies::dbscan strategy) -> ClusteringR
 	return operators::dbscan(space, strategy.radius, strategy.min_points);
 }
 
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_groups(const Space &space, strategies::affinity_propagation strategy)
+	-> ClusteringResult<typename Space::distance_type>
+{
+	return operators::affinity_propagation(space, strategy.preference, strategy.max_iterations, strategy.tolerance,
+										   strategy.damping);
+}
+
 } // namespace metric::intent
 
 namespace metric {

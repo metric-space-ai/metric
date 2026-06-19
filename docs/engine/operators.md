@@ -12,6 +12,7 @@ The current C++ engine operators include:
 - `metric::operators::range`
 - `metric::operators::kmedoids`
 - `metric::operators::dbscan`
+- `metric::operators::affinity_propagation`
 - `metric::operators::entropy`
 - `metric::operators::mgc`
 
