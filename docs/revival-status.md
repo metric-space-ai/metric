@@ -56,6 +56,7 @@ The current local tree implements the first revival slice:
 - initial C++ engine nearest operators with `NeighborSet`, `operators::knn`, and `operators::range` over spaces, distance providers, and neighbor indexes
 - initial C++ engine clustering operators with `ClusteringResult`, deterministic `operators::kmedoids`, and deterministic `operators::dbscan` over spaces and distance providers
 - initial C++ engine intent helpers and strategies with semantic `find_neighbors` and `find_groups` entry points over implemented search and clustering paths
+- C++ engine `find_neighbors` accepts the semantic `metric::count{...}` target argument
 - initial C++ engine representative-selection intent with deterministic farthest-first strategy
 - initial C++ engine compress intent backed by deterministic farthest-first representative compression
 - initial C++ engine entropy and MGC operators with named result objects over records and metric spaces

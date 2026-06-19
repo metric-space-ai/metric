@@ -143,7 +143,7 @@ auto structure_entropy = metric::operators::entropy(space);
 auto dependency = metric::operators::mgc(space, space);
 auto clustered = metric::mappings::clustered_space(space, groups);
 
-auto user_neighbors = metric::find_neighbors(space, std::string("metricks"), 2);
+auto user_neighbors = metric::find_neighbors(space, std::string("metricks"), metric::count{2});
 auto user_groups = metric::find_groups(space, metric::strategies::k_medoids(2));
 auto user_dependency = metric::compare(space, space, metric::strategies::mgc{});
 ```

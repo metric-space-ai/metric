@@ -14,7 +14,8 @@ int main()
     metric::representations::MatrixCache<decltype(space)> matrix(space);
     assert(matrix.distance(space.id(0), space.id(1)) == 1);
 
-    const auto neighbors = metric::find_neighbors(space, std::string("metricks"), 2, metric::strategies::cover_tree{});
+    const auto neighbors =
+        metric::find_neighbors(space, std::string("metricks"), metric::count{2}, metric::strategies::cover_tree{});
     assert(neighbors.operator_name == "knn");
     assert(neighbors.representation == "cover_tree_index");
     assert(neighbors.size() == 2);
