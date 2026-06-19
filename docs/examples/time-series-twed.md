@@ -4,6 +4,9 @@ Time-series records often need an alignment-aware metric. A shifted or stretched
 
 The promoted C++ example [time_series_twed_space.cpp](../../examples/core/time_series_twed_space.cpp) uses `metric::TWED` to compare small curves, then builds a `metric::MatrixSpace` over those time-series records.
 
+The promoted Python example [time_series_alignment_space.py](../../python/examples/metric_space/time_series_alignment_space.py)
+uses the same finite-space pattern with a small alignment-aware callable. It stays on the core wheel path while the compiled TWED binding remains part of the broader legacy/full Python surface.
+
 Core shape:
 
 ```cpp

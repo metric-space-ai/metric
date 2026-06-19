@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Documentation and Examples
+
+- Add a promoted Python time-series metric-space example using an alignment-aware callable on the core wheel path.
+
 ## [0.3.2] - 2026-06-19
 
 ### API Changes
