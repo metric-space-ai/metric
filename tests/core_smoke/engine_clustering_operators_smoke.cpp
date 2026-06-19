@@ -1,0 +1,50 @@
+#include <cassert>
+#include <stdexcept>
+#include <type_traits>
+#include <vector>
+
+#include "metric/engine.hpp"
+
+struct AbsoluteDistance {
+	auto operator()(int lhs, int rhs) const -> int { return lhs > rhs ? lhs - rhs : rhs - lhs; }
+};
+
+int main()
+{
+	auto space = metric::make_space(std::vector<int>{0, 1, 10, 11}, AbsoluteDistance{});
+	metric::representations::MatrixCache<decltype(space)> matrix(space);
+
+	const auto clustered = metric::operators::kmedoids(matrix, 2);
+	static_assert(std::is_same<decltype(clustered)::distance_type, int>::value);
+	assert(clustered.algorithm == "kmedoids");
+	assert(clustered.representation == "distance_provider");
+	assert(clustered.record_count == space.size());
+	assert(clustered.cluster_count == 2);
+	assert(clustered.converged);
+	assert(clustered.iterations > 0);
+	assert(clustered.assignments.size() == space.size());
+	assert(clustered.cluster_sizes.size() == 2);
+	assert(clustered.medoids.size() == 2);
+	assert(clustered.medoids[0] == space.id(0));
+	assert(clustered.medoids[1] == space.id(2));
+	assert(clustered.assignments[0] == clustered.assignments[1]);
+	assert(clustered.assignments[2] == clustered.assignments[3]);
+	assert(clustered.assignments[0] != clustered.assignments[2]);
+	assert(clustered.cluster_sizes[0] == 2);
+	assert(clustered.cluster_sizes[1] == 2);
+
+	const auto implicit = metric::operators::kmedoids(space, 2);
+	assert(implicit.representation == "metric_space");
+	assert(implicit.medoids == clustered.medoids);
+	assert(implicit.assignments == clustered.assignments);
+
+	bool rejected_too_many_clusters = false;
+	try {
+		(void)metric::operators::kmedoids(matrix, 5);
+	} catch (const std::invalid_argument &) {
+		rejected_too_many_clusters = true;
+	}
+	assert(rejected_too_many_clusters);
+
+	return 0;
+}

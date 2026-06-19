@@ -24,6 +24,9 @@ target_link_libraries(engine_representations_smoke PRIVATE ${METRIC_TARGET_NAME}
 add_executable(engine_nearest_operators_smoke engine_nearest_operators_smoke.cpp)
 target_link_libraries(engine_nearest_operators_smoke PRIVATE ${METRIC_TARGET_NAME})
 
+add_executable(engine_clustering_operators_smoke engine_clustering_operators_smoke.cpp)
+target_link_libraries(engine_clustering_operators_smoke PRIVATE ${METRIC_TARGET_NAME})
+
 add_test(NAME metric_core_smoke COMMAND metric_core_smoke)
 add_test(NAME metric_mgc_smoke COMMAND metric_mgc_smoke)
 if (METRIC_BUILD_CORE_ENTROPY)
@@ -34,3 +37,4 @@ add_test(NAME space_consistency_smoke COMMAND space_consistency_smoke)
 add_test(NAME engine_core_smoke COMMAND engine_core_smoke)
 add_test(NAME engine_representations_smoke COMMAND engine_representations_smoke)
 add_test(NAME engine_nearest_operators_smoke COMMAND engine_nearest_operators_smoke)
+add_test(NAME engine_clustering_operators_smoke COMMAND engine_clustering_operators_smoke)

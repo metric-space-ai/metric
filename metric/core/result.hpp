@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "neighbor.hpp"
+#include "record_id.hpp"
 
 namespace metric::core {
 
@@ -31,10 +32,27 @@ template <typename Distance> struct NeighborSet {
 	auto operator[](std::size_t index) const -> const neighbor_type & { return neighbors[index]; }
 };
 
+template <typename Distance> struct ClusteringResult {
+	using distance_type = Distance;
+
+	std::vector<std::size_t> assignments;
+	std::vector<RecordId> medoids;
+	std::vector<std::size_t> cluster_sizes;
+	std::size_t record_count{};
+	std::size_t cluster_count{};
+	std::size_t iterations{};
+	bool converged{false};
+	std::string algorithm;
+	std::string representation;
+
+	auto empty() const -> bool { return assignments.empty(); }
+};
+
 } // namespace metric::core
 
 namespace metric {
 template <typename Distance> using NeighborSet = core::NeighborSet<Distance>;
+template <typename Distance> using ClusteringResult = core::ClusteringResult<Distance>;
 } // namespace metric
 
 #endif
