@@ -57,6 +57,7 @@ The current local tree implements the first revival slice:
 - promoted C++ examples under `examples/core/`
 - promoted Python examples under `python/examples/metric_space/`
 - CI-tested C++ and Python engine flagship examples for strings, process curves, histograms, and cross-space dependency
+- CI-tested Python engine flagship example for mixed structured records with a custom composite metric
 - direct Python smoke gates run promoted metric-space and engine examples together
 - engine documentation chapters for metric spaces, representations, intents, strategies, operators, mappings, runtime policies, and migration
 - README engine quickstart for C++ engine intents, strategy selection, representation swaps, and mapping-derived spaces
@@ -286,6 +287,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - C++ record-space embed, reduce, and map intents accept exact lazy runtime policies with explicit materialized-policy rejection, merged as `fcee9927eadb902b6590a7df05da8de031bb3f60`
 - stable C++ `MetricSpace` mutation IDs and common representation diagnostics, merged as `1235940adafafac0de588f3a93ba0f09a09d7935`
 - CI-tested C++ and Python engine flagship examples for strings, process curves, histograms, and cross-space dependency, merged as `9d9d89dad779c836fe2f1334b68000938d76c9c6`
+- CI-tested Python engine demo for mixed structured records with a custom composite metric, merged as `558e9f6ce2dfad3f7df8fc1d2a79dc907ffba21b`
 - direct Python smoke gates now run promoted metric-space and engine examples together, merged as `06f22b20e7d44c7f2058b81d43f513fc157f36b0`
 - Python engine-style Space intent facade methods for representatives and structure diagnostics with named result objects and core test coverage, merged as `1849c29a25122b31605945295c91710cfc6a126f`
 - Python `Space.representatives(count=...)` and `find_representatives(..., count=...)` semantic target aliases, merged as `5e2986bc788a758cccdcd8cbb2e122c77d2796d7`
