@@ -31,5 +31,6 @@
 #include "Callback/VerboseCallback.h"
 
 #include "Network.h"
+#include "AutoencoderModel.h"
 
 #endif /* dnn_H_ */

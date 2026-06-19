@@ -161,6 +161,58 @@ template <class InputDataType, class Scalar> class FlatVectorCodec {
 	InputDataType norm_value_{};
 };
 
+template <class Record, class Scalar> class VectorRecordCodec {
+  public:
+	using matrix_type = blaze::DynamicMatrix<Scalar>;
+
+	explicit VectorRecordCodec(std::size_t feature_count)
+		: feature_count_(feature_count)
+	{
+		if (feature_count_ == 0) {
+			throw std::invalid_argument("VectorRecordCodec feature count must be positive");
+		}
+	}
+
+	auto feature_count() const -> std::size_t { return feature_count_; }
+	auto inverse_supported() const -> bool { return true; }
+
+	auto encode_batch(const std::vector<Record> &records) const -> matrix_type
+	{
+		matrix_type encoded(records.size(), feature_count_);
+		for (std::size_t row = 0; row < records.size(); ++row) {
+			if (records[row].size() != feature_count_) {
+				throw std::invalid_argument("VectorRecordCodec record feature count does not match codec");
+			}
+			for (std::size_t column = 0; column < feature_count_; ++column) {
+				encoded(row, column) = static_cast<Scalar>(records[row][column]);
+			}
+		}
+		return encoded;
+	}
+
+	auto decode_batch(const matrix_type &matrix) const -> std::vector<Record>
+	{
+		if (matrix.columns() != feature_count_) {
+			throw std::invalid_argument("VectorRecordCodec decoded feature count does not match codec");
+		}
+
+		std::vector<Record> records;
+		records.reserve(matrix.rows());
+		for (std::size_t row = 0; row < matrix.rows(); ++row) {
+			Record record;
+			record.reserve(feature_count_);
+			for (std::size_t column = 0; column < feature_count_; ++column) {
+				record.push_back(static_cast<typename Record::value_type>(matrix(row, column)));
+			}
+			records.push_back(std::move(record));
+		}
+		return records;
+	}
+
+  private:
+	std::size_t feature_count_{0};
+};
+
 } // namespace metric::dnn
 
 #endif /* DATASET_H_ */
