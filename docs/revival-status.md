@@ -41,6 +41,7 @@ The current local tree implements the first revival slice:
 - Python engine-style Space map intent for deterministic transforms into derived metric spaces
 - Python map facade accepts `transform=` and reports ambiguous or unavailable mapping forms deterministically
 - Python engine-style Space denoise intent with DBSCAN-noise filtering and mapping-result lineage
+- Python describe facade accepts fresh explicit representations and records representation metadata
 - Python beta compatibility bridge modules under `metric.mappings` and `metric.transforms`
 - promoted C++ examples under `examples/core/`
 - promoted Python examples under `python/examples/metric_space/`
@@ -277,6 +278,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python engine-style Space embed intent backed by deterministic classical MDS with named `EmbeddingResult` diagnostics, merged as `9fbd39d0890bfd64d8b65cc091334d0975e03d87`
 - Python `Space.embed(..., representation=...)` freshness checks and representation metadata, merged as `3e223d49300b98d3042385cf9d6d6c0cde71f069`
 - C++ engine embed intent backed by the PCFA strategy with LAPACK-gated core smoke, downstream, and include-smoke coverage, merged as `dc44030e5155608dfeaebbdeb48ab367f595cd0f`
+- Python `Space.describe(..., representation=...)` and `Space.describe_structure(..., representation=...)` freshness checks and representation metadata, merged as `292b054d0fd50a9177ed26934b9d445a2dd42943`
 - Python engine-style Space compress intent backed by representative and medoid compression with named `CompressionResult` objects, merged as `e7029d80c0b2e37bae9078a75408c8b45ae14b91`
 - C++ engine compress intent backed by deterministic farthest-first representative compression with named `CompressionResult` objects, merged as `d6abef83b61d9e68f5d156884d09c525e8792bf6`
 - Python neighbor facade support for target `count` and `radius` intent arguments, merged as `e9dd23e217b12aeb8e6e85df612c55d78c66da50`
