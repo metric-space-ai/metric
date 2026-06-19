@@ -73,6 +73,33 @@ template <typename Distance> struct RepresentativeSet {
 	auto operator[](std::size_t index) const -> RecordId { return representatives[index]; }
 };
 
+template <typename Score> struct Outlier {
+	using score_type = Score;
+
+	RecordId id;
+	Score score{};
+};
+
+template <typename Score> struct OutlierResult {
+	using score_type = Score;
+	using outlier_type = Outlier<Score>;
+
+	std::vector<outlier_type> outliers;
+	std::size_t record_count{};
+	std::size_t cluster_count{};
+	std::size_t noise_count{};
+	bool exact{true};
+	std::string operator_name;
+	std::string strategy;
+	std::string representation;
+
+	auto size() const -> std::size_t { return outliers.size(); }
+	auto empty() const -> bool { return outliers.empty(); }
+	auto begin() const -> typename std::vector<outlier_type>::const_iterator { return outliers.begin(); }
+	auto end() const -> typename std::vector<outlier_type>::const_iterator { return outliers.end(); }
+	auto operator[](std::size_t index) const -> const outlier_type & { return outliers[index]; }
+};
+
 template <typename Value = double> struct EntropyResult {
 	using value_type = Value;
 
@@ -138,6 +165,8 @@ namespace metric {
 template <typename Distance> using NeighborSet = core::NeighborSet<Distance>;
 template <typename Distance> using ClusteringResult = core::ClusteringResult<Distance>;
 template <typename Distance> using RepresentativeSet = core::RepresentativeSet<Distance>;
+template <typename Score> using Outlier = core::Outlier<Score>;
+template <typename Score> using OutlierResult = core::OutlierResult<Score>;
 template <typename Value = double> using EntropyResult = core::EntropyResult<Value>;
 template <typename Value = double> using CorrelationResult = core::CorrelationResult<Value>;
 template <typename Distance, typename Value = double>
