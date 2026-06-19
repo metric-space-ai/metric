@@ -11,6 +11,9 @@ from metric import intent, mappings, representations, transforms
 from metric.operators import (
     ClusteringResult,
     CorrelationResult,
+    EmbeddingDiagnostics,
+    EmbeddingModel,
+    EmbeddingResult,
     GraphConnectivityDiagnostics,
     GraphDegreeDiagnostics,
     GraphStretchDiagnostics,
@@ -29,6 +32,7 @@ from metric.operators import (
     dbscan,
     denoise_space,
     describe_structure,
+    embed_space,
     exact_knn_graph,
     exact_knn_graph_edges,
     exact_radius_graph,
@@ -56,7 +60,7 @@ from metric.operators import (
     symmetrize_graph,
 )
 from metric.spaces import FiniteMetricSpace, MatrixSpace, Space
-from metric.strategies import DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids
+from metric.strategies import ClassicMDS, DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids
 
 
 class RevivalApiTest(unittest.TestCase):
@@ -89,6 +93,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.intent.find_groups, find_groups)
         self.assertIs(metric.intent.find_neighbors, nearest_neighbors)
         self.assertIs(metric.intent.denoise, denoise_space)
+        self.assertIs(metric.intent.embed, embed_space)
         self.assertIs(metric.representations.MatrixSpace, MatrixSpace)
         self.assertIs(metric.operators.nearest_neighbors, nearest_neighbors)
         self.assertIs(metric.operators.range_neighbors, range_neighbors)
@@ -98,6 +103,9 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.operators.GraphConstructionMetadata, GraphConstructionMetadata)
         self.assertIs(metric.operators.GraphConstructionResult, GraphConstructionResult)
         self.assertIs(metric.operators.MappingResult, MappingResult)
+        self.assertIs(metric.operators.EmbeddingDiagnostics, EmbeddingDiagnostics)
+        self.assertIs(metric.operators.EmbeddingModel, EmbeddingModel)
+        self.assertIs(metric.operators.EmbeddingResult, EmbeddingResult)
         self.assertIs(metric.operators.ClusteringResult, ClusteringResult)
         self.assertIs(metric.operators.Outlier, Outlier)
         self.assertIs(metric.operators.OutlierResult, OutlierResult)
@@ -108,6 +116,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.operators.find_groups, find_groups)
         self.assertIs(metric.operators.find_outliers, find_outliers)
         self.assertIs(metric.operators.denoise_space, denoise_space)
+        self.assertIs(metric.operators.embed_space, embed_space)
         self.assertIs(metric.operators.compare_spaces, compare_spaces)
         self.assertIs(metric.operators.correlate_spaces, correlate_spaces)
         self.assertIs(metric.operators.describe_structure, describe_structure)
@@ -146,6 +155,9 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.GraphConstructionMetadata, GraphConstructionMetadata)
         self.assertIs(metric.GraphConstructionResult, GraphConstructionResult)
         self.assertIs(metric.MappingResult, MappingResult)
+        self.assertIs(metric.EmbeddingDiagnostics, EmbeddingDiagnostics)
+        self.assertIs(metric.EmbeddingModel, EmbeddingModel)
+        self.assertIs(metric.EmbeddingResult, EmbeddingResult)
         self.assertIs(metric.ClusteringResult, ClusteringResult)
         self.assertIs(metric.Outlier, Outlier)
         self.assertIs(metric.OutlierResult, OutlierResult)
@@ -155,6 +167,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.find_groups, find_groups)
         self.assertIs(metric.find_outliers, find_outliers)
         self.assertIs(metric.denoise_space, denoise_space)
+        self.assertIs(metric.embed_space, embed_space)
         self.assertIs(metric.describe_structure, describe_structure)
         self.assertIs(metric.find_representatives, find_representatives)
         self.assertIs(metric.reduce_space, reduce_space)
@@ -164,6 +177,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.DBSCAN, DBSCAN)
         self.assertIs(metric.DistanceProfileCorrelation, DistanceProfileCorrelation)
         self.assertIs(metric.FarthestFirst, FarthestFirst)
+        self.assertIs(metric.ClassicMDS, ClassicMDS)
         self.assertIs(metric.CorrelationResult, CorrelationResult)
         self.assertIs(metric.compare_spaces, compare_spaces)
         self.assertIs(metric.correlate_spaces, correlate_spaces)
@@ -201,6 +215,9 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("GraphConstructionMetadata", metric.__all__)
         self.assertIn("GraphConstructionResult", metric.__all__)
         self.assertIn("MappingResult", metric.__all__)
+        self.assertIn("EmbeddingDiagnostics", metric.__all__)
+        self.assertIn("EmbeddingModel", metric.__all__)
+        self.assertIn("EmbeddingResult", metric.__all__)
         self.assertIn("ClusteringResult", metric.__all__)
         self.assertIn("Outlier", metric.__all__)
         self.assertIn("OutlierResult", metric.__all__)
@@ -211,6 +228,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("find_groups", metric.__all__)
         self.assertIn("find_outliers", metric.__all__)
         self.assertIn("denoise_space", metric.__all__)
+        self.assertIn("embed_space", metric.__all__)
         self.assertIn("compare_spaces", metric.__all__)
         self.assertIn("correlate_spaces", metric.__all__)
         self.assertIn("describe_structure", metric.__all__)
@@ -222,6 +240,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("DBSCAN", metric.__all__)
         self.assertIn("DistanceProfileCorrelation", metric.__all__)
         self.assertIn("FarthestFirst", metric.__all__)
+        self.assertIn("ClassicMDS", metric.__all__)
         self.assertIn("exact_knn_graph", metric.__all__)
         self.assertIn("exact_knn_graph_edges", metric.__all__)
         self.assertIn("exact_radius_graph", metric.__all__)
@@ -428,6 +447,41 @@ class RevivalApiTest(unittest.TestCase):
             [0, 1, 4],
         )
 
+        embedding = space.embed(dimensions=1)
+        self.assertIsInstance(embedding, EmbeddingResult)
+        self.assertIsInstance(embedding.diagnostics, EmbeddingDiagnostics)
+        self.assertIsInstance(embedding.model, EmbeddingModel)
+        self.assertIsInstance(embedding.embedded_space, Space)
+        self.assertIsInstance(embedding.source_space, Space)
+        self.assertEqual(embedding.coordinates.shape, (5, 1))
+        self.assertEqual(embedding.dimensions, 1)
+        self.assertEqual(embedding.model.method, "classic_mds")
+        self.assertEqual(embedding.model.dimensions, 1)
+        self.assertEqual(embedding.model.source_record_ids, (0, 1, 2, 3, 4))
+        self.assertEqual(embedding.source_record_ids, (0, 1, 2, 3, 4))
+        self.assertEqual(embedding.source_record_count, 5)
+        self.assertTrue(embedding.exact)
+        self.assertEqual(embedding.operator_name, "embed")
+        self.assertEqual(embedding.strategy, "classic_mds")
+        self.assertEqual(embedding.representation, "metric_space")
+        self.assertLess(embedding.stress, 1e-12)
+        self.assertLess(embedding.diagnostics.raw_stress, 1e-12)
+        self.assertGreaterEqual(embedding.diagnostics.distance_correlation, 0.999999)
+        self.assertEqual(embedding.trustworthiness, 1.0)
+        self.assertEqual(embedding.diagnostics.neighbor_k, 2)
+        self.assertTrue(embedding.diagnostics.finite_coordinates)
+        self.assertEqual(embedding.source_space.records, [0, 1, 2, 3, 4])
+        self.assertAlmostEqual(embedding.embedded_space.distance(0, 4), 4.0)
+        self.assertTrue(np.isfinite(embedding.coordinates).all())
+
+        strategy_embedding = embed_space(
+            [0, 1, 2],
+            lambda lhs, rhs: abs(lhs - rhs),
+            strategy=ClassicMDS(dimensions=1),
+        )
+        self.assertEqual(strategy_embedding.coordinates.shape, (3, 1))
+        self.assertLess(strategy_embedding.stress, 1e-12)
+
         description = space.describe()
         self.assertIsInstance(description, StructureDescription)
         self.assertEqual(description.record_count, 5)
@@ -477,6 +531,12 @@ class RevivalApiTest(unittest.TestCase):
             map_space([0, 1], lambda record: record, metric=3)
         with self.assertRaises(TypeError):
             space.denoise(KMedoids(groups=2))
+        with self.assertRaises(ValueError):
+            space.embed(dimensions=0)
+        with self.assertRaises(TypeError):
+            space.embed(strategy=KMedoids(groups=2))
+        with self.assertRaises(TypeError):
+            embed_space([0, 1], metric=3)
 
     def test_intrinsic_dimension_estimates_distance_growth(self):
         records = [0, 1, 2, 3, 4]
@@ -815,6 +875,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(space.within_radius("cut", 1), [(0, 1), (1, 1)])
         self.assertTrue(callable(space.compare))
         self.assertTrue(callable(space.correlate))
+        self.assertTrue(callable(space.embed))
         self.assertTrue(callable(space.outliers))
         self.assertTrue(callable(space.denoise))
         self.assertTrue(callable(space.reduce))

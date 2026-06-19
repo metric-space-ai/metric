@@ -20,6 +20,7 @@ The current local tree implements the first revival slice:
 - Python engine-style Space grouping intent with KMedoids and DBSCAN strategies
 - Python engine-style Space intent facade methods for representatives and structure diagnostics
 - Python engine-style Space compare/correlate intent with a deterministic distance-profile correlation strategy
+- Python engine-style Space embed intent with deterministic classical MDS and embedding diagnostics
 - Python engine-style Space outlier intent with DBSCAN-noise strategy
 - Python engine-style Space reduce intent with representative and medoid reduction strategies
 - Python engine-style Space map intent for deterministic transforms into derived metric spaces

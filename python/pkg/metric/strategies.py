@@ -4,6 +4,13 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
+class ClassicMDS:
+    """Classical MDS embedding strategy over an exact distance matrix."""
+
+    dimensions: int = 2
+
+
+@dataclass(frozen=True)
 class FarthestFirst:
     """Deterministic farthest-first representative-selection strategy."""
 
@@ -33,4 +40,4 @@ class DistanceProfileCorrelation:
     method: str = "pearson"
 
 
-__all__ = ["DBSCAN", "DistanceProfileCorrelation", "FarthestFirst", "KMedoids"]
+__all__ = ["ClassicMDS", "DBSCAN", "DistanceProfileCorrelation", "FarthestFirst", "KMedoids"]

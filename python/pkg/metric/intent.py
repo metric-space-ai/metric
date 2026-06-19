@@ -5,6 +5,7 @@ from .operators import (
     correlate_spaces,
     denoise_space,
     describe_structure,
+    embed_space,
     find_groups,
     find_outliers,
     find_representatives,
@@ -20,6 +21,7 @@ compare = compare_spaces
 correlate = correlate_spaces
 denoise = denoise_space
 describe = describe_structure
+embed = embed_space
 groups = find_groups
 map = map_space
 outliers = find_outliers
@@ -35,6 +37,8 @@ __all__ = [
     "denoise_space",
     "describe",
     "describe_structure",
+    "embed",
+    "embed_space",
     "find_groups",
     "find_neighbors",
     "find_outliers",
