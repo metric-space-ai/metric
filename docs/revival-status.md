@@ -30,6 +30,7 @@ The current local tree implements the first revival slice:
 - Python engine-style Space intent facade methods for representatives and structure diagnostics
 - Python engine-style Space compare/correlate intent with a deterministic distance-profile correlation strategy
 - Python engine-style Space embed intent with deterministic classical MDS and embedding diagnostics
+- Python outlier facade supports strategy-free `Space.outliers(count=...)`, `fraction`, and `threshold`
 - Python engine-style Space outlier intent with DBSCAN-noise strategy
 - Python engine-style Space reduce intent with representative and medoid reduction strategies
 - Python engine-style Space compress intent with representative and medoid compression strategies
@@ -279,6 +280,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python `metric.runtime` facade with `RuntimePolicy`, `CachePolicy`, and `runtime=` intent parameters, merged as `f111cb27ce950759bfbcbc13004ad9420e54da25`
 - Python `Space.groups(count=...)` and `Space.groups(radius=...)` strategy-free grouping facade, merged as `457c74257fc908ff86ac0e7262f2957159cf9459`
 - Python queryless `Space.neighbors(...)`, `include_self`, and radius/count capped neighbor results, merged as `6acbf2357d0071d5d7fe4bc87e8020ccc3d4718b`
+- Python strategy-free `Space.outliers(count=...)`, `fraction`, and `threshold` facade, merged as `376e45480dcdb3abaaab6aa972d32f4373b0744c`
 
 ## Historical Code Policy
 
