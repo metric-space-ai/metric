@@ -41,6 +41,7 @@ The current local tree implements the first revival slice:
 - initial C++ engine intent helpers and strategies with semantic `find_neighbors` and `find_groups` entry points over implemented search and clustering paths
 - initial C++ engine entropy and MGC operators with named result objects over records and metric spaces
 - initial C++ engine compare/correlate intent helpers with explicit MGC strategy
+- initial C++ engine describe intent with exact finite-space structure diagnostics
 - initial C++ engine reduce intent backed by the PCFA strategy
 - initial C++ engine mapping conventions with `MappingResult` lineage metadata and clustered-space derivation
 - initial C++ engine PCFA mapping adapter with explicit fit, transform, and inverse-transform support
@@ -210,6 +211,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - initial C++ engine intent helpers and strategy objects for semantic neighbor and grouping workflows, merged as `d3620cc63a4375ed248575d5a02114d778eb70a6`
 - initial C++ engine entropy and MGC operator wrappers with named result objects and core smoke coverage, merged as `68199bcf7443056b1ebed32fd00b57ca5fea676e`
 - C++ engine compare/correlate intent helpers with explicit MGC strategy and core smoke coverage, merged as `d90a7314a453df8b4499cebbfbc5c1f2f9d40c0d`
+- C++ engine describe intent with exact finite-space structure diagnostics and core smoke coverage, merged as `5fc5d65f6e13d2b7f1529956265240c592a5b141`
 - initial C++ engine mapping conventions with clustered-space derivation, `MappingResult` lineage metadata, and core smoke coverage, merged as `9e4b2d1a349d4b43e76e06ec7374f1d43a919296`
 - C++ engine PCFA mapping adapter with explicit inverse reconstruction and LAPACK-gated core smoke coverage, merged as `0aff5aea43433b4fe1b20dbc84cedf71b0e4559e`
 - C++ engine reduce intent backed by the PCFA strategy with LAPACK-gated core smoke coverage, merged as `cf1ceef290f73fac95943f0b7132953fe9d0c698`
