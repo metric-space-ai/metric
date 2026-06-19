@@ -26,6 +26,7 @@ The current local tree implements the first revival slice:
 - CI-tested C++ and Python engine flagship examples for strings, process curves, histograms, and cross-space dependency
 - engine documentation chapters for metric spaces, representations, intents, strategies, operators, mappings, runtime policies, and migration
 - README engine quickstart for C++ engine intents, strategy selection, representation swaps, and mapping-derived spaces
+- API and stability docs for the promoted C++ and Python outlier intent surface
 - C++ smoke and contract tests under `tests/core_smoke/`
 - Python core API and metric-contract tests under `python/tests/core/`
 - intrinsic-dimension diagnostics in C++ and Python core operator helpers
@@ -237,6 +238,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - C++ engine outlier intent backed by DBSCAN-noise detection with named `OutlierResult` objects and core smoke coverage, merged as `178c635e331b5acee8f1c868ba48dafe834443a3`
 - Python engine-style Space outlier intent with named `OutlierResult` objects and DBSCAN-noise strategy coverage, merged as `3974b358beb5dbe23b181126fe2915e2f065bcba`
 - README engine quickstart covering the C++ engine path, strategy selection, representation swaps, and mapping-derived spaces, merged as `7f01e1084e3fb177a93b3ebb1fdfa4f38f1be895`
+- API and stability documentation for the promoted C++ and Python outlier intent surface, merged as `ce1beaf44f9b3319cccceb4273d2823b20affce5`
 
 ## Historical Code Policy
 
