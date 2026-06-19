@@ -1119,7 +1119,7 @@ def _nearest_reference_distance(space, record_index, references):
     return min(space.distance(record_index, candidate_index) for candidate_index in candidates)
 
 
-def find_outliers(records, metric, strategy):
+def find_outliers(records, metric, strategy, *, representation="metric_space"):
     """Find unusual records and return an engine-style result object."""
     strategy = _coerce_outlier_strategy(strategy)
     records = list(records)
@@ -1149,7 +1149,7 @@ def find_outliers(records, metric, strategy):
         exact=True,
         operator_name="find_outliers",
         strategy="dbscan_noise",
-        representation=groups.representation,
+        representation=representation,
     )
 
 
@@ -1161,7 +1161,7 @@ def _coerce_denoise_strategy(strategy):
     raise TypeError("strategy must be a DBSCAN strategy")
 
 
-def denoise_space(records, metric, strategy):
+def denoise_space(records, metric, strategy, *, representation="metric_space"):
     """Filter DBSCAN noise records and return a derived metric space."""
     strategy = _coerce_denoise_strategy(strategy)
     records = list(records)
@@ -1184,7 +1184,7 @@ def denoise_space(records, metric, strategy):
         operator_name="denoise",
         mapping="density_denoise",
         strategy="dbscan_noise_filter",
-        representation=groups.representation,
+        representation=representation,
         inverse_supported=False,
     )
 
