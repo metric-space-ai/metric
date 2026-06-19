@@ -2,6 +2,30 @@
 
 ## [Unreleased]
 
+### API Changes
+
+- Keep the Python core API surface unchanged while expanding its contract coverage.
+
+### Algorithm Changes
+
+- Add Python core metric-contract checks for non-negativity, identity, symmetry, and triangle inequality across built-in edit distance, NumPy record callables, and structured-record callables.
+
+### Packaging and Build
+
+- Add a Trusted Publishing option to the manual PyPI publishing workflow while preserving the repository-secret password path.
+- Run every promoted Python metric-space example in the Python release-artifact gate.
+- Include both promoted Python examples in cibuildwheel tests for PyPI publish builds.
+
+### Documentation and Examples
+
+- Add a promoted Python structured-record metric-space example using dictionaries and a domain metric callable.
+- Document the promoted Python examples in the structured-data examples guide.
+- Update testing and release-gate docs to describe Python core metric-contract coverage and multiple promoted Python examples.
+
+### Known Limitations
+
+- PyPI publishing for `metric-space` remains blocked until repository PyPI credentials are replaced or PyPI Trusted Publishing is configured for `metric-space-ai/metric`.
+
 ## [0.3.1] - 2026-06-19
 
 ### Packaging and Build

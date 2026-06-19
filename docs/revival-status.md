@@ -20,11 +20,11 @@ The current local tree implements the first revival slice:
 - promoted C++ examples under `examples/core/`
 - promoted Python examples under `python/examples/metric_space/`
 - C++ smoke and contract tests under `tests/core_smoke/`
-- Python core API tests under `python/tests/core/`
+- Python core API and metric-contract tests under `python/tests/core/`
 - documentation for concepts, APIs, examples, stability, testing, and release gates
 - CI workflows for C++ core, Python wheels, docs/formatting, and GitHub Pages artifacts
 - release artifact workflow for source archive, Python sdist, Python wheel built from that sdist, and C++ core/downstream evidence
-- manual PyPI publishing workflow for checked sdist and cibuildwheel wheel artifacts
+- manual PyPI publishing workflow for checked sdist and cibuildwheel wheel artifacts, with repository-secret and Trusted Publishing authentication paths
 - manual-only legacy workflows for broad historical coverage
 
 ## Current Local Verification
@@ -127,6 +127,15 @@ PyPI publishing moved to the `v0.3.1` packaging patch release so Linux wheels us
 - PyPI still returned 404 for `https://pypi.org/pypi/metric-space/json` after the failed upload, so no visible `metric-space` release was published
 
 The remaining external release action is to update or replace the repository PyPI credentials, or configure PyPI Trusted Publishing for owner `metric-space-ai`, repository `metric`, workflow `publish-python.yml`, and environment `pypi`. The workflow supports both repository-secret password uploads and Trusted Publishing uploads; after PyPI access is fixed, rerun `.github/workflows/publish-python.yml` with `ref=v0.3.1`, `publish=true`, and the appropriate `auth_method`. No local Twine credentials were present during the 2026-06-19 release check.
+
+## Post-v0.3.1 Master Progress
+
+The following revival improvements landed on `master` after the `v0.3.1` tag:
+
+- Trusted Publishing support for `.github/workflows/publish-python.yml`, merged as `e0f7b94764d3a277315867d28f40d04c6e2a6168`
+- promoted Python structured-record example, merged as `0417dd113f2452ec4772e7835cbf86a33e572e81`
+- release and PyPI build gates running both promoted Python examples, merged as `3d7b1a6e4cfeb37708615e2eb795a1d66bd8450d`
+- Python core metric-contract checks for edit distance, NumPy record callables, and structured-record callables, merged as `3073280344ef66831fbcfcf9197df7d01050b82c`
 
 ## Historical Code Policy
 
