@@ -121,6 +121,14 @@ int main()
 	}
 	assert(rejected_stateful_parallel_groups);
 
+	bool rejected_stateful_parallel_describe = false;
+	try {
+		(void)metric::describe_structure(stateful_space, stateful_policy);
+	} catch (const std::invalid_argument &) {
+		rejected_stateful_parallel_describe = true;
+	}
+	assert(rejected_stateful_parallel_describe);
+
 	const auto lazy_groups = metric::find_groups(space, metric::strategies::k_medoids(2), lazy_policy);
 	assert(lazy_groups.algorithm == "kmedoids");
 	assert(lazy_groups.representation == "metric_space");

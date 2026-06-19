@@ -13,6 +13,9 @@
 
 #include "../core/concepts.hpp"
 #include "../core/result.hpp"
+#include "../representations/implicit.hpp"
+#include "../representations/matrix_cache.hpp"
+#include "../runtime/execution.hpp"
 
 namespace metric::intent {
 namespace detail {
@@ -43,24 +46,25 @@ auto expansion_dimension(const std::vector<std::vector<Distance>> &distances) ->
 
 } // namespace detail
 
-template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
-auto describe_structure(const Space &space) -> StructureDescription<typename Space::distance_type>
+template <typename Provider, typename std::enable_if<DistanceProvider_v<Provider>, int>::type = 0>
+auto describe_structure(const Provider &provider) -> StructureDescription<typename Provider::distance_type>
 {
-	using distance_type = typename Space::distance_type;
+	using distance_type = typename Provider::distance_type;
 
 	StructureDescription<distance_type> result;
-	result.record_count = space.size();
+	result.record_count = provider.record_count();
 	result.exact = true;
 	result.operator_name = "describe_structure";
 	result.strategy = "exact_all_pairs";
-	result.representation = "metric_space";
+	result.representation = "distance_provider";
 
-	std::vector<std::vector<distance_type>> distances(space.size(), std::vector<distance_type>(space.size()));
+	std::vector<std::vector<distance_type>> distances(provider.record_count(),
+													  std::vector<distance_type>(provider.record_count()));
 	double distance_sum = 0.0;
 
-	for (std::size_t row = 0; row < space.size(); ++row) {
-		for (std::size_t column = row + 1; column < space.size(); ++column) {
-			const auto distance = space.distance(space.id(row), space.id(column));
+	for (std::size_t row = 0; row < provider.record_count(); ++row) {
+		for (std::size_t column = row + 1; column < provider.record_count(); ++column) {
+			const auto distance = provider.distance(RecordId::from_index(row), RecordId::from_index(column));
 			distances[row][column] = distance;
 			distances[column][row] = distance;
 			++result.pair_count;
@@ -83,6 +87,33 @@ auto describe_structure(const Space &space) -> StructureDescription<typename Spa
 		result.average_distance = distance_sum / static_cast<double>(result.pair_count);
 	}
 	result.intrinsic_dimension = detail::expansion_dimension(distances);
+	return result;
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto describe_structure(const Space &space) -> StructureDescription<typename Space::distance_type>
+{
+	representations::ImplicitDistanceProvider<Space> provider(space);
+	auto result = describe_structure(provider);
+	result.representation = "metric_space";
+	return result;
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto describe_structure(const Space &space, runtime::policy runtime_policy)
+	-> StructureDescription<typename Space::distance_type>
+{
+	runtime::require_exact_describe(runtime_policy);
+	runtime::require_parallel_metric<typename Space::metric_type>(runtime_policy);
+	if (runtime_policy.uses_materialization()) {
+		representations::MatrixCache<Space> matrix(space);
+		auto result = describe_structure(matrix);
+		result.representation = runtime::describe_representation(runtime_policy);
+		return result;
+	}
+
+	auto result = describe_structure(space);
+	result.representation = runtime::describe_representation(runtime_policy);
 	return result;
 }
 
