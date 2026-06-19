@@ -449,14 +449,19 @@ class Space(FiniteMetricSpace):
             representation=representation_name,
         )
 
-    def describe(self, *, runtime=None):
+    def describe(self, *, representation=None, runtime=None):
         require_exact_runtime(runtime)
+        representation_name = "metric_space"
+        if representation is not None:
+            representation.ensure_fresh()
+            representation_name = getattr(representation, "representation", representation_name)
+
         from metric.operators import describe_structure
 
-        return describe_structure(self.records, self.metric)
+        return describe_structure(self.records, self.metric, representation=representation_name)
 
-    def describe_structure(self, *, runtime=None):
-        return self.describe(runtime=runtime)
+    def describe_structure(self, *, representation=None, runtime=None):
+        return self.describe(representation=representation, runtime=runtime)
 
     def _compare_records(self, other, align):
         if align == "position":
