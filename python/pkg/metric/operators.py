@@ -1787,9 +1787,26 @@ def compare_spaces(
     )
 
 
-def correlate_spaces(left_records, left_metric, right_records, right_metric, strategy=None):
+def correlate_spaces(
+    left_records,
+    left_metric,
+    right_records,
+    right_metric,
+    strategy=None,
+    *,
+    left_representation="records",
+    right_representation="records",
+):
     """Alias for compare_spaces for correlation-oriented workflows."""
-    return compare_spaces(left_records, left_metric, right_records, right_metric, strategy)
+    return compare_spaces(
+        left_records,
+        left_metric,
+        right_records,
+        right_metric,
+        strategy,
+        left_representation=left_representation,
+        right_representation=right_representation,
+    )
 
 
 def intrinsic_dimension(records, metric):
