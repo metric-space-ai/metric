@@ -87,6 +87,8 @@ The revival branch landed through [pull request #326](https://github.com/metric-
 
 The release metadata update landed through [pull request #327](https://github.com/metric-space-ai/metric/pull/327), merged into `master` as commit `84e87eaf45ef8726f2248f0da761b9d8b59695d6`.
 
+The `v0.3.2` release metadata update landed through [pull request #340](https://github.com/metric-space-ai/metric/pull/340), merged into `master` as commit `62d8e1ec5955b7443254e20e1d60b7b33f489a18`.
+
 The GitHub repository metadata was checked on 2026-06-19 with `gh repo view metric-space-ai/metric`.
 
 - repository description: `Numerical computing framework for finite metric spaces in C++ and Python.`
@@ -130,9 +132,17 @@ PyPI publishing moved to the `v0.3.1` packaging patch release so Linux wheels us
 
 The remaining external release action is to update or replace the repository PyPI credentials, or configure PyPI Trusted Publishing for owner `metric-space-ai`, repository `metric`, workflow `publish-python.yml`, and environment `pypi`. The workflow supports both repository-secret password uploads and Trusted Publishing uploads; after PyPI access is fixed, rerun `.github/workflows/publish-python.yml` with the current release tag, `publish=true`, and the appropriate `auth_method`. No local Twine credentials were present during the 2026-06-19 release check.
 
-## Post-v0.3.1 Master Progress
+PyPI publishing is now prepared against the `v0.3.2` release, which includes the post-`v0.3.1` revival work:
 
-The following revival improvements landed on `master` after the `v0.3.1` tag:
+- tag `v0.3.2` points at commit `62d8e1ec5955b7443254e20e1d60b7b33f489a18`
+- [GitHub release `v0.3.2`](https://github.com/metric-space-ai/metric/releases/tag/v0.3.2) is published as a non-draft, non-prerelease release
+- release artifact workflow run `27803605815` completed successfully from tag `v0.3.2`
+- tag CI runs for docs/formatting, C++ core smoke, Python core wheels, and release artifacts completed successfully
+- the release assets include `metric-v0.3.2.tar.gz`, `metric_space-0.3.2.tar.gz`, and `metric_space-0.3.2-cp312-cp312-linux_x86_64.whl`
+- PyPI publish dry-run `27803764604` completed successfully with one source distribution artifact and checked wheel artifact sets for CPython 3.10 through 3.14 on Linux, macOS, and Windows
+- PyPI still returned 404 for `https://pypi.org/pypi/metric-space/json` after the dry-run, so no visible `metric-space` release has been published
+
+The `v0.3.2` release includes the following revival improvements that landed on `master` after the `v0.3.1` tag:
 
 - Trusted Publishing support for `.github/workflows/publish-python.yml`, merged as `e0f7b94764d3a277315867d28f40d04c6e2a6168`
 - promoted Python structured-record example, merged as `0417dd113f2452ec4772e7835cbf86a33e572e81`
@@ -140,8 +150,6 @@ The following revival improvements landed on `master` after the `v0.3.1` tag:
 - Python core metric-contract checks for edit distance, NumPy record callables, and structured-record callables, merged as `3073280344ef66831fbcfcf9197df7d01050b82c`
 - revival source-format checks for promoted source and docs files, merged as `cf35266ba5e18b6113f8eb3aa8715ac500050710`
 - intrinsic-dimension diagnostics in C++ and Python, merged as `d510e0ceb78a307a4e91545837ee4e6ff81eccc3`
-
-The current source tree targets `0.3.2` for the next GitHub release and Python distribution metadata so those post-`v0.3.1` changes can be tagged and published together.
 
 ## Historical Code Policy
 
