@@ -87,7 +87,7 @@ gh workflow run publish-python.yml \
   -f publish=false
 ```
 
-Use `publish=true` only after confirming the target package index, credentials, and package ownership.
+Use `publish=true` only after confirming the target package index, credentials, and package ownership. If PyPI returns `403 Forbidden`, rotate the repository PyPI credentials or configure PyPI Trusted Publishing, confirm the package name is still available, and rerun the same workflow with `ref=v0.3.1` and `publish=true`.
 
 ## Artifacts
 
