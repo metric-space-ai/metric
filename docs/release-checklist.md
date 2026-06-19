@@ -65,6 +65,7 @@ Docs and formatting verification:
 
 ```shell
 ruby scripts/check_revival_whitespace.rb
+ruby scripts/check_revival_format.rb
 ruby scripts/check_markdown_links.rb
 ruby -ryaml -e 'Dir[".github/workflows/*.yml"].each { |path| YAML.load_file(path) }; puts "workflow YAML parsed"'
 git diff --check
