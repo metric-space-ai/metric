@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cmath>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -49,6 +50,36 @@ int main()
     const auto operator_range =
         metric::operators::range_neighbors(records, metric::Edit<std::string>{}, std::string("cut"), 1);
     assert(operator_range.size() == 2);
+
+    const auto representative_ids = metric::operators::representative_indices(records, metric::Edit<std::string>{}, 3);
+    assert((representative_ids == std::vector<std::size_t>{0, 3, 1}));
+
+    const auto representative_records = metric::operators::representatives(records, metric::Edit<std::string>{}, 3);
+    assert((representative_records == std::vector<std::string>{"cat", "dog", "cot"}));
+
+    bool rejected_empty_records = false;
+    try {
+        metric::operators::representative_indices(std::vector<std::string>{}, metric::Edit<std::string>{}, 1);
+    } catch (const std::invalid_argument &) {
+        rejected_empty_records = true;
+    }
+    assert(rejected_empty_records);
+
+    bool rejected_large_k = false;
+    try {
+        metric::operators::representative_indices(records, metric::Edit<std::string>{}, records.size() + 1);
+    } catch (const std::invalid_argument &) {
+        rejected_large_k = true;
+    }
+    assert(rejected_large_k);
+
+    bool rejected_seed = false;
+    try {
+        metric::operators::representative_indices(records, metric::Edit<std::string>{}, 1, records.size());
+    } catch (const std::out_of_range &) {
+        rejected_seed = true;
+    }
+    assert(rejected_seed);
 
     const std::vector<int> line = {0, 1, 2, 3, 4};
     const double dimension = metric::operators::intrinsic_dimension(line, AbsoluteDistance{});
