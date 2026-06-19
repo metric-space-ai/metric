@@ -66,6 +66,15 @@ int main()
 	assert(!affinity_groups.empty());
 	assert(affinity_groups.iterations > 0);
 
+	metric::representations::MatrixCache<decltype(continuous_space)> continuous_matrix(continuous_space);
+	const auto cached_affinity_groups = metric::operators::affinity_propagation(continuous_matrix, 0.7);
+	assert(cached_affinity_groups.algorithm == "affinity_propagation");
+	assert(cached_affinity_groups.representation == "distance_provider");
+	assert(cached_affinity_groups.record_count == continuous_space.size());
+	assert(cached_affinity_groups.assignments == affinity_groups.assignments);
+	assert(cached_affinity_groups.medoids == affinity_groups.medoids);
+	assert(cached_affinity_groups.cluster_sizes == affinity_groups.cluster_sizes);
+
 	bool rejected_invalid_preference = false;
 	try {
 		(void)metric::operators::affinity_propagation(continuous_space, 1.0);

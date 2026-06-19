@@ -54,6 +54,8 @@ The first engine operators live under `metric::operators` and return named resul
 - `metric::operators::kmedoids(distance_provider, cluster_count)`
 - `metric::operators::dbscan(space, radius, min_points)`
 - `metric::operators::dbscan(distance_provider, radius, min_points)`
+- `metric::operators::affinity_propagation(space, preference)`
+- `metric::operators::affinity_propagation(distance_provider, preference)`
 - `metric::operators::entropy(space)`
 - `metric::operators::entropy(records, metric)`
 - `metric::operators::mgc(space_a, space_b)`

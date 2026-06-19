@@ -23,6 +23,10 @@ They return named result objects:
 - `EntropyResult`
 - `CorrelationResult`
 
+The clustering operators accept a `MetricSpace` directly and, where promoted, engine distance providers such as
+`MatrixCache`. Materialized provider overloads keep all result IDs as stable `RecordId` values while reporting
+`representation == "distance_provider"`.
+
 ## Python Operators
 
 The current Python operator layer includes:

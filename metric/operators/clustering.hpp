@@ -248,6 +248,40 @@ inline auto validate_affinity_propagation_parameters(double preference, int max_
 	}
 }
 
+template <typename Provider>
+auto affinity_similarity_matrix(const Provider &provider, typename Provider::distance_type preference)
+	-> blaze::SymmetricMatrix<blaze::DynamicMatrix<typename Provider::distance_type, blaze::rowMajor>>
+{
+	using distance_type = typename Provider::distance_type;
+
+	blaze::SymmetricMatrix<blaze::DynamicMatrix<distance_type, blaze::rowMajor>> similarity(provider.record_count());
+	distance_type minimum_similarity{};
+	distance_type maximum_similarity{};
+	bool has_similarity = false;
+
+	for (std::size_t lhs = 0; lhs < provider.record_count(); ++lhs) {
+		for (std::size_t rhs = lhs; rhs < provider.record_count(); ++rhs) {
+			const auto distance = provider.distance(RecordId::from_index(lhs), RecordId::from_index(rhs));
+			const auto current_similarity = -distance;
+			if (!has_similarity || current_similarity < minimum_similarity) {
+				minimum_similarity = current_similarity;
+			}
+			if (!has_similarity || current_similarity > maximum_similarity) {
+				maximum_similarity = current_similarity;
+			}
+			has_similarity = true;
+			similarity(lhs, rhs) = current_similarity;
+		}
+	}
+
+	for (std::size_t index = 0; index < similarity.columns(); ++index) {
+		similarity(index, index) =
+			preference * maximum_similarity + (distance_type{1} - preference) * minimum_similarity;
+	}
+
+	return similarity;
+}
+
 template <typename Provider, typename Radius>
 auto dbscan_region_query(const Provider &provider, RecordId id, Radius radius) -> std::vector<RecordId>
 {
@@ -451,30 +485,30 @@ auto dbscan(const Space &space, Radius radius, std::size_t min_points) -> Cluste
 	return result;
 }
 
-template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
-auto affinity_propagation(const Space &space, double preference = 0.5, int max_iterations = 200,
+template <typename Provider, typename std::enable_if<DistanceProvider_v<Provider>, int>::type = 0>
+auto affinity_propagation(const Provider &provider, double preference = 0.5, int max_iterations = 200,
 						  double tolerance = 1.0e-6, double damping = 0.5)
-	-> ClusteringResult<typename Space::distance_type>
+	-> ClusteringResult<typename Provider::distance_type>
 {
-	using distance_type = typename Space::distance_type;
-	using matrix_type = Matrix<typename Space::record_type, typename Space::metric_type>;
+	using distance_type = typename Provider::distance_type;
 
 	static_assert(std::is_floating_point<distance_type>::value,
 				  "metric::operators::affinity_propagation requires a floating-point distance type");
 
-	if (space.size() < 2) {
+	if (provider.record_count() < 2) {
 		throw std::invalid_argument("affinity propagation requires at least two records");
 	}
 	engine_detail::validate_affinity_propagation_parameters(preference, max_iterations, tolerance, damping);
 
-	matrix_type matrix(space.records(), space.metric());
 	const auto preference_value = static_cast<distance_type>(preference);
 	const auto tolerance_value = static_cast<distance_type>(tolerance);
 	const auto damping_value = static_cast<distance_type>(damping);
 
-	auto similarity = affprop_details::similarity_matrix(matrix, preference_value);
-	blaze::DynamicMatrix<distance_type, blaze::rowMajor> responsibilities(space.size(), space.size());
-	blaze::DynamicMatrix<distance_type, blaze::rowMajor> availabilities(space.size(), space.size());
+	auto similarity = engine_detail::affinity_similarity_matrix(provider, preference_value);
+	blaze::DynamicMatrix<distance_type, blaze::rowMajor> responsibilities(provider.record_count(),
+																		   provider.record_count());
+	blaze::DynamicMatrix<distance_type, blaze::rowMajor> availabilities(provider.record_count(),
+																		 provider.record_count());
 	responsibilities = distance_type{};
 	availabilities = distance_type{};
 
@@ -507,11 +541,22 @@ auto affinity_propagation(const Space &space, double preference = 0.5, int max_i
 	result.assignments = std::move(assignments);
 	result.medoids = std::move(medoids);
 	result.cluster_sizes = std::move(cluster_sizes);
-	result.record_count = space.size();
+	result.record_count = provider.record_count();
 	result.cluster_count = result.medoids.size();
 	result.iterations = static_cast<std::size_t>(iterations);
 	result.converged = converged;
 	result.algorithm = "affinity_propagation";
+	result.representation = "distance_provider";
+	return result;
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto affinity_propagation(const Space &space, double preference = 0.5, int max_iterations = 200,
+						  double tolerance = 1.0e-6, double damping = 0.5)
+	-> ClusteringResult<typename Space::distance_type>
+{
+	representations::ImplicitDistanceProvider<Space> provider(space);
+	auto result = affinity_propagation(provider, preference, max_iterations, tolerance, damping);
 	result.representation = "metric_space";
 	return result;
 }
