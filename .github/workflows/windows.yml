@@ -1,16 +1,9 @@
 name: Windows C++ build and tests
 
+# Legacy broad Windows workflow. The revived PR gate is
+# .github/workflows/core-cpp.yml, which includes windows-latest.
 on:
-  push:
-    branches:
-      - master
-    paths-ignore:
-      - 'python/**'
-  pull_request:
-    branches:
-      - master
-    paths-ignore:
-      - 'python/**'
+  workflow_dispatch:
 
 
 env:

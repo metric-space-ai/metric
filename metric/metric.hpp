@@ -22,9 +22,11 @@ Copyright (c) 2018 Michael Welsch
 #ifndef _PANDA_METRIC_HPP
 #define _PANDA_METRIC_HPP
 
+#include "concepts.hpp"
 #include "correlation.hpp"
 #include "distance.hpp"
 #include "mapping.hpp"
+#include "operators.hpp"
 #include "space.hpp"
 #include "transform.hpp"
 

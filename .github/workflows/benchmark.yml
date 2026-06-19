@@ -1,13 +1,9 @@
 name: Benchmark
+
+# Legacy benchmark workflow. Correctness CI is separate; benchmark runs are
+# triggered manually until the benchmark archive is restored.
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - '.github/workflows/benchmark.yml'
-      - 'benchmarks/**'
-      - 'metric/**'
-      - 'CMakeLists.txt'
+  workflow_dispatch:
 jobs:
   benchmark:
     name: Performance check

@@ -1,0 +1,69 @@
+name: Core C++ smoke
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - "v*"
+    paths:
+      - ".github/workflows/core-cpp.yml"
+      - "CMakeLists.txt"
+      - "CMakePresets.json"
+      - "cmake/**"
+      - "examples/core/**"
+      - "metric/**"
+      - "tests/core_smoke/**"
+      - "tests/downstream_consumer/**"
+  pull_request:
+    branches:
+      - master
+    paths:
+      - ".github/workflows/core-cpp.yml"
+      - "CMakeLists.txt"
+      - "CMakePresets.json"
+      - "cmake/**"
+      - "examples/core/**"
+      - "metric/**"
+      - "tests/core_smoke/**"
+      - "tests/downstream_consumer/**"
+
+jobs:
+  core:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux LAPACK dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libblas-dev liblapack-dev
+
+      - name: Configure
+        run: cmake --preset core
+
+      - name: Build
+        run: cmake --build --preset core --parallel 2
+
+      - name: Test
+        run: ctest --preset core
+
+      - name: Install
+        run: cmake --install build/core --prefix build/install-core --config Debug
+
+      - name: Configure downstream consumer
+        run: cmake -S tests/downstream_consumer -B build/downstream-consumer -DCMAKE_PREFIX_PATH="$PWD/build/install-core"
+
+      - name: Build downstream consumer
+        run: cmake --build build/downstream-consumer --parallel 2 --config Debug
+
+      - name: Run downstream consumer
+        run: ctest --test-dir build/downstream-consumer --output-on-failure --build-config Debug

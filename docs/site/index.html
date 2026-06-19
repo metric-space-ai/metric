@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="METRIC is a numerical computing engine for finite metric spaces and metric-space algorithms."
+    />
+    <title>METRIC</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #14161a;
+        --muted: #5e6673;
+        --line: #d8dee8;
+        --surface: #f4f6f9;
+        --panel: #ffffff;
+        --cyan: #008fb3;
+        --red: #c94c4c;
+        --green: #19805b;
+        --gold: #9a6b00;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background: var(--surface);
+        color: var(--ink);
+      }
+
+      a {
+        color: inherit;
+      }
+
+      code,
+      pre {
+        font-family: "SFMono-Regular", ui-monospace, "Cascadia Code", monospace;
+      }
+
+      .topline,
+      .section,
+      footer {
+        border-bottom: 1px solid var(--line);
+      }
+
+      .inner {
+        width: min(1160px, calc(100% - 40px));
+        margin: 0 auto;
+      }
+
+      .topline {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: rgba(244, 246, 249, 0.94);
+        backdrop-filter: blur(14px);
+      }
+
+      .topline .inner {
+        display: flex;
+        min-height: 72px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .brand {
+        font-weight: 850;
+        letter-spacing: 0.08em;
+      }
+
+      nav {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      nav a {
+        text-decoration: none;
+      }
+
+      .nav-cta,
+      .hero-cta {
+        display: inline-flex;
+        min-height: 42px;
+        align-items: center;
+        justify-content: center;
+        padding: 0 18px;
+        background: var(--ink);
+        color: #fff;
+        font-weight: 760;
+        text-decoration: none;
+        transition:
+          transform 180ms ease,
+          background 180ms ease;
+      }
+
+      .nav-cta:hover,
+      .nav-cta:focus-visible,
+      .hero-cta:hover,
+      .hero-cta:focus-visible {
+        background: #2a3038;
+        transform: translateY(-2px);
+        outline: none;
+      }
+
+      .hero {
+        position: relative;
+        min-height: calc(88svh - 72px);
+        border-bottom: 1px solid var(--line);
+        background:
+          linear-gradient(rgba(20, 22, 26, 0.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(20, 22, 26, 0.05) 1px, transparent 1px),
+          var(--surface);
+        background-size: 52px 52px;
+        overflow: hidden;
+      }
+
+      .hero .inner {
+        position: relative;
+        z-index: 2;
+      }
+
+      .hero-copy {
+        width: min(720px, 100%);
+        padding: 92px 0 70px;
+        animation: enter 560ms ease-out both;
+      }
+
+      .eyebrow {
+        margin: 0 0 18px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 760;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        max-width: 760px;
+        margin: 0;
+        font-size: 108px;
+        line-height: 0.94;
+        letter-spacing: 0;
+      }
+
+      .lead {
+        max-width: 650px;
+        margin: 26px 0 0;
+        color: #303844;
+        font-size: 23px;
+        line-height: 1.38;
+      }
+
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 34px;
+      }
+
+      .secondary {
+        display: inline-flex;
+        min-height: 42px;
+        align-items: center;
+        justify-content: center;
+        padding: 0 18px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        font-weight: 720;
+        text-decoration: none;
+        transition:
+          transform 180ms ease,
+          border-color 180ms ease;
+      }
+
+      .secondary:hover,
+      .secondary:focus-visible {
+        border-color: var(--ink);
+        transform: translateY(-2px);
+        outline: none;
+      }
+
+      .metric-field {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+      }
+
+      .edge {
+        position: absolute;
+        height: 2px;
+        background: #c5ccd8;
+        transform-origin: left center;
+        animation: draw 820ms ease-out both;
+      }
+
+      .edge.one {
+        top: 25%;
+        left: 53%;
+        width: 28%;
+        transform: rotate(14deg);
+      }
+
+      .edge.two {
+        top: 57%;
+        left: 51%;
+        width: 31%;
+        transform: rotate(-18deg);
+      }
+
+      .edge.three {
+        top: 35%;
+        left: 70%;
+        width: 18%;
+        transform: rotate(58deg);
+      }
+
+      .node {
+        position: absolute;
+        display: grid;
+        width: 94px;
+        height: 94px;
+        place-items: center;
+        border: 2px solid var(--ink);
+        background: #fff;
+        font-weight: 780;
+        animation: enter 620ms ease-out both;
+      }
+
+      .node span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 650;
+      }
+
+      .node.a {
+        top: 16%;
+        right: 33%;
+        border-color: var(--cyan);
+      }
+
+      .node.b {
+        top: 22%;
+        right: 8%;
+        border-color: var(--red);
+      }
+
+      .node.c {
+        bottom: 22%;
+        right: 36%;
+        border-color: var(--green);
+      }
+
+      .node.d {
+        right: 11%;
+        bottom: 13%;
+        border-color: var(--gold);
+      }
+
+      .caption {
+        position: absolute;
+        right: 7%;
+        bottom: 7%;
+        max-width: 360px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      @keyframes enter {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes draw {
+        from {
+          opacity: 0;
+          scale: 0.6 1;
+        }
+
+        to {
+          opacity: 1;
+          scale: 1 1;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 1ms !important;
+          scroll-behavior: auto !important;
+          transition-duration: 1ms !important;
+        }
+      }
+
+      .section {
+        padding: 76px 0;
+      }
+
+      .section h2 {
+        max-width: 780px;
+        margin: 0;
+        font-size: 50px;
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .section p {
+        max-width: 780px;
+        color: #333b46;
+        font-size: 18px;
+        line-height: 1.55;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1px;
+        margin-top: 34px;
+        border: 1px solid var(--line);
+        background: var(--line);
+      }
+
+      .tile {
+        min-height: 178px;
+        padding: 24px;
+        background: #fff;
+      }
+
+      .tile strong {
+        display: block;
+        margin-bottom: 12px;
+        font-size: 18px;
+      }
+
+      .tile p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.45;
+      }
+
+      .pipeline {
+        display: grid;
+        gap: 1px;
+        margin-top: 34px;
+        border: 1px solid var(--line);
+        background: var(--line);
+      }
+
+      .step {
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr);
+        gap: 28px;
+        padding: 22px 24px;
+        background: #fff;
+      }
+
+      .step strong {
+        font-size: 16px;
+      }
+
+      .step span {
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      pre {
+        margin: 34px 0 0;
+        overflow: auto;
+        padding: 24px;
+        background: #12151a;
+        color: #f3f6fb;
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      footer {
+        padding: 34px 0;
+        color: var(--muted);
+      }
+
+      @media (max-width: 860px) {
+        h1 {
+          font-size: 72px;
+        }
+
+        .lead {
+          font-size: 20px;
+        }
+
+        .section h2 {
+          font-size: 38px;
+        }
+
+        nav {
+          gap: 12px;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .metric-field {
+          opacity: 0.38;
+        }
+
+        .step {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+      }
+
+      @media (max-width: 640px) {
+        h1 {
+          font-size: 56px;
+        }
+
+        .section h2 {
+          font-size: 31px;
+        }
+
+        .topline .inner {
+          align-items: flex-start;
+          flex-direction: column;
+          padding: 18px 0;
+        }
+
+        .hero-copy {
+          padding: 54px 0 52px;
+        }
+
+        .metric-field {
+          opacity: 0.22;
+        }
+
+        nav {
+          flex-wrap: wrap;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topline">
+      <div class="inner">
+        <div class="brand">METRIC</div>
+        <nav aria-label="Primary navigation">
+          <a href="#engine">Engine</a>
+          <a href="#api">API</a>
+          <a href="docs.html">Docs</a>
+          <a class="nav-cta" href="https://github.com/metric-space-ai/metric">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="metric-field" aria-hidden="true">
+          <div class="edge one"></div>
+          <div class="edge two"></div>
+          <div class="edge three"></div>
+          <div class="node a">x0<span>d</span></div>
+          <div class="node b">x1<span>d</span></div>
+          <div class="node c">x2<span>d</span></div>
+          <div class="node d">x3<span>d</span></div>
+          <div class="caption">
+            Records become computational when a metric defines their geometry.
+          </div>
+        </div>
+        <div class="inner">
+          <div class="hero-copy">
+            <p class="eyebrow">Finite metric-space engine</p>
+            <h1>METRIC</h1>
+            <p class="lead">
+              Numerical computing for finite metric spaces. Vector spaces are supported as a special case, not assumed as the foundation.
+            </p>
+            <div class="hero-actions">
+              <a class="hero-cta" href="docs.html">Read the docs</a>
+              <a class="secondary" href="https://github.com/metric-space-ai/metric">View source</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="engine" class="section">
+        <div class="inner">
+          <h2>An engine, not an algorithm shelf.</h2>
+          <p>
+            METRIC organizes metric-space computation around one pipeline: records plus a metric become a space; user intent selects strategies, representations, runtimes, and named results.
+          </p>
+          <div class="pipeline">
+            <div class="step"><strong>RecordSet + Metric</strong><span>Define geometry for strings, vectors, graphs, histograms, time series, images, or structured records.</span></div>
+            <div class="step"><strong>MetricSpace</strong><span>Own stable IDs, metadata, metric assumptions, and finite-space state.</span></div>
+            <div class="step"><strong>Intent</strong><span>Use clear names: neighbors, groups, embed, map, reduce, denoise, outliers, compare.</span></div>
+            <div class="step"><strong>Strategy + Runtime</strong><span>Select algorithms, exactness, approximation, materialization, parallelism, and reproducibility.</span></div>
+            <div class="step"><strong>Result</strong><span>Return diagnostics, lineage, metric assumptions, warnings, and source-to-target mappings.</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="api" class="section">
+        <div class="inner">
+          <h2>Use the metric-space core now. Grow into intent names as the facade lands.</h2>
+          <div class="grid">
+            <div class="tile"><strong>Find</strong><p>Use nearest-neighbor helpers and explicit representations for local structure.</p></div>
+            <div class="tile"><strong>Represent</strong><p>Use matrix, graph, and tree spaces when a workflow needs cached or sparse structure.</p></div>
+            <div class="tile"><strong>Transform</strong><p>Use entropy, MGC, and mapping modules where the current core exposes tested operators.</p></div>
+          </div>
+          <pre><code>from metric import Edit, Space
+
+records = ["cat", "cot", "coat", "dog"]
+space = Space(records, Edit())
+
+print(space.distance(0, 1))
+print(space.neighbors("cut", k=2))</code></pre>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="inner">
+        METRIC is open source. Documentation: <a href="docs.html">docs.html</a>. Revival status: <a href="https://github.com/metric-space-ai/metric/blob/master/docs/revival-status.md">docs/revival-status.md</a>. Source: <a href="https://github.com/metric-space-ai/metric">github.com/metric-space-ai/metric</a>.
+      </div>
+    </footer>
+  </body>
+</html>

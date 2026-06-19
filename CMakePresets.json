@@ -1,0 +1,114 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 19,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "core",
+      "displayName": "Core library and smoke test",
+      "binaryDir": "${sourceDir}/build/core",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "METRIC_FETCH_DEPS": "ON",
+        "METRIC_BUILD_CORE_TESTS": "ON",
+        "METRIC_BUILD_CORE_EXAMPLES": "ON",
+        "METRIC_BUILD_TESTS": "OFF",
+        "METRIC_BUILD_EXAMPLES": "OFF",
+        "METRIC_BUILD_BENCHMARKS": "OFF",
+        "METRIC_BUILD_PYTHON": "OFF"
+      }
+    },
+    {
+      "name": "dev",
+      "displayName": "Default developer build",
+      "inherits": "core",
+      "binaryDir": "${sourceDir}/build/dev"
+    },
+    {
+      "name": "full-tests",
+      "displayName": "Developer build with full C++ tests",
+      "inherits": "dev",
+      "binaryDir": "${sourceDir}/build/full-tests",
+      "cacheVariables": {
+        "METRIC_BUILD_TESTS": "ON"
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Release-style core build",
+      "inherits": "core",
+      "binaryDir": "${sourceDir}/build/release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "python-cmake",
+      "displayName": "Top-level CMake Python core bindings",
+      "inherits": "core",
+      "binaryDir": "${sourceDir}/build/python-cmake",
+      "cacheVariables": {
+        "METRIC_BUILD_CORE_TESTS": "OFF",
+        "METRIC_BUILD_CORE_EXAMPLES": "OFF",
+        "METRIC_BUILD_PYTHON": "ON",
+        "METRIC_PYTHON_USE_BLAS": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "core",
+      "configurePreset": "core",
+      "configuration": "Debug"
+    },
+    {
+      "name": "dev",
+      "configurePreset": "dev",
+      "configuration": "Debug"
+    },
+    {
+      "name": "full-tests",
+      "configurePreset": "full-tests",
+      "configuration": "Debug"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "configuration": "Release"
+    },
+    {
+      "name": "python-cmake",
+      "configurePreset": "python-cmake",
+      "configuration": "Debug"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "core",
+      "configurePreset": "core",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "dev",
+      "configurePreset": "dev",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "full-tests",
+      "configurePreset": "full-tests",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

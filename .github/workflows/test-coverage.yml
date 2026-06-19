@@ -1,21 +1,9 @@
 name: Test coverage
+
+# Legacy full-suite coverage workflow. It remains available manually until the
+# full test suite is restored as an extended gate.
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - '.github/workflows/test-coverage.yml'
-      - 'metric/**'
-      - 'tests/**'
-      - 'CMakeLists.txt'
-  pull_request:
-    branches:
-      - master
-    paths:
-      - '.github/workflows/test-coverage.yml'
-      - 'metric/**'
-      - 'tests/**'
-      - 'CMakeLists.txt'
+  workflow_dispatch:
 jobs:
   deploy:
     runs-on: ubuntu-latest

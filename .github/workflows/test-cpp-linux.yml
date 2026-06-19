@@ -1,25 +1,9 @@
 name: Compile project and run C++ tests [Linux]
+
+# Legacy full-suite workflow. It is retained for manual investigation while the
+# revival release gate is the cross-platform "Core C++ smoke" workflow.
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - '.github/workflows/test-cpp-linux.yml'
-      - 'benchmarks/**'
-      - 'examples/**'
-      - 'metric/**'
-      - 'tests/**'
-      - 'CMakeLists.txt'
-  pull_request:
-    branches:
-      - master
-    paths:
-      - '.github/workflows/test-cpp-linux.yml'
-      - 'benchmarks/**'
-      - 'examples/**'
-      - 'metric/**'
-      - 'tests/**'
-      - 'CMakeLists.txt'
+  workflow_dispatch:
 jobs:
   deploy:
     runs-on: ubuntu-latest

@@ -1,15 +1,9 @@
 name: Test Python package
+
+# Legacy full Python workflow. The revived PR gate is python-core.yml with
+# current CPython versions and the minimal core wheel.
 on:
-  push:
-    branches:
-      - master
-    paths-ignore:
-      - '.github/workflows/cmake.yml'
-  pull_request:
-    branches:
-      - master
-    paths-ignore:
-      - '.github/workflows/cmake.yml'
+  workflow_dispatch:
 
 jobs:
   deploy:

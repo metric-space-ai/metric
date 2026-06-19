@@ -1,0 +1,24 @@
+add_executable(metric_core_smoke metric_core_smoke.cpp)
+target_link_libraries(metric_core_smoke PRIVATE ${METRIC_TARGET_NAME})
+
+add_executable(metric_mgc_smoke metric_mgc_smoke.cpp)
+target_link_libraries(metric_mgc_smoke PRIVATE ${METRIC_TARGET_NAME})
+
+if (METRIC_BUILD_CORE_ENTROPY)
+    add_executable(metric_entropy_smoke metric_entropy_smoke.cpp)
+    target_link_libraries(metric_entropy_smoke PRIVATE ${METRIC_TARGET_NAME})
+endif ()
+
+add_executable(metric_contracts_smoke metric_contracts_smoke.cpp)
+target_link_libraries(metric_contracts_smoke PRIVATE ${METRIC_TARGET_NAME})
+
+add_executable(space_consistency_smoke space_consistency_smoke.cpp)
+target_link_libraries(space_consistency_smoke PRIVATE ${METRIC_TARGET_NAME})
+
+add_test(NAME metric_core_smoke COMMAND metric_core_smoke)
+add_test(NAME metric_mgc_smoke COMMAND metric_mgc_smoke)
+if (METRIC_BUILD_CORE_ENTROPY)
+    add_test(NAME metric_entropy_smoke COMMAND metric_entropy_smoke)
+endif ()
+add_test(NAME metric_contracts_smoke COMMAND metric_contracts_smoke)
+add_test(NAME space_consistency_smoke COMMAND space_consistency_smoke)
