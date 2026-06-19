@@ -24,6 +24,7 @@ The current local tree implements the first revival slice:
 - Python matrix/tree/graph representations expose version freshness checks and deterministic stale errors
 - Python public exception facade includes `metric.exceptions` and deterministic `UnsupportedOperationError` for unsupported inverse reconstruction
 - Python neighbor facade accepts the target `count` and `radius` intent arguments
+- Python neighbor facade supports queryless neighbor rows, `include_self`, and radius results capped by `count`
 - Python grouping facade accepts strategy-free `Space.groups(count=...)` and `Space.groups(radius=...)` intent arguments
 - Python engine-style Space grouping intent with KMedoids and DBSCAN strategies
 - Python engine-style Space intent facade methods for representatives and structure diagnostics
@@ -277,6 +278,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python `Space.from_dataframe(...)`, stable `Space.ids`, `Space.record(...)`, and `Space.pairwise(...)` helpers, merged as `327259e5fc4b1ee1c3e1d6b724ee38021bae434e`
 - Python `metric.runtime` facade with `RuntimePolicy`, `CachePolicy`, and `runtime=` intent parameters, merged as `f111cb27ce950759bfbcbc13004ad9420e54da25`
 - Python `Space.groups(count=...)` and `Space.groups(radius=...)` strategy-free grouping facade, merged as `457c74257fc908ff86ac0e7262f2957159cf9459`
+- Python queryless `Space.neighbors(...)`, `include_self`, and radius/count capped neighbor results, merged as `6acbf2357d0071d5d7fe4bc87e8020ccc3d4718b`
 
 ## Historical Code Policy
 
