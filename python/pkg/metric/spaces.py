@@ -1,5 +1,17 @@
 """Finite metric-space helpers for the revived Python API."""
 
+import operator
+
+
+def _coerce_non_negative_integer(value, name):
+    try:
+        value = operator.index(value)
+    except TypeError:
+        raise TypeError(f"{name} must be an integer") from None
+    if value < 0:
+        raise ValueError(f"{name} must be non-negative")
+    return value
+
 
 class FiniteMetricSpace:
     """Explicit finite metric space backed by a pairwise distance matrix."""
@@ -31,6 +43,7 @@ class FiniteMetricSpace:
         return FiniteMetricSpace(self.records, self.metric)
 
     def knn(self, query, k=1):
+        k = _coerce_non_negative_integer(k, "k")
         distances = [
             (index, self.metric(record, query))
             for index, record in enumerate(self.records)
@@ -56,8 +69,16 @@ class Space(FiniteMetricSpace):
     facade until they have deterministic coverage.
     """
 
-    def neighbors(self, query, k=1):
-        return self.knn(query, k)
+    def neighbors(self, query, k=None, count=None, radius=None):
+        if radius is not None:
+            if k is not None or count is not None:
+                raise ValueError("radius cannot be combined with k or count")
+            return self.rnn(query, radius)
+
+        if k is not None and count is not None:
+            raise ValueError("use either k or count, not both")
+
+        return self.knn(query, 1 if k is None and count is None else count if count is not None else k)
 
     def nearest(self, query):
         return self.nn(query)

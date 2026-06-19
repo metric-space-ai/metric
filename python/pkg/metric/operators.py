@@ -275,8 +275,13 @@ def pairwise_distance_matrix(records, metric):
     return FiniteMetricSpace(records, metric).pairwise_distances()
 
 
-def nearest_neighbors(records, metric, query, k=1):
-    return FiniteMetricSpace(records, metric).knn(query, k)
+def nearest_neighbors(records, metric, query, k=None, count=None):
+    if k is not None and count is not None:
+        raise ValueError("use either k or count, not both")
+    return FiniteMetricSpace(records, metric).knn(
+        query,
+        1 if k is None and count is None else count if count is not None else k,
+    )
 
 
 def range_neighbors(records, metric, query, radius):
