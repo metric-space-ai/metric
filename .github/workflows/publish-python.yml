@@ -84,6 +84,11 @@ jobs:
           package-dir: ./python
           output-dir: wheelhouse
 
+      - name: Set up Python for distribution checks
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Check wheels
         shell: bash
         run: |
@@ -113,6 +118,11 @@ jobs:
           pattern: metric-space-pypi-*
           path: dist
           merge-multiple: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
       - name: Check distribution set
         shell: bash
