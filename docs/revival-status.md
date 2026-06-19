@@ -25,6 +25,7 @@ The current local tree implements the first revival slice:
 - deterministic C++ representative-selection helpers in `metric::operators`
 - deterministic Python representative-selection helpers in `metric.operators`
 - deterministic C++ and Python medoid representative helpers
+- deterministic C++ and Python separated-representative helpers
 - documentation for concepts, APIs, examples, stability, testing, and release gates
 - CI workflows for C++ core, Python wheels, docs/formatting, revived-source formatting, and GitHub Pages artifacts
 - release artifact workflow for source archive, Python sdist, Python wheel built from that sdist, and C++ core/downstream evidence
@@ -174,6 +175,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - representative-selection fixtures for process curves and structured mixed records, merged as `dd891b7d32d5f862d1517173a9a5cd8c7d032e36`
 - C++ and Python radius-coverage representative helpers with promoted examples and CI coverage, merged as `5eb721b1ae7004dd6643e9d74d9995c6ad0463c7`
 - C++ and Python medoid representative helpers with promoted examples and CI coverage, merged as `3022a8485b1df5f8322437bc5d6d9998305082ca`
+- C++ and Python separated-representative helpers with promoted examples and CI coverage, merged as `5cfae5fdbb7159aa04c51dfe85734fd295d0f7b9`
 
 ## Historical Code Policy
 
