@@ -71,6 +71,13 @@ class FiniteMetricSpace:
     def __len__(self):
         return len(self.records)
 
+    def __repr__(self):
+        record_type = type(self.records[0]).__name__ if self.records else "empty"
+        return (
+            f"{type(self).__name__}(size={len(self)}, "
+            f"metric={self.metric!r}, records={record_type}, name={self.name!r})"
+        )
+
     def __getitem__(self, index):
         return self.records[index]
 

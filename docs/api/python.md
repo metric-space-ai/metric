@@ -101,6 +101,8 @@ space.nn(query)
 space.rnn(query, radius=1)
 ```
 
+`repr(space)` reports the engine object shape: size, metric, record type, and optional name.
+
 Use `Space.from_dataframe(df, metric=row_metric, id_column="sample_id")` for
 DataFrame-like tabular records. The constructor reads rows through
 `to_dict("records")`, uses `id_column` as stable record IDs, and removes that ID
