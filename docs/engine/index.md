@@ -30,6 +30,7 @@ They use the engine vocabulary directly across native metric spaces and the vect
 - process curves with an alignment metric, representative selection, and graph construction
 - vectors with Euclidean distance as one record type among others
 - histograms with cumulative transport distance, matrix materialization, and grouping
+- mixed industrial-style records with a composed domain metric and matrix-cache runtime diagnostics
 - cross-space dependency over two aligned finite metric spaces
 
 ## Core Idea

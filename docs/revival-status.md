@@ -86,6 +86,7 @@ The current local tree implements the first revival slice:
 - CI-tested Python engine representation-swap example covering implicit search, matrix materialization, exact tree-style lookup, exact kNN graph adjacency, runtime diagnostics, and stale representation checks
 - CI-tested Python engine clustered-space mapping example covering `ClusteringResult` to derived `Space` lineage
 - CI-tested Python engine flagship example for mixed structured records with a custom composite metric
+- CI-tested C++ engine flagship example for mixed structured records with a composed domain metric, materialized runtime diagnostics, grouping, and DBSCAN-noise outlier detection
 - promoted Python metric-space and engine examples demonstrate named `Neighbor` / `NeighborResult` fields instead of teaching tuple-indexed neighbor access
 - native C++ DNN baseline smoke coverage for RegressionMSE, RMSProp, row-as-observation network training, dense Autoencoder train/encode/decode/save/load, and fully connected parameter serialization round trips
 - native C++ DNN `Network` training hooks for forward activation capture, anchored layer-output backpropagation, and explicit optimizer updates

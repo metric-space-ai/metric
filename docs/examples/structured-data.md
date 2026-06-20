@@ -12,6 +12,7 @@ Promoted examples that currently run in the core CI path:
 - [custom_metric_space.cpp](../../examples/core/custom_metric_space.cpp): strings compared with a custom padded Hamming metric
 - [time_series_twed_space.cpp](../../examples/core/time_series_twed_space.cpp): process curves compared with TWED
 - [histogram_emd_space.cpp](../../examples/core/histogram_emd_space.cpp): histograms compared with Earth mover distance
+- [mixed_structured_records.cpp](../../examples/engine/mixed_structured_records.cpp): C++ engine demo for mixed industrial records with a composed domain metric, matrix-cache runtime diagnostics, grouping, and outlier detection
 - [explicit_space_representations.cpp](../../examples/core/explicit_space_representations.cpp): one finite metric space represented as matrix, tree, and graph structures
 - [metric_space_entropy.cpp](../../examples/core/metric_space_entropy.cpp): entropy diagnostics over numeric and string records
 - [metric_space_intrinsic_dimension.cpp](../../examples/core/metric_space_intrinsic_dimension.cpp): expansion-dimension diagnostic over a finite line metric
