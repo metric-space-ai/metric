@@ -41,6 +41,7 @@ The current local tree implements the first revival slice:
 - Python engine-style Space intent facade methods for representatives and structure diagnostics
 - Python representatives facade accepts semantic `count=` target arguments
 - Python representatives facade accepts fresh explicit representations and records representation metadata
+- Python `RepresentativeSet` exposes structured conversion helpers for metadata, selected IDs, and optional pandas coverage rows
 - Python engine-style Space compare/correlate intent with a deterministic distance-profile correlation strategy
 - Python compare/correlate facade supports `align="ids"` over stable Space IDs
 - Python compare/correlate facade records fresh explicit left/right representation metadata
