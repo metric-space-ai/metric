@@ -797,6 +797,18 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(outliers.operator_name, "find_outliers")
         self.assertEqual(outliers.strategy, "dbscan_noise")
         self.assertEqual(outliers.representation, "metric_space")
+        self.assertEqual(outliers.outliers[0].to_dict(), {"record_id": 4, "score": 19})
+        outlier_record = outliers.to_dict()
+        self.assertEqual(outlier_record["outliers"], [{"record_id": 4, "score": 19}])
+        self.assertEqual(outlier_record["strategy"], "dbscan_noise")
+        np.testing.assert_array_equal(outliers.to_numpy(), np.asarray([19.0]))
+        try:
+            outliers_frame = outliers.to_pandas()
+        except exceptions.OptionalDependencyError:
+            outliers_frame = None
+        if outliers_frame is not None:
+            self.assertEqual(outliers_frame.loc[0, "record_id"], 4)
+            self.assertEqual(outliers_frame.loc[0, "rank"], 0)
         self.assertEqual(
             find_outliers([0, 1, 10, 11, 30], lambda lhs, rhs: abs(lhs - rhs), DBSCAN(radius=2, min_points=2)),
             outliers,
