@@ -58,6 +58,7 @@ The current local tree implements the first revival slice:
 - Python legacy Tree bindings expose boolean `empty()`, explicit `size()`, and named `insert_if(...)` threshold insertion
 - Python legacy kmeans binding uses the corrected `random_seed` keyword
 - Python beta compatibility bridge modules under `metric.mappings` and `metric.transforms`
+- Python compatibility facade under `metric.compat` for lazy legacy import-path discovery
 - promoted C++ examples under `examples/core/`
 - promoted Python examples under `python/examples/metric_space/`
 - CI-tested Python tutorial notebooks under `python/notebooks/` with a standard-library smoke runner executed from the core Python API tests
@@ -389,6 +390,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - CI-tested C++ engine representation-swap example covering implicit search, matrix cache, cover-tree index, kNN graph index, and stale representation diagnostics, merged as `6692769a33300ba316da4720b4064307a4060e3d`
 - C++ engine compatibility aliases and legacy-space adapters under `metric/compat`, merged as `53f20ed254af9eb7367174b2496ec562ea0a73e4`
 - C++ engine `SpaceVersion` and strategy-layer representation materialization headers, merged as `213d5f9b16b9ff949881881916a996a34d1ef69e`
+- Python `metric.compat` facade for lazy legacy import-path discovery, merged as `62f4caf5bb00e40df6f09234d0e185e3c8b3b985`
 
 ## Historical Code Policy
 
