@@ -38,7 +38,8 @@ auto structure = metric::describe_structure(space);
 ## Python
 
 ```python
-from metric import DistanceProfileCorrelation, Space
+from metric import Space
+from metric.strategies import DistanceProfileCorrelation
 from metric.strategies import ClassicMDS
 
 space = Space(records, metric)

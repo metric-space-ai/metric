@@ -34,6 +34,8 @@ The records are strings. Edit distance defines the geometry without an embedding
 - `mappings`: beta compatibility bridge for installed mapping bindings
 - `transforms`: beta compatibility bridge for installed transform bindings
 
+Strategy classes are intentionally imported from `metric.strategies`, not from the top-level `metric` package. This keeps the first Python namespace focused on records, metrics, spaces, intent helpers, named results, and runtime policy objects.
+
 When the optional standard distance bindings are installed, `metric.distance`
 and `metric.metrics` expose compatibility aliases for historical names:
 `Manhattan` mirrors `Manhatten`, `Minkowski` mirrors `P_norm`, and

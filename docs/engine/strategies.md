@@ -58,6 +58,8 @@ The current Python strategy objects include:
 `StrategyUnavailableError` for those strategies until deterministic fixtures,
 diagnostics, and CI-backed result contracts are promoted.
 
+Python strategy classes are not exported from the top-level `metric` package. Import them from `metric.strategies` so algorithm names stay in the strategy layer.
+
 ## Promotion Rule
 
 A strategy should be promoted only when it has:

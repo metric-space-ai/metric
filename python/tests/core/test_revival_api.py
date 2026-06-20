@@ -244,18 +244,23 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.reduce_space, reduce_space)
         self.assertIs(metric.kmedoids, kmedoids)
         self.assertIs(metric.dbscan, dbscan)
-        self.assertIs(metric.KMedoids, KMedoids)
-        self.assertIs(metric.DBSCAN, DBSCAN)
-        self.assertIs(metric.DistanceProfileCorrelation, DistanceProfileCorrelation)
-        self.assertIs(metric.FarthestFirst, FarthestFirst)
-        self.assertIs(metric.ClassicMDS, ClassicMDS)
-        self.assertIs(metric.MDS, MDS)
-        self.assertIs(metric.DiffusionEmbedding, DiffusionEmbedding)
-        self.assertIs(metric.PCFA, PCFA)
-        self.assertIs(metric.SOM, SOM)
-        self.assertIs(metric.KOC, KOC)
-        self.assertIs(metric.DSPCC, DSPCC)
-        self.assertIs(metric.PhateAE, PhateAE)
+        for strategy_name in (
+            "ClassicMDS",
+            "DBSCAN",
+            "DSPCC",
+            "DiffusionEmbedding",
+            "DistanceProfileCorrelation",
+            "FarthestFirst",
+            "KOC",
+            "KMedoids",
+            "MDS",
+            "PCFA",
+            "PhateAE",
+            "SOM",
+        ):
+            self.assertFalse(hasattr(metric, strategy_name), strategy_name)
+        with self.assertRaises(ImportError):
+            exec("from metric import KMedoids", {})
         self.assertIs(metric.CorrelationResult, CorrelationResult)
         self.assertIs(metric.compare_spaces, compare_spaces)
         self.assertIs(metric.correlate_spaces, correlate_spaces)
@@ -327,18 +332,21 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("compress_space", metric.__all__)
         self.assertIn("kmedoids", metric.__all__)
         self.assertIn("dbscan", metric.__all__)
-        self.assertIn("KMedoids", metric.__all__)
-        self.assertIn("DBSCAN", metric.__all__)
-        self.assertIn("DistanceProfileCorrelation", metric.__all__)
-        self.assertIn("FarthestFirst", metric.__all__)
-        self.assertIn("ClassicMDS", metric.__all__)
-        self.assertIn("MDS", metric.__all__)
-        self.assertIn("DiffusionEmbedding", metric.__all__)
-        self.assertIn("PCFA", metric.__all__)
-        self.assertIn("SOM", metric.__all__)
-        self.assertIn("KOC", metric.__all__)
-        self.assertIn("DSPCC", metric.__all__)
-        self.assertIn("PhateAE", metric.__all__)
+        for strategy_name in (
+            "ClassicMDS",
+            "DBSCAN",
+            "DSPCC",
+            "DiffusionEmbedding",
+            "DistanceProfileCorrelation",
+            "FarthestFirst",
+            "KOC",
+            "KMedoids",
+            "MDS",
+            "PCFA",
+            "PhateAE",
+            "SOM",
+        ):
+            self.assertNotIn(strategy_name, metric.__all__)
         self.assertIn("exact_knn_graph", metric.__all__)
         self.assertIn("exact_knn_graph_edges", metric.__all__)
         self.assertIn("exact_radius_graph", metric.__all__)

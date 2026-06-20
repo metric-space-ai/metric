@@ -1,4 +1,5 @@
-from metric import DistanceProfileCorrelation, Space
+from metric import Space
+from metric.strategies import DistanceProfileCorrelation
 
 
 def absolute_distance(lhs, rhs):
