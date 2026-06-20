@@ -170,12 +170,16 @@ Tasks:
 - remove TestPyPI install instructions from the main path
 - publish a modern package under a deliberate name
 
-Potential package names:
+Selected public package name:
 
 - `mtrc`
-- `metric-space`
-- `metric-space-numerics`
-- `metric-py` only if ownership and continuity are intentional
+
+Rejected or non-selected package names:
+
+- `metric-space` was rejected by PyPI name retention during pending Trusted
+  Publisher setup
+- `metric-space-numerics` was available but replaced by the shorter `mtrc`
+- `metric-py` should only be reused if ownership and continuity are intentional
 
 Acceptance criteria:
 
@@ -427,13 +431,11 @@ understandable, buildable, tested, documented, and releasable, further work
 should move from restoration into framework development.
 
 As of 2026-06-20, the local code, documentation, CI, GitHub release, engine
-layer, and follow-up plan work have reached that transition point. The remaining
-public relaunch blocker is external package-index state: the original
-`metric-space` package name was rejected by PyPI name retention, and the short
-replacement name `mtrc` still needs a successful first publish. That PyPI task
-blocks final public package availability, but it should not block continued
-framework development on the engine, capability, mapping, demo, and validation
-plans below.
+layer, follow-up plan work, and public PyPI package availability have reached
+that transition point. The original `metric-space` package name was rejected by
+PyPI name retention, so the short replacement name `mtrc` was selected and
+published from release `v0.3.4`. Framework development should now continue on
+the engine, capability, mapping, demo, and validation plans below.
 
 The following detail plans are the reference set for the next development
 phase:
@@ -487,7 +489,7 @@ lands a meaningful implementation slice. Use these status meanings:
 | [Python User Experience Plan](PYTHON_USER_EXPERIENCE_PLAN.md) | Baseline complete; active roadmap | Python `Space`, named result objects, conversion helpers, runtime policies, strategy docs, error docs, and real-data examples are present. Update when Python becomes the source of a new public workflow or deprecation path. |
 | [Flagship Demos Plan](FLAGSHIP_DEMOS_PLAN.md) | Baseline complete; active roadmap | CI-tested C++ and Python engine demos cover strings, process curves, histograms, vector special case, cross-space dependency, representation swaps, mixed structured records, and PHATE-AE mapping. Update when a new demo becomes canonical or gallery-ready. |
 | [Test And Validation Plan](TEST_AND_VALIDATION_PLAN.md) | Baseline complete; active roadmap | Core, Python, docs, release, fast, extended, nightly, and benchmark validation paths are documented, with core engine smoke and Python revival tests in place. Update when new gates become required or benchmark thresholds are promoted. |
-| PyPI package availability | External blocker | `mtrc` has a matching pending PyPI Trusted Publisher, but remains unpublished until a real publish run succeeds and PyPI JSON visibility is confirmed. Update after that publish check. |
+| PyPI package availability | Baseline complete | `mtrc` `0.3.4` is visible on PyPI after Trusted Publishing run `27867187603`; PyPI JSON reports 16 release files, and a fresh local venv installed `mtrc==0.3.4` and imported `metric` version `0.3.4`. Update when the package name, supported wheel matrix, or publishing workflow changes. |
 
 These plans should now be treated as the working backlog for the real
 framework-development phase. New work should be planned against the most
