@@ -19,6 +19,7 @@ The current local tree implements the first revival slice:
 - Python `metric.core` facade namespace for central finite metric-space building blocks
 - Python core facade exposes a runtime-checkable `metric.Metric` protocol and explicit missing-metric errors
 - Python Space facade exposes stable `ids`, `record(...)`, `pairwise(...)`, and DataFrame-like construction
+- Python Space facade exposes an engine-oriented `repr` with size, metric, record type, and name
 - Python top-level facade exposes integer-compatible `RecordId` defaults for generated stable IDs
 - Python runtime facade exposes `RuntimePolicy`, `CachePolicy`, and `runtime=` on promoted Space intent methods with materialized grouping representation metadata
 - Python runtime facade exposes `RuntimeDiagnostics` with policy, support, and representation metadata
@@ -395,6 +396,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python `metric.compat` facade for lazy legacy import-path discovery, merged as `62f4caf5bb00e40df6f09234d0e185e3c8b3b985`
 - Python top-level package no longer exports algorithm strategy classes, merged as `0f937e4a0be505cd4a85720c3c5affb816b60ccb`
 - Python `RecordId` facade for generated stable default IDs, merged as `04793ac45507627856488907a282b955186ee853`
+- Python `Space` engine-model `repr`, merged as `6d6ba3a7205dad04ce52be92b03cfb340dc830bf`
 
 ## Historical Code Policy
 
