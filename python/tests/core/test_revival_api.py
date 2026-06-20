@@ -716,6 +716,17 @@ class RevivalApiTest(unittest.TestCase):
         self.assertTrue(groups.converged)
         self.assertEqual(groups.algorithm, "kmedoids")
         self.assertEqual(groups.representation, "metric_space")
+        group_record = groups.to_dict()
+        self.assertEqual(group_record["assignments"], (0, 0, 0, 1, 1))
+        self.assertEqual(group_record["cluster_sizes"], (3, 2))
+        np.testing.assert_array_equal(groups.to_numpy(), np.asarray([0, 0, 0, 1, 1]))
+        try:
+            groups_frame = groups.to_pandas()
+        except exceptions.OptionalDependencyError:
+            groups_frame = None
+        if groups_frame is not None:
+            self.assertEqual(groups_frame.loc[1, "is_medoid"], True)
+            self.assertEqual(groups_frame.loc[3, "cluster_label"], 1)
         self.assertEqual(find_groups([0, 1, 2, 10, 11], lambda lhs, rhs: abs(lhs - rhs), 2), groups)
         self.assertEqual(group_space.groups(count=2), groups)
         self.assertEqual(group_space.groups(), groups)
