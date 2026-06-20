@@ -41,6 +41,11 @@
 - Add Python `metric.exceptions` with `UnsupportedOperationError` for unsupported inverse reconstruction on lossy result objects.
 - Add Python representation version checks with deterministic `StaleRepresentationError` failures for stale matrix, tree, and graph views.
 - Add Python `metric.Metric` protocol and explicit `MissingMetricError` when constructing `Space` without a metric.
+- Add Python `RecordId` defaults, `Space.vectors(...)`, engine-model `repr`, and explicit `validate`, `copy`, and `cache` constructor policies.
+- Add named Python `Neighbor` / `NeighborResult` fields to promoted examples instead of teaching tuple-indexed neighbor access.
+- Add structured conversion helpers across promoted Python result objects, including neighbors, clustering, outliers, representatives, structure diagnostics, correlation, embedding, mapping, reduction, compression, graph construction, and graph diagnostics.
+- Add structured conversion helpers for Python runtime policy and runtime diagnostics metadata.
+- Add Python `Space.compare(...)` and `Space.correlate(...)` support for raw right-hand record sets with explicit `other_metric=`.
 
 ### Algorithm Changes
 
