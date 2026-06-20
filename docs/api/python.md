@@ -4,13 +4,19 @@ The current Python core API exposes metric constructors, a minimal `Space` facad
 
 The stable entry point is `Space`: a finite record set plus a metric with cached pairwise distances and intent-named helpers for neighbors, groups, embedding, outliers, denoising, representatives, reduction, compression, deterministic mapping, cross-space comparison, and structure diagnostics. `FiniteMetricSpace` and `MatrixSpace` remain available for explicit representation vocabulary, and `Space.to_matrix()` returns an explicit finite matrix-space view.
 
+For the user-facing learning path, start with [Python Space](../python/space.md),
+[Python Intent Methods](../python/intents.md), [Python Result Objects](../python/results.md),
+[Python Strategy Overrides](../python/strategies.md), and
+[Python Errors](../python/errors.md). This page remains the API reference.
+
 ## Basic Use
 
 ```python
-from metric import Edit, Space
+from metric import Space
+from metric.metrics import Edit
 
 records = ["cat", "cot", "coat", "dog"]
-space = Space(records, Edit())
+space = Space(records, metric=Edit())
 
 print(space.distance(0, 1))
 print(space.pairwise())
