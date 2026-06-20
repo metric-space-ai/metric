@@ -12,6 +12,7 @@
 - Add a C++ include-smoke test and docs for the engine graph sparsification operator header.
 - Document Python `KOC` and `DSPCC` strategy objects consistently as roadmap-only strategies in the API stability docs.
 - Document the roadmap-only C++ KOC mapping adapter surface in the engine mapping docs.
+- Add a CI-tested C++ engine flagship demo for mixed structured records with a composed domain metric and runtime diagnostics.
 
 ## [0.3.3] - 2026-06-20
 

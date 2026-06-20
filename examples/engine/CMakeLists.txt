@@ -10,6 +10,9 @@ target_link_libraries(engine_vector_space_special_case PRIVATE ${METRIC_TARGET_N
 add_executable(engine_histogram_transport_space histogram_transport_space.cpp)
 target_link_libraries(engine_histogram_transport_space PRIVATE ${METRIC_TARGET_NAME})
 
+add_executable(engine_mixed_structured_records mixed_structured_records.cpp)
+target_link_libraries(engine_mixed_structured_records PRIVATE ${METRIC_TARGET_NAME})
+
 add_executable(engine_cross_space_mgc cross_space_mgc.cpp)
 target_link_libraries(engine_cross_space_mgc PRIVATE ${METRIC_TARGET_NAME})
 
@@ -24,6 +27,7 @@ if (BUILD_TESTING)
     add_test(NAME example_engine_process_curves_space COMMAND engine_process_curves_space)
     add_test(NAME example_engine_vector_space_special_case COMMAND engine_vector_space_special_case)
     add_test(NAME example_engine_histogram_transport_space COMMAND engine_histogram_transport_space)
+    add_test(NAME example_engine_mixed_structured_records COMMAND engine_mixed_structured_records)
     add_test(NAME example_engine_cross_space_mgc COMMAND engine_cross_space_mgc)
     add_test(NAME example_engine_representation_swap COMMAND engine_representation_swap)
     add_test(NAME example_engine_phate_autoencoder_map COMMAND engine_phate_autoencoder_map)

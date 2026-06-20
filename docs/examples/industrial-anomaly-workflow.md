@@ -37,3 +37,5 @@ latent = mapper.transform(new_curve_windows)
 ```
 
 The first three calls are current Python core intent methods. The `map` calls show the target mapping shape: mapping and embedding remain optional downstream representations. The primary model is the metric space.
+
+The CI-tested C++ engine fixture [mixed_structured_records.cpp](../../examples/engine/mixed_structured_records.cpp) uses the same workflow shape over mixed industrial-style records. Its metric combines numeric summaries, status categories, maintenance-message edit distance, histogram transport, and aligned curve distance before running `find_neighbors`, `find_groups`, and `find_outliers` with explicit matrix-cache runtime diagnostics.
