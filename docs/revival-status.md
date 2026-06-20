@@ -43,6 +43,7 @@ The current local tree implements the first revival slice:
 - Python engine-style Space compare/correlate intent with a deterministic distance-profile correlation strategy
 - Python compare/correlate facade supports `align="ids"` over stable Space IDs
 - Python compare/correlate facade records fresh explicit left/right representation metadata
+- Python compare/correlate results record alignment mode, matched IDs, dropped-ID fields, p-value slot, local scores, and diagnostics metadata
 - Python engine-style Space embed intent with deterministic classical MDS and embedding diagnostics
 - Python embed facade accepts fresh explicit representations and records representation metadata
 - Python outlier facade supports strategy-free `Space.outliers(count=...)`, `fraction`, and `threshold`
@@ -405,6 +406,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python `Space.vectors(...)` constructor with pure Python Euclidean default, merged as `88634c99032b4b2e00890797cc8fbdad67bb5db4`
 - Python `Neighbor` and `NeighborResult` named neighbor results, merged as `ec9d7d5a3e0de3a04205f4563b0c04367469aee4`
 - Python `NeighborResult` conversion helpers, merged as `8285012f0ad9b4cfae1363096152ca6be52d833b`
+- Python compare/correlate alignment metadata on `CorrelationResult`, merged as `096413baa8e0454c809066b5de188e815f726312`
 
 ## Historical Code Policy
 
