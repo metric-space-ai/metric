@@ -91,6 +91,8 @@ Approximate runtime policies throw for these promoted paths until backed by expl
 
 Python exposes `RuntimePolicy`, `CachePolicy`, `RuntimeDiagnostics`, and `runtime_diagnostics(...)` through `metric.runtime` and the top-level `metric` package. Promoted `Space` intent methods accept `runtime=` and currently execute exact deterministic paths only; approximate policies are explicit placeholders. `Space.groups(..., runtime=RuntimePolicy(cache="materialized"))` records `representation == "matrix"` when no explicit representation override is supplied.
 
+Python neighbor execution also accepts runtime representation helpers through `metric.runtime`: `using_implicit()`, `using_matrix()`, `using_tree()`, and `using_graph(count)`. Matrix and tree policies can answer record queries. Graph policies use the exact kNN graph representation for queryless neighbor rows and reject arbitrary record queries because the promoted Python graph facade stores source-index adjacency.
+
 ```python
 from metric import RuntimePolicy
 

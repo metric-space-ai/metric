@@ -188,6 +188,16 @@ class FiniteMetricSpace:
             if distance <= radius
         ]
 
+    def neighbors(self, query, k=None, count=None, radius=None):
+        if k is not None and count is not None:
+            raise ValueError("use either k or count, not both")
+        if radius is not None:
+            if k is not None or count is not None:
+                raise ValueError("radius cannot be combined with k or count")
+            return self.rnn(query, radius)
+        value = 1 if k is None and count is None else count if count is not None else k
+        return self.knn(query, _coerce_non_negative_integer(value, "count"))
+
 
 class Space(FiniteMetricSpace):
     """Intent-first facade for a finite metric space.
@@ -229,16 +239,30 @@ class Space(FiniteMetricSpace):
         representation=None,
         runtime=None,
     ):
-        require_exact_runtime(runtime)
+        runtime_policy = require_exact_runtime(runtime)
         if strategy is not None:
             raise ValueError("strategy overrides are not promoted for Python neighbors yet")
+
+        has_explicit_count = k is not None or count is not None
+        neighbor_count = self._neighbor_count(k, count) if has_explicit_count or radius is None else None
+        if representation is None:
+            representation = self._runtime_neighbor_representation(
+                runtime_policy,
+                query=query,
+                count=neighbor_count,
+                radius=radius,
+                include_self=include_self,
+            )
         if query is not None and representation is not None:
             return representation.neighbors(query, k=k, count=count, radius=radius)
         if representation is not None:
             representation.ensure_fresh()
+            if getattr(representation, "representation", None) == "exact_knn_graph":
+                return [
+                    list(representation.neighbors(source_index))[:neighbor_count]
+                    for source_index in range(len(self.records))
+                ]
 
-        has_explicit_count = k is not None or count is not None
-        neighbor_count = self._neighbor_count(k, count) if has_explicit_count or radius is None else None
         if query is None:
             return [
                 self._neighbor_row(source_index, neighbor_count, radius=radius, include_self=include_self)
@@ -411,6 +435,49 @@ class Space(FiniteMetricSpace):
             representation.ensure_fresh()
             representation_name = getattr(representation, "representation", representation_name)
         return representation_name
+
+    def _runtime_neighbor_representation(
+        self,
+        runtime_policy,
+        *,
+        query,
+        count,
+        radius,
+        include_self,
+    ):
+        if runtime_policy.representation == "auto":
+            if runtime_policy.cache_mode == "materialized":
+                return self.to_matrix()
+            return None
+        if runtime_policy.representation == "metric_space":
+            return None
+        if runtime_policy.representation == "matrix":
+            return self.to_matrix()
+        if runtime_policy.representation == "tree":
+            return self.to_tree()
+        if runtime_policy.representation == "graph":
+            if query is not None:
+                raise StrategyUnavailableError(
+                    "graph runtime representation requires queryless Space.neighbors(...) "
+                    "in the Python facade"
+                )
+            if radius is not None:
+                raise StrategyUnavailableError(
+                    "graph runtime representation does not support radius neighbor queries "
+                    "in the Python facade"
+                )
+            if include_self:
+                raise StrategyUnavailableError(
+                    "graph runtime representation does not support include_self=True "
+                    "in the Python facade"
+                )
+            graph_count = (
+                runtime_policy.graph_count
+                if runtime_policy.graph_count is not None
+                else count
+            )
+            return self.to_graph(count=0 if graph_count is None else graph_count)
+        return None
 
     def reduce(self, count=None, strategy=None, *, representation=None, runtime=None):
         require_exact_runtime(runtime)

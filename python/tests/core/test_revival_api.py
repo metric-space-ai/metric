@@ -1393,6 +1393,9 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(policy.cache_mode, "materialized")
         self.assertEqual(policy.name, "exact_materialized_parallel")
         self.assertEqual(runtime.materialized(runtime.parallel()).name, "exact_materialized_parallel")
+        self.assertEqual(runtime.using_matrix().representation_preference, "matrix")
+        self.assertEqual(runtime.using_tree().representation_preference, "exact_tree_index")
+        self.assertEqual(runtime.using_graph(1).representation_preference, "exact_knn_graph")
         diagnostics = runtime_diagnostics(policy, representation="matrix", intent="neighbors")
         self.assertIsInstance(diagnostics, RuntimeDiagnostics)
         self.assertEqual(diagnostics.policy_name, "exact_materialized_parallel")
@@ -1414,18 +1417,41 @@ class RevivalApiTest(unittest.TestCase):
         self.assertFalse(approximate_diagnostics.supported)
         self.assertIn("approximate", approximate_diagnostics.reason)
         self.assertEqual(space.neighbors("cut", count=2, runtime=policy), [(0, 1), (1, 1)])
-        self.assertEqual(space.neighbors("cut", count=2, representation=space.to_tree(), runtime=policy), [(0, 1), (1, 1)])
+        self.assertEqual(
+            space.neighbors("cut", count=2, representation=space.to_tree(), runtime=policy),
+            [(0, 1), (1, 1)],
+        )
+        self.assertEqual(
+            space.neighbors("cut", count=2, runtime=runtime.using_matrix()),
+            [(0, 1), (1, 1)],
+        )
+        self.assertEqual(
+            space.neighbors("cut", count=2, runtime=runtime.using_tree()),
+            [(0, 1), (1, 1)],
+        )
+        graph_policy = runtime.using_graph(1)
+        self.assertEqual(runtime_diagnostics(graph_policy).representation, "exact_knn_graph")
+        self.assertEqual(
+            space.neighbors(count=1, runtime=graph_policy),
+            [[(1, 1)], [(0, 1)], [(0, 1)], [(1, 2)]],
+        )
         self.assertEqual(space.groups(count=2, runtime=policy).representation, "matrix")
         self.assertEqual(space.describe(runtime=policy).record_count, len(self.records))
         self.assertEqual(space.describe_structure(runtime=policy).record_count, len(self.records))
         self.assertEqual(space.compare(space, runtime=policy).left_record_count, len(self.records))
 
+        with self.assertRaisesRegex(StrategyUnavailableError, "queryless"):
+            space.neighbors("cut", count=2, runtime=graph_policy)
         with self.assertRaises(StrategyUnavailableError):
             space.neighbors("cut", count=2, runtime=RuntimePolicy(exact=False))
         with self.assertRaises(StrategyUnavailableError):
             space.groups(count=2, runtime=RuntimePolicy(exact=False))
         with self.assertRaises(StrategyParameterError):
             RuntimePolicy(cache="unknown")
+        with self.assertRaises(StrategyParameterError):
+            RuntimePolicy(representation="unknown")
+        with self.assertRaises(StrategyParameterError):
+            RuntimePolicy(representation="graph", graph_count=-1)
         with self.assertRaises(StrategyParameterError):
             RuntimePolicy(parallel="yes")
 
