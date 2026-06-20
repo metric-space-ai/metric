@@ -48,6 +48,7 @@ The current local tree implements the first revival slice:
 - Python engine-style Space map intent for deterministic transforms into derived metric spaces
 - Python map facade accepts `transform=` and reports ambiguous or unavailable mapping forms deterministically
 - Python map facade accepts fresh explicit representations and records representation metadata
+- Python clustered-space mapping facade derives cluster-level Spaces from clustering results with grouped lineage
 - Python strategy facade exports `MDS`, `DiffusionEmbedding`, `PCFA`, `SOM`, `KOC`, `DSPCC`, and `PhateAE`, with `MDS` executing the promoted classical-MDS path and roadmap strategies raising explicit unavailable errors
 - Python engine-style Space denoise intent with DBSCAN-noise filtering and mapping-result lineage
 - Python describe facade accepts fresh explicit representations and records representation metadata
@@ -297,6 +298,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - initial C++ engine mapping conventions with clustered-space derivation, `MappingResult` lineage metadata, and core smoke coverage, merged as `9e4b2d1a349d4b43e76e06ec7374f1d43a919296`
 - C++ engine PCFA mapping adapter with explicit inverse reconstruction and LAPACK-gated core smoke coverage, merged as `0aff5aea43433b4fe1b20dbc84cedf71b0e4559e`
 - C++ engine reduce intent backed by the PCFA strategy with LAPACK-gated core smoke coverage, merged as `cf1ceef290f73fac95943f0b7132953fe9d0c698`
+- Python clustered-space mapping adapter from `ClusteringResult` to derived `Space`, merged as `d3d97379a655ef2e131c121335accc522d7bdd03`
 - C++ representation-layer follow-ups for lazy `MatrixCache` diagnostics, explicit kNN graph sampled-recall validation, and the promoted Python engine representation-swap example, merged as `8e38a8c5ba1f11e879d66a8cd00b77ee47e67bf9`
 - C++ engine umbrella header exposure for the PCFA-backed reduce intent with core, downstream, and include-smoke coverage, merged as `82457b5368e49cfbb6a0f3c417fef0fc56c4f5fb`
 - initial C++ engine runtime policy scaffolding for exact lazy/materialized neighbor execution, representation diagnostics, and cache staleness coverage, merged as `c9217ec01bc06578dc050a06605df22c44fd62eb`
