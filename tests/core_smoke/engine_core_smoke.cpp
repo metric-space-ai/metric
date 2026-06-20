@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "metric/distance.hpp"
@@ -26,6 +27,9 @@ int main()
 
 	const auto metric_id = typed_space.id(0);
 	const auto metrics_id = typed_space.id(1);
+	static_assert(std::is_same<decltype(typed_space.version()), metric::SpaceVersion>::value);
+	assert(metric::initial_space_version == 0);
+	assert(metric::next_space_version(metric::initial_space_version) == 1);
 	assert(metric_id.index() == 0);
 	assert(typed_space.size() == records.size());
 	assert(!typed_space.empty());

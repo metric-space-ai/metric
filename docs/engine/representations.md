@@ -33,6 +33,12 @@ auto tree = metric::representations::make(space, metric::strategies::cover_tree{
 auto graph = metric::representations::make(space, metric::strategies::knn_graph(3));
 ```
 
+The same operation is available from the strategy namespace when code wants the strategy layer to be the entry point:
+
+```cpp
+auto matrix = metric::strategies::make_representation(space, metric::strategies::matrix_cache{});
+```
+
 Each adapter captures the source `space.version()` when it is built and exposes `is_stale()`.
 
 ## Matrix Cache
