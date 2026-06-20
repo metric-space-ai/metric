@@ -515,6 +515,45 @@ class StructureDescription:
     strategy: str
     representation: str
 
+    def to_dict(self):
+        return {
+            "record_count": self.record_count,
+            "pair_count": self.pair_count,
+            "zero_distance_pair_count": self.zero_distance_pair_count,
+            "minimum_nonzero_distance": self.minimum_nonzero_distance,
+            "maximum_distance": self.maximum_distance,
+            "average_distance": self.average_distance,
+            "intrinsic_dimension": self.intrinsic_dimension,
+            "has_nonzero_distances": self.has_nonzero_distances,
+            "exact": self.exact,
+            "strategy": self.strategy,
+            "representation": self.representation,
+        }
+
+    def to_numpy(self):
+        return np.asarray(
+            [
+                self.record_count,
+                self.pair_count,
+                self.zero_distance_pair_count,
+                self.minimum_nonzero_distance,
+                self.maximum_distance,
+                self.average_distance,
+                self.intrinsic_dimension,
+            ],
+            dtype=float,
+        )
+
+    def to_pandas(self):
+        try:
+            import pandas as pd
+        except ModuleNotFoundError:
+            raise OptionalDependencyError(
+                "StructureDescription.to_pandas() requires pandas. Install pandas or use to_dict()."
+            ) from None
+
+        return pd.DataFrame.from_records([self.to_dict()])
+
 
 @dataclass(frozen=True)
 class CorrelationResult:
