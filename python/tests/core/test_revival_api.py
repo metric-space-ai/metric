@@ -683,6 +683,12 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(neighbors.neighbors[0].record, "cat")
         self.assertEqual(neighbors.neighbors[0].rank, 0)
         self.assertEqual(neighbors.distances, (1, 1))
+        self.assertEqual(
+            neighbors.neighbors[0].to_dict(),
+            {"id": 0, "record": "cat", "distance": 1, "rank": 0},
+        )
+        self.assertEqual(neighbors.to_dict()["neighbors"][1]["record"], "cot")
+        np.testing.assert_array_equal(neighbors.to_numpy(), np.asarray([1.0, 1.0]))
         self.assertTrue(neighbors.exact)
         self.assertEqual(neighbors.strategy, "exact_scan")
         self.assertEqual(neighbors.representation, "metric_space")
@@ -1528,6 +1534,11 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(rows, [[(1, 1)], [(0, 1)], [(0, 1)], [(1, 2)]])
         self.assertEqual(rows.rows[0][0].record, "cot")
         self.assertEqual(rows.distances, ((1,), (1,), (1,), (2,)))
+        self.assertEqual(rows.to_dict()["rows"][0][0]["record"], "cot")
+        np.testing.assert_array_equal(
+            rows.to_numpy(),
+            np.asarray([[1.0], [1.0], [1.0], [2.0]]),
+        )
         self.assertEqual(space.neighbors(count=1, include_self=True)[0], [(0, 0)])
         self.assertEqual(space.neighbors(radius=1)[0], [(1, 1), (2, 1)])
         self.assertEqual(space.nearest("cut"), (0, 1))
