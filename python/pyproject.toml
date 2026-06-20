@@ -9,8 +9,8 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "metric-space"
-version = "0.3.3"
+name = "mtrc"
+version = "0.3.4"
 description = "Python bindings and helpers for finite metric-space numerics"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -22,6 +22,7 @@ keywords = [
   "distance-metrics",
   "finite-metric-space",
   "metric-space",
+  "mtrc",
   "numerical-computing"
 ]
 classifiers = [

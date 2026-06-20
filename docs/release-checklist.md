@@ -88,14 +88,15 @@ PyPI publishing workflow:
 ```shell
 gh workflow run publish-python.yml \
   --repo metric-space-ai/metric \
-  -f ref=v0.3.3 \
+  -f ref=v0.3.4 \
   -f publish=false
 ```
 
-Use `publish=true` only after confirming the target package index, credentials, and package ownership. If PyPI returns `403 Forbidden`, rotate the repository PyPI credentials or configure PyPI Trusted Publishing, confirm the package name is still available, and rerun the same workflow with `ref=v0.3.3` and `publish=true`.
+Use `publish=true` only after confirming the target package index, credentials, and package ownership. If PyPI returns `403 Forbidden`, rotate the repository PyPI credentials or configure PyPI Trusted Publishing, confirm the package name is still available, and rerun the same workflow with `ref=v0.3.4` and `publish=true`.
 
 For Trusted Publishing, configure PyPI with:
 
+- project name: `mtrc`
 - owner: `metric-space-ai`
 - repository: `metric`
 - workflow: `publish-python.yml`
@@ -106,7 +107,7 @@ Then run:
 ```shell
 gh workflow run publish-python.yml \
   --repo metric-space-ai/metric \
-  -f ref=v0.3.3 \
+  -f ref=v0.3.4 \
   -f publish=true \
   -f auth_method=trusted-publishing
 ```
