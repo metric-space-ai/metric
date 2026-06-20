@@ -20,6 +20,7 @@ The current local tree implements the first revival slice:
 - Python Space facade exposes stable `ids`, `record(...)`, `pairwise(...)`, and DataFrame-like construction
 - Python runtime facade exposes `RuntimePolicy`, `CachePolicy`, and `runtime=` on promoted Space intent methods with materialized grouping representation metadata
 - Python runtime facade exposes `RuntimeDiagnostics` with policy, support, and representation metadata
+- Python runtime policy helpers select metric-space, matrix, tree, and queryless graph neighbor execution representations
 - Python engine facade modules under `metric.intent` and `metric.representations`
 - Python representation facade exposes `Space.to_matrix()`, `Space.to_tree()`, and `Space.to_graph(count=...)`
 - Python matrix/tree/graph representations expose version freshness checks and deterministic stale errors
@@ -360,6 +361,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - C++ map intent support for promoted mapping adapters through `metric::mappings::fit`/`transform`, merged as `23e753ab9c27ea75ef056ee17871a3f3ae4dbaef`
 - C++ strategy-driven representation materialization for brute-force, matrix-cache, cover-tree, and kNN-graph strategies, merged as `62db634fc64ece6fac1a7ce50d86c17cb473af39`
 - C++ runtime representation policies for implicit, matrix-cache, cover-tree, and kNN-graph neighbor execution, merged as `9d1d5ff68067f3fff0d9f7b0d5dc262f0656e06d`
+- Python runtime representation policies for metric-space, matrix, tree, and queryless graph neighbor execution, merged as `79f0d32f15ef2e6b067f813fd07793f286d1703c`
 - Python representation freshness checks with deterministic stale representation errors, merged as `da591dcbd98d04a5541925170726429e17f836d0`
 - Python runtime-checkable `metric.Metric` protocol and explicit missing-metric errors, merged as `b7512721308d03940b0127f021260e1cee92d65f`
 - Python `Space.from_dataframe(...)`, stable `Space.ids`, `Space.record(...)`, and `Space.pairwise(...)` helpers, merged as `327259e5fc4b1ee1c3e1d6b724ee38021bae434e`
