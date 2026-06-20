@@ -724,12 +724,12 @@ class Space(FiniteMetricSpace):
 
     def _compare_records(self, other, align):
         if align == "position":
-            return self.records, other.records
+            return self.records, other.records, tuple(self.ids), (), ()
         if align != "ids":
             raise ValueError("align must be 'position' or 'ids'")
         if set(self.ids) != set(other.ids):
             raise IncompatibleSpaceError("align='ids' requires both spaces to have the same ids")
-        return self.records, [other.record(record_id) for record_id in self.ids]
+        return self.records, [other.record(record_id) for record_id in self.ids], tuple(self.ids), (), ()
 
     def compare(
         self,
@@ -744,7 +744,13 @@ class Space(FiniteMetricSpace):
         require_exact_runtime(runtime)
         from metric.operators import compare_spaces
 
-        left_records, right_records = self._compare_records(other, align)
+        (
+            left_records,
+            right_records,
+            matched_ids,
+            dropped_left_ids,
+            dropped_right_ids,
+        ) = self._compare_records(other, align)
         return compare_spaces(
             left_records,
             self.metric,
@@ -753,6 +759,10 @@ class Space(FiniteMetricSpace):
             strategy,
             left_representation=self._representation_name(representation),
             right_representation=self._representation_name(other_representation),
+            align=align,
+            matched_ids=matched_ids,
+            dropped_left_ids=dropped_left_ids,
+            dropped_right_ids=dropped_right_ids,
         )
 
     def correlate(
