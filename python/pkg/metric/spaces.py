@@ -1,17 +1,24 @@
 """Finite metric-space helpers for the revived Python API."""
 
 from collections.abc import Mapping
+import copy as _copy
 import math
+import numbers
 import operator
 
 from metric.exceptions import (
     AmbiguousIntentError,
     IncompatibleSpaceError,
+    MetricContractError,
     MissingMetricError,
     StaleRepresentationError,
     StrategyUnavailableError,
 )
-from metric.runtime import require_exact_runtime
+from metric.runtime import CachePolicy, require_exact_runtime
+
+
+_VALIDATION_MODES = {"none", "sample", "strict"}
+_MATERIALIZED_CACHE_MODES = {"auto", "materialized"}
 
 
 class RecordId(int):
@@ -31,6 +38,34 @@ def _coerce_non_negative_integer(value, name):
     return value
 
 
+def _normalize_validation(validate):
+    if not isinstance(validate, str):
+        raise TypeError("validate must be a string")
+    if validate not in _VALIDATION_MODES:
+        raise ValueError(f"validate must be one of {sorted(_VALIDATION_MODES)!r}")
+    return validate
+
+
+def _normalize_cache(cache):
+    return cache if isinstance(cache, CachePolicy) else CachePolicy(cache)
+
+
+def _validate_distance_value(value, lhs_index, rhs_index):
+    if isinstance(value, bool) or not isinstance(value, numbers.Real):
+        raise MetricContractError(
+            f"metric distance for records {lhs_index} and {rhs_index} must be a real number"
+        )
+    if not math.isfinite(value):
+        raise MetricContractError(
+            f"metric distance for records {lhs_index} and {rhs_index} must be finite"
+        )
+    if value < 0:
+        raise MetricContractError(
+            f"metric distance for records {lhs_index} and {rhs_index} must be non-negative"
+        )
+    return value
+
+
 class FiniteMetricSpace:
     """Explicit finite metric space backed by a pairwise distance matrix."""
 
@@ -43,13 +78,20 @@ class FiniteMetricSpace:
         ids=None,
         name=None,
         metadata=None,
+        validate="sample",
+        copy=False,
+        cache="auto",
     ):
         if metric is None:
             raise MissingMetricError(
                 "Space requires an explicit metric for arbitrary records. "
                 "Use Space(records, metric=Edit()) or another callable metric."
             )
-        self.records = list(records)
+        validate = _normalize_validation(validate)
+        cache = _normalize_cache(cache)
+        if not isinstance(copy, bool):
+            raise TypeError("copy must be a bool")
+        self.records = [_copy.copy(record) for record in records] if copy else list(records)
         self.ids = [RecordId(index) for index in range(len(self.records))] if ids is None else list(ids)
         if len(self.ids) != len(self.records):
             raise ValueError("ids must have the same length as records")
@@ -62,11 +104,20 @@ class FiniteMetricSpace:
         self.source_space = source_space
         self.source_version = source_space.version() if source_space is not None else None
         self.representation = representation
+        self.validate = validate
+        self.cache = cache
         self._version = 0
-        self._distances = [
-            [metric(lhs, rhs) for rhs in self.records]
-            for lhs in self.records
-        ]
+        self._lazy_distances = {}
+        self._distances = None
+        if cache.mode in _MATERIALIZED_CACHE_MODES:
+            self._distances = [
+                [self._compute_distance(lhs_index, rhs_index) for rhs_index in range(len(self.records))]
+                for lhs_index in range(len(self.records))
+            ]
+        elif validate == "strict":
+            self._validate_all_distances()
+        else:
+            self._validate_sample_distances()
 
     def __len__(self):
         return len(self.records)
@@ -142,14 +193,26 @@ class FiniteMetricSpace:
 
     def distance(self, lhs_index, rhs_index):
         self.ensure_fresh()
-        return self._distances[lhs_index][rhs_index]
+        if self._distances is not None:
+            return self._distances[lhs_index][rhs_index]
+        if self.cache.mode == "lazy":
+            key = (lhs_index, rhs_index)
+            if key not in self._lazy_distances:
+                self._lazy_distances[key] = self._compute_distance(lhs_index, rhs_index)
+            return self._lazy_distances[key]
+        return self._compute_distance(lhs_index, rhs_index)
 
     def record(self, record_id):
         return self.records[self._id_to_index[record_id]]
 
     def pairwise_distances(self):
         self.ensure_fresh()
-        return [row[:] for row in self._distances]
+        if self._distances is not None:
+            return [row[:] for row in self._distances]
+        return [
+            [self.distance(lhs_index, rhs_index) for rhs_index in range(len(self.records))]
+            for lhs_index in range(len(self.records))
+        ]
 
     def pairwise(self, ids=None):
         self.ensure_fresh()
@@ -158,7 +221,7 @@ class FiniteMetricSpace:
 
         positions = [self._id_to_index[record_id] for record_id in ids]
         return [
-            [self._distances[lhs][rhs] for rhs in positions]
+            [self.distance(lhs, rhs) for rhs in positions]
             for lhs in positions
         ]
 
@@ -171,6 +234,8 @@ class FiniteMetricSpace:
             ids=self.ids,
             name=self.name,
             metadata=self.metadata,
+            validate=self.validate,
+            cache="materialized",
         )
 
     def to_tree(self):
@@ -211,6 +276,25 @@ class FiniteMetricSpace:
             return self.rnn(query, radius)
         value = 1 if k is None and count is None else count if count is not None else k
         return self.knn(query, _coerce_non_negative_integer(value, "count"))
+
+    def _compute_distance(self, lhs_index, rhs_index):
+        value = self.metric(self.records[lhs_index], self.records[rhs_index])
+        if self.validate != "none":
+            _validate_distance_value(value, lhs_index, rhs_index)
+        return value
+
+    def _validate_sample_distances(self):
+        if self.validate == "none" or not self.records:
+            return
+        sample_size = min(len(self.records), 3)
+        for lhs_index in range(sample_size):
+            for rhs_index in range(sample_size):
+                self._compute_distance(lhs_index, rhs_index)
+
+    def _validate_all_distances(self):
+        for lhs_index in range(len(self.records)):
+            for rhs_index in range(len(self.records)):
+                self._compute_distance(lhs_index, rhs_index)
 
 
 class Space(FiniteMetricSpace):

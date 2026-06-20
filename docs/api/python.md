@@ -19,6 +19,40 @@ print(space.neighbors("cut", count=2))
 
 The records are strings. Edit distance defines the geometry without an embedding step.
 
+## Space Constructor
+
+The primary constructor accepts finite records, an explicit metric, optional
+stable IDs, and runtime-facing construction preferences:
+
+```python
+space = Space(
+    records,
+    metric=Edit(),
+    ids=None,
+    name=None,
+    metadata=None,
+    validate="sample",
+    copy=False,
+    cache="auto",
+)
+```
+
+`validate` accepts `"none"`, `"sample"`, or `"strict"`. Sample validation checks
+a small prefix of the space for real, finite, non-negative distance values;
+strict validation checks every pair. The constructor does not currently enforce
+full metric axioms such as symmetry or triangle inequality.
+
+`copy=True` shallow-copies records before storing them. The default keeps the
+existing record objects and only copies the outer collection into the finite
+space facade.
+
+`cache` accepts `"auto"`, `"none"`, or a `metric.runtime.CachePolicy`.
+`"auto"` materializes pairwise distances for the current explicit
+`FiniteMetricSpace` representation. `"none"` computes distances on demand
+without retaining a matrix. `CachePolicy("lazy")` memoizes distances when they
+are first requested, and `CachePolicy("materialized")` requests eager
+materialization explicitly.
+
 ## Core Objects
 
 - `Metric`: runtime-checkable protocol for Python metric callables
