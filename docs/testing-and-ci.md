@@ -15,6 +15,26 @@ The required PR and release gates are intentionally small, reproducible, and cro
 
 The corresponding local commands are listed in [release-checklist.md](release-checklist.md).
 
+## CI Grouping Model
+
+The validation roadmap uses four CI groups. They are named explicitly so new
+tests can be promoted without changing the meaning of release gates.
+
+| Group | Current Trigger | Workflows | Blocking Status |
+|---|---|---|---|
+| Fast | Pull request and `master` push on relevant paths | `core-cpp.yml`, `python-core.yml`, `docs-and-format.yml` | Required revival signal for promoted C++, Python, docs, and formatting paths. |
+| Extended | Manual dispatch or release-artifact rehearsal | `test-cpp-linux.yml`, `windows.yml`, `test_python.yml`, `test-coverage.yml`, `python-package.yml`, `release-artifacts.yml` | Non-blocking until each restored area has deterministic fixtures and documented expected values. |
+| Nightly | Defined for future scheduled sweeps | Not active as a scheduled workflow in the revival gate | Reserved for larger randomized sweeps, long-running demos, sanitizer builds, and convergence trend checks. |
+| Benchmark | Manual dispatch | `benchmark.yml` | Non-blocking performance evidence; ordinary correctness CI must not fail on benchmark noise. |
+
+Fast CI is the only group expected to run on ordinary pull requests. Extended,
+nightly, and benchmark checks must remain opt-in until their fixtures are small,
+deterministic, and documented enough to avoid flaky release blockers.
+
+When a capability moves from roadmap to promoted status, it should first gain a
+local deterministic fixture, then enter the extended group, then graduate into
+fast CI only after runtime and platform cost are understood.
+
 ## Fast C++ Test Path
 
 The fast C++ path is controlled by these CMake options and presets:

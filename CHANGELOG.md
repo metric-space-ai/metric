@@ -14,6 +14,7 @@
 - Document the roadmap-only C++ KOC mapping adapter surface in the engine mapping docs.
 - Add a CI-tested C++ engine flagship demo for mixed structured records with a composed domain metric and runtime diagnostics.
 - Add the Python user-path docs for `Space`, intent methods, result objects, expert strategy overrides, errors, and real-data examples.
+- Document the fast, extended, nightly, and benchmark CI grouping model from the validation plan with current workflow status.
 
 ## [0.3.3] - 2026-06-20
 
