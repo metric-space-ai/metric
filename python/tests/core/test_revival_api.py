@@ -7,7 +7,7 @@ from pathlib import Path
 import metric
 import metric.distance as distance_module
 import numpy as np
-from metric import exceptions, intent, mappings, representations, runtime, transforms
+from metric import core, exceptions, intent, mappings, representations, runtime, transforms
 from metric.exceptions import (
     AmbiguousIntentError,
     IncompatibleSpaceError,
@@ -119,6 +119,19 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(MatrixSpace, FiniteMetricSpace)
         self.assertIs(metric.metrics.Edit, Edit)
         self.assertIs(metric.metrics.Metric, Metric)
+        self.assertIs(metric.core, core)
+        self.assertIs(metric.core.Edit, Edit)
+        self.assertIs(metric.core.Metric, Metric)
+        self.assertIs(metric.core.Space, Space)
+        self.assertIs(metric.core.FiniteMetricSpace, FiniteMetricSpace)
+        self.assertIs(metric.core.MatrixSpace, MatrixSpace)
+        self.assertIs(metric.core.RuntimePolicy, RuntimePolicy)
+        self.assertIs(metric.core.RuntimeDiagnostics, RuntimeDiagnostics)
+        self.assertIs(metric.core.MetricError, MetricError)
+        self.assertIs(metric.core.MissingMetricError, MissingMetricError)
+        self.assertIs(metric.core.StaleRepresentationError, StaleRepresentationError)
+        self.assertIs(metric.core.UnsupportedOperationError, UnsupportedOperationError)
+        self.assertEqual(metric.core.make_space(self.records, self.metric).records, self.records)
         for name in ("Manhattan", "Minkowski", "ThresholdedEuclidean"):
             self.assertTrue(hasattr(metric.metrics, name))
         self.assertIs(metric.spaces.FiniteMetricSpace, FiniteMetricSpace)
@@ -274,6 +287,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.UnsupportedOperationError, UnsupportedOperationError)
         self.assertIn("FiniteMetricSpace", metric.__all__)
         self.assertIn("Space", metric.__all__)
+        self.assertIn("core", metric.__all__)
         self.assertIn("exceptions", metric.__all__)
         self.assertIn("MetricError", metric.__all__)
         self.assertIn("Metric", metric.__all__)

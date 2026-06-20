@@ -2,6 +2,7 @@
 
 The revived core API is organized around explicit finite metric spaces:
 
+- ``metric.core`` for central finite metric-space building blocks
 - ``metric.metrics`` for metric constructors
 - ``metric.spaces`` for finite metric-space helpers
 - ``metric.exceptions`` for public METRIC error types
@@ -19,7 +20,7 @@ try:
 except ModuleNotFoundError:
     pass
 
-from . import exceptions, intent, mappings, metrics, operators, representations, runtime, spaces, strategies, transforms
+from . import core, exceptions, intent, mappings, metrics, operators, representations, runtime, spaces, strategies, transforms
 from .exceptions import (
     AmbiguousIntentError,
     IncompatibleSpaceError,
