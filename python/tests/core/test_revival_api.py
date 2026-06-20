@@ -745,6 +745,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(clustered.source_record_ids, (1, 3))
         self.assertEqual(clustered.source_records, ((0, 1, 2), (3, 4)))
         self.assertEqual(clustered.representative_records, (1, 3))
+        self.assertEqual(clustered.to_dict()["mapping"], "clustered_space")
+        self.assertEqual(clustered.to_dict()["source_records"], ((0, 1, 2), (3, 4)))
         self.assertFalse(clustered.inverse_supported)
         self.assertEqual(
             clustered.space.records[0],
@@ -849,6 +851,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(denoised.strategy, "dbscan_noise_filter")
         self.assertEqual(denoised.representation, "metric_space")
         self.assertFalse(denoised.inverse_supported)
+        self.assertEqual(denoised.to_dict()["source_record_ids"], (0, 1, 2, 3))
+        np.testing.assert_array_equal(denoised.to_numpy(), np.asarray([0, 1, 2, 3], dtype=object))
         with self.assertRaisesRegex(UnsupportedOperationError, "space\\.embed"):
             denoised.inverse_transform()
         self.assertEqual(denoised.space.distance(0, 3), 11)
@@ -997,6 +1001,14 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(mapped.strategy, "deterministic_transform")
         self.assertEqual(mapped.representation, "metric_space")
         self.assertFalse(mapped.inverse_supported)
+        self.assertEqual(mapped.to_dict()["target_record_count"], 5)
+        try:
+            mapped_frame = mapped.to_pandas()
+        except exceptions.OptionalDependencyError:
+            mapped_frame = None
+        if mapped_frame is not None:
+            self.assertEqual(mapped_frame.loc[0, "source_record_id"], 0)
+            self.assertEqual(mapped_frame.loc[0, "mapping"], "deterministic_transform")
         with self.assertRaisesRegex(UnsupportedOperationError, "inverse_supported=False"):
             mapped.inverse_transform()
         self.assertEqual(mapped.space.distance(0, 4), 4)
