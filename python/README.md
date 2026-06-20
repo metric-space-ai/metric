@@ -107,6 +107,10 @@ print("nearest:", space.neighbors("cut", 2))
 
 The core-wheel example is also available at `examples/metric_space/string_edit_space.py`. Full correlation, mapping, and standard-distance examples remain part of the broader restoration path until their bindings are promoted into the default wheel.
 
+Small tutorial notebooks live under `notebooks/`. They are paired with
+`notebooks/smoke_notebooks.py`, which executes their code cells in CI after the
+wheel is installed.
+
 `metric.mappings` and `metric.transforms` are importable beta namespaces. They expose `available()` and `legacy_module()` so callers can inspect whether a wheel includes the broader legacy bindings without making those bindings part of the core-wheel contract.
 
 ## NumPy records

@@ -423,6 +423,18 @@ class RevivalApiTest(unittest.TestCase):
                 )
                 self.assertEqual(result.returncode, 0, result.stdout)
 
+    def test_promoted_notebooks_run(self):
+        smoke_script = Path(__file__).resolve().parents[2] / "notebooks" / "smoke_notebooks.py"
+        result = subprocess.run(
+            [sys.executable, str(smoke_script)],
+            check=False,
+            env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout)
+
     def test_finite_metric_space_caches_pairwise_distances(self):
         space = FiniteMetricSpace(self.records, self.metric)
 

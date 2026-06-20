@@ -60,6 +60,7 @@ python -m pip install --force-reinstall wheelhouse/*.whl
 for example in python/examples/metric_space/*.py python/examples/engine/*.py; do
   python "$example"
 done
+python python/notebooks/smoke_notebooks.py
 PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s python/tests/core -v
 ```
 
