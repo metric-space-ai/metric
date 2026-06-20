@@ -101,6 +101,7 @@ The current local tree implements the first revival slice:
 - C++ representation adapters expose common diagnostics and preserve provider IDs across materialized snapshots
 - C++ representation factory helpers expose `implicit`, `matrix`, `cover_tree`, `knn_graph`/`graph`, and `topology` over `MetricSpace`
 - C++ representation strategies materialize implicit, matrix-cache, cover-tree, and kNN-graph representations
+- C++ strategy namespace exposes representation materialization through `make_representation(...)`
 - C++ `MatrixCache` supports eager and lazy fill modes with hit/miss/fill diagnostics and deterministic stale-state reporting
 - C++ `KnnGraphIndex` exposes explicit sampled-recall validation against an exact distance provider
 - initial C++ engine nearest operators with `NeighborSet`, `operators::knn`, and `operators::range` over spaces, distance providers, and neighbor indexes
@@ -125,6 +126,7 @@ The current local tree implements the first revival slice:
 - C++ engine runtime diagnostics with policy, representation, support, and reason metadata
 - C++ engine runtime policies select implicit, matrix-cache, cover-tree, and kNN-graph neighbor execution representations explicitly
 - C++ engine runtime policies account for `metric_traits<Metric>::thread_safe` when parallel execution is requested
+- C++ engine exposes `SpaceVersion` as the public version type for freshness checks
 - C++ engine compatibility aliases and legacy-space adapters under `metric/compat`
 - initial C++ engine mapping conventions with `MappingResult` lineage metadata and clustered-space derivation
 - initial C++ engine PCFA mapping adapter with explicit fit, transform, and inverse-transform support
@@ -386,6 +388,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python legacy kmeans binding keyword corrected from `random_see` to `random_seed`, merged as `e8faf336ffc9a7087eec95213593bf339d2f52e4`
 - CI-tested C++ engine representation-swap example covering implicit search, matrix cache, cover-tree index, kNN graph index, and stale representation diagnostics, merged as `6692769a33300ba316da4720b4064307a4060e3d`
 - C++ engine compatibility aliases and legacy-space adapters under `metric/compat`, merged as `53f20ed254af9eb7367174b2496ec562ea0a73e4`
+- C++ engine `SpaceVersion` and strategy-layer representation materialization headers, merged as `213d5f9b16b9ff949881881916a996a34d1ef69e`
 
 ## Historical Code Policy
 
