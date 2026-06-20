@@ -396,6 +396,44 @@ class RepresentativeSet:
     strategy: str
     representation: str
 
+    def to_dict(self):
+        return {
+            "representatives": self.representatives,
+            "nearest_representative_distances": self.nearest_representative_distances,
+            "record_count": self.record_count,
+            "requested_count": self.requested_count,
+            "coverage_radius": self.coverage_radius,
+            "average_nearest_distance": self.average_nearest_distance,
+            "exact": self.exact,
+            "strategy": self.strategy,
+            "representation": self.representation,
+        }
+
+    def to_numpy(self):
+        return np.asarray(self.representatives, dtype=int)
+
+    def to_pandas(self):
+        try:
+            import pandas as pd
+        except ModuleNotFoundError:
+            raise OptionalDependencyError(
+                "RepresentativeSet.to_pandas() requires pandas. Install pandas or use to_dict()."
+            ) from None
+
+        representatives = set(self.representatives)
+        rows = []
+        for record_id, distance in enumerate(self.nearest_representative_distances):
+            rows.append(
+                {
+                    "record_id": record_id,
+                    "nearest_representative_distance": distance,
+                    "is_representative": record_id in representatives,
+                    "strategy": self.strategy,
+                    "representation": self.representation,
+                }
+            )
+        return pd.DataFrame.from_records(rows)
+
 
 @dataclass(frozen=True)
 class ReductionResult:

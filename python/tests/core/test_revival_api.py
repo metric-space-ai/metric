@@ -897,6 +897,17 @@ class RevivalApiTest(unittest.TestCase):
         self.assertAlmostEqual(representatives_result.average_nearest_distance, 0.4)
         self.assertEqual(representatives_result.strategy, "farthest_first")
         self.assertEqual(representatives_result.representation, "metric_space")
+        representatives_record = representatives_result.to_dict()
+        self.assertEqual(representatives_record["representatives"], (0, 4, 2))
+        self.assertEqual(representatives_record["coverage_radius"], 1)
+        np.testing.assert_array_equal(representatives_result.to_numpy(), np.asarray([0, 4, 2]))
+        try:
+            representatives_frame = representatives_result.to_pandas()
+        except exceptions.OptionalDependencyError:
+            representatives_frame = None
+        if representatives_frame is not None:
+            self.assertEqual(representatives_frame.loc[4, "is_representative"], True)
+            self.assertEqual(representatives_frame.loc[1, "nearest_representative_distance"], 1)
         matrix_representatives = space.representatives(count=3, representation=space.to_matrix())
         self.assertEqual(matrix_representatives.representation, "matrix")
         self.assertEqual(matrix_representatives.representatives, representatives_result.representatives)
