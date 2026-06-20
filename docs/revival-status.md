@@ -113,6 +113,7 @@ The current local tree implements the first revival slice:
 - C++ and Python graph degree diagnostics with deterministic degree-policy metadata
 - C++ and Python graph connectivity diagnostics with deterministic component metadata
 - C++ and Python graph stretch diagnostics with deterministic shortest-path metadata
+- Python graph construction and graph diagnostics expose structured conversion helpers for metadata, numeric vectors, and optional pandas rows
 - initial C++ engine skeleton with `MetricSpace`, stable `RecordId`s, metric traits, and engine concept traits
 - C++ `MetricSpace` supports stable ID lookup, insertion, replacement, erase, and ID-to-position mapping
 - initial C++ engine representation adapters for implicit distance lookup, matrix caching, exact neighbor-index scaffolds, kNN graph adjacency, graph topology edges, and stale detection
