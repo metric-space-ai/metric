@@ -53,6 +53,9 @@ int main()
 	auto strategy_matrix = metric::representations::make(space, metric::strategies::matrix_cache{});
 	static_assert(metric::DistanceProvider_v<decltype(strategy_matrix)>);
 	assert(strategy_matrix.distance(id0, id2) == matrix.distance(id0, id2));
+	auto strategy_entry_matrix = metric::strategies::make_representation(space, metric::strategies::matrix_cache{});
+	static_assert(metric::DistanceProvider_v<decltype(strategy_entry_matrix)>);
+	assert(strategy_entry_matrix.distance(id0, id2) == matrix.distance(id0, id2));
 
 	auto lazy_matrix = metric::representations::matrix(space, metric::representations::matrix_cache_mode::lazy);
 	assert(lazy_matrix.cached_distances() == 0);

@@ -6,7 +6,7 @@ The engine starts with a finite record set and a metric callable:
 RecordSet + Metric -> MetricSpace
 ```
 
-`MetricSpace` is the canonical C++ engine object. It owns records by value, assigns stable `RecordId` values, exposes the metric, and carries a `version()` counter for representation staleness checks.
+`MetricSpace` is the canonical C++ engine object. It owns records by value, assigns stable `RecordId` values, exposes the metric, and carries a `SpaceVersion` counter for representation staleness checks.
 
 Python exposes the same model through `Space`: a finite record set plus a metric callable with cached pairwise distances and intent-named helpers.
 
@@ -50,6 +50,7 @@ matrix = space.to_matrix()
 ## Current Contract
 
 - `RecordId` is opaque in C++ but currently backed by dense internal storage.
+- `SpaceVersion` is the public C++ version type for mutation and representation freshness checks.
 - C++ `MetricSpace` owns records by value in the first engine version.
 - Python `Space` stores records as a list and eagerly caches pairwise distances.
 - Mutating C++ space state should call `touch()` so cached representations can report stale state.

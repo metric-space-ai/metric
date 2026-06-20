@@ -13,6 +13,7 @@
 
 #include "concepts.hpp"
 #include "record_id.hpp"
+#include "version.hpp"
 
 namespace metric::core {
 
@@ -34,8 +35,8 @@ template <typename Record, typename Metric> class MetricSpace {
 
 	auto size() const -> std::size_t { return records_.size(); }
 	auto empty() const -> bool { return records_.empty(); }
-	auto version() const -> std::size_t { return version_; }
-	auto touch() -> void { ++version_; }
+	auto version() const -> SpaceVersion { return version_; }
+	auto touch() -> void { version_ = next_space_version(version_); }
 
 	auto id(std::size_t position) const -> RecordId { return id_at(position); }
 
@@ -83,14 +84,14 @@ template <typename Record, typename Metric> class MetricSpace {
 		const auto id = RecordId::from_index(next_record_id_++);
 		records_.push_back(std::move(record));
 		ids_.push_back(id);
-		++version_;
+		version_ = next_space_version(version_);
 		return id;
 	}
 
 	auto replace(RecordId id, record_type record) -> void
 	{
 		records_[position_of(id)] = std::move(record);
-		++version_;
+		version_ = next_space_version(version_);
 	}
 
 	auto erase(RecordId id) -> bool
@@ -99,7 +100,7 @@ template <typename Record, typename Metric> class MetricSpace {
 			if (ids_[position] == id) {
 				records_.erase(records_.begin() + static_cast<std::ptrdiff_t>(position));
 				ids_.erase(ids_.begin() + static_cast<std::ptrdiff_t>(position));
-				++version_;
+				version_ = next_space_version(version_);
 				return true;
 			}
 		}
@@ -128,7 +129,7 @@ template <typename Record, typename Metric> class MetricSpace {
 	metric_type metric_;
 	std::vector<RecordId> ids_;
 	std::size_t next_record_id_{};
-	std::size_t version_{};
+	SpaceVersion version_{initial_space_version};
 };
 
 template <typename Container, typename Metric>
