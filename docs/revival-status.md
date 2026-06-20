@@ -292,6 +292,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - testing and release-checklist docs now describe the expanded promoted Python example gate, merged as `dbed0eba25455e420baba79f49d134c126dd6c14`
 - PyPI publish dry-run `27804901826` completed successfully on `master` commit `1ab3ada019f0460f4ba418291bd2146342ef8064` with one source distribution artifact and checked wheel artifact sets for CPython 3.10 through 3.14 on Linux, macOS, and Windows
 - PyPI still returned 404 for `https://pypi.org/pypi/metric-space/json` after the master dry-run, so no visible `metric-space` release has been published
+- PyPI was rechecked on 2026-06-20 with the official JSON API and still returned 404 for `https://pypi.org/pypi/metric-space/json`; GitHub release `v0.3.2` remains published as a non-draft, non-prerelease release
 - promotion-gated research roadmap for diagnostics, representative selection, sparse graphs, cross-space dependency discovery, denoising, vector-database adapters, and benchmarks, merged as `b80eaba438a6a45f327951c87f74d88c4af37ed3`
 - Python representative-selection helpers using deterministic farthest-first traversal, merged as `78d9d4cdb065555541e10131698452c6d713a257`
 - promoted Python representative-selection example and wheel-gate coverage, merged as `78d9d4cdb065555541e10131698452c6d713a257`
@@ -419,6 +420,18 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python `Neighbor` and `NeighborResult` named neighbor results, merged as `ec9d7d5a3e0de3a04205f4563b0c04367469aee4`
 - Python `NeighborResult` conversion helpers, merged as `8285012f0ad9b4cfae1363096152ca6be52d833b`
 - Python compare/correlate alignment metadata on `CorrelationResult`, merged as `096413baa8e0454c809066b5de188e815f726312`
+- promoted Python metric-space and engine examples use named `Neighbor` / `NeighborResult` fields instead of tuple-indexed access, merged as `8d3e57dd7a12086ccda038bcf317209d685ca651`
+- Python `CorrelationResult` conversion helpers, merged as `7b0356b82b1ec403351a714f7c12cbb1c9b05d89`
+- Python `ClusteringResult` conversion helpers, merged as `2a6f0f46649b3a04bb0e02727963b4dc29382bcf`
+- Python `Outlier` and `OutlierResult` conversion helpers, merged as `ec73ed478faa78faa4fe2f76fc67cf0488914cf7`
+- Python `RepresentativeSet` conversion helpers, merged as `5f1bd8994ffa9595d0c875351d749cf4e451cb3c`
+- Python `StructureDescription` conversion helpers, merged as `4b91a849f6f5466f1c4a4a1e93e3c3a191479442`
+- Python `EmbeddingResult`, `EmbeddingModel`, and `EmbeddingDiagnostics` conversion helpers, merged as `a6d377b8f636984ca87e46207a2510844f5bb7e1`
+- Python `MappingResult` conversion helpers, merged as `d7ed977148885bec83d73811dcd69af97016a1b6`
+- Python `ReductionResult` and `CompressionResult` conversion helpers, merged as `ced85b45470857f467ffc4822594c7c5b46a7430`
+- Python graph construction and graph diagnostics conversion helpers, merged as `4979278a00616b2107a56df073254313f56401ee`
+- Python `Space.compare(...)` and `Space.correlate(...)` accept raw right-hand records with explicit `other_metric=`, merged as `15e03cb88ae3622f4ed3c04028df63088b68f186`
+- Python runtime policy and diagnostics conversion helpers, merged as `caf3375394344859452cce7ce6c36a0fa085e194`
 
 ## Historical Code Policy
 
