@@ -50,6 +50,7 @@ The current local tree implements the first revival slice:
 - Python compare/correlate results expose `to_dict()`, `to_numpy()`, and optional `to_pandas()` conversion helpers
 - Python engine-style Space embed intent with deterministic classical MDS and embedding diagnostics
 - Python embed facade accepts fresh explicit representations and records representation metadata
+- Python `EmbeddingResult`, `EmbeddingModel`, and `EmbeddingDiagnostics` expose structured conversion helpers for coordinates and metadata
 - Python outlier facade supports strategy-free `Space.outliers(count=...)`, `fraction`, and `threshold`
 - Python `Outlier` and `OutlierResult` expose structured conversion helpers for metadata, score vectors, and optional pandas rows
 - Python denoise facade supports strategy-free outlier-removal `Space.denoise(...)` controls

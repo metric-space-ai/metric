@@ -624,6 +624,17 @@ class EmbeddingDiagnostics:
     finite_coordinates: bool
     coordinate_scale: float
 
+    def to_dict(self):
+        return {
+            "raw_stress": self.raw_stress,
+            "normalized_stress": self.normalized_stress,
+            "distance_correlation": self.distance_correlation,
+            "trustworthiness": self.trustworthiness,
+            "neighbor_k": self.neighbor_k,
+            "finite_coordinates": self.finite_coordinates,
+            "coordinate_scale": self.coordinate_scale,
+        }
+
 
 @dataclass(frozen=True)
 class EmbeddingModel:
@@ -632,6 +643,13 @@ class EmbeddingModel:
     method: str
     dimensions: int
     source_record_ids: tuple
+
+    def to_dict(self):
+        return {
+            "method": self.method,
+            "dimensions": self.dimensions,
+            "source_record_ids": self.source_record_ids,
+        }
 
 
 @dataclass(frozen=True)
@@ -652,6 +670,46 @@ class EmbeddingResult:
     strategy: str
     representation: str
     diagnostics: EmbeddingDiagnostics
+
+    def to_dict(self):
+        return {
+            "coordinates": np.asarray(self.coordinates).tolist(),
+            "model": self.model.to_dict(),
+            "source_record_ids": self.source_record_ids,
+            "source_record_count": self.source_record_count,
+            "dimensions": self.dimensions,
+            "stress": self.stress,
+            "trustworthiness": self.trustworthiness,
+            "exact": self.exact,
+            "operator_name": self.operator_name,
+            "strategy": self.strategy,
+            "representation": self.representation,
+            "diagnostics": self.diagnostics.to_dict(),
+        }
+
+    def to_numpy(self):
+        return np.array(self.coordinates, dtype=float, copy=True)
+
+    def to_pandas(self):
+        try:
+            import pandas as pd
+        except ModuleNotFoundError:
+            raise OptionalDependencyError(
+                "EmbeddingResult.to_pandas() requires pandas. Install pandas or use to_dict()."
+            ) from None
+
+        coordinates = self.to_numpy()
+        if coordinates.ndim == 1:
+            coordinates = coordinates.reshape((-1, 1))
+        rows = []
+        for row_index, source_record_id in enumerate(self.source_record_ids):
+            row = {"source_record_id": source_record_id}
+            for dimension in range(coordinates.shape[1]):
+                row[f"coordinate_{dimension}"] = coordinates[row_index, dimension]
+            row["strategy"] = self.strategy
+            row["representation"] = self.representation
+            rows.append(row)
+        return pd.DataFrame.from_records(rows)
 
 
 def pairwise_distance_matrix(records, metric):
