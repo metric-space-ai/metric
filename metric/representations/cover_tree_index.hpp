@@ -128,6 +128,11 @@ template <typename Space> class CoverTreeIndex {
 	std::vector<record_type> records_;
 };
 
+template <typename Space> auto cover_tree(const Space &space) -> CoverTreeIndex<Space>
+{
+	return CoverTreeIndex<Space>(space);
+}
+
 } // namespace metric::representations
 
 #endif

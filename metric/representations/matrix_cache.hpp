@@ -145,6 +145,12 @@ template <typename Space> class MatrixCache {
 	mutable std::size_t misses_{};
 };
 
+template <typename Space>
+auto matrix(const Space &space, matrix_cache_mode mode = matrix_cache_mode::eager) -> MatrixCache<Space>
+{
+	return MatrixCache<Space>(space, mode);
+}
+
 } // namespace metric::representations
 
 #endif

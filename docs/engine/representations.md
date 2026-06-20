@@ -14,6 +14,16 @@ The current C++ engine representation adapters live under `metric::representatio
 - `KnnGraphIndex<Space>`
 - `GraphTopology<Space>`
 
+The factory helpers mirror the Python facade and keep examples focused on the
+representation role:
+
+- `implicit(space)`
+- `matrix(space)`
+- `matrix(space, matrix_cache_mode::lazy)`
+- `cover_tree(space)`
+- `knn_graph(space, k)` / `graph(space, k)`
+- `topology(space)`
+
 Each adapter captures the source `space.version()` when it is built and exposes `is_stale()`.
 
 ## Matrix Cache
@@ -21,11 +31,12 @@ Each adapter captures the source `space.version()` when it is built and exposes 
 `MatrixCache` can eagerly store all pairwise distances or fill entries lazily. Use eager materialization when repeated `RecordId` queries or all-pairs operators make the upfront cost explicit and worthwhile. Use the lazy mode when the workflow needs distance-provider semantics but should only compute requested pairs.
 
 ```cpp
-metric::representations::MatrixCache<decltype(space)> matrix(space);
+auto matrix = metric::representations::matrix(space);
 auto distance = matrix.distance(space.id(0), space.id(1));
 
-metric::representations::MatrixCache<decltype(space)> lazy_matrix(
-    space, metric::representations::matrix_cache_mode::lazy);
+auto lazy_matrix = metric::representations::matrix(
+    space,
+    metric::representations::matrix_cache_mode::lazy);
 auto first = lazy_matrix.distance(space.id(0), space.id(2));  // miss
 auto again = lazy_matrix.distance(space.id(0), space.id(2));  // hit
 auto stats = lazy_matrix.stats();

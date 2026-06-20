@@ -46,6 +46,11 @@ template <typename Space> class ImplicitDistanceProvider {
 	const space_type *space_;
 };
 
+template <typename Space> auto implicit(const Space &space) -> ImplicitDistanceProvider<Space>
+{
+	return ImplicitDistanceProvider<Space>(space);
+}
+
 } // namespace metric::representations
 
 #endif

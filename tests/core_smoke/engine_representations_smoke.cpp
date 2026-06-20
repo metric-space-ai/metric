@@ -17,7 +17,7 @@ int main()
 	const auto id2 = space.id(2);
 	const auto id3 = space.id(3);
 
-	metric::representations::ImplicitDistanceProvider<decltype(space)> implicit(space);
+	auto implicit = metric::representations::implicit(space);
 	static_assert(metric::DistanceProvider_v<decltype(implicit)>);
 	assert(implicit.record_count() == space.size());
 	assert(implicit.id(0) == id0);
@@ -31,7 +31,7 @@ int main()
 	assert(implicit_diagnostics.updates == metric::representations::update_mode::live);
 	assert(!implicit_diagnostics.stale);
 
-	metric::representations::MatrixCache<decltype(space)> matrix(space);
+	auto matrix = metric::representations::matrix(space);
 	static_assert(metric::DistanceProvider_v<decltype(matrix)>);
 	assert(matrix.record_count() == space.size());
 	assert(matrix.id(2) == id2);
@@ -47,8 +47,7 @@ int main()
 	assert(matrix.stats().fill_ratio == 1.0);
 	assert(matrix.stats().hits == 2);
 
-	metric::representations::MatrixCache<decltype(space)> lazy_matrix(
-		space, metric::representations::matrix_cache_mode::lazy);
+	auto lazy_matrix = metric::representations::matrix(space, metric::representations::matrix_cache_mode::lazy);
 	assert(lazy_matrix.cached_distances() == 0);
 	const auto lazy_initial_diagnostics = lazy_matrix.diagnostics();
 	assert(lazy_initial_diagnostics.materialized == metric::representations::materialization::lazy);
@@ -65,7 +64,7 @@ int main()
 	assert(lazy_diagnostics.cached_distances == 2);
 	assert(lazy_diagnostics.distance_evaluations == 2);
 
-	metric::representations::CoverTreeIndex<decltype(space)> tree(space);
+	auto tree = metric::representations::cover_tree(space);
 	static_assert(metric::NeighborSearchIndex_v<decltype(tree)>);
 	assert(tree.id(3) == id3);
 	assert(tree.contains(id0));
@@ -80,7 +79,7 @@ int main()
 	assert(tree_diagnostics.records == space.size());
 	assert(tree.stats().nodes == space.size());
 
-	metric::representations::KnnGraphIndex<decltype(space)> graph(space, 1);
+	auto graph = metric::representations::knn_graph(space, 1);
 	static_assert(metric::NeighborSearchIndex_v<decltype(graph)>);
 	assert(graph.k() == 1);
 	assert(graph.id(0) == id0);
@@ -97,8 +96,11 @@ int main()
 	assert(graph_recall_stats.recall_validated);
 	assert(graph_recall_stats.sampled_recall == 1.0);
 	assert(graph.sampled_recall(matrix, 2) == 1.0);
+	const auto graph_alias = metric::representations::graph(space, 1);
+	assert(graph_alias.k() == graph.k());
+	assert(graph_alias.neighbors(id0)[0].id == graph.neighbors(id0)[0].id);
 
-	metric::representations::GraphTopology<decltype(space)> topology(space);
+	auto topology = metric::representations::topology(space);
 	static_assert(metric::GraphTopology_v<decltype(topology)>);
 	assert(topology.id(1) == id1);
 	assert(topology.contains(id2));
@@ -141,7 +143,7 @@ int main()
 	assert(matrix.position_of(id3) == 3);
 	assert(matrix.distance(id1, id3) == 7);
 
-	metric::representations::MatrixCache<decltype(space)> refreshed_matrix(space);
+	auto refreshed_matrix = metric::representations::matrix(space);
 	assert(refreshed_matrix.record_count() == space.size());
 	assert(!refreshed_matrix.contains(id1));
 	assert(refreshed_matrix.id(1) == id2);
