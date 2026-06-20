@@ -58,6 +58,7 @@ The current local tree implements the first revival slice:
 - Python engine-style Space outlier intent with DBSCAN-noise strategy
 - Python engine-style Space reduce intent with representative and medoid reduction strategies
 - Python engine-style Space compress intent with representative and medoid compression strategies
+- Python `ReductionResult` and `CompressionResult` expose structured conversion helpers for lineage metadata, assignments, and optional pandas rows
 - Python reduce and compress facades accept fresh explicit representations and record representation metadata
 - Python engine-style Space map intent for deterministic transforms into derived metric spaces
 - Python map facade accepts `transform=` and reports ambiguous or unavailable mapping forms deterministically
