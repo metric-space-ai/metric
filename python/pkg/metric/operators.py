@@ -229,6 +229,8 @@ class MappingResult:
     strategy: str
     representation: str
     inverse_supported: bool
+    source_records: tuple = ()
+    representative_records: tuple = ()
 
     def inverse_transform(self, *args, **kwargs):
         _raise_unsupported_inverse(self)

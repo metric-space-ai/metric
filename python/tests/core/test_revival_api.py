@@ -348,6 +348,10 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("RuntimeDiagnostics", metric.__all__)
         self.assertIn("runtime_diagnostics", metric.__all__)
         self.assertEqual(mappings.STABILITY, "beta")
+        self.assertTrue(callable(mappings.clustered_space))
+        self.assertTrue(callable(mappings.make_clustered_space_mapping))
+        self.assertTrue(callable(mappings.fit))
+        self.assertTrue(callable(mappings.transform))
         self.assertEqual(transforms.STABILITY, "beta")
         self.assertIsInstance(representations.matrix(Space(self.records, self.metric)), MatrixSpace)
         self.assertIsInstance(representations.matrix_space(self.records, self.metric), MatrixSpace)
@@ -602,6 +606,36 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(matrix_groups.representation, "matrix")
         self.assertEqual(matrix_groups.assignments, groups.assignments)
 
+        clustered = mappings.clustered_space(group_space, groups)
+        self.assertIsInstance(clustered, MappingResult)
+        self.assertIsInstance(clustered.space, Space)
+        self.assertEqual(clustered.mapping, "clustered_space")
+        self.assertEqual(clustered.strategy, "kmedoids")
+        self.assertEqual(clustered.representation, "metric_space")
+        self.assertEqual(clustered.source_record_count, 5)
+        self.assertEqual(clustered.target_record_count, 2)
+        self.assertEqual(clustered.source_record_ids, (1, 3))
+        self.assertEqual(clustered.source_records, ((0, 1, 2), (3, 4)))
+        self.assertEqual(clustered.representative_records, (1, 3))
+        self.assertFalse(clustered.inverse_supported)
+        self.assertEqual(
+            clustered.space.records[0],
+            mappings.ClusterRecord(label=0, representative=1, members=(0, 1, 2)),
+        )
+        self.assertEqual(clustered.space.records[1].members, (3, 4))
+        self.assertEqual(clustered.space.distance(0, 1), group_space.distance(1, 3))
+        mapping = mappings.make_clustered_space_mapping(groups)
+        model = mappings.fit(mapping, group_space)
+        self.assertFalse(model.inverse_supported())
+        self.assertEqual(
+            mappings.transform(model, group_space).source_records,
+            clustered.source_records,
+        )
+        id_space = Space([0, 1, 10], metric=lambda lhs, rhs: abs(lhs - rhs), ids=["a", "b", "c"])
+        id_clustered = mappings.clustered_space(id_space, id_space.groups(KMedoids(groups=2)))
+        self.assertEqual(id_clustered.source_records, (("a", "b"), ("c",)))
+        self.assertEqual(id_clustered.representative_records, ("a", "c"))
+
         density_groups = group_space.groups(DBSCAN(radius=1, min_points=2))
         self.assertIsInstance(density_groups, ClusteringResult)
         self.assertEqual(density_groups.assignments, (0, 0, 0, 1, 1))
@@ -620,6 +654,11 @@ class RevivalApiTest(unittest.TestCase):
             group_space.groups(KMedoids(groups=2), count=2)
 
         outlier_space = Space([0, 1, 10, 11, 30], metric=lambda lhs, rhs: abs(lhs - rhs))
+        noise_groups = outlier_space.groups(DBSCAN(radius=2, min_points=2))
+        noise_clustered = mappings.clustered_space(outlier_space, noise_groups)
+        self.assertEqual(noise_clustered.source_records, ((0, 1), (2, 3)))
+        self.assertEqual(noise_clustered.representative_records, (0, 2))
+        self.assertEqual(noise_clustered.target_record_count, 2)
         outliers = outlier_space.outliers(DBSCAN(radius=2, min_points=2))
         self.assertIsInstance(outliers, OutlierResult)
         self.assertEqual(outliers.outliers, (Outlier(record_id=4, score=19),))
