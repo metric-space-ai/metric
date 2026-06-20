@@ -1368,6 +1368,17 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(knn_graph.metadata.symmetrization, "none")
         self.assertEqual(knn_graph.metadata.normalization, "none")
         self.assertEqual(knn_graph.metadata.tie_break, "distance_then_target_index")
+        self.assertEqual(knn_graph.metadata.to_dict()["strategy"], "exact_knn")
+        self.assertEqual(knn_graph.to_dict()["metadata"]["edge_count"], len(knn_graph.edges))
+        np.testing.assert_array_equal(knn_graph.to_numpy(), np.asarray(knn_graph.edges, dtype=object))
+        try:
+            graph_frame = knn_graph.to_pandas()
+        except exceptions.OptionalDependencyError:
+            graph_frame = None
+        if graph_frame is not None:
+            self.assertEqual(graph_frame.loc[0, "source_record_id"], 0)
+            self.assertEqual(graph_frame.loc[0, "target_record_id"], 3)
+            self.assertEqual(graph_frame.loc[0, "strategy"], "exact_knn")
 
         wide_knn_graph = exact_knn_graph(records, cumulative_transport_distance, 2)
         pruned_graph = prune_graph_out_degree(wide_knn_graph, max_out_degree=1)
@@ -1395,6 +1406,16 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(degree_diagnostics.max_degree, 3)
         self.assertAlmostEqual(degree_diagnostics.average_degree, 2.0)
         self.assertEqual(degree_diagnostics.degree_policy, "directed_in_out")
+        self.assertEqual(degree_diagnostics.to_dict()["degrees"], (2, 2, 1, 3, 2))
+        np.testing.assert_array_equal(degree_diagnostics.to_numpy(), np.asarray([2, 2, 1, 3, 2]))
+        try:
+            degree_frame = degree_diagnostics.to_pandas()
+        except exceptions.OptionalDependencyError:
+            degree_frame = None
+        if degree_frame is not None:
+            self.assertEqual(degree_frame.loc[3, "record_id"], 3)
+            self.assertEqual(degree_frame.loc[3, "degree"], 3)
+            self.assertEqual(degree_frame.loc[3, "in_degree"], 2)
 
         connectivity_diagnostics = graph_connectivity_diagnostics(knn_graph)
         self.assertIsInstance(connectivity_diagnostics, GraphConnectivityDiagnostics)
@@ -1407,6 +1428,15 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(connectivity_diagnostics.largest_component_size, 5)
         self.assertTrue(connectivity_diagnostics.connected)
         self.assertEqual(connectivity_diagnostics.connectivity_policy, "weak_undirected_reachability")
+        self.assertEqual(connectivity_diagnostics.to_dict()["component_count"], 1)
+        np.testing.assert_array_equal(connectivity_diagnostics.to_numpy(), np.asarray([0, 0, 0, 0, 0]))
+        try:
+            connectivity_frame = connectivity_diagnostics.to_pandas()
+        except exceptions.OptionalDependencyError:
+            connectivity_frame = None
+        if connectivity_frame is not None:
+            self.assertEqual(connectivity_frame.loc[2, "component_label"], 0)
+            self.assertEqual(connectivity_frame.loc[2, "connectivity_policy"], "weak_undirected_reachability")
 
         union_graph = symmetrize_graph(knn_graph, policy="union", weighting="minimum_distance")
         self.assertEqual(
@@ -1454,6 +1484,15 @@ class RevivalApiTest(unittest.TestCase):
         self.assertAlmostEqual(undirected_stretch.max_stretch, 1.0)
         self.assertAlmostEqual(undirected_stretch.average_stretch, 1.0)
         self.assertEqual(undirected_stretch.stretch_policy, "undirected_shortest_path")
+        self.assertEqual(undirected_stretch.to_dict()["reachable_pair_count"], 10)
+        np.testing.assert_allclose(undirected_stretch.to_numpy(), np.asarray([10, 10, 0, 0, 1.0, 1.0]))
+        try:
+            stretch_frame = undirected_stretch.to_pandas()
+        except exceptions.OptionalDependencyError:
+            stretch_frame = None
+        if stretch_frame is not None:
+            self.assertEqual(stretch_frame.loc[0, "stretch_policy"], "undirected_shortest_path")
+            self.assertEqual(stretch_frame.loc[0, "reachable_pair_count"], 10)
 
         mutual_graph = symmetrize_graph(knn_graph, policy="mutual", weighting="minimum_distance")
         self.assertEqual(list(mutual_graph.edges), [(0, 3, 0.5)])

@@ -59,6 +59,25 @@ class GraphConstructionMetadata:
     max_out_degree: object = None
     sparsification: str = ""
 
+    def to_dict(self):
+        return {
+            "strategy": self.strategy,
+            "record_count": self.record_count,
+            "edge_count": self.edge_count,
+            "directed": self.directed,
+            "self_loops": self.self_loops,
+            "exact": self.exact,
+            "k": self.k,
+            "radius": self.radius,
+            "edge_payload": self.edge_payload,
+            "weighting": self.weighting,
+            "symmetrization": self.symmetrization,
+            "normalization": self.normalization,
+            "tie_break": self.tie_break,
+            "max_out_degree": self.max_out_degree,
+            "sparsification": self.sparsification,
+        }
+
 
 @dataclass(frozen=True)
 class GraphConstructionResult:
@@ -66,6 +85,42 @@ class GraphConstructionResult:
 
     edges: tuple
     metadata: GraphConstructionMetadata
+
+    def to_dict(self):
+        return {
+            "edges": self.edges,
+            "metadata": self.metadata.to_dict(),
+        }
+
+    def to_numpy(self):
+        return np.asarray(self.edges, dtype=object)
+
+    def to_pandas(self):
+        try:
+            import pandas as pd
+        except ModuleNotFoundError:
+            raise OptionalDependencyError(
+                "GraphConstructionResult.to_pandas() requires pandas. Install pandas or use to_dict()."
+            ) from None
+
+        metadata = self.metadata.to_dict()
+        rows = []
+        for source_record_id, target_record_id, distance in self.edges:
+            rows.append(
+                {
+                    "source_record_id": source_record_id,
+                    "target_record_id": target_record_id,
+                    "distance": distance,
+                    "strategy": metadata["strategy"],
+                    "directed": metadata["directed"],
+                    "edge_payload": metadata["edge_payload"],
+                    "weighting": metadata["weighting"],
+                    "symmetrization": metadata["symmetrization"],
+                    "normalization": metadata["normalization"],
+                    "sparsification": metadata["sparsification"],
+                }
+            )
+        return pd.DataFrame.from_records(rows)
 
 
 @dataclass(frozen=True)
@@ -83,6 +138,45 @@ class GraphDegreeDiagnostics:
     average_degree: float
     degree_policy: str
 
+    def to_dict(self):
+        return {
+            "record_count": self.record_count,
+            "edge_count": self.edge_count,
+            "directed": self.directed,
+            "degrees": self.degrees,
+            "out_degrees": self.out_degrees,
+            "in_degrees": self.in_degrees,
+            "isolated_count": self.isolated_count,
+            "max_degree": self.max_degree,
+            "average_degree": self.average_degree,
+            "degree_policy": self.degree_policy,
+        }
+
+    def to_numpy(self):
+        return np.asarray(self.degrees, dtype=int)
+
+    def to_pandas(self):
+        try:
+            import pandas as pd
+        except ModuleNotFoundError:
+            raise OptionalDependencyError(
+                "GraphDegreeDiagnostics.to_pandas() requires pandas. Install pandas or use to_dict()."
+            ) from None
+
+        rows = []
+        for record_id, degree in enumerate(self.degrees):
+            rows.append(
+                {
+                    "record_id": record_id,
+                    "degree": degree,
+                    "out_degree": self.out_degrees[record_id],
+                    "in_degree": self.in_degrees[record_id],
+                    "directed": self.directed,
+                    "degree_policy": self.degree_policy,
+                }
+            )
+        return pd.DataFrame.from_records(rows)
+
 
 @dataclass(frozen=True)
 class GraphConnectivityDiagnostics:
@@ -97,6 +191,43 @@ class GraphConnectivityDiagnostics:
     largest_component_size: int
     connected: bool
     connectivity_policy: str
+
+    def to_dict(self):
+        return {
+            "record_count": self.record_count,
+            "edge_count": self.edge_count,
+            "directed": self.directed,
+            "component_labels": self.component_labels,
+            "component_count": self.component_count,
+            "isolated_count": self.isolated_count,
+            "largest_component_size": self.largest_component_size,
+            "connected": self.connected,
+            "connectivity_policy": self.connectivity_policy,
+        }
+
+    def to_numpy(self):
+        return np.asarray(self.component_labels, dtype=int)
+
+    def to_pandas(self):
+        try:
+            import pandas as pd
+        except ModuleNotFoundError:
+            raise OptionalDependencyError(
+                "GraphConnectivityDiagnostics.to_pandas() requires pandas. Install pandas or use to_dict()."
+            ) from None
+
+        rows = []
+        for record_id, component_label in enumerate(self.component_labels):
+            rows.append(
+                {
+                    "record_id": record_id,
+                    "component_label": component_label,
+                    "directed": self.directed,
+                    "connected": self.connected,
+                    "connectivity_policy": self.connectivity_policy,
+                }
+            )
+        return pd.DataFrame.from_records(rows)
 
 
 @dataclass(frozen=True)
@@ -113,6 +244,43 @@ class GraphStretchDiagnostics:
     max_stretch: float
     average_stretch: float
     stretch_policy: str
+
+    def to_dict(self):
+        return {
+            "record_count": self.record_count,
+            "edge_count": self.edge_count,
+            "directed": self.directed,
+            "pair_count": self.pair_count,
+            "reachable_pair_count": self.reachable_pair_count,
+            "unreachable_pair_count": self.unreachable_pair_count,
+            "zero_metric_pair_count": self.zero_metric_pair_count,
+            "max_stretch": self.max_stretch,
+            "average_stretch": self.average_stretch,
+            "stretch_policy": self.stretch_policy,
+        }
+
+    def to_numpy(self):
+        return np.asarray(
+            [
+                self.pair_count,
+                self.reachable_pair_count,
+                self.unreachable_pair_count,
+                self.zero_metric_pair_count,
+                self.max_stretch,
+                self.average_stretch,
+            ],
+            dtype=float,
+        )
+
+    def to_pandas(self):
+        try:
+            import pandas as pd
+        except ModuleNotFoundError:
+            raise OptionalDependencyError(
+                "GraphStretchDiagnostics.to_pandas() requires pandas. Install pandas or use to_dict()."
+            ) from None
+
+        return pd.DataFrame.from_records([self.to_dict()])
 
 
 @dataclass(frozen=True)
