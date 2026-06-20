@@ -35,6 +35,9 @@ target_link_libraries(engine_representations_smoke PRIVATE ${METRIC_TARGET_NAME}
 add_executable(engine_nearest_operators_smoke engine_nearest_operators_smoke.cpp)
 target_link_libraries(engine_nearest_operators_smoke PRIVATE ${METRIC_TARGET_NAME})
 
+add_executable(engine_sparsify_operator_smoke engine_sparsify_operator_smoke.cpp)
+target_link_libraries(engine_sparsify_operator_smoke PRIVATE ${METRIC_TARGET_NAME})
+
 add_executable(engine_clustering_operators_smoke engine_clustering_operators_smoke.cpp)
 target_link_libraries(engine_clustering_operators_smoke PRIVATE ${METRIC_TARGET_NAME})
 
@@ -110,6 +113,7 @@ add_test(NAME engine_core_smoke COMMAND engine_core_smoke)
 add_test(NAME engine_compat_smoke COMMAND engine_compat_smoke)
 add_test(NAME engine_representations_smoke COMMAND engine_representations_smoke)
 add_test(NAME engine_nearest_operators_smoke COMMAND engine_nearest_operators_smoke)
+add_test(NAME engine_sparsify_operator_smoke COMMAND engine_sparsify_operator_smoke)
 add_test(NAME engine_clustering_operators_smoke COMMAND engine_clustering_operators_smoke)
 add_test(NAME engine_dbscan_operator_smoke COMMAND engine_dbscan_operator_smoke)
 add_test(NAME engine_intent_strategy_smoke COMMAND engine_intent_strategy_smoke)

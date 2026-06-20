@@ -2,7 +2,13 @@
 
 ## [Unreleased]
 
-No unreleased changes yet.
+### API Changes
+
+- Add the dedicated C++ `<metric/operators/sparsify.hpp>` include path for exact graph construction, graph diagnostics, graph symmetrization, and out-degree pruning helpers.
+
+### Documentation and Examples
+
+- Add a C++ include-smoke test and docs for the engine graph sparsification operator header.
 
 ## [0.3.3] - 2026-06-20
 
