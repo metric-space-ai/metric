@@ -11,6 +11,7 @@ from metric import compat, core, exceptions, intent, mappings, representations, 
 from metric.exceptions import (
     AmbiguousIntentError,
     IncompatibleSpaceError,
+    MetricContractError,
     MetricError,
     MissingMetricError,
     StaleRepresentationError,
@@ -487,6 +488,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(len(space), len(self.records))
         self.assertEqual(space.ids, [0, 1, 2, 3])
         self.assertEqual(space.version(), 0)
+        self.assertEqual(space.validate, "sample")
+        self.assertEqual(space.cache, CachePolicy("auto"))
         self.assertIn("FiniteMetricSpace(size=4, metric=", repr(space))
         self.assertIn("records=str, name=None", repr(space))
         named_space = Space(self.records, self.metric, name="words")
@@ -569,6 +572,57 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIsInstance(CallableMetric(), Metric)
         with self.assertRaisesRegex(MissingMetricError, "explicit metric"):
             Space(self.records)
+
+    def test_space_constructor_runtime_options_are_explicit(self):
+        def numeric_distance(lhs, rhs):
+            return abs(lhs["value"] - rhs["value"])
+
+        records = [{"value": 0}, {"value": 2}]
+
+        shared = Space(records, metric=numeric_distance, validate="none", copy=False, cache="none")
+        copied = Space(records, metric=numeric_distance, validate="none", copy=True, cache="none")
+
+        self.assertIs(shared.records[0], records[0])
+        self.assertIsNot(copied.records[0], records[0])
+        self.assertEqual(copied.distance(0, 1), 2)
+        self.assertEqual(copied.cache, CachePolicy("none"))
+
+        uncached_calls = []
+
+        def uncached_distance(lhs, rhs):
+            uncached_calls.append((lhs, rhs))
+            return abs(lhs - rhs)
+
+        uncached = Space([0, 2], metric=uncached_distance, validate="none", cache="none")
+        self.assertEqual(uncached_calls, [])
+        self.assertEqual(uncached.distance(0, 1), 2)
+        self.assertEqual(uncached.distance(0, 1), 2)
+        self.assertEqual(len(uncached_calls), 2)
+
+        lazy_calls = []
+
+        def lazy_distance(lhs, rhs):
+            lazy_calls.append((lhs, rhs))
+            return abs(lhs - rhs)
+
+        lazy_space = Space([0, 2], metric=lazy_distance, validate="none", cache=CachePolicy("lazy"))
+        self.assertEqual(lazy_space.cache, CachePolicy("lazy"))
+        self.assertEqual(lazy_space.distance(0, 1), 2)
+        self.assertEqual(lazy_space.distance(0, 1), 2)
+        self.assertEqual(lazy_calls, [(0, 2)])
+
+        def negative_tail(lhs, rhs):
+            return -1 if lhs == rhs == 3 else 0
+
+        Space([0, 1, 2, 3], metric=negative_tail, validate="sample", cache="none")
+        with self.assertRaisesRegex(MetricContractError, "non-negative"):
+            Space([0, 1, 2, 3], metric=negative_tail, validate="strict", cache="none")
+        with self.assertRaisesRegex(ValueError, "validate must be one of"):
+            Space(records, metric=numeric_distance, validate="full")
+        with self.assertRaisesRegex(TypeError, "copy must be a bool"):
+            Space(records, metric=numeric_distance, copy="yes")
+        with self.assertRaisesRegex(StrategyParameterError, "cache mode"):
+            Space(records, metric=numeric_distance, cache="forever")
 
     def test_space_from_dataframe_uses_metric_and_id_column(self):
         class DataFrameLike:
