@@ -9,6 +9,7 @@
 ### Documentation and Examples
 
 - Add a C++ include-smoke test and docs for the engine graph sparsification operator header.
+- Document Python `KOC` and `DSPCC` strategy objects consistently as roadmap-only strategies in the API stability docs.
 
 ## [0.3.3] - 2026-06-20
 
