@@ -1164,6 +1164,21 @@ class RevivalApiTest(unittest.TestCase):
         if dependency_frame is not None:
             self.assertEqual(dependency_frame.loc[0, "value"], dependency.value)
         self.assertEqual(process_space.correlate(quality_space), dependency)
+        raw_dependency = process_space.compare(quality_space.records, other_metric=quality_space.metric)
+        self.assertAlmostEqual(raw_dependency.value, dependency.value)
+        self.assertEqual(raw_dependency.left_representation, "metric_space")
+        self.assertEqual(raw_dependency.right_representation, "records")
+        self.assertEqual(raw_dependency.matched_ids, tuple(process_space.ids))
+        self.assertAlmostEqual(
+            process_space.correlate(quality_space.records, other_metric=quality_space.metric).value,
+            dependency.value,
+        )
+        with self.assertRaisesRegex(TypeError, "other_metric"):
+            process_space.compare(quality_space.records)
+        with self.assertRaisesRegex(TypeError, "only accepted"):
+            process_space.compare(quality_space, other_metric=quality_space.metric)
+        with self.assertRaisesRegex(ValueError, "align='ids'"):
+            process_space.compare(quality_space.records, other_metric=quality_space.metric, align="ids")
         matrix_dependency = process_space.compare(
             quality_space,
             representation=process_space.to_matrix(),

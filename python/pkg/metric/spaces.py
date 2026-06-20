@@ -722,14 +722,23 @@ class Space(FiniteMetricSpace):
             intent=intent,
         )
 
-    def _compare_records(self, other, align):
+    def _compare_records(self, other, align, other_metric=None):
+        if not isinstance(other, FiniteMetricSpace):
+            if other_metric is None:
+                raise TypeError("other must be a metric.Space or pass other_metric= for raw records")
+            if align != "position":
+                raise ValueError("align='ids' requires other to be a metric.Space")
+            return self.records, list(other), other_metric, tuple(self.ids), (), ()
+
+        if other_metric is not None:
+            raise TypeError("other_metric is only accepted when other is a raw record set")
         if align == "position":
-            return self.records, other.records, tuple(self.ids), (), ()
+            return self.records, other.records, other.metric, tuple(self.ids), (), ()
         if align != "ids":
             raise ValueError("align must be 'position' or 'ids'")
         if set(self.ids) != set(other.ids):
             raise IncompatibleSpaceError("align='ids' requires both spaces to have the same ids")
-        return self.records, [other.record(record_id) for record_id in self.ids], tuple(self.ids), (), ()
+        return self.records, [other.record(record_id) for record_id in self.ids], other.metric, tuple(self.ids), (), ()
 
     def compare(
         self,
@@ -737,6 +746,7 @@ class Space(FiniteMetricSpace):
         strategy=None,
         *,
         align="position",
+        other_metric=None,
         representation=None,
         other_representation=None,
         runtime=None,
@@ -747,18 +757,23 @@ class Space(FiniteMetricSpace):
         (
             left_records,
             right_records,
+            right_metric,
             matched_ids,
             dropped_left_ids,
             dropped_right_ids,
-        ) = self._compare_records(other, align)
+        ) = self._compare_records(other, align, other_metric)
         return compare_spaces(
             left_records,
             self.metric,
             right_records,
-            other.metric,
+            right_metric,
             strategy,
             left_representation=self._representation_name(representation),
-            right_representation=self._representation_name(other_representation),
+            right_representation=(
+                self._representation_name(other_representation)
+                if other_representation is not None or isinstance(other, FiniteMetricSpace)
+                else "records"
+            ),
             align=align,
             matched_ids=matched_ids,
             dropped_left_ids=dropped_left_ids,
@@ -771,6 +786,7 @@ class Space(FiniteMetricSpace):
         strategy=None,
         *,
         align="position",
+        other_metric=None,
         representation=None,
         other_representation=None,
         runtime=None,
@@ -779,6 +795,7 @@ class Space(FiniteMetricSpace):
             other,
             strategy=strategy,
             align=align,
+            other_metric=other_metric,
             representation=representation,
             other_representation=other_representation,
             runtime=runtime,
