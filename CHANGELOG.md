@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+No unreleased changes yet.
+
+## [0.3.3] - 2026-06-20
+
 ### API Changes
 
 - Add the first C++ engine core skeleton with `metric::MetricSpace`, `RecordId`, `Neighbor`, metric traits, engine concept traits, and `make_space`.
@@ -79,6 +83,15 @@
 - Add engine documentation chapters for metric spaces, representations, intents, strategies, operators, mappings, runtime policies, and migration.
 - Update the README quickstart to show the C++ engine path, strategy selection, representation swap, and mapping-derived spaces.
 - Update API and stability docs for the promoted C++ and Python outlier intent surface.
+
+### Packaging and Build
+
+- Prepare Python and C++ package metadata for `0.3.3`.
+- Run PyPI publish dry-run `27862071672` on current `master` with `publish=false`; the source distribution and CPython 3.10 through 3.14 wheels for Linux, macOS, and Windows were built and checked successfully.
+
+### Known Limitations
+
+- PyPI publishing for `metric-space` remains blocked until repository PyPI credentials are replaced or PyPI Trusted Publishing is configured for `metric-space-ai/metric`.
 
 ## [0.3.2] - 2026-06-19
 
