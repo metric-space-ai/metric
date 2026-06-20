@@ -10,7 +10,7 @@ Algorithm names belong at this layer. A user asks to find groups; `k_medoids` or
 
 ## C++ Strategies
 
-The current C++ strategy objects include:
+The current promoted C++ strategy objects include:
 
 - `metric::strategies::brute_force`
 - `metric::strategies::matrix_cache`
@@ -22,6 +22,16 @@ The current C++ strategy objects include:
 - `metric::strategies::farthest_first`
 - `metric::strategies::mgc`
 - `metric::strategies::pcfa`
+
+The current C++ roadmap strategy objects include:
+
+- `metric::strategies::som`
+- `metric::strategies::koc`
+- `metric::strategies::dspcc`
+
+They validate strategy parameters and raise clear `std::invalid_argument`
+messages from the engine reduction intent until deterministic mapping
+contracts, diagnostics, and CI-backed examples are promoted.
 
 ## Python Strategies
 
@@ -35,7 +45,7 @@ The current Python strategy objects include:
 - `DistanceProfileCorrelation`
 
 `MDS` and `ClassicMDS` execute the promoted classical-MDS embedding path.
-`DiffusionEmbedding`, `PCFA`, `SOM`, and `PhateAE` are also importable from
+`DiffusionEmbedding`, `PCFA`, `SOM`, `KOC`, `DSPCC`, and `PhateAE` are also importable from
 `metric.strategies` as roadmap vocabulary, but Python intent methods raise
 `StrategyUnavailableError` for those strategies until deterministic fixtures,
 diagnostics, and CI-backed result contracts are promoted.

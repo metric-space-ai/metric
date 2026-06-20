@@ -22,6 +22,44 @@ struct pcfa {
 	std::size_t components{};
 };
 
+struct som {
+	som(std::size_t width, std::size_t height)
+		: width(width)
+		, height(height)
+	{
+		if (width == 0 || height == 0) {
+			throw std::invalid_argument("SOM grid dimensions must be positive");
+		}
+	}
+
+	std::size_t width{};
+	std::size_t height{};
+};
+
+struct koc {
+	explicit koc(std::size_t clusters)
+		: clusters(clusters)
+	{
+		if (clusters == 0) {
+			throw std::invalid_argument("KOC cluster count must be positive");
+		}
+	}
+
+	std::size_t clusters{};
+};
+
+struct dspcc {
+	explicit dspcc(std::size_t components)
+		: components(components)
+	{
+		if (components == 0) {
+			throw std::invalid_argument("DSPCC component count must be positive");
+		}
+	}
+
+	std::size_t components{};
+};
+
 } // namespace metric::strategies
 
 #endif
