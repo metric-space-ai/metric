@@ -7,7 +7,7 @@ from typing import ClassVar
 
 import numpy as np
 
-from metric.exceptions import StrategyUnavailableError, UnsupportedOperationError
+from metric.exceptions import OptionalDependencyError, StrategyUnavailableError, UnsupportedOperationError
 from metric.spaces import FiniteMetricSpace
 from metric.strategies import (
     ClassicMDS,
@@ -127,6 +127,14 @@ class Neighbor:
     def as_tuple(self):
         return (self.id, self.distance)
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "record": self.record,
+            "distance": self.distance,
+            "rank": self.rank,
+        }
+
     def __iter__(self):
         return iter(self.as_tuple())
 
@@ -195,6 +203,47 @@ class NeighborResult:
         if self.rows:
             return [[neighbor.as_tuple() for neighbor in row] for row in self.rows]
         return [neighbor.as_tuple() for neighbor in self.neighbors]
+
+    def to_dict(self):
+        return {
+            "query": self.query,
+            "query_id": self.query_id,
+            "neighbors": [neighbor.to_dict() for neighbor in self.neighbors],
+            "rows": [
+                [neighbor.to_dict() for neighbor in row]
+                for row in self.rows
+            ],
+            "distances": self.distances,
+            "exact": self.exact,
+            "strategy": self.strategy,
+            "representation": self.representation,
+            "diagnostics": self.diagnostics,
+        }
+
+    def to_numpy(self):
+        try:
+            return np.asarray(self.distances, dtype=float)
+        except ValueError:
+            return np.asarray(self.distances, dtype=object)
+
+    def to_pandas(self):
+        try:
+            import pandas as pd
+        except ModuleNotFoundError:
+            raise OptionalDependencyError(
+                "NeighborResult.to_pandas() requires pandas. Install pandas or use to_dict()."
+            ) from None
+
+        records = []
+        if self.rows:
+            for source_id, row in enumerate(self.rows):
+                for neighbor in row:
+                    record = neighbor.to_dict()
+                    record["source_id"] = source_id
+                    records.append(record)
+        else:
+            records = [neighbor.to_dict() for neighbor in self.neighbors]
+        return pd.DataFrame.from_records(records)
 
 
 @dataclass(frozen=True)

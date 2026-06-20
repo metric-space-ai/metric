@@ -277,6 +277,8 @@ same exact metric path as `Space.within_radius(...)`. Queryless
 `Space.neighbors(count=...)` stores one row of `Neighbor` objects per source
 record in `result.rows`. The older `k` name remains a compatibility alias for
 count-based nearest-neighbor calls, but new examples should prefer `count`.
+Use `NeighborResult.to_dict()` for structured Python data, `to_numpy()` for the
+numeric distance array, and `to_pandas()` when pandas is installed.
 
 `find_groups` returns a `ClusteringResult` with source-record assignments, medoid record IDs, cluster sizes, optional DBSCAN core/noise records, iteration metadata, algorithm metadata, and representation metadata. `Space.groups(...)` exposes the same result from the `Space` facade. Passing an integer group count selects deterministic `KMedoids`; passing `KMedoids` or `DBSCAN` makes the strategy explicit. Pass a fresh `representation=` to record representation metadata; stale representations raise `metric.StaleRepresentationError`. Passing `runtime=RuntimePolicy(cache="materialized")` records `representation == "matrix"` when no explicit representation override is supplied.
 
