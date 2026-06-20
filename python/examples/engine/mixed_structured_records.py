@@ -126,9 +126,9 @@ def main():
     space = Space(records, metric=mixed_record_distance, name="mixed_structured_records")
     matrix = space.to_matrix()
     neighbors = space.neighbors(query, count=2)
-    assert [names[index] for index, _distance in neighbors] == ["warmup-drift", "warmup-alert"]
+    assert [names[neighbor.id] for neighbor in neighbors.neighbors] == ["warmup-drift", "warmup-alert"]
 
-    explanation = field_contributions(query, records[neighbors[0][0]])
+    explanation = field_contributions(query, neighbors.neighbors[0].record)
     assert explanation["status"] == 0.0
     assert explanation["curve"] < 0.01
 
@@ -146,7 +146,7 @@ def main():
     diagnostics = space.runtime_diagnostics(representation=matrix, intent="mixed_record_demo")
     assert diagnostics.representation == "matrix"
 
-    print("nearest mixed records =", names[neighbors[0][0]], names[neighbors[1][0]])
+    print("nearest mixed records =", names[neighbors.neighbors[0].id], names[neighbors.neighbors[1].id])
     print("mixed record groups =", groups.cluster_count)
     print("mixed record outlier =", names[outliers.outliers[0].record_id])
 

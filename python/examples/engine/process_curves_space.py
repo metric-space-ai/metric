@@ -36,9 +36,9 @@ def main():
     query = (0, 1, 1, 1, 2, 4)
 
     space = Space(records, aligned_curve_distance)
-    nearest_id, nearest_distance = space.nearest(query)
-    assert names[nearest_id] == "baseline"
-    assert nearest_distance == 1.0
+    nearest = space.nearest(query)
+    assert names[nearest.id] == "baseline"
+    assert nearest.distance == 1.0
 
     representatives = space.representatives(2)
     assert representatives.strategy == "farthest_first"
@@ -48,7 +48,7 @@ def main():
     assert graph.metadata.strategy == "exact_knn"
     assert graph.metadata.record_count == len(records)
 
-    print("nearest process curve =", names[nearest_id], nearest_distance)
+    print("nearest process curve =", names[nearest.id], nearest.distance)
     print("process curve graph edges =", graph.metadata.edge_count)
 
 

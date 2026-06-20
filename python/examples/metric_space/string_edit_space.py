@@ -7,8 +7,8 @@ def main():
 
     print("distance(cat, cot) =", space(0, 1))
 
-    for record_id, distance in space.neighbors("cut", 2):
-        print(f"{records[record_id]}: {distance}")
+    for neighbor in space.neighbors("cut", 2).neighbors:
+        print(f"{neighbor.record}: {neighbor.distance}")
 
 
 if __name__ == "__main__":

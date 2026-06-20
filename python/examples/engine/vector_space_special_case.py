@@ -48,16 +48,16 @@ def main():
     assert round(matrix.distance(0, 1), 12) == round(sqrt(0.13), 12)
 
     implicit_neighbors = space.neighbors(query, count=3)
-    assert names[implicit_neighbors[0][0]] == "alpha-0"
+    assert names[implicit_neighbors.neighbors[0].id] == "alpha-0"
 
     tree = space.to_tree()
-    tree_neighbors = tree.neighbors(query, count=3)
-    assert tree_neighbors == implicit_neighbors
+    tree_neighbors = space.neighbors(query, count=3, representation=tree)
+    assert tree_neighbors.as_tuples() == implicit_neighbors.as_tuples()
 
     graph = space.to_graph(count=2)
-    graph_neighbors = graph.neighbors(0)
-    assert len(graph_neighbors) == 2
-    assert names[graph_neighbors[0][0]].startswith("alpha")
+    graph_neighbors = space.neighbors(count=2, representation=graph)
+    assert len(graph_neighbors.rows[0]) == 2
+    assert names[graph_neighbors.rows[0][0].id].startswith("alpha")
 
     groups = space.groups(strategy=KMedoids(groups=3), representation=matrix)
     assert groups.algorithm == "kmedoids"
@@ -97,8 +97,8 @@ def main():
     print("metric_law =", space.metadata["metric_law"])
     print("vector dimension metadata =", space.metadata["dimensions"])
     print("available representations =", ",".join(space.metadata["representations"]))
-    print("nearest vector =", names[implicit_neighbors[0][0]], round(implicit_neighbors[0][1], 3))
-    print("indexed nearest =", names[tree_neighbors[0][0]], "via", tree.representation)
+    print("nearest vector =", implicit_neighbors.neighbors[0].record, round(implicit_neighbors.neighbors[0].distance, 3))
+    print("indexed nearest =", tree_neighbors.neighbors[0].record, "via", tree.representation)
     print("runtime policy =", exact_diagnostics.policy_name, "via", exact_diagnostics.representation)
     print("matrix cache reuse =", groups.representation, outliers.representation)
     print("vector groups =", groups.cluster_count)
