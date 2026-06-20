@@ -62,6 +62,7 @@ The current local tree implements the first revival slice:
 - Python engine-style Space map intent for deterministic transforms into derived metric spaces
 - Python map facade accepts `transform=` and reports ambiguous or unavailable mapping forms deterministically
 - Python map facade accepts fresh explicit representations and records representation metadata
+- Python `MappingResult` exposes structured conversion helpers for lineage metadata, source IDs, and optional pandas rows
 - Python clustered-space mapping facade derives cluster-level Spaces from clustering results with grouped lineage
 - Python strategy facade exports `MDS`, `DiffusionEmbedding`, `PCFA`, `SOM`, `KOC`, `DSPCC`, and `PhateAE`, with `MDS` executing the promoted classical-MDS path and roadmap strategies raising explicit unavailable errors
 - Python top-level package keeps algorithm strategy classes under `metric.strategies`

@@ -498,6 +498,48 @@ class MappingResult:
     def inverse_transform(self, *args, **kwargs):
         _raise_unsupported_inverse(self)
 
+    def to_dict(self):
+        return {
+            "source_record_ids": self.source_record_ids,
+            "source_record_count": self.source_record_count,
+            "target_record_count": self.target_record_count,
+            "exact": self.exact,
+            "operator_name": self.operator_name,
+            "mapping": self.mapping,
+            "strategy": self.strategy,
+            "representation": self.representation,
+            "inverse_supported": self.inverse_supported,
+            "source_records": self.source_records,
+            "representative_records": self.representative_records,
+        }
+
+    def to_numpy(self):
+        return np.asarray(self.source_record_ids, dtype=object)
+
+    def to_pandas(self):
+        try:
+            import pandas as pd
+        except ModuleNotFoundError:
+            raise OptionalDependencyError(
+                "MappingResult.to_pandas() requires pandas. Install pandas or use to_dict()."
+            ) from None
+
+        rows = []
+        for target_record_id, source_record_id in enumerate(self.source_record_ids):
+            row = {
+                "target_record_id": target_record_id,
+                "source_record_id": source_record_id,
+                "mapping": self.mapping,
+                "strategy": self.strategy,
+                "representation": self.representation,
+            }
+            if self.source_records:
+                row["source_records"] = self.source_records[target_record_id]
+            if self.representative_records:
+                row["representative_record"] = self.representative_records[target_record_id]
+            rows.append(row)
+        return pd.DataFrame.from_records(rows)
+
 
 @dataclass(frozen=True)
 class StructureDescription:
