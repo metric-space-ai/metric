@@ -33,13 +33,17 @@ The record type is not required to be a vector. A metric can operate on strings,
 
 ```python
 from metric import Edit, Space
+from metric.core import make_space
 
 records = ["metric", "metrics", "matrix", "tree"]
 space = Space(records, Edit())
+same_space = make_space(records, Edit())
 
 distance = space.distance(0, 1)
 matrix = space.to_matrix()
 ```
+
+`metric.core` is the Python namespace for the central engine building blocks: `Metric`, `Space`, `FiniteMetricSpace`, runtime policy metadata, and core metric-space errors. The top-level `metric.Space` import remains the shortest path for examples, while `metric.core` gives contributors a stable namespace that mirrors the engine model.
 
 `to_matrix()` makes materialization explicit in Python. It returns an independent finite matrix-space view with the same records and metric.
 
