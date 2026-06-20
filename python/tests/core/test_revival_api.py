@@ -1042,6 +1042,22 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(embedding.source_space.records, [0, 1, 2, 3, 4])
         self.assertAlmostEqual(embedding.embedded_space.distance(0, 4), 4.0)
         self.assertTrue(np.isfinite(embedding.coordinates).all())
+        self.assertEqual(
+            embedding.model.to_dict(),
+            {"method": "classic_mds", "dimensions": 1, "source_record_ids": (0, 1, 2, 3, 4)},
+        )
+        self.assertEqual(embedding.diagnostics.to_dict()["neighbor_k"], 2)
+        embedding_record = embedding.to_dict()
+        self.assertEqual(embedding_record["dimensions"], 1)
+        self.assertEqual(embedding_record["model"]["method"], "classic_mds")
+        np.testing.assert_allclose(embedding.to_numpy(), embedding.coordinates)
+        try:
+            embedding_frame = embedding.to_pandas()
+        except exceptions.OptionalDependencyError:
+            embedding_frame = None
+        if embedding_frame is not None:
+            self.assertEqual(embedding_frame.loc[0, "source_record_id"], 0)
+            self.assertIn("coordinate_0", embedding_frame.columns)
 
         matrix_embedding = space.embed(dimensions=1, representation=space.to_matrix())
         self.assertEqual(matrix_embedding.representation, "matrix")
