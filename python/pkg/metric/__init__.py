@@ -9,6 +9,7 @@ The revived core API is organized around explicit finite metric spaces:
 - ``metric.operators`` for small metric-space operators
 - ``metric.runtime`` for runtime policy objects
 - ``metric.mappings`` and ``metric.transforms`` for beta compatibility bridges
+- ``metric.compat`` for lazy legacy import-path discovery
 
 Legacy compiled extension names remain available when their modules are present.
 """
@@ -20,7 +21,7 @@ try:
 except ModuleNotFoundError:
     pass
 
-from . import core, exceptions, intent, mappings, metrics, operators, representations, runtime, spaces, strategies, transforms
+from . import compat, core, exceptions, intent, mappings, metrics, operators, representations, runtime, spaces, strategies, transforms
 from .exceptions import (
     AmbiguousIntentError,
     IncompatibleSpaceError,
