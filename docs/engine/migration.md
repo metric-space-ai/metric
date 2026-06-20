@@ -35,6 +35,7 @@ The following remain valid for existing code:
 - historical mapping classes
 - historical transform classes
 - Python compatibility modules under `metric.distance`, `metric.correlation`, `metric.mapping`, `metric.space`, and `metric.transform`
+- Python compatibility discovery through `metric.compat`
 
 Legacy index-based C++ spaces can be copied into the engine model explicitly when the metric object is available:
 
@@ -43,6 +44,15 @@ Legacy index-based C++ spaces can be copied into the engine model explicitly whe
 
 auto engine_space = metric::compat::to_metric_space(legacy_space, metric);
 auto id = metric::compat::record_id_from_legacy_index(0);
+```
+
+Python legacy import paths are discoverable without eagerly importing every historical extension module:
+
+```python
+from metric import compat
+
+if "mapping" in compat.available_modules():
+    legacy_mapping = compat.legacy_module("mapping")
 ```
 
 ## Migration Steps

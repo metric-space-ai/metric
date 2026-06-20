@@ -7,7 +7,7 @@ from pathlib import Path
 import metric
 import metric.distance as distance_module
 import numpy as np
-from metric import core, exceptions, intent, mappings, representations, runtime, transforms
+from metric import compat, core, exceptions, intent, mappings, representations, runtime, transforms
 from metric.exceptions import (
     AmbiguousIntentError,
     IncompatibleSpaceError,
@@ -361,6 +361,11 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("CachePolicy", metric.__all__)
         self.assertIn("RuntimeDiagnostics", metric.__all__)
         self.assertIn("runtime_diagnostics", metric.__all__)
+        self.assertIn("compat", metric.__all__)
+        self.assertEqual(compat.STABILITY, "compatibility")
+        self.assertIn("distance", compat.LEGACY_MODULES)
+        self.assertIs(compat.legacy_module("distance"), distance_module)
+        self.assertIsInstance(compat.available_modules(), tuple)
         self.assertEqual(mappings.STABILITY, "beta")
         self.assertTrue(callable(mappings.clustered_space))
         self.assertTrue(callable(mappings.make_clustered_space_mapping))
@@ -371,6 +376,9 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIsInstance(representations.matrix_space(self.records, self.metric), MatrixSpace)
         self.assertIsInstance(mappings.available(), tuple)
         self.assertIsInstance(transforms.available(), tuple)
+
+        with self.assertRaisesRegex(ValueError, "unknown legacy METRIC module"):
+            compat.legacy_module("unknown")
 
     def test_distance_compatibility_aliases_are_lazy(self):
         manhatten = object()
