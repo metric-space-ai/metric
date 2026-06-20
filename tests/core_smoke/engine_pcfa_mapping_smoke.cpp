@@ -59,6 +59,25 @@ int main()
 	assert(direct.space.size() == reduced.space.size());
 	assert(direct.source_records == reduced.source_records);
 
+	const auto intent_mapped = metric::map(space, mapping);
+	using intent_mapped_type = typename std::decay<decltype(intent_mapped)>::type;
+	static_assert(std::is_same<typename intent_mapped_type::space_type::record_type, record_type>::value,
+				  "map intent should produce the mapping adapter target record type");
+	assert(intent_mapped.mapping == "pcfa");
+	assert(intent_mapped.strategy == "pcfa");
+	assert(intent_mapped.representation == "metric_space");
+	assert(intent_mapped.inverse_supported);
+	assert(intent_mapped.source_record_count == space.size());
+	assert(intent_mapped.source_records == reduced.source_records);
+	assert(intent_mapped.space.size() == reduced.space.size());
+	assert(close(intent_mapped.space.record(intent_mapped.space.id(0))[0], -0.5));
+	assert(close(intent_mapped.space.record(intent_mapped.space.id(1))[0], 0.5));
+
+	const auto runtime_intent_mapped = metric::map(space, mapping, metric::runtime::exact());
+	assert(runtime_intent_mapped.mapping == "pcfa");
+	assert(runtime_intent_mapped.representation == "metric_space");
+	assert(runtime_intent_mapped.source_records == intent_mapped.source_records);
+
 	bool rejected_zero_components = false;
 	try {
 		(void)metric::mappings::pcfa(0);
