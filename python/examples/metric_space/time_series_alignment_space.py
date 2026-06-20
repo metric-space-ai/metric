@@ -37,17 +37,17 @@ def main():
     query = (0, 1, 1, 1, 2, 4)
 
     space = Space(records, aligned_curve_distance)
-    nearest_id, nearest_distance = space.nearest(query)
+    nearest = space.nearest(query)
     distances = pairwise_distance_matrix(records, aligned_curve_distance)
     dimension = intrinsic_dimension(records, aligned_curve_distance)
 
-    assert names[nearest_id] == "baseline"
-    assert nearest_distance == 1.0
+    assert names[nearest.id] == "baseline"
+    assert nearest.distance == 1.0
     assert distances[0][1] == 2.0
     assert distances[0][2] == 6.0
     assert dimension > 0.0
 
-    print("nearest process curve =", names[nearest_id], nearest_distance)
+    print("nearest process curve =", names[nearest.id], nearest.distance)
     print("distance(baseline, shifted) =", distances[0][1])
     print("intrinsic dimension estimate =", round(dimension, 3))
 

@@ -7,7 +7,10 @@ def main():
 
     query = "metricks"
     implicit_neighbors = space.neighbors(query, count=2)
-    assert implicit_neighbors[0] == (1, 1)
+    nearest = implicit_neighbors.neighbors[0]
+    assert nearest.id == 1
+    assert nearest.record == "metrics"
+    assert nearest.distance == 1
 
     matrix = space.to_matrix()
     assert matrix.representation == "matrix"
@@ -15,13 +18,14 @@ def main():
     assert matrix.distance(0, 2) == 2
 
     tree = space.to_tree()
-    tree_neighbors = tree.neighbors(query, count=2)
-    assert tree_neighbors == implicit_neighbors
+    tree_neighbors = space.neighbors(query, count=2, representation=tree)
+    assert tree_neighbors.as_tuples() == implicit_neighbors.as_tuples()
 
     graph = space.to_graph(count=2)
-    graph_neighbors = graph.neighbors(0)
-    assert graph_neighbors[0] == (1, 1)
-    assert len(graph_neighbors) == 2
+    graph_neighbors = space.neighbors(count=2, representation=graph)
+    assert graph_neighbors.rows[0][0].id == 1
+    assert graph_neighbors.rows[0][0].distance == 1
+    assert len(graph_neighbors.rows[0]) == 2
 
     materialized_groups = space.groups(count=2, representation=matrix)
     assert materialized_groups.representation == "matrix"
@@ -40,9 +44,9 @@ def main():
     assert tree.is_stale()
     assert graph.is_stale()
 
-    print("implicit nearest =", records[implicit_neighbors[0][0]], implicit_neighbors[0][1])
-    print("tree nearest =", records[tree_neighbors[0][0]], tree_neighbors[0][1])
-    print("graph neighbors from metric =", [records[index] for index, _distance in graph_neighbors])
+    print("implicit nearest =", nearest.record, nearest.distance)
+    print("tree nearest =", tree_neighbors.neighbors[0].record, tree_neighbors.neighbors[0].distance)
+    print("graph neighbors from metric =", [neighbor.record for neighbor in graph_neighbors.rows[0]])
     print("runtime representation =", diagnostics.representation)
 
 

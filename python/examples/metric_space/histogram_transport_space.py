@@ -28,18 +28,18 @@ def main():
     query = (0.25, 0.75, 0.0, 0.0)
 
     space = Space(records, cumulative_transport_distance)
-    nearest_id, nearest_distance = space.nearest(query)
+    nearest = space.nearest(query)
     distances = pairwise_distance_matrix(records, cumulative_transport_distance)
     dimension = intrinsic_dimension(records, cumulative_transport_distance)
 
-    assert names[nearest_id] == "one-step"
-    assert nearest_distance == 0.25
+    assert names[nearest.id] == "one-step"
+    assert nearest.distance == 0.25
     assert distances[0][1] == 1.0
     assert distances[0][2] == 3.0
     assert distances[3][4] == 1.0
     assert dimension > 0.0
 
-    print("nearest histogram =", names[nearest_id], nearest_distance)
+    print("nearest histogram =", names[nearest.id], nearest.distance)
     print("distance(left-edge, right-edge) =", distances[0][2])
     print("intrinsic dimension estimate =", round(dimension, 3))
 

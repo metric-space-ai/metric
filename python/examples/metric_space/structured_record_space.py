@@ -26,9 +26,9 @@ def main():
     query = {"status": "ok", "temperature_c": 63.0, "events": ("start", "load", "idle")}
 
     space = Space(records, structured_record_distance)
-    nearest_id, nearest_distance = space.nearest(query)
+    nearest = space.nearest(query)
 
-    print("nearest structured record =", records[nearest_id]["id"], nearest_distance)
+    print("nearest structured record =", nearest.record["id"], nearest.distance)
     print("distance(pump-a, valve-c) =", space.distance(0, 2))
     print("pairwise rows =", len(pairwise_distance_matrix(records, structured_record_distance)))
 

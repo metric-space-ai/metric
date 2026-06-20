@@ -28,13 +28,14 @@ def main():
 
     space = Space(records, cumulative_transport_distance)
     nearest = space.neighbors(query, 2)
-    assert nearest == [(1, 0.25), (3, 0.25)]
+    assert [neighbor.id for neighbor in nearest.neighbors] == [1, 3]
+    assert [neighbor.distance for neighbor in nearest.neighbors] == [0.25, 0.25]
 
     groups = space.groups(KMedoids(groups=2))
     assert groups.algorithm == "kmedoids"
     assert groups.cluster_count == 2
 
-    print("nearest histograms =", names[nearest[0][0]], names[nearest[1][0]])
+    print("nearest histograms =", names[nearest.neighbors[0].id], names[nearest.neighbors[1].id])
     print("histogram groups =", groups.cluster_count)
 
 
