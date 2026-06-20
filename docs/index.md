@@ -17,6 +17,9 @@ This docs tree is the canonical home for concepts, API references, engine archit
 - [Revival Status](revival-status.md)
 - [C++ API](api/cpp.md)
 - [Python API](api/python.md)
+- [Python Space](python/space.md)
+- [Python Intent Methods](python/intents.md)
+- [Python Result Objects](python/results.md)
 - [Finite Metric Spaces](concepts/finite-metric-space.md)
 - [Vector Space as a Special Case](concepts/vector-space-as-special-case.md)
 
@@ -30,10 +33,11 @@ This docs tree is the canonical home for concepts, API references, engine archit
 6. Read [Explicit Representations](concepts/explicit-representations.md) to understand matrix, graph, and tree execution forms.
 7. Read [Graph Representation Terminology](concepts/graph-representations.md) before promoting sparse graph construction.
 8. Use the [Python API](api/python.md) or [C++ API](api/cpp.md) for implementation.
-9. Use [API Surface](stability.md) to understand core, expert, compatibility, extension APIs, and the module status matrix.
-10. Use [Testing and CI Scope](testing-and-ci.md) to understand release gates versus historical coverage.
-11. Use [Research Roadmap](research-roadmap.md) to understand which research directions can be promoted after deterministic fixtures and release gates exist.
-12. Use [Revival Status](revival-status.md) to distinguish local revival completion from external release actions.
+9. For Python, read [Python Space](python/space.md), [Python Intent Methods](python/intents.md), and [Python Result Objects](python/results.md) before strategy overrides.
+10. Use [API Surface](stability.md) to understand core, expert, compatibility, extension APIs, and the module status matrix.
+11. Use [Testing and CI Scope](testing-and-ci.md) to understand release gates versus historical coverage.
+12. Use [Research Roadmap](research-roadmap.md) to understand which research directions can be promoted after deterministic fixtures and release gates exist.
+13. Use [Revival Status](revival-status.md) to distinguish local revival completion from external release actions.
 
 ## Concepts
 
@@ -53,9 +57,21 @@ This docs tree is the canonical home for concepts, API references, engine archit
 - [Explicit Representations](concepts/explicit-representations.md)
 - [Graph Representation Terminology](concepts/graph-representations.md)
 
+## Python User Path
+
+- [Space Constructor And Records](python/space.md)
+- [Intent Methods](python/intents.md)
+- [Result Objects](python/results.md)
+- [Expert Strategy Overrides](python/strategies.md)
+- [Errors And Troubleshooting](python/errors.md)
+- [Python API Reference](api/python.md)
+
 ## Examples
 
 - [Custom Metric Example](examples/custom-metric.md)
+- [Python Custom Metric](examples/python-custom-metric.md)
+- [Python Real-Data Records](examples/python-real-data.md)
+- [Python Compare Spaces](examples/python-compare-spaces.md)
 - [Structured Data](examples/structured-data.md)
 - [Time-Series Space With TWED](examples/time-series-twed.md)
 - [Histogram Space With EMD](examples/histogram-emd.md)
