@@ -94,7 +94,7 @@ from .operators import (
     symmetrize_graph,
 )
 from .runtime import CachePolicy, RuntimeDiagnostics, RuntimePolicy, runtime_diagnostics
-from .spaces import FiniteMetricSpace, MatrixSpace, Space
+from .spaces import FiniteMetricSpace, MatrixSpace, RecordId, Space
 
 __all__ = sorted(
     name
