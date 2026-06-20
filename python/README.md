@@ -2,7 +2,7 @@
 
 Python bindings for METRIC metric-space numerics.
 
-The public Python distribution name is `metric-space`. The import package remains
+The public Python distribution name is `mtrc`. The import package remains
 `metric`.
 
 The revived core package exposes the project concepts explicitly:
@@ -23,7 +23,7 @@ The Python package is in revival. The current supported CPython targets for the 
 After the package is published to PyPI, install the core package with:
 
 ```shell
-python -m pip install metric-space
+python -m pip install mtrc
 ```
 
 Until PyPI publishing is completed, build from source with the instructions below.

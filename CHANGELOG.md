@@ -18,6 +18,12 @@
 - Add expected diagnostic output snippets for the CI-tested C++ engine flagship demos.
 - Document the `v0.3.3` PyPI publish attempts and the remaining external PyPI authentication blocker.
 
+### Packaging and Build
+
+- Rename the public Python distribution from `metric-space` to the short PyPI
+  package name `mtrc` after PyPI rejected `metric-space` as too similar to an
+  existing project; the import package remains `metric`.
+
 ## [0.3.3] - 2026-06-20
 
 ### API Changes

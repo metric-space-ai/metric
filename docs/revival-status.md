@@ -204,17 +204,23 @@ git diff --check
 
 The Python package currently uses `pyproject.toml` for the PEP 517 build-system declaration and PEP 621 project metadata. `setup.py` registers the CMake extension build hook and the source-distribution hook that includes the required C++ metric headers in the Python sdist. `scikit-build-core` remains a candidate for a later packaging simplification, but it is not adopted in this revival slice because the current bridge already builds the core wheel and preserves the existing extension layout.
 
-The public Python distribution name is `metric-space`. The import package remains `metric`.
+The public Python distribution name is `mtrc`. The import package remains `metric`.
 
 PyPI name availability was checked on 2026-06-19 with the official PyPI JSON API:
 
 - `metric` exists on PyPI and should not be used for this relaunch.
 - `metric-py` exists on PyPI as version `0.0.6`, points at the historical `panda-official/metric` repository, and should not be reused unless package ownership and continuity are deliberately restored.
-- `metric-space` had no matching visible distribution.
+- `metric-space` had no matching visible distribution, but PyPI later rejected
+  it as too similar to an existing project during pending Trusted Publisher
+  setup.
 - `metric-space-numerics` had no matching visible distribution.
 - `panda-metric` and `panda_metric` had no matching visible distribution.
+- `mtrc` had no matching visible distribution and was accepted by PyPI as a
+  pending Trusted Publisher project name on 2026-06-20.
 
-The release metadata therefore uses `metric-space` to avoid colliding with both the unrelated `metric` project and the historical `metric-py` distribution.
+The release metadata therefore uses `mtrc` to avoid colliding with both the
+unrelated `metric` project, the historical `metric-py` distribution, and PyPI's
+name-retention rejection for `metric-space`.
 
 ## External State Checked
 
@@ -299,7 +305,9 @@ The post-`v0.3.2` revival work listed below was released as `v0.3.3` on 2026-06-
 - PyPI publish run `27864470653` rebuilt and checked the same distribution set successfully with `auth_method=trusted-publishing`, but the final Trusted Publishing token exchange failed with `invalid-publisher` for repository `metric-space-ai/metric`, workflow `publish-python.yml`, ref `refs/heads/master`, and environment `pypi`
 - PyPI publish run `27864755237` rebuilt and checked the same distribution set successfully with `auth_method=password`, but the first Twine upload failed with `HTTPError: 403 Forbidden` from `https://upload.pypi.org/legacy/`
 - PyPI still returned 404 for `https://pypi.org/pypi/metric-space/json` on 2026-06-20 after the `v0.3.3` dry-run and both real publish attempts, so no visible `metric-space` release has been published
-- the remaining external release action is still to update repository PyPI credentials or configure a matching PyPI Trusted Publisher before rerunning `.github/workflows/publish-python.yml` with `ref=v0.3.3`, `publish=true`, and the matching `auth_method`
+- the next release action is to publish the renamed `mtrc` package from the
+  `v0.3.4` release with `.github/workflows/publish-python.yml`,
+  `publish=true`, and `auth_method=trusted-publishing`
 
 The `v0.3.3` release includes the following revival improvements that landed on `master` after the `v0.3.2` tag:
 
@@ -466,6 +474,12 @@ PyPI release after the `v0.3.3` dry-run and both real upload paths. The
 Trusted Publishing path failed because PyPI has no matching publisher for the
 workflow claims, and the repository-secret password path reached PyPI but was
 rejected with `403 Forbidden`.
+
+After that failure, PyPI rejected pending Trusted Publisher setup for
+`metric-space` because the name is too similar to an existing project. The short
+package name `mtrc` was selected instead and accepted as a pending Trusted
+Publisher for owner `metric-space-ai`, repository `metric`, workflow
+`publish-python.yml`, and environment `pypi`.
 
 ## Historical Code Policy
 
