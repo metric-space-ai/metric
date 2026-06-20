@@ -89,7 +89,8 @@ PyPI publishing workflow:
 gh workflow run publish-python.yml \
   --repo metric-space-ai/metric \
   -f ref=v0.3.4 \
-  -f publish=false
+  -f publish=false \
+  -f auth_method=trusted-publishing
 ```
 
 Use `publish=true` only after confirming the target package index, credentials, and package ownership. If PyPI returns `403 Forbidden`, rotate the repository PyPI credentials or configure PyPI Trusted Publishing, confirm the package name is still available, and rerun the same workflow with `ref=v0.3.4` and `publish=true`.
@@ -111,6 +112,29 @@ gh workflow run publish-python.yml \
   -f publish=true \
   -f auth_method=trusted-publishing
 ```
+
+After a successful publish, verify PyPI visibility and installability:
+
+```shell
+python - <<'PY'
+import json, urllib.request
+with urllib.request.urlopen("https://pypi.org/pypi/mtrc/json", timeout=30) as response:
+    data = json.load(response)
+print(data["info"]["name"])
+print(data["info"]["version"])
+print(len(data["releases"].get("0.3.4", [])))
+PY
+
+python -m venv /tmp/metric-pypi-verify
+/tmp/metric-pypi-verify/bin/python -m pip install --upgrade pip
+/tmp/metric-pypi-verify/bin/python -m pip install mtrc==0.3.4
+/tmp/metric-pypi-verify/bin/python -c "import metric; print(metric.__version__)"
+```
+
+Current `v0.3.4` evidence: publish workflow run `27867187603` completed with
+Trusted Publishing, PyPI JSON reports `mtrc` version `0.3.4` with 16 release
+files, and a fresh local virtual environment installed `mtrc==0.3.4` and
+imported `metric` version `0.3.4`.
 
 ## Artifacts
 

@@ -215,12 +215,13 @@ PyPI name availability was checked on 2026-06-19 with the official PyPI JSON API
   setup.
 - `metric-space-numerics` had no matching visible distribution.
 - `panda-metric` and `panda_metric` had no matching visible distribution.
-- `mtrc` had no matching visible distribution and was accepted by PyPI as a
-  pending Trusted Publisher project name on 2026-06-20.
+- `mtrc` had no matching visible distribution, was accepted by PyPI as a
+  pending Trusted Publisher project name on 2026-06-20, and is now published on
+  PyPI as version `0.3.4`.
 
-The release metadata therefore uses `mtrc` to avoid colliding with both the
-unrelated `metric` project, the historical `metric-py` distribution, and PyPI's
-name-retention rejection for `metric-space`.
+The release metadata and PyPI project therefore use `mtrc` to avoid colliding
+with both the unrelated `metric` project, the historical `metric-py`
+distribution, and PyPI's name-retention rejection for `metric-space`.
 
 ## External State Checked
 
@@ -305,9 +306,31 @@ The post-`v0.3.2` revival work listed below was released as `v0.3.3` on 2026-06-
 - PyPI publish run `27864470653` rebuilt and checked the same distribution set successfully with `auth_method=trusted-publishing`, but the final Trusted Publishing token exchange failed with `invalid-publisher` for repository `metric-space-ai/metric`, workflow `publish-python.yml`, ref `refs/heads/master`, and environment `pypi`
 - PyPI publish run `27864755237` rebuilt and checked the same distribution set successfully with `auth_method=password`, but the first Twine upload failed with `HTTPError: 403 Forbidden` from `https://upload.pypi.org/legacy/`
 - PyPI still returned 404 for `https://pypi.org/pypi/metric-space/json` on 2026-06-20 after the `v0.3.3` dry-run and both real publish attempts, so no visible `metric-space` release has been published
-- the next release action is to publish the renamed `mtrc` package from the
-  `v0.3.4` release with `.github/workflows/publish-python.yml`,
-  `publish=true`, and `auth_method=trusted-publishing`
+- the renamed `mtrc` package was published from the follow-up `v0.3.4` release
+  state below
+
+## v0.3.4 Release State
+
+The PyPI package rename and first successful public package publication were
+released as `v0.3.4` on 2026-06-20:
+
+- the `mtrc` release metadata update landed through [pull request #624](https://github.com/metric-space-ai/metric/pull/624), merged into `master` as commit `6bb809b3268ad14b2c593d118634cf480882bd9d`
+- tag `v0.3.4` points at commit `6bb809b3268ad14b2c593d118634cf480882bd9d`
+- [GitHub release `v0.3.4`](https://github.com/metric-space-ai/metric/releases/tag/v0.3.4) is published as a non-draft, non-prerelease release
+- release artifact workflow run `27866843882` completed successfully from tag
+  `v0.3.4`
+- PyPI publish dry-run `27866853174` completed successfully on tag `v0.3.4`
+  with one source distribution artifact and checked wheel artifact sets for
+  CPython 3.10 through 3.14 on Linux, macOS, and Windows; the publish job was
+  skipped because `publish=false`
+- PyPI publish run `27867187603` completed successfully on tag `v0.3.4` with
+  `auth_method=trusted-publishing`, checked one source distribution and 15
+  wheels, uploaded the package to PyPI, and generated digital attestations
+- PyPI JSON for `https://pypi.org/pypi/mtrc/json` returned project name
+  `mtrc`, version `0.3.4`, project URL `https://pypi.org/project/mtrc/`, and 16
+  release files
+- a fresh local virtual environment installed `mtrc==0.3.4` from PyPI and
+  `import metric` reported `metric.__version__ == "0.3.4"`
 
 The `v0.3.3` release includes the following revival improvements that landed on `master` after the `v0.3.2` tag:
 
@@ -469,17 +492,12 @@ The following follow-up-plan work landed on `master` after the `v0.3.3` tag:
 - validation-plan CI grouping documentation for fast, extended, nightly, and benchmark paths, merged through [pull request #619](https://github.com/metric-space-ai/metric/pull/619) as `dcc56fbe957216b31abe9d2f34eb0e682720937f`
 - expected diagnostic-output snippets for the C++ engine flagship demos, merged through [pull request #620](https://github.com/metric-space-ai/metric/pull/620) as `fa8bd2e91805987c4a2787914f8be5e936b788ae`
 
-The PyPI publish blocker remains external: `metric-space` still has no visible
-PyPI release after the `v0.3.3` dry-run and both real upload paths. The
-Trusted Publishing path failed because PyPI has no matching publisher for the
-workflow claims, and the repository-secret password path reached PyPI but was
-rejected with `403 Forbidden`.
-
-After that failure, PyPI rejected pending Trusted Publisher setup for
-`metric-space` because the name is too similar to an existing project. The short
-package name `mtrc` was selected instead and accepted as a pending Trusted
-Publisher for owner `metric-space-ai`, repository `metric`, workflow
-`publish-python.yml`, and environment `pypi`.
+The PyPI publish blocker is resolved by the `v0.3.4` release. PyPI rejected
+pending Trusted Publisher setup for `metric-space` because the name is too
+similar to an existing project, so the short package name `mtrc` was selected
+instead. PyPI accepted `mtrc` for owner `metric-space-ai`, repository `metric`,
+workflow `publish-python.yml`, and environment `pypi`; Trusted Publishing run
+`27867187603` then published `mtrc==0.3.4` successfully.
 
 ## Historical Code Policy
 

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+No changes yet.
+
+## [0.3.4] - 2026-06-20
+
 ### API Changes
 
 - Add the dedicated C++ `<metric/operators/sparsify.hpp>` include path for exact graph construction, graph diagnostics, graph symmetrization, and out-degree pruning helpers.
@@ -23,6 +27,9 @@
 - Rename the public Python distribution from `metric-space` to the short PyPI
   package name `mtrc` after PyPI rejected `metric-space` as too similar to an
   existing project; the import package remains `metric`.
+- Publish `mtrc==0.3.4` to PyPI with Trusted Publishing, one source
+  distribution, and 15 CPython wheels for Linux, macOS, and Windows; a fresh
+  install of `mtrc==0.3.4` imports `metric` version `0.3.4`.
 
 ## [0.3.3] - 2026-06-20
 
