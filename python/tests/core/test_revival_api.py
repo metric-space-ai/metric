@@ -13,6 +13,7 @@ from metric.exceptions import (
     IncompatibleSpaceError,
     MetricContractError,
     MetricError,
+    MetricInputError,
     MissingMetricError,
     StaleRepresentationError,
     StrategyParameterError,
@@ -1594,6 +1595,7 @@ class RevivalApiTest(unittest.TestCase):
             return float(np.linalg.norm(lhs - rhs))
 
         space = Space(records, euclidean)
+        vector_space = Space.vectors(records, ids=["origin", "middle", "far"], name="vectors")
 
         self.assertEqual(len(space), 3)
         self.assertAlmostEqual(space.distance(0, 1), 5.0)
@@ -1601,6 +1603,21 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(range_neighbors(records, euclidean, np.array([3.0, 4.0]), 0.0), [(1, 0.0)])
         self.assertAlmostEqual(pairwise_distance_matrix(records, euclidean)[1][2], 5.0)
         self.assertMetricContracts(records, euclidean)
+        self.assertEqual(vector_space.ids, ["origin", "middle", "far"])
+        self.assertEqual(vector_space.name, "vectors")
+        self.assertEqual(vector_space.metric.name, "Euclidean")
+        self.assertIn("metric=Euclidean()", repr(vector_space))
+        self.assertAlmostEqual(vector_space.distance(0, 1), 5.0)
+        self.assertEqual(vector_space.nearest(np.array([3.0, 4.0])), (1, 0.0))
+        self.assertMetricContracts(records, vector_space.metric)
+
+        manhattan_space = Space.vectors(
+            records,
+            metric=lambda lhs, rhs: float(np.abs(lhs - rhs).sum()),
+        )
+        self.assertEqual(manhattan_space.distance(0, 1), 7.0)
+        with self.assertRaisesRegex(MetricInputError, "same length"):
+            Space.vectors([[0.0], [0.0, 1.0]])
 
     def test_structured_records_use_domain_metric_callable(self):
         records = [
