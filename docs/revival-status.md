@@ -69,6 +69,7 @@ The current local tree implements the first revival slice:
 - native C++ DNN trainer-level `CompositeLoss` with reconstruction MSE, bottleneck coordinate MSE, anchored gradients, and per-term loss reports
 - native C++ DNN `AutoencoderModel`, `NativeDnnTrainer`, vector-record codec support, and `NativeAutoencoderMapping` into Euclidean latent metric spaces with inverse decode
 - native C++ DNN PHATE-style diffusion-potential geometry targets keyed by `SampleId` and `NativePhateAutoencoderMapping` smoke/example coverage
+- CI-tested C++ learnable-map demo diagnostics for PHATE-AE source traits, pre-training intents, matrix/graph representations, training loss, reconstruction, deterministic seed, and out-of-sample transforms
 - native C++ DNN autoencoder artifact metadata with manifest JSON, network cereal bytes, diagnostics JSON, codec/loss/training specs, and model reload coverage
 - direct Python smoke gates run promoted metric-space and engine examples together
 - engine documentation chapters for metric spaces, representations, intents, strategies, operators, mappings, runtime policies, and migration
@@ -311,6 +312,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - native C++ DNN trainer-level `CompositeLoss` with reconstruction MSE, bottleneck coordinate MSE, anchored gradients, and per-term loss reports, merged as `2c03b29590e0df0718894ac88d75efcac8fc2f65`
 - native C++ DNN `AutoencoderModel`, `NativeDnnTrainer`, vector-record codec support, and `NativeAutoencoderMapping` into Euclidean latent metric spaces with inverse decode, merged as `dc7c6a4aeba0b4e855a997b0641e50036bd97fb5`
 - native C++ DNN PHATE-style diffusion-potential geometry targets keyed by `SampleId` and `NativePhateAutoencoderMapping` smoke/example coverage, merged as `7880eced81cd34e580e05727f17720dff887f061`
+- CI-tested C++ learnable-map demo diagnostics for PHATE-AE source traits, pre-training intents, matrix/graph representations, training loss, reconstruction, deterministic seed, and out-of-sample transforms, merged as `573111a92ebc307dc535063cf3726b2c5114addb`
 - native C++ DNN autoencoder artifact metadata with manifest JSON, network cereal bytes, diagnostics JSON, codec/loss/training specs, and model reload coverage, merged as `f8269aac8bf3f1e6f056a2146894c95c6d1a2083`
 - direct Python smoke gates now run promoted metric-space and engine examples together, merged as `06f22b20e7d44c7f2058b81d43f513fc157f36b0`
 - Python engine-style Space intent facade methods for representatives and structure diagnostics with named result objects and core test coverage, merged as `1849c29a25122b31605945295c91710cfc6a126f`
