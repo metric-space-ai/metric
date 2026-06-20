@@ -293,6 +293,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - PyPI publish dry-run `27804901826` completed successfully on `master` commit `1ab3ada019f0460f4ba418291bd2146342ef8064` with one source distribution artifact and checked wheel artifact sets for CPython 3.10 through 3.14 on Linux, macOS, and Windows
 - PyPI still returned 404 for `https://pypi.org/pypi/metric-space/json` after the master dry-run, so no visible `metric-space` release has been published
 - PyPI was rechecked on 2026-06-20 with the official JSON API and still returned 404 for `https://pypi.org/pypi/metric-space/json`; GitHub release `v0.3.2` remains published as a non-draft, non-prerelease release
+- PyPI publish dry-run `27862071672` completed successfully on `master` commit `9d72264bfed0c6553390e6d9510e0adec6ac817f` with one source distribution artifact and checked wheel artifact sets for CPython 3.10 through 3.14 on Linux, macOS, and Windows; the publish job was skipped because `publish=false`
 - promotion-gated research roadmap for diagnostics, representative selection, sparse graphs, cross-space dependency discovery, denoising, vector-database adapters, and benchmarks, merged as `b80eaba438a6a45f327951c87f74d88c4af37ed3`
 - Python representative-selection helpers using deterministic farthest-first traversal, merged as `78d9d4cdb065555541e10131698452c6d713a257`
 - promoted Python representative-selection example and wheel-gate coverage, merged as `78d9d4cdb065555541e10131698452c6d713a257`
