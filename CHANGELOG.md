@@ -5,11 +5,13 @@
 ### API Changes
 
 - Add the dedicated C++ `<metric/operators/sparsify.hpp>` include path for exact graph construction, graph diagnostics, graph symmetrization, and out-degree pruning helpers.
+- Add roadmap-only C++ `<metric/mappings/koc.hpp>` with a `metric::mappings::koc(...)` factory that validates parameters and fails explicitly until the KOC engine mapping contract is promoted.
 
 ### Documentation and Examples
 
 - Add a C++ include-smoke test and docs for the engine graph sparsification operator header.
 - Document Python `KOC` and `DSPCC` strategy objects consistently as roadmap-only strategies in the API stability docs.
+- Document the roadmap-only C++ KOC mapping adapter surface in the engine mapping docs.
 
 ## [0.3.3] - 2026-06-20
 

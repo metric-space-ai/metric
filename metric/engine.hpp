@@ -25,6 +25,7 @@
 #include "intent/representatives.hpp"
 #include "intent/reduce.hpp"
 #include "mappings/clustered_space.hpp"
+#include "mappings/koc.hpp"
 #include "mappings/mapping.hpp"
 #include "mappings/native_autoencoder.hpp"
 #include "mappings/native_phate_autoencoder.hpp"
