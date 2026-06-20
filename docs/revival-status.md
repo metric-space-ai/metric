@@ -282,19 +282,27 @@ The `v0.3.2` release includes the following revival improvements that landed on 
 - revival source-format checks for promoted source and docs files, merged as `cf35266ba5e18b6113f8eb3aa8715ac500050710`
 - intrinsic-dimension diagnostics in C++ and Python, merged as `d510e0ceb78a307a4e91545837ee4e6ff81eccc3`
 
-## Post-v0.3.2 Master Progress
+## v0.3.3 Release State
 
-The following revival improvements landed on `master` after the `v0.3.2` tag and are unreleased until the next tag:
+The post-`v0.3.2` revival work listed below was released as `v0.3.3` on 2026-06-20:
+
+- the `v0.3.3` release metadata update landed through [pull request #612](https://github.com/metric-space-ai/metric/pull/612), merged into `master` as commit `b4ac04ad5e882bf9aa4436bac88da9e886e87389`
+- tag `v0.3.3` points at commit `b4ac04ad5e882bf9aa4436bac88da9e886e87389`
+- [GitHub release `v0.3.3`](https://github.com/metric-space-ai/metric/releases/tag/v0.3.3) is published as a non-draft, non-prerelease release
+- release artifact workflow run `27862818089` completed successfully from tag `v0.3.3`
+- the release assets include `metric-v0.3.3.tar.gz`, `metric_space-0.3.3.tar.gz`, and `metric_space-0.3.3-cp312-cp312-linux_x86_64.whl`
+- PyPI publish dry-run `27862985344` completed successfully on tag `v0.3.3` with one source distribution artifact and checked wheel artifact sets for CPython 3.10 through 3.14 on Linux, macOS, and Windows; the publish job was skipped because `publish=false`
+- PyPI still returned 404 for `https://pypi.org/pypi/metric-space/json` on 2026-06-20 after the `v0.3.3` dry-run, so no visible `metric-space` release has been published
+- the remaining external release action is still to update repository PyPI credentials or configure PyPI Trusted Publishing before rerunning `.github/workflows/publish-python.yml` with `ref=v0.3.3`, `publish=true`, and the appropriate `auth_method`
+
+The `v0.3.3` release includes the following revival improvements that landed on `master` after the `v0.3.2` tag:
 
 - promoted Python time-series metric-space example using an alignment-aware callable, merged as `30b75635dfc26010d2f400539dd69952fc787f41`
 - promoted Python histogram metric-space example using a one-dimensional transport callable, merged as `dbed0eba25455e420baba79f49d134c126dd6c14`
 - Python core API tests now subprocess-run every `python/examples/metric_space/*.py` example, merged as `dbed0eba25455e420baba79f49d134c126dd6c14`
 - testing and release-checklist docs now describe the expanded promoted Python example gate, merged as `dbed0eba25455e420baba79f49d134c126dd6c14`
 - PyPI publish dry-run `27804901826` completed successfully on `master` commit `1ab3ada019f0460f4ba418291bd2146342ef8064` with one source distribution artifact and checked wheel artifact sets for CPython 3.10 through 3.14 on Linux, macOS, and Windows
-- PyPI still returned 404 for `https://pypi.org/pypi/metric-space/json` after the master dry-run, so no visible `metric-space` release has been published
-- PyPI was rechecked on 2026-06-20 with the official JSON API and still returned 404 for `https://pypi.org/pypi/metric-space/json`; GitHub release `v0.3.2` remains published as a non-draft, non-prerelease release
 - PyPI publish dry-run `27862071672` completed successfully on `master` commit `9d72264bfed0c6553390e6d9510e0adec6ac817f` with one source distribution artifact and checked wheel artifact sets for CPython 3.10 through 3.14 on Linux, macOS, and Windows; the publish job was skipped because `publish=false`
-- `v0.3.3` release metadata prepares the Python and C++ package versions for the post-`v0.3.2` engine and Python facade work
 - promotion-gated research roadmap for diagnostics, representative selection, sparse graphs, cross-space dependency discovery, denoising, vector-database adapters, and benchmarks, merged as `b80eaba438a6a45f327951c87f74d88c4af37ed3`
 - Python representative-selection helpers using deterministic farthest-first traversal, merged as `78d9d4cdb065555541e10131698452c6d713a257`
 - promoted Python representative-selection example and wheel-gate coverage, merged as `78d9d4cdb065555541e10131698452c6d713a257`
