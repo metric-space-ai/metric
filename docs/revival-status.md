@@ -25,6 +25,7 @@ The current local tree implements the first revival slice:
 - Python top-level facade exposes integer-compatible `RecordId` defaults for generated stable IDs
 - Python runtime facade exposes `RuntimePolicy`, `CachePolicy`, and `runtime=` on promoted Space intent methods with materialized grouping representation metadata
 - Python runtime facade exposes `RuntimeDiagnostics` with policy, support, and representation metadata
+- Python runtime policy and diagnostics objects expose structured conversion helpers for runtime metadata
 - Python runtime policy helpers select metric-space, matrix, tree, and queryless graph neighbor execution representations
 - Python engine facade modules under `metric.intent` and `metric.representations`
 - Python representation facade exposes `Space.to_matrix()`, `Space.to_tree()`, and `Space.to_graph(count=...)`

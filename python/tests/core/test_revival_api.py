@@ -1734,6 +1734,8 @@ class RevivalApiTest(unittest.TestCase):
 
         self.assertEqual(policy.cache_mode, "materialized")
         self.assertEqual(policy.name, "exact_materialized_parallel")
+        self.assertEqual(policy.cache.to_dict(), {"mode": "materialized"})
+        self.assertEqual(policy.to_dict()["representation_preference"], "matrix")
         self.assertEqual(runtime.materialized(runtime.parallel()).name, "exact_materialized_parallel")
         self.assertEqual(runtime.using_matrix().representation_preference, "matrix")
         self.assertEqual(runtime.using_tree().representation_preference, "exact_tree_index")
@@ -1748,6 +1750,14 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(diagnostics.intent, "neighbors")
         self.assertTrue(diagnostics.supported)
         self.assertEqual(diagnostics.reason, "")
+        self.assertEqual(diagnostics.to_dict()["policy_name"], "exact_materialized_parallel")
+        try:
+            diagnostics_frame = diagnostics.to_pandas()
+        except exceptions.OptionalDependencyError:
+            diagnostics_frame = None
+        if diagnostics_frame is not None:
+            self.assertEqual(diagnostics_frame.loc[0, "representation"], "matrix")
+            self.assertEqual(diagnostics_frame.loc[0, "intent"], "neighbors")
         space_diagnostics = space.runtime_diagnostics(
             representation=space.to_matrix(),
             runtime=policy,

@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 import operator
 
-from metric.exceptions import StrategyParameterError, StrategyUnavailableError
+from metric.exceptions import OptionalDependencyError, StrategyParameterError, StrategyUnavailableError
 
 
 _CACHE_MODES = {"auto", "lazy", "materialized", "none"}
@@ -21,6 +21,9 @@ class CachePolicy:
             raise StrategyParameterError("cache mode must be a string")
         if self.mode not in _CACHE_MODES:
             raise StrategyParameterError(f"cache mode must be one of {sorted(_CACHE_MODES)!r}")
+
+    def to_dict(self):
+        return {"mode": self.mode}
 
 
 @dataclass(frozen=True)
@@ -78,6 +81,18 @@ class RuntimePolicy:
         execution = "parallel" if self.parallel else "serial"
         return f"{accuracy}_{self.cache_mode}_{execution}"
 
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "exact": self.exact,
+            "parallel": self.parallel,
+            "cache": self.cache.to_dict(),
+            "cache_mode": self.cache_mode,
+            "representation": self.representation,
+            "representation_preference": self.representation_preference,
+            "graph_count": self.graph_count,
+        }
+
 
 @dataclass(frozen=True)
 class RuntimeDiagnostics:
@@ -91,6 +106,28 @@ class RuntimeDiagnostics:
     intent: str | None = None
     supported: bool = True
     reason: str = ""
+
+    def to_dict(self):
+        return {
+            "policy_name": self.policy_name,
+            "exact": self.exact,
+            "parallel": self.parallel,
+            "cache_mode": self.cache_mode,
+            "representation": self.representation,
+            "intent": self.intent,
+            "supported": self.supported,
+            "reason": self.reason,
+        }
+
+    def to_pandas(self):
+        try:
+            import pandas as pd
+        except ModuleNotFoundError:
+            raise OptionalDependencyError(
+                "RuntimeDiagnostics.to_pandas() requires pandas. Install pandas or use to_dict()."
+            ) from None
+
+        return pd.DataFrame.from_records([self.to_dict()])
 
 
 def runtime_policy(runtime=None):

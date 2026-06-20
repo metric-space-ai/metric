@@ -171,7 +171,9 @@ policy with `exact=False` raises `StrategyUnavailableError` instead of silently
 returning approximate results. `RuntimeDiagnostics` and
 `runtime_diagnostics(...)` expose normalized policy metadata, support status,
 cache mode, serial/parallel selection, and the representation used for an
-intent.
+intent. Use `CachePolicy.to_dict()`, `RuntimePolicy.to_dict()`, and
+`RuntimeDiagnostics.to_dict()` for structured metadata; `RuntimeDiagnostics`
+also exposes `to_pandas()` when pandas is installed.
 
 ## Operators
 
