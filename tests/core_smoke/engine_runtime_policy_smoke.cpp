@@ -63,6 +63,17 @@ int main()
 	assert(lazy_neighbors.size() == 2);
 	assert(lazy_neighbors[0].id == space.id(1));
 
+	const auto explicit_implicit_policy = metric::runtime::using_implicit();
+	assert(explicit_implicit_policy.name() == "exact_lazy_serial");
+	assert(explicit_implicit_policy.representation_preference() == "implicit");
+	const auto explicit_implicit_diagnostics =
+		metric::runtime::diagnostics(explicit_implicit_policy, {}, "neighbors");
+	assert(explicit_implicit_diagnostics.representation == "implicit");
+	const auto explicit_implicit_neighbors =
+		metric::find_neighbors(space, std::string("ee"), 2, explicit_implicit_policy);
+	assert(explicit_implicit_neighbors.representation == "implicit");
+	assert(explicit_implicit_neighbors[0].id == space.id(1));
+
 	const auto materialized_policy = metric::runtime::materialized(metric::runtime::exact());
 	assert(materialized_policy.name() == "exact_materialized_serial");
 	assert(materialized_policy.representation_preference() == "matrix_cache");
@@ -82,6 +93,43 @@ int main()
 		metric::find_neighbors(space, space.id(0), metric::count{2}, materialized_policy);
 	assert(counted_materialized_neighbors.representation == "matrix_cache");
 	assert(counted_materialized_neighbors[0].id == materialized_neighbors[0].id);
+
+	const auto matrix_policy = metric::runtime::using_matrix_cache();
+	assert(matrix_policy.name() == "exact_materialized_serial");
+	assert(matrix_policy.representation_preference() == "matrix_cache");
+	const auto matrix_policy_neighbors = metric::find_neighbors(space, space.id(0), 2, matrix_policy);
+	assert(matrix_policy_neighbors.representation == "matrix_cache");
+	assert(matrix_policy_neighbors[0].id == materialized_neighbors[0].id);
+
+	const auto tree_policy = metric::runtime::using_cover_tree();
+	assert(tree_policy.name() == "exact_materialized_serial");
+	assert(tree_policy.representation_preference() == "cover_tree_index");
+	const auto tree_diagnostics = metric::runtime::diagnostics(tree_policy, {}, "neighbors");
+	assert(tree_diagnostics.materialized);
+	assert(tree_diagnostics.representation == "cover_tree_index");
+	const auto tree_query_neighbors = metric::find_neighbors(space, std::string("ee"), 2, tree_policy);
+	assert(tree_query_neighbors.representation == "cover_tree_index");
+	assert(tree_query_neighbors[0].id == space.id(1));
+	const auto tree_id_neighbors = metric::find_neighbors(space, space.id(0), 2, tree_policy);
+	assert(tree_id_neighbors.representation == "cover_tree_index");
+	assert(tree_id_neighbors.size() == lazy_neighbors.size());
+	assert(tree_id_neighbors[0].id == lazy_neighbors[0].id);
+	const auto empty_tree_id_neighbors = metric::find_neighbors(space, space.id(0), 0, tree_policy);
+	assert(empty_tree_id_neighbors.representation == "cover_tree_index");
+	assert(empty_tree_id_neighbors.empty());
+
+	const auto graph_policy = metric::runtime::using_knn_graph(2);
+	assert(graph_policy.name() == "exact_materialized_serial");
+	assert(graph_policy.graph_neighbors() == 2);
+	assert(graph_policy.representation_preference() == "knn_graph_index");
+	const auto graph_diagnostics = metric::runtime::diagnostics(graph_policy, {}, "neighbors");
+	assert(graph_diagnostics.representation == "knn_graph_index");
+	const auto graph_query_neighbors = metric::find_neighbors(space, std::string("ee"), 2, graph_policy);
+	assert(graph_query_neighbors.representation == "knn_graph_index");
+	assert(graph_query_neighbors[0].id == tree_query_neighbors[0].id);
+	const auto graph_id_neighbors = metric::find_neighbors(space, space.id(0), 2, graph_policy);
+	assert(graph_id_neighbors.representation == "knn_graph_index");
+	assert(graph_id_neighbors[0].id == materialized_neighbors[0].id);
 
 	const auto parallel_policy = metric::runtime::parallel(materialized_policy);
 	assert(parallel_policy.name() == "exact_materialized_parallel");
