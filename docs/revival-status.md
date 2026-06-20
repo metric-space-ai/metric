@@ -51,6 +51,7 @@ The current local tree implements the first revival slice:
 - Python map facade accepts fresh explicit representations and records representation metadata
 - Python clustered-space mapping facade derives cluster-level Spaces from clustering results with grouped lineage
 - Python strategy facade exports `MDS`, `DiffusionEmbedding`, `PCFA`, `SOM`, `KOC`, `DSPCC`, and `PhateAE`, with `MDS` executing the promoted classical-MDS path and roadmap strategies raising explicit unavailable errors
+- Python top-level package keeps algorithm strategy classes under `metric.strategies`
 - Python engine-style Space denoise intent with DBSCAN-noise filtering and mapping-result lineage
 - Python describe facade accepts fresh explicit representations and records representation metadata
 - Python distance compatibility aliases expose `Manhattan`, `Minkowski`, and `ThresholdedEuclidean` when optional historical standard bindings are installed
@@ -391,6 +392,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - C++ engine compatibility aliases and legacy-space adapters under `metric/compat`, merged as `53f20ed254af9eb7367174b2496ec562ea0a73e4`
 - C++ engine `SpaceVersion` and strategy-layer representation materialization headers, merged as `213d5f9b16b9ff949881881916a996a34d1ef69e`
 - Python `metric.compat` facade for lazy legacy import-path discovery, merged as `62f4caf5bb00e40df6f09234d0e185e3c8b3b985`
+- Python top-level package no longer exports algorithm strategy classes, merged as `0f937e4a0be505cd4a85720c3c5affb816b60ccb`
 
 ## Historical Code Policy
 
