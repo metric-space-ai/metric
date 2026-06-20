@@ -45,6 +45,7 @@ The current local tree implements the first revival slice:
 - Python `RepresentativeSet` exposes structured conversion helpers for metadata, selected IDs, and optional pandas coverage rows
 - Python engine-style Space compare/correlate intent with a deterministic distance-profile correlation strategy
 - Python compare/correlate facade supports `align="ids"` over stable Space IDs
+- Python compare/correlate facade accepts raw right-hand records with explicit `other_metric=` for position-aligned comparisons
 - Python compare/correlate facade records fresh explicit left/right representation metadata
 - Python compare/correlate results record alignment mode, matched IDs, dropped-ID fields, p-value slot, local scores, and diagnostics metadata
 - Python compare/correlate results expose `to_dict()`, `to_numpy()`, and optional `to_pandas()` conversion helpers
