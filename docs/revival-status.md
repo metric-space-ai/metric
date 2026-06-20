@@ -59,6 +59,7 @@ The current local tree implements the first revival slice:
 - promoted Python examples under `python/examples/metric_space/`
 - CI-tested Python tutorial notebooks under `python/notebooks/` with a standard-library smoke runner executed from the core Python API tests
 - CI-tested C++ and Python engine flagship examples for strings, process curves, histograms, and cross-space dependency
+- CI-tested C++ and Python engine vector special-case examples with aligned-vector metric traits, representation diagnostics, runtime diagnostics, and deterministic mapping/embedding coverage
 - CI-tested C++ engine representation-swap example covering implicit search, matrix cache, cover-tree index, kNN graph index, and stale representation diagnostics
 - CI-tested Python engine representation-swap example covering implicit search, matrix materialization, exact tree-style lookup, exact kNN graph adjacency, runtime diagnostics, and stale representation checks
 - CI-tested Python engine flagship example for mixed structured records with a custom composite metric
@@ -301,6 +302,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - C++ record-space embed, reduce, and map intents accept exact lazy runtime policies with explicit materialized-policy rejection, merged as `fcee9927eadb902b6590a7df05da8de031bb3f60`
 - stable C++ `MetricSpace` mutation IDs and common representation diagnostics, merged as `1235940adafafac0de588f3a93ba0f09a09d7935`
 - CI-tested C++ and Python engine flagship examples for strings, process curves, histograms, and cross-space dependency, merged as `9d9d89dad779c836fe2f1334b68000938d76c9c6`
+- CI-tested C++ and Python engine vector special-case examples with aligned-vector metric traits, representation diagnostics, runtime diagnostics, and deterministic mapping/embedding coverage, merged as `39db861701e6e12f77ce127e094e550ad4e38bbd`
 - CI-tested Python engine demo for mixed structured records with a custom composite metric, merged as `558e9f6ce2dfad3f7df8fc1d2a79dc907ffba21b`
 - native C++ DNN baseline smoke coverage and fully connected logical parameter serialization round trips, merged as `e7b520c5d62a9a8a6589d76a14789e3d100d16a2`
 - native C++ DNN `Network` training hooks for forward activation capture, anchored layer-output backpropagation, and explicit optimizer updates, merged as `d9398ffb2d6aaeee08097c8517f36a060a89d30d`
