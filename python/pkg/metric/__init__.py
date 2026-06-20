@@ -53,6 +53,8 @@ from .operators import (
     GraphConstructionMetadata,
     GraphConstructionResult,
     MappingResult,
+    Neighbor,
+    NeighborResult,
     Outlier,
     OutlierResult,
     RepresentativeSet,

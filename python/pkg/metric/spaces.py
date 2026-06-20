@@ -381,6 +381,8 @@ class Space(FiniteMetricSpace):
         representation=None,
         runtime=None,
     ):
+        from metric.operators import neighbor_result
+
         runtime_policy = require_exact_runtime(runtime)
         if strategy is not None:
             raise ValueError("strategy overrides are not promoted for Python neighbors yet")
@@ -396,31 +398,46 @@ class Space(FiniteMetricSpace):
                 include_self=include_self,
             )
         if query is not None and representation is not None:
-            return representation.neighbors(query, k=k, count=count, radius=radius)
+            return neighbor_result(
+                self.records,
+                query=query,
+                neighbors=representation.neighbors(query, k=k, count=count, radius=radius),
+                representation=getattr(representation, "representation", "metric_space"),
+            )
         if representation is not None:
             representation.ensure_fresh()
             if getattr(representation, "representation", None) == "exact_knn_graph":
-                return [
+                rows = [
                     list(representation.neighbors(source_index))[:neighbor_count]
                     for source_index in range(len(self.records))
                 ]
+                return neighbor_result(
+                    self.records,
+                    rows=rows,
+                    representation=representation.representation,
+                )
 
         if query is None:
-            return [
+            rows = [
                 self._neighbor_row(source_index, neighbor_count, radius=radius, include_self=include_self)
                 for source_index in range(len(self.records))
             ]
+            return neighbor_result(self.records, rows=rows)
 
         if radius is not None:
             neighbors = self.rnn(query, radius)
-            return neighbors if neighbor_count is None else neighbors[:neighbor_count]
-        return self.knn(query, neighbor_count)
+            return neighbor_result(
+                self.records,
+                query=query,
+                neighbors=neighbors if neighbor_count is None else neighbors[:neighbor_count],
+            )
+        return neighbor_result(self.records, query=query, neighbors=self.knn(query, neighbor_count))
 
     def nearest(self, query):
-        return self.nn(query)
+        return self.neighbors(query, count=1).neighbors[0]
 
     def within_radius(self, query, radius):
-        return self.rnn(query, radius)
+        return self.neighbors(query, radius=radius)
 
     def groups(self, strategy=None, *, count="auto", radius=None, min_size=1, representation=None, runtime=None):
         runtime_policy = require_exact_runtime(runtime)
