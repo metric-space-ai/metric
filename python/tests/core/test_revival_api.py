@@ -74,7 +74,7 @@ from metric.operators import (
 )
 from metric.representations import GraphIndex, TreeIndex, graph, tree
 from metric.runtime import CachePolicy, RuntimeDiagnostics, RuntimePolicy, runtime_diagnostics
-from metric.spaces import FiniteMetricSpace, MatrixSpace, Space
+from metric.spaces import FiniteMetricSpace, MatrixSpace, RecordId, Space
 from metric.strategies import (
     ClassicMDS,
     DBSCAN,
@@ -286,12 +286,16 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.coverage_representatives, coverage_representatives)
         self.assertIs(metric.FiniteMetricSpace, FiniteMetricSpace)
         self.assertIs(metric.Space, Space)
+        self.assertIs(metric.RecordId, RecordId)
+        self.assertIsInstance(Space(self.records, self.metric).ids[0], RecordId)
+        self.assertEqual(Space(self.records, self.metric).ids, [0, 1, 2, 3])
         self.assertIs(metric.MetricError, MetricError)
         self.assertIs(metric.MissingMetricError, MissingMetricError)
         self.assertIs(metric.StaleRepresentationError, StaleRepresentationError)
         self.assertIs(metric.UnsupportedOperationError, UnsupportedOperationError)
         self.assertIn("FiniteMetricSpace", metric.__all__)
         self.assertIn("Space", metric.__all__)
+        self.assertIn("RecordId", metric.__all__)
         self.assertIn("core", metric.__all__)
         self.assertIn("exceptions", metric.__all__)
         self.assertIn("MetricError", metric.__all__)
