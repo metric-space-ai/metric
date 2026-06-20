@@ -57,6 +57,7 @@ The current local tree implements the first revival slice:
 - Python beta compatibility bridge modules under `metric.mappings` and `metric.transforms`
 - promoted C++ examples under `examples/core/`
 - promoted Python examples under `python/examples/metric_space/`
+- CI-tested Python tutorial notebooks under `python/notebooks/` with a standard-library smoke runner executed from the core Python API tests
 - CI-tested C++ and Python engine flagship examples for strings, process curves, histograms, and cross-space dependency
 - CI-tested C++ engine representation-swap example covering implicit search, matrix cache, cover-tree index, kNN graph index, and stale representation diagnostics
 - CI-tested Python engine representation-swap example covering implicit search, matrix materialization, exact tree-style lookup, exact kNN graph adjacency, runtime diagnostics, and stale representation checks
@@ -340,6 +341,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python neighbor facade support for target `count` and `radius` intent arguments, merged as `e9dd23e217b12aeb8e6e85df612c55d78c66da50`
 - Python representation facade support for `Space.to_tree()` and `Space.to_graph(count=...)`, merged as `adb6222c2f311662678694fb3a92ee25052b89bd`
 - Python strategy facade exports for `MDS`, `DiffusionEmbedding`, `PCFA`, `SOM`, and `PhateAE`, with promoted-vs-roadmap strategy errors covered by wheel CI, merged as `6961fe0dc97185a03a5e48b35b5b32ddaa8423f6`
+- CI-tested Python tutorial notebooks and standard-library notebook smoke runner, merged as `4977f3a0aeae84dc2ddc874c2b7e17e35d8c3d71`
 - Python public exception facade with `UnsupportedOperationError` for unsupported inverse reconstruction, merged as `ec94ef66017733624e52465fb96bccbed13ae9c2`
 - C++ semantic `metric::count{...}` target argument support for `find_neighbors`, merged as `806eb4628770e89811a9c27205161d371a325c99`
 - Python representation freshness checks with deterministic stale representation errors, merged as `da591dcbd98d04a5541925170726429e17f836d0`
