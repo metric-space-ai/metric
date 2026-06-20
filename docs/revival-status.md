@@ -87,6 +87,9 @@ The current local tree implements the first revival slice:
 - CI-tested Python engine clustered-space mapping example covering `ClusteringResult` to derived `Space` lineage
 - CI-tested Python engine flagship example for mixed structured records with a custom composite metric
 - CI-tested C++ engine flagship example for mixed structured records with a composed domain metric, materialized runtime diagnostics, grouping, and DBSCAN-noise outlier detection
+- Python user-path documentation for `Space`, intent methods, result objects, strategy overrides, errors, and real-data examples
+- documented CI grouping model for fast, extended, nightly, and benchmark validation paths
+- saved expected diagnostic-output snippets for the CI-tested C++ engine flagship demos
 - promoted Python metric-space and engine examples demonstrate named `Neighbor` / `NeighborResult` fields instead of teaching tuple-indexed neighbor access
 - native C++ DNN baseline smoke coverage for RegressionMSE, RMSProp, row-as-observation network training, dense Autoencoder train/encode/decode/save/load, and fully connected parameter serialization round trips
 - native C++ DNN `Network` training hooks for forward activation capture, anchored layer-output backpropagation, and explicit optimizer updates
@@ -443,6 +446,23 @@ The `v0.3.3` release includes the following revival improvements that landed on 
 - Python graph construction and graph diagnostics conversion helpers, merged as `4979278a00616b2107a56df073254313f56401ee`
 - Python `Space.compare(...)` and `Space.correlate(...)` accept raw right-hand records with explicit `other_metric=`, merged as `15e03cb88ae3622f4ed3c04028df63088b68f186`
 - Python runtime policy and diagnostics conversion helpers, merged as `caf3375394344859452cce7ce6c36a0fa085e194`
+
+## Post-v0.3.3 Follow-up Plan State
+
+The following follow-up-plan work landed on `master` after the `v0.3.3` tag:
+
+- dedicated C++ `<metric/operators/sparsify.hpp>` include path with include-smoke coverage, merged through [pull request #614](https://github.com/metric-space-ai/metric/pull/614) as `d6a86119c158495936c8325cc44737ead8479ce7`
+- Python roadmap strategy docs for `KOC` and `DSPCC`, merged through [pull request #615](https://github.com/metric-space-ai/metric/pull/615) as `30fb5597a74746d116d607f68d5c73114b5116e0`
+- roadmap-only C++ KOC mapping adapter with explicit not-promoted errors, merged through [pull request #616](https://github.com/metric-space-ai/metric/pull/616) as `c03f3f405b60bc3c0ffeaebc431454b3a26f4931`
+- CI-tested C++ mixed structured-record flagship demo, merged through [pull request #617](https://github.com/metric-space-ai/metric/pull/617) as `337226041d605770339540737a2d0adaa8b1ddd7`
+- Python user-path docs and real-data example pages required by `PYTHON_USER_EXPERIENCE_PLAN.md`, merged through [pull request #618](https://github.com/metric-space-ai/metric/pull/618) as `181dcdbf805e1b48e308642b46fda1bf89fe0d92`
+- validation-plan CI grouping documentation for fast, extended, nightly, and benchmark paths, merged through [pull request #619](https://github.com/metric-space-ai/metric/pull/619) as `dcc56fbe957216b31abe9d2f34eb0e682720937f`
+- expected diagnostic-output snippets for the C++ engine flagship demos, merged through [pull request #620](https://github.com/metric-space-ai/metric/pull/620) as `fa8bd2e91805987c4a2787914f8be5e936b788ae`
+
+The PyPI publish blocker remains external: `metric-space` still has no visible
+PyPI release until repository credentials are replaced or Trusted Publishing is
+configured and `.github/workflows/publish-python.yml` is rerun with
+`publish=true`.
 
 ## Historical Code Policy
 
