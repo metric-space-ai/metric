@@ -938,6 +938,15 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(reduction.strategy, "farthest_first")
         self.assertEqual(reduction.representation, "metric_space")
         self.assertFalse(reduction.inverse_supported)
+        self.assertEqual(reduction.to_dict()["reduced_record_count"], 3)
+        np.testing.assert_array_equal(reduction.to_numpy(), np.asarray([0, 0, 2, 2, 1]))
+        try:
+            reduction_frame = reduction.to_pandas()
+        except exceptions.OptionalDependencyError:
+            reduction_frame = None
+        if reduction_frame is not None:
+            self.assertEqual(reduction_frame.loc[4, "representative_source_id"], 4)
+            self.assertEqual(reduction_frame.loc[1, "nearest_representative_distance"], 1)
         with self.assertRaisesRegex(UnsupportedOperationError, "inverse_supported=False"):
             reduction.inverse_transform()
         matrix_reduction = space.reduce(count=3, representation=space.to_matrix())
@@ -972,6 +981,15 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(compression.representation, "metric_space")
         self.assertTrue(compression.lossy)
         self.assertFalse(compression.inverse_supported)
+        self.assertEqual(compression.to_dict()["compression_ratio"], 0.6)
+        np.testing.assert_array_equal(compression.to_numpy(), np.asarray([0, 0, 2, 2, 1]))
+        try:
+            compression_frame = compression.to_pandas()
+        except exceptions.OptionalDependencyError:
+            compression_frame = None
+        if compression_frame is not None:
+            self.assertEqual(compression_frame.loc[4, "compressed_record_id"], 1)
+            self.assertEqual(compression_frame.loc[4, "representative_source_id"], 4)
         with self.assertRaisesRegex(UnsupportedOperationError, "inverse_supported=False"):
             compression.inverse_transform()
         matrix_compression = space.compress(count=3, representation=space.to_matrix())

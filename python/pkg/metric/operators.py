@@ -454,6 +454,47 @@ class ReductionResult:
     def inverse_transform(self, *args, **kwargs):
         _raise_unsupported_inverse(self)
 
+    def to_dict(self):
+        return {
+            "source_record_ids": self.source_record_ids,
+            "assignments": self.assignments,
+            "nearest_representative_distances": self.nearest_representative_distances,
+            "source_record_count": self.source_record_count,
+            "reduced_record_count": self.reduced_record_count,
+            "exact": self.exact,
+            "operator_name": self.operator_name,
+            "strategy": self.strategy,
+            "representation": self.representation,
+            "inverse_supported": self.inverse_supported,
+        }
+
+    def to_numpy(self):
+        return np.asarray(self.assignments, dtype=int)
+
+    def to_pandas(self):
+        try:
+            import pandas as pd
+        except ModuleNotFoundError:
+            raise OptionalDependencyError(
+                "ReductionResult.to_pandas() requires pandas. Install pandas or use to_dict()."
+            ) from None
+
+        selected = set(self.source_record_ids)
+        rows = []
+        for source_record_id, reduced_record_id in enumerate(self.assignments):
+            rows.append(
+                {
+                    "source_record_id": source_record_id,
+                    "reduced_record_id": reduced_record_id,
+                    "representative_source_id": self.source_record_ids[reduced_record_id],
+                    "nearest_representative_distance": self.nearest_representative_distances[source_record_id],
+                    "is_representative": source_record_id in selected,
+                    "strategy": self.strategy,
+                    "representation": self.representation,
+                }
+            )
+        return pd.DataFrame.from_records(rows)
+
 
 @dataclass(frozen=True)
 class CompressionResult:
@@ -476,6 +517,51 @@ class CompressionResult:
 
     def inverse_transform(self, *args, **kwargs):
         _raise_unsupported_inverse(self)
+
+    def to_dict(self):
+        return {
+            "source_record_ids": self.source_record_ids,
+            "assignments": self.assignments,
+            "nearest_representative_distances": self.nearest_representative_distances,
+            "source_record_count": self.source_record_count,
+            "compressed_record_count": self.compressed_record_count,
+            "compression_ratio": self.compression_ratio,
+            "exact": self.exact,
+            "operator_name": self.operator_name,
+            "compression": self.compression,
+            "strategy": self.strategy,
+            "representation": self.representation,
+            "lossy": self.lossy,
+            "inverse_supported": self.inverse_supported,
+        }
+
+    def to_numpy(self):
+        return np.asarray(self.assignments, dtype=int)
+
+    def to_pandas(self):
+        try:
+            import pandas as pd
+        except ModuleNotFoundError:
+            raise OptionalDependencyError(
+                "CompressionResult.to_pandas() requires pandas. Install pandas or use to_dict()."
+            ) from None
+
+        selected = set(self.source_record_ids)
+        rows = []
+        for source_record_id, compressed_record_id in enumerate(self.assignments):
+            rows.append(
+                {
+                    "source_record_id": source_record_id,
+                    "compressed_record_id": compressed_record_id,
+                    "representative_source_id": self.source_record_ids[compressed_record_id],
+                    "nearest_representative_distance": self.nearest_representative_distances[source_record_id],
+                    "is_representative": source_record_id in selected,
+                    "compression": self.compression,
+                    "strategy": self.strategy,
+                    "representation": self.representation,
+                }
+            )
+        return pd.DataFrame.from_records(rows)
 
 
 @dataclass(frozen=True)
