@@ -13,6 +13,7 @@
 #include "../core/metric_space.hpp"
 #include "../core/record_id.hpp"
 #include "../core/result.hpp"
+#include "../mappings/mapping.hpp"
 #include "../runtime/execution.hpp"
 
 namespace metric::intent {
@@ -58,6 +59,26 @@ auto map(const Space &space, Transform transform, TargetMetric metric, runtime::
 	runtime::require_lazy_map(runtime_policy);
 	runtime::require_parallel_metric<typename Space::metric_type>(runtime_policy);
 	auto result = map(space, std::move(transform), std::move(metric));
+	result.representation = runtime::map_representation(runtime_policy);
+	return result;
+}
+
+template <typename Space, typename Mapping,
+		  typename std::enable_if<MetricSpaceLike_v<Space> && Mapping_v<Mapping, Space>, int>::type = 0>
+auto map(const Space &space, const Mapping &mapping) -> decltype(mappings::transform(mappings::fit(mapping, space), space))
+{
+	auto model = mappings::fit(mapping, space);
+	return mappings::transform(model, space);
+}
+
+template <typename Space, typename Mapping,
+		  typename std::enable_if<MetricSpaceLike_v<Space> && Mapping_v<Mapping, Space>, int>::type = 0>
+auto map(const Space &space, const Mapping &mapping, runtime::policy runtime_policy) -> decltype(map(space, mapping))
+{
+	runtime::require_exact_map(runtime_policy);
+	runtime::require_lazy_map(runtime_policy);
+	runtime::require_parallel_metric<typename Space::metric_type>(runtime_policy);
+	auto result = map(space, mapping);
 	result.representation = runtime::map_representation(runtime_policy);
 	return result;
 }

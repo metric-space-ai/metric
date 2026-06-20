@@ -20,6 +20,7 @@ The current engine mapping layer includes:
 
 - `metric::MappingResult`
 - deterministic C++ `metric::map`
+- C++ `metric::map(space, mapping_adapter)` over promoted mapping adapters
 - `metric::mappings::fit`
 - `metric::mappings::transform`
 - clustered-space mapping from `ClusteringResult`
@@ -30,7 +31,17 @@ The current engine mapping layer includes:
 - deterministic Python `Space.map`
 - DBSCAN-noise-filtered Python `Space.denoise`
 
-`MappingResult` stores the derived space plus source-record lineage. Inverse reconstruction is explicit and optional. The C++ `metric::embed` intent returns a PCFA-derived coordinate space with one-to-one lineage and `mapping == "pcfa_embedding"`. The C++ `metric::denoise` and Python `Space.denoise` intents also return `MappingResult` values, preserving one-to-one lineage for non-noise records kept after DBSCAN noise filtering.
+`MappingResult` stores the derived space plus source-record lineage. Inverse reconstruction is explicit and optional.
+The C++ `metric::map(space, metric::mappings::pcfa(components))` form fits a promoted mapping adapter
+and transforms the same source space through the semantic map intent. The C++ `metric::embed` intent returns a
+PCFA-derived coordinate space with one-to-one lineage and `mapping == "pcfa_embedding"`. The C++ `metric::denoise`
+and Python `Space.denoise` intents also return `MappingResult` values, preserving one-to-one lineage for non-noise
+records kept after DBSCAN noise filtering.
+
+```cpp
+auto mapped = metric::map(space, metric::mappings::pcfa(2));
+auto coordinates = mapped.space;
+```
 
 ## Python Status
 

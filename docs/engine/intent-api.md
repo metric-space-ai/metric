@@ -13,7 +13,7 @@ Intent APIs are named by what users want to do, not by the algorithm used to do 
 | Find outliers | `find_outliers` | `Space.outliers` | C++ and Python DBSCAN-noise path |
 | Reduce complexity | `reduce` | `Space.reduce` | C++ PCFA-backed path; Python representative/medoid reduction path |
 | Compress a space | `compress` | `Space.compress` | C++ farthest-first representative path; Python representative/medoid path |
-| Map to another space | `map`, `metric::mappings::*` | `Space.map` | C++ and Python deterministic transform paths; C++ mapping conventions |
+| Map to another space | `map`, `metric::mappings::*` | `Space.map` | C++ deterministic transform and mapping-adapter paths; Python deterministic transform path |
 | Denoise a space | `denoise` | `Space.denoise` | C++ and Python DBSCAN-noise filter paths |
 
 The operator layer may still use algorithm names because it is the implementation layer. The intent layer is the recommended user-facing vocabulary.
@@ -30,6 +30,7 @@ auto dependency = metric::compare(space_a, space_b, metric::strategies::mgc{});
 auto embedding = metric::embed(space, metric::strategies::pcfa(2));
 auto compression = metric::compress(space, 2, metric::strategies::farthest_first{});
 auto mapped = metric::map(space, transform, target_metric);
+auto learned_map = metric::map(space, metric::mappings::pcfa(2));
 auto denoised = metric::denoise(space, metric::strategies::dbscan(2.0, 2));
 auto structure = metric::describe_structure(space);
 ```
