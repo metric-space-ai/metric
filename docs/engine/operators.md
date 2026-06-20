@@ -15,6 +15,7 @@ The current C++ engine operators include:
 - `metric::operators::affinity_propagation`
 - `metric::operators::entropy`
 - `metric::operators::mgc`
+- graph construction, diagnostics, symmetrization, and out-degree pruning helpers through `<metric/operators/sparsify.hpp>`
 
 They return named result objects:
 
@@ -26,6 +27,11 @@ They return named result objects:
 The clustering operators accept a `MetricSpace` directly and, where promoted, engine distance providers such as
 `MatrixCache`. Materialized provider overloads keep all result IDs as stable `RecordId` values while reporting
 `representation == "distance_provider"`.
+
+The graph sparsification header provides the planned operator include path for exact graph construction helpers,
+`symmetrize_graph`, `prune_graph_out_degree`, and graph diagnostics. Existing code can continue including
+`<metric/operators.hpp>`; new engine-oriented code can include `<metric/operators/sparsify.hpp>` or the
+`<metric/engine.hpp>` umbrella.
 
 ## Python Operators
 
