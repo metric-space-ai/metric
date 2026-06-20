@@ -53,6 +53,9 @@ target_link_libraries(engine_mapping_model_smoke PRIVATE ${METRIC_TARGET_NAME})
 add_executable(engine_map_intent_smoke engine_map_intent_smoke.cpp)
 target_link_libraries(engine_map_intent_smoke PRIVATE ${METRIC_TARGET_NAME})
 
+add_executable(engine_koc_mapping_smoke engine_koc_mapping_smoke.cpp)
+target_link_libraries(engine_koc_mapping_smoke PRIVATE ${METRIC_TARGET_NAME})
+
 add_executable(engine_denoise_intent_smoke engine_denoise_intent_smoke.cpp)
 target_link_libraries(engine_denoise_intent_smoke PRIVATE ${METRIC_TARGET_NAME})
 
@@ -119,6 +122,7 @@ add_test(NAME engine_dbscan_operator_smoke COMMAND engine_dbscan_operator_smoke)
 add_test(NAME engine_intent_strategy_smoke COMMAND engine_intent_strategy_smoke)
 add_test(NAME engine_mapping_model_smoke COMMAND engine_mapping_model_smoke)
 add_test(NAME engine_map_intent_smoke COMMAND engine_map_intent_smoke)
+add_test(NAME engine_koc_mapping_smoke COMMAND engine_koc_mapping_smoke)
 add_test(NAME engine_denoise_intent_smoke COMMAND engine_denoise_intent_smoke)
 add_test(NAME engine_compare_intent_smoke COMMAND engine_compare_intent_smoke)
 add_test(NAME engine_describe_intent_smoke COMMAND engine_describe_intent_smoke)

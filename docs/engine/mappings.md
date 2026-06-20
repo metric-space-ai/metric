@@ -25,6 +25,7 @@ The current engine mapping layer includes:
 - `metric::mappings::transform`
 - clustered-space mapping from `ClusteringResult`
 - LAPACK-backed PCFA mapping
+- roadmap KOC mapping factory with explicit unpromoted-contract failures
 - PCFA-backed `metric::embed`
 - PCFA-backed `metric::reduce`
 - DBSCAN-noise-filtered `metric::denoise`
@@ -38,6 +39,9 @@ and transforms the same source space through the semantic map intent. The C++ `m
 PCFA-derived coordinate space with one-to-one lineage and `mapping == "pcfa_embedding"`. The C++ `metric::denoise`
 and Python `Space.denoise` intents also return `MappingResult` values, preserving one-to-one lineage for non-noise
 records kept after DBSCAN noise filtering.
+The C++ `metric::mappings::koc(clusters)` factory is roadmap-only: it validates the requested cluster count and
+then raises a clear unpromoted-contract error from `fit(...)`, `transform(...)`, and `metric::map(...)` until the
+KOC adapter has deterministic mapping diagnostics and CI-backed examples.
 
 ```cpp
 auto mapped = metric::map(space, metric::mappings::pcfa(2));
