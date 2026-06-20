@@ -30,6 +30,7 @@ The current local tree implements the first revival slice:
 - Python representation facade exposes `Space.to_matrix()`, `Space.to_tree()`, and `Space.to_graph(count=...)`
 - Python matrix/tree/graph representations expose version freshness checks and deterministic stale errors
 - Python neighbor facade returns named `NeighborResult` / `Neighbor` objects with tuple/list compatibility
+- Python neighbor results expose `to_dict()`, `to_numpy()`, and optional `to_pandas()` conversion helpers
 - Python public exception facade includes `metric.exceptions` and deterministic `UnsupportedOperationError` for unsupported inverse reconstruction
 - Python neighbor facade accepts the target `count` and `radius` intent arguments
 - Python neighbor facade supports queryless neighbor rows, `include_self`, and radius results capped by `count`
@@ -403,6 +404,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python `Space` constructor policies for `validate`, `copy`, and `cache`, merged as `7fca4fd7adb4877178b575794ad59ff17b8a5737`
 - Python `Space.vectors(...)` constructor with pure Python Euclidean default, merged as `88634c99032b4b2e00890797cc8fbdad67bb5db4`
 - Python `Neighbor` and `NeighborResult` named neighbor results, merged as `ec9d7d5a3e0de3a04205f4563b0c04367469aee4`
+- Python `NeighborResult` conversion helpers, merged as `8285012f0ad9b4cfae1363096152ca6be52d833b`
 
 ## Historical Code Policy
 
