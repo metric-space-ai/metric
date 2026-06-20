@@ -73,6 +73,7 @@ This docs tree is the canonical home for concepts, API references, engine archit
 - [Python Real-Data Records](examples/python-real-data.md)
 - [Python Compare Spaces](examples/python-compare-spaces.md)
 - [Structured Data](examples/structured-data.md)
+- [Engine Demo Expected Outputs](examples/engine-demo-outputs.md)
 - [Time-Series Space With TWED](examples/time-series-twed.md)
 - [Histogram Space With EMD](examples/histogram-emd.md)
 - [Exact Graph Edge Fixtures](examples/graph-construction.md)
