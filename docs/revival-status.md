@@ -19,6 +19,7 @@ The current local tree implements the first revival slice:
 - Python `metric.core` facade namespace for central finite metric-space building blocks
 - Python core facade exposes a runtime-checkable `metric.Metric` protocol and explicit missing-metric errors
 - Python Space facade exposes stable `ids`, `record(...)`, `pairwise(...)`, and DataFrame-like construction
+- Python Space facade exposes `Space.vectors(...)` with a core-wheel Euclidean default and custom metric override
 - Python Space facade exposes an engine-oriented `repr` with size, metric, record type, and name
 - Python Space constructor exposes explicit `validate`, `copy`, and `cache` policies for record validation and distance storage
 - Python top-level facade exposes integer-compatible `RecordId` defaults for generated stable IDs
@@ -399,6 +400,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python `RecordId` facade for generated stable default IDs, merged as `04793ac45507627856488907a282b955186ee853`
 - Python `Space` engine-model `repr`, merged as `6d6ba3a7205dad04ce52be92b03cfb340dc830bf`
 - Python `Space` constructor policies for `validate`, `copy`, and `cache`, merged as `7fca4fd7adb4877178b575794ad59ff17b8a5737`
+- Python `Space.vectors(...)` constructor with pure Python Euclidean default, merged as `88634c99032b4b2e00890797cc8fbdad67bb5db4`
 
 ## Historical Code Policy
 
