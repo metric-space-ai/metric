@@ -139,7 +139,19 @@ inline auto require_parallel_metric(policy runtime_policy) -> void
 
 inline auto execution_representation(policy runtime_policy) -> std::string
 {
-	return runtime_policy.uses_materialization() ? "matrix_cache" : "metric_space";
+	switch (runtime_policy.representation_mode()) {
+	case representation::implicit:
+		return "implicit";
+	case representation::matrix_cache:
+		return "matrix_cache";
+	case representation::cover_tree:
+		return "cover_tree_index";
+	case representation::knn_graph:
+		return "knn_graph_index";
+	case representation::automatic:
+		return runtime_policy.uses_materialization() ? "matrix_cache" : "metric_space";
+	}
+	return "metric_space";
 }
 
 inline auto neighbor_representation(policy runtime_policy) -> std::string

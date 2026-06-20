@@ -10,6 +10,10 @@ The first C++ runtime policy surface lives under `metric::runtime`:
 - `materialized`
 - `serial`
 - `parallel`
+- `using_implicit`
+- `using_matrix_cache`
+- `using_cover_tree`
+- `using_knn_graph`
 - `cache`
 - `diagnostics`
 
@@ -27,6 +31,17 @@ Metrics are treated as thread-safe by default. A metric can specialize `metric::
 `runtime::exact()` uses the lazy metric-space path for neighbor lookup.
 
 `runtime::materialized(runtime::exact())` uses a `MatrixCache` for `RecordId` neighbor lookup and reports `representation == "matrix_cache"` in the returned `NeighborSet`.
+
+Explicit representation policies can select the promoted neighbor execution structure:
+
+```cpp
+auto implicit = metric::runtime::using_implicit();
+auto matrix = metric::runtime::using_matrix_cache();
+auto tree = metric::runtime::using_cover_tree();
+auto graph = metric::runtime::using_knn_graph(3);
+```
+
+`using_matrix_cache()` requires a `RecordId` query because the cache indexes existing records. `using_cover_tree()` and `using_knn_graph(k)` work for record queries and `RecordId` queries, then report `cover_tree_index` or `knn_graph_index` in the returned `NeighborSet`.
 
 `runtime::approximate()` is reserved. It currently throws for neighbor lookup instead of silently selecting an approximate algorithm.
 
