@@ -34,6 +34,8 @@ from metric.operators import (
     GraphConstructionMetadata,
     GraphConstructionResult,
     MappingResult,
+    Neighbor,
+    NeighborResult,
     Outlier,
     OutlierResult,
     RepresentativeSet,
@@ -165,6 +167,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.operators.GraphStretchDiagnostics, GraphStretchDiagnostics)
         self.assertIs(metric.operators.GraphConstructionMetadata, GraphConstructionMetadata)
         self.assertIs(metric.operators.GraphConstructionResult, GraphConstructionResult)
+        self.assertIs(metric.operators.Neighbor, Neighbor)
+        self.assertIs(metric.operators.NeighborResult, NeighborResult)
         self.assertIs(metric.operators.CompressionResult, CompressionResult)
         self.assertIs(metric.operators.MappingResult, MappingResult)
         self.assertIs(metric.operators.EmbeddingDiagnostics, EmbeddingDiagnostics)
@@ -227,6 +231,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.GraphStretchDiagnostics, GraphStretchDiagnostics)
         self.assertIs(metric.GraphConstructionMetadata, GraphConstructionMetadata)
         self.assertIs(metric.GraphConstructionResult, GraphConstructionResult)
+        self.assertIs(metric.Neighbor, Neighbor)
+        self.assertIs(metric.NeighborResult, NeighborResult)
         self.assertIs(metric.MappingResult, MappingResult)
         self.assertIs(metric.EmbeddingDiagnostics, EmbeddingDiagnostics)
         self.assertIs(metric.EmbeddingModel, EmbeddingModel)
@@ -314,6 +320,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("GraphStretchDiagnostics", metric.__all__)
         self.assertIn("GraphConstructionMetadata", metric.__all__)
         self.assertIn("GraphConstructionResult", metric.__all__)
+        self.assertIn("Neighbor", metric.__all__)
+        self.assertIn("NeighborResult", metric.__all__)
         self.assertIn("CompressionResult", metric.__all__)
         self.assertIn("MappingResult", metric.__all__)
         self.assertIn("EmbeddingDiagnostics", metric.__all__)
@@ -668,7 +676,16 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(space.knn("cut", 2), [(0, 1), (1, 1)])
         self.assertEqual(space.nn("cut"), (0, 1))
         self.assertEqual(space.rnn("cut", 1), [(0, 1), (1, 1)])
-        self.assertEqual(nearest_neighbors(self.records, self.metric, "cut", 2), [(0, 1), (1, 1)])
+        neighbors = nearest_neighbors(self.records, self.metric, "cut", 2)
+        self.assertIsInstance(neighbors, NeighborResult)
+        self.assertEqual(neighbors, [(0, 1), (1, 1)])
+        self.assertEqual(neighbors.neighbors[0], (0, 1))
+        self.assertEqual(neighbors.neighbors[0].record, "cat")
+        self.assertEqual(neighbors.neighbors[0].rank, 0)
+        self.assertEqual(neighbors.distances, (1, 1))
+        self.assertTrue(neighbors.exact)
+        self.assertEqual(neighbors.strategy, "exact_scan")
+        self.assertEqual(neighbors.representation, "metric_space")
         self.assertEqual(nearest_neighbors(self.records, self.metric, "cut", count=2), [(0, 1), (1, 1)])
         self.assertEqual(range_neighbors(self.records, self.metric, "cut", 1), [(0, 1), (1, 1)])
         self.assertEqual(pairwise_distance_matrix(self.records, self.metric)[0][1], 1)
@@ -1498,14 +1515,23 @@ class RevivalApiTest(unittest.TestCase):
         space = Space(self.records, self.metric)
 
         self.assertIsInstance(space, FiniteMetricSpace)
-        self.assertEqual(space.neighbors("cut", 2), [(0, 1), (1, 1)])
+        neighbors = space.neighbors("cut", 2)
+        self.assertIsInstance(neighbors, NeighborResult)
+        self.assertEqual(neighbors, [(0, 1), (1, 1)])
+        self.assertEqual(neighbors.query, "cut")
+        self.assertEqual(neighbors.neighbors[0].record, "cat")
         self.assertEqual(space.neighbors("cut", count=2), [(0, 1), (1, 1)])
         self.assertEqual(space.neighbors("cut", radius=1), [(0, 1), (1, 1)])
         self.assertEqual(space.neighbors("cut", count=1, radius=1), [(0, 1)])
-        self.assertEqual(space.neighbors(count=1), [[(1, 1)], [(0, 1)], [(0, 1)], [(1, 2)]])
+        rows = space.neighbors(count=1)
+        self.assertIsInstance(rows, NeighborResult)
+        self.assertEqual(rows, [[(1, 1)], [(0, 1)], [(0, 1)], [(1, 2)]])
+        self.assertEqual(rows.rows[0][0].record, "cot")
+        self.assertEqual(rows.distances, ((1,), (1,), (1,), (2,)))
         self.assertEqual(space.neighbors(count=1, include_self=True)[0], [(0, 0)])
         self.assertEqual(space.neighbors(radius=1)[0], [(1, 1), (2, 1)])
         self.assertEqual(space.nearest("cut"), (0, 1))
+        self.assertIsInstance(space.nearest("cut"), Neighbor)
         self.assertEqual(space.within_radius("cut", 1), [(0, 1), (1, 1)])
         with self.assertRaises(ValueError):
             space.neighbors("cut", k=1, count=2)

@@ -189,6 +189,8 @@ from metric.operators import (
     GraphDegreeDiagnostics,
     GraphStretchDiagnostics,
     MappingResult,
+    Neighbor,
+    NeighborResult,
     Outlier,
     OutlierResult,
     RepresentativeSet,
@@ -266,7 +268,15 @@ mapped = map_space(records, transform, target_metric)
 structure = describe_structure(records, Edit())
 ```
 
-`Space.neighbors(query, count=...)` returns nearest `(record_id, distance)` tuples. `Space.neighbors(query, radius=...)` returns range-neighbor tuples through the same exact metric path as `Space.within_radius(...)`. The older `k` name remains a compatibility alias for count-based nearest-neighbor calls, but new examples should prefer `count`.
+`Space.neighbors(query, count=...)` returns a `NeighborResult` with named
+`Neighbor` objects, `.distances`, exactness, strategy, and representation
+metadata. It remains sequence-compatible with older `(record_id, distance)`
+tuple lists, so existing unpacking and comparisons continue to work.
+`Space.neighbors(query, radius=...)` returns range-neighbor results through the
+same exact metric path as `Space.within_radius(...)`. Queryless
+`Space.neighbors(count=...)` stores one row of `Neighbor` objects per source
+record in `result.rows`. The older `k` name remains a compatibility alias for
+count-based nearest-neighbor calls, but new examples should prefer `count`.
 
 `find_groups` returns a `ClusteringResult` with source-record assignments, medoid record IDs, cluster sizes, optional DBSCAN core/noise records, iteration metadata, algorithm metadata, and representation metadata. `Space.groups(...)` exposes the same result from the `Space` facade. Passing an integer group count selects deterministic `KMedoids`; passing `KMedoids` or `DBSCAN` makes the strategy explicit. Pass a fresh `representation=` to record representation metadata; stale representations raise `metric.StaleRepresentationError`. Passing `runtime=RuntimePolicy(cache="materialized")` records `representation == "matrix"` when no explicit representation override is supplied.
 

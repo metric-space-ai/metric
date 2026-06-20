@@ -116,6 +116,88 @@ class GraphStretchDiagnostics:
 
 
 @dataclass(frozen=True)
+class Neighbor:
+    """One neighbor record with compatibility tuple behavior."""
+
+    id: int
+    record: object
+    distance: object
+    rank: int
+
+    def as_tuple(self):
+        return (self.id, self.distance)
+
+    def __iter__(self):
+        return iter(self.as_tuple())
+
+    def __len__(self):
+        return 2
+
+    def __getitem__(self, index):
+        return self.as_tuple()[index]
+
+    def __eq__(self, other):
+        if isinstance(other, Neighbor):
+            return (
+                self.id == other.id
+                and self.record == other.record
+                and self.distance == other.distance
+                and self.rank == other.rank
+            )
+        if isinstance(other, (list, tuple)) and len(other) == 2:
+            return self.as_tuple() == tuple(other)
+        return False
+
+
+@dataclass(frozen=True)
+class NeighborResult:
+    """Engine-style neighbor result with sequence compatibility."""
+
+    query: object
+    query_id: object
+    neighbors: tuple
+    rows: tuple
+    distances: tuple
+    exact: bool
+    strategy: str
+    representation: str
+    diagnostics: object = None
+
+    def __len__(self):
+        return len(self.rows) if self.rows else len(self.neighbors)
+
+    def __iter__(self):
+        if self.rows:
+            return iter([list(row) for row in self.rows])
+        return iter(self.neighbors)
+
+    def __getitem__(self, index):
+        if self.rows:
+            return list(self.rows[index])
+        return self.neighbors[index]
+
+    def __eq__(self, other):
+        if isinstance(other, NeighborResult):
+            return (
+                self.query == other.query
+                and self.query_id == other.query_id
+                and self.neighbors == other.neighbors
+                and self.rows == other.rows
+                and self.distances == other.distances
+                and self.exact == other.exact
+                and self.strategy == other.strategy
+                and self.representation == other.representation
+                and self.diagnostics == other.diagnostics
+            )
+        return list(self) == other
+
+    def as_tuples(self):
+        if self.rows:
+            return [[neighbor.as_tuple() for neighbor in row] for row in self.rows]
+        return [neighbor.as_tuple() for neighbor in self.neighbors]
+
+
+@dataclass(frozen=True)
 class ClusteringResult:
     """Engine-style grouping result with assignments and cluster metadata."""
 
@@ -314,17 +396,72 @@ def pairwise_distance_matrix(records, metric):
     return FiniteMetricSpace(records, metric).pairwise_distances()
 
 
-def nearest_neighbors(records, metric, query, k=None, count=None):
-    if k is not None and count is not None:
-        raise ValueError("use either k or count, not both")
-    return FiniteMetricSpace(records, metric).knn(
-        query,
-        1 if k is None and count is None else count if count is not None else k,
+def neighbor_result(
+    records,
+    *,
+    query=None,
+    query_id=None,
+    neighbors=None,
+    rows=None,
+    exact=True,
+    strategy="exact_scan",
+    representation="metric_space",
+    diagnostics=None,
+):
+    def make_neighbor(raw_neighbor, rank):
+        record_id, distance = raw_neighbor
+        return Neighbor(
+            id=record_id,
+            record=records[record_id],
+            distance=distance,
+            rank=rank,
+        )
+
+    if rows is not None:
+        result_rows = tuple(
+            tuple(make_neighbor(raw_neighbor, rank) for rank, raw_neighbor in enumerate(row))
+            for row in rows
+        )
+        distances = tuple(
+            tuple(neighbor.distance for neighbor in row)
+            for row in result_rows
+        )
+        result_neighbors = ()
+    else:
+        result_neighbors = tuple(
+            make_neighbor(raw_neighbor, rank)
+            for rank, raw_neighbor in enumerate(() if neighbors is None else neighbors)
+        )
+        result_rows = ()
+        distances = tuple(neighbor.distance for neighbor in result_neighbors)
+
+    return NeighborResult(
+        query=query,
+        query_id=query_id,
+        neighbors=result_neighbors,
+        rows=result_rows,
+        distances=distances,
+        exact=exact,
+        strategy=strategy,
+        representation=representation,
+        diagnostics=diagnostics,
     )
 
 
+def nearest_neighbors(records, metric, query, k=None, count=None):
+    if k is not None and count is not None:
+        raise ValueError("use either k or count, not both")
+    space = FiniteMetricSpace(records, metric)
+    neighbors = space.knn(
+        query,
+        1 if k is None and count is None else count if count is not None else k,
+    )
+    return neighbor_result(space.records, query=query, neighbors=neighbors)
+
+
 def range_neighbors(records, metric, query, radius):
-    return FiniteMetricSpace(records, metric).rnn(query, radius)
+    space = FiniteMetricSpace(records, metric)
+    return neighbor_result(space.records, query=query, neighbors=space.rnn(query, radius))
 
 
 def _coerce_graph_k(k):
@@ -1907,6 +2044,8 @@ __all__ = [
     "GraphConstructionMetadata",
     "GraphConstructionResult",
     "MappingResult",
+    "Neighbor",
+    "NeighborResult",
     "Outlier",
     "OutlierResult",
     "RepresentativeSet",
