@@ -231,6 +231,16 @@ template <typename Space> class KnnGraphIndex {
 	std::vector<std::vector<neighbor_type>> adjacency_;
 };
 
+template <typename Space> auto knn_graph(const Space &space, std::size_t k) -> KnnGraphIndex<Space>
+{
+	return KnnGraphIndex<Space>(space, k);
+}
+
+template <typename Space> auto graph(const Space &space, std::size_t k) -> KnnGraphIndex<Space>
+{
+	return knn_graph(space, k);
+}
+
 } // namespace metric::representations
 
 #endif

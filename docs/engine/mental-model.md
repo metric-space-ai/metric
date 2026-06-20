@@ -130,10 +130,10 @@ auto lhs = space.id(0);
 auto rhs = space.id(1);
 auto distance = space.distance(lhs, rhs);
 
-metric::representations::MatrixCache<decltype(space)> matrix(space);
+auto matrix = metric::representations::matrix(space);
 auto cached_distance = matrix.distance(lhs, rhs);
 
-metric::representations::CoverTreeIndex<decltype(space)> tree(space);
+auto tree = metric::representations::cover_tree(space);
 auto neighbors = tree.knn(std::string("metricks"), 2);
 
 auto exact_neighbors = metric::operators::knn(space, std::string("metricks"), 2);

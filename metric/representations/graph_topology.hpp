@@ -112,6 +112,11 @@ template <typename Space> class GraphTopology {
 	std::vector<edge_type> edges_;
 };
 
+template <typename Space> auto topology(const Space &space) -> GraphTopology<Space>
+{
+	return GraphTopology<Space>(space);
+}
+
 } // namespace metric::representations
 
 #endif
