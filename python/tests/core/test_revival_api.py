@@ -1067,6 +1067,19 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(description.maximum_distance, 4)
         self.assertAlmostEqual(description.average_distance, 2.0)
         self.assertAlmostEqual(description.intrinsic_dimension, np.log2(5.0 / 3.0))
+        description_record = description.to_dict()
+        self.assertEqual(description_record["record_count"], 5)
+        self.assertEqual(description_record["strategy"], "exact_all_pairs")
+        np.testing.assert_allclose(
+            description.to_numpy(),
+            np.asarray([5.0, 10.0, 0.0, 1.0, 4.0, 2.0, np.log2(5.0 / 3.0)]),
+        )
+        try:
+            description_frame = description.to_pandas()
+        except exceptions.OptionalDependencyError:
+            description_frame = None
+        if description_frame is not None:
+            self.assertEqual(description_frame.loc[0, "pair_count"], 10)
         self.assertEqual(space.describe_structure(), description)
         matrix_description = space.describe(representation=space.to_matrix())
         self.assertEqual(matrix_description.representation, "matrix")

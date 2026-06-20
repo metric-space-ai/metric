@@ -39,6 +39,7 @@ The current local tree implements the first revival slice:
 - Python grouping facade accepts fresh explicit representations and records representation metadata
 - Python `ClusteringResult` exposes `to_dict()`, `to_numpy()`, and optional `to_pandas()` conversion helpers
 - Python engine-style Space intent facade methods for representatives and structure diagnostics
+- Python `StructureDescription` exposes structured conversion helpers for metadata, numeric diagnostics, and optional pandas tables
 - Python representatives facade accepts semantic `count=` target arguments
 - Python representatives facade accepts fresh explicit representations and records representation metadata
 - Python `RepresentativeSet` exposes structured conversion helpers for metadata, selected IDs, and optional pandas coverage rows

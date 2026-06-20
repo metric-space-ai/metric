@@ -320,7 +320,7 @@ numeric distance array, and `to_pandas()` when pandas is installed.
 
 `intrinsic_dimension` returns an expansion-dimension estimate based on finite-space neighborhood growth. Treat it as a diagnostic that depends on the metric, sample density, duplicates, and available radii.
 
-`describe_structure` returns a `StructureDescription` with record count, evaluated pair count, zero-distance pair count, minimum nonzero distance, maximum distance, average distance, and intrinsic-dimension estimate. `Space.describe()` and `Space.describe_structure()` expose the same diagnostics from the `Space` facade. Pass a fresh `representation=` to record representation metadata; stale representations raise `metric.StaleRepresentationError`.
+`describe_structure` returns a `StructureDescription` with record count, evaluated pair count, zero-distance pair count, minimum nonzero distance, maximum distance, average distance, and intrinsic-dimension estimate. `Space.describe()` and `Space.describe_structure()` expose the same diagnostics from the `Space` facade. Pass a fresh `representation=` to record representation metadata; stale representations raise `metric.StaleRepresentationError`. Use `StructureDescription.to_dict()` for structured metadata, `to_numpy()` for the ordered numeric diagnostic vector, and `to_pandas()` for a one-row diagnostics table when pandas is installed.
 
 ## Custom Metrics
 
