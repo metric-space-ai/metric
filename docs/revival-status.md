@@ -16,6 +16,7 @@ The current local tree implements the first revival slice:
 - a downstream CMake consumer under `tests/downstream_consumer/`
 - core C++ `Metric`, `Space`, `FiniteSpace`, explicit representation aliases, and `metric::operators`
 - Python core facade modules under `metric.metrics`, `metric.spaces`, and `metric.operators`
+- Python `metric.core` facade namespace for central finite metric-space building blocks
 - Python core facade exposes a runtime-checkable `metric.Metric` protocol and explicit missing-metric errors
 - Python Space facade exposes stable `ids`, `record(...)`, `pairwise(...)`, and DataFrame-like construction
 - Python runtime facade exposes `RuntimePolicy`, `CachePolicy`, and `runtime=` on promoted Space intent methods with materialized grouping representation metadata
@@ -369,6 +370,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python representation freshness checks with deterministic stale representation errors, merged as `da591dcbd98d04a5541925170726429e17f836d0`
 - Python runtime-checkable `metric.Metric` protocol and explicit missing-metric errors, merged as `b7512721308d03940b0127f021260e1cee92d65f`
 - Python `Space.from_dataframe(...)`, stable `Space.ids`, `Space.record(...)`, and `Space.pairwise(...)` helpers, merged as `327259e5fc4b1ee1c3e1d6b724ee38021bae434e`
+- Python `metric.core` facade namespace for central finite metric-space building blocks, merged as `7419096f18474efa2c74aa8041debf453e8a05d1`
 - Python `metric.runtime` facade with `RuntimePolicy`, `CachePolicy`, and `runtime=` intent parameters, merged as `f111cb27ce950759bfbcbc13004ad9420e54da25`
 - Python `RuntimeDiagnostics`, `runtime_diagnostics(...)`, and `Space.runtime_diagnostics(...)` support and representation metadata, merged as `2822c80957fcdd54cf402db47fd0d015becd72c9`
 - Python `Space.groups(..., runtime=RuntimePolicy(cache="materialized"))` materialized representation metadata and approximate-runtime rejection, merged as `139dbd72e8af4a4a7e9127738e46db63cb34021e`
