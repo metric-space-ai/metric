@@ -119,6 +119,7 @@ The current local tree implements the first revival slice:
 - C++ engine umbrella header exposure for the PCFA-backed reduce intent
 - initial C++ engine runtime policy scaffolding for exact lazy/materialized neighbor, grouping, representative, compression, structure-diagnostic, cross-space comparison, outlier, denoise, and record-space embed/reduce/map execution with representation-cache staleness
 - C++ engine runtime diagnostics with policy, representation, support, and reason metadata
+- C++ engine runtime policies select implicit, matrix-cache, cover-tree, and kNN-graph neighbor execution representations explicitly
 - C++ engine runtime policies account for `metric_traits<Metric>::thread_safe` when parallel execution is requested
 - initial C++ engine mapping conventions with `MappingResult` lineage metadata and clustered-space derivation
 - initial C++ engine PCFA mapping adapter with explicit fit, transform, and inverse-transform support
@@ -358,6 +359,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - C++ representation factory helpers for `implicit`, `matrix`, `cover_tree`, `knn_graph`/`graph`, and `topology`, merged as `2865f742512e7e3ea389dfc3d1b191945b07b37f`
 - C++ map intent support for promoted mapping adapters through `metric::mappings::fit`/`transform`, merged as `23e753ab9c27ea75ef056ee17871a3f3ae4dbaef`
 - C++ strategy-driven representation materialization for brute-force, matrix-cache, cover-tree, and kNN-graph strategies, merged as `62db634fc64ece6fac1a7ce50d86c17cb473af39`
+- C++ runtime representation policies for implicit, matrix-cache, cover-tree, and kNN-graph neighbor execution, merged as `9d1d5ff68067f3fff0d9f7b0d5dc262f0656e06d`
 - Python representation freshness checks with deterministic stale representation errors, merged as `da591dcbd98d04a5541925170726429e17f836d0`
 - Python runtime-checkable `metric.Metric` protocol and explicit missing-metric errors, merged as `b7512721308d03940b0127f021260e1cee92d65f`
 - Python `Space.from_dataframe(...)`, stable `Space.ids`, `Space.record(...)`, and `Space.pairwise(...)` helpers, merged as `327259e5fc4b1ee1c3e1d6b724ee38021bae434e`
