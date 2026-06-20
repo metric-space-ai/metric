@@ -265,6 +265,56 @@ class ClusteringResult:
     algorithm: str
     representation: str
 
+    def to_dict(self):
+        return {
+            "assignments": self.assignments,
+            "medoids": self.medoids,
+            "core_records": self.core_records,
+            "noise_records": self.noise_records,
+            "cluster_sizes": self.cluster_sizes,
+            "record_count": self.record_count,
+            "cluster_count": self.cluster_count,
+            "noise_count": self.noise_count,
+            "iterations": self.iterations,
+            "converged": self.converged,
+            "algorithm": self.algorithm,
+            "representation": self.representation,
+            "noise_label": self.noise_label,
+        }
+
+    def to_numpy(self):
+        return np.asarray(self.assignments, dtype=int)
+
+    def to_pandas(self):
+        try:
+            import pandas as pd
+        except ModuleNotFoundError:
+            raise OptionalDependencyError(
+                "ClusteringResult.to_pandas() requires pandas. Install pandas or use to_dict()."
+            ) from None
+
+        medoids = set(self.medoids)
+        core_records = set(self.core_records)
+        noise_records = set(self.noise_records)
+        rows = []
+        for record_id, cluster_label in enumerate(self.assignments):
+            cluster_size = None
+            if 0 <= cluster_label < len(self.cluster_sizes):
+                cluster_size = self.cluster_sizes[cluster_label]
+            rows.append(
+                {
+                    "record_id": record_id,
+                    "cluster_label": cluster_label,
+                    "cluster_size": cluster_size,
+                    "is_medoid": record_id in medoids,
+                    "is_core": record_id in core_records,
+                    "is_noise": record_id in noise_records or cluster_label == self.noise_label,
+                    "algorithm": self.algorithm,
+                    "representation": self.representation,
+                }
+            )
+        return pd.DataFrame.from_records(rows)
+
 
 @dataclass(frozen=True)
 class Outlier:

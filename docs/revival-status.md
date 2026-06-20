@@ -37,6 +37,7 @@ The current local tree implements the first revival slice:
 - Python grouping facade accepts strategy-free `Space.groups(count=...)` and `Space.groups(radius=...)` intent arguments
 - Python engine-style Space grouping intent with KMedoids and DBSCAN strategies
 - Python grouping facade accepts fresh explicit representations and records representation metadata
+- Python `ClusteringResult` exposes `to_dict()`, `to_numpy()`, and optional `to_pandas()` conversion helpers
 - Python engine-style Space intent facade methods for representatives and structure diagnostics
 - Python representatives facade accepts semantic `count=` target arguments
 - Python representatives facade accepts fresh explicit representations and records representation metadata
