@@ -296,8 +296,10 @@ The post-`v0.3.2` revival work listed below was released as `v0.3.3` on 2026-06-
 - release artifact workflow run `27862818089` completed successfully from tag `v0.3.3`
 - the release assets include `metric-v0.3.3.tar.gz`, `metric_space-0.3.3.tar.gz`, and `metric_space-0.3.3-cp312-cp312-linux_x86_64.whl`
 - PyPI publish dry-run `27862985344` completed successfully on tag `v0.3.3` with one source distribution artifact and checked wheel artifact sets for CPython 3.10 through 3.14 on Linux, macOS, and Windows; the publish job was skipped because `publish=false`
-- PyPI still returned 404 for `https://pypi.org/pypi/metric-space/json` on 2026-06-20 after the `v0.3.3` dry-run, so no visible `metric-space` release has been published
-- the remaining external release action is still to update repository PyPI credentials or configure PyPI Trusted Publishing before rerunning `.github/workflows/publish-python.yml` with `ref=v0.3.3`, `publish=true`, and the appropriate `auth_method`
+- PyPI publish run `27864470653` rebuilt and checked the same distribution set successfully with `auth_method=trusted-publishing`, but the final Trusted Publishing token exchange failed with `invalid-publisher` for repository `metric-space-ai/metric`, workflow `publish-python.yml`, ref `refs/heads/master`, and environment `pypi`
+- PyPI publish run `27864755237` rebuilt and checked the same distribution set successfully with `auth_method=password`, but the first Twine upload failed with `HTTPError: 403 Forbidden` from `https://upload.pypi.org/legacy/`
+- PyPI still returned 404 for `https://pypi.org/pypi/metric-space/json` on 2026-06-20 after the `v0.3.3` dry-run and both real publish attempts, so no visible `metric-space` release has been published
+- the remaining external release action is still to update repository PyPI credentials or configure a matching PyPI Trusted Publisher before rerunning `.github/workflows/publish-python.yml` with `ref=v0.3.3`, `publish=true`, and the matching `auth_method`
 
 The `v0.3.3` release includes the following revival improvements that landed on `master` after the `v0.3.2` tag:
 
@@ -460,9 +462,10 @@ The following follow-up-plan work landed on `master` after the `v0.3.3` tag:
 - expected diagnostic-output snippets for the C++ engine flagship demos, merged through [pull request #620](https://github.com/metric-space-ai/metric/pull/620) as `fa8bd2e91805987c4a2787914f8be5e936b788ae`
 
 The PyPI publish blocker remains external: `metric-space` still has no visible
-PyPI release until repository credentials are replaced or Trusted Publishing is
-configured and `.github/workflows/publish-python.yml` is rerun with
-`publish=true`.
+PyPI release after the `v0.3.3` dry-run and both real upload paths. The
+Trusted Publishing path failed because PyPI has no matching publisher for the
+workflow claims, and the repository-secret password path reached PyPI but was
+rejected with `403 Forbidden`.
 
 ## Historical Code Policy
 
