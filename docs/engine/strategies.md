@@ -33,6 +33,14 @@ They validate strategy parameters and raise clear `std::invalid_argument`
 messages from the engine reduction intent until deterministic mapping
 contracts, diagnostics, and CI-backed examples are promoted.
 
+Search strategies also provide the promoted representation-selection vocabulary.
+`metric::representations::make(space, strategy)` materializes:
+
+- `brute_force` as an implicit distance provider
+- `matrix_cache` as a matrix cache
+- `cover_tree` as a cover-tree index
+- `knn_graph(k)` as a kNN graph index
+
 ## Python Strategies
 
 The current Python strategy objects include:

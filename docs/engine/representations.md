@@ -24,6 +24,15 @@ representation role:
 - `knn_graph(space, k)` / `graph(space, k)`
 - `topology(space)`
 
+Search strategies can also materialize the matching representation explicitly:
+
+```cpp
+auto implicit = metric::representations::make(space, metric::strategies::brute_force{});
+auto matrix = metric::representations::make(space, metric::strategies::matrix_cache{});
+auto tree = metric::representations::make(space, metric::strategies::cover_tree{});
+auto graph = metric::representations::make(space, metric::strategies::knn_graph(3));
+```
+
 Each adapter captures the source `space.version()` when it is built and exposes `is_stale()`.
 
 ## Matrix Cache

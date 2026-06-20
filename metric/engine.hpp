@@ -37,6 +37,7 @@
 #include "representations/implicit.hpp"
 #include "representations/knn_graph_index.hpp"
 #include "representations/matrix_cache.hpp"
+#include "representations/strategy.hpp"
 #include "runtime/cache.hpp"
 #include "runtime/execution.hpp"
 #include "runtime/policy.hpp"
