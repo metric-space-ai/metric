@@ -26,6 +26,9 @@ target_link_libraries(space_consistency_smoke PRIVATE ${METRIC_TARGET_NAME})
 add_executable(engine_core_smoke engine_core_smoke.cpp)
 target_link_libraries(engine_core_smoke PRIVATE ${METRIC_TARGET_NAME})
 
+add_executable(engine_compat_smoke engine_compat_smoke.cpp)
+target_link_libraries(engine_compat_smoke PRIVATE ${METRIC_TARGET_NAME})
+
 add_executable(engine_representations_smoke engine_representations_smoke.cpp)
 target_link_libraries(engine_representations_smoke PRIVATE ${METRIC_TARGET_NAME})
 
@@ -104,6 +107,7 @@ endif ()
 add_test(NAME metric_contracts_smoke COMMAND metric_contracts_smoke)
 add_test(NAME space_consistency_smoke COMMAND space_consistency_smoke)
 add_test(NAME engine_core_smoke COMMAND engine_core_smoke)
+add_test(NAME engine_compat_smoke COMMAND engine_compat_smoke)
 add_test(NAME engine_representations_smoke COMMAND engine_representations_smoke)
 add_test(NAME engine_nearest_operators_smoke COMMAND engine_nearest_operators_smoke)
 add_test(NAME engine_clustering_operators_smoke COMMAND engine_clustering_operators_smoke)
