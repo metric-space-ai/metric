@@ -96,9 +96,11 @@ from .spaces import FiniteMetricSpace, MatrixSpace, Space
 from .strategies import (
     ClassicMDS,
     DBSCAN,
+    DSPCC,
     DiffusionEmbedding,
     DistanceProfileCorrelation,
     FarthestFirst,
+    KOC,
     KMedoids,
     MDS,
     PCFA,

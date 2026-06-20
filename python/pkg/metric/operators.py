@@ -12,9 +12,11 @@ from metric.spaces import FiniteMetricSpace
 from metric.strategies import (
     ClassicMDS,
     DBSCAN,
+    DSPCC,
     DiffusionEmbedding,
     DistanceProfileCorrelation,
     FarthestFirst,
+    KOC,
     KMedoids,
     PCFA,
     PhateAE,
@@ -1311,7 +1313,7 @@ def find_representatives(records, metric, k=None, strategy=None, *, count=None, 
 
 def _is_strategy_like(value):
     return (
-        isinstance(value, (FarthestFirst, KMedoids, PCFA, SOM))
+        isinstance(value, (FarthestFirst, KMedoids, PCFA, SOM, KOC, DSPCC))
         or hasattr(value, "seed_index")
         or hasattr(value, "groups")
     )
@@ -1328,7 +1330,7 @@ def _coerce_reduction_request(count, strategy):
         pass
     elif isinstance(strategy, KMedoids):
         pass
-    elif isinstance(strategy, (PCFA, SOM)):
+    elif isinstance(strategy, (PCFA, SOM, KOC, DSPCC)):
         raise StrategyUnavailableError(
             f"{type(strategy).__name__} reduction is not promoted yet. "
             "Use FarthestFirst or KMedoids until a reconstruction or quantization contract is CI-backed."

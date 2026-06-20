@@ -44,6 +44,20 @@ class SOM:
 
 
 @dataclass(frozen=True)
+class KOC:
+    """Roadmap Kohonen outlier chart reduction or mapping strategy."""
+
+    clusters: int = 2
+
+
+@dataclass(frozen=True)
+class DSPCC:
+    """Roadmap DSPCC reduction or mapping strategy."""
+
+    dimensions: int = 2
+
+
+@dataclass(frozen=True)
 class PhateAE:
     """Roadmap PHATE-AE-style learnable mapping strategy."""
 
@@ -84,9 +98,11 @@ class DistanceProfileCorrelation:
 __all__ = [
     "ClassicMDS",
     "DBSCAN",
+    "DSPCC",
     "DiffusionEmbedding",
     "DistanceProfileCorrelation",
     "FarthestFirst",
+    "KOC",
     "KMedoids",
     "MDS",
     "PCFA",

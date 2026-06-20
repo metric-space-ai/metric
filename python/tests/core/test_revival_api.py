@@ -78,9 +78,11 @@ from metric.spaces import FiniteMetricSpace, MatrixSpace, Space
 from metric.strategies import (
     ClassicMDS,
     DBSCAN,
+    DSPCC,
     DiffusionEmbedding,
     DistanceProfileCorrelation,
     FarthestFirst,
+    KOC,
     KMedoids,
     MDS,
     PCFA,
@@ -199,6 +201,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.strategies.DiffusionEmbedding, DiffusionEmbedding)
         self.assertIs(metric.strategies.PCFA, PCFA)
         self.assertIs(metric.strategies.SOM, SOM)
+        self.assertIs(metric.strategies.KOC, KOC)
+        self.assertIs(metric.strategies.DSPCC, DSPCC)
         self.assertIs(metric.strategies.PhateAE, PhateAE)
         self.assertIs(metric.transforms, transforms)
         self.assertIs(metric.Edit, Edit)
@@ -236,6 +240,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.DiffusionEmbedding, DiffusionEmbedding)
         self.assertIs(metric.PCFA, PCFA)
         self.assertIs(metric.SOM, SOM)
+        self.assertIs(metric.KOC, KOC)
+        self.assertIs(metric.DSPCC, DSPCC)
         self.assertIs(metric.PhateAE, PhateAE)
         self.assertIs(metric.CorrelationResult, CorrelationResult)
         self.assertIs(metric.compare_spaces, compare_spaces)
@@ -316,6 +322,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("DiffusionEmbedding", metric.__all__)
         self.assertIn("PCFA", metric.__all__)
         self.assertIn("SOM", metric.__all__)
+        self.assertIn("KOC", metric.__all__)
+        self.assertIn("DSPCC", metric.__all__)
         self.assertIn("PhateAE", metric.__all__)
         self.assertIn("exact_knn_graph", metric.__all__)
         self.assertIn("exact_knn_graph_edges", metric.__all__)
@@ -960,6 +968,10 @@ class RevivalApiTest(unittest.TestCase):
             space.reduce(strategy=PCFA(dimensions=2))
         with self.assertRaisesRegex(StrategyUnavailableError, "SOM reduction is not promoted"):
             space.reduce(strategy=SOM(grid=(2, 2)))
+        with self.assertRaisesRegex(StrategyUnavailableError, "KOC reduction is not promoted"):
+            space.reduce(strategy=KOC(clusters=2))
+        with self.assertRaisesRegex(StrategyUnavailableError, "DSPCC reduction is not promoted"):
+            space.reduce(strategy=DSPCC(dimensions=2))
         with self.assertRaisesRegex(TypeError, "count is required"):
             space.representatives()
         with self.assertRaisesRegex(ValueError, "either k or count"):
