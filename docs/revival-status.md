@@ -64,6 +64,7 @@ The current local tree implements the first revival slice:
 - CI-tested C++ and Python engine vector special-case examples with aligned-vector metric traits, representation diagnostics, runtime diagnostics, and deterministic mapping/embedding coverage
 - CI-tested C++ engine representation-swap example covering implicit search, matrix cache, cover-tree index, kNN graph index, and stale representation diagnostics
 - CI-tested Python engine representation-swap example covering implicit search, matrix materialization, exact tree-style lookup, exact kNN graph adjacency, runtime diagnostics, and stale representation checks
+- CI-tested Python engine clustered-space mapping example covering `ClusteringResult` to derived `Space` lineage
 - CI-tested Python engine flagship example for mixed structured records with a custom composite metric
 - native C++ DNN baseline smoke coverage for RegressionMSE, RMSProp, row-as-observation network training, dense Autoencoder train/encode/decode/save/load, and fully connected parameter serialization round trips
 - native C++ DNN `Network` training hooks for forward activation capture, anchored layer-output backpropagation, and explicit optimizer updates
@@ -299,6 +300,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - C++ engine PCFA mapping adapter with explicit inverse reconstruction and LAPACK-gated core smoke coverage, merged as `0aff5aea43433b4fe1b20dbc84cedf71b0e4559e`
 - C++ engine reduce intent backed by the PCFA strategy with LAPACK-gated core smoke coverage, merged as `cf1ceef290f73fac95943f0b7132953fe9d0c698`
 - Python clustered-space mapping adapter from `ClusteringResult` to derived `Space`, merged as `d3d97379a655ef2e131c121335accc522d7bdd03`
+- CI-tested Python clustered-space mapping engine example, merged as `e19161e9a7dc30d2f30577b592c4f89750e327da`
 - C++ representation-layer follow-ups for lazy `MatrixCache` diagnostics, explicit kNN graph sampled-recall validation, and the promoted Python engine representation-swap example, merged as `8e38a8c5ba1f11e879d66a8cd00b77ee47e67bf9`
 - C++ engine umbrella header exposure for the PCFA-backed reduce intent with core, downstream, and include-smoke coverage, merged as `82457b5368e49cfbb6a0f3c417fef0fc56c4f5fb`
 - initial C++ engine runtime policy scaffolding for exact lazy/materialized neighbor execution, representation diagnostics, and cache staleness coverage, merged as `c9217ec01bc06578dc050a06605df22c44fd62eb`
