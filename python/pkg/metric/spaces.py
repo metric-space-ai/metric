@@ -10,6 +10,7 @@ from metric.exceptions import (
     AmbiguousIntentError,
     IncompatibleSpaceError,
     MetricContractError,
+    MetricInputError,
     MissingMetricError,
     StaleRepresentationError,
     StrategyUnavailableError,
@@ -26,6 +27,35 @@ class RecordId(int):
 
     def __new__(cls, value):
         return int.__new__(cls, value)
+
+
+class _EuclideanVectorMetric:
+    name = "Euclidean"
+
+    def __call__(self, lhs, rhs):
+        lhs_values = self._values(lhs)
+        rhs_values = self._values(rhs)
+        if len(lhs_values) != len(rhs_values):
+            raise MetricInputError("vector records must have the same length")
+
+        total = 0.0
+        for lhs_value, rhs_value in zip(lhs_values, rhs_values):
+            try:
+                delta = float(lhs_value) - float(rhs_value)
+            except (TypeError, ValueError):
+                raise MetricInputError("vector records must contain numeric values") from None
+            total += delta * delta
+        return math.sqrt(total)
+
+    def __repr__(self):
+        return "Euclidean()"
+
+    @staticmethod
+    def _values(record):
+        try:
+            return list(record)
+        except TypeError:
+            raise MetricInputError("vector records must be one-dimensional sequences") from None
 
 
 def _coerce_non_negative_integer(value, name):
@@ -134,6 +164,20 @@ class FiniteMetricSpace:
 
     def __call__(self, lhs_index, rhs_index):
         return self.distance(lhs_index, rhs_index)
+
+    @classmethod
+    def vectors(cls, records, metric=None, **kwargs):
+        """Construct a finite metric space from vector records.
+
+        Defaults to a pure Python Euclidean metric so the convenience remains
+        available in the core wheel without optional standard-distance bindings.
+        """
+
+        return cls(
+            records,
+            metric=_EuclideanVectorMetric() if metric is None else metric,
+            **kwargs,
+        )
 
     @classmethod
     def from_dataframe(cls, dataframe, metric=None, id_column=None, **kwargs):

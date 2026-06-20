@@ -133,6 +133,8 @@ space.describe_structure(representation=space.to_matrix())
 space.knn(query, k=10)
 space.nn(query)
 space.rnn(query, radius=1)
+Space.vectors(records)
+Space.vectors(records, metric=custom_vector_metric)
 ```
 
 `repr(space)` reports the engine object shape: size, metric, record type, and optional name.
@@ -142,6 +144,12 @@ DataFrame-like tabular records. The constructor reads rows through
 `to_dict("records")`, uses `id_column` as stable record IDs, and removes that ID
 column from the row dictionaries passed to the metric. It does not require pandas
 at import time.
+
+Use `Space.vectors(records)` for vector-specific inputs when Euclidean distance
+is the intended domain metric. The default is implemented in pure Python so the
+core wheel does not require optional standard-distance bindings. Pass
+`metric=...` to use Manhattan, cosine-derived, normalized, or domain-specific
+vector distances.
 
 Runtime policy objects live in `metric.runtime` and are re-exported from
 `metric`:
@@ -331,6 +339,9 @@ def euclidean(lhs, rhs) -> float:
 
 space = Space(records, euclidean)
 print(space.distance(0, 1))
+
+vector_space = Space.vectors(records)
+print(vector_space.distance(0, 1))
 ```
 
 `pairwise()` and `pairwise_distances()` currently return Python lists of lists.
