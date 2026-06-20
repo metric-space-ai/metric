@@ -12,6 +12,8 @@ Copyright (c) 2018 Michael Welsch
 #include <type_traits>
 #include <vector>
 
+#include "../../core/metric_traits.hpp"
+
 namespace metric {
 
 /**
@@ -56,6 +58,20 @@ template <typename V = double> struct Euclidean {
 	template <template <typename, bool> class Container, typename ValueType, bool F> // detect Blaze object by signature
 	double operator()(const Container<ValueType, F> &a, const Container<ValueType, F> &b) const;
 };
+
+} // namespace metric
+
+namespace metric::core {
+
+template <typename V> struct metric_traits<::metric::Euclidean<V>> {
+	static constexpr auto law = metric_law::metric;
+	static constexpr auto records = record_kind::aligned_vector;
+	static constexpr bool thread_safe = true;
+};
+
+} // namespace metric::core
+
+namespace metric {
 
 /**
  * @class Manhatten

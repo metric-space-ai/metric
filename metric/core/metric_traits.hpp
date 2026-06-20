@@ -17,6 +17,7 @@ enum class metric_law {
 enum class record_kind {
 	custom,
 	vector,
+	aligned_vector,
 	string,
 	sequence,
 	structured,

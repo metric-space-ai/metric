@@ -24,10 +24,11 @@ The first implementation slices are documented in [Engine Mental Model](mental-m
 ## Flagship Examples
 
 The first CI-tested engine demos live under `examples/engine/` and `python/examples/engine/`.
-They start with non-vector records and use the engine vocabulary directly:
+They use the engine vocabulary directly across native metric spaces and the vector special case:
 
 - strings with edit distance for neighbor search and grouping
 - process curves with an alignment metric, representative selection, and graph construction
+- vectors with Euclidean distance as one record type among others
 - histograms with cumulative transport distance, matrix materialization, and grouping
 - cross-space dependency over two aligned finite metric spaces
 
