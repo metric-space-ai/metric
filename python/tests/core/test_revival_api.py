@@ -1060,6 +1060,16 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(dependency.dropped_right_ids, ())
         self.assertEqual(dependency.local_scores, ())
         self.assertIsNone(dependency.diagnostics)
+        dependency_record = dependency.to_dict()
+        self.assertEqual(dependency_record["value"], dependency.value)
+        self.assertEqual(dependency_record["matched_ids"], (0, 1, 2, 3, 4, 5))
+        np.testing.assert_array_equal(dependency.to_numpy(), np.asarray([dependency.value]))
+        try:
+            dependency_frame = dependency.to_pandas()
+        except exceptions.OptionalDependencyError:
+            dependency_frame = None
+        if dependency_frame is not None:
+            self.assertEqual(dependency_frame.loc[0, "value"], dependency.value)
         self.assertEqual(process_space.correlate(quality_space), dependency)
         matrix_dependency = process_space.compare(
             quality_space,

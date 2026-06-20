@@ -406,6 +406,40 @@ class CorrelationResult:
     local_scores: tuple = ()
     diagnostics: object = None
 
+    def to_dict(self):
+        return {
+            "value": self.value,
+            "left_record_count": self.left_record_count,
+            "right_record_count": self.right_record_count,
+            "pair_count": self.pair_count,
+            "exact": self.exact,
+            "algorithm": self.algorithm,
+            "strategy": self.strategy,
+            "left_representation": self.left_representation,
+            "right_representation": self.right_representation,
+            "statistic_name": self.statistic_name,
+            "p_value": self.p_value,
+            "matched_ids": self.matched_ids,
+            "dropped_left_ids": self.dropped_left_ids,
+            "dropped_right_ids": self.dropped_right_ids,
+            "align": self.align,
+            "local_scores": self.local_scores,
+            "diagnostics": self.diagnostics,
+        }
+
+    def to_numpy(self):
+        return np.asarray([self.value], dtype=float)
+
+    def to_pandas(self):
+        try:
+            import pandas as pd
+        except ModuleNotFoundError:
+            raise OptionalDependencyError(
+                "CorrelationResult.to_pandas() requires pandas. Install pandas or use to_dict()."
+            ) from None
+
+        return pd.DataFrame.from_records([self.to_dict()])
+
 
 @dataclass(frozen=True)
 class EmbeddingDiagnostics:

@@ -44,6 +44,7 @@ The current local tree implements the first revival slice:
 - Python compare/correlate facade supports `align="ids"` over stable Space IDs
 - Python compare/correlate facade records fresh explicit left/right representation metadata
 - Python compare/correlate results record alignment mode, matched IDs, dropped-ID fields, p-value slot, local scores, and diagnostics metadata
+- Python compare/correlate results expose `to_dict()`, `to_numpy()`, and optional `to_pandas()` conversion helpers
 - Python engine-style Space embed intent with deterministic classical MDS and embedding diagnostics
 - Python embed facade accepts fresh explicit representations and records representation metadata
 - Python outlier facade supports strategy-free `Space.outliers(count=...)`, `fraction`, and `threshold`
