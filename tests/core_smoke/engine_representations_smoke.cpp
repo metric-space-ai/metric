@@ -1,4 +1,5 @@
 #include <cassert>
+#include <stdexcept>
 #include <vector>
 
 #include "metric/engine.hpp"
@@ -30,6 +31,9 @@ int main()
 	assert(implicit_diagnostics.materialized == metric::representations::materialization::lazy);
 	assert(implicit_diagnostics.updates == metric::representations::update_mode::live);
 	assert(!implicit_diagnostics.stale);
+	auto strategy_implicit = metric::representations::make(space, metric::strategies::brute_force{});
+	static_assert(metric::DistanceProvider_v<decltype(strategy_implicit)>);
+	assert(strategy_implicit.distance(id0, id2) == implicit.distance(id0, id2));
 
 	auto matrix = metric::representations::matrix(space);
 	static_assert(metric::DistanceProvider_v<decltype(matrix)>);
@@ -46,6 +50,9 @@ int main()
 	assert(!matrix_diagnostics.stale);
 	assert(matrix.stats().fill_ratio == 1.0);
 	assert(matrix.stats().hits == 2);
+	auto strategy_matrix = metric::representations::make(space, metric::strategies::matrix_cache{});
+	static_assert(metric::DistanceProvider_v<decltype(strategy_matrix)>);
+	assert(strategy_matrix.distance(id0, id2) == matrix.distance(id0, id2));
 
 	auto lazy_matrix = metric::representations::matrix(space, metric::representations::matrix_cache_mode::lazy);
 	assert(lazy_matrix.cached_distances() == 0);
@@ -78,6 +85,9 @@ int main()
 	assert(tree_diagnostics.kind == metric::representations::representation_kind::cover_tree_index);
 	assert(tree_diagnostics.records == space.size());
 	assert(tree.stats().nodes == space.size());
+	auto strategy_tree = metric::representations::make(space, metric::strategies::cover_tree{});
+	static_assert(metric::NeighborSearchIndex_v<decltype(strategy_tree)>);
+	assert(strategy_tree.knn(4, 2)[0].id == tree_neighbors[0].id);
 
 	auto graph = metric::representations::knn_graph(space, 1);
 	static_assert(metric::NeighborSearchIndex_v<decltype(graph)>);
@@ -99,6 +109,17 @@ int main()
 	const auto graph_alias = metric::representations::graph(space, 1);
 	assert(graph_alias.k() == graph.k());
 	assert(graph_alias.neighbors(id0)[0].id == graph.neighbors(id0)[0].id);
+	auto strategy_graph = metric::representations::make(space, metric::strategies::knn_graph(1));
+	static_assert(metric::NeighborSearchIndex_v<decltype(strategy_graph)>);
+	assert(strategy_graph.k() == graph.k());
+	assert(strategy_graph.neighbors(id0)[0].id == graph.neighbors(id0)[0].id);
+	bool rejected_missing_graph_neighbors = false;
+	try {
+		(void)metric::representations::make(space, metric::strategies::knn_graph{});
+	} catch (const std::invalid_argument &) {
+		rejected_missing_graph_neighbors = true;
+	}
+	assert(rejected_missing_graph_neighbors);
 
 	auto topology = metric::representations::topology(space);
 	static_assert(metric::GraphTopology_v<decltype(topology)>);
