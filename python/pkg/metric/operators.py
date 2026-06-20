@@ -397,6 +397,14 @@ class CorrelationResult:
     strategy: str
     left_representation: str
     right_representation: str
+    statistic_name: str = "distance_profile_correlation"
+    p_value: object = None
+    matched_ids: tuple = ()
+    dropped_left_ids: tuple = ()
+    dropped_right_ids: tuple = ()
+    align: str = "position"
+    local_scores: tuple = ()
+    diagnostics: object = None
 
 
 @dataclass(frozen=True)
@@ -1970,6 +1978,11 @@ def compare_spaces(
     *,
     left_representation="records",
     right_representation="records",
+    align="position",
+    matched_ids=None,
+    dropped_left_ids=(),
+    dropped_right_ids=(),
+    p_value=None,
 ):
     """Compare aligned finite metric spaces through pairwise distance profiles."""
     if strategy is None:
@@ -1983,6 +1996,8 @@ def compare_spaces(
     right_records = list(right_records)
     if len(left_records) != len(right_records):
         raise ValueError("space comparison requires aligned record sets of equal size")
+    if matched_ids is None:
+        matched_ids = tuple(range(len(left_records)))
 
     left_profile = _upper_triangle(pairwise_distance_matrix(left_records, left_metric))
     right_profile = _upper_triangle(pairwise_distance_matrix(right_records, right_metric))
@@ -1997,6 +2012,14 @@ def compare_spaces(
         strategy="distance_profile_correlation",
         left_representation=left_representation,
         right_representation=right_representation,
+        statistic_name="distance_profile_correlation",
+        p_value=p_value,
+        matched_ids=tuple(matched_ids),
+        dropped_left_ids=tuple(dropped_left_ids),
+        dropped_right_ids=tuple(dropped_right_ids),
+        align=align,
+        local_scores=(),
+        diagnostics=None,
     )
 
 

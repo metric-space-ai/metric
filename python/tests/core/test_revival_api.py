@@ -1052,6 +1052,14 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(dependency.strategy, "distance_profile_correlation")
         self.assertEqual(dependency.left_representation, "metric_space")
         self.assertEqual(dependency.right_representation, "metric_space")
+        self.assertEqual(dependency.statistic_name, "distance_profile_correlation")
+        self.assertIsNone(dependency.p_value)
+        self.assertEqual(dependency.align, "position")
+        self.assertEqual(dependency.matched_ids, (0, 1, 2, 3, 4, 5))
+        self.assertEqual(dependency.dropped_left_ids, ())
+        self.assertEqual(dependency.dropped_right_ids, ())
+        self.assertEqual(dependency.local_scores, ())
+        self.assertIsNone(dependency.diagnostics)
         self.assertEqual(process_space.correlate(quality_space), dependency)
         matrix_dependency = process_space.compare(
             quality_space,
@@ -1097,8 +1105,15 @@ class RevivalApiTest(unittest.TestCase):
             ids=[5, 0, 4, 1, 3, 2],
         )
         id_aligned_dependency = process_space.compare(shuffled_quality_space, align="ids")
-        self.assertEqual(id_aligned_dependency, dependency)
-        self.assertEqual(process_space.correlate(shuffled_quality_space, align="ids"), dependency)
+        self.assertAlmostEqual(id_aligned_dependency.value, dependency.value)
+        self.assertEqual(id_aligned_dependency.align, "ids")
+        self.assertEqual(id_aligned_dependency.matched_ids, (0, 1, 2, 3, 4, 5))
+        self.assertEqual(id_aligned_dependency.dropped_left_ids, ())
+        self.assertEqual(id_aligned_dependency.dropped_right_ids, ())
+        self.assertAlmostEqual(
+            process_space.correlate(shuffled_quality_space, align="ids").value,
+            dependency.value,
+        )
         self.assertAlmostEqual(
             process_space.compare(shuffled_quality_space, align="position").value,
             0.1505759459175673,
