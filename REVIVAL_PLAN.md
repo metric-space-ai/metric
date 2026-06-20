@@ -419,6 +419,79 @@ Deliverables:
 - comparison against embedding-only baselines
 - industrial anomaly workflow demo
 
+## Post-Revival Development Plans
+
+The revival plan is the baseline relaunch plan. Once the repository is
+understandable, buildable, tested, documented, and releasable, further work
+should move from restoration into framework development.
+
+As of 2026-06-20, the local code, documentation, CI, GitHub release, engine
+layer, and follow-up plan work have reached that transition point. The remaining
+public relaunch blocker is external package-index state: `metric-space` is not
+yet visible on PyPI because both configured publish paths need PyPI-side
+authorization to be fixed. That PyPI task blocks final public package
+availability, but it should not block continued framework development on the
+engine, capability, mapping, demo, and validation plans below.
+
+The following detail plans are the reference set for the next development
+phase:
+
+1. [METRIC Engine Plan](METRIC_ENGINE_PLAN.md) defines the engine architecture
+   and the core model:
+   `RecordSet + Metric -> MetricSpace -> Representations -> Operators -> Mappings -> Runtime`.
+2. [Engine Implementation Plan](ENGINE_IMPLEMENTATION_PLAN.md) turns the engine
+   architecture into concrete C++, Python, documentation, and example phases.
+3. [Representation Layer Plan](REPRESENTATION_LAYER_PLAN.md) defines matrices,
+   trees, graphs, caches, topologies, and indexes as interchangeable
+   representations over one `MetricSpace`.
+4. [Capability Roadmap](CAPABILITY_ROADMAP.md) defines user-facing framework
+   capabilities such as `neighbors`, `groups`, `embed`, `map`, `reduce`,
+   `denoise`, `outliers`, and `compare`.
+5. [Embedding And Mapping Roadmap](EMBEDDING_AND_MAPPING_ROADMAP.md) defines
+   embedding, reduction, mapping, inverse transform, and out-of-sample
+   transformation as metric-space capabilities rather than standalone
+   algorithm names.
+6. [Native DNN Engine Plan](NATIVE_DNN_ENGINE_PLAN.md) defines the native DNN
+   backend path for learned mappings, including PHATE-AE-style structure
+   preservation without making neural networks the conceptual center.
+7. [Python User Experience Plan](PYTHON_USER_EXPERIENCE_PLAN.md) defines the
+   Python facade, result objects, error behavior, examples, and documentation
+   required for Python to be the easiest way to learn the engine.
+8. [Flagship Demos Plan](FLAGSHIP_DEMOS_PLAN.md) defines the non-vector,
+   vector-special-case, mixed-record, and learned-mapping demos that should
+   prove the framework story in CI and documentation.
+9. [Test And Validation Plan](TEST_AND_VALIDATION_PLAN.md) defines correctness,
+   validation, regression, performance, and CI grouping for the engine and its
+   capabilities.
+
+Sub-plan status should be tracked here whenever one of the referenced plans
+lands a meaningful implementation slice. Use these status meanings:
+
+- Baseline complete: the first coherent implementation slice is on `master`,
+  documented, and covered by local or CI validation.
+- Active roadmap: the plan remains a source for additional framework
+  development beyond the first landed slice.
+- External blocker: the remaining work depends on package-index, account, or
+  service configuration outside the repository.
+
+| Plan | Status | Evidence and next update rule |
+|---|---|---|
+| [METRIC Engine Plan](METRIC_ENGINE_PLAN.md) | Baseline complete; active roadmap | The engine model is now visible through C++ headers, Python facade modules, docs, and demos. Update when the engine vocabulary or public composition model changes. |
+| [Engine Implementation Plan](ENGINE_IMPLEMENTATION_PLAN.md) | Baseline complete | The C++ core model, representations, operators, intent APIs, strategy objects, mappings, runtime policies, Python facade, docs, and flagship examples are present on `master`. Update when a new implementation phase becomes the recommended path. |
+| [Representation Layer Plan](REPRESENTATION_LAYER_PLAN.md) | Baseline complete; active roadmap | Implicit providers, matrix cache, cover-tree index, kNN graph index, graph topology, diagnostics, staleness checks, and representation strategies are present. Update when approximate or backend-specific representations are promoted. |
+| [Capability Roadmap](CAPABILITY_ROADMAP.md) | Baseline complete; active roadmap | Initial intent capabilities exist for neighbors, groups, representatives, compare/correlate, describe, embed, reduce, map, compress, denoise, and outliers. Update as richer default recipes or new capability contracts are promoted. |
+| [Embedding And Mapping Roadmap](EMBEDDING_AND_MAPPING_ROADMAP.md) | Baseline complete; active roadmap | MDS-style Python embedding, C++ PCFA mapping/reduction, clustered-space mapping, roadmap-only KOC surface, and native PHATE-AE demos are present. Update when a mapping strategy gains production status or out-of-sample model support changes. |
+| [Native DNN Engine Plan](NATIVE_DNN_ENGINE_PLAN.md) | Baseline complete; active roadmap | Native DNN training hooks, sample IDs, codecs, composite loss, autoencoder mapping, PHATE-style targets, PHATE-AE mapping, and artifact reload coverage are present. Update when trainer APIs or backend boundaries are promoted. |
+| [Python User Experience Plan](PYTHON_USER_EXPERIENCE_PLAN.md) | Baseline complete; active roadmap | Python `Space`, named result objects, conversion helpers, runtime policies, strategy docs, error docs, and real-data examples are present. Update when Python becomes the source of a new public workflow or deprecation path. |
+| [Flagship Demos Plan](FLAGSHIP_DEMOS_PLAN.md) | Baseline complete; active roadmap | CI-tested C++ and Python engine demos cover strings, process curves, histograms, vector special case, cross-space dependency, representation swaps, mixed structured records, and PHATE-AE mapping. Update when a new demo becomes canonical or gallery-ready. |
+| [Test And Validation Plan](TEST_AND_VALIDATION_PLAN.md) | Baseline complete; active roadmap | Core, Python, docs, release, fast, extended, nightly, and benchmark validation paths are documented, with core engine smoke and Python revival tests in place. Update when new gates become required or benchmark thresholds are promoted. |
+| PyPI package availability | External blocker | `metric-space` remains unpublished until repository PyPI credentials are replaced or a matching PyPI Trusted Publisher is configured. Update after a successful real publish run and PyPI JSON visibility check. |
+
+These plans should now be treated as the working backlog for the real
+framework-development phase. New work should be planned against the most
+specific document first, then cross-checked against this revival plan to ensure
+the public framing remains stable.
+
 ## Immediate Next Changes
 
 The first branch should avoid broad refactoring. It should make the project understandable and runnable.
