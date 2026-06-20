@@ -323,6 +323,12 @@ class Outlier:
     record_id: int
     score: object
 
+    def to_dict(self):
+        return {
+            "record_id": self.record_id,
+            "score": self.score,
+        }
+
 
 @dataclass(frozen=True)
 class OutlierResult:
@@ -336,6 +342,44 @@ class OutlierResult:
     operator_name: str
     strategy: str
     representation: str
+
+    def to_dict(self):
+        return {
+            "outliers": [outlier.to_dict() for outlier in self.outliers],
+            "record_count": self.record_count,
+            "cluster_count": self.cluster_count,
+            "noise_count": self.noise_count,
+            "exact": self.exact,
+            "operator_name": self.operator_name,
+            "strategy": self.strategy,
+            "representation": self.representation,
+        }
+
+    def to_numpy(self):
+        scores = [outlier.score for outlier in self.outliers]
+        try:
+            return np.asarray(scores, dtype=float)
+        except (TypeError, ValueError):
+            return np.asarray(scores, dtype=object)
+
+    def to_pandas(self):
+        try:
+            import pandas as pd
+        except ModuleNotFoundError:
+            raise OptionalDependencyError(
+                "OutlierResult.to_pandas() requires pandas. Install pandas or use to_dict()."
+            ) from None
+
+        rows = []
+        for rank, outlier in enumerate(self.outliers):
+            record = outlier.to_dict()
+            record["rank"] = rank
+            record["operator_name"] = self.operator_name
+            record["strategy"] = self.strategy
+            record["representation"] = self.representation
+            record["exact"] = self.exact
+            rows.append(record)
+        return pd.DataFrame.from_records(rows)
 
 
 @dataclass(frozen=True)

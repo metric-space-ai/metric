@@ -49,6 +49,7 @@ The current local tree implements the first revival slice:
 - Python engine-style Space embed intent with deterministic classical MDS and embedding diagnostics
 - Python embed facade accepts fresh explicit representations and records representation metadata
 - Python outlier facade supports strategy-free `Space.outliers(count=...)`, `fraction`, and `threshold`
+- Python `Outlier` and `OutlierResult` expose structured conversion helpers for metadata, score vectors, and optional pandas rows
 - Python denoise facade supports strategy-free outlier-removal `Space.denoise(...)` controls
 - Python outlier and denoise facades record fresh explicit representation metadata
 - Python engine-style Space outlier intent with DBSCAN-noise strategy
