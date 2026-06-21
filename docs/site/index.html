@@ -408,6 +408,8 @@
         <div class="brand">METRIC</div>
         <nav aria-label="Primary navigation">
           <a href="#concept">Concept</a>
+          <a href="#compute">Compute</a>
+          <a href="#analysis">Analysis</a>
           <a href="#workflow">Workflow</a>
           <a href="#tradeoffs">Tradeoffs</a>
           <a href="#examples">Evidence</a>
@@ -421,10 +423,10 @@
       <section class="hero">
         <div class="inner hero-grid">
           <div>
-            <p class="eyebrow">Generalized vector-space computation</p>
+            <p class="eyebrow">Vector spaces included, metric spaces generalized</p>
             <h1>METRIC</h1>
             <p class="lead">
-              Vector algorithms start with coordinates. METRIC starts with records and a distance function. A vector space is one case of that model; a finite metric space covers strings, curves, histograms, mixed records, graphs, images, and vectors with one C++ engine surface.
+              METRIC does not replace vector spaces. It includes them as the coordinate-based special case and generalizes the same style of numerical analysis to records that are easier to compare by a native metric than to embed first.
             </p>
             <div class="hero-actions">
               <a class="button primary" href="#concept">Understand the model</a>
@@ -432,26 +434,26 @@
             </div>
           </div>
           <div class="compare-panel" aria-label="Vector space compared with finite metric space">
-            <h2>The generalization</h2>
+            <h2>From vectors to metric numerics</h2>
             <div class="compare-row header">
               <span>Question</span>
-              <span>Vector space</span>
-              <span>Finite metric space</span>
+              <span>Vector-space special case</span>
+              <span>Metric-space generalization</span>
             </div>
             <div class="compare-row">
-              <strong>What is a record?</strong>
-              <span>A coordinate row such as `[1.2, 0.4, 9.1]`.</span>
-              <span>Any item with a defined distance: string, curve, histogram, image-like distribution, graph, structured record, or vector.</span>
+              <strong>Primitive object</strong>
+              <span>A coordinate row such as `[1.2, 0.4, 9.1]`; this remains fully supported.</span>
+              <span>Any finite record with distances to other records: vector, string, image, time series, graph, or mixed object.</span>
             </div>
             <div class="compare-row">
-              <strong>What gives geometry?</strong>
-              <span>A norm or vector distance such as Euclidean, cosine-derived, or Manhattan distance.</span>
-              <span>An explicit domain metric `d(x, y)` that compares two records in their native form.</span>
+              <strong>Primitive number</strong>
+              <span>Coordinates plus a vector metric such as Euclidean, cosine-derived, or Manhattan distance.</span>
+              <span>Pairwise distances `d(x, y)` and structures derived from them.</span>
             </div>
             <div class="compare-row">
-              <strong>What changes?</strong>
-              <span>Every object must become coordinates before computation.</span>
-              <span>Computation can happen before, after, or without vectorization.</span>
+              <strong>When it matters</strong>
+              <span>Use coordinates directly when the coordinate representation is natural and sufficient.</span>
+              <span>Use native metrics when forcing data into embeddings first is awkward, lossy, expensive, or inflexible.</span>
             </div>
           </div>
         </div>
@@ -459,9 +461,9 @@
 
       <section id="concept" class="band">
         <div class="inner">
-          <h2>One core idea: records plus metric equals space.</h2>
+          <h2>A vector dataset is already a finite metric space.</h2>
           <p class="section-lead">
-            METRIC treats a dataset as a finite metric space when it has a finite set of records and a distance function. The distance function is the modeling decision. It defines which records are near, which groups are meaningful, which graph edges exist, and which mapping diagnostics are valid.
+            If `X` is a finite set of vectors and `d` is Euclidean distance, then `(X, d)` is a finite metric space. METRIC keeps that case and removes the unnecessary restriction that every useful record must first become a vector. From the distance function, the engine can build the numerical structures normally needed for advanced analysis: distance matrices, neighborhood graphs, kernels, diffusion operators, embeddings, representatives, correlations, and learned mappings.
           </p>
           <div class="formula">
             <div>
@@ -472,14 +474,63 @@
             <div>
               <strong>Metric</strong>
               <code>d(x, y)</code>
-              <p>The distance compares two records and exposes the geometry used by operators.</p>
+              <p>The distance is the numeric observable. For vectors it can be a norm; for other records it can be a domain metric.</p>
             </div>
             <div>
               <strong>Space</strong>
               <code>(X, d)</code>
-              <p>The pair becomes the object that search, grouping, graph, diagnostic, and mapping code operates on.</p>
+              <p>The pair is the common layer for distance-based search, grouping, graph, diagnostic, and mapping code.</p>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section id="compute" class="band">
+        <div class="inner">
+          <h2>Once distance exists, data becomes numerically usable.</h2>
+          <p class="section-lead">
+            Coordinates are one way to obtain distances. METRIC also works when distance comes from edit operations, transport cost, time alignment, graph structure, or a composed domain metric. The engine evaluates distances and derives the numeric objects that algorithms actually consume.
+          </p>
+          <div class="examples">
+            <div class="example">
+              <strong>Distance matrix</strong>
+              <p>`D[i, j] = d(xi, xj)` turns vectors, strings, images, curves, graphs, or mixed records into a numerical matrix. Embedding is optional, not required.</p>
+            </div>
+            <div class="example">
+              <strong>Neighborhood graph</strong>
+              <p>Edges come from metric neighborhoods. The graph can drive search, clustering, local structure diagnostics, diffusion, and sparsification.</p>
+            </div>
+            <div class="example">
+              <strong>Kernels and diffusion</strong>
+              <p>Distances can be transformed into affinities and diffusion operators while keeping provenance back to the source records.</p>
+            </div>
+            <div class="example">
+              <strong>Statistics and mappings</strong>
+              <p>Entropy, intrinsic dimension, MGC correlation, embeddings, learned maps, and representatives can operate on distance geometry.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="analysis" class="band">
+        <div class="inner">
+          <h2>Use arbitrary datatypes as numerical analysis objects.</h2>
+          <p class="section-lead">
+            Numbers are useful because software can compare, sort, group, approximate, map, and correlate them. METRIC gives arbitrary records the same kind of computational access through distances: strings can use edit distance, images can use transport or structural distance, time series can use alignment distance, graphs can use graph distance, and mixed records can combine those with ordinary numeric fields.
+          </p>
+          <div class="workflow">
+            <div class="step"><b>A</b><strong>Per-type metric</strong><span>Define one distance rule for each datatype or field: text, image, curve, histogram, graph, categorical state, scalar sensor value.</span></div>
+            <div class="step"><b>B</b><strong>Metric composition</strong><span>Combine those distances into one record metric when a record contains multiple datatypes. Cross-type comparison is explicit: use a pair metric, recoding cost, or mapping when a string, image, or time series must be compared across type boundaries.</span></div>
+            <div class="step"><b>C</b><strong>Shared analysis</strong><span>Run the same metric-space operators over the resulting space: nearest records, clusters, representatives, outliers, graph structure, correlations, embeddings, compression, and learned mappings.</span></div>
+          </div>
+          <pre><code>d(record_a, record_b) =
+  w_text  * edit(record_a.text, record_b.text)
++ w_image * transport(record_a.image, record_b.image)
++ w_curve * alignment(record_a.series, record_b.series)
++ w_num   * euclidean(record_a.sensors, record_b.sensors)</code></pre>
+          <p class="section-lead">
+            This is the generalization that makes multimodal embedding optional instead of mandatory. If an embedding is the best representation, it fits as a mapping. If native metrics are more faithful, analysis can begin without training one global embedding model first.
+          </p>
         </div>
       </section>
 
@@ -487,14 +538,14 @@
         <div class="inner">
           <h2>The engine workflow is linear.</h2>
           <p class="section-lead">
-            METRIC is not a catalog of unrelated algorithms. The public model is a sequence of choices over the same finite metric space.
+            The workflow is the same whether the records are vectors, strings, images, curves, or mixed domain objects. The metric-space abstraction is the common numerical layer.
           </p>
           <div class="workflow">
-            <div class="step"><b>1</b><strong>Choose records</strong><span>Keep the data in the domain where comparison is meaningful: strings, process curves, histograms, mixed records, or vectors.</span></div>
-            <div class="step"><b>2</b><strong>Choose the metric</strong><span>Use edit distance, transport cost, time alignment, a graph distance, Euclidean distance, or a composed domain metric.</span></div>
-            <div class="step"><b>3</b><strong>Create a metric space</strong><span>The C++ engine stores stable record IDs, metric traits, metadata, and version state.</span></div>
+            <div class="step"><b>1</b><strong>Choose typed records</strong><span>Keep the data in the domain where comparison is meaningful: strings, images, curves, histograms, graphs, categorical states, numeric fields, or vectors.</span></div>
+            <div class="step"><b>2</b><strong>Attach metrics</strong><span>Use edit distance for text, transport or structural distance for images, alignment distance for time series, Euclidean distance for vectors, and composed metrics for mixed records.</span></div>
+            <div class="step"><b>3</b><strong>Create a metric space</strong><span>The C++ engine stores stable record IDs, metric traits, metadata, and version state for the resulting finite space.</span></div>
             <div class="step"><b>4</b><strong>Select representation</strong><span>Run implicitly, materialize a matrix cache, build a graph, use a tree index, or fit a mapping.</span></div>
-            <div class="step"><b>5</b><strong>Run operators</strong><span>Find neighbors, groups, representatives, outliers, graph structure, entropy, cross-space dependency, or mapped spaces.</span></div>
+            <div class="step"><b>5</b><strong>Run analysis</strong><span>Find neighbors, groups, representatives, outliers, graph structure, entropy, cross-space dependency, or mapped spaces.</span></div>
             <div class="step"><b>6</b><strong>Inspect results</strong><span>Results keep source IDs, diagnostics, representation metadata, metric assumptions, warnings, and lineage.</span></div>
           </div>
         </div>
@@ -504,22 +555,26 @@
         <div class="inner">
           <h2>Advantages and costs.</h2>
           <p class="section-lead">
-            The benefit is not magic speed. The benefit is preserving the right geometry. The cost is that metric-space computation makes the distance function explicit and often more expensive than a fixed vector dot product.
+            The benefit is a broader numerical substrate, not automatic speed. The cost is that the metric has to be designed, evaluated, and sometimes materialized.
           </p>
           <div class="pros-cons">
             <div class="cell">
               <strong>Advantages</strong>
               <ul>
+                <li>Vector datasets remain first-class; they are finite metric spaces with coordinate-derived distances.</li>
+                <li>Strings, images, curves, histograms, structured records, and vectors can participate in one analysis model.</li>
+                <li>Heterogeneous records can be analyzed without first training one global multimodal embedding network.</li>
                 <li>Native distances can preserve order, transport, alignment, structure, and mixed-field semantics.</li>
                 <li>Vector spaces remain available as a normal special case.</li>
                 <li>Representations are explicit: implicit lookup, dense matrix, graph, tree index, or mapped space.</li>
-                <li>Results can report assumptions, diagnostics, and source-record lineage.</li>
               </ul>
             </div>
             <div class="cell">
               <strong>Costs</strong>
               <ul>
-                <li>A useful metric must exist; a weak metric produces weak results.</li>
+                <li>A useful metric must exist for each type, field, or cross-type comparison that the analysis uses.</li>
+                <li>Composed metrics need explicit weights and assumptions.</li>
+                <li>When a natural vector representation already solves the problem, direct vector methods can be simpler.</li>
                 <li>Pairwise distances can be expensive for large record sets.</li>
                 <li>Some indexes and algorithms require metric laws such as symmetry and triangle inequality.</li>
                 <li>METRIC is a native C++ library, not a hosted vector database or tensor training framework.</li>
@@ -531,9 +586,9 @@
 
       <section id="examples" class="band">
         <div class="inner">
-          <h2>Where plain vector neighbors lose information.</h2>
+          <h2>What this enables.</h2>
           <p class="section-lead">
-            The checked-in C++ demo reports compare native metric-space workflows with vector baselines. These are small deterministic fixtures, not benchmark claims about all datasets.
+            The checked-in C++ reports are small deterministic fixtures. They demonstrate the analysis pattern: keep the domain metric, derive numerical structures from distances, and only map to coordinates when that mapping is the right representation.
           </p>
           <div class="examples">
             <div class="example">
@@ -553,7 +608,7 @@
             </div>
             <div class="example">
               <strong>Mixed structured records</strong>
-              <p>A composed metric over numeric, categorical, text, histogram, and curve fields returns 4/4 expected records. Numeric vector shadows miss 4/4.</p>
+              <p>A composed metric over numeric, categorical, text, histogram, and curve fields returns 4/4 expected records. Numeric vector shadows miss 4/4 because they discard nonnumeric semantics.</p>
               <a href="https://github.com/metric-space-ai/metric/blob/master/docs/examples/mixed-structured-record-baseline.md">Read demo facts</a>
             </div>
             <div class="example">
