@@ -17,6 +17,10 @@ Examples:
 4. Run `compare` with a cross-space strategy such as MGC.
 
 The promoted C++ example [metric_space_correlation.cpp](../../examples/core/metric_space_correlation.cpp) runs in the core CI path and compares paired observations from two different record containers and metric types.
+The engine hero fixture [cross_space_mgc.cpp](../../examples/engine/cross_space_mgc.cpp)
+adds a raw cross-modal vector-nearest-neighbor pairing baseline, where the
+baseline misses most nonlinear paired records while MGC still detects the
+cross-space dependency.
 
 ## Target Python Shape
 

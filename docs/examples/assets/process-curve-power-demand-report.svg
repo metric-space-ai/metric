@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="520" viewBox="0 0 920 520" role="img" aria-labelledby="title desc">
+  <title id="title">PowerDemand external process-curve benchmark report</title>
+  <desc id="desc">Summary figure for the METRIC PowerDemand process-curve benchmark: 24 external windows, 8 queries, 8 of 8 alignment-metric hits, and 8 of 8 vector-baseline misses.</desc>
+  <rect width="920" height="520" fill="#f8fafc"/>
+  <text x="54" y="48" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#172033">PowerDemand external process-curve benchmark</text>
+  <text x="54" y="76" font-family="Arial, sans-serif" font-size="13" fill="#526070">UCR Time Series Anomaly Detection datasets (2021), Figshare, CC BY 4.0</text>
+  <rect x="54" y="112" width="812" height="138" rx="8" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="86" y="148" font-family="Arial, sans-serif" font-size="14" fill="#526070">External windows</text>
+  <text x="86" y="190" font-family="Arial, sans-serif" font-size="42" font-weight="700" fill="#172033">24</text>
+  <text x="256" y="148" font-family="Arial, sans-serif" font-size="14" fill="#526070">Downsampled queries</text>
+  <text x="256" y="190" font-family="Arial, sans-serif" font-size="42" font-weight="700" fill="#172033">8</text>
+  <text x="476" y="148" font-family="Arial, sans-serif" font-size="14" fill="#526070">Alignment metric</text>
+  <text x="476" y="190" font-family="Arial, sans-serif" font-size="42" font-weight="700" fill="#166534">8/8</text>
+  <text x="676" y="148" font-family="Arial, sans-serif" font-size="14" fill="#526070">Vector baseline misses</text>
+  <text x="676" y="190" font-family="Arial, sans-serif" font-size="42" font-weight="700" fill="#991b1b">8/8</text>
+  <text x="86" y="224" font-family="Arial, sans-serif" font-size="13" fill="#64748b">Dense source-window evaluations: 576</text>
+  <text x="476" y="224" font-family="Arial, sans-serif" font-size="13" fill="#64748b">Average metric margin: 370.005</text>
+  <rect x="54" y="282" width="812" height="154" rx="8" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="86" y="318" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#172033">Representative query</text>
+  <text x="86" y="346" font-family="Arial, sans-serif" font-size="13" fill="#526070">downsampled_power_demand_044_anomaly_start_18485</text>
+  <line x1="86" y1="374" x2="820" y2="374" stroke="#e2e8f0"/>
+  <text x="86" y="406" font-family="Arial, sans-serif" font-size="13" fill="#166534">METRIC alignment winner</text>
+  <text x="286" y="406" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#172033">power_demand_044_anomaly_start_18485</text>
+  <text x="742" y="406" font-family="Arial, sans-serif" font-size="13" fill="#172033">324</text>
+  <text x="86" y="432" font-family="Arial, sans-serif" font-size="13" fill="#991b1b">Padded vector baseline winner</text>
+  <text x="286" y="432" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#172033">power_demand_045_pre_anomaly_23152</text>
+  <text x="742" y="432" font-family="Arial, sans-serif" font-size="13" fill="#172033">592.967</text>
+  <text x="54" y="482" font-family="Arial, sans-serif" font-size="12" fill="#64748b">Record IDs are preserved from the local CSV slice through nearest-neighbor output; values are copied from the source archive without smoothing or rescaling.</text>
+</svg>

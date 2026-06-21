@@ -2,3 +2,6 @@ build/
 CMakeUserPresets.json
 __pycache__/
 *.py[cod]
+python/pkg/metric/_impl/*.so
+python/pkg/metric/_impl/*.pyd
+.codex/

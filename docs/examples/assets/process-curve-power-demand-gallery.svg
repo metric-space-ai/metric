@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="360" viewBox="0 0 760 360" role="img" aria-labelledby="title desc">
+  <title id="title">Power demand process-curve gallery</title>
+  <desc id="desc">Six short windows from a CC BY 4.0 UCR time-series anomaly dataset, showing normal, pre-anomaly, anomaly, and recovery process curves.</desc>
+  <rect width="760" height="360" fill="#f8fafc"/>
+  <text x="58" y="24" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#172033">Power demand process-curve gallery</text>
+  <text x="58" y="330" font-family="Arial, sans-serif" font-size="11" fill="#526070">Source: UCR Time Series Anomaly Detection datasets (2021), Figshare, CC BY 4.0</text>
+  <line x1="58" y1="268" x2="698" y2="268" stroke="#cbd5e1" stroke-width="1"/>
+  <line x1="58" y1="38" x2="58" y2="268" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="30" y="272" font-family="Arial, sans-serif" font-size="10" fill="#64748b">low</text>
+  <text x="28" y="42" font-family="Arial, sans-serif" font-size="10" fill="#64748b">high</text>
+  <rect x="540" y="45" width="164" height="86" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+  <line x1="556" y1="62" x2="586" y2="62" stroke="#2563eb" stroke-width="3"/>
+  <text x="594" y="66" font-family="Arial, sans-serif" font-size="11" fill="#334155">normal</text>
+  <line x1="556" y1="82" x2="586" y2="82" stroke="#16a34a" stroke-width="3"/>
+  <text x="594" y="86" font-family="Arial, sans-serif" font-size="11" fill="#334155">pre-anomaly</text>
+  <line x1="556" y1="102" x2="586" y2="102" stroke="#dc2626" stroke-width="3"/>
+  <text x="594" y="106" font-family="Arial, sans-serif" font-size="11" fill="#334155">anomaly</text>
+  <line x1="556" y1="122" x2="586" y2="122" stroke="#7c3aed" stroke-width="3"/>
+  <text x="594" y="126" font-family="Arial, sans-serif" font-size="11" fill="#334155">recovery</text>
+  <polyline fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="58.0,68.8 76.3,38.8 94.6,44.0 112.9,45.2 131.1,66.4 149.4,93.5 167.7,90.3 186.0,85.0 204.3,79.1 222.6,81.3 240.9,38.0 259.1,45.5 277.4,61.2 295.7,96.8 314.0,127.5 332.3,142.4 350.6,168.8 368.9,197.6 387.1,203.7 405.4,215.4 423.7,209.6 442.0,209.5 460.3,192.0 478.6,129.9 496.9,133.6 515.1,108.4 533.4,94.1 551.7,104.7 570.0,123.0 588.3,147.8 606.6,177.8 624.9,175.1 643.1,171.8 661.4,174.9 679.7,112.6 698.0,111.6"/>
+  <polyline fill="none" stroke="#3b82f6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="0.75" points="58.0,135.9 76.3,106.6 94.6,95.5 112.9,99.6 131.1,103.7 149.4,129.8 167.7,126.1 186.0,123.6 204.3,121.6 222.6,131.0 240.9,151.0 259.1,171.7 277.4,191.8 295.7,192.7 314.0,170.5 332.3,184.7 350.6,189.6 368.9,209.9 387.1,234.2 405.4,234.0 423.7,241.6 442.0,243.0 460.3,240.4 478.6,239.4 496.9,218.4 515.1,193.7 533.4,194.4 551.7,197.9 570.0,197.7 588.3,213.3 606.6,223.6 624.9,228.4 643.1,223.9 661.4,224.1 679.7,227.5 698.0,226.2"/>
+  <polyline fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="58.0,103.6 76.3,107.3 94.6,108.9 112.9,117.6 131.1,61.3 149.4,73.6 167.7,99.5 186.0,112.9 204.3,132.9 222.6,166.6 240.9,206.8 259.1,230.0 277.4,234.2 295.7,243.7 314.0,240.3 332.3,233.5 350.6,217.8 368.9,168.8 387.1,153.5 405.4,125.6 423.7,113.4 442.0,123.2 460.3,135.7 478.6,157.4 496.9,172.4 515.1,171.7 533.4,165.6 551.7,151.4 570.0,102.1 588.3,94.8 606.6,114.0 624.9,133.8 643.1,153.4 661.4,168.8 679.7,197.4 698.0,210.5"/>
+  <polyline fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="58.0,268.0 76.3,265.0 94.6,256.0 112.9,249.7 131.1,238.2 149.4,233.0 167.7,232.6 186.0,230.1 204.3,223.3 222.6,214.9 240.9,211.0 259.1,214.3 277.4,215.1 295.7,218.0 314.0,213.9 332.3,204.8 350.6,195.8 368.9,189.1 387.1,185.4 405.4,180.3 423.7,174.2 442.0,169.9 460.3,167.6 478.6,166.4 496.9,160.5 515.1,155.9 533.4,153.1 551.7,148.9 570.0,144.6 588.3,143.5 606.6,145.0 624.9,144.5 643.1,146.0 661.4,145.8 679.7,147.8 698.0,147.9"/>
+  <polyline fill="none" stroke="#ef4444" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="0.75" points="58.0,138.6 76.3,138.9 94.6,132.2 112.9,132.9 131.1,131.5 149.4,130.2 167.7,132.7 186.0,134.5 204.3,135.9 222.6,137.8 240.9,139.5 259.1,140.2 277.4,140.4 295.7,144.3 314.0,144.0 332.3,146.3 350.6,149.7 368.9,155.1 387.1,157.8 405.4,162.1 423.7,166.4 442.0,169.5 460.3,172.8 478.6,174.3 496.9,174.8 515.1,174.7 533.4,174.4 551.7,175.1 570.0,175.8 588.3,176.5 606.6,173.9 624.9,176.6 643.1,178.6 661.4,178.7 679.7,179.8 698.0,180.5"/>
+  <polyline fill="none" stroke="#7c3aed" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="58.0,267.4 76.3,248.3 94.6,248.0 112.9,236.9 131.1,224.7 149.4,230.1 167.7,203.9 186.0,189.2 204.3,188.5 222.6,189.6 240.9,204.7 259.1,216.6 277.4,220.7 295.7,221.3 314.0,222.3 332.3,195.0 350.6,141.0 368.9,144.6 387.1,153.6 405.4,171.3 423.7,184.3 442.0,210.5 460.3,228.4 478.6,230.9 496.9,235.1 515.1,242.7 533.4,213.8 551.7,206.3 570.0,151.5 588.3,102.0 606.6,66.3 624.9,63.9 643.1,62.1 661.4,81.3 679.7,104.0 698.0,107.3"/>
+</svg>

@@ -5,21 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="Technical documentation for the METRIC finite metric-space engine."
+      content="Technical documentation for the METRIC native C++ finite metric-space engine."
     />
     <title>METRIC Docs</title>
     <style>
       :root {
         color-scheme: light;
         --ink: #14161a;
+        --text: #343c46;
         --muted: #5e6673;
         --line: #d8dee8;
         --surface: #f4f6f9;
         --panel: #ffffff;
         --code: #11151b;
-        --cyan: #008fb3;
-        --red: #c94c4c;
-        --green: #19805b;
         font-family:
           Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
           "Segoe UI", sans-serif;
@@ -59,7 +57,7 @@
         top: 0;
         z-index: 5;
         border-bottom: 1px solid var(--line);
-        background: rgba(244, 246, 249, 0.94);
+        background: rgba(244, 246, 249, 0.95);
         backdrop-filter: blur(14px);
       }
 
@@ -72,7 +70,7 @@
 
       .topline-inner {
         display: flex;
-        min-height: 72px;
+        min-height: 70px;
         align-items: center;
         justify-content: space-between;
         gap: 20px;
@@ -164,19 +162,19 @@
       }
 
       h1 {
-        max-width: 860px;
+        max-width: 900px;
         margin: 0;
-        font-size: 74px;
-        line-height: 0.96;
+        font-size: 66px;
+        line-height: 0.98;
         letter-spacing: 0;
       }
 
       .lead {
-        max-width: 840px;
+        max-width: 850px;
         margin: 24px 0 0;
-        color: #343c46;
-        font-size: 23px;
-        line-height: 1.4;
+        color: var(--text);
+        font-size: 22px;
+        line-height: 1.42;
       }
 
       section {
@@ -186,21 +184,21 @@
 
       h2 {
         margin: 0 0 18px;
-        font-size: 42px;
+        font-size: 38px;
         line-height: 1.04;
         letter-spacing: 0;
       }
 
       p {
-        max-width: 820px;
-        color: #343c46;
+        max-width: 840px;
+        color: var(--text);
         font-size: 17px;
         line-height: 1.58;
       }
 
       ul,
       ol {
-        color: #343c46;
+        color: var(--text);
         font-size: 16px;
         line-height: 1.65;
       }
@@ -215,7 +213,7 @@
       }
 
       .card {
-        min-height: 150px;
+        min-height: 142px;
         padding: 22px;
         background: #fff;
       }
@@ -254,7 +252,7 @@
 
       @media (max-width: 900px) {
         h1 {
-          font-size: 52px;
+          font-size: 48px;
         }
 
         .lead {
@@ -262,7 +260,7 @@
         }
 
         h2 {
-          font-size: 34px;
+          font-size: 31px;
         }
 
         .doc-shell {
@@ -280,17 +278,13 @@
 
       @media (max-width: 640px) {
         h1 {
-          font-size: 40px;
-        }
-
-        h2 {
-          font-size: 29px;
+          font-size: 37px;
         }
 
         .topline-inner {
           align-items: flex-start;
           flex-direction: column;
-          padding: 18px 0;
+          padding: 16px 0;
         }
 
         .top-actions {
@@ -305,8 +299,9 @@
         <div class="brand">METRIC Docs</div>
         <nav class="top-actions" aria-label="Primary navigation">
           <a href="index.html">Project</a>
-          <a href="#engine">Engine</a>
-          <a href="#api">API</a>
+          <a href="#space">Metric Space</a>
+          <a href="#cpp">C++</a>
+          <a href="#examples">Examples</a>
           <a class="nav-cta" href="https://github.com/metric-space-ai/metric">GitHub</a>
         </nav>
       </div>
@@ -316,106 +311,97 @@
       <aside class="toc" aria-label="Table of contents">
         <strong>Start Here</strong>
         <a href="#overview">Overview</a>
-        <a href="#manifesto">Manifesto</a>
+        <a href="#space">Finite Metric Spaces</a>
         <a href="#engine">Engine Model</a>
-        <a href="#api">API Surface</a>
-        <a href="#python">Python</a>
-        <a href="#cpp">C++</a>
-        <a href="#workflows">Workflows</a>
+        <a href="#cpp">C++ API</a>
+        <a href="#bindings">Bindings</a>
+        <a href="#examples">Hero Examples</a>
+        <a href="#status">Status Labels</a>
       </aside>
 
       <article>
         <div id="overview" class="hero">
           <p class="kicker">Technical Documentation</p>
-          <h1>Finite metric spaces as a first-class numerical object.</h1>
+          <h1>Finite metric spaces as native C++ numerical objects.</h1>
           <p class="lead">
-            METRIC gives users a unified engine for explicit metrics, finite spaces, representations, operators, mappings, diagnostics, and runtime policies.
+            METRIC works with records and explicit metrics. The core engine owns the metric-space model; bindings adapt external language data to that native implementation.
           </p>
         </div>
 
-        <section id="manifesto">
-          <h2>Why metric-space numerics?</h2>
+        <section id="space">
+          <h2>Finite Metric Spaces</h2>
           <p>
-            Vector search starts from coordinates and a vector distance. METRIC treats that as one useful specialization rather than the foundation. The modeling step starts with records in their natural form and a metric that expresses the cost of comparing those records.
+            A finite metric space is a finite record set `X = {x0, x1, ..., xn}` plus a distance function `d(x, y)`. The metric gives the dataset its geometry. Operators document when they require non-negativity, identity, symmetry, and the triangle inequality.
           </p>
           <p>
-            Once records and a metric are chosen, the dataset is a finite metric space. Embeddings, sparse graphs, search trees, and neural approximators can then be introduced as mappings, representations, or strategies without hiding the metric contract that gives the space its geometry.
-          </p>
-          <p>
-            The stable public frame is intentionally narrow: compute with metric spaces directly, preserve research breadth behind clear stability labels, and promote algorithms only when assumptions, examples, and tests are explicit.
+            Records do not need to be vectors. METRIC can use strings with edit distance, histograms with transport distance, process curves with alignment distance, mixed records with composed domain penalties, or vectors with Euclidean distance.
           </p>
         </section>
 
         <section id="engine">
           <h2>Engine Model</h2>
-          <p>
-            The engine is organized around one pipeline:
-          </p>
-          <pre><code>RecordSet + Metric -> MetricSpace -> Intent -> Strategy -> Representation -> Runtime -> Result</code></pre>
+          <pre><code>RecordSet + Metric -> MetricSpace -> Representation -> Operator -> Result</code></pre>
           <div class="cards">
-            <div class="card"><strong>MetricSpace</strong><span>Owns records, stable IDs, metrics, assumptions, metadata, and version state.</span></div>
-            <div class="card"><strong>Intent</strong><span>Names what the user wants: neighbors, groups, embed, map, reduce, denoise, outliers, compare.</span></div>
-            <div class="card"><strong>Strategy</strong><span>Names how the operation executes: MDS, MGC, cover tree, kNN graph, PCFA, PHATE-AE, and more.</span></div>
-            <div class="card"><strong>Runtime</strong><span>Controls exactness, approximation, materialization, sparsity, parallelism, and reproducibility.</span></div>
+            <div class="card"><strong>MetricSpace</strong><span>Stores records, stable IDs, metric traits, metadata, and version state.</span></div>
+            <div class="card"><strong>Representation</strong><span>Runs the same space implicitly, through a distance matrix, graph, tree index, or mapped space.</span></div>
+            <div class="card"><strong>Operator</strong><span>Computes neighbors, groups, representatives, graph diagnostics, entropy, MGC, mappings, and reductions.</span></div>
+            <div class="card"><strong>Result</strong><span>Preserves IDs, strategy metadata, representation metadata, warnings, diagnostics, and lineage.</span></div>
           </div>
         </section>
 
-        <section id="api">
-          <h2>API Surface</h2>
+        <section id="cpp">
+          <h2>C++ API</h2>
+          <pre><code>#include &lt;metric/distance.hpp&gt;
+#include &lt;metric/engine.hpp&gt;
+
+#include &lt;string&gt;
+#include &lt;vector&gt;
+
+std::vector&lt;std::string&gt; records = {"metric", "metrics", "matrix", "tree"};
+auto space = metric::make_space(records, metric::Edit&lt;char&gt;{});
+
+auto neighbors = metric::find_neighbors(
+    space,
+    std::string("metricks"),
+    metric::count{2},
+    metric::strategies::cover_tree{});</code></pre>
           <p>
-            METRIC separates the current revived core from the target engine facade. Promoted examples use the CI-tested core while the intent-first facade is restored.
-          </p>
-          <ul>
-            <li><strong>Core Revival API:</strong> metrics, C++ `metric::Metric`, C++ `Space::from_records`, C++ `metric::operators`, Python `Space`, `FiniteMetricSpace`, `MatrixSpace`, explicit C++ representations, nearest-neighbor helpers, and intrinsic-dimension diagnostics.</li>
-            <li><strong>Target Engine API:</strong> broader intent methods, strategies, runtime policies, and result objects.</li>
-            <li><strong>Compatibility API:</strong> lower-level compatibility names such as `metric::Matrix`, `metric::Tree`, and `metric::KNNGraph`.</li>
-            <li><strong>Extension API:</strong> custom metrics, representations, strategies, neural modules, and diagnostics.</li>
-          </ul>
-          <p>
-            Stable revival surface means CI-backed metrics, typed C++ metric callables, minimal C++ and Python Space facades, explicit spaces, C++ and Python operator helpers, nearest-neighbor helpers, intrinsic-dimension diagnostics, entropy and MGC examples, and install/export support. Python `metric.mappings` and `metric.transforms` are beta compatibility bridges. Mapping modules, transforms, neural approximators, industrial demos, and broad historical examples stay beta or experimental until deterministic tests and promoted examples cover them.
-          </p>
-          <p>
-            The repository keeps a path-based module status matrix in <a href="https://github.com/metric-space-ai/metric/blob/master/docs/stability.md">docs/stability.md</a>, separating Core Revival APIs from compatibility, beta, experimental, and historical code.
-            Current local revival evidence and remaining external release actions are tracked in <a href="https://github.com/metric-space-ai/metric/blob/master/docs/revival-status.md">docs/revival-status.md</a>.
+            The detailed C++ reference is maintained in <a href="https://github.com/metric-space-ai/metric/blob/master/docs/api/cpp.md">docs/api/cpp.md</a>.
           </p>
         </section>
 
-        <section id="python">
-          <h2>Python</h2>
+        <section id="bindings">
+          <h2>Bindings</h2>
+          <p>
+            Python exposes selected native surfaces for user records, result objects, and adapters. Algorithmic work belongs to the C++ implementation. Binding documentation is maintained in <a href="https://github.com/metric-space-ai/metric/blob/master/docs/api/python.md">docs/api/python.md</a>.
+          </p>
           <pre><code>from metric import Edit, Space
 
 records = ["cat", "cot", "coat", "dog"]
 space = Space(records, Edit())
-
-print(space.distance(0, 1))
 print(space.neighbors("cut", k=2))</code></pre>
         </section>
 
-        <section id="cpp">
-          <h2>C++</h2>
-          <pre><code>#include &lt;metric/distance.hpp&gt;
-#include &lt;metric/space.hpp&gt;
-#include &lt;metric/operators.hpp&gt;
-
-std::vector&lt;std::string&gt; records = {"cat", "cot", "coat", "dog"};
-
-auto space = metric::Space::from_records(records, metric::Edit&lt;std::string&gt;{});
-
-auto nearest = space.neighbors(std::string("cut"), 2);
-auto distances = metric::operators::pairwise_distance_matrix(records, metric::Edit&lt;std::string&gt;{});</code></pre>
+        <section id="examples">
+          <h2>Hero Examples</h2>
+          <ul>
+            <li>String edit space: metric correct 4/4, vector baseline misses 4/4.</li>
+            <li>Histogram transport: metric correct 4/4, vector baseline misses 4/4.</li>
+            <li>External process curves: metric correct 16/16, vector baseline misses 16/16.</li>
+            <li>Distribution/image recoding: metric correct 4/4, vector baseline misses 4/4.</li>
+            <li>Mixed structured records: metric correct 4/4, vector baseline misses 4/4.</li>
+            <li>Cross-space MGC: dependency detected, raw vector pairing misses 9/12.</li>
+            <li>PHATE-AE pipeline: native component provenance plus process-curve latent nearest families correct for 6/6 while the vector baseline misses 6/6.</li>
+          </ul>
+          <p>
+            The documented outputs are in <a href="https://github.com/metric-space-ai/metric/blob/master/docs/examples/engine-demo-outputs.md">docs/examples/engine-demo-outputs.md</a>.
+          </p>
         </section>
 
-        <section id="workflows">
-          <h2>Workflows</h2>
-          <ol>
-            <li>Choose records and a meaningful metric.</li>
-            <li>Create a finite metric space.</li>
-            <li>Use the current core operators for search, diagnostics, or comparison.</li>
-            <li>Use target intent names and strategies only where the facade is implemented and tested.</li>
-            <li>Use result diagnostics to inspect assumptions, costs, warnings, and lineage.</li>
-          </ol>
+        <section id="status">
+          <h2>Status Labels</h2>
           <p>
-            Source documentation is maintained in the repository under <a href="https://github.com/metric-space-ai/metric/tree/master/docs">docs/</a>.
+            METRIC labels public surfaces as promoted, compatibility, beta, experimental, or historical. The module matrix is maintained in <a href="https://github.com/metric-space-ai/metric/blob/master/docs/stability.md">docs/stability.md</a>.
           </p>
         </section>
       </article>
