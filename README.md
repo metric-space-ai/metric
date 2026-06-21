@@ -316,9 +316,6 @@ The revived stable core is intentionally small: distance metrics, typed C++ metr
 
 METRIC also preserves broader research work in mappings, transforms, neural approximators, industrial demos, and domain-specific experiments. Python exposes `metric.mappings` and `metric.transforms` as beta compatibility bridges so users can inspect installed legacy bindings without treating them as stable core APIs. Those modules remain valuable, but they are not advertised as stable release gates until they have deterministic tests, documented assumptions, and promoted examples. The current module-by-module support status is maintained in [API Surface](docs/stability.md).
 
-## Background
-
-METRIC grew out of the PANDA project and earlier industrial AI experiments. That history explains the breadth of algorithms still present in the repository: mappings, feature extractors, transforms, DNN components, and anomaly workflows. The revived public frame is narrower and clearer: compute with finite metric spaces directly, then use mapping or learning layers only when they serve that metric-space workflow.
 
 ## License
 
