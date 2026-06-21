@@ -7,6 +7,12 @@ The promoted C++ example [histogram_emd_space.cpp](../../examples/core/histogram
 The promoted Python example [histogram_transport_space.py](../../python/examples/metric_space/histogram_transport_space.py)
 uses the same metric-space pattern with a deterministic one-dimensional transport callable. It covers the core wheel path without requiring the broader compiled EMD binding.
 
+The CI-tested C++ engine fixture [histogram_transport_space.cpp](../../examples/engine/histogram_transport_space.cpp)
+adds the corresponding native transport-vs-vector baseline. The report
+[Histogram Transport Baseline](histogram-transport-baseline.md) records 4/4
+transport hits and 4/4 raw-vector misses on shifted-mass queries with split-mass
+decoys.
+
 Core shape:
 
 ```cpp

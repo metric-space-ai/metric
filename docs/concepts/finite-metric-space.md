@@ -36,18 +36,6 @@ METRIC also provides explicit representations:
 
 These representations trade memory, update cost, and query speed differently. A matrix gives direct pairwise distance lookup. A graph gives sparse local structure. A tree supports nearest-neighbor access without storing every pairwise distance.
 
-## Python Example
-
-```python
-from metric.metrics import Edit
-from metric.spaces import FiniteMetricSpace
-
-space = FiniteMetricSpace(["cat", "cot", "coat", "dog"], Edit())
-
-print(space.distance(0, 1))
-print(space.knn("cut", k=2))
-```
-
 ## C++ Example
 
 ```cpp
@@ -69,6 +57,20 @@ int main()
 ```
 
 This is a finite metric space over strings. The strings are not embedded into vectors first; edit distance defines the geometry.
+
+## Python Binding Example
+
+```python
+from metric.metrics import Edit
+from metric.spaces import FiniteMetricSpace
+
+space = FiniteMetricSpace(["cat", "cot", "coat", "dog"], Edit())
+
+print(space.distance(0, 1))
+print(space.knn("cut", k=2))
+```
+
+The Python object adapts user data to the native engine surface. The metric-space model and promoted algorithms belong to the C++ implementation.
 
 ## Why This Is Broader Than Vector Search
 

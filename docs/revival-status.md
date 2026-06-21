@@ -1,6 +1,6 @@
 # Revival Status
 
-This page tracks the current execution status of [REVIVAL_PLAN.md](../REVIVAL_PLAN.md). It is not a replacement for the plan; it records which revival requirements are implemented on `master` and which release actions still require package-index state.
+This page records implemented recovery and release-readiness work on `master`, plus external release actions that depend on package-index state.
 
 ## Local Revival Scope
 
@@ -67,7 +67,7 @@ The current local tree implements the first revival slice:
 - Python map facade accepts fresh explicit representations and records representation metadata
 - Python `MappingResult` exposes structured conversion helpers for lineage metadata, source IDs, and optional pandas rows
 - Python clustered-space mapping facade derives cluster-level Spaces from clustering results with grouped lineage
-- Python strategy facade exports `MDS`, `DiffusionEmbedding`, `PCFA`, `SOM`, `KOC`, `DSPCC`, and `PhateAE`, with `MDS` executing the promoted classical-MDS path and roadmap strategies raising explicit unavailable errors
+- Python strategy facade exports `MDS`, `DiffusionEmbedding`, `PCFA`, `SOM`, `KOC`, `DSPCC`, and `PhateAE`, with `MDS` executing the promoted classical-MDS path and learned PHATE-AE remaining native C++ binding vocabulary until the facade delegates to the C++ adapter
 - Python top-level package keeps algorithm strategy classes under `metric.strategies`
 - Python engine-style Space denoise intent with DBSCAN-noise filtering and mapping-result lineage
 - Python describe facade accepts fresh explicit representations and records representation metadata
@@ -196,6 +196,8 @@ PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s python/tests/core -v
 ruby scripts/check_revival_whitespace.rb
 ruby scripts/check_revival_format.rb
 ruby scripts/check_markdown_links.rb
+ruby scripts/check_metric_numeric_guard.rb
+ruby scripts/check_metric_numeric_seams.rb
 ruby -ryaml -e 'Dir[".github/workflows/*.yml"].each { |path| YAML.load_file(path) }; puts "workflow YAML parsed"'
 git diff --check
 ```
@@ -482,14 +484,14 @@ The `v0.3.3` release includes the following revival improvements that landed on 
 
 ## Post-v0.3.3 Follow-up Plan State
 
-The following follow-up-plan work landed on `master` after the `v0.3.3` tag:
+The following follow-up work landed on `master` after the `v0.3.3` tag:
 
 - dedicated C++ `<metric/operators/sparsify.hpp>` include path with include-smoke coverage, merged through [pull request #614](https://github.com/metric-space-ai/metric/pull/614) as `d6a86119c158495936c8325cc44737ead8479ce7`
 - Python roadmap strategy docs for `KOC` and `DSPCC`, merged through [pull request #615](https://github.com/metric-space-ai/metric/pull/615) as `30fb5597a74746d116d607f68d5c73114b5116e0`
 - roadmap-only C++ KOC mapping adapter with explicit not-promoted errors, merged through [pull request #616](https://github.com/metric-space-ai/metric/pull/616) as `c03f3f405b60bc3c0ffeaebc431454b3a26f4931`
 - CI-tested C++ mixed structured-record flagship demo, merged through [pull request #617](https://github.com/metric-space-ai/metric/pull/617) as `337226041d605770339540737a2d0adaa8b1ddd7`
-- Python user-path docs and real-data example pages required by `PYTHON_USER_EXPERIENCE_PLAN.md`, merged through [pull request #618](https://github.com/metric-space-ai/metric/pull/618) as `181dcdbf805e1b48e308642b46fda1bf89fe0d92`
-- validation-plan CI grouping documentation for fast, extended, nightly, and benchmark paths, merged through [pull request #619](https://github.com/metric-space-ai/metric/pull/619) as `dcc56fbe957216b31abe9d2f34eb0e682720937f`
+- Python user-path docs and real-data example pages, merged through [pull request #618](https://github.com/metric-space-ai/metric/pull/618) as `181dcdbf805e1b48e308642b46fda1bf89fe0d92`
+- CI grouping documentation for fast, extended, nightly, and benchmark paths, merged through [pull request #619](https://github.com/metric-space-ai/metric/pull/619) as `dcc56fbe957216b31abe9d2f34eb0e682720937f`
 - expected diagnostic-output snippets for the C++ engine flagship demos, merged through [pull request #620](https://github.com/metric-space-ai/metric/pull/620) as `fa8bd2e91805987c4a2787914f8be5e936b788ae`
 
 The PyPI publish blocker is resolved by the `v0.3.4` release. PyPI rejected

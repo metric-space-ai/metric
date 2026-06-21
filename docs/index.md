@@ -1,63 +1,51 @@
 # METRIC Docs
 
-METRIC is a numerical computing engine for finite metric spaces.
+METRIC is a native C++ engine for finite metric spaces.
 
-This docs tree is the canonical home for concepts, API references, engine architecture, examples, and release rules. The root `README.md` stays short and product-facing. The public GitHub Pages site lives in `docs/site/`.
+This documentation covers the product concepts, C++ API, bindings, examples, stability labels, and release-facing build rules. The public GitHub Pages site is checked in under `docs/site/`.
 
 ## Start Here
 
+1. [Finite Metric Spaces](concepts/finite-metric-space.md)
+2. [Metric Spaces](concepts/metric-space.md)
+3. [Vector Space as a Special Case](concepts/vector-space-as-special-case.md)
+4. [Engine Overview](engine/index.md)
+5. [C++ API](api/cpp.md)
+6. [Stability Labels](stability.md)
+
+## Engine
+
 - [Engine Overview](engine/index.md)
-- [Engine Metric Space](engine/metric-space.md)
-- [Engine Intent API](engine/intent-api.md)
-- [Engine Runtime Policies](engine/runtime.md)
-- [Metric-Space Numerics Manifesto](manifesto.md)
-- [API Surface](stability.md)
-- [Testing and CI Scope](testing-and-ci.md)
-- [Research Roadmap](research-roadmap.md)
-- [Revival Status](revival-status.md)
-- [C++ API](api/cpp.md)
-- [Python API](api/python.md)
-- [Python Space](python/space.md)
-- [Python Intent Methods](python/intents.md)
-- [Python Result Objects](python/results.md)
-- [Finite Metric Spaces](concepts/finite-metric-space.md)
-- [Vector Space as a Special Case](concepts/vector-space-as-special-case.md)
-
-## Reading Order
-
-1. Read the root [README.md](../README.md) for the product framing.
-2. Read [Metric-Space Numerics Manifesto](manifesto.md) for the technical distinction from vector-search and embedding-only workflows.
-3. Read [Engine Overview](engine/index.md) to understand the engine model.
-4. Read [Engine Metric Space](engine/metric-space.md), [Representations](engine/representations.md), and [Intent API](engine/intent-api.md) for the engine-specific model.
-5. Read [Metric Spaces](concepts/metric-space.md) and [Finite Metric Spaces](concepts/finite-metric-space.md).
-6. Read [Explicit Representations](concepts/explicit-representations.md) to understand matrix, graph, and tree execution forms.
-7. Read [Graph Representation Terminology](concepts/graph-representations.md) before promoting sparse graph construction.
-8. Use the [Python API](api/python.md) or [C++ API](api/cpp.md) for implementation.
-9. For Python, read [Python Space](python/space.md), [Python Intent Methods](python/intents.md), and [Python Result Objects](python/results.md) before strategy overrides.
-10. Use [API Surface](stability.md) to understand core, expert, compatibility, extension APIs, and the module status matrix.
-11. Use [Testing and CI Scope](testing-and-ci.md) to understand release gates versus historical coverage.
-12. Use [Research Roadmap](research-roadmap.md) to understand which research directions can be promoted after deterministic fixtures and release gates exist.
-13. Use [Revival Status](revival-status.md) to distinguish local revival completion from external release actions.
+- [Metric Space](engine/metric-space.md)
+- [Representations](engine/representations.md)
+- [Intent API](engine/intent-api.md)
+- [Strategies](engine/strategies.md)
+- [Operators](engine/operators.md)
+- [Mappings](engine/mappings.md)
+- [Runtime Policies](engine/runtime.md)
+- [Migration](engine/migration.md)
 
 ## Concepts
 
-- [Metric-Space Numerics Manifesto](manifesto.md)
-- [Engine Metric Space](engine/metric-space.md)
-- [Engine Representations](engine/representations.md)
-- [Engine Intent API](engine/intent-api.md)
-- [Engine Strategies](engine/strategies.md)
-- [Engine Operators](engine/operators.md)
-- [Engine Mappings](engine/mappings.md)
-- [Engine Runtime Policies](engine/runtime.md)
-- [Engine Migration](engine/migration.md)
-- [Metric Spaces](concepts/metric-space.md)
 - [Finite Metric Spaces](concepts/finite-metric-space.md)
+- [Metric Spaces](concepts/metric-space.md)
 - [Metrics as Recoding Costs](concepts/metrics-as-recoding-costs.md)
 - [Vector Space as a Special Case](concepts/vector-space-as-special-case.md)
 - [Explicit Representations](concepts/explicit-representations.md)
 - [Graph Representation Terminology](concepts/graph-representations.md)
+- [Metric-Space Numerics Manifesto](manifesto.md)
 
-## Python User Path
+## APIs
+
+- [C++ API](api/cpp.md)
+- [Python Binding API](api/python.md)
+- [Stability Labels](stability.md)
+- [Testing and CI Scope](testing-and-ci.md)
+- [Release Checklist](release-checklist.md)
+
+## Python Binding
+
+Python is a binding and adapter layer over the native engine surface.
 
 - [Space Constructor And Records](python/space.md)
 - [Intent Methods](python/intents.md)
@@ -66,14 +54,28 @@ This docs tree is the canonical home for concepts, API references, engine archit
 - [Errors And Troubleshooting](python/errors.md)
 - [Python API Reference](api/python.md)
 
-## Examples
+## Hero Examples
+
+- [Engine Demo Expected Outputs](examples/engine-demo-outputs.md)
+- [String Edit Baseline](examples/string-edit-baseline.md)
+- [Histogram Transport Baseline](examples/histogram-transport-baseline.md)
+- [Process Curve External Gallery](examples/process-curve-external-gallery.md)
+- [Process Curve Gallery Benchmark](examples/process-curve-gallery-benchmark.md)
+- [Process Curve PHATE Map](examples/process-curve-phate-map.md)
+- [Process Curve PHATE Gallery](examples/process-curve-phate-gallery.md)
+- [Distribution Image Recoding Baseline](examples/distribution-image-recoding-baseline.md)
+- [Mixed Structured Record Baseline](examples/mixed-structured-record-baseline.md)
+- [Cross-Space Dependency Baseline](examples/cross-space-dependency-baseline.md)
+- [PHATE-AE Pipeline Hero](examples/phate-ae-pipeline-hero.md)
+- [Engine Benchmark Report](examples/engine-benchmark-report.md)
+
+## Additional Examples
 
 - [Custom Metric Example](examples/custom-metric.md)
 - [Python Custom Metric](examples/python-custom-metric.md)
 - [Python Real-Data Records](examples/python-real-data.md)
 - [Python Compare Spaces](examples/python-compare-spaces.md)
 - [Structured Data](examples/structured-data.md)
-- [Engine Demo Expected Outputs](examples/engine-demo-outputs.md)
 - [Time-Series Space With TWED](examples/time-series-twed.md)
 - [Histogram Space With EMD](examples/histogram-emd.md)
 - [Exact Graph Edge Fixtures](examples/graph-construction.md)
@@ -83,29 +85,7 @@ This docs tree is the canonical home for concepts, API references, engine archit
 - [Correlation Between Metric Spaces](examples/correlation-between-spaces.md)
 - [Industrial Anomaly Workflow](examples/industrial-anomaly-workflow.md)
 
-## Architecture Records
-
-The project keeps the design records that shaped the engine in the repository root. They are useful when extending the engine or reviewing why the API is organized around intent names, strategies, representations, and runtime policies.
-
-- [Research Roadmap](research-roadmap.md)
-- [Engine Implementation Plan](../ENGINE_IMPLEMENTATION_PLAN.md)
-- [Capability Roadmap](../CAPABILITY_ROADMAP.md)
-- [Algorithmic Gap Analysis](../ALGORITHMIC_GAP_ANALYSIS.md)
-- [Representation Layer Plan](../REPRESENTATION_LAYER_PLAN.md)
-- [Embedding And Mapping Roadmap](../EMBEDDING_AND_MAPPING_ROADMAP.md)
-- [Native DNN Engine Plan](../NATIVE_DNN_ENGINE_PLAN.md)
-- [Python User Experience Plan](../PYTHON_USER_EXPERIENCE_PLAN.md)
-- [Flagship Demos Plan](../FLAGSHIP_DEMOS_PLAN.md)
-- [Test And Validation Plan](../TEST_AND_VALIDATION_PLAN.md)
-- [Changelog](../CHANGELOG.md)
-- [Examples Tree Status](../examples/README.md)
-- [Tests Tree Status](../tests/README.md)
-
 ## GitHub Pages
-
-The public project page and technical documentation page are checked in under `docs/site/`.
-
-If Pages is enabled for the repository and pointed at the static site artifact, the public URLs are:
 
 - Project page: <https://metric-space-ai.github.io/metric/>
 - Technical documentation: <https://metric-space-ai.github.io/metric/docs.html>
