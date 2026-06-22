@@ -5,7 +5,9 @@
 #ifndef _METRIC_SPACE_BUILDER_HPP
 #define _METRIC_SPACE_BUILDER_HPP
 
+#include <cmath>
 #include <cstddef>
+#include <iterator>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -43,6 +45,22 @@ struct is_equality_comparable<
 	T, std::void_t<decltype(std::declval<const T &>() == std::declval<const T &>())>> : std::true_type {};
 
 template <typename T> constexpr bool is_equality_comparable_v = is_equality_comparable<T>::value;
+
+// Record exposes .size() (a container record, e.g. std::vector<double>): needed for
+// the optional uniform-dimension check.
+template <typename T, typename = void> struct has_size : std::false_type {};
+template <typename T>
+struct has_size<T, std::void_t<decltype(std::declval<const T &>().size())>> : std::true_type {};
+template <typename T> constexpr bool has_size_v = has_size<T>::value;
+
+// Record is an iterable of arithmetic elements (e.g. std::vector<double>): needed for
+// the optional finiteness check.
+template <typename T, typename = void> struct arithmetic_element : std::false_type {};
+template <typename T>
+struct arithmetic_element<T, std::void_t<decltype(*std::begin(std::declval<const T &>()))>>
+	: std::is_arithmetic<std::remove_cv_t<std::remove_reference_t<decltype(*std::begin(std::declval<const T &>()))>>> {
+};
+template <typename T> constexpr bool arithmetic_element_v = arithmetic_element<T>::value;
 
 } // namespace builder_detail
 
@@ -111,6 +129,23 @@ template <typename Record, typename Metric> class SpaceBuilder {
 		return *this;
 	}
 
+	// Opt into validation: every (container) record must have the same dimension.
+	// Reports the offending record index and sizes on failure.
+	auto require_uniform_dimension(bool required = true) -> SpaceBuilder &
+	{
+		require_uniform_dimension_ = required;
+		return *this;
+	}
+
+	// Opt into validation: every record value must be finite (no NaN/Inf). The default
+	// catalog vector metrics do NOT reject non-finite input, so this guards the
+	// silent-wrong-knn footgun at construction time. Reports the offending record/position.
+	auto require_finite(bool required = true) -> SpaceBuilder &
+	{
+		require_finite_ = required;
+		return *this;
+	}
+
 	// Attach a human-readable name (stored under the "name" metadata key). Surfaced by build_described().
 	auto named(std::string name) -> SpaceBuilder &
 	{
@@ -156,6 +191,40 @@ template <typename Record, typename Metric> class SpaceBuilder {
 					"SpaceBuilder requires a true metric (metric_traits<Metric>::law == metric_law::metric)");
 			}
 		}
+		if (require_uniform_dimension_) {
+			if constexpr (builder_detail::has_size_v<Record>) {
+				if (!records_.empty()) {
+					const std::size_t dim = records_.front().size();
+					for (std::size_t i = 0; i < records_.size(); ++i) {
+						if (records_[i].size() != dim) {
+							throw MetricInputError(
+								"SpaceBuilder requires uniform record dimension (require_uniform_dimension): record " +
+								std::to_string(i) + " has size " + std::to_string(records_[i].size()) + ", expected " +
+								std::to_string(dim));
+						}
+					}
+				}
+			} else {
+				throw MetricInputError("SpaceBuilder require_uniform_dimension needs a record type with size()");
+			}
+		}
+		if (require_finite_) {
+			if constexpr (builder_detail::arithmetic_element_v<Record>) {
+				for (std::size_t i = 0; i < records_.size(); ++i) {
+					std::size_t position = 0;
+					for (const auto &value : records_[i]) {
+						if (!std::isfinite(static_cast<double>(value))) {
+							throw MetricInputError(
+								"SpaceBuilder requires finite record values (require_finite): record " +
+								std::to_string(i) + ", position " + std::to_string(position));
+						}
+						++position;
+					}
+				}
+			} else {
+				throw MetricInputError("SpaceBuilder require_finite needs a record type of arithmetic elements");
+			}
+		}
 		if (require_unique_records_) {
 			if constexpr (builder_detail::is_equality_comparable_v<Record>) {
 				for (std::size_t lhs = 0; lhs < records_.size(); ++lhs) {
@@ -177,6 +246,8 @@ template <typename Record, typename Metric> class SpaceBuilder {
 	bool require_non_empty_{false};
 	bool require_unique_records_{false};
 	bool require_true_metric_{false};
+	bool require_uniform_dimension_{false};
+	bool require_finite_{false};
 	core::Metadata metadata_;
 };
 
