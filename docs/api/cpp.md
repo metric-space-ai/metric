@@ -47,24 +47,70 @@ aggregates the Level-1 surfaces without moving ownership into a monolithic API.
 #include <string>
 #include <vector>
 
+namespace app {
+
+using MachineRecord = mtrc::record::ComposedRecord<std::string, std::vector<double>, int>;
+
+struct MachineMetric {
+    mtrc::Edit<char> event_code{};
+    mtrc::Wasserstein<double> spectrum{mtrc::Wasserstein<double>::on_line(4)};
+    mtrc::DiscreteMetric<double> state{1.0};
+
+    auto operator()(const MachineRecord& a, const MachineRecord& b) const -> double
+    {
+        return static_cast<double>(event_code(a.template field<0>(), b.template field<0>())) +
+               spectrum(a.template field<1>(), b.template field<1>()) +
+               state(a.template field<2>(), b.template field<2>());
+    }
+};
+
+} // namespace app
+
+namespace mtrc::core {
+
+template <> struct metric_traits<::app::MachineMetric> {
+    static constexpr auto law = metric_law::metric;
+    static constexpr auto records = record_kind::structured;
+    static constexpr bool thread_safe = true;
+
+    static auto cache_key(const ::app::MachineMetric&) -> std::string
+    {
+        return "app::MachineMetric:edit+wass-line4+discrete";
+    }
+};
+
+} // namespace mtrc::core
+
 int main()
 {
-    std::vector<std::string> input = {"pump_ok", "pump_warn", "pump_fail", "valve_ok"};
+    const std::vector<std::string> event = {"pump_ok", "pump_warn", "valve_ok", "valve_warn"};
+    const std::vector<std::vector<double>> spectrum = {
+        {0.70, 0.20, 0.10, 0.00},
+        {0.64, 0.24, 0.12, 0.00},
+        {0.00, 0.10, 0.25, 0.65},
+        {0.00, 0.08, 0.28, 0.64},
+    };
+    const std::vector<int> state = {0, 1, 0, 1};
 
-    auto records = mtrc::record::import_records(input);
-    auto space = mtrc::space::build_checked(records, mtrc::Edit<char>{});
+    auto imported = mtrc::record::import_mixed_records(event, spectrum, state);
+    auto space = mtrc::space::build_checked(imported.records, app::MachineMetric{});
 
-    auto profile = mtrc::stats::profile(space);
+    const auto query =
+        mtrc::record::compose_record(std::string("valve_warning"),
+                                     std::vector<double>{0.0, 0.08, 0.27, 0.65}, 1);
+    auto nearest = mtrc::space::query::nearest(space, query);
     auto diagnosis = mtrc::stats::diagnose_space(space);
-    auto nearest = mtrc::space::query::nearest(space, space.id(0));
-    auto sample = mtrc::stats::sample::regular_sample(space, 2);
     auto reduced = mtrc::modify::represent::represent(space, 2);
 
-    return profile.record_count == 4 && diagnosis.discoverable_metric &&
-           nearest.id != space.id(0) &&
-           sample.size() == 2 && reduced.size() == 2 ? 0 : 1;
+    return nearest.id == space.id(3) && diagnosis.discoverable_metric &&
+           reduced.size() == 2 ? 0 : 1;
 }
 ```
+
+The practical workflow starts from typed records. Here one record contains a
+symbolic event code, a distribution-like sensor spectrum, and a discrete machine
+state. The metric is the single rule for comparing record pairs; the space then
+provides pair values, search, diagnostics, and derived representative sets.
 
 The workflow pieces stay separate:
 
