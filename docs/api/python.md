@@ -3,12 +3,26 @@
 The Python core API exposes metric constructors, a `Space` facade, finite-space
 helpers, and operator helpers over the native implementation.
 
-The stable entry point is `Space`: a finite record set plus a metric with cached
-pairwise distances and helpers for neighbors, groups, embedding, outliers,
+> **Availability in the current core wheel.** The construction and inspection
+> surface runs today: `Space(...)`/`Space.vectors(...)`/`Space.from_dataframe(...)`,
+> `space.distance(...)`, `space.pairwise()`/`pairwise_distances()`, the
+> `to_matrix()`/`to_tree()`/`to_graph()` representation views, `repr(space)`, and
+> the metric constructors. The **algorithmic intent methods** —
+> `neighbors`/`nearest`/`within_radius`, `groups`, `outliers`, `denoise`, `embed`,
+> `reduce`, `compress`, `representatives`, `describe`/`describe_structure`,
+> `compare`/`correlate` (and the matching `metric.operators` free functions) —
+> currently raise `StrategyUnavailableError`: their native bindings are not
+> promoted in the default wheel yet. `metric.correlation` (Entropy/MGC) requires
+> the full build (`METRIC_PYTHON_BUILD_FULL`) and otherwise raises
+> `ModuleNotFoundError`. For neighbor/cluster/embedding analysis today, use the
+> C++ surface (`<metric/workflow.hpp>`).
+
+The entry point is `Space`: a finite record set plus a metric with cached
+pairwise distances. It is the carrier for neighbors, groups, embedding, outliers,
 denoising, representatives, reduction, compression, deterministic mapping,
-cross-space comparison, and structure diagnostics. `FiniteMetricSpace` and
-`MatrixSpace` remain available for explicit representation vocabulary, and
-`Space.to_matrix()` returns an explicit finite matrix-space view.
+cross-space comparison, and structure diagnostics (availability as above).
+`FiniteMetricSpace` and `MatrixSpace` remain available for explicit representation
+vocabulary, and `Space.to_matrix()` returns an explicit finite matrix-space view.
 
 For the user-facing learning path, start with [Python Space](../python/space.md),
 [Python Method Helpers](../python/intents.md), [Python Result Objects](../python/results.md),
@@ -26,7 +40,7 @@ space = Space(records, metric=Edit())
 
 print(space.distance(0, 1))
 print(space.pairwise())
-print(space.neighbors("cut", count=2))
+# space.neighbors("cut", count=2)  # raises StrategyUnavailableError in the current wheel
 ```
 
 The records are strings. Edit distance defines the geometry without an embedding step.
@@ -184,8 +198,10 @@ diagnostics = space.runtime_diagnostics(
 )
 ```
 
-The promoted Python facade currently executes exact deterministic operators. A
-policy with `exact=False` raises `StrategyUnavailableError` instead of silently
+When an intent method is promoted it executes an exact deterministic operator;
+the intent methods that are not yet promoted raise `StrategyUnavailableError`
+regardless of policy (see the availability note above). A policy with
+`exact=False` likewise raises `StrategyUnavailableError` instead of silently
 returning approximate results. `RuntimeDiagnostics` and
 `runtime_diagnostics(...)` expose normalized policy metadata, support status,
 cache mode, serial/parallel selection, and the representation used for an
@@ -423,12 +439,19 @@ Spaces expose `version()` and `touch()` so representation users can invalidate c
 
 ## Implemented Facade
 
-The implemented facade covers matrix/tree/graph representation views, neighbor
-access, grouping, classical-MDS embedding, outlier detection, DBSCAN-backed
-denoising, deterministic mapping, cross-space comparison, representative
-selection, representative reduction, and structure diagnostics. Additional
-embedding strategies and fitted mappings remain unavailable until they have
-stable native strategies, result objects, examples, and CI coverage.
+The implemented facade covers space construction, the metric constructors,
+`distance`/`pairwise`/`pairwise_distances`, and the matrix/tree/graph
+representation views (`to_matrix`/`to_tree`/`to_graph`), plus `repr` and version
+introspection.
+
+Neighbor access, grouping, classical-MDS embedding, outlier detection,
+DBSCAN-backed denoising, deterministic mapping, cross-space comparison,
+representative selection/reduction/compression, and structure diagnostics have
+defined result contracts (documented above) but currently raise
+`StrategyUnavailableError` in the default wheel: their native bindings are not
+promoted yet. Additional embedding strategies and fitted mappings likewise remain
+unavailable until they have stable native strategies, result objects, examples,
+and CI coverage.
 
 ## Error Model
 

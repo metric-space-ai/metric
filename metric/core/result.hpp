@@ -7,6 +7,8 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <ostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -402,6 +404,23 @@ auto scored_outliers(const std::vector<RecordId> &ids, ScoreFor score_for) -> st
 // estimator_failure (a non-finite estimate that is neither of the above).
 enum class entropy_status { valid, too_few_records, degenerate, estimator_failure };
 
+// Audit-friendly name for an entropy_status value, used by the result summaries
+// below so a printed EntropyResult reports WHY a number is (or is not) valid.
+inline auto entropy_status_name(entropy_status status) -> const char *
+{
+	switch (status) {
+	case entropy_status::valid:
+		return "valid";
+	case entropy_status::too_few_records:
+		return "too_few_records";
+	case entropy_status::degenerate:
+		return "degenerate";
+	case entropy_status::estimator_failure:
+		return "estimator_failure";
+	}
+	return "unknown";
+}
+
 template <typename Value = double> struct EntropyResult {
 	using value_type = Value;
 
@@ -559,9 +578,140 @@ auto make_mapping_result(Space space, std::vector<std::vector<RecordId>> source_
 								std::move(validity)};
 }
 
+// ---------------------------------------------------------------------------
+// Human-readable one-line summaries for every result type.
+//
+// Each *Result struct already carries its own provenance (operator_name,
+// representation, exact / metric_status / validity). These free operator<<
+// overloads surface that provenance so a caller can answer "what did I just get
+// back?" with a single `std::cout << result;` instead of hand-writing a field
+// dump. They live in mtrc::core so they are found by ADL for the result types
+// (which are aliased into mtrc). A generic `summary()` / `to_string()` returns
+// the same text as a std::string for logging and test assertions.
+// ---------------------------------------------------------------------------
+
+inline auto exact_label(bool exact) -> const char * { return exact ? "exact" : "approx"; }
+
+template <typename Distance>
+auto operator<<(std::ostream &os, const NeighborSet<Distance> &result) -> std::ostream &
+{
+	os << "NeighborSet(op=" << result.operator_name << ", representation=" << result.representation
+	   << ", size=" << result.size() << ", requested=" << result.requested_count
+	   << ", records=" << result.record_count << ", " << exact_label(result.exact) << ')';
+	return os;
+}
+
+template <typename Distance>
+auto operator<<(std::ostream &os, const ClusteringResult<Distance> &result) -> std::ostream &
+{
+	os << "ClusteringResult(algorithm=" << result.algorithm << ", representation=" << result.representation
+	   << ", clusters=" << result.cluster_count << ", noise=" << result.noise_count
+	   << ", records=" << result.record_count << ", iterations=" << result.iterations
+	   << ", converged=" << (result.converged ? "yes" : "no") << ')';
+	return os;
+}
+
+template <typename Distance>
+auto operator<<(std::ostream &os, const RepresentativeSet<Distance> &result) -> std::ostream &
+{
+	os << "RepresentativeSet(op=" << result.operator_name << ", strategy=" << result.strategy
+	   << ", representation=" << result.representation << ", size=" << result.size()
+	   << ", requested=" << result.requested_count << ", records=" << result.record_count
+	   << ", coverage_radius=" << result.coverage_radius
+	   << ", average_nearest_distance=" << result.average_nearest_distance << ", " << exact_label(result.exact)
+	   << ')';
+	return os;
+}
+
+template <typename Space>
+auto operator<<(std::ostream &os, const CompressionResult<Space> &result) -> std::ostream &
+{
+	os << "CompressionResult(op=" << result.operator_name << ", compression=" << result.compression
+	   << ", strategy=" << result.strategy << ", representation=" << result.representation
+	   << ", source_records=" << result.source_record_count << ", compressed_records=" << result.compressed_record_count
+	   << ", ratio=" << result.compression_ratio << ", " << (result.lossy ? "lossy" : "lossless")
+	   << ", inverse=" << (result.inverse_supported ? "yes" : "no")
+	   << ", metric_status=" << metric_law_name(result.metric_status) << ", " << exact_label(result.exact) << ')';
+	return os;
+}
+
+template <typename Score> auto operator<<(std::ostream &os, const Outlier<Score> &outlier) -> std::ostream &
+{
+	os << "Outlier(id=" << outlier.id.index() << ", score=" << outlier.score << ')';
+	return os;
+}
+
+template <typename Score> auto operator<<(std::ostream &os, const OutlierResult<Score> &result) -> std::ostream &
+{
+	os << "OutlierResult(op=" << result.operator_name << ", strategy=" << result.strategy
+	   << ", representation=" << result.representation << ", outliers=" << result.size()
+	   << ", records=" << result.record_count << ", clusters=" << result.cluster_count
+	   << ", noise=" << result.noise_count << ", " << exact_label(result.exact) << ')';
+	return os;
+}
+
+template <typename Value> auto operator<<(std::ostream &os, const EntropyResult<Value> &result) -> std::ostream &
+{
+	os << "EntropyResult(algorithm=" << result.algorithm << ", value=" << result.value
+	   << ", status=" << entropy_status_name(result.status) << ", records=" << result.record_count
+	   << ", k=" << result.neighbor_count << ", p=" << result.approximation_order
+	   << ", effective_k=" << result.effective_neighbor_count << ", effective_p=" << result.effective_approximation_order
+	   << ", " << (result.exponentiated ? "exponentiated" : "raw") << ", representation=" << result.representation
+	   << ", " << exact_label(result.exact) << ')';
+	return os;
+}
+
+template <typename Value> auto operator<<(std::ostream &os, const CorrelationResult<Value> &result) -> std::ostream &
+{
+	os << "CorrelationResult(algorithm=" << result.algorithm << ", value=" << result.value
+	   << ", left_records=" << result.left_record_count << ", right_records=" << result.right_record_count
+	   << ", left_representation=" << result.left_representation << ", right_representation=" << result.right_representation
+	   << ", " << exact_label(result.exact) << ')';
+	return os;
+}
+
+template <typename Distance, typename Value>
+auto operator<<(std::ostream &os, const StructureDescription<Distance, Value> &result) -> std::ostream &
+{
+	os << "StructureDescription(op=" << result.operator_name << ", representation=" << result.representation
+	   << ", records=" << result.record_count << ", pairs=" << result.pair_count
+	   << ", zero_distance_pairs=" << result.zero_distance_pair_count
+	   << ", min_nonzero_distance=" << result.minimum_nonzero_distance
+	   << ", max_distance=" << result.maximum_distance << ", average_distance=" << result.average_distance
+	   << ", intrinsic_dimension=" << result.intrinsic_dimension << ", " << exact_label(result.exact) << ')';
+	return os;
+}
+
+template <typename Space> auto operator<<(std::ostream &os, const MappingResult<Space> &result) -> std::ostream &
+{
+	os << "MappingResult(mapping=" << result.mapping << ", strategy=" << result.strategy
+	   << ", representation=" << result.representation << ", derived_records=" << result.size()
+	   << ", source_records=" << result.source_record_count
+	   << ", inverse=" << (result.inverse_supported ? "yes" : "no")
+	   << ", out_of_sample=" << (result.out_of_sample_supported ? "yes" : "no")
+	   << ", metric_status=" << metric_law_name(result.metric_status) << ')';
+	return os;
+}
+
+// Same text as operator<< but returned as a std::string, for logging and test
+// assertions. SFINAE-constrained to streamable result types so it never becomes
+// a catch-all; reached by ADL for the mtrc::core result types.
+template <typename Result>
+auto summary(const Result &result)
+	-> decltype(std::declval<std::ostream &>() << result, std::string{})
+{
+	std::ostringstream stream;
+	stream << result;
+	return stream.str();
+}
+
+template <typename Result> auto to_string(const Result &result) -> decltype(summary(result)) { return summary(result); }
+
 } // namespace mtrc::core
 
 namespace mtrc {
+using core::summary;
+using core::to_string;
 template <typename Distance> using NeighborSet = core::NeighborSet<Distance>;
 using core::make_neighbor_set;
 using core::nearest_neighbor_set;

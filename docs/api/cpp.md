@@ -91,6 +91,26 @@ flat row-major binding buffer into C++ records. For mixed records,
 `inspect_record_columns` and `validate_record_columns` check parallel field
 columns before they are composed.
 
+CSV and TSV helpers cover the common "file of numeric records" path without a
+separate example parser:
+
+```cpp
+mtrc::CsvReadOptions options;
+options.has_header = true;
+
+auto records = mtrc::record::read_csv<double>("vectors.csv", options);
+auto space = mtrc::space::build_checked(records, mtrc::Euclidean<double>{});
+
+mtrc::CsvWriteOptions out;
+out.header = {"x", "y", "z"};
+mtrc::record::write_csv("vectors.normalized.csv", records, out);
+```
+
+The reader rejects ragged rows by default, reports parse failures with
+line/column context, and rejects non-finite floating-point values unless
+`require_finite` is disabled explicitly. Set `require_uniform_dimension = false`
+when the record family is intentionally ragged.
+
 ```cpp
 std::vector<std::string> name = {"pump", "valve"};
 std::vector<std::vector<double>> spectrum = {{0.2, 0.8}, {0.7, 0.3}};

@@ -3,6 +3,14 @@
 The Python facade is organized around user intent. Start with records and a
 metric, then ask what you want to know about the finite metric space.
 
+> **Availability.** The intent methods on this page (`neighbors`, `groups`,
+> `embed`, `outliers`, `denoise`, `reduce`, `compress`, `compare`, `describe`,
+> ...) currently raise `StrategyUnavailableError` in the default core wheel —
+> their native bindings are not promoted yet. Space construction, `distance`,
+> `pairwise`, and the `to_matrix`/`to_tree`/`to_graph` views run today. The
+> snippets below show the reserved Python facade shape; for these analyses today
+> use the C++ surface.
+
 ## Neighbors
 
 ```python
@@ -156,6 +164,8 @@ neighbors = space.neighbors("cut", count=2, runtime=policy)
 diagnostics = space.runtime_diagnostics(runtime=policy, intent="neighbors")
 ```
 
-Current Python intent methods execute exact deterministic paths. Passing
-`RuntimePolicy(exact=False)` raises `StrategyUnavailableError` instead of
-silently returning approximate results.
+When an intent method is promoted it executes an exact deterministic path; the
+methods not yet promoted raise `StrategyUnavailableError` regardless of policy
+(see the availability note at the top). Passing `RuntimePolicy(exact=False)`
+likewise raises `StrategyUnavailableError` instead of silently returning
+approximate results.

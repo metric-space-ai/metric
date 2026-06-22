@@ -4,6 +4,12 @@
 finite set of records, an explicit metric callable, stable record IDs, and
 small runtime preferences for validation and distance caching.
 
+> **Availability.** Construction, `distance`, `pairwise`, and the
+> `to_matrix`/`to_tree`/`to_graph` views run in the default core wheel. The
+> analysis methods shown below (`neighbors`, `outliers`, `groups`, `embed`, ...)
+> currently raise `StrategyUnavailableError` — their native bindings are not
+> promoted yet.
+
 ## Constructor
 
 ```python

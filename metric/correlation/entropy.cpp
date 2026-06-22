@@ -28,7 +28,7 @@ namespace entropy_details {
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid
 // code dubbing
 
-std::vector<double> linspace(double a, double b, int n)
+inline std::vector<double> linspace(double a, double b, int n)
 {
 	std::vector<double> array;
 	if (n > 1) {
@@ -206,7 +206,7 @@ inline double erfcinv(const double z)
 	return s * erfinv_imp(p, q);
 }
 
-std::vector<double> icdf(const std::vector<double> &prob, const double mu, const double sigma)
+inline std::vector<double> icdf(const std::vector<double> &prob, const double mu, const double sigma)
 {
 	std::vector<double> synth;
 	synth.reserve(prob.size());
@@ -217,7 +217,7 @@ std::vector<double> icdf(const std::vector<double> &prob, const double mu, const
 	return synth;
 }
 
-double variance(const std::vector<double> &data, const double mean)
+inline double variance(const std::vector<double> &data, const double mean)
 {
 	double sum = 0;
 	for (size_t i = 0; i < data.size(); ++i) {
@@ -227,7 +227,7 @@ double variance(const std::vector<double> &data, const double mean)
 	return sum;
 }
 
-double mean(const std::vector<double> &data)
+inline double mean(const std::vector<double> &data)
 {
 	double sum = 0;
 	for (size_t i = 0; i < data.size(); ++i) {
@@ -238,7 +238,7 @@ double mean(const std::vector<double> &data)
 	return value;
 }
 
-double peak2ems(const std::vector<double> &data)
+inline double peak2ems(const std::vector<double> &data)
 {
 	double maxAbs = -1;
 	double rms = 0;
@@ -275,7 +275,7 @@ template <typename T> T conv_diff_entropy_inv(T in)
 
 template <typename T1, typename T2> T1 log(T1 logbase, T2 x) { return std::log(x) / std::log(logbase); }
 
-double mvnpdf(mtrc::numeric::DynamicVector<double> x, mtrc::numeric::DynamicVector<double> mu,
+inline double mvnpdf(mtrc::numeric::DynamicVector<double> x, mtrc::numeric::DynamicVector<double> mu,
 			  mtrc::numeric::DynamicMatrix<double> Sigma)
 {
 
@@ -288,7 +288,7 @@ double mvnpdf(mtrc::numeric::DynamicVector<double> x, mtrc::numeric::DynamicVect
 	return std::exp(-p / 2) / std::sqrt(mtrc::numeric::det(Sigma) * std::pow(2 * M_PI, n));
 }
 
-double mvnpdf(mtrc::numeric::DynamicVector<double> x)
+inline double mvnpdf(mtrc::numeric::DynamicVector<double> x)
 {
 
 	return (mvnpdf(x, mtrc::numeric::DynamicVector<double>(x.size(), 0),
@@ -308,7 +308,7 @@ double mvnpdf(mtrc::numeric::DynamicVector<double> x)
 	From http://www.psc.edu/~burkardt/src/dirichlet/dirichlet.f
 	(with modifications for negative numbers and extra precision)
 */
-double digamma(double x)
+inline double digamma(double x)
 {
 	double result;
 	static const double neginf = -std::numeric_limits<double>::infinity(), c = 12, s = 1e-6, d1 = -0.57721566490153286,

@@ -32,7 +32,7 @@ template <typename T> T erfcx_simple(T x)
 }
 
 // https://stackoverflow.com/questions/39777360/accurate-computation-of-scaled-complementary-error-function-erfcx
-double erfcx_double(double x);
+inline double erfcx_double(double x);
 
 template <typename T> T erfcx(T x)
 { // for double, inf starts at -26 on x86_64

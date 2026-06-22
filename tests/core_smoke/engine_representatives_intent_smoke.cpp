@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cmath>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include "metric/engine.hpp"
@@ -54,6 +55,7 @@ int main()
 	assert(representatives.operator_name == "find_representatives");
 	assert(representatives.strategy == "farthest_first");
 	assert(representatives.representation == "metric_space");
+	assert(mtrc::summary(representatives).find("RepresentativeSet") != std::string::npos);
 
 	const auto materialized_policy = mtrc::space::storage::materialized(mtrc::space::storage::exact());
 	const auto materialized = mtrc::find_representatives(line, 3, materialized_policy);

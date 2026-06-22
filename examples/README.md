@@ -13,6 +13,7 @@ The current core examples cover:
   InternalBleeding gallery benchmarks and a non-vector native PHATE-AE mapping
   fixture
 - custom metric callables
+- CSV/TSV record file I/O feeding a finite metric space
 - explicit matrix, graph, and tree representations
 - engine pipeline metadata inspection through the PHATE-AE builder example
 - a native engine benchmark report that consolidates representation-cost and

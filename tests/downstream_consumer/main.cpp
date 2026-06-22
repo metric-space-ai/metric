@@ -6,12 +6,16 @@
 #include <metric/metric/catalog.hpp>
 #include <metric/space/index/operators.hpp>
 #include <metric/space.hpp>
+#include <metric/workflow.hpp>
 
 int main()
 {
 	std::vector<std::string> records = {"cat", "cot", "coat", "dog"};
 	auto edit = mtrc::make_metric<std::string>(mtrc::Edit<std::string>{});
 	auto space = mtrc::Space::from_records(records, edit);
+	auto workflow_space = mtrc::space::build_checked(records, mtrc::Edit<char>{});
+	auto profile = mtrc::stats::profile(workflow_space);
+	assert(profile.record_count == records.size());
 
 	assert(space.size() == records.size());
 	assert(space[0] == "cat");

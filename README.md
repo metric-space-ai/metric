@@ -201,6 +201,12 @@ Mixed records can be imported from parallel typed field columns with
 `mtrc::record::import_mixed_records`; the returned report keeps field-count and
 row-count validation explicit before a composed metric is selected.
 
+For homogeneous numeric records in files, `mtrc::record::read_csv<double>` and
+`read_tsv<double>` load vector records directly in C++. They validate row shape,
+parse failures, and non-finite values before a metric is selected. The matching
+`write_csv` and `write_tsv` helpers export records without pulling a separate
+CSV dependency into the core.
+
 Metric Discovery is available at runtime through
 `mtrc::metric::discover_metrics(mtrc::record_kind::sequence)`. The returned
 entries expose the record family, metric-law/admission status, domain gate, and
@@ -239,7 +245,11 @@ For a package-manager based build, install:
 
 - C++17 compiler
 - CMake 3.19+
-- optional BLAS/LAPACK for LAPACK-backed numerical tests and advanced linear algebra paths
+- BLAS/LAPACK for the stats/entropy layer used by `<metric/workflow.hpp>` (the quickstart
+  above calls `mtrc::stats::profile`/`diagnose_space`, which pull the LAPACK-backed entropy
+  path). The exported `metric::metric` target links it automatically when found. It is only
+  optional if you restrict yourself to records, metrics, and space/search without the
+  stats/entropy layer.
 
 Then configure without dependency fetching:
 
@@ -263,9 +273,21 @@ add_executable(program program.cpp)
 target_link_libraries(program PRIVATE metric::metric)
 ```
 
+The `metric::metric` target carries its LAPACK dependency automatically (re-resolved by the
+package config via `find_dependency(LAPACK)`), so the stats/entropy and
+`<metric/workflow.hpp>` paths link without extra flags. For a raw header-only compile without
+CMake, link LAPACK yourself, e.g. `c++ -std=c++17 -I. app.cpp -framework Accelerate` on macOS
+or `c++ -std=c++17 -I. app.cpp -llapack` on Linux.
+
 ## Python Binding
 
-Python is an adapter layer over the native implementation.
+Python is an adapter layer over the native implementation. The current core wheel
+runs space construction and inspection (`distance`, `pairwise`, and the
+`to_matrix`/`to_tree`/`to_graph` representation views) plus the metric
+constructors. The algorithmic intent methods (`neighbors`, `groups`, `outliers`,
+`embed`, `reduce`, `compress`, `compare`, ...) currently raise
+`StrategyUnavailableError` because their native bindings are not promoted in the
+default wheel yet. Use the C++ surface for those analyses today.
 
 ```shell
 python -m pip install ./python
@@ -276,7 +298,10 @@ from metric import Edit, Space
 
 records = ["red", "reed", "road", "blue"]
 space = Space(records, Edit())
-print(space.neighbors("read", k=2))
+
+print(space.distance(0, 1))   # 1
+print(space.pairwise())       # cached pairwise edit distances
+# space.neighbors("read", k=2)  # raises StrategyUnavailableError in the current wheel
 ```
 
 ## Documentation

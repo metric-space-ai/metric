@@ -28,7 +28,7 @@ namespace epmgp {
 const double inf = std::numeric_limits<double>::infinity();
 
 // https://stackoverflow.com/questions/39777360/accurate-computation-of-scaled-complementary-error-function-erfcx
-double erfcx_double(double x)
+inline double erfcx_double(double x)
 {
 	double a, d, e, m, p, q, r, s, t;
 

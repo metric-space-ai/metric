@@ -8,6 +8,7 @@
 
 #include <cassert>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include "metric/core/metric_space.hpp"
@@ -64,6 +65,7 @@ void knn_batch_matches_single_queries()
 	assert(id_batch.size() == 2);
 	assert(neighbor_sets_equal(id_batch[0], search::knn(space, space.id(0), 1)));
 	assert(neighbor_sets_equal(id_batch[1], search::knn(space, space.id(1), 1)));
+	assert(mtrc::summary(id_batch[0]).find("NeighborSet") != std::string::npos);
 
 	// Value batch == per-value single query (no self-exclusion for value queries).
 	const std::vector<int> queries = {0, 8};

@@ -11,6 +11,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <string>
 #include <vector>
 
 #include "metric/metric/catalog.hpp"
@@ -41,6 +42,8 @@ int main()
 	assert(close(valid.value, -4.4489104772539489));
 	assert(valid.neighbor_count == 3 && valid.approximation_order == 2);
 	assert(valid.effective_neighbor_count == 2 && valid.effective_approximation_order == 3);
+	assert(mtrc::summary(valid).find("EntropyResult") != std::string::npos);
+	assert(mtrc::summary(valid).find("status=valid") != std::string::npos);
 
 	// Too few records: n < 4 -> NaN sentinel, too_few_records, no estimation attempted.
 	const std::vector<Rec> tiny = {{5.0, 5.0}, {2.0, 2.0}, {3.0, 3.0}};

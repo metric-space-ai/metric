@@ -2,6 +2,7 @@
 #include <cmath>
 #include <limits>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include "metric/core/metric_space.hpp"
@@ -83,6 +84,7 @@ int main()
 	assert(identical_description.zero_distance_pair_count == 6);
 	assert(!identical_description.has_nonzero_distances);
 	assert(identical_description.intrinsic_dimension == 0.0);
+	assert(mtrc::summary(identical_description).find("StructureDescription") != std::string::npos);
 
 	const auto identical_volume = properties::density(identical_space, 0);
 	assert(identical_volume.algorithm == "density");
@@ -156,12 +158,14 @@ int main()
 	assert(dbscan_duplicates.noise_count == 0);
 	assert((dbscan_duplicates.cluster_sizes == std::vector<std::size_t>{4}));
 	assert(dbscan_duplicates.core_records.size() == 4);
+	assert(mtrc::summary(dbscan_duplicates).find("ClusteringResult") != std::string::npos);
 
 	const auto all_noise = structural::find_outliers(uneven_space, structural::dbscan_options(1.0, 2));
 	assert(all_noise.noise_count == 1);
 	assert(all_noise.size() == 1);
 	assert(all_noise[0].id == uneven_space.id(4));
 	assert(all_noise[0].score == 99);
+	assert(mtrc::summary(all_noise).find("OutlierResult") != std::string::npos);
 
 	assert(throws_invalid_argument([&] { (void)properties::local_volume(uneven_space, -1); }));
 	assert(throws_invalid_argument([&] {
@@ -175,6 +179,7 @@ int main()
 	assert(close(first_mgc.value, second_mgc.value));
 	assert(first_mgc.left_record_count == 4);
 	assert(first_mgc.right_record_count == 4);
+	assert(mtrc::summary(first_mgc).find("CorrelationResult") != std::string::npos);
 	assert(throws_invalid_argument([&] {
 		const std::vector<std::vector<double>> too_small = {{0.0}};
 		(void)mtrc::stats::correlate::mgc(too_small, mtrc::Euclidean<double>(), too_small, mtrc::Euclidean<double>());

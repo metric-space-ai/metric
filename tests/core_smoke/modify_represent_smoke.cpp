@@ -24,6 +24,7 @@ int main()
 	assert(rep.source_record_count == 5);
 	assert(rep.mapping == "represent");
 	assert(rep.strategy == "farthest_first");
+	assert(mtrc::summary(rep).find("MappingResult") != std::string::npos);
 
 	assert(rep.source_records.size() == 3);
 	assert(rep.representative_records.size() == 3);
@@ -48,6 +49,7 @@ int main()
 	assert(rep.source_records.size() == 3);
 	assert(comp.metric_status == rep.metric_status);
 	assert(comp.validity.find("record-set cardinality reduction") != std::string::npos);
+	assert(mtrc::summary(comp).find("CompressionResult") != std::string::npos);
 
 	const auto exact = mtrc::represent(line, 2, mtrc::space::storage::exact());
 	assert(exact.size() == 2);

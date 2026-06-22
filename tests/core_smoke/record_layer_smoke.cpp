@@ -9,6 +9,8 @@
 
 #include <cassert>
 #include <cstddef>
+#include <cstdio>
+#include <fstream>
 #include <limits>
 #include <sstream>
 #include <stdexcept>
@@ -154,6 +156,89 @@ static auto test_binding_buffers() -> void
 	// Generic container import copies records as-is.
 	const auto imported = mtrc::import_records(std::vector<std::string>{"a", "b", "c"});
 	assert(imported.size() == 3 && imported[1] == "b");
+}
+
+static auto test_delimited_file_io() -> void
+{
+	{
+		std::istringstream csv("name,x,y\n\"pump, one\",0,1\nvalve,2,3\n\n");
+		mtrc::CsvReadOptions options;
+		options.has_header = true;
+		const auto rows = mtrc::read_csv<std::string>(csv, options);
+		assert(rows.size() == 2);
+		assert((rows[0] == std::vector<std::string>{"pump, one", "0", "1"}));
+		assert((rows[1] == std::vector<std::string>{"valve", "2", "3"}));
+	}
+
+	{
+		std::istringstream csv("x,y\n0, 1.5\n2,3\n");
+		mtrc::CsvReadOptions options;
+		options.has_header = true;
+		const auto rows = mtrc::read_csv<double>(csv, options);
+		assert(rows.size() == 2);
+		assert((rows[0] == std::vector<double>{0.0, 1.5}));
+		assert((rows[1] == std::vector<double>{2.0, 3.0}));
+	}
+
+	{
+		std::istringstream tsv("0\t1\n2\t3\n");
+		const auto rows = mtrc::read_tsv<int>(tsv);
+		assert((rows == std::vector<std::vector<int>>{{0, 1}, {2, 3}}));
+	}
+
+	{
+		std::istringstream ragged("1,2,3\n4\n");
+		mtrc::CsvReadOptions options;
+		options.require_uniform_dimension = false;
+		const auto rows = mtrc::read_csv<int>(ragged, options);
+		assert((rows == std::vector<std::vector<int>>{{1, 2, 3}, {4}}));
+	}
+
+	assert(throws_invalid_argument([] {
+		std::istringstream csv("1,2\n3\n");
+		(void)mtrc::read_csv<double>(csv);
+	}));
+	assert(throws_invalid_argument([] {
+		std::istringstream csv("1,\n");
+		(void)mtrc::read_csv<double>(csv);
+	}));
+	assert(throws_invalid_argument([] {
+		std::istringstream csv("1,nan\n");
+		(void)mtrc::read_csv<double>(csv);
+	}));
+	assert(throws_invalid_argument([] {
+		std::istringstream csv("\"unterminated\n");
+		(void)mtrc::read_csv<std::string>(csv);
+	}));
+
+	{
+		std::ostringstream output;
+		mtrc::CsvWriteOptions options;
+		options.header = {"name", "note"};
+		mtrc::write_csv(output, std::vector<std::vector<std::string>>{{"pump, one", "steady"}, {"valve", "he said \"ok\""}},
+						options);
+		assert(output.str() == "name,note\n\"pump, one\",steady\nvalve,\"he said \"\"ok\"\"\"\n");
+	}
+
+	{
+		std::ostringstream output;
+		mtrc::write_tsv(output, std::vector<std::vector<int>>{{1, 2}, {3, 4}});
+		assert(output.str() == "1\t2\n3\t4\n");
+	}
+
+	const std::string path = "record_layer_smoke_vectors.csv";
+	{
+		mtrc::CsvWriteOptions options;
+		options.header = {"x", "y"};
+		mtrc::write_csv(path, std::vector<std::vector<double>>{{0.0, 1.0}, {2.5, 3.5}}, options);
+	}
+	{
+		mtrc::CsvReadOptions options;
+		options.has_header = true;
+		const auto rows = mtrc::read_csv<double>(path, options);
+		assert((rows == std::vector<std::vector<double>>{{0.0, 1.0}, {2.5, 3.5}}));
+	}
+	std::remove(path.c_str());
 }
 
 static auto test_conversion() -> void
@@ -321,6 +406,7 @@ int main()
 	test_id_set_helpers();
 	test_empty_record_sets();
 	test_binding_buffers();
+	test_delimited_file_io();
 	test_conversion();
 	test_grouping();
 	test_composed_records();

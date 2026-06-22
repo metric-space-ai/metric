@@ -3,6 +3,14 @@
 Python spaces can start from real record shapes. The metric defines geometry;
 METRIC does not require an embedding step before users can ask intent questions.
 
+> **Availability.** The space construction in these examples runs today
+> (`Space.from_dataframe`, `Space.vectors`, `space.distance`, `space.pairwise`,
+> the `to_matrix`/`to_tree`/`to_graph` views). The analysis calls shown —
+> `space.neighbors(...)`, `space.outliers(...)`, `space.embed(...)` — currently
+> raise `StrategyUnavailableError` in the default core wheel because their native
+> bindings are not promoted yet. For these analyses today, build the space in
+> C++ (`<metric/workflow.hpp>`).
+
 ## DataFrame Rows
 
 ```python

@@ -42,7 +42,11 @@ The C++ core requires:
 - C++17 compiler
 - CMake 3.19+
 - the in-tree Metric numeric core under `metric/numeric`
-- optional BLAS/LAPACK for LAPACK-backed numerical tests and advanced linear algebra paths
+- BLAS/LAPACK for the stats/entropy layer pulled by `<metric/workflow.hpp>` and
+  `<metric/engine.hpp>` (entropy references LAPACK symbols such as `dgesv_`/`dgetrf_`). The
+  exported `metric::metric` target links it automatically when found and the package config
+  re-resolves it via `find_dependency(LAPACK)`. It is only optional if you restrict yourself
+  to records, metrics, and space/search without the stats/entropy layer.
 
 The Metric numeric core is part of this repository and is consumed through the normal Metric include tree; it is not fetched or discovered as a separate package.
 

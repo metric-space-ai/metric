@@ -69,6 +69,22 @@ target_include_directories(${METRIC_TARGET_NAME} INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
+# Propagate the LAPACK dependency through the public interface target. The
+# always-included stats/entropy headers (pulled transitively by
+# <metric/workflow.hpp> and <metric/engine.hpp>) reference LAPACK symbols
+# (dgesv_/dgetrf_), so a downstream consumer that links `metric::metric` and
+# includes workflow.hpp must link LAPACK too. Prefer the imported LAPACK::LAPACK
+# target so the exported package stays relocatable; the package config file
+# re-resolves it via find_dependency(LAPACK) (only when LAPACK was present at
+# build time -- see METRIC_CONFIG_LAPACK_DEPENDENCY below).
+if (LAPACK_FOUND)
+    if (TARGET LAPACK::LAPACK)
+        target_link_libraries(${METRIC_TARGET_NAME} INTERFACE LAPACK::LAPACK)
+    else ()
+        target_link_libraries(${METRIC_TARGET_NAME} INTERFACE ${LAPACK_LIBRARIES})
+    endif ()
+endif ()
+
 # Catch2 installation
 if (METRIC_BUILD_TESTS OR METRIC_BUILD_BENCHMARKS)
     FetchContent_Declare(
@@ -130,6 +146,16 @@ install(EXPORT metric-target
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake)
 
 include(CMakePackageConfigHelpers)
+
+# Only emit find_dependency(LAPACK) into the installed config when LAPACK was
+# actually linked into the interface target. A pure header-only consumer on a
+# machine without LAPACK then still resolves find_package(metric) successfully;
+# a workflow.hpp/stats consumer gets the LAPACK dependency re-resolved for it.
+if (LAPACK_FOUND)
+    set(METRIC_CONFIG_LAPACK_DEPENDENCY "include(CMakeFindDependencyMacro)\nfind_dependency(LAPACK)")
+else ()
+    set(METRIC_CONFIG_LAPACK_DEPENDENCY "")
+endif ()
 
 # Create package config file
 configure_package_config_file(
