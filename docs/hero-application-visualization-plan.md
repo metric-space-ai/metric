@@ -231,6 +231,81 @@ A small factual evidence strip:
 This must not use the generic big-number card pattern. It should read as
 evidence attached to the dataset, not as SaaS marketing stats.
 
+## Visualization Architecture Decision
+
+METRIC needs an integrated visualization layer for hero applications, but the
+layer must be separate from the C++ metric-space core.
+
+### What belongs in C++
+
+C++ owns the evidence:
+
+- records
+- metric values
+- source-space and baseline pair values
+- query winners
+- representative records
+- derived-space coordinates
+- graph edges
+- diagnostics and benchmark metadata
+
+The C++ executable exports evidence as stable CSV/JSON artifacts. This keeps the
+scientific and algorithmic contract native, deterministic, and testable.
+
+### What belongs outside C++
+
+Rendering belongs to the documentation/site layer:
+
+- static SVGs for README, GitHub, and documentation pages
+- optional interactive HTML views for the project site
+- optional notebook/browser adapters in Python or JavaScript, provided they only
+  render exported evidence or binding-level data
+
+No rendering dependency may become a required C++ dependency.
+
+### Initial Renderer
+
+The first renderer should be an in-repository static renderer for 2D evidence:
+
+- curve galleries
+- query winner overlays
+- metric/baseline heatmaps
+- outcome strips
+- graph views over finite spaces
+
+The renderer may be a small script or static-site module. Its job is formatting,
+not computation.
+
+### Optional Interactive Renderer
+
+An external interactive renderer such as Babyplots may be added later as an
+optional docs/site adapter for:
+
+- PHATE/AE derived coordinate spaces
+- 3D point clouds
+- interactive source-space graph exploration
+- brushing a point to inspect the original record and metric neighbors
+
+If used, Babyplots must be integrated only in the site/notebook layer, never as
+a C++ dependency. The adapter must consume exported METRIC evidence, not compute
+metric results. It must also provide a static SVG fallback for GitHub and
+offline docs.
+
+### Required Data Contract For Interactive Views
+
+Any renderer, static or interactive, must consume the same evidence schema:
+
+- `records`
+- `queries`
+- `pair_values`
+- `winners`
+- `coordinates`
+- `edges`
+- `diagnostics`
+- `provenance`
+
+This prevents the visualization layer from becoming another algorithm layer.
+
 ## Required Documentation Changes
 
 ### `docs/examples/process-curve-external-gallery.md`
