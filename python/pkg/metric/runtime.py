@@ -353,8 +353,10 @@ def capabilities():
         "denoise": native_binding_available("dbscan"),
         # Metric-space embedding (never promoted in this batch).
         "embed": native_binding_available("embed"),
-        # Cross-space distance-profile comparison/correlation.
-        "compare_correlate": native_binding_available("compare_spaces"),
+        # Cross-space distance-profile comparison/correlation. The native
+        # binding promoted for compare_spaces/correlate_spaces is exposed as
+        # metric._impl.metric.distance_profile_correlation.
+        "compare_correlate": native_binding_available("distance_profile_correlation"),
         # The optional native correlation package.
         "correlation_package": _correlation_package_available(),
     }

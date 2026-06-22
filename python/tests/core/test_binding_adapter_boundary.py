@@ -131,7 +131,7 @@ def test_c31_dynamic_flags_match_live_probes():
     # the flag must equal the live probe both before and after integration.
     native = c31_native_metric_module_or_none()
     assert result["compare_correlate"] == bool(
-        native is not None and hasattr(native, "compare_spaces")
+        native is not None and hasattr(native, "distance_profile_correlation")
     )
 
     # correlation_package is computed by attempting the import, so the flag must

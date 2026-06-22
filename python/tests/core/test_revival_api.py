@@ -478,7 +478,7 @@ class RevivalApiTest(unittest.TestCase):
             native_metric = None
         self.assertEqual(
             result["compare_correlate"],
-            bool(native_metric is not None and hasattr(native_metric, "compare_spaces")),
+            bool(native_metric is not None and hasattr(native_metric, "distance_profile_correlation")),
         )
 
         try:
