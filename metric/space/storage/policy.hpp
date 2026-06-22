@@ -20,6 +20,11 @@ enum class materialization_policy {
 	materialized,
 };
 
+// NOTE: execution::parallel is currently a declared preference only. The space /
+// search / stats paths run serially (no threads are forked); selecting parallel
+// gates a metric thread-safety check and diagnostics string but does NOT yet
+// accelerate work. It is exposed honestly here so callers do not assume threading
+// they are not getting; see docs/supported-surface.md (Scale & performance).
 enum class execution {
 	serial,
 	parallel,
