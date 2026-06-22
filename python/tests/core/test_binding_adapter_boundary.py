@@ -1,11 +1,65 @@
+import importlib
+import importlib.util
+from pathlib import Path
+
 import numpy as np
 import pytest
 
+import metric
 import metric.distance as distance
 from metric import mappings
-from metric.exceptions import MissingMetricError, StrategyUnavailableError
+from metric.exceptions import MissingMetricError, OptionalDependencyError, StrategyUnavailableError
 from metric.spaces import Space
 from metric.strategies import PhateAE
+
+
+def _native_correlation_available():
+    return all(
+        importlib.util.find_spec(name) is not None
+        for name in ("metric._impl.entropy", "metric._impl.mgc")
+    )
+
+
+def test_import_metric_succeeds_without_native_correlation():
+    # The top-level package must keep importing even when the native
+    # correlation bindings are absent (it does not import correlation).
+    assert hasattr(metric, "OptionalDependencyError")
+    assert issubclass(OptionalDependencyError, metric.MetricError)
+
+
+@pytest.mark.skipif(
+    _native_correlation_available(),
+    reason="native correlation bindings are present; the adapter-boundary raise does not apply",
+)
+def test_correlation_import_raises_optional_dependency_error_when_native_absent():
+    # Importing the correlation adapter must convert the missing native
+    # binding into a clean metric.OptionalDependencyError that names the
+    # native binding -- never a raw ModuleNotFoundError / ABI traceback.
+    with pytest.raises(OptionalDependencyError) as excinfo:
+        importlib.import_module("metric.correlation")
+
+    message = str(excinfo.value)
+    assert "metric._impl.entropy" in message
+    assert "adapter boundary" in message
+
+    # The surfaced error must be OptionalDependencyError, not a raw
+    # ModuleNotFoundError, and must not chain one as its visible cause.
+    assert not isinstance(excinfo.value, ModuleNotFoundError)
+    assert excinfo.value.__cause__ is None
+
+    # Loading the mgc adapter module on its own (bypassing the package
+    # __init__, which fails first on entropy) names its own native binding.
+    mgc_path = (
+        Path(metric.__file__).resolve().parent / "correlation" / "mgc.py"
+    )
+    mgc_spec = importlib.util.spec_from_file_location(
+        "metric_correlation_mgc_under_test", mgc_path
+    )
+    mgc_module = importlib.util.module_from_spec(mgc_spec)
+    with pytest.raises(OptionalDependencyError) as mgc_excinfo:
+        mgc_spec.loader.exec_module(mgc_module)
+    assert "metric._impl.mgc" in str(mgc_excinfo.value)
+    assert mgc_excinfo.value.__cause__ is None
 
 
 def test_standard_vector_metrics_are_native_distance_exports():

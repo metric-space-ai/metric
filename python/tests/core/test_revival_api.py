@@ -706,6 +706,29 @@ class RevivalApiTest(unittest.TestCase):
             if historical is not None:
                 self.assertIs(getattr(distance_module, alias), historical)
 
+    def test_correlation_import_is_clean_adapter_boundary(self):
+        import importlib
+        import importlib.util
+
+        from metric.exceptions import OptionalDependencyError
+
+        # Importing the top-level package must keep succeeding; it does not
+        # import correlation.
+        self.assertTrue(hasattr(metric, "OptionalDependencyError"))
+
+        native_available = all(
+            importlib.util.find_spec(name) is not None
+            for name in ("metric._impl.entropy", "metric._impl.mgc")
+        )
+        if native_available:
+            self.skipTest("native correlation bindings are present; adapter-boundary raise does not apply")
+
+        with self.assertRaises(OptionalDependencyError) as ctx:
+            importlib.import_module("metric.correlation")
+        self.assertIn("metric._impl.entropy", str(ctx.exception))
+        self.assertNotIsInstance(ctx.exception, ModuleNotFoundError)
+        self.assertIsNone(ctx.exception.__cause__)
+
     def test_top_level_hides_debug_extension_exports(self):
         for name in ("DoubleVector", "LongVector", "test"):
             self.assertFalse(hasattr(metric, name), name)

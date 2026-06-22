@@ -14,9 +14,12 @@ helpers, and operator helpers over the native implementation.
 > matching unpromoted `metric.operators` free functions) — currently raise
 > `StrategyUnavailableError`: their native
 > bindings are not promoted in the default wheel yet. `metric.correlation`
-> (Entropy/MGC) requires the full build (`METRIC_PYTHON_BUILD_FULL`) and
-> otherwise raises `ModuleNotFoundError`. For cluster/embedding/dependency
-> analysis today, use the C++ surface
+> (Entropy/MGC) is an adapter boundary over the native correlation bindings
+> (`metric._impl.entropy`/`metric._impl.mgc`), which require the full build
+> (`METRIC_PYTHON_BUILD_FULL`). When those bindings are absent, `import
+> metric.correlation` raises `metric.OptionalDependencyError` naming the
+> missing native binding (not a raw `ModuleNotFoundError`). For
+> cluster/embedding/dependency analysis today, use the C++ surface
 > (`<metric/workflow.hpp>`).
 
 The entry point is `Space`: a finite record set plus a metric with cached
@@ -443,6 +446,8 @@ they have stable native bindings, result objects, examples, and CI coverage.
 ## Error Model
 
 Public Python error classes live in `metric.exceptions` and are re-exported from `metric`, starting with `MetricError`, `MissingMetricError`, and `UnsupportedOperationError`. `Space(records)` without a metric raises `MissingMetricError` with an explicit construction example. Core result objects use these errors for explicit unsupported operations such as inverse reconstruction on lossy reductions, compression, deterministic maps, and denoise filters.
+
+`metric.correlation` is an adapter boundary, not a promoted algorithm surface. When the native correlation bindings (`metric._impl.entropy`/`metric._impl.mgc`) are not built into the wheel, `import metric.correlation` (and `from metric import correlation`) raises `metric.OptionalDependencyError` with a message naming the missing native binding, instead of a raw `ModuleNotFoundError`. `import metric` itself stays unaffected and keeps succeeding.
 
 ## Compatibility
 

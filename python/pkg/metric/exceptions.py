@@ -49,8 +49,16 @@ class StaleRepresentationError(RepresentationError):
     """Raised when a representation no longer matches its source space."""
 
 
-class OptionalDependencyError(MetricError):
-    """Raised when an optional dependency is required but unavailable."""
+class OptionalDependencyError(MetricError, ImportError):
+    """Raised when an optional dependency is required but unavailable.
+
+    It is also an :class:`ImportError` because it is raised exclusively for
+    unavailable optional imports/native bindings (e.g. the correlation adapter
+    boundary or a missing ``numpy``). This lets import-aware compatibility
+    discovery (``metric.compat``) treat an unavailable optional binding the
+    same way it treats any other unimportable legacy module, while keeping the
+    public ``MetricError`` hierarchy intact.
+    """
 
 
 class NotFittedError(MetricError):
