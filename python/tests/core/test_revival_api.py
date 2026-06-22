@@ -8,6 +8,7 @@ from pathlib import Path
 
 import metric
 import metric.distance as distance_module
+import metric.spaces as spaces_module
 import numpy as np
 from metric import compat, core, exceptions, intent, mappings, representations, runtime, transforms
 from metric.exceptions import (
@@ -17,6 +18,7 @@ from metric.exceptions import (
     MetricError,
     MetricInputError,
     MissingMetricError,
+    OptionalDependencyError,
     StaleRepresentationError,
     StrategyParameterError,
     StrategyUnavailableError,
@@ -1599,5 +1601,39 @@ class RevivalApiTest(unittest.TestCase):
 
         self.assertEqual(space.nearest(query).id, 1)
         self.assertGreaterEqual(intrinsic_dimension(records, cumulative_transport_distance), 0.0)
+
+    def test_distance_matrix_numpy_marshals_pairwise_in_record_order(self):
+        records = [0.0, 1.0, 4.0]
+        space = Space(records, metric=lambda lhs, rhs: abs(lhs - rhs))
+
+        matrix = space.distance_matrix_numpy()
+
+        self.assertIsInstance(matrix, np.ndarray)
+        self.assertEqual(matrix.shape, (len(records), len(records)))
+        # Record order is preserved: [i][j] is the known |records[i] - records[j]|.
+        for i, lhs in enumerate(records):
+            for j, rhs in enumerate(records):
+                self.assertEqual(matrix[i][j], abs(lhs - rhs))
+        # Symmetric metric -> symmetric matrix; identity distance -> zero diagonal.
+        self.assertTrue(np.array_equal(matrix, matrix.T))
+        self.assertTrue(np.array_equal(np.diagonal(matrix), np.zeros(len(records))))
+
+    def test_distance_matrix_numpy_requires_numpy(self):
+        space = Space([0.0, 1.0], metric=lambda lhs, rhs: abs(lhs - rhs))
+        original_numpy = spaces_module._numpy
+
+        def _raise_missing_numpy():
+            raise OptionalDependencyError(
+                "Space.distance_matrix_numpy() requires numpy."
+            ) from ModuleNotFoundError("numpy")
+
+        spaces_module._numpy = _raise_missing_numpy
+        try:
+            with self.assertRaises(OptionalDependencyError):
+                space.distance_matrix_numpy()
+        finally:
+            spaces_module._numpy = original_numpy
+
+
 if __name__ == "__main__":
     unittest.main()

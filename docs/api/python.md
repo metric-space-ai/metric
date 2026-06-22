@@ -153,6 +153,7 @@ space.distance(lhs_index, rhs_index)
 space.pairwise()
 space.pairwise(ids=[0, 2])
 space.pairwise_distances()
+space.distance_matrix_numpy()
 space.version()
 space.touch()
 space.to_matrix()
@@ -202,6 +203,12 @@ Space.vectors(records, metric=custom_vector_metric)
 ```
 
 `repr(space)` reports the engine object shape: size, metric, record type, and optional name.
+
+`space.distance_matrix_numpy()` returns the pairwise distance matrix as a square
+`numpy.ndarray` of shape `(n, n)` in record order, marshaled from
+`pairwise_distances()`. A symmetric metric yields a symmetric matrix and an
+identity-respecting metric yields a zero diagonal. numpy is imported lazily; the
+method raises `OptionalDependencyError` when numpy is not installed.
 
 Use `Space.from_dataframe(df, metric=row_metric, id_column="sample_id")` for
 DataFrame-like tabular records. The constructor reads rows through

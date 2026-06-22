@@ -223,6 +223,22 @@ def _as_scalar_records(records):
     return scalar_records
 
 
+def _numpy():
+    """Import numpy lazily, mirroring ``metric.operators._numpy``.
+
+    Returns the numpy module or raises ``OptionalDependencyError`` so degraded
+    installs without numpy still import this module.
+    """
+    try:
+        import numpy as np
+    except ModuleNotFoundError as exc:
+        raise OptionalDependencyError(
+            "Space.distance_matrix_numpy() requires numpy. Install numpy or use "
+            "Space.pairwise_distances() for plain Python lists."
+        ) from exc
+    return np
+
+
 def _load_numpy_array(path, *, allow_pickle):
     try:
         import numpy as np
@@ -545,6 +561,21 @@ class FiniteMetricSpace:
             [self.distance(lhs, rhs) for rhs in positions]
             for lhs in positions
         ]
+
+    def distance_matrix_numpy(self):
+        """Return the pairwise distance matrix as a square ``numpy.ndarray``.
+
+        Adapter: this marshals the existing pairwise matrix
+        (``self.pairwise_distances()``, in record order) into a NumPy array; it
+        runs no new distance computation beyond that already-promoted path. The
+        result has shape ``(n, n)`` in record order, so for a symmetric metric it
+        is symmetric and for an identity-respecting metric its diagonal is zero --
+        both follow from the underlying pairwise values and are not special-cased.
+
+        Raises ``OptionalDependencyError`` if numpy is not installed.
+        """
+        np = _numpy()
+        return np.asarray(self.pairwise_distances(), dtype=float)
 
     def to_csv(
         self,

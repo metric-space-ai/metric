@@ -64,6 +64,26 @@ assert space.distance(0, 1) == 2
 operations use physical positions today, while result objects report stable
 source IDs where the promoted result contract exposes them.
 
+## NumPy Distance Matrix
+
+```python
+from metric import Space
+from metric.metrics import Edit
+
+space = Space(["cat", "cot", "coat", "dog"], metric=Edit())
+matrix = space.distance_matrix_numpy()
+
+assert matrix.shape == (len(space), len(space))
+assert matrix[0][1] == space.distance(0, 1)
+```
+
+`Space.distance_matrix_numpy()` returns the pairwise distance matrix as a square
+`numpy.ndarray` of shape `(n, n)` in record order, built from
+`pairwise_distances()`. For a symmetric metric the result is symmetric, and for
+an identity-respecting metric the diagonal is zero -- both follow from the
+underlying pairwise values. The method imports numpy lazily and raises
+`OptionalDependencyError` when numpy is not installed.
+
 ## DataFrame Rows
 
 ```python
