@@ -41,4 +41,14 @@ struct affinity_propagation_options {
 
 } // namespace mtrc::stats::structural_analysis
 
+namespace mtrc {
+// Re-export the clustering option structs alongside the verbs that consume them
+// (find_groups / find_outliers), so a call reads
+// `mtrc::find_groups(space, mtrc::dbscan_options(0.7, 2))` instead of spelling the
+// deeply-nested mtrc::stats::structural_analysis::dbscan_options.
+using stats::structural_analysis::affinity_propagation_options;
+using stats::structural_analysis::dbscan_options;
+using stats::structural_analysis::k_medoids_options;
+} // namespace mtrc
+
 #endif
