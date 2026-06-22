@@ -199,3 +199,8 @@ monitoring package. Its concrete implementation plan is
 This workstream is not a generic demo cleanup. It must produce reproducible C++
 evidence exports and static visual assets that show real process-curve records,
 query recovery, metric-space structure, and padded-vector baseline failures.
+
+The interactive presentation and data-debugging layer is tracked separately in
+[METRIC Visual Debug Library Plan](visual-debug-library-plan.md). That work is a
+JavaScript/WebGL/browser package for linked high-volume views over exported
+METRIC evidence, with Babyplots evaluated as a serious base or fork candidate.
