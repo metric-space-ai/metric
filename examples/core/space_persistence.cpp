@@ -30,8 +30,15 @@ int main()
 	assert(loaded.space.id(2) == fixed);
 	assert(loaded.space.distance(normal, fixed) == space.distance(normal, fixed));
 
+	auto subspace = mtrc::space::select_subspace(space, std::vector<mtrc::RecordId>{normal, fixed});
+	std::stringstream subspace_stream;
+	mtrc::space::persistence::save(subspace_stream, subspace);
+	auto loaded_subspace = mtrc::space::persistence::load_subspace<std::string>(subspace_stream, mtrc::Edit<char>{});
+	assert(mtrc::space::parent_record_id(loaded_subspace.subspace, loaded_subspace.subspace.space.id(1)) == fixed);
+
 	std::cout << "saved records: " << loaded.artifact.record_count() << "\n";
 	std::cout << "saved pair values: " << loaded.artifact.pair_count() << "\n";
+	std::cout << "saved subspace lineage rows: " << loaded_subspace.artifact.lineage.size() << "\n";
 	std::cout << "distance(normal, fixed): " << loaded.space.distance(normal, fixed) << "\n";
 	return 0;
 }

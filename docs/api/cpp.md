@@ -160,6 +160,23 @@ a codec with `encode(record) -> std::string` and `decode(payload) -> Record`.
 the supplied metric, so an artifact cannot silently load against the wrong
 metric implementation.
 
+Derived-space lineage is preserved through the same namespace. `save` is
+overloaded for `Subspace` and `MergedSpace`; `load_subspace` and
+`load_merged_space` restore both the finite space and the existing lineage rows.
+If a derived space was structurally changed after creation, export refuses the
+stale lineage instead of writing a misleading artifact.
+
+```cpp
+auto sub = mtrc::space::select_subspace(space, {space.id(0), space.id(2)});
+
+mtrc::space::persistence::save(artifact, sub);
+auto loaded_sub = mtrc::space::persistence::load_subspace<std::string>(
+    artifact, mtrc::Edit<char>{});
+
+auto parent_id = mtrc::space::parent_record_id(loaded_sub.subspace,
+                                               loaded_sub.subspace.space.id(0));
+```
+
 ## Metrics
 
 Catalog metrics live under `metric/metric/catalog/...` and are aggregated by

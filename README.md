@@ -198,7 +198,8 @@ and `modify` creates derived spaces.
 Finite spaces can also be exported as native C++ artifacts:
 `mtrc::space::persistence::save` stores records, stable `RecordId`s, the space
 version, metric identity, and optional materialized pair values; `load` restores
-the space with an explicitly supplied metric.
+the space with an explicitly supplied metric. Subspace and merged-space
+artifacts preserve their existing lineage rows.
 
 ## Build From Source
 

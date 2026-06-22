@@ -84,5 +84,63 @@ int main()
 	assert(throws<mtrc::MetricInputError>(
 		[&] { (void)mtrc::space::persistence::restore_space(bad_distance, metric_type{}); }));
 
+	auto subspace = mtrc::space::select_subspace(space, std::vector<mtrc::RecordId>{ok, fixed});
+	const auto sub_artifact = mtrc::space::persistence::export_subspace(subspace);
+	assert(sub_artifact.record_count() == 2);
+	assert(sub_artifact.lineage.size() == 2);
+	assert(sub_artifact.lineage[0].local_id == subspace.space.id(0));
+	assert(sub_artifact.lineage[0].parent_id == ok);
+	assert(sub_artifact.lineage[1].parent_id == fixed);
+
+	auto restored_subspace = mtrc::space::persistence::restore_subspace(sub_artifact, metric_type{});
+	assert(restored_subspace.space.size() == subspace.space.size());
+	assert(mtrc::space::parent_record_id(restored_subspace, restored_subspace.space.id(0)) == ok);
+	assert(mtrc::space::parent_record_id(restored_subspace, restored_subspace.space.id(1)) == fixed);
+
+	std::stringstream sub_stream;
+	mtrc::space::persistence::save(sub_stream, subspace);
+	const auto loaded_subspace = mtrc::space::persistence::load_subspace<std::string>(sub_stream, metric_type{});
+	assert(mtrc::space::parent_record_id(loaded_subspace.subspace, loaded_subspace.subspace.space.id(1)) == fixed);
+
+	auto stale_subspace = subspace;
+	stale_subspace.space.insert("new local record");
+	assert(throws<mtrc::StaleRepresentationError>(
+		[&] { (void)mtrc::space::persistence::export_subspace(stale_subspace); }));
+
+	auto bad_sub_artifact = sub_artifact;
+	bad_sub_artifact.lineage.pop_back();
+	assert(throws<mtrc::MetricInputError>(
+		[&] { (void)mtrc::space::persistence::restore_subspace(bad_sub_artifact, metric_type{}); }));
+
+	auto left = mtrc::space::select_subspace(space, std::vector<mtrc::RecordId>{ok});
+	auto right = mtrc::space::select_subspace(space, std::vector<mtrc::RecordId>{fail, fixed});
+	auto merged = mtrc::space::merge_checked(
+		std::vector<const decltype(left.space) *>{&left.space, &right.space});
+	const auto merged_artifact = mtrc::space::persistence::export_merged_space(merged);
+	assert(merged_artifact.record_count() == 3);
+	assert(merged_artifact.lineage.size() == 3);
+	assert(merged_artifact.lineage[0].source_index == 0);
+	assert(merged_artifact.lineage[0].source_id == left.space.id(0));
+	assert(merged_artifact.lineage[1].source_index == 1);
+	assert(merged_artifact.lineage[1].source_id == right.space.id(0));
+
+	auto restored_merged = mtrc::space::persistence::restore_merged_space(merged_artifact, metric_type{});
+	const auto first_origin = mtrc::space::merge_origin(restored_merged, restored_merged.space.id(0));
+	const auto second_origin = mtrc::space::merge_origin(restored_merged, restored_merged.space.id(1));
+	assert(first_origin.source_index == 0);
+	assert(first_origin.source_id == left.space.id(0));
+	assert(second_origin.source_index == 1);
+	assert(second_origin.source_id == right.space.id(0));
+
+	std::stringstream merged_stream;
+	mtrc::space::persistence::save(merged_stream, merged);
+	const auto loaded_merged = mtrc::space::persistence::load_merged_space<std::string>(merged_stream, metric_type{});
+	assert(mtrc::space::merge_origin(loaded_merged.merged, loaded_merged.merged.space.id(2)).source_index == 1);
+
+	auto bad_merged_artifact = merged_artifact;
+	bad_merged_artifact.lineage.front().local_id = merged.space.id(1);
+	assert(throws<mtrc::MetricInputError>(
+		[&] { (void)mtrc::space::persistence::restore_merged_space(bad_merged_artifact, metric_type{}); }));
+
 	return 0;
 }

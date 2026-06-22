@@ -26,6 +26,7 @@
 #include <metric/core/version.hpp>
 #include <metric/record/id.hpp>
 #include <metric/space/distances.hpp>
+#include <metric/space/lineage.hpp>
 
 // Native finite-space artifacts.
 //
@@ -100,6 +101,26 @@ template <typename Record, typename Distance> struct space_artifact {
 
 	auto record_count() const -> std::size_t { return records.size(); }
 	auto pair_count() const -> std::size_t { return distances.size(); }
+};
+
+template <typename Record, typename Distance> struct subspace_artifact {
+	using record_type = Record;
+	using distance_type = Distance;
+
+	space_artifact<record_type, distance_type> space;
+	std::vector<subspace_lineage_entry> lineage;
+
+	auto record_count() const -> std::size_t { return space.record_count(); }
+};
+
+template <typename Record, typename Distance> struct merged_space_artifact {
+	using record_type = Record;
+	using distance_type = Distance;
+
+	space_artifact<record_type, distance_type> space;
+	std::vector<merged_lineage_entry> lineage;
+
+	auto record_count() const -> std::size_t { return space.record_count(); }
 };
 
 template <typename Distance> struct distance_mismatch {
@@ -282,6 +303,26 @@ auto export_space(const Space &space, artifact_options options = {})
 	return artifact;
 }
 
+template <typename Record, typename Metric>
+auto export_subspace(const Subspace<Record, Metric> &sub, artifact_options options = {})
+	-> subspace_artifact<Record, metric_result_t<Metric, Record>>
+{
+	subspace_artifact<Record, metric_result_t<Metric, Record>> artifact;
+	artifact.space = export_space(sub.space, std::move(options));
+	artifact.lineage = subspace_lineage(sub);
+	return artifact;
+}
+
+template <typename Record, typename Metric>
+auto export_merged_space(const MergedSpace<Record, Metric> &merged, artifact_options options = {})
+	-> merged_space_artifact<Record, metric_result_t<Metric, Record>>
+{
+	merged_space_artifact<Record, metric_result_t<Metric, Record>> artifact;
+	artifact.space = export_space(merged.space, std::move(options));
+	artifact.lineage = merged_lineage(merged);
+	return artifact;
+}
+
 template <typename Space, typename Record, typename Distance,
 		  typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto verify_distances(const Space &space, const space_artifact<Record, Distance> &artifact,
@@ -318,6 +359,72 @@ auto restore_space(const space_artifact<Record, Distance> &artifact, Metric metr
 		}
 	}
 	return space;
+}
+
+template <typename Record, typename Distance, typename Metric>
+auto restore_subspace(const subspace_artifact<Record, Distance> &artifact, Metric metric, load_options options = {})
+	-> Subspace<Record, typename std::decay<Metric>::type>
+{
+	auto space = restore_space(artifact.space, std::move(metric), options);
+	if (artifact.lineage.size() != space.size()) {
+		throw MetricInputError("subspace artifact lineage row count does not match restored space size");
+	}
+
+	std::vector<RecordId> source_ids;
+	source_ids.reserve(space.size());
+	for (std::size_t position = 0; position < space.size(); ++position) {
+		const auto local_id = space.id(position);
+		bool found = false;
+		RecordId parent_id;
+		for (const auto &entry : artifact.lineage) {
+			if (entry.local_id == local_id) {
+				if (found) {
+					throw MetricInputError("subspace artifact contains duplicate lineage for a local RecordId");
+				}
+				found = true;
+				parent_id = entry.parent_id;
+			}
+		}
+		if (!found) {
+			throw MetricInputError("subspace artifact is missing lineage for a local RecordId");
+		}
+		source_ids.push_back(parent_id);
+	}
+
+	return Subspace<Record, typename std::decay<Metric>::type>{std::move(space), std::move(source_ids)};
+}
+
+template <typename Record, typename Distance, typename Metric>
+auto restore_merged_space(const merged_space_artifact<Record, Distance> &artifact, Metric metric,
+						  load_options options = {}) -> MergedSpace<Record, typename std::decay<Metric>::type>
+{
+	auto space = restore_space(artifact.space, std::move(metric), options);
+	if (artifact.lineage.size() != space.size()) {
+		throw MetricInputError("merged-space artifact lineage row count does not match restored space size");
+	}
+
+	std::vector<MergeOrigin> lineage;
+	lineage.reserve(space.size());
+	for (std::size_t position = 0; position < space.size(); ++position) {
+		const auto local_id = space.id(position);
+		bool found = false;
+		MergeOrigin origin;
+		for (const auto &entry : artifact.lineage) {
+			if (entry.local_id == local_id) {
+				if (found) {
+					throw MetricInputError("merged-space artifact contains duplicate lineage for a local RecordId");
+				}
+				found = true;
+				origin = MergeOrigin{entry.source_index, entry.source_id};
+			}
+		}
+		if (!found) {
+			throw MetricInputError("merged-space artifact is missing lineage for a local RecordId");
+		}
+		lineage.push_back(origin);
+	}
+
+	return MergedSpace<Record, typename std::decay<Metric>::type>{std::move(space), std::move(lineage)};
 }
 
 template <typename Space, typename Record, typename Distance,
@@ -363,6 +470,33 @@ auto save_artifact(std::ostream &output, const space_artifact<Record, Distance> 
 }
 
 template <typename Record, typename Distance, typename RecordCodec = record_text_codec<Record>>
+auto save_subspace_artifact(std::ostream &output, const subspace_artifact<Record, Distance> &artifact,
+							RecordCodec codec = RecordCodec{}) -> void
+{
+	output << "mtrc_subspace_artifact_v1\n";
+	save_artifact(output, artifact.space, std::move(codec));
+	output << "lineage " << artifact.lineage.size() << '\n';
+	for (const auto &entry : artifact.lineage) {
+		output << "lineage_row " << entry.local_id.index() << ' ' << entry.parent_id.index() << '\n';
+	}
+	output << "end_subspace\n";
+}
+
+template <typename Record, typename Distance, typename RecordCodec = record_text_codec<Record>>
+auto save_merged_space_artifact(std::ostream &output, const merged_space_artifact<Record, Distance> &artifact,
+								RecordCodec codec = RecordCodec{}) -> void
+{
+	output << "mtrc_merged_space_artifact_v1\n";
+	save_artifact(output, artifact.space, std::move(codec));
+	output << "lineage " << artifact.lineage.size() << '\n';
+	for (const auto &entry : artifact.lineage) {
+		output << "lineage_row " << entry.local_id.index() << ' ' << entry.source_index << ' '
+			   << entry.source_id.index() << '\n';
+	}
+	output << "end_merged_space\n";
+}
+
+template <typename Record, typename Distance, typename RecordCodec = record_text_codec<Record>>
 auto load_artifact(std::istream &input, RecordCodec codec = RecordCodec{}) -> space_artifact<Record, Distance>
 {
 	detail::expect_token(input, "mtrc_space_artifact_v1");
@@ -404,12 +538,71 @@ auto load_artifact(std::istream &input, RecordCodec codec = RecordCodec{}) -> sp
 	return artifact;
 }
 
+template <typename Record, typename Distance, typename RecordCodec = record_text_codec<Record>>
+auto load_subspace_artifact(std::istream &input, RecordCodec codec = RecordCodec{})
+	-> subspace_artifact<Record, Distance>
+{
+	detail::expect_token(input, "mtrc_subspace_artifact_v1");
+	subspace_artifact<Record, Distance> artifact;
+	artifact.space = load_artifact<Record, Distance>(input, std::move(codec));
+
+	detail::expect_token(input, "lineage");
+	const auto lineage_count = detail::read_size(input, "subspace lineage count");
+	artifact.lineage.reserve(lineage_count);
+	for (std::size_t index = 0; index < lineage_count; ++index) {
+		(void)index;
+		detail::expect_token(input, "lineage_row");
+		const auto local_id = RecordId::from_index(detail::read_size(input, "subspace lineage local id"));
+		const auto parent_id = RecordId::from_index(detail::read_size(input, "subspace lineage parent id"));
+		artifact.lineage.push_back(subspace_lineage_entry{local_id, parent_id});
+	}
+	detail::expect_token(input, "end_subspace");
+	return artifact;
+}
+
+template <typename Record, typename Distance, typename RecordCodec = record_text_codec<Record>>
+auto load_merged_space_artifact(std::istream &input, RecordCodec codec = RecordCodec{})
+	-> merged_space_artifact<Record, Distance>
+{
+	detail::expect_token(input, "mtrc_merged_space_artifact_v1");
+	merged_space_artifact<Record, Distance> artifact;
+	artifact.space = load_artifact<Record, Distance>(input, std::move(codec));
+
+	detail::expect_token(input, "lineage");
+	const auto lineage_count = detail::read_size(input, "merged-space lineage count");
+	artifact.lineage.reserve(lineage_count);
+	for (std::size_t index = 0; index < lineage_count; ++index) {
+		(void)index;
+		detail::expect_token(input, "lineage_row");
+		const auto local_id = RecordId::from_index(detail::read_size(input, "merged-space lineage local id"));
+		const auto source_index = detail::read_size(input, "merged-space lineage source index");
+		const auto source_id = RecordId::from_index(detail::read_size(input, "merged-space lineage source id"));
+		artifact.lineage.push_back(merged_lineage_entry{local_id, source_index, source_id});
+	}
+	detail::expect_token(input, "end_merged_space");
+	return artifact;
+}
+
 template <typename Space, typename RecordCodec = record_text_codec<typename Space::record_type>,
 		  typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto save(std::ostream &output, const Space &space, artifact_options options = {}, RecordCodec codec = RecordCodec{})
 	-> void
 {
 	save_artifact(output, export_space(space, std::move(options)), std::move(codec));
+}
+
+template <typename Record, typename Metric, typename RecordCodec = record_text_codec<Record>>
+auto save(std::ostream &output, const Subspace<Record, Metric> &sub, artifact_options options = {},
+		  RecordCodec codec = RecordCodec{}) -> void
+{
+	save_subspace_artifact(output, export_subspace(sub, std::move(options)), std::move(codec));
+}
+
+template <typename Record, typename Metric, typename RecordCodec = record_text_codec<Record>>
+auto save(std::ostream &output, const MergedSpace<Record, Metric> &merged, artifact_options options = {},
+		  RecordCodec codec = RecordCodec{}) -> void
+{
+	save_merged_space_artifact(output, export_merged_space(merged, std::move(options)), std::move(codec));
 }
 
 template <typename Record, typename Metric> struct loaded_space {
@@ -421,6 +614,24 @@ template <typename Record, typename Metric> struct loaded_space {
 	space_artifact<Record, distance_type> artifact;
 };
 
+template <typename Record, typename Metric> struct loaded_subspace {
+	using metric_type = Metric;
+	using space_type = core::MetricSpace<Record, metric_type>;
+	using distance_type = typename space_type::distance_type;
+
+	Subspace<Record, metric_type> subspace;
+	subspace_artifact<Record, distance_type> artifact;
+};
+
+template <typename Record, typename Metric> struct loaded_merged_space {
+	using metric_type = Metric;
+	using space_type = core::MetricSpace<Record, metric_type>;
+	using distance_type = typename space_type::distance_type;
+
+	MergedSpace<Record, metric_type> merged;
+	merged_space_artifact<Record, distance_type> artifact;
+};
+
 template <typename Record, typename Metric, typename RecordCodec = record_text_codec<Record>>
 auto load(std::istream &input, Metric metric, load_options options = {}, RecordCodec codec = RecordCodec{})
 	-> loaded_space<Record, typename std::decay<Metric>::type>
@@ -430,6 +641,28 @@ auto load(std::istream &input, Metric metric, load_options options = {}, RecordC
 	auto artifact = load_artifact<Record, distance_type>(input, std::move(codec));
 	auto space = restore_space(artifact, std::move(metric), options);
 	return loaded_space<Record, metric_type>{std::move(space), std::move(artifact)};
+}
+
+template <typename Record, typename Metric, typename RecordCodec = record_text_codec<Record>>
+auto load_subspace(std::istream &input, Metric metric, load_options options = {}, RecordCodec codec = RecordCodec{})
+	-> loaded_subspace<Record, typename std::decay<Metric>::type>
+{
+	using metric_type = typename std::decay<Metric>::type;
+	using distance_type = metric_result_t<metric_type, Record>;
+	auto artifact = load_subspace_artifact<Record, distance_type>(input, std::move(codec));
+	auto subspace = restore_subspace(artifact, std::move(metric), options);
+	return loaded_subspace<Record, metric_type>{std::move(subspace), std::move(artifact)};
+}
+
+template <typename Record, typename Metric, typename RecordCodec = record_text_codec<Record>>
+auto load_merged_space(std::istream &input, Metric metric, load_options options = {},
+					   RecordCodec codec = RecordCodec{}) -> loaded_merged_space<Record, typename std::decay<Metric>::type>
+{
+	using metric_type = typename std::decay<Metric>::type;
+	using distance_type = metric_result_t<metric_type, Record>;
+	auto artifact = load_merged_space_artifact<Record, distance_type>(input, std::move(codec));
+	auto merged = restore_merged_space(artifact, std::move(metric), options);
+	return loaded_merged_space<Record, metric_type>{std::move(merged), std::move(artifact)};
 }
 
 } // namespace mtrc::space::persistence
