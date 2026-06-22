@@ -98,6 +98,37 @@ from .operators import (
 from .runtime import CachePolicy, RuntimeDiagnostics, RuntimePolicy, runtime_diagnostics
 from .spaces import FiniteMetricSpace, MatrixSpace, RecordId, Space
 
+
+def available():
+    """Report which native capabilities this installed wheel actually provides.
+
+    Returns a dict mapping each native extension module to whether it imports, so
+    callers can check what runs vs. what raises StrategyUnavailableError /
+    OptionalDependencyError before relying on an operation. ``distance``/``space``/
+    ``metric``/``transform`` ship in the core wheel; ``entropy``/``mgc``
+    (correlation) require the FULL build.
+    """
+
+    import importlib
+
+    modules = {
+        "distance": "metric._impl.distance",
+        "space": "metric._impl.space",
+        "metric": "metric._impl.metric",
+        "transform": "metric._impl.transform",
+        "entropy": "metric._impl.entropy",
+        "mgc": "metric._impl.mgc",
+    }
+    capabilities = {}
+    for name, module_path in modules.items():
+        try:
+            importlib.import_module(module_path)
+            capabilities[name] = True
+        except Exception:
+            capabilities[name] = False
+    return capabilities
+
+
 __all__ = sorted(
     name
     for name in globals()

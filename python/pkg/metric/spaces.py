@@ -310,6 +310,22 @@ class FiniteMetricSpace:
             for lhs_index in range(len(self.records))
         ]
 
+    def distance_matrix(self, as_numpy=True):
+        """Return the full pairwise distance matrix.
+
+        Defaults to a NumPy ``ndarray`` (the numpy-first convention used by the
+        result dataclasses); pass ``as_numpy=False`` for the plain list-of-lists.
+        This is the data-out counterpart to ``pairwise()`` — feed it to plotting,
+        clustering, or CSV export (``metric`` C++ side has ``mtrc::render::write_csv``).
+        """
+
+        rows = self.pairwise_distances()
+        if not as_numpy:
+            return rows
+        import numpy as _np
+
+        return _np.asarray(rows, dtype=float)
+
     def pairwise(self, ids=None):
         self.ensure_fresh()
         if ids is None:
