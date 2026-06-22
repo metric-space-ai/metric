@@ -350,6 +350,36 @@ class FiniteMetricSpace:
     def __call__(self, lhs_index, rhs_index):
         return self.distance(lhs_index, rhs_index)
 
+    def __getstate__(self):
+        """Pickle the records, ids, metadata and settings (not the rebuildable caches).
+
+        The metric must itself be picklable: a module-level / named callable works;
+        a lambda or a native binding object does not. In that case a clear TypeError
+        is raised so a user knows to use a named metric or re-attach the metric after
+        loading, rather than getting an opaque pickling failure.
+        """
+
+        import pickle as _pickle
+
+        try:
+            _pickle.dumps(self.metric)
+        except Exception as error:
+            raise TypeError(
+                "Space is not picklable because its metric is not picklable "
+                f"({self.metric!r}). Use a module-level/named metric callable, or pickle the "
+                "records/ids yourself and re-attach the metric after loading."
+            ) from error
+
+        state = self.__dict__.copy()
+        for key in ("_native_matrix", "_native_matrix_version", "_distances", "_lazy_distances"):
+            state.pop(key, None)
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self._lazy_distances = {}
+        self._distances = None
+
     @classmethod
     def vectors(cls, records, metric=None, **kwargs):
         """Construct a finite metric space from vector records.

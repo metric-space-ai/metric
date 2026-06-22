@@ -14,4 +14,9 @@ struct mgc_options {};
 
 } // namespace mtrc::stats::correlate
 
+namespace mtrc {
+// Re-export alongside compare()/correlate() so callers can write mtrc::mgc_options.
+using stats::correlate::mgc_options;
+} // namespace mtrc
+
 #endif

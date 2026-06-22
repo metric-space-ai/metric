@@ -1,0 +1,31 @@
+# Doxygen configuration for the METRIC C++ API reference.
+# Generate with:  doxygen docs/Doxyfile   (output in docs/api/generated/html)
+# Only non-default settings are listed; Doxygen supplies the rest.
+
+PROJECT_NAME           = "METRIC"
+PROJECT_BRIEF          = "Native C++ framework for finite metric spaces (namespace mtrc)"
+OUTPUT_DIRECTORY       = docs/api/generated
+
+# Scan the public mtrc headers; skip vendored / numeric-core / 3rdparty trees.
+INPUT                  = metric README.md docs/supported-surface.md
+FILE_PATTERNS          = *.hpp *.h
+RECURSIVE              = YES
+EXCLUDE_PATTERNS       = */3rdparty/* */numeric/* */quarantine/* */benchmarks/*
+USE_MDFILE_AS_MAINPAGE = README.md
+
+# Extract the documented public surface; keep the tree navigable.
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+HIDE_UNDOC_MEMBERS     = NO
+JAVADOC_AUTOBRIEF      = YES
+GENERATE_TREEVIEW      = YES
+QUIET                  = YES
+WARN_IF_UNDOCUMENTED   = NO
+
+# HTML only by default; flip these on if you need other formats.
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+
+# C++17; let Doxygen resolve the mtrc include tree.
+INCLUDE_PATH           = .
+PREDEFINED             = __cplusplus=201703L

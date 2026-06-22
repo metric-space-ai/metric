@@ -281,4 +281,10 @@ auto regular_sample(const Space &space, std::size_t count, std::size_t offset = 
 
 } // namespace mtrc::stats::sample
 
+namespace mtrc {
+// Re-export so regular_sample sits at the same `mtrc::` depth as the other
+// space-level verbs.
+using stats::sample::regular_sample;
+} // namespace mtrc
+
 #endif

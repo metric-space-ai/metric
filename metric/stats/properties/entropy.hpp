@@ -123,4 +123,10 @@ auto entropy(const Space &space, std::size_t k = 7, std::size_t p = 70, bool exp
 
 } // namespace mtrc::stats::properties
 
+namespace mtrc {
+// Re-export so the entropy verb sits at the same `mtrc::` depth as the other
+// space-level verbs (find_neighbors, find_groups, describe_structure, ...).
+using stats::properties::entropy;
+} // namespace mtrc
+
 #endif

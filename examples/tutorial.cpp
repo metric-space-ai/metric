@@ -1,91 +1,51 @@
-#include "metric/metric.hpp"
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Runnable companion to examples/TUTORIAL.md, on the current mtrc:: surface.
+// Build: c++ -std=c++17 -I. examples/tutorial.cpp -framework Accelerate   (macOS)
+//        c++ -std=c++17 -I. examples/tutorial.cpp -llapack                (Linux)
 
-void distance_example()
+#include <metric/quickstart.hpp>
+
+#include <iostream>
+#include <string>
+#include <vector>
+
+// A finite metric space over strings, compared by edit distance.
+static void strings_example()
 {
-	using namespace mtrc;
+	std::vector<std::string> words = {"metric", "metrics", "matrix", "tree"};
+	auto records = mtrc::record::import_records(words);
+	auto space = mtrc::space::build_checked(records, mtrc::Edit<char>{});
 
-	// configure the metric
-	Euclidean<double> euclidean_distance;
-	// new: Euclidean<std::vector<double>> euclidean_distance;
-
-	// apply the metric
-	std::vector<double> a = {1, 2, 5, 3, 1};
-	std::vector<double> b = {2, 2, 1, 3, 2};
-	double result = euclidean_distance(a, b);
-	std::cout << "result = " << result << std::endl;
+	std::cout << mtrc::describe_structure(space) << "\n";
+	std::cout << mtrc::find_neighbors(space, std::string("metricks"), 2) << "\n";
 }
 
-void correlation_example()
+// A vector space with construction-time validation, then a couple of properties.
+static void vectors_example()
 {
-	using namespace mtrc;
-	// some data
-	std::vector<std::vector<int>> A = {
-		{0, 1, 1, 1, 1, 1, 2, 3}, {1, 1, 1, 1, 1, 2, 3, 4}, {2, 2, 2, 1, 1, 2, 0, 0}, {3, 3, 2, 2, 1, 1, 0, 0},
-		{4, 3, 2, 1, 0, 0, 0, 0}, {5, 3, 2, 1, 0, 0, 0, 0}, {4, 6, 2, 2, 1, 1, 0, 0},
-	};
+	std::vector<std::vector<double>> records = {{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}, {1.0, 1.0}};
 
-	// some other data
-	std::deque<std::string> B = {
-		"this", "test", "tests", "correlation", "of", "arbitrary", "data",
-	};
+	auto space = mtrc::space::space_builder<std::vector<double>>(mtrc::Euclidean<double>{})
+					 .add_all(records)
+					 .require_non_empty()
+					 .require_uniform_dimension()
+					 .require_finite()
+					 .build();
 
-	// configure the correlation
-	auto mgc_corr = MGC<std::vector<int>, Euclidean<int>, std::string, Edit<std::string>>();
-	// new auto mgc_corr = MGC<Euclidean<std::vector<int>>, Edit<std::string>>();
-
-	// apply the correlation
-	auto result = mgc_corr(A, B);
-
-	std::cout << "Multiscale graph correlation: " << result << std::endl;
-	// 0.0791671 (Time = 7.8e-05s)
-	// Rows 2 and 3 are similar in both data sets, so that there is a minimal correlation.
-}
-
-void knn_example()
-{
-	using namespace mtrc;
-	using rec_t = std::vector<double>;
-
-	// some data
-	std::vector<rec_t> A = {
-		{0, 1, 1, 1, 1, 1, 2, 3}, {1, 1, 1, 1, 1, 2, 3, 4}, {2, 2, 2, 1, 1, 2, 0, 0}, {3, 3, 2, 2, 1, 1, 0, 0},
-		{4, 3, 2, 1, 0, 0, 0, 0}, {5, 3, 2, 1, 0, 0, 0, 0}, {4, 6, 2, 2, 1, 1, 0, 0},
-	};
-
-	// std::vector<double> v0 = {0, 1, 1, 1, 1, 1, 2, 3};
-	// std::vector<double> v1 = {1, 1, 1, 1, 1, 2, 3, 4};
-	// std::vector<double> v2 = {2, 2, 2, 1, 1, 2, 0, 0};
-	// std::vector<double> v3 = {3, 3, 2, 2, 1, 1, 0, 0};
-	rec_t b = {2, 8, 2, 1, 0, 0, 0, 0};
-
-	// configure the tree
-	Tree<rec_t, Manhattan<double>> searchTree(A);
-
-	// apply a method of the seach tree
-	auto nn = searchTree.nn(b);
-	std::cout << "Tree: best match for b is A[" << nn->ID << "]" << std::endl;
-
-	// configure the graph
-	KNNGraph<rec_t, Manhattan<double>> searchGraph(A, 2, 4);
-
-	auto nn_ID = searchGraph.nn(b);
-	std::cout << "Graph: best match for b is A[" << nn_ID << "]" << std::endl;
-
-	// configure the search tree
-	Matrix<rec_t, Manhattan<double>> searchMatrix(A);
-	std::cout << "Matrix: best match for b is A[" << searchMatrix.nn(b) << "]" << std::endl;
-
-	std::cout << searchMatrix(0, 3) << std::endl;
-	std::cout << searchGraph(0, 3) << std::endl;
-	std::cout << searchTree(0, 3) << std::endl;
+	std::cout << "intrinsic dimension: " << mtrc::intrinsic_dimension(space) << "\n";
+	auto e = mtrc::entropy(space);
+	if (e.succeeded()) {
+		std::cout << e << "\n";
+	}
+	std::cout << mtrc::find_groups(space, mtrc::k_medoids_options(2)) << "\n";
 }
 
 int main()
 {
-
-	distance_example();
-	correlation_example();
-	knn_example();
-
+	strings_example();
+	vectors_example();
 	return 0;
 }

@@ -5,6 +5,7 @@
 #ifndef _METRIC_RECORD_VALIDATE_HPP
 #define _METRIC_RECORD_VALIDATE_HPP
 
+#include <cmath>
 #include <cstddef>
 #include <limits>
 #include <sstream>
@@ -160,12 +161,38 @@ auto validate_uniform_record_dimension(
 		return 0;
 	}
 	const std::size_t record_dim = records.front().size();
-	for (const auto &record : records) {
-		if (record.size() != record_dim) {
-			throw std::invalid_argument(message);
+	for (std::size_t index = 0; index < records.size(); ++index) {
+		if (records[index].size() != record_dim) {
+			// Surface the offending record and the concrete sizes so a user can
+			// locate the bad row instead of re-scanning the whole set by hand.
+			throw std::invalid_argument(std::string(message) + " (record " + std::to_string(index) + " has size " +
+										std::to_string(records[index].size()) + ", expected " +
+										std::to_string(record_dim) + ")");
 		}
 	}
 	return record_dim;
+}
+
+// One-call finiteness validator over a vector record set. The default catalog
+// vector metrics (Euclidean/Manhattan/Chebyshev/P_norm) do NOT reject NaN/Inf,
+// so a stray non-finite value silently produces NaN distances that misorder or
+// drop neighbors in knn with zero error. Run this before building a space (or
+// via the SpaceBuilder require_finite() option) to fail fast with the offending
+// record index and position instead of getting silent-wrong-answers downstream.
+template <typename T>
+auto validate_finite_records(
+	const std::vector<std::vector<T>> &records,
+	const char *message = "mtrc::record::validate_finite_records found a non-finite (NaN/Inf) value") -> void
+{
+	for (std::size_t index = 0; index < records.size(); ++index) {
+		const auto &record = records[index];
+		for (std::size_t position = 0; position < record.size(); ++position) {
+			if (!std::isfinite(static_cast<double>(record[position]))) {
+				throw std::invalid_argument(std::string(message) + " (record " + std::to_string(index) +
+											", position " + std::to_string(position) + ")");
+			}
+		}
+	}
 }
 
 inline auto validate_buffer_shape(
@@ -191,6 +218,7 @@ using record::RecordColumnIssue;
 using record::RecordColumnReport;
 using record::RecordIdReport;
 using record::validate_buffer_shape;
+using record::validate_finite_records;
 using record::validate_record_columns;
 using record::validate_records_non_empty;
 using record::validate_uniform_record_dimension;

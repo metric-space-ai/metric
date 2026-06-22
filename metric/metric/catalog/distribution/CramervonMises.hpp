@@ -55,6 +55,8 @@ template <typename Sample, typename D = double> class CramervonMises {
 	 * @param sample_2 second sample
 	 * @return distance
 	 */
+	[[deprecated("CramervonMises is a quarantined statistical divergence, not a true metric; "
+				 "use an admitted metric (mtrc::Wasserstein / mtrc::EMD) for metric geometry")]]
 	distance_type operator()(const Sample &sample_1, const Sample &sample_2) const;
 
   private:

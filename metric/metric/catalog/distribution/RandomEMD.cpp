@@ -31,7 +31,19 @@ auto RandomEMD<Sample, D>::operator()(const Sample &sample_1, const Sample &samp
 	//
 
 	D area = 0;
+
+	// Degenerate-input guards (this is the documented quarantine footgun):
+	//  - both samples empty -> concat_data is empty -> concat_data[size()-1] would
+	//    read out of bounds (crash). There is no mass to move, so the distance is 0.
+	//  - all values identical (zero range) -> step == 0 -> the integration loop below
+	//    never advances (infinite hang). The integral over a zero-width support is 0.
+	if (concat_data.empty()) {
+		return area;
+	}
 	double step = (concat_data[concat_data.size() - 1] - concat_data[0]) * precision;
+	if (step <= 0) {
+		return area;
+	}
 
 	for (double value = concat_data[0]; value <= concat_data[concat_data.size() - 1]; value += step) {
 		area += abs(pmq_1.cdf(value) - pmq_2.cdf(value)) * step;

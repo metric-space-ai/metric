@@ -12,6 +12,7 @@
 #include <initializer_list>
 #include <limits>
 #include <map>
+#include <ostream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -664,6 +665,10 @@ class Metadata {
 	long double number_{0};
 	bool bool_{false};
 };
+
+// Stream a Metadata value as its JSON dump, so a result-to-Metadata adapter or
+// any Metadata field prints with a single `os << metadata`.
+inline auto operator<<(std::ostream &os, const Metadata &metadata) -> std::ostream & { return os << metadata.dump(); }
 
 } // namespace mtrc::core
 

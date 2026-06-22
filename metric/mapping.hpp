@@ -23,6 +23,18 @@ Copyright (c) PANDA Team
 #ifndef _METRIC_MAPPING_HPP
 #define _METRIC_MAPPING_HPP
 
+// DEPRECATED legacy umbrella. This header aggregates the pre-revival mapping/
+// clustering implementations (ESN, KOC, SOM, ensembles, kmeans, hierarchical
+// clustering, ...). It is NOT the supported surface and is not covered by the
+// core test gate. New code should use the promoted, tested surfaces instead:
+//
+//   clustering / outliers / representatives -> <metric/stats.hpp>
+//                                              (mtrc::stats::structural_analysis)
+//   embeddings / derived coordinate spaces  -> <metric/modify.hpp> / <metric/engine.hpp>
+//                                              (PCFA, native autoencoder, PHATE-AE)
+//
+// See docs/supported-surface.md for what is promoted vs. legacy.
+
 #include "mapping/ESN.hpp"
 #include "mapping/KOC.hpp"
 #include "mapping/PCFA.hpp"

@@ -48,4 +48,10 @@ auto intrinsic_dimension(const Container &records, Metric metric) -> double
 
 } // namespace mtrc::stats::properties
 
+namespace mtrc {
+// Re-export so intrinsic_dimension sits at the same `mtrc::` depth as the other
+// space-level verbs.
+using stats::properties::intrinsic_dimension;
+} // namespace mtrc
+
 #endif
