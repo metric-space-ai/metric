@@ -217,6 +217,57 @@ class FiniteMetricSpace:
 
         return cls(records, metric=metric, ids=ids, **kwargs)
 
+    @classmethod
+    def from_csv(cls, path, metric=None, *, has_header=True, id_column=None, delimiter=",", **kwargs):
+        """Load numeric vector records from a CSV file.
+
+        Convenience I/O glue: each non-id column becomes a float feature, and the
+        space defaults to the native Euclidean metric like ``Space.vectors`` when
+        ``metric`` is not given. This is data marshalling, not a distance
+        algorithm; for non-numeric or structured rows use ``from_dataframe``.
+        Raises ``MetricInputError`` with the offending row/column on a non-numeric
+        cell or an empty file.
+        """
+
+        import csv as _csv
+
+        with open(path, newline="") as handle:
+            rows = list(_csv.reader(handle, delimiter=delimiter))
+        if not rows:
+            raise MetricInputError(f"Space.from_csv: {path!r} contains no rows")
+
+        header = None
+        if has_header:
+            header = rows[0]
+            rows = rows[1:]
+
+        id_index = None
+        if id_column is not None:
+            if header is None:
+                raise ValueError("Space.from_csv: id_column requires has_header=True")
+            if id_column not in header:
+                raise KeyError(f"Space.from_csv: id_column {id_column!r} is not in the header")
+            id_index = header.index(id_column)
+
+        ids = [] if id_index is not None else None
+        records = []
+        for row_number, row in enumerate(rows):
+            values = []
+            for column_index, cell in enumerate(row):
+                if column_index == id_index:
+                    ids.append(cell)
+                    continue
+                try:
+                    values.append(float(cell))
+                except (TypeError, ValueError) as error:
+                    raise MetricInputError(
+                        f"Space.from_csv: non-numeric value {cell!r} at row {row_number}, column {column_index}"
+                    ) from error
+            records.append(values)
+
+        chosen_metric = _native_euclidean_metric() if metric is None else metric
+        return cls(records, metric=chosen_metric, ids=ids, **kwargs)
+
     def version(self):
         return self._version
 
@@ -328,7 +379,7 @@ class FiniteMetricSpace:
         from metric.operators import Neighbor
 
         return Neighbor(
-            id=int(self.ids[index]),
+            id=self.ids[index],
             record=self.records[index],
             distance=distance,
             rank=rank,
