@@ -16,7 +16,7 @@ Copyright (c) 2020 Panda Team
 #include <type_traits>
 #include <vector>
 
-namespace metric {
+namespace mtrc {
 
 /**
  * @class KNNGraph
@@ -123,7 +123,8 @@ class KNNGraph : public Graph<WeightType, isDense, isSymmetric> {
 	 * @param K amount of neighbours
 	 * @return vector of indexes of NN's in graph
 	 */
-	std::vector<std::size_t> knn(const Sample &p, std::size_t K) const;
+	// not const: the greedy graph walk (gnnn_search -> Graph::getNeighbours) is non-const
+	std::vector<std::size_t> knn(const Sample &p, std::size_t K);
 
 	/**
 	 * @brief find all nearest neighbours in sphere of radius threshold
@@ -131,7 +132,7 @@ class KNNGraph : public Graph<WeightType, isDense, isSymmetric> {
 	 * @param threshold  radius of threshold sphere
 	 * @return vector of indexes of NN's in graph and distances to searching value
 	 */
-	auto rnn(const Sample &x, distance_type threshold) const -> std::vector<std::pair<std::size_t, distance_type>>;
+	auto rnn(const Sample &x, distance_type threshold) -> std::vector<std::pair<std::size_t, distance_type>>;
 
 	/**
 	 * @brief erase element from graph
@@ -206,6 +207,6 @@ class KNNGraph : public Graph<WeightType, isDense, isSymmetric> {
 	template <typename T1> std::vector<size_t> sort_indexes(const std::vector<T1> &v);
 };
 
-} // namespace metric
+} // namespace mtrc
 #include "knn_graph.cpp"
 #endif

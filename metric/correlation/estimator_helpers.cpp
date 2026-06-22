@@ -11,7 +11,7 @@ Copyright (c) 2019 Panda Team
 #include <iostream>
 #include <vector>
 
-namespace metric {
+namespace mtrc {
 
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid
 // code dubbing
@@ -245,4 +245,4 @@ inline double peak2ems(const std::vector<double> &data)
 	return maxAbs / rms;
 }
 
-} // namespace metric
+} // namespace mtrc

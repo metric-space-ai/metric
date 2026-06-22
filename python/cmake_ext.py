@@ -39,11 +39,12 @@ class CMakeExtension(Extension):
     setuptools.Extension for cmake
     """
 
-    def __init__(self, name, source_dir='', output_dir=''):
+    def __init__(self, name, source_dir='', output_dir='', target_name=None):
         check_for_cmake()
         Extension.__init__(self, name, sources=[])
         self.source_dir = os.path.abspath(source_dir)
         self.output_dir = output_dir
+        self.target_name = target_name or name.rsplit('.', 1)[-1]
 
 
 class CMakeBuildExt(build_ext):
@@ -83,8 +84,8 @@ class CMakeBuildExt(build_ext):
                                   cwd=self.build_temp,
                                   env=env)
             build_args = [CMAKE_EXE, '--build', '.', '--config', build_type]
-            if ext.name != 'all':
-                build_args.extend(['--target', ext.name])
+            if ext.target_name != 'all':
+                build_args.extend(['--target', ext.target_name])
             subprocess.check_call(build_args,
                                   cwd=self.build_temp,
                                   env=env)

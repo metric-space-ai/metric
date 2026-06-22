@@ -2,21 +2,19 @@
 #include <iostream>
 
 #include <regex>
+#include <stdexcept>
 #include <tuple>
 
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/vector.hpp>
+#include <metric/numeric/Math.h>
 
-#include <blaze/Math.h>
-
-namespace metric {
+namespace mtrc {
 
 }
 class Datasets {
   public:
 	std::tuple<std::vector<uint8_t>, std::vector<uint32_t>, std::vector<uint8_t>> getMnist(const std::string filename);
 
-	template <typename T> static blaze::DynamicMatrix<T> readDenseMatrixFromFile(const std::string filepath);
+	template <typename T> static mtrc::numeric::DynamicMatrix<T> readDenseMatrixFromFile(const std::string filepath);
 
 	static std::tuple<std::vector<uint32_t>, std::vector<uint8_t>> loadImages(const std::string imagesListFilename);
 
@@ -24,27 +22,15 @@ class Datasets {
 	static std::regex getDelimiterAndSetDecimal(std::string &string);
 
 	template <typename T>
-	static blaze::DynamicVector<T, blaze::rowVector> getRowFromStrings(const std::vector<std::string> &stringElements);
+	static mtrc::numeric::DynamicVector<T, mtrc::numeric::rowVector>
+	getRowFromStrings(const std::vector<std::string> &stringElements);
 };
 
 std::tuple<std::vector<uint8_t>, std::vector<uint32_t>, std::vector<uint8_t>> inline Datasets::getMnist(
 	const std::string filename)
 {
-	std::ifstream dataFile(filename, std::ifstream::binary);
-
-	if (dataFile) {
-		cereal::BinaryInputArchive ia(dataFile);
-		std::vector<uint8_t> labels;
-		std::vector<uint32_t> shape;
-		std::vector<uint8_t> features;
-
-		ia(labels, shape, features);
-
-		return {labels, shape, features};
-	} else {
-		std::cout << "Could not open " << filename << std::endl;
-		return {{}, {}, {}};
-	}
+	(void)filename;
+	throw std::runtime_error("Datasets::getMnist no longer reads cereal archives in the dependency-free C++ core");
 }
 
 inline std::regex Datasets::getDelimiterAndSetDecimal(std::string &string)
@@ -83,7 +69,7 @@ inline std::regex Datasets::getDelimiterAndSetDecimal(std::string &string)
 	}
 }
 
-template <typename T> blaze::DynamicMatrix<T> Datasets::readDenseMatrixFromFile(const std::string filepath)
+template <typename T> mtrc::numeric::DynamicMatrix<T> Datasets::readDenseMatrixFromFile(const std::string filepath)
 {
 	/* Open file */
 	std::ifstream file(filepath);
@@ -95,7 +81,7 @@ template <typename T> blaze::DynamicMatrix<T> Datasets::readDenseMatrixFromFile(
 	file.seekg(0);
 
 	/* Reserve rows */
-	std::vector<blaze::DynamicVector<T, blaze::rowVector>> rows;
+	std::vector<mtrc::numeric::DynamicVector<T, mtrc::numeric::rowVector>> rows;
 	rows.reserve(rowsNumber);
 
 	while (std::getline(file, line)) {
@@ -114,18 +100,19 @@ template <typename T> blaze::DynamicMatrix<T> Datasets::readDenseMatrixFromFile(
 	}
 
 	/* Construct matrix */
-	blaze::DynamicMatrix<T> matrix(rows.size(), rows[0].size());
+	mtrc::numeric::DynamicMatrix<T> matrix(rows.size(), rows[0].size());
 	for (size_t i = 0; i < matrix.rows(); ++i) {
-		blaze::row(matrix, i) = rows[i];
+		mtrc::numeric::row(matrix, i) = rows[i];
 	}
 
 	return matrix;
 }
 
 template <typename T>
-blaze::DynamicVector<T, blaze::rowVector> Datasets::getRowFromStrings(const std::vector<std::string> &stringElements)
+mtrc::numeric::DynamicVector<T, mtrc::numeric::rowVector>
+Datasets::getRowFromStrings(const std::vector<std::string> &stringElements)
 {
-	blaze::DynamicVector<T, blaze::rowVector> row(stringElements.size());
+	mtrc::numeric::DynamicVector<T, mtrc::numeric::rowVector> row(stringElements.size());
 	for (size_t i = 0; i < row.size(); ++i) {
 		row[i] = std::stod(stringElements[i]);
 	}

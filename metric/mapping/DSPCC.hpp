@@ -14,9 +14,9 @@ Copyright (c) 2019 Panda Team
 #include <tuple>
 
 #include "metric/mapping/PCFA.hpp"
-#include <blaze/Blaze.h>
+#include <metric/numeric.hpp>
 
-namespace metric {
+namespace mtrc {
 
 /**
  * @class VibrationFeatureExtractor
@@ -28,7 +28,7 @@ template <typename RecType, typename Metric> class DSPCC {
 
   private:
 	template <typename C, int = determine_container_type<C>::code>
-	struct determine_RecTypeInner // type for internal processing, that can not be Blaze vector
+	struct determine_RecTypeInner // type for internal processing, that is not stored as a Metric numeric vector
 	{
 		using type = void;
 	};
@@ -40,7 +40,7 @@ template <typename RecType, typename Metric> class DSPCC {
 	};
 
 	template <typename C>
-	struct determine_RecTypeInner<C, 2> // Blaze vector
+	struct determine_RecTypeInner<C, 2> // Numeric vector
 	{
 		using type = std::vector<typename C::ElementType>; // we use STL vector for internal computations
 	};
@@ -115,9 +115,9 @@ template <typename RecType, typename Metric> class DSPCC {
 	size_t get_subband_size() { return resulting_subband_length; }
 
   private:
-	std::vector<metric::PCFA<RecTypeInner, Metric>> freq_PCA_models;
-	std::vector<metric::PCFA<RecTypeInner, Metric>> time_PCA_models;
-	std::vector<metric::PCFA<RecTypeInner, Metric>>
+	std::vector<mtrc::PCFA<RecTypeInner, Metric>> freq_PCA_models;
+	std::vector<mtrc::PCFA<RecTypeInner, Metric>> time_PCA_models;
+	std::vector<mtrc::PCFA<RecTypeInner, Metric>>
 		top_PCA_model; // TODO solve initialization issue, remove wrapping vector
 	std::stack<size_t> subband_length;
 	size_t n_subbands;
@@ -147,7 +147,7 @@ template <typename RecType, typename Metric> class DSPCC {
 				 float time_freq_balance_, size_t n_top_features_);
 
 	/**
-	 * @brief conditionally compiled function for selection between outer and inner RecType: Blaze case
+	 * @brief conditionally compiled function for selection between outer and inner RecType: Numeric case
 	 *
 	 * @param TrainingDataset - training dataset
 	 * @param n_features_ - desired number of features of frequency and time PCFAs
@@ -186,15 +186,15 @@ template <typename RecType, typename Metric> class DSPCC {
 	select_encode(const std::vector<RecType> &Data);
 
 	/**
-	 * @brief conditionally compiled function for selection betwween outer and inner RecType: Blaze case
+	 * @brief conditionally compiled function for selection betwween outer and inner RecType: Numeric case
 	 *
 	 * @param Data - waveforms of same length and format as TrainingDataset
 	 * @return
 	 */
 	template <typename R>
 	typename std::enable_if<
-		// DSPCC<RecType, Metric>:: template determine_container_type<R>::code == 2, // Blaze case
-		determine_container_type<R>::code == 2, // Blaze case
+		// DSPCC<RecType, Metric>:: template determine_container_type<R>::code == 2, // Numeric case
+		determine_container_type<R>::code == 2, // Numeric case
 		std::vector<RecType>>::type
 	select_encode(const std::vector<RecType> &Data);
 
@@ -210,13 +210,13 @@ template <typename RecType, typename Metric> class DSPCC {
 	select_decode(const std::vector<RecType> &Codes);
 
 	/**
-	 * @brief conditionally compiled function for selection betwween outer and inner RecType: Blaze case
+	 * @brief conditionally compiled function for selection betwween outer and inner RecType: Numeric case
 	 *
 	 * @param Codes - compressed codes
 	 * @return
 	 */
 	template <typename R>
-	typename std::enable_if<determine_container_type<R>::code == 2, // Blaze case
+	typename std::enable_if<determine_container_type<R>::code == 2, // Numeric case
 							std::vector<RecType>>::type
 	select_decode(const std::vector<RecType> &Codes);
 
@@ -309,7 +309,7 @@ template <typename RecType, typename Metric> class DSPCC {
 	size_t original_size(size_t subband_size, size_t depth, size_t wavelet_length = 10);
 };
 
-} // namespace metric
+} // namespace mtrc
 
 #include "DSPCC.cpp"
 

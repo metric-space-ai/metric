@@ -2,26 +2,24 @@
 
 #include <limits>
 
+#include "metric/solve/parametric/dnn.hpp"
 #include <iostream>
-#include "metric/utils/dnn.hpp"
 
+using namespace mtrc::solve::parametric::dnn;
 
-using namespace metric::dnn;
-
-using Matrix = blaze::DynamicMatrix<double>;
-using Vector = blaze::DynamicVector<double>;
-
+using Matrix = mtrc::numeric::DynamicMatrix<double>;
+using Vector = mtrc::numeric::DynamicVector<double>;
 
 TEST_CASE("fullyconnected_json", "[dnn]")
 {
-	auto json = R"(
+	auto json = mtrc::core::Metadata::parse(R"(
 					{
 						"type": "FullyConnected",
 						"inputSize": 100,
 						"outputSize": 10,
 						"activation": "Identity"
 					}
-				)"_json;
+				)");
 
 	FullyConnected<double, Identity<double>> fc(json);
 
@@ -31,7 +29,7 @@ TEST_CASE("fullyconnected_json", "[dnn]")
 	REQUIRE(json == fc.toJson());
 }
 
-//BOOST_AUTO_TEST_CASE(maxpolling_json)
+// BOOST_AUTO_TEST_CASE(maxpolling_json)
 //{
 //	auto json = R"(
 //					{
@@ -46,11 +44,11 @@ TEST_CASE("fullyconnected_json", "[dnn]")
 //	BOOST_CHECK_EQUAL(mp.getOutputSize(), 10);
 //
 //	BOOST_CHECK_EQUAL(json, mp.toJson());
-//}
+// }
 
 TEST_CASE("network_json", "[dnn]")
 {
-	auto json = R"({
+	auto json = mtrc::core::Metadata::parse(R"({
 					"0":
 						{
 							"type": "FullyConnected",
@@ -67,7 +65,7 @@ TEST_CASE("network_json", "[dnn]")
 											"decay": 0.9}
 						}
 					}
-				)"_json;
+				)");
 
 	Network<double> nt(json.dump());
 	REQUIRE(json == nt.toJson());

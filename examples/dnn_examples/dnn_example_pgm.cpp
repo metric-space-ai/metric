@@ -1,41 +1,37 @@
-#include "metric/utils/dnn.hpp"
-#include "metric/utils/dnn/Utils/Random.h"
-#include "metric/utils/datasets.hpp"
 #include "metric/mapping/autoencoder.hpp"
+#include "metric/utils/datasets.hpp"
+#include "metric/solve/parametric/dnn.hpp"
+#include "metric/solve/parametric/dnn/core/Utils/Random.h"
 
-#include <iostream>
 #include <chrono>
-
+#include <iostream>
 
 using namespace std;
-using namespace metric;
-
+using namespace mtrc;
 
 template <typename Scalar>
-blaze::DynamicMatrix<Scalar> getRandomMatrix(const size_t rows, const size_t columns)
+mtrc::numeric::DynamicMatrix<Scalar> getRandomMatrix(const size_t rows, const size_t columns)
 {
-	blaze::DynamicMatrix<Scalar> m(rows, columns);
+	mtrc::numeric::DynamicMatrix<Scalar> m(rows, columns);
 
 	for (size_t i = 0UL; i < rows; i++) {
 		for (size_t j = 0UL; j < columns; j++) {
-			m(i, j) = blaze::rand<Scalar>(-1, 1);
+			m(i, j) = mtrc::numeric::rand<Scalar>(-1, 1);
 		}
 	}
 
 	return m;
 }
 
-template<typename T>
-void printVector(const T& vector)
+template <typename T> void printVector(const T &vector)
 {
-	for (auto e: vector) {
+	for (auto e : vector) {
 		cout << +e << " ";
 	}
 	cout << endl;
 }
 
-template<typename T>
-void printMatrix(const T& vector, size_t rows, size_t columns)
+template <typename T> void printMatrix(const T &vector, size_t rows, size_t columns)
 {
 	cout << setw(3);
 	for (auto i = 0; i < rows; ++i) {
@@ -46,8 +42,7 @@ void printMatrix(const T& vector, size_t rows, size_t columns)
 	}
 }
 
-template<typename T>
-int vectorDiff(const vector<T>& vector1, const vector<T>& vector2)
+template <typename T> int vectorDiff(const vector<T> &vector1, const vector<T> &vector2)
 {
 	if (vector1.size() != vector2.size()) {
 		cout << "v1.size() != v2.size()" << endl;
@@ -62,7 +57,7 @@ int vectorDiff(const vector<T>& vector1, const vector<T>& vector2)
 	return diff;
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
 	if (argc != 2) {
 		cout << "usage: " << argv[0] << " pgm_images_list" << endl;
@@ -77,8 +72,7 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 
-
-	auto json = R"({
+	auto json = mtrc::core::Metadata::parse(R"({
 					"0":
 						{
 							"type": "FullyConnected",
@@ -130,10 +124,10 @@ int main(int argc, char* argv[])
 											"decay": 0.9}
 						}
 					}
-				)"_json;
+				)");
 
 	Autoencoder<uint8_t, double> autoencoder(json.dump());
-	autoencoder.setCallback(dnn::VerboseCallback<double>());
+	autoencoder.setCallback(mtrc::solve::parametric::dnn::VerboseCallback<double>());
 
 	/*cout << "fps" << endl;
 	for (auto i = 0; i < 100; ++i) {
@@ -142,11 +136,11 @@ int main(int argc, char* argv[])
 		auto prediction = autoencoder.predict(sample);
 	}
 	return 0;*/
-	//auto i = 10;
-	//auto w = shape[1] * shape[2];
-	//vector<uint8_t> sample(features.begin() + i * w , features.begin() + (i + 1)*shape[1] * shape[2]);
-	//auto prediction = autoencoder.predict(sample);
-	//printMatrix(prediction, shape[1], shape[2]);
+	// auto i = 10;
+	// auto w = shape[1] * shape[2];
+	// vector<uint8_t> sample(features.begin() + i * w , features.begin() + (i + 1)*shape[1] * shape[2]);
+	// auto prediction = autoencoder.predict(sample);
+	// printMatrix(prediction, shape[1], shape[2]);
 
 	cout << "Train" << endl;
 	autoencoder.train(features, 50, 128);

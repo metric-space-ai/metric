@@ -11,7 +11,8 @@ Copyright (c) 2019 Panda Team
 #include <iostream>
 #include <vector>
 
-#include "metric/distance.hpp"
+#include "metric/metric/catalog.hpp"
+#include "metric/metric/quarantine/Kohonen.hpp" // Kohonen distance is quarantined out of the catalog umbrella
 #include <chrono>
 
 TEMPLATE_TEST_CASE("kohonen", "[distance]", float, double)
@@ -25,7 +26,7 @@ TEMPLATE_TEST_CASE("kohonen", "[distance]", float, double)
 		{0, 0}, {1, 0}, {2, 0}, {0, 1}, {1, 1}, {2, 1},
 	};
 
-	metric::Kohonen<TestType, Record> distance_1(train_dataset, grid_w, grid_h);
+	mtrc::Kohonen<TestType, Record> distance_1(train_dataset, grid_w, grid_h);
 
 	TestType result;
 	result = distance_1(train_dataset[0], train_dataset[1]);
@@ -45,17 +46,17 @@ TEMPLATE_TEST_CASE("kohonen", "[distance]", float, double)
 	REQUIRE(result < 4);
 
 	using Vector = std::vector<TestType>;
-	using Metric = metric::Euclidean<TestType>;
-	using Graph = metric::Grid6;
+	using Metric = mtrc::Euclidean<TestType>;
+	using Graph = mtrc::Grid6;
 	using Distribution = std::uniform_real_distribution<TestType>;
 
 	Distribution distr(-1, 1);
 
-	metric::SOM<Vector, Graph, Metric> som_model(Graph(grid_w, grid_h), Metric(), 0.8, 0.2, 50, distr);
+	mtrc::SOM<Vector, Graph, Metric> som_model(Graph(grid_w, grid_h), Metric(), 0.8, 0.2, 50, distr);
 
 	som_model.train(train_dataset);
 
-	metric::Kohonen<TestType, Vector, Graph, Metric> distance_2(som_model, train_dataset);
+	mtrc::Kohonen<TestType, Vector, Graph, Metric> distance_2(som_model, train_dataset);
 
 	result = distance_2(train_dataset[0], train_dataset[1]);
 	REQUIRE(result > 0);
@@ -74,10 +75,10 @@ TEMPLATE_TEST_CASE("kohonen", "[distance]", float, double)
 	REQUIRE(result > 2);
 	REQUIRE(result < 4);
 
-	metric::SOM<Vector, Graph, Metric> negative_som_model(Graph(grid_w, grid_h), Metric(), -0.8, -0.2, 50, distr);
+	mtrc::SOM<Vector, Graph, Metric> negative_som_model(Graph(grid_w, grid_h), Metric(), -0.8, -0.2, 50, distr);
 	negative_som_model.train(train_dataset);
 
-	metric::Kohonen<TestType, Vector, Graph, Metric> distance_3(negative_som_model, train_dataset);
+	mtrc::Kohonen<TestType, Vector, Graph, Metric> distance_3(negative_som_model, train_dataset);
 
 	result = distance_3(train_dataset[0], train_dataset[1]);
 	REQUIRE(result > 0);

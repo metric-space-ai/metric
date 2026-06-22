@@ -1,5 +1,5 @@
-#include <metric/distance.hpp>
-#include <metric/operators.hpp>
+#include <metric/metric/catalog.hpp>
+#include <metric/space/index/operators.hpp>
 #include <metric/space.hpp>
 
 #include <cassert>
@@ -10,15 +10,16 @@
 int main()
 {
 	std::vector<std::string> records = {"cat", "cot", "coat", "dog"};
-	const auto space = metric::Space::from_records(records, metric::Edit<std::string>{});
-	const auto selected = metric::operators::representative_indices(records, metric::Edit<std::string>{}, 3);
-	const auto selected_records = metric::operators::representatives(records, metric::Edit<std::string>{}, 3);
-	const auto center = metric::operators::medoid_index(records, metric::Edit<std::string>{});
-	const auto center_record = metric::operators::medoid(records, metric::Edit<std::string>{});
-	const auto separated = metric::operators::separated_representative_indices(records, metric::Edit<std::string>{}, 2);
-	const auto separated_records = metric::operators::separated_representatives(records, metric::Edit<std::string>{}, 2);
-	const auto covered = metric::operators::coverage_representative_indices(records, metric::Edit<std::string>{}, 1);
-	const auto covered_records = metric::operators::coverage_representatives(records, metric::Edit<std::string>{}, 1);
+	const auto space = mtrc::Space::from_records(records, mtrc::Edit<std::string>{});
+	const auto selected = mtrc::stats::structural_analysis::representative_indices(records, mtrc::Edit<std::string>{}, 3);
+	const auto selected_records = mtrc::stats::structural_analysis::representatives(records, mtrc::Edit<std::string>{}, 3);
+	const auto center = mtrc::stats::structural_analysis::medoid_index(records, mtrc::Edit<std::string>{});
+	const auto center_record = mtrc::stats::structural_analysis::medoid(records, mtrc::Edit<std::string>{});
+	const auto separated = mtrc::stats::structural_analysis::separated_representative_indices(records, mtrc::Edit<std::string>{}, 2);
+	const auto separated_records =
+		mtrc::stats::structural_analysis::separated_representatives(records, mtrc::Edit<std::string>{}, 2);
+	const auto covered = mtrc::stats::structural_analysis::coverage_representative_indices(records, mtrc::Edit<std::string>{}, 1);
+	const auto covered_records = mtrc::stats::structural_analysis::coverage_representatives(records, mtrc::Edit<std::string>{}, 1);
 
 	assert((selected == std::vector<std::size_t>{0, 3, 1}));
 	assert((selected_records == std::vector<std::string>{"cat", "dog", "cot"}));

@@ -35,7 +35,7 @@ Copyright (c) 2019 Michael Welsch
 
 #include "poor_mans_quantum/distributions/Discrete.hpp"
 
-namespace metric {
+namespace mtrc {
 template <typename Distribution = Discrete<float>, typename T = float> class PMQ {
 
   public:
@@ -197,7 +197,7 @@ template <typename Distribution = Discrete<float>, typename T = float> class PMQ
 	std::mt19937_64 _generator;
 };
 
-} // namespace metric
+} // namespace mtrc
 #include "poor_mans_quantum/poor_mans_quantum.cpp"
 
 #endif // headerguard

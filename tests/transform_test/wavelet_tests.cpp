@@ -5,7 +5,7 @@
 TEMPLATE_TEST_CASE("DaubechiesMat", "[transform][wavelet]", float, double)
 {
 	auto wnum = GENERATE(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-	const auto w = wavelet::dbwavf<blaze::DynamicVector<TestType>>(wnum);
+	const auto w = wavelet::dbwavf<mtrc::numeric::DynamicVector<TestType>>(wnum);
 	auto [Lo_D, Hi_D, Lo_R, Hi_R] = wavelet::orthfilt(w);
 	std::reverse(Lo_D.begin(), Lo_D.end());
 	std::reverse(Hi_D.begin(), Hi_D.end());
@@ -14,30 +14,31 @@ TEMPLATE_TEST_CASE("DaubechiesMat", "[transform][wavelet]", float, double)
 	const auto dmat = wavelet::DaubechiesMat<TestType>(signalLength, wnum * 2);
 
 	const size_t fl = wnum * 2;
-	REQUIRE(blaze::subvector(blaze::row(dmat, 0), 0, fl) == Lo_D);
-	REQUIRE(blaze::subvector(blaze::row(dmat, dmat.rows() / 2), 0, fl) == Hi_D);
+	REQUIRE(mtrc::numeric::subvector(mtrc::numeric::row(dmat, 0), 0, fl) == Lo_D);
+	REQUIRE(mtrc::numeric::subvector(mtrc::numeric::row(dmat, dmat.rows() / 2), 0, fl) == Hi_D);
 
-	const auto sumLow = blaze::sum(blaze::row(dmat, 0));
+	const auto sumLow = mtrc::numeric::sum(mtrc::numeric::row(dmat, 0));
 	for (size_t i = 0; i < dmat.rows() / 2; ++i) {
-		REQUIRE(Approx(sumLow) == blaze::sum(blaze::row(dmat, i)));
+		REQUIRE(Approx(sumLow) == mtrc::numeric::sum(mtrc::numeric::row(dmat, i)));
 	}
 
-	const auto sumHigh = blaze::sum(blaze::row(dmat, dmat.rows() / 2));
+	const auto sumHigh = mtrc::numeric::sum(mtrc::numeric::row(dmat, dmat.rows() / 2));
 	for (size_t i = dmat.rows() / 2; i < dmat.rows(); ++i) {
 		/* Set scale = 1 due problem with Approx(0.0) comparation */
-		REQUIRE(Approx(sumHigh).scale(1.) == blaze::sum(blaze::row(dmat, i)));
+		REQUIRE(Approx(sumHigh).scale(1.) == mtrc::numeric::sum(mtrc::numeric::row(dmat, i)));
 	}
 }
 
 TEMPLATE_TEST_CASE("DaubechiesMat()_ZeroDerivative", "[transform][wavelet]", float, double)
 {
-	const blaze::DynamicVector<TestType> data = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+	const mtrc::numeric::DynamicVector<TestType> data = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
 	const auto dmat = wavelet::DaubechiesMat<TestType>(data.size(), 4, wavelet::Padding::ZeroDerivative);
 	const auto result = dmat * data;
 
-	const blaze::DynamicVector<TestType> expected = {{1.379538},  {3.725003},	   {6.553430}, {9.381957}, {12.339693},
-													 {-0.129410}, {-9.901802e-13}, {-9.9e-13}, {-9.9e-13}, {0.482963}};
+	const mtrc::numeric::DynamicVector<TestType> expected = {{1.379538},	{3.725003},	 {6.553430},	  {9.381957},
+															   {12.339693}, {-0.129410}, {-9.901802e-13}, {-9.9e-13},
+															   {-9.9e-13},	{0.482963}};
 
 	REQUIRE(result.size() == expected.size());
 	for (size_t i = 0; i < expected.size(); ++i) {
@@ -48,8 +49,8 @@ TEMPLATE_TEST_CASE("DaubechiesMat()_ZeroDerivative", "[transform][wavelet]", flo
 }
 
 TEMPLATE_TEST_CASE("dbwavf", "[transform][wavelet]", std::vector<float>, std::vector<double>,
-				   blaze::DynamicVector<float>, blaze::DynamicVector<double>, blaze::CompressedVector<float>,
-				   blaze::CompressedVector<double>)
+				   mtrc::numeric::DynamicVector<float>, mtrc::numeric::DynamicVector<double>,
+				   mtrc::numeric::CompressedVector<float>, mtrc::numeric::CompressedVector<double>)
 {
 	std::array<TestType, 11> coeffs;
 	coeffs[1] = {0.5000000000000000, 0.5000000000000000};

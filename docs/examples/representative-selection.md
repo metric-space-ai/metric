@@ -9,22 +9,22 @@ The promoted Python example [representative_selection_space.py](../../python/exa
 C++ shape:
 
 ```cpp
-#include <metric/distance.hpp>
-#include <metric/operators.hpp>
+#include <metric/metric/catalog.hpp>
+#include <metric/space/index/operators.hpp>
 
 #include <string>
 #include <vector>
 
 std::vector<std::string> records = {"cat", "cot", "coat", "dog"};
 
-auto selected_ids = metric::operators::representative_indices(records, metric::Edit<std::string>{}, 2);
-auto selected_records = metric::operators::representatives(records, metric::Edit<std::string>{}, 2);
-auto center_id = metric::operators::medoid_index(records, metric::Edit<std::string>{});
-auto center_record = metric::operators::medoid(records, metric::Edit<std::string>{});
-auto separated_ids = metric::operators::separated_representative_indices(records, metric::Edit<std::string>{}, 2);
-auto separated_records = metric::operators::separated_representatives(records, metric::Edit<std::string>{}, 2);
-auto covered_ids = metric::operators::coverage_representative_indices(records, metric::Edit<std::string>{}, 1);
-auto covered_records = metric::operators::coverage_representatives(records, metric::Edit<std::string>{}, 1);
+auto selected_ids = mtrc::space::index::representative_indices(records, mtrc::Edit<std::string>{}, 2);
+auto selected_records = mtrc::space::index::representatives(records, mtrc::Edit<std::string>{}, 2);
+auto center_id = mtrc::space::index::medoid_index(records, mtrc::Edit<std::string>{});
+auto center_record = mtrc::space::index::medoid(records, mtrc::Edit<std::string>{});
+auto separated_ids = mtrc::space::index::separated_representative_indices(records, mtrc::Edit<std::string>{}, 2);
+auto separated_records = mtrc::space::index::separated_representatives(records, mtrc::Edit<std::string>{}, 2);
+auto covered_ids = mtrc::space::index::coverage_representative_indices(records, mtrc::Edit<std::string>{}, 1);
+auto covered_records = mtrc::space::index::coverage_representatives(records, mtrc::Edit<std::string>{}, 1);
 ```
 
 Python shape:

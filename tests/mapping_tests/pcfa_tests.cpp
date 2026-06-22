@@ -18,24 +18,24 @@ Copyright (c) 2019 Panda Team
 TEMPLATE_TEST_CASE("PCFA", "[mapping]", std::deque<float>, std::deque<double>, std::vector<float>, std::vector<double>)
 {
 
-	TestType d0_blaze{0, 1, 2};
-	TestType d1_blaze{0, 1, 3};
-	std::vector<TestType> d_train = {d0_blaze, d1_blaze};
+	TestType d0_numeric{0, 1, 2};
+	TestType d1_numeric{0, 1, 3};
+	std::vector<TestType> d_train = {d0_numeric, d1_numeric};
 
 	using RecType = TestType;
 
-	auto pcfa0 = metric::PCFA<RecType, void>(d_train, 2);
-	// auto pcfa = metric::PCFA_factory(d_train, 2);  // we also can use factory for autodeduction
+	auto pcfa0 = mtrc::PCFA<RecType, void>(d_train, 2);
+	// auto pcfa = mtrc::PCFA_factory(d_train, 2);  // we also can use factory for autodeduction
 
 	auto weights = pcfa0.weights();
 	auto bias = pcfa0.average();
 	// model saved to vector and matrix
-	auto pcfa = metric::PCFA<RecType, void>(weights, bias);
+	auto pcfa = mtrc::PCFA<RecType, void>(weights, bias);
 	// model leaded, same as pcfa0
 
-	RecType d2_blaze{0, 1, 4};
-	RecType d3_blaze{0, 2, 2};
-	std::vector<RecType> d_test = {d0_blaze, d2_blaze, d3_blaze};
+	RecType d2_numeric{0, 1, 4};
+	RecType d3_numeric{0, 2, 2};
+	std::vector<RecType> d_test = {d0_numeric, d2_numeric, d3_numeric};
 
 	// Check compression, i.e. PCFA::encode(...)
 

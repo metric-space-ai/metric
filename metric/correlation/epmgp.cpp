@@ -11,7 +11,7 @@ Copyright (c) 2019 Panda Team
 // based on local_gaussian.m Matlab code
 #include "epmgp.hpp"
 
-#include <blaze/Blaze.h>
+#include <metric/numeric.hpp>
 
 #include <cassert>
 #include <cmath>
@@ -229,9 +229,11 @@ auto truncNormMoments(std::vector<T> lowerBIN, std::vector<T> upperBIN, std::vec
 }
 
 template <typename T>
-auto local_gaussian_axis_aligned_hyperrectangles(blaze::DynamicVector<T> m, blaze::DynamicMatrix<T> K,
-												 blaze::DynamicVector<T> lowerB, blaze::DynamicVector<T> upperB)
-	-> std::tuple<T, blaze::DynamicVector<T>, blaze::DynamicMatrix<T>>
+auto local_gaussian_axis_aligned_hyperrectangles(mtrc::numeric::DynamicVector<T> m,
+												 mtrc::numeric::DynamicMatrix<T> K,
+												 mtrc::numeric::DynamicVector<T> lowerB,
+												 mtrc::numeric::DynamicVector<T> upperB)
+	-> std::tuple<T, mtrc::numeric::DynamicVector<T>, mtrc::numeric::DynamicMatrix<T>>
 {
 	size_t n = m.size();
 	assert(lowerB.size() == n && upperB.size() == n && K.rows() == n);
@@ -239,25 +241,25 @@ auto local_gaussian_axis_aligned_hyperrectangles(blaze::DynamicVector<T> m, blaz
 	size_t maxSteps = 200;
 	T epsConverge = 1e-8;
 
-	blaze::DynamicVector<T> tauSite(K.rows(), 0);
-	blaze::DynamicVector<T> nuSite(K.rows(), 0);
+	mtrc::numeric::DynamicVector<T> tauSite(K.rows(), 0);
+	mtrc::numeric::DynamicVector<T> nuSite(K.rows(), 0);
 
 	T logZ = 0;
-	blaze::DynamicVector<T> mu = (lowerB + upperB) / 2.0;
-	blaze::DynamicMatrix<T> sigma = K;
-	blaze::DynamicVector<T> KinvM = blaze::evaluate(blaze::inv(K) * m);
-	blaze::DynamicVector<T> muLast(mu.size(), 1);
+	mtrc::numeric::DynamicVector<T> mu = (lowerB + upperB) / 2.0;
+	mtrc::numeric::DynamicMatrix<T> sigma = K;
+	mtrc::numeric::DynamicVector<T> KinvM = mtrc::numeric::evaluate(mtrc::numeric::inv(K) * m);
+	mtrc::numeric::DynamicVector<T> muLast(mu.size(), 1);
 	muLast = muLast * -inf;
 	bool converged = false;
 	size_t k = 1;
 
 	// here we only define expressions, calculations are made inside the loop below
-	auto tauCavity = 1 / blaze::diagonal(sigma) - tauSite;
-	auto nuCavity = mu / blaze::diagonal(sigma) - nuSite;
-	blaze::DynamicVector<T> sighat(n, 0);
+	auto tauCavity = 1 / mtrc::numeric::diagonal(sigma) - tauSite;
+	auto nuCavity = mu / mtrc::numeric::diagonal(sigma) - nuSite;
+	mtrc::numeric::DynamicVector<T> sighat(n, 0);
 	auto deltatauSite = 1.0 / sighat - tauCavity - tauSite;
-	auto logZhat = blaze::DynamicVector<T>(n, 0);
-	blaze::DynamicMatrix<T> L;
+	auto logZhat = mtrc::numeric::DynamicVector<T>(n, 0);
+	mtrc::numeric::DynamicMatrix<T> L;
 
 	std::vector<T> muInSTL(n, 0);
 	std::vector<T> sigmaInSTL(n, 0);
@@ -265,12 +267,12 @@ auto local_gaussian_axis_aligned_hyperrectangles(blaze::DynamicVector<T> m, blaz
 	std::vector<T> upperbSTL(upperB.size(), 0);
 
 	while (!converged && k < maxSteps) {
-		blaze::DynamicVector<T> muInBlaze(nuCavity * (1 / tauCavity));
-		blaze::DynamicVector<T> sigmaInBlaze = 1 / tauCavity;
+		mtrc::numeric::DynamicVector<T> muInNumeric(nuCavity * (1 / tauCavity));
+		mtrc::numeric::DynamicVector<T> sigmaInNumeric = 1 / tauCavity;
 
 		for (size_t i = 0; i < n; ++i) {
-			muInSTL[i] = muInBlaze[i];
-			sigmaInSTL[i] = sigmaInBlaze[i];
+			muInSTL[i] = muInNumeric[i];
+			sigmaInSTL[i] = sigmaInNumeric[i];
 			lowerbSTL[i] = lowerB[i];
 			upperbSTL[i] = upperB[i];
 		}
@@ -280,8 +282,8 @@ auto local_gaussian_axis_aligned_hyperrectangles(blaze::DynamicVector<T> m, blaz
 		auto logZhatSTL = std::get<0>(hat);
 		auto muhatSTL = std::get<1>(hat);
 		auto sighatSTL = std::get<2>(hat);
-		blaze::DynamicVector<T> muhat(muhatSTL.size(), 0);
-		// blaze::DynamicVector<double> sighat (sighatSTL.size(), 0); // moved outside loop
+		mtrc::numeric::DynamicVector<T> muhat(muhatSTL.size(), 0);
+		// mtrc::numeric::DynamicVector<double> sighat (sighatSTL.size(), 0); // moved outside loop
 		assert(logZhat.size() == n && muhat.size() == n && sighat.size() == n); // TODO remove after testing
 		for (size_t i = 0; i < n; ++i) {
 			logZhat[i] = logZhatSTL[i];
@@ -290,29 +292,29 @@ auto local_gaussian_axis_aligned_hyperrectangles(blaze::DynamicVector<T> m, blaz
 		}
 
 		// auto deltatauSite = 1.0/sighat - tauCavity - tauSite; // definition moved out of loop
-		tauSite = blaze::evaluate(tauSite + deltatauSite);
-		nuSite = blaze::evaluate(muhat / sighat - nuCavity);
+		tauSite = mtrc::numeric::evaluate(tauSite + deltatauSite);
+		nuSite = mtrc::numeric::evaluate(muhat / sighat - nuCavity);
 
-		blaze::DiagonalMatrix<blaze::DynamicMatrix<T>> sSiteHalf(tauSite.size(), 0);
+		mtrc::numeric::DiagonalMatrix<mtrc::numeric::DynamicMatrix<T>> sSiteHalf(tauSite.size(), 0);
 		for (size_t i = 0; i < tauSite.size(); ++i) {
 			if (tauSite[i] < 0 || std::isnan(tauSite[i])) // this differs from Matlab code
 				sSiteHalf(i, i) = 0;
 			else
 				sSiteHalf(i, i) = std::sqrt(tauSite[i]);
 		}
-		blaze::IdentityMatrix<T> eye(K.rows());
-		blaze::llh(eye + sSiteHalf * K * sSiteHalf, L);
-		L = blaze::trans(L); // get lower from upper
+		mtrc::numeric::IdentityMatrix<T> eye(K.rows());
+		mtrc::numeric::llh(eye + sSiteHalf * K * sSiteHalf, L);
+		L = mtrc::numeric::trans(L); // get lower from upper
 		// L = eye + sSiteHalf*K*sSiteHalf; // TODO remove
 		// std::cout << "L:\n" << L << "\n";
-		// blaze::potrf(L, 'U'); // LAPACK issue
+		// mtrc::numeric::potrf(L, 'U'); // LAPACK issue
 		// std::cout << "L_chol:\n" << L << "\n";
-		auto V = blaze::inv(blaze::trans(L)) * (sSiteHalf * K);
-		sigma = K - blaze::trans(V) * V;
+		auto V = mtrc::numeric::inv(mtrc::numeric::trans(L)) * (sSiteHalf * K);
+		sigma = K - mtrc::numeric::trans(V) * V;
 		mu = sigma * (nuSite + KinvM);
-		blaze::DynamicVector<T> diff = muLast - mu;
+		mtrc::numeric::DynamicVector<T> diff = muLast - mu;
 
-		if (std::sqrt(blaze::trans(diff) * diff) < epsConverge) // (norm(muLast-mu)) < epsConverge
+		if (std::sqrt(mtrc::numeric::trans(diff) * diff) < epsConverge) // (norm(muLast-mu)) < epsConverge
 			converged = true;
 		else
 			muLast = mu;
@@ -321,11 +323,11 @@ auto local_gaussian_axis_aligned_hyperrectangles(blaze::DynamicVector<T> m, blaz
 	}
 
 	T lZ1 = 0;
-	blaze::DiagonalMatrix<blaze::DynamicMatrix<T>> tau(n, 0);
-	blaze::DiagonalMatrix<blaze::DynamicMatrix<T>> diagTauSite(n, 0);
-	blaze::DiagonalMatrix<blaze::DynamicMatrix<T>> diagTauCavity(n, 0);
-	// blaze::DynamicMatrix<double> diagTauSite (n, n, 0);
-	// blaze::DynamicMatrix<double> diagTauCavity (n, n, 0);
+	mtrc::numeric::DiagonalMatrix<mtrc::numeric::DynamicMatrix<T>> tau(n, 0);
+	mtrc::numeric::DiagonalMatrix<mtrc::numeric::DynamicMatrix<T>> diagTauSite(n, 0);
+	mtrc::numeric::DiagonalMatrix<mtrc::numeric::DynamicMatrix<T>> diagTauCavity(n, 0);
+	// mtrc::numeric::DynamicMatrix<double> diagTauSite (n, n, 0);
+	// mtrc::numeric::DynamicMatrix<double> diagTauCavity (n, n, 0);
 
 	for (size_t i = 0; i < n; ++i) {
 		lZ1 += std::log(1 + tauSite[i] / tauCavity[i]) * 0.5 - std::log(L(i, i));
@@ -333,13 +335,13 @@ auto local_gaussian_axis_aligned_hyperrectangles(blaze::DynamicVector<T> m, blaz
 		diagTauSite(i, i) = tauSite[i];
 		diagTauCavity(i, i) = tauCavity[i];
 	}
-	blaze::DynamicVector<T> diffSite(nuSite - tauSite * m);
-	T lZ2 = 0.5 * (blaze::trans(diffSite) * (sigma - tau) * diffSite);
-	auto lZ3 = 0.5 * (blaze::trans(nuCavity) *
-					  (blaze::inv(diagTauSite + diagTauCavity) * (tauSite * nuCavity / tauCavity - 2 * nuSite)));
-	auto lZ4 =
-		-0.5 * (blaze::trans(tauCavity * m) * (blaze::inv(diagTauSite + diagTauCavity) * (tauSite * m - 2 * nuSite)));
-	logZ = lZ1 + lZ2 + lZ3 + lZ4 + blaze::sum(logZhat);
+	mtrc::numeric::DynamicVector<T> diffSite(nuSite - tauSite * m);
+	T lZ2 = 0.5 * (mtrc::numeric::trans(diffSite) * (sigma - tau) * diffSite);
+	auto lZ3 = 0.5 * (mtrc::numeric::trans(nuCavity) * (mtrc::numeric::inv(diagTauSite + diagTauCavity) *
+														  (tauSite * nuCavity / tauCavity - 2 * nuSite)));
+	auto lZ4 = -0.5 * (mtrc::numeric::trans(tauCavity * m) *
+					   (mtrc::numeric::inv(diagTauSite + diagTauCavity) * (tauSite * m - 2 * nuSite)));
+	logZ = lZ1 + lZ2 + lZ3 + lZ4 + mtrc::numeric::sum(logZhat);
 
 	return std::make_tuple(logZ, mu, sigma);
 }
@@ -349,12 +351,12 @@ auto local_gaussian_axis_aligned_hyperrectangles(blaze::DynamicVector<T> m, blaz
 
 
 template <typename T>
-std::tuple<T, blaze::DynamicVector<T>, blaze::DynamicMatrix<T>>
+std::tuple<T, mtrc::numeric::DynamicVector<T>, mtrc::numeric::DynamicMatrix<T>>
 local_gaussian_axis_aligned_hyperrectangles(
-		blaze::DynamicVector<T> m,
-		blaze::DynamicMatrix<T> K,
-		blaze::DynamicVector<T> lowerB,
-		blaze::DynamicVector<T> upperB
+		mtrc::numeric::DynamicVector<T> m,
+		mtrc::numeric::DynamicMatrix<T> K,
+		mtrc::numeric::DynamicVector<T> lowerB,
+		mtrc::numeric::DynamicVector<T> upperB
 		)
 {
 	size_t n = m.size();
@@ -363,26 +365,26 @@ local_gaussian_axis_aligned_hyperrectangles(
 	size_t maxSteps = 200;
 	T epsConverge = 1e-8;
 
-	blaze::DynamicVector<T> tauSite (K.rows(), 0);
-	blaze::DynamicVector<T> nuSite (K.rows(), 0);
+	mtrc::numeric::DynamicVector<T> tauSite (K.rows(), 0);
+	mtrc::numeric::DynamicVector<T> nuSite (K.rows(), 0);
 
 	T logZ = 0;
-	blaze::DynamicVector<T> mu = (lowerB + upperB) / 2.0;
-	blaze::DynamicMatrix<T> sigma = K;
-	blaze::DynamicVector<T> KinvM = blaze::evaluate(blaze::inv(K) * m);
-	blaze::DynamicVector<T> muLast (mu.size(), 1);
+	mtrc::numeric::DynamicVector<T> mu = (lowerB + upperB) / 2.0;
+	mtrc::numeric::DynamicMatrix<T> sigma = K;
+	mtrc::numeric::DynamicVector<T> KinvM = mtrc::numeric::evaluate(mtrc::numeric::inv(K) * m);
+	mtrc::numeric::DynamicVector<T> muLast (mu.size(), 1);
 	muLast = muLast * -inf;
 	bool converged = false;
 	size_t k = 1;
 
 	// here we only define expressions, calculations are made inside the loop below
-	auto tauCavity = 1/blaze::diagonal(sigma) - tauSite;
-	auto nuCavity =  mu/blaze::diagonal(sigma) - nuSite;
-	blaze::DynamicVector<T> sighat (n, 0);
+	auto tauCavity = 1/mtrc::numeric::diagonal(sigma) - tauSite;
+	auto nuCavity =  mu/mtrc::numeric::diagonal(sigma) - nuSite;
+	mtrc::numeric::DynamicVector<T> sighat (n, 0);
 	auto deltatauSite = 1.0/sighat - tauCavity - tauSite;
-	auto logZhat = blaze::DynamicVector<T>(n, 0);
-	blaze::DynamicMatrix<T> L;
-	blaze::DynamicMatrix<std::complex<T>> Lc; // complex
+	auto logZhat = mtrc::numeric::DynamicVector<T>(n, 0);
+	mtrc::numeric::DynamicMatrix<T> L;
+	mtrc::numeric::DynamicMatrix<std::complex<T>> Lc; // complex
 
 	std::vector<T> muInSTL (n, 0);
 	std::vector<T> sigmaInSTL (n, 0);
@@ -390,12 +392,12 @@ local_gaussian_axis_aligned_hyperrectangles(
 	std::vector<T> upperbSTL (upperB.size(), 0);
 
 	while (!converged && k < maxSteps) {
-		blaze::DynamicVector<T> muInBlaze ( nuCavity * (1/tauCavity) );
-		blaze::DynamicVector<T> sigmaInBlaze = 1/tauCavity;
+		mtrc::numeric::DynamicVector<T> muInNumeric ( nuCavity * (1/tauCavity) );
+		mtrc::numeric::DynamicVector<T> sigmaInNumeric = 1/tauCavity;
 
 		for (size_t i = 0; i < n; ++i) {
-			muInSTL[i] = muInBlaze[i];
-			sigmaInSTL[i] = sigmaInBlaze[i];
+			muInSTL[i] = muInNumeric[i];
+			sigmaInSTL[i] = sigmaInNumeric[i];
 			lowerbSTL[i] = lowerB[i];
 			upperbSTL[i] = upperB[i];
 		}
@@ -405,8 +407,8 @@ local_gaussian_axis_aligned_hyperrectangles(
 		auto logZhatSTL = std::get<0>(hat);
 		auto muhatSTL = std::get<1>(hat);
 		auto sighatSTL = std::get<2>(hat);
-		blaze::DynamicVector<T> muhat (muhatSTL.size(), 0);
-		//blaze::DynamicVector<double> sighat (sighatSTL.size(), 0); // moved outside loop
+		mtrc::numeric::DynamicVector<T> muhat (muhatSTL.size(), 0);
+		//mtrc::numeric::DynamicVector<double> sighat (sighatSTL.size(), 0); // moved outside loop
 		assert(logZhat.size() == n && muhat.size() == n && sighat.size() == n); // TODO remove after testing
 		for (size_t i = 0; i < n; ++i) {
 			logZhat[i] = logZhatSTL[i];
@@ -415,22 +417,22 @@ local_gaussian_axis_aligned_hyperrectangles(
 		}
 
 		//auto deltatauSite = 1.0/sighat - tauCavity - tauSite; // definition moved out of loop
-		tauSite = blaze::evaluate(tauSite + deltatauSite);
-		nuSite = blaze::evaluate(muhat/sighat - nuCavity);
+		tauSite = mtrc::numeric::evaluate(tauSite + deltatauSite);
+		nuSite = mtrc::numeric::evaluate(muhat/sighat - nuCavity);
 
-//        blaze::DiagonalMatrix<blaze::DynamicMatrix<T>> sSiteHalf (tauSite.size(), 0);
+//        mtrc::numeric::DiagonalMatrix<mtrc::numeric::DynamicMatrix<T>> sSiteHalf (tauSite.size(), 0);
 //        for (size_t i = 0; i<tauSite.size(); ++i) {
 //            if (tauSite[i] < 0 || std::isnan(tauSite[i]))
 //                sSiteHalf(i, i) = 0; // TODO check well
 //            else
 //                sSiteHalf(i, i) = std::sqrt(tauSite[i]);
 //        }
-//        blaze::IdentityMatrix<T> eye (K.rows());
-//        blaze::llh(eye + sSiteHalf*K*sSiteHalf, L);
-//        L = blaze::trans(L); // get lower from upper
+//        mtrc::numeric::IdentityMatrix<T> eye (K.rows());
+//        mtrc::numeric::llh(eye + sSiteHalf*K*sSiteHalf, L);
+//        L = mtrc::numeric::trans(L); // get lower from upper
 
 		bool negative_exists = false;
-		blaze::DiagonalMatrix<blaze::DynamicMatrix<std::complex<T>>> sSiteHalf (tauSite.size(), 0);
+		mtrc::numeric::DiagonalMatrix<mtrc::numeric::DynamicMatrix<std::complex<T>>> sSiteHalf (tauSite.size(), 0);
 
 		for (size_t i = 0; i<tauSite.size(); ++i) {
 			if (tauSite[i] < 0) {
@@ -447,30 +449,30 @@ local_gaussian_axis_aligned_hyperrectangles(
 				}
 			}
 		}
-		blaze::IdentityMatrix<std::complex<T>> eye (K.rows());
-		blaze::DynamicMatrix<std::complex<T>> Kc = K;
-		Lc = K; // TODO create empty // blaze::DynamicMatrix<std::complex<T>>(K.rows(), 0);
+		mtrc::numeric::IdentityMatrix<std::complex<T>> eye (K.rows());
+		mtrc::numeric::DynamicMatrix<std::complex<T>> Kc = K;
+		Lc = K; // TODO create empty // mtrc::numeric::DynamicMatrix<std::complex<T>>(K.rows(), 0);
 		auto llh_arg = eye + sSiteHalf*Kc*sSiteHalf;
-		//blaze::llh(eye + sSiteHalf*Kc*sSiteHalf, Lc);
-		blaze::llh(llh_arg, Lc);
-		Lc = blaze::trans(Lc); // get lower from upper
-		L = blaze::real(Lc);
+		//mtrc::numeric::llh(eye + sSiteHalf*Kc*sSiteHalf, Lc);
+		mtrc::numeric::llh(llh_arg, Lc);
+		Lc = mtrc::numeric::trans(Lc); // get lower from upper
+		L = mtrc::numeric::real(Lc);
 
 
 
 		//L = eye + sSiteHalf*K*sSiteHalf; // TODO remove
 		//std::cout << "L:\n" << L << "\n";
-		//blaze::potrf(L, 'U'); // LAPACK issue
+		//mtrc::numeric::potrf(L, 'U'); // LAPACK issue
 		//std::cout << "L_chol:\n" << L << "\n";
 
-		// auto V = blaze::inv(blaze::trans(L)) * (sSiteHalf*K);
-		auto V = blaze::inv(blaze::trans(Lc)) * (sSiteHalf*Kc);
-		//sigma = K - blaze::trans(V)*V;
-		sigma = blaze::real(Kc - blaze::trans(V)*V);
+		// auto V = mtrc::numeric::inv(mtrc::numeric::trans(L)) * (sSiteHalf*K);
+		auto V = mtrc::numeric::inv(mtrc::numeric::trans(Lc)) * (sSiteHalf*Kc);
+		//sigma = K - mtrc::numeric::trans(V)*V;
+		sigma = mtrc::numeric::real(Kc - mtrc::numeric::trans(V)*V);
 		mu = sigma*(nuSite + KinvM);
-		blaze::DynamicVector<T> diff = muLast - mu;
+		mtrc::numeric::DynamicVector<T> diff = muLast - mu;
 
-		if (std::sqrt(blaze::trans(diff) * diff) < epsConverge) // (norm(muLast-mu)) < epsConverge
+		if (std::sqrt(mtrc::numeric::trans(diff) * diff) < epsConverge) // (norm(muLast-mu)) < epsConverge
 			converged = true;
 		else
 			muLast = mu;
@@ -479,11 +481,11 @@ local_gaussian_axis_aligned_hyperrectangles(
 	}
 
 	T lZ1 = 0;
-	blaze::DiagonalMatrix<blaze::DynamicMatrix<T>> tau (n, 0);
-	blaze::DiagonalMatrix<blaze::DynamicMatrix<T>> diagTauSite (n, 0);
-	blaze::DiagonalMatrix<blaze::DynamicMatrix<T>> diagTauCavity (n, 0);
-	//blaze::DynamicMatrix<double> diagTauSite (n, n, 0);
-	//blaze::DynamicMatrix<double> diagTauCavity (n, n, 0);
+	mtrc::numeric::DiagonalMatrix<mtrc::numeric::DynamicMatrix<T>> tau (n, 0);
+	mtrc::numeric::DiagonalMatrix<mtrc::numeric::DynamicMatrix<T>> diagTauSite (n, 0);
+	mtrc::numeric::DiagonalMatrix<mtrc::numeric::DynamicMatrix<T>> diagTauCavity (n, 0);
+	//mtrc::numeric::DynamicMatrix<double> diagTauSite (n, n, 0);
+	//mtrc::numeric::DynamicMatrix<double> diagTauCavity (n, n, 0);
 
 	for (size_t i = 0; i<n; ++i) {
 		lZ1 += std::log(1 + tauSite[i]/tauCavity[i])*0.5 - std::log(L(i, i));
@@ -491,11 +493,12 @@ local_gaussian_axis_aligned_hyperrectangles(
 		diagTauSite(i, i) = tauSite[i];
 		diagTauCavity(i, i) = tauCavity[i];
 	}
-	blaze::DynamicVector<T> diffSite (nuSite - tauSite*m);
-	T lZ2 = 0.5*(blaze::trans(diffSite)*(sigma-tau)*diffSite);
-	auto lZ3 = 0.5*( blaze::trans(nuCavity)*( blaze::inv(diagTauSite + diagTauCavity)*(tauSite*nuCavity/tauCavity -
-2*nuSite) ) ); auto lZ4 = - 0.5*( blaze::trans(tauCavity*m)*( blaze::inv(diagTauSite + diagTauCavity)*(tauSite*m -
-2*nuSite) ) ); logZ = lZ1 + lZ2 + lZ3 + lZ4 + blaze::sum(logZhat);
+	mtrc::numeric::DynamicVector<T> diffSite (nuSite - tauSite*m);
+	T lZ2 = 0.5*(mtrc::numeric::trans(diffSite)*(sigma-tau)*diffSite);
+	auto lZ3 = 0.5*( mtrc::numeric::trans(nuCavity)*( mtrc::numeric::inv(diagTauSite +
+diagTauCavity)*(tauSite*nuCavity/tauCavity - 2*nuSite) ) ); auto lZ4 = - 0.5*( mtrc::numeric::trans(tauCavity*m)*(
+mtrc::numeric::inv(diagTauSite + diagTauCavity)*(tauSite*m - 2*nuSite) ) ); logZ = lZ1 + lZ2 + lZ3 + lZ4 +
+mtrc::numeric::sum(logZhat);
 
 	return std::make_tuple(logZ, mu, sigma);
 }

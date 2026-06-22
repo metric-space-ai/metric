@@ -14,7 +14,7 @@ Copyright (c) 2018 Michael Welsch, Signal Empowering Technology
 
 #include <algorithm>
 
-namespace metric {
+namespace mtrc {
 
 namespace CWA_details {
 
@@ -141,5 +141,5 @@ template <typename Container> double correlation_weighted_accuracy(Container a, 
 	return std::sqrt(accu * corr);
 }
 
-} // namespace metric
+} // namespace mtrc
 #endif

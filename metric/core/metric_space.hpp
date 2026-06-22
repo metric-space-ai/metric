@@ -11,11 +11,12 @@
 #include <utility>
 #include <vector>
 
+#include <metric/record/id.hpp>
+
 #include "concepts.hpp"
-#include "record_id.hpp"
 #include "version.hpp"
 
-namespace metric::core {
+namespace mtrc::core {
 
 template <typename Record, typename Metric> class MetricSpace {
   public:
@@ -24,13 +25,11 @@ template <typename Record, typename Metric> class MetricSpace {
 	using distance_type = metric_result_t<metric_type, record_type>;
 
 	MetricSpace(std::vector<record_type> records, metric_type metric)
-		: records_(std::move(records))
-		, metric_(std::move(metric))
-		, ids_(make_initial_ids(records_.size()))
-		, next_record_id_(records_.size())
+		: records_(std::move(records)), metric_(std::move(metric)), ids_(make_initial_ids(records_.size())),
+		  next_record_id_(records_.size())
 	{
 		static_assert(MetricCallable_v<metric_type, record_type>,
-					  "metric::core::MetricSpace requires a metric callable accepting two records");
+					  "mtrc::core::MetricSpace requires a metric callable accepting two records");
 	}
 
 	auto size() const -> std::size_t { return records_.size(); }
@@ -48,31 +47,18 @@ template <typename Record, typename Metric> class MetricSpace {
 
 	auto contains(RecordId id) const -> bool
 	{
-		for (const auto current : ids_) {
-			if (current == id) {
-				return true;
-			}
-		}
-		return false;
+		return contains_record_id(ids_, id);
 	}
 
 	auto position_of(RecordId id) const -> std::size_t
 	{
-		for (std::size_t position = 0; position < ids_.size(); ++position) {
-			if (ids_[position] == id) {
-				return position;
-			}
-		}
-		throw std::out_of_range("record id is not in the metric space");
+		return position_of_record_id(ids_, id, "record id is not in the metric space");
 	}
 
 	auto record(RecordId id) const -> const record_type & { return records_.at(position_of(id)); }
 	auto operator[](RecordId id) const -> const record_type & { return record(id); }
 
-	auto distance(RecordId lhs, RecordId rhs) const -> distance_type
-	{
-		return metric_(record(lhs), record(rhs));
-	}
+	auto distance(RecordId lhs, RecordId rhs) const -> distance_type { return metric_(record(lhs), record(rhs)); }
 
 	auto operator()(RecordId lhs, RecordId rhs) const -> distance_type { return distance(lhs, rhs); }
 
@@ -142,11 +128,11 @@ auto make_space(Container records, Metric metric)
 												 std::move(metric));
 }
 
-} // namespace metric::core
+} // namespace mtrc::core
 
-namespace metric {
+namespace mtrc {
 using core::make_space;
 using core::MetricSpace;
-} // namespace metric
+} // namespace mtrc
 
 #endif

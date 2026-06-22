@@ -8,68 +8,68 @@
 
 #pragma once
 
-#include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
+#include <pybind11/pybind11.h>
 #include <vector>
 
-
 /**
-    Tiny adapter that provides NumpyArray with std::vector like interface
+	Tiny adapter that provides NumpyArray with std::vector like interface
 */
-template<typename T>
-class NumpyToVectorAdapter: public pybind11::array_t<T> {
-public:
-    using pybind11::array_t<T>::array_t;
+template <typename T> class NumpyToVectorAdapter : public pybind11::array_t<T> {
+  public:
+	using pybind11::array_t<T>::array_t;
 
-    NumpyToVectorAdapter(pybind11::array_t<T> obj)
-        : pybind11::array_t<T>(obj)
-    {
-    }
+	NumpyToVectorAdapter(pybind11::array_t<T> obj) : pybind11::array_t<T>(obj) {}
 
-    bool empty() const {return this->size() == 0;}
+	bool empty() const { return this->size() == 0; }
 
-    T* begin() const {
-        return pybind11::detail::array_begin<T>(this->request());
-    }
+	T *begin() const
+	{
+		auto info = this->request();
+		return static_cast<T *>(info.ptr);
+	}
 
-    T* end() const {
-        return pybind11::detail::array_end<T>(this->request());
-    }
+	T *end() const
+	{
+		auto info = this->request();
+		return static_cast<T *>(info.ptr) + info.size;
+	}
 
-    const T& operator[](size_t index) const {
-        // TODO: init upon creation
-        auto r = pybind11::array_t<T>::template unchecked<1>();
-        return r[index];
-    }
+	const T &operator[](size_t index) const
+	{
+		// TODO: init upon creation
+		auto r = pybind11::array_t<T>::template unchecked<1>();
+		return r[index];
+	}
 };
 
-//template<typename T>
-//class WrapStlMatrix: public base_python_object {
-//public:
-//    typedef std::vector<T> value_type;
-//    WrapStlMatrix() = default;
-//    WrapStlMatrix(base_python_object& obj)
-//        : base_python_object(obj) {
-//    }
+// template<typename T>
+// class WrapStlMatrix: public base_python_object {
+// public:
+//     typedef std::vector<T> value_type;
+//     WrapStlMatrix() = default;
+//     WrapStlMatrix(base_python_object& obj)
+//         : base_python_object(obj) {
+//     }
 //
-//    size_t size() const {
-//        return boost::python::len(*this);
-//    }
+//     size_t size() const {
+//         return boost::python::len(*this);
+//     }
 //
-//    bool empty() const {
-//        return size() == 0;
-//    }
+//     bool empty() const {
+//         return size() == 0;
+//     }
 //
 //	boost::python::stl_input_iterator<T> begin() const {
-//        return boost::python::stl_input_iterator<T>(*this);
-//    }
+//         return boost::python::stl_input_iterator<T>(*this);
+//     }
 //
 //	boost::python::stl_input_iterator<T> end() const {
-//        return boost::python::stl_input_iterator<T>();
-//    }
+//         return boost::python::stl_input_iterator<T>();
+//     }
 //
-//    WrapStlMatrix operator[](int index) const {
-//        base_python_object wr = boost::python::extract<base_python_object>(base_python_object::operator[](index));
-//        return WrapStlMatrix(wr);
-//    }
-//};
+//     WrapStlMatrix operator[](int index) const {
+//         base_python_object wr = boost::python::extract<base_python_object>(base_python_object::operator[](index));
+//         return WrapStlMatrix(wr);
+//     }
+// };

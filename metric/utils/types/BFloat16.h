@@ -431,18 +431,15 @@ bfloat16 operator"" _h(long double);
 namespace detail {
 #if BFLOAT_ENABLE_CPP11_TYPE_TRAITS
 /// Conditional type.
-template <bool B, typename T, typename F> struct conditional : std::conditional<B, T, F> {
-};
+template <bool B, typename T, typename F> struct conditional : std::conditional<B, T, F> {};
 
 /// Helper for tag dispatching.
-template <bool B> struct bool_type : std::integral_constant<bool, B> {
-};
+template <bool B> struct bool_type : std::integral_constant<bool, B> {};
 using std::false_type;
 using std::true_type;
 
 /// Type traits for floating-point types.
-template <typename T> struct is_float : std::is_floating_point<T> {
-};
+template <typename T> struct is_float : std::is_floating_point<T> {};
 #else
 
 /// Conditional type.
@@ -454,38 +451,27 @@ template <typename T, typename F> struct conditional<false, T, F> {
 };
 
 /// Helper for tag dispatching.
-template <bool> struct bool_type {
-};
+template <bool> struct bool_type {};
 typedef bool_type<true> true_type;
 typedef bool_type<false> false_type;
 
 /// Type traits for floating-point types.
-template <typename> struct is_float : false_type {
-};
-template <typename T> struct is_float<const T> : is_float<T> {
-};
-template <typename T> struct is_float<volatile T> : is_float<T> {
-};
-template <typename T> struct is_float<const volatile T> : is_float<T> {
-};
-template <> struct is_float<float> : true_type {
-};
-template <> struct is_float<double> : true_type {
-};
-template <> struct is_float<long double> : true_type {
-};
+template <typename> struct is_float : false_type {};
+template <typename T> struct is_float<const T> : is_float<T> {};
+template <typename T> struct is_float<volatile T> : is_float<T> {};
+template <typename T> struct is_float<const volatile T> : is_float<T> {};
+template <> struct is_float<float> : true_type {};
+template <> struct is_float<double> : true_type {};
+template <> struct is_float<long double> : true_type {};
 #endif
 
 /// Type traits for floating-point bits.
 template <typename T> struct bits {
 	typedef unsigned char type;
 };
-template <typename T> struct bits<const T> : bits<T> {
-};
-template <typename T> struct bits<volatile T> : bits<T> {
-};
-template <typename T> struct bits<const volatile T> : bits<T> {
-};
+template <typename T> struct bits<const T> : bits<T> {};
+template <typename T> struct bits<volatile T> : bits<T> {};
+template <typename T> struct bits<const volatile T> : bits<T> {};
 
 #if BFLOAT_ENABLE_CPP11_CSTDINT
 /// Unsigned integer of (at least) 16 bits width.
@@ -518,8 +504,7 @@ typedef long int32;
 
 /// Unsigned integer of (at least) 32 bits width.
 template <>
-struct bits<float> : conditional<std::numeric_limits<unsigned int>::digits >= 32, unsigned int, unsigned long> {
-};
+struct bits<float> : conditional<std::numeric_limits<unsigned int>::digits >= 32, unsigned int, unsigned long> {};
 
 #if BFLOAT_ENABLE_CPP11_LONG_LONG
 /// Unsigned Integer of (at least) 64 bits width.
@@ -540,8 +525,7 @@ typedef BFLOAT_ARITHMETIC_TYPE internal_t;
 #endif
 
 /// Tag type for binary construction.
-struct binary_t {
-};
+struct binary_t {};
 
 /// Tag for binary construction.
 BFLOAT_CONSTEXPR_CONST binary_t binary = binary_t();
@@ -1032,8 +1016,8 @@ template <std::float_round_style R, typename T> unsigned int float2bfloat16_impl
 /// \exception FE_INEXACT if value had to be rounded
 template <std::float_round_style R, typename T> unsigned int float2bfloat16(T value)
 {
-	return float2bfloat16_impl<R>(value, bool_type < std::numeric_limits<T>::is_iec559 &&
-											 sizeof(typename bits<T>::type) == sizeof(T) > ());
+	return float2bfloat16_impl<R>(
+		value, bool_type<std::numeric_limits<T>::is_iec559 && sizeof(typename bits<T>::type) == sizeof(T)>());
 }
 
 /// Convert integer to bfloat16-precision floating-point.
@@ -1136,7 +1120,7 @@ template <typename T> T bfloat162float_impl(unsigned int value, T, ...)
 template <typename T> T bfloat162float(unsigned int value)
 {
 	return bfloat162float_impl(
-		value, T(), bool_type < std::numeric_limits<T>::is_iec559 && sizeof(typename bits<T>::type) == sizeof(T) > ());
+		value, T(), bool_type<std::numeric_limits<T>::is_iec559 && sizeof(typename bits<T>::type) == sizeof(T)>());
 }
 
 /// Convert bfloat16-precision floating-point to integer.
@@ -2130,8 +2114,7 @@ namespace detail {
 /// \tparam U source type
 /// \tparam R rounding mode to use
 template <typename T, typename U, std::float_round_style R = (std::float_round_style)(BFLOAT_ROUND_STYLE)>
-struct bfloat16_caster {
-};
+struct bfloat16_caster {};
 template <typename U, std::float_round_style R> struct bfloat16_caster<bfloat16, U, R> {
 #if BFLOAT_ENABLE_CPP11_STATIC_ASSERT && BFLOAT_ENABLE_CPP11_TYPE_TRAITS
 	static_assert(std::is_arithmetic<U>::value, "bfloat16_cast from non-arithmetic type unsupported");
@@ -2448,21 +2431,21 @@ inline bfloat16 operator+(bfloat16 x, bfloat16 y)
                         my = ((absy&0x7F)|((absy>0x7F)<<7))<<3;
                         my = (my>>d) | ((my&((1<<d)-1))!=0);
                 }
-		
+
                 else
                         my = 1;
                 if(sub)
                 {
                         if(!(mx-=my))
                                 return bfloat16(detail::binary, static_cast<unsigned>(bfloat16::round_style==std::round_toward_neg_infinity)<<15); // hier
-                        for(; mx<0x2000 && exp>1; mx<<=1,--exp) ; 
+                        for(; mx<0x2000 && exp>1; mx<<=1,--exp) ;
 			return bfloat16(detail::binary, detail::rounded<bfloat16::round_style,false>(sign+((exp-7)<<7)+(mx>>3), (mx>>2)&1, (mx&0x3)!=0));
                 }
                 else
                 {
                         mx += my;
-                        int i = mx >> 11; 
-                        if((exp+=i)> 254) 
+                        int i = mx >> 11;
+                        if((exp+=i)> 254)
                                 return bfloat16(detail::binary, detail::overflow<bfloat16::round_style>(sign));
                         mx = (mx>>i) | (mx&i);
 			return bfloat16(detail::binary, detail::rounded<bfloat16::round_style,false>(sign+((exp-1)<<7)+(mx>>3), (mx>>2)&1, (mx&0x3)!=0));

@@ -1,36 +1,43 @@
+"""Representation swap — adapter boundary demo.
+
+Explicit representations are adapters: the matrix view materializes distances
+through the native ``Edit`` binding, and the tree/graph handles carry source
+lineage and staleness. Indexed/graph *search* and graph *construction* are
+native-only METRIC algorithms, so those operations raise until a native binding
+is exposed. The runtime-diagnostics view is a pure policy adapter.
+"""
+
 from metric import Edit, RuntimePolicy, Space
+from metric.exceptions import StrategyUnavailableError
+
+
+def requires_native(label, call):
+    try:
+        call()
+    except StrategyUnavailableError:
+        print(f"{label}: requires native C++ binding")
+    else:
+        raise AssertionError(f"{label} should require a native binding")
 
 
 def main():
     records = ["metric", "metrics", "matrix", "tree"]
     space = Space(records, metric=Edit(), name="string_edit_representation_swap")
 
-    query = "metricks"
-    implicit_neighbors = space.neighbors(query, count=2)
-    nearest = implicit_neighbors.neighbors[0]
-    assert nearest.id == 1
-    assert nearest.record == "metrics"
-    assert nearest.distance == 1
-
+    # Adapter surface: the materialized matrix view exposes explicit distances.
     matrix = space.to_matrix()
     assert matrix.representation == "matrix"
     assert matrix.distance(0, 1) == 1
     assert matrix.distance(0, 2) == 2
+    print("matrix distance(metric, metrics) =", matrix.distance(0, 1))
 
+    # The tree index is a stored representation; its lineage/staleness is an
+    # adapter, but its search is native-only.
     tree = space.to_tree()
-    tree_neighbors = space.neighbors(query, count=2, representation=tree)
-    assert tree_neighbors.as_tuples() == implicit_neighbors.as_tuples()
+    assert tree.representation == "exact_tree_index"
+    requires_native("tree.knn", lambda: tree.knn("metricks", count=2))
 
-    graph = space.to_graph(count=2)
-    graph_neighbors = space.neighbors(count=2, representation=graph)
-    assert graph_neighbors.rows[0][0].id == 1
-    assert graph_neighbors.rows[0][0].distance == 1
-    assert len(graph_neighbors.rows[0]) == 2
-
-    materialized_groups = space.groups(count=2, representation=matrix)
-    assert materialized_groups.representation == "matrix"
-    assert materialized_groups.cluster_count == 2
-
+    # Adapter surface: a runtime-policy view.
     diagnostics = space.runtime_diagnostics(
         representation=matrix,
         runtime=RuntimePolicy(exact=True, cache="materialized"),
@@ -38,16 +45,18 @@ def main():
     )
     assert diagnostics.representation == "matrix"
     assert diagnostics.policy_name == "exact_materialized_serial"
+    print("runtime representation =", diagnostics.representation)
 
+    # Native boundary: implicit search, graph construction, and clustering.
+    requires_native("neighbors", lambda: space.neighbors("metricks", count=2))
+    requires_native("to_graph", lambda: space.to_graph(count=2))
+    requires_native("groups", lambda: space.groups(count=2, representation=matrix))
+
+    # Staleness bookkeeping stays in Python (no algorithm involved).
     space.touch()
     assert matrix.is_stale()
     assert tree.is_stale()
-    assert graph.is_stale()
-
-    print("implicit nearest =", nearest.record, nearest.distance)
-    print("tree nearest =", tree_neighbors.neighbors[0].record, tree_neighbors.neighbors[0].distance)
-    print("graph neighbors from metric =", [neighbor.record for neighbor in graph_neighbors.rows[0]])
-    print("runtime representation =", diagnostics.representation)
+    print("representations stale after touch =", matrix.is_stale(), tree.is_stale())
 
 
 if __name__ == "__main__":

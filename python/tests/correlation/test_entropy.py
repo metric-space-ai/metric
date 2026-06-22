@@ -1,4 +1,4 @@
-from metric.distance import Euclidean, Manhatten, Chebyshev, P_norm
+from metric.distance import Euclidean, Manhattan, Chebyshev, P_norm
 from metric.correlation import Entropy
 import numpy
 import math
@@ -16,7 +16,7 @@ def test_entropy():
 
     assert pytest.approx(entropy()(v), 1.014045451620507)
     assert pytest.approx(entropy(metric=Euclidean())(v), 1.014045451620507)
-    assert pytest.approx(entropy(metric=Manhatten())(v), 1.582185490039048)
+    assert pytest.approx(entropy(metric=Manhattan())(v), 1.582185490039048)
     assert pytest.approx(entropy(metric=Chebyshev())(v), -3.9489104772539405)
     assert pytest.approx(entropy(metric=P_norm())(v), 1.582185490039048)
     assert pytest.approx(entropy(metric=P_norm(p=10))(v), -1.6957132689132957)

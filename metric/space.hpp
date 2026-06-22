@@ -29,15 +29,14 @@ Copyright (c) PANDA Team
 
 #include "space/knn_graph.hpp"
 #include "space/matrix.hpp"
+#include "space/partition.hpp"
 #include "space/tree.hpp"
 
-namespace metric {
+namespace mtrc {
 
-template <typename RecType, typename Metric>
-using MatrixSpace = Matrix<RecType, Metric>;
+template <typename RecType, typename Metric> using MatrixSpace = Matrix<RecType, Metric>;
 
-template <typename RecType, typename Metric>
-using TreeSpace = Tree<RecType, Metric>;
+template <typename RecType, typename Metric> using TreeSpace = Tree<RecType, Metric>;
 
 template <typename Sample, typename Distance, typename WeightType = bool, bool isDense = false, bool isSymmetric = true>
 using GraphSpace = KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>;
@@ -55,7 +54,8 @@ template <typename RecType, typename Metric> class FiniteSpace {
 	{
 	}
 
-	template <typename Container> FiniteSpace(const Container &records, metric_type metric = metric_type())
+	template <typename Container>
+	FiniteSpace(const Container &records, metric_type metric = metric_type())
 		: representation_(records, std::move(metric))
 	{
 	}
@@ -125,5 +125,5 @@ struct Space {
 	}
 };
 
-} // namespace metric
+} // namespace mtrc
 #endif

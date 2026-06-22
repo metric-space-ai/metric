@@ -11,7 +11,7 @@
 
 #include <stack>
 
-namespace metric {
+namespace mtrc {
 
 // recursive split for arbitrary depth
 // this code is COPIED from DSPCC, TODO update DSPCC to remove code dubbing if this code becomes common
@@ -155,4 +155,4 @@ std::size_t original_size(std::size_t subband_size, std::size_t depth, std::size
 
 std::size_t wmaxlevel(std::size_t input_size, int waveletType) { return 0; }
 
-} // namespace metric
+} // namespace mtrc

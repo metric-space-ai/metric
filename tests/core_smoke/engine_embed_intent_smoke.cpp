@@ -3,15 +3,12 @@
 #include <stdexcept>
 #include <vector>
 
-#include "metric/distance.hpp"
+#include "metric/metric/catalog.hpp"
 #include "metric/engine.hpp"
 
 namespace {
 
-auto close(double lhs, double rhs) -> bool
-{
-	return std::fabs(lhs - rhs) < 1e-9;
-}
+auto close(double lhs, double rhs) -> bool { return std::fabs(lhs - rhs) < 1e-9; }
 
 } // namespace
 
@@ -19,9 +16,9 @@ int main()
 {
 	using record_type = std::vector<double>;
 
-	auto space = metric::make_space(std::vector<record_type>{{0, 1, 2}, {0, 1, 3}}, metric::Euclidean<double>{});
+	auto space = mtrc::make_space(std::vector<record_type>{{0, 1, 2}, {0, 1, 3}}, mtrc::Euclidean<double>{});
 
-	const auto embedding = metric::embed(space, metric::strategies::pcfa(2));
+	const auto embedding = mtrc::embed(space, mtrc::modify::map::pcfa_options(2));
 	assert(embedding.mapping == "pcfa_embedding");
 	assert(embedding.strategy == "pcfa");
 	assert(embedding.representation == "metric_space");
@@ -34,26 +31,26 @@ int main()
 	assert(close(embedding.space.record(embedding.space.id(0))[0], -0.5));
 	assert(close(embedding.space.record(embedding.space.id(1))[0], 0.5));
 
-	const auto direct = metric::embed(space, 2);
+	const auto direct = mtrc::embed(space, 2);
 	assert(direct.mapping == "pcfa_embedding");
 	assert(direct.source_records == embedding.source_records);
 	assert(close(direct.space.record(direct.space.id(0))[0], embedding.space.record(embedding.space.id(0))[0]));
 
-	const auto lazy_policy = metric::runtime::exact();
-	const auto runtime_embedding = metric::embed(space, metric::strategies::pcfa(2), lazy_policy);
+	const auto lazy_policy = mtrc::space::storage::exact();
+	const auto runtime_embedding = mtrc::embed(space, mtrc::modify::map::pcfa_options(2), lazy_policy);
 	assert(runtime_embedding.mapping == "pcfa_embedding");
 	assert(runtime_embedding.representation == "metric_space");
 	assert(runtime_embedding.source_records == embedding.source_records);
 	assert(close(runtime_embedding.space.record(runtime_embedding.space.id(0))[0],
 				 embedding.space.record(embedding.space.id(0))[0]));
 
-	const auto runtime_direct = metric::embed(space, 2, lazy_policy);
+	const auto runtime_direct = mtrc::embed(space, 2, lazy_policy);
 	assert(runtime_direct.representation == "metric_space");
 	assert(runtime_direct.source_records == embedding.source_records);
 
 	bool rejected_zero_components = false;
 	try {
-		(void)metric::embed(space, 0);
+		(void)mtrc::embed(space, 0);
 	} catch (const std::invalid_argument &) {
 		rejected_zero_components = true;
 	}
@@ -61,7 +58,7 @@ int main()
 
 	bool rejected_materialized_runtime = false;
 	try {
-		(void)metric::embed(space, 2, metric::runtime::materialized(metric::runtime::exact()));
+		(void)mtrc::embed(space, 2, mtrc::space::storage::materialized(mtrc::space::storage::exact()));
 	} catch (const std::invalid_argument &) {
 		rejected_materialized_runtime = true;
 	}
@@ -69,7 +66,7 @@ int main()
 
 	bool rejected_approximate_runtime = false;
 	try {
-		(void)metric::embed(space, 2, metric::runtime::approximate());
+		(void)mtrc::embed(space, 2, mtrc::space::storage::approximate());
 	} catch (const std::invalid_argument &) {
 		rejected_approximate_runtime = true;
 	}

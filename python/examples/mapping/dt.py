@@ -67,7 +67,7 @@ def main():
 
     dimensions = (
         Dimension(accessors[0], distance.Euclidean()),
-        Dimension(accessors[1], distance.Manhatten()),
+        Dimension(accessors[1], distance.Manhattan()),
         Dimension(accessors[2], distance.P_norm()),
         Dimension(accessors[2], distance.Euclidean_thresholded()),
         Dimension(accessors[2], distance.Cosine()),

@@ -17,7 +17,7 @@ Copyright (c) 2018 Max Filippov
 #include <math.h> // log2
 #include <queue>
 
-namespace metric {
+namespace mtrc {
 /**
  * @class DT
  *
@@ -108,7 +108,7 @@ template <class Record> class DT {
 	double gain_threshold = 0;
 };
 
-} // namespace metric
+} // namespace mtrc
 
 #include "DT/DT.cpp"
 

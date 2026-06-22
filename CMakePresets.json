@@ -12,7 +12,6 @@
       "binaryDir": "${sourceDir}/build/core",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "METRIC_FETCH_DEPS": "ON",
         "METRIC_BUILD_CORE_TESTS": "ON",
         "METRIC_BUILD_CORE_EXAMPLES": "ON",
         "METRIC_BUILD_TESTS": "OFF",

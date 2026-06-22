@@ -12,7 +12,7 @@ based on Olivier Mallets implementation https://github.com/olmallet81/GALGO-2.0
 
 #include <iostream>
 
-namespace metric {
+namespace mtrc {
 
 template <typename P, typename T> class Genetic;
 
@@ -30,7 +30,7 @@ template <typename P, typename T> using CHR = std::shared_ptr<Chromosome<P, T>>;
 template <typename T> using PAR = std::unique_ptr<Parameter<T>>;
 
 } // namespace genetic_details
-} // namespace metric
+} // namespace mtrc
 
 #include "genetic/Chromosome.hpp"
 #include "genetic/Parameter.hpp"

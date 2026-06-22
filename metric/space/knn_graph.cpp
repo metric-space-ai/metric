@@ -8,7 +8,9 @@ Copyright (c) 2020 Panda Team
 */
 #include "knn_graph.hpp"
 
-namespace metric {
+#include <stdexcept>
+
+namespace mtrc {
 
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 template <typename Container, typename>
@@ -26,6 +28,11 @@ template <typename Container, typename>
 void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::calculate_distance_matrix(const Container &samples)
 {
 	Distance distance;
+
+	// construct() is called again by insert()/insert_if()/erase(); without clearing, every rebuild appends a
+	// fresh N x N block on top of the previous (now stale, shorter) rows. That both grows _distance_matrix without
+	// bound and leaves brute_force()/operator() reading stale rows whose columns are out of range for the new size.
+	_distance_matrix.clear();
 
 	for (int i = 0; i < samples.size(); i++) {
 		// take each node
@@ -170,7 +177,9 @@ KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::brute_force(const 
 	for (int i = 0; i < ids.size(); i++) {
 		distance_row.clear();
 		for (int j = 0; j < ids.size(); j++) {
-			distance_row.push_back(_distance_matrix[i][j]);
+			// _distance_matrix is indexed by GLOBAL node id. In the divide stage `ids` holds the global ids of a
+			// subgroup (not 0..k-1), so the row/column must be resolved through ids[], not the local i/j.
+			distance_row.push_back(_distance_matrix[ids[i]][ids[j]]);
 		}
 		distances.push_back(distance_row);
 	}
@@ -274,7 +283,12 @@ std::vector<size_t> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>
 			for (int j = 0; j < num_greedy_moves; j++) {
 				distances.clear();
 				// 0 index is for node itself, 1 - is first circle of neighbours
-				auto neighbours = this->getNeighbours(checking_node, 1)[1];
+				auto rings = this->getNeighbours(checking_node, 1);
+				// an isolated node has no first ring; stop the greedy walk and keep the best found so far
+				if (rings.size() < 2 || rings[1].empty()) {
+					break;
+				}
+				auto neighbours = rings[1];
 
 				// get first num_expansions neighbours for the checking node and calculate distances to the query
 				for (int p = 0; p < num_expansions; p++) {
@@ -290,6 +304,9 @@ std::vector<size_t> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>
 					}
 				}
 
+				if (distances.empty()) {
+					break;
+				}
 				auto min_index = std::min_element(distances.begin(), distances.end());
 				new_node = neighbours[std::distance(distances.begin(), min_index)];
 				// if we back to the visited node then we fall in loop and search is complete
@@ -354,7 +371,8 @@ KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::insert_if(const Sa
 {
 	auto nn = gnnn_search(p, 1);
 	Distance metric;
-	if (metric(_nodes[nn[0]], p) < threshold)
+	// an empty graph has no neighbour within the threshold, so the point is always inserted
+	if (!nn.empty() && metric(_nodes[nn[0]], p) < threshold)
 		return std::pair{0, false};
 	auto id = insert(p);
 	return std::pair{id, true};
@@ -372,7 +390,7 @@ KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::insert_if(const Co
 	std::size_t id = _nodes.size();
 	for (auto &i : items) {
 		auto nn = gnnn_search(i, 1);
-		if (metric(_nodes[nn[0]], i) < threshold) {
+		if (!nn.empty() && metric(_nodes[nn[0]], i) < threshold) {
 			v.emplace_back(0, false);
 		} else {
 			v.emplace_back(id, true);
@@ -402,12 +420,15 @@ template <typename Sample, typename Distance, typename WeightType, bool isDense,
 std::size_t KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::nn(const Sample &p)
 {
 	auto n = gnnn_search(p, 1);
+	if (n.empty()) {
+		throw std::out_of_range("cannot find a nearest neighbour in an empty kNN graph");
+	}
 	return n[0];
 }
 
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 std::vector<std::size_t> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::knn(const Sample &p,
-																						   std::size_t K) const
+																						   std::size_t K)
 {
 	return gnnn_search(p, K);
 }
@@ -415,7 +436,7 @@ std::vector<std::size_t> KNNGraph<Sample, Distance, WeightType, isDense, isSymme
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 std::vector<std::pair<std::size_t, typename Distance::distance_type>>
 KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::rnn(const Sample &query,
-																  typename Distance::distance_type threshold) const
+																  typename Distance::distance_type threshold)
 {
 	std::vector<std::pair<size_t, typename Distance::distance_type>> result;
 
@@ -451,7 +472,12 @@ KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::rnn(const Sample &
 			for (int j = 0; j < num_greedy_moves; j++) {
 				distances.clear();
 				// 0 index is for node itself, 1 - is first circle of neighbours
-				auto neighbours = this->getNeighbours(checking_node, 1)[1];
+				auto rings = this->getNeighbours(checking_node, 1);
+				// an isolated node has no first ring; stop the greedy walk and keep the best found so far
+				if (rings.size() < 2 || rings[1].empty()) {
+					break;
+				}
+				auto neighbours = rings[1];
 
 				// get first num_expansions neighbours for the checking node and calculate distances to the query
 				for (int p = 0; p < num_expansions; p++) {
@@ -467,6 +493,9 @@ KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::rnn(const Sample &
 					}
 				}
 
+				if (distances.empty()) {
+					break;
+				}
 				auto min_index = std::min_element(distances.begin(), distances.end());
 				new_node = neighbours[std::distance(distances.begin(), min_index)];
 				// if we back to the visited node then we fall in loop and search is complete
@@ -491,4 +520,4 @@ KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::rnn(const Sample &
 	return result;
 }
 
-} // namespace metric
+} // namespace mtrc

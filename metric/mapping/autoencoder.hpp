@@ -1,11 +1,11 @@
-#include "../utils/dnn.hpp"
+#include <metric/solve/parametric/dnn.hpp>
 
 #include <chrono>
 
-namespace metric {
-template <typename InputDataType, typename Scalar> class Autoencoder : public dnn::Network<Scalar> {
+namespace mtrc {
+template <typename InputDataType, typename Scalar> class Autoencoder : public solve::parametric::dnn::Network<Scalar> {
   private:
-	using typename dnn::Network<Scalar>::Matrix;
+	using typename solve::parametric::dnn::Network<Scalar>::Matrix;
 
 	Matrix trainData;
 	Scalar normValue;
@@ -65,7 +65,7 @@ template <typename InputDataType, typename Scalar>
 std::vector<InputDataType> Autoencoder<InputDataType, Scalar>::predict(const std::vector<InputDataType> data)
 {
 	auto t1 = std::chrono::high_resolution_clock::now();
-	auto prediction = dnn::Network<Scalar>::predict(convertData(data));
+	auto prediction = solve::parametric::dnn::Network<Scalar>::predict(convertData(data));
 	auto t2 = std::chrono::high_resolution_clock::now();
 	auto d = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
 	std::cout << "Prediction time: " << d.count() << " s" << std::endl;
@@ -80,7 +80,7 @@ Autoencoder<InputDataType, Scalar>::convertData(const std::vector<InputDataType>
 	assert(this->num_layers() > 0);
 
 	const auto feature_count = this->layers[0]->inputSize;
-	const dnn::FlatVectorCodec<InputDataType, Scalar> codec(feature_count, normValue);
+	const solve::parametric::dnn::FlatVectorCodec<InputDataType, Scalar> codec(feature_count, normValue);
 	return codec.encode_flat(inputData);
 }
 
@@ -94,7 +94,7 @@ template <typename InputDataType, typename Scalar>
 std::vector<InputDataType> Autoencoder<InputDataType, Scalar>::convertToOutput(const Matrix &data,
 																			   bool doDenormalization)
 {
-	const dnn::FlatVectorCodec<InputDataType, Scalar> codec(data.columns(), normValue);
+	const solve::parametric::dnn::FlatVectorCodec<InputDataType, Scalar> codec(data.columns(), normValue);
 	return codec.decode_flat(data, doDenormalization);
 }
 
@@ -138,4 +138,4 @@ std::vector<InputDataType> Autoencoder<InputDataType, Scalar>::decode(const std:
 	return convertToOutput(output);
 }
 
-} // namespace metric
+} // namespace mtrc

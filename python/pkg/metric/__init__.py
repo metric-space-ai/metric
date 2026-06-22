@@ -21,7 +21,7 @@ try:
 except ModuleNotFoundError:
     pass
 
-from . import compat, core, exceptions, intent, mappings, metrics, operators, representations, runtime, spaces, strategies, transforms
+from . import compat, core, exceptions, intent, mapping_pipeline, mappings, metrics, operators, representations, runtime, spaces, strategies, transforms
 from .exceptions import (
     AmbiguousIntentError,
     IncompatibleSpaceError,

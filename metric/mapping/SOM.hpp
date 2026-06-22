@@ -16,7 +16,7 @@ International Journal of Modeling and Optimization, Vol. 6, No. 1, February 2016
 W. Natita, W. Wiboonsak, and S. Dusadee
 */
 
-#include "metric/distance/k-related/Standards.hpp"
+#include "metric/metric/catalog/vector/Standards.hpp"
 #include "metric/utils/graph.hpp"
 
 #include <assert.h>
@@ -35,14 +35,14 @@ W. Natita, W. Wiboonsak, and S. Dusadee
 #define M_PI (3.14159265358979323846)
 #endif
 
-namespace metric {
+namespace mtrc {
 /**
  * @class SOM
  *
  *@brief
  *
  */
-template <typename RecType, class Graph = metric::Grid6, class Metric = metric::Euclidean<typename RecType::value_type>,
+template <typename RecType, class Graph = mtrc::Grid6, class Metric = mtrc::Euclidean<typename RecType::value_type>,
 		  class Distribution = std::uniform_real_distribution<typename RecType::value_type>>
 class SOM {
 	using T = typename RecType::value_type;
@@ -222,6 +222,6 @@ class SOM {
 	std::vector<std::vector<T>> weights; // coordinates in the input_dimensions space
 };
 
-} // namespace metric
+} // namespace mtrc
 #include "SOM.cpp"
 #endif

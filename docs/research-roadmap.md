@@ -46,7 +46,7 @@ Goal: choose small, meaningful subsets of a finite metric space without assuming
 
 Current promoted base:
 
-- C++ `metric::operators::representative_indices` and `representatives` expose deterministic farthest-first traversal over finite metric spaces.
+- C++ `mtrc::space::index::representative_indices` and `representatives` expose deterministic farthest-first traversal over finite metric spaces.
 - Python `metric.operators.representative_indices` and `representatives` expose the same traversal rule.
 - C++ and Python `medoid_index` / `medoid` expose deterministic single-medoid selection by minimum total distance.
 - C++ and Python `separated_representative_indices` / `separated_representatives` expose deterministic redundancy-threshold selection by minimum distance.

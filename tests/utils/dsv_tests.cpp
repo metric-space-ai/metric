@@ -1,30 +1,21 @@
 #include <catch2/catch.hpp>
 
-#include <limits>
 #include <iostream>
+#include <limits>
 
 #include "metric/utils/datasets.hpp"
 
-
 using namespace std;
-using namespace metric;
+using namespace mtrc;
 
-
-TEMPLATE_TEST_CASE("base","[utils]", float, double)
+TEMPLATE_TEST_CASE("base", "[utils]", float, double)
 {
-	using Matrix = blaze::DynamicMatrix<TestType, blaze::columnMajor>;
-	using Vector = blaze::DynamicVector<TestType>;
+	using Matrix = mtrc::numeric::DynamicMatrix<TestType, mtrc::numeric::columnMajor>;
+	using Vector = mtrc::numeric::DynamicVector<TestType>;
 
-	blaze::DynamicMatrix<TestType> m{{1, 2, 3},
-	                               {4, 5, 6},
-	                               {7, 8, 9},
-	                               {1, 1.1, 1.2},
-	                               {1.3, 1.4, -1.5},
-	                               {16, -17, 18},
-	                               {-0.19, 2, 0.21},
-	                               {-22, 23, 24},
-	                               {-25, 26, 27},
-	                               {-2.8e-8, 29, 3e7}};
+	mtrc::numeric::DynamicMatrix<TestType> m{{1, 2, 3},		 {4, 5, 6},			{7, 8, 9},		  {1, 1.1, 1.2},
+											   {1.3, 1.4, -1.5}, {16, -17, 18},		{-0.19, 2, 0.21}, {-22, 23, 24},
+											   {-25, 26, 27},	 {-2.8e-8, 29, 3e7}};
 	{
 		std::ofstream file("matrix.dsv");
 		file << "1;2; 3" << std::endl;

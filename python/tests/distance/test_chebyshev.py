@@ -3,8 +3,8 @@ from metric.distance import Chebyshev
 
 
 def test_chebyshev():
-    v0 = numpy.float_([0, 1, 1, 1, 1, 1, 2, 3])
-    v1 = numpy.float_([1, 1, 1, 1, 1, 2, 3, 4])
+    v0 = numpy.asarray([0, 1, 1, 1, 1, 1, 2, 3], dtype=float)
+    v1 = numpy.asarray([1, 1, 1, 1, 1, 2, 3, 4], dtype=float)
 
     assert isinstance(Chebyshev, object)
 

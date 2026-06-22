@@ -11,7 +11,7 @@
 #include <cassert>
 #include <exception>
 
-namespace metric {
+namespace mtrc {
 
 template <class Record>
 DT<Record>::DT(double entropy_threshold, double gain_threshold)
@@ -246,7 +246,7 @@ DT<Record>::split_subset(const std::vector<int> &subset,
 
 		auto [feature_dist_table, feature_dist_orig_idx] = distance_matrix_of_subset(subset, distances[f]);
 
-		auto results = metric::kmedoids_(feature_dist_table, unique_labels.size(), 1000);
+		auto results = mtrc::kmedoids_(feature_dist_table, unique_labels.size(), 1000);
 		auto medoids = std::get<1>(results); // medoid indices in feature_dist_table; original indices can be obtained
 											 // via feature_dist_orig_idx
 
@@ -314,7 +314,7 @@ DT<Record>::split_subset(const std::vector<int> &subset,
 
 			// also fill global medoid indices (in order to output them for winning field)
 			medoid_global_idx[f][medoid_idx] = feature_dist_orig_idx[medoids[medoid_idx]];
-		}															 // end of medoid loop
+		} // end of medoid loop
 		if (current_entropy_weighted_sum < min_entropy_weighted_sum) // update winning field
 		{
 			min_entropy_weighted_sum = current_entropy_weighted_sum;
@@ -361,4 +361,4 @@ inline void DT<Record>::add_distribution_to_node( // mutates *new_node!
 	}
 }
 
-} // namespace metric
+} // namespace mtrc

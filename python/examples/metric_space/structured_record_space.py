@@ -1,4 +1,12 @@
+"""Structured-record space — adapter boundary demo.
+
+A toy domain metric over dict records. The Python ``Space`` adapts the records
+and exposes explicit distances and the pairwise matrix. Neighbor search is a
+native-only METRIC algorithm.
+"""
+
 from metric import Space
+from metric.exceptions import StrategyUnavailableError
 from metric.operators import pairwise_distance_matrix
 
 
@@ -26,11 +34,18 @@ def main():
     query = {"status": "ok", "temperature_c": 63.0, "events": ("start", "load", "idle")}
 
     space = Space(records, structured_record_distance)
-    nearest = space.nearest(query)
 
-    print("nearest structured record =", nearest.record["id"], nearest.distance)
+    # Adapter surface: explicit distances and the materialized matrix.
     print("distance(pump-a, valve-c) =", space.distance(0, 2))
     print("pairwise rows =", len(pairwise_distance_matrix(records, structured_record_distance)))
+
+    # Native boundary: nearest-neighbor search requires the C++ binding.
+    try:
+        space.nearest(query)
+    except StrategyUnavailableError:
+        print("nearest: requires native C++ binding")
+    else:
+        raise AssertionError("nearest should require a native binding")
 
 
 if __name__ == "__main__":

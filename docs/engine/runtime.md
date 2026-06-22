@@ -1,126 +1,19 @@
-# Runtime Policies
+# Execution Policies
 
-Runtime policies make execution cost and approximation explicit.
+Execution policy belongs to `mtrc::space::storage`. It controls how a finite
+metric space is accessed for a computation: directly, through a table, through
+an index, or through a graph-backed form.
 
-The first C++ runtime policy surface lives under `metric::runtime`:
+The important rule is that execution policy does not define the metric. It only
+chooses how metric values are computed or reused.
 
-- `exact`
-- `approximate`
-- `lazy`
-- `materialized`
-- `serial`
-- `parallel`
-- `using_implicit`
-- `using_matrix_cache`
-- `using_cover_tree`
-- `using_knn_graph`
-- `cache`
-- `diagnostics`
+Current execution concepts:
 
-`runtime::diagnostics(...)` returns a `RuntimeDiagnostics` value with the normalized policy name, exact/materialized/parallel flags, selected representation, optional intent label, support status, and reason text for unsupported policies.
+- exact or unsupported approximate behavior
+- lazy live access or materialized table access
+- serial or parallel metric evaluation where the metric is safe for it
+- stale-state diagnostics when a space changes after a storage object was built
+- representation diagnostics for storage and index objects
 
-```cpp
-auto policy = metric::runtime::materialized(metric::runtime::exact());
-auto info = metric::runtime::diagnostics(policy, {}, "neighbors");
-```
-
-Metrics are treated as thread-safe by default. A metric can specialize `metric::metric_traits<Metric>` with `thread_safe = false` to reject `runtime::parallel(...)` execution until it provides a safe implementation. `runtime::diagnostics_for_metric<Metric>(...)` and `runtime::diagnostics_for_space(space, ...)` report the unsupported state with a reason.
-
-## Neighbor Execution
-
-`runtime::exact()` uses the lazy metric-space path for neighbor lookup.
-
-`runtime::materialized(runtime::exact())` uses a `MatrixCache` for `RecordId` neighbor lookup and reports `representation == "matrix_cache"` in the returned `NeighborSet`.
-
-Explicit representation policies can select the promoted neighbor execution structure:
-
-```cpp
-auto implicit = metric::runtime::using_implicit();
-auto matrix = metric::runtime::using_matrix_cache();
-auto tree = metric::runtime::using_cover_tree();
-auto graph = metric::runtime::using_knn_graph(3);
-```
-
-`using_matrix_cache()` requires a `RecordId` query because the cache indexes existing records. `using_cover_tree()` and `using_knn_graph(k)` work for record queries and `RecordId` queries, then report `cover_tree_index` or `knn_graph_index` in the returned `NeighborSet`.
-
-`runtime::approximate()` is reserved. It currently throws for neighbor lookup instead of silently selecting an approximate algorithm.
-
-## Grouping Execution
-
-`find_groups(..., runtime::exact())` uses the lazy metric-space path for promoted grouping strategies.
-
-`find_groups(..., runtime::materialized(runtime::exact()))` uses a `MatrixCache` for promoted k-medoids, DBSCAN, and affinity-propagation grouping strategies and reports `representation == "matrix_cache"` in the returned `ClusteringResult`.
-
-`runtime::approximate()` is reserved for grouping as well. It throws instead of silently selecting an approximate clustering path.
-
-## Representative And Compression Execution
-
-`find_representatives(..., runtime::materialized(runtime::exact()))` uses a `MatrixCache` for farthest-first representative selection and reports `representation == "matrix_cache"` in the returned `RepresentativeSet`.
-
-`compress(..., runtime::materialized(runtime::exact()))` uses a `MatrixCache` for both representative selection and source-to-representative assignment. The returned `CompressionResult` reports `representation == "matrix_cache"` while the compressed space still contains records from the original metric space.
-
-Approximate runtime policies throw for these promoted paths until backed by explicit approximate implementations.
-
-## Structure Diagnostics Execution
-
-`describe_structure(..., runtime::materialized(runtime::exact()))` uses a `MatrixCache` for exact all-pairs distance evaluation and reports `representation == "matrix_cache"` in the returned `StructureDescription`.
-
-Approximate runtime policies throw for structure diagnostics until backed by explicit approximate diagnostic implementations.
-
-## Cross-Space Comparison Execution
-
-`compare(..., runtime::materialized(runtime::exact()))` and `correlate(..., runtime::materialized(runtime::exact()))` use separate `MatrixCache` representations for the left and right spaces before running exact MGC over the materialized distance matrices. The returned `CorrelationResult` reports `left_representation == "matrix_cache"` and `right_representation == "matrix_cache"`.
-
-Approximate runtime policies throw for cross-space comparison until backed by explicit approximate correlation implementations.
-
-## Record-Space Pipeline Execution
-
-`embed(..., runtime::exact())`, `reduce(..., runtime::exact())`, and `map(..., runtime::exact())` use the record-space implementation path and report `representation == "metric_space"` in their `MappingResult` values.
-
-`runtime::materialized(...)` throws for these paths because the current PCFA and deterministic transform implementations consume records directly instead of a distance-provider representation. Approximate runtime policies also throw until backed by explicit approximate pipeline implementations.
-
-## Outlier And Denoise Execution
-
-`find_outliers(..., runtime::materialized(runtime::exact()))` uses a `MatrixCache` for DBSCAN-noise detection and nearest-reference scoring, then reports `representation == "matrix_cache"` in the returned `OutlierResult`.
-
-`denoise(..., runtime::materialized(runtime::exact()))` uses a `MatrixCache` for the DBSCAN-noise filtering step while deriving the output space from the original records. The returned `MappingResult` reports `representation == "matrix_cache"`.
-
-Approximate runtime policies throw for these promoted paths until backed by explicit approximate implementations.
-
-## Python Runtime Facade
-
-Python exposes `RuntimePolicy`, `CachePolicy`, `RuntimeDiagnostics`, and `runtime_diagnostics(...)` through `metric.runtime` and the top-level `metric` package. Promoted `Space` intent methods accept `runtime=` and currently execute exact deterministic paths only; approximate policies are explicit placeholders. `Space.groups(..., runtime=RuntimePolicy(cache="materialized"))` records `representation == "matrix"` when no explicit representation override is supplied.
-
-Python neighbor execution also accepts runtime representation helpers through `metric.runtime`: `using_implicit()`, `using_matrix()`, `using_tree()`, and `using_graph(count)`. Matrix and tree policies can answer record queries. Graph policies use the exact kNN graph representation for queryless neighbor rows and reject arbitrary record queries because the promoted Python graph facade stores source-index adjacency.
-
-```python
-from metric import RuntimePolicy
-
-policy = RuntimePolicy(exact=True, parallel=True, cache="materialized")
-diagnostics = space.runtime_diagnostics(
-    runtime=policy,
-    representation=space.to_matrix(),
-    intent="neighbors",
-)
-```
-
-`diagnostics.representation` records the selected execution representation, while `supported` and `reason` explain whether the normalized policy is promoted by the current Python facade.
-
-## Cache Staleness
-
-Representations capture `space.version()` at construction. `runtime::cache(...)` wraps a representation and delegates `is_stale()` to that version check.
-
-```cpp
-auto matrix = metric::runtime::cache(metric::representations::MatrixCache<decltype(space)>(space));
-auto before = matrix.is_stale();
-space.touch();
-auto after = matrix.is_stale();
-```
-
-## Current Limits
-
-- Approximate policies are explicit placeholders until backed by real approximate execution paths.
-- Parallel policy metadata is exposed before broad parallel execution is implemented, and non-thread-safe metric traits reject parallel runtime policies.
-- C++ and Python runtime diagnostics report policy and representation metadata; they do not yet switch execution to approximate or broadly parallel implementations.
-
-This conservative behavior is intentional: no hidden all-pairs materialization or approximate search should happen without an explicit policy or documented default.
+Use explicit storage/index objects when the workflow needs reproducibility,
+cost accounting, or query-speed control.

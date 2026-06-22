@@ -10,7 +10,7 @@
 #define _METRIC_MAPPING_HIERARCHCLUSTERING_HPP
 #include <vector>
 
-namespace metric {
+namespace mtrc {
 /**
  * @class Cluster
  *
@@ -119,7 +119,7 @@ template <typename T, typename Distance> class HierarchicalClustering {
 	std::vector<std::vector<double>> calculateDistances();
 };
 
-} // namespace metric
+} // namespace mtrc
 
 #include "hierarchClustering.cpp"
 #endif

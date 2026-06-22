@@ -1,6 +1,6 @@
 # Distribution Image Recoding Baseline
 
-This report records the first CI-safe distribution/image recoding hero fixture
+This report records the first CI-safe distribution/image recoding workflow fixture
 for METRIC production readiness.
 
 Command:
@@ -34,7 +34,7 @@ distribution benchmark graph edges = 2
 Interpretation:
 
 - the transport metric selects the expected shifted structure for every query
-- the flat vector baseline selects colocated but structurally wrong patterns for
+- the flat vector comparison selects colocated but structurally wrong patterns for
   every query
 - the metric margin is measured in the transport metric: it is the distance from
   the query to the vector winner minus the distance to the metric winner

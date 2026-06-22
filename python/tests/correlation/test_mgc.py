@@ -1,5 +1,5 @@
 from metric.correlation import MGC, MGC_direct
-from metric.distance import Euclidean, Manhatten, P_norm
+from metric.distance import Euclidean, Manhattan, P_norm
 import numpy
 import pytest
 
@@ -27,12 +27,12 @@ def test_symmetry():
     tolerance = 1e-13
     expected_distance = 0.28845659117728745
 
-    mgc_corr = MGC(metric1=Euclidean(), metric2=Manhatten())
+    mgc_corr = MGC(metric1=Euclidean(), metric2=Manhattan())
 
     result = mgc_corr(a1, b1)
     assert result == pytest.approx(expected_distance, tolerance)
 
-    mgc_corr2 = MGC(metric1=Manhatten(), metric2=Euclidean())
+    mgc_corr2 = MGC(metric1=Manhattan(), metric2=Euclidean())
 
     result = mgc_corr2(b1, a1)
     assert result == pytest.approx(expected_distance, tolerance)

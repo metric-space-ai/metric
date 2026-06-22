@@ -6,7 +6,7 @@
   Copyright (c) 2019 PANDA Team
 */
 
-namespace metric {
+namespace mtrc {
 
 MetricAutoDetector::MetricAutoDetector() {}
 
@@ -15,7 +15,7 @@ std::string MetricAutoDetector::detect(Graph &graph, int graph_w, int graph_h, s
 									   bool isEstimate)
 {
 	std::vector<std::string> metric_type_names = {
-		"Euclidean", "Manhatten", "P_norm", "Euclidean_thresholded", "Cosine", "Chebyshev", "Earth Mover Distance",
+		"Euclidean", "Manhattan", "P_norm", "Euclidean_thresholded", "Cosine", "Chebyshev", "Earth Mover Distance",
 		"SSIM",		 "TWED"};
 
 	// Random updating
@@ -29,50 +29,50 @@ std::string MetricAutoDetector::detect(Graph &graph, int graph_w, int graph_h, s
 	for (auto metric_type : metric_type_names) {
 		if (metric_type == "Euclidean") {
 			// Euclidean
-			metric::Euclidean<double> distance;
-			relative_diff_mean = get_mean_distance_difference<Record, Graph, metric::Euclidean<double>>(
+			mtrc::Euclidean<double> distance;
+			relative_diff_mean = get_mean_distance_difference<Record, Graph, mtrc::Euclidean<double>>(
 				graph, distance, dataset, randomized_indexes, isEstimate);
-		} else if (metric_type == "Manhatten") {
-			// Manhatten
-			metric::Manhatten<double> distance;
-			relative_diff_mean = get_mean_distance_difference<Record, Graph, metric::Manhatten<double>>(
+		} else if (metric_type == "Manhattan") {
+			// Manhattan
+			mtrc::Manhattan<double> distance;
+			relative_diff_mean = get_mean_distance_difference<Record, Graph, mtrc::Manhattan<double>>(
 				graph, distance, dataset, randomized_indexes, isEstimate);
 		} else if (metric_type == "P_norm") {
 			// P_norm
-			metric::P_norm<double> distance;
-			relative_diff_mean = get_mean_distance_difference<Record, Graph, metric::P_norm<double>>(
+			mtrc::P_norm<double> distance;
+			relative_diff_mean = get_mean_distance_difference<Record, Graph, mtrc::P_norm<double>>(
 				graph, distance, dataset, randomized_indexes, isEstimate);
 		} else if (metric_type == "Euclidean_thresholded") {
 			// Euclidean_thresholded
-			metric::Euclidean_thresholded<double> distance;
-			relative_diff_mean = get_mean_distance_difference<Record, Graph, metric::Euclidean_thresholded<double>>(
+			mtrc::Euclidean_thresholded<double> distance;
+			relative_diff_mean = get_mean_distance_difference<Record, Graph, mtrc::Euclidean_thresholded<double>>(
 				graph, distance, dataset, randomized_indexes, isEstimate);
 		} else if (metric_type == "Cosine") {
 			// Cosine
-			metric::Cosine<double> distance;
-			relative_diff_mean = get_mean_distance_difference<Record, Graph, metric::Cosine<double>>(
+			mtrc::Cosine<double> distance;
+			relative_diff_mean = get_mean_distance_difference<Record, Graph, mtrc::Cosine<double>>(
 				graph, distance, dataset, randomized_indexes, isEstimate);
 		} else if (metric_type == "Chebyshev") {
 			// Chebyshev
-			metric::Chebyshev<double> distance;
-			relative_diff_mean = get_mean_distance_difference<Record, Graph, metric::Chebyshev<double>>(
+			mtrc::Chebyshev<double> distance;
+			relative_diff_mean = get_mean_distance_difference<Record, Graph, mtrc::Chebyshev<double>>(
 				graph, distance, dataset, randomized_indexes, isEstimate);
 		} else if (metric_type == "Earth Mover Distance") {
 			// Earth Mover Distance
-			auto cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<double>(graph_w, graph_h);
-			auto maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
-			metric::EMD<double> distance(cost_mat, maxCost);
-			relative_diff_mean = get_mean_distance_difference<Record, Graph, metric::EMD<double>>(
+			auto cost_mat = mtrc::EMD_details::ground_distance_matrix_of_2dgrid<double>(graph_w, graph_h);
+			auto maxCost = mtrc::EMD_details::max_in_distance_matrix(cost_mat);
+			mtrc::EMD<double> distance(cost_mat, maxCost);
+			relative_diff_mean = get_mean_distance_difference<Record, Graph, mtrc::EMD<double>>(
 				graph, distance, dataset, randomized_indexes, isEstimate);
 		} else if (metric_type == "SSIM") {
 			// SSIM
-			metric::SSIM<double, Record> distance;
-			relative_diff_mean = get_mean_distance_difference<Record, Graph, metric::SSIM<double, Record>>(
+			mtrc::SSIM<double, Record> distance;
+			relative_diff_mean = get_mean_distance_difference<Record, Graph, mtrc::SSIM<double, Record>>(
 				graph, distance, dataset, randomized_indexes, isEstimate);
 		} else if (metric_type == "TWED") {
 			// TWED
-			metric::TWED<double> distance(0, 1);
-			relative_diff_mean = get_mean_distance_difference<Record, Graph, metric::TWED<double>>(
+			mtrc::TWED<double> distance(0, 1);
+			relative_diff_mean = get_mean_distance_difference<Record, Graph, mtrc::TWED<double>>(
 				graph, distance, dataset, randomized_indexes, isEstimate);
 		}
 		relative_diff_means.push_back(relative_diff_mean);
@@ -94,11 +94,11 @@ std::string MetricAutoDetector::detect(Graph &graph, int graph_w, int graph_h, s
 	return metric_type_names[best_index];
 }
 
-template <typename Record, typename Graph, typename Metric = metric::Euclidean<double>>
+template <typename Record, typename Graph, typename Metric = mtrc::Euclidean<double>>
 double get_mean_distance_difference(Graph &graph, Metric distance, std::vector<Record> dataset,
 									std::vector<size_t> randomized_indexes, bool isEstimate)
 {
-	metric::SOM<Record, Graph, Metric> som(graph, Metric());
+	mtrc::SOM<Record, Graph, Metric> som(graph, Metric());
 	if (isEstimate) {
 		som.estimate(dataset, 50);
 	} else {
@@ -142,4 +142,4 @@ double get_mean_distance_difference(Graph &graph, Metric distance, std::vector<R
 	return relative_diff_mean;
 }
 
-} // end namespace metric
+} // end namespace mtrc

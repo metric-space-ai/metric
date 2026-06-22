@@ -1,7 +1,7 @@
 #ifndef _METRIC_DETERMINISTIC_SWITCH_DETECTOR_HPP
 #define _METRIC_DETERMINISTIC_SWITCH_DETECTOR_HPP
 
-#include <blaze/Blaze.h>
+#include <metric/numeric.hpp>
 
 /**
  * @class SwitchDetector - non-ML deterministic detector of On-Off and Off-On switches in 3-dimensional timeseries.
@@ -19,8 +19,9 @@ template <typename value_type> class DetSwitchDetector {
 	 * @param update_rate_  - parameter to control off latency: weight of new signal in the cumulative output:
 	 *   1 - no latency, 0 - no update (eternal delay)
 	 */
-	DetSwitchDetector(const blaze::DynamicMatrix<value_type> &W1_, const blaze::DynamicMatrix<value_type> &Wo_,
-					  const size_t wnd_size_ = 15, const value_type update_rate_ = 0.0025);
+	DetSwitchDetector(const mtrc::numeric::DynamicMatrix<value_type> &W1_,
+					  const mtrc::numeric::DynamicMatrix<value_type> &Wo_, const size_t wnd_size_ = 15,
+					  const value_type update_rate_ = 0.0025);
 
 	/**
 	 * @brief DetSwitchDetector  - create instance using parameters
@@ -49,14 +50,14 @@ template <typename value_type> class DetSwitchDetector {
 	 * @return  - single column matrix of same number of rows as input, containing found switches:
 	 *    -1 - off, 1 - on, 0 - no switch
 	 */
-	blaze::DynamicMatrix<value_type> encode(const blaze::DynamicMatrix<value_type> &dataset);
+	mtrc::numeric::DynamicMatrix<value_type> encode(const mtrc::numeric::DynamicMatrix<value_type> &dataset);
 
   private:
-	blaze::DynamicMatrix<value_type> W1; // hodden layer weights (4 rows)
-	blaze::DynamicMatrix<value_type> Wo; // output neuron weights (single row)
-	size_t wnd_size;					 // stddev sliding window size
-	value_type update_rate;				 // update rate between between 0 and 1, the greater, the lower is latency
-	value_type lat = 0;					 // we keep latency value between calls
+	mtrc::numeric::DynamicMatrix<value_type> W1; // hodden layer weights (4 rows)
+	mtrc::numeric::DynamicMatrix<value_type> Wo; // output neuron weights (single row)
+	size_t wnd_size;							   // stddev sliding window size
+	value_type update_rate; // update rate between between 0 and 1, the greater, the lower is latency
+	value_type lat = 0;		// we keep latency value between calls
 };
 
 #include "deterministic_switch_detector.cpp"

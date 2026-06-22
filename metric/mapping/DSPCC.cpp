@@ -4,7 +4,7 @@
 #include "metric/transform/discrete_cosine.hpp"
 #include "metric/transform/wavelet.hpp"
 
-namespace metric {
+namespace mtrc {
 
 // ------------------------------------------
 // common functions
@@ -109,7 +109,7 @@ DSPCC<RecType, Metric>::select_train(const std::vector<RecType> &TrainingDataset
 
 	using ValueType = DSPCC<RecType, Metric>::value_type;
 
-	// convert from Blaze to STL  // TODO move to separate private method
+	// convert from Numeric to STL  // TODO move to separate private method
 	std::vector<RecTypeInner> ConvertedDataset;
 	for (size_t i = 0; i < TrainingDataset.size(); ++i) {
 		RecTypeInner line;
@@ -142,13 +142,13 @@ void DSPCC<RecType, Metric>::train(const std::vector<DSPCC<RecType, Metric>::Rec
 	auto PreEncoded = outer_encode(TrainingDataset);
 	for (size_t subband_idx = 0; subband_idx < std::get<0>(PreEncoded).size(); ++subband_idx) {
 		freq_PCA_models.push_back(
-			metric::PCFA<RecTypeInner, void>(std::get<0>(PreEncoded)[subband_idx], n_features_freq));
+			mtrc::PCFA<RecTypeInner, void>(std::get<0>(PreEncoded)[subband_idx], n_features_freq));
 		time_PCA_models.push_back(
-			metric::PCFA<RecTypeInner, void>(std::get<1>(PreEncoded)[subband_idx], n_features_time));
+			mtrc::PCFA<RecTypeInner, void>(std::get<1>(PreEncoded)[subband_idx], n_features_time));
 	}
 	std::vector<std::vector<RecTypeInner>> time_freq_PCFA_encoded = time_freq_PCFA_encode(PreEncoded);
 	std::vector<RecTypeInner> series = mixed_code_serialize(time_freq_PCFA_encoded);
-	top_PCA_model.push_back(metric::PCFA<RecTypeInner, void>(series, n_top_subbands));
+	top_PCA_model.push_back(mtrc::PCFA<RecTypeInner, void>(series, n_top_subbands));
 }
 
 template <typename RecType, typename Metric>
@@ -191,7 +191,7 @@ DSPCC<RecType, Metric>::outer_encode(const std::vector<DSPCC<RecType, Metric>::R
 			subband_length = subband_length_local;
 		}
 		std::deque<RecTypeInner> current_rec_subbands_freqdomain(current_rec_subbands_timedomain);
-		metric::apply_DCT_STL(
+		mtrc::apply_DCT_STL(
 			current_rec_subbands_freqdomain, false,
 			resulting_subband_length); // transform all subbands at once (only first mix_idx values are replaced, the
 									   // rest is left unchanged!), TODO refactor cutting!!
@@ -222,7 +222,7 @@ std::vector<typename DSPCC<RecType, Metric>::RecTypeInner> DSPCC<RecType, Metric
 			subbands_timedomain.push_back(TimeData[subband_idx][record_idx]);
 			subbands_freqdomain.push_back(FreqData[subband_idx][record_idx]);
 		}
-		metric::apply_DCT_STL(subbands_freqdomain, true);
+		mtrc::apply_DCT_STL(subbands_freqdomain, true);
 
 		std::stack<size_t> subband_length_copy(subband_length);
 		RecTypeInner restored_waveform_freq = sequential_iDWT(subbands_freqdomain, subband_length_copy, 5);
@@ -382,7 +382,7 @@ DSPCC<RecType, Metric>::select_encode(const std::vector<RecType> &Data)
 
 template <typename RecType, typename Metric>
 template <typename R>
-typename std::enable_if<determine_container_type<R>::code == 2, // Blaze vector case
+typename std::enable_if<determine_container_type<R>::code == 2, // Metric numeric vector case
 						std::vector<RecType>>::type
 DSPCC<RecType, Metric>::select_encode(const std::vector<RecType> &Data)
 {
@@ -439,7 +439,7 @@ DSPCC<RecType, Metric>::select_decode(const std::vector<RecType> &Codes)
 
 template <typename RecType, typename Metric>
 template <typename R>
-typename std::enable_if<determine_container_type<R>::code == 2, // Blaze case
+typename std::enable_if<determine_container_type<R>::code == 2, // Numeric case
 						std::vector<RecType>>::type
 DSPCC<RecType, Metric>::select_decode(const std::vector<RecType> &Codes)
 {
@@ -532,4 +532,4 @@ size_t DSPCC<RecType, Metric>::original_size(size_t subband_size, size_t depth, 
 	return n * (subband_size - sum);
 }
 
-} // namespace metric
+} // namespace mtrc

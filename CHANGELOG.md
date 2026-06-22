@@ -2,7 +2,20 @@
 
 ## [Unreleased]
 
-No changes yet.
+### Documentation and Examples
+
+- Add the production "Cross-Space Dependency" C++ engine hero
+  (`examples/engine/cross_space_dependency.cpp`): an MGC dependence test between
+  two heterogeneous finite metric spaces — event-log text under edit distance and
+  process curves under TWED — with no shared embedding. It adds a seeded
+  permutation test on top of the public `compare()` intent to turn MGC's bare
+  statistic into a calibrated p-value, exercises coupled/decoupled/permuted
+  scenarios, and contrasts METRIC against naive scalar and forced-common-vector
+  baselines that miss the structural dependence.
+- Pin the cross-space dependency contract in the core gate via
+  `tests/core_smoke/engine_cross_space_dependency_smoke.cpp`.
+- Document the workflow, statistic/p-value semantics, and interpretation in
+  `docs/examples/cross-space-dependency.md`.
 
 ## [0.3.4] - 2026-06-20
 
@@ -240,7 +253,7 @@ No changes yet.
 ### Changed
 - Metric headers moved from `modules` to `metric` directory [#318](https://github.com/panda-official/metric/pull/318)
   [#319](https://github.com/panda-official/metric/pull/319)
-- Move buildin dependencies (`blaze`, `json`, `cereal`) to external [#315](https://github.com/panda-official/metric/pull/315)
+- Move built-in dependencies (`legacy numeric`, `json`, `cereal`) to external [#315](https://github.com/panda-official/metric/pull/315)
 - Wavelet `dbwavf` refactor [#317](https://github.com/panda-official/metric/pull/317)
 - Fix dozens spelling errors, layout errors, etc in `README.md` [#319](https://github.com/panda-official/metric/pull/319)
 - Put in order CI workflows [#311](https://github.com/panda-official/metric/pull/311)

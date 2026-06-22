@@ -28,7 +28,7 @@ Copyright (c) 2018 M.Welsch
 #include <string>
 #include <tuple>
 #include <vector>
-namespace metric {
+namespace mtrc {
 /**
  * @brief
  *
@@ -43,7 +43,7 @@ auto kmeans(const std::vector<std::vector<T>> &data, int k, int maxiter = 200,
 			std::string distance_measure = "Euclidean", long long random_seed = -1)
 	-> std::tuple<std::vector<int>, std::vector<std::vector<T>>, std::vector<int>>;
 
-} // namespace metric
+} // namespace mtrc
 
 #include "kmeans.cpp"
 #endif

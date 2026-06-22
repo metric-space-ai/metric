@@ -17,9 +17,9 @@ Fixture:
 - native `feature_record_codec` supplies fixed-size DNN input features without
   replacing the source metric
 - native PHATE-style geometry uses the executable pipeline hooks
-  `matrix_cache_distance_provider`, `exponential_affinity_kernel`, and
+  `distance_table_pairwise_distances`, `exponential_affinity_kernel`, and
   `lazy_row_normalized_diffusion_operator`
-- native training uses the C++ `metric::dnn` autoencoder path with
+- native training uses the C++ `mtrc::solve::parametric::dnn` autoencoder path with
   reconstruction loss plus bottleneck-coordinate geometry loss
 
 Expected output:
@@ -31,7 +31,7 @@ process PHATE source metric = aligned_curve_distance
 process PHATE feature codec = process_curve_feature_codec
 process PHATE pipeline components = 11
 process PHATE pipeline codec = feature_record_codec
-process PHATE distance provider = matrix_cache_distance_provider
+process PHATE distance provider = distance_table_pairwise_distances
 process PHATE affinity kernel = exponential_affinity_kernel
 process PHATE diffusion operator = lazy_row_normalized_diffusion_operator
 process PHATE geometry target evaluations = 100

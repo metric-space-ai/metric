@@ -38,7 +38,7 @@ An approximate k-nearest-neighbor graph is built from a heuristic, randomized se
 
 Approximate graphs must not be documented as exact unless their edge sets are verified against the dense pairwise result for the relevant fixture. They should report construction parameters, deterministic seeds when present, and recall or consistency diagnostics when those diagnostics are available.
 
-`metric::KNNGraph` is a compatibility and expert API for approximate kNN graph construction. New promoted examples should state when they are using it as an approximate graph representation.
+`mtrc::KNNGraph` is a compatibility and expert API for approximate kNN graph construction. New promoted examples should state when they are using it as an approximate graph representation.
 
 ## Radius Graph
 

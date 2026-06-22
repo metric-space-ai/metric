@@ -6,7 +6,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 PANDA Team
 */
 
-namespace metric {
+namespace mtrc {
 
 /**
  * @class MetricAutoDetector
@@ -43,6 +43,6 @@ class MetricAutoDetector {
 										std::vector<size_t> randomized_indexes, bool isEstimate);
 };
 
-} // end namespace metric
+} // end namespace mtrc
 
 #include "auto_detect_metric/auto_detect_metric.cpp"

@@ -1,7 +1,7 @@
 name: Benchmark
 
-# Legacy benchmark workflow. Correctness CI is separate; benchmark runs are
-# triggered manually until the benchmark archive is restored.
+# Manual benchmark workflow. Correctness CI is separate; benchmark runs stay
+# opt-in and archive report artifacts instead of blocking ordinary pull requests.
 on:
   workflow_dispatch:
 jobs:
@@ -9,12 +9,12 @@ jobs:
     name: Performance check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
       - name: Cache apt
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         env:
           cache-name: cache-apt
         with:
@@ -22,7 +22,7 @@ jobs:
           key: ${{ runner.os }}-benchmark-${{ env.cache-name }}
 
       - name: Cache ccache
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         env:
           cache-name: cache-ccache
         with:
@@ -36,7 +36,6 @@ jobs:
           sudo apt-get install libopenblas-dev
           sudo apt-get install libjpeg-dev
           sudo apt-get install nlohmann-json3-dev
-          git clone https://bitbucket.org/blaze-lib/blaze.git --depth=1 --branch=v3.8 && cd blaze && cmake -DCMAKE_INSTALL_PREFIX=/usr/local/ . && sudo make install
           git clone https://github.com/USCiLab/cereal --depth=1 --branch=v1.3.2 && cd cereal && cmake -DCMAKE_INSTALL_PREFIX=/usr/local/ -DJUST_INSTALL_CEREAL=ON . && sudo make install
           sudo apt-get install -y g++-9 g++-9-multilib
           sudo apt-get install ccache
@@ -47,12 +46,57 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake -DCMAKE_BUILD_TYPE=Release -DMETRIC_BUILD_BENCHMARKS=ON ..
-          cmake --build . --target convolution_benchmarks
+          cmake -DCMAKE_BUILD_TYPE=Release -DMETRIC_BUILD_BENCHMARKS=ON -DMETRIC_BUILD_CORE_EXAMPLES=ON ..
+          cmake --build . --target convolution_benchmarks engine_benchmark_report engine_hero_application_benchmarks
 
       - name: Run benchmark
         run: |
           ./build/benchmarks/image_processing_benchmarks/convolution_benchmarks --benchmark-samples 10 --out convolution-benchmark-output
+
+      - name: Render engine benchmark report
+        env:
+          METRIC_BENCHMARK_REPORT_SUITE: manual benchmark workflow
+          METRIC_BENCHMARK_REPORT_SOURCE: .github/workflows/benchmark.yml + examples/engine/benchmark_report.cpp
+          METRIC_BENCHMARK_REPORT_BUILD_PROFILE: Release; METRIC_BUILD_BENCHMARKS=ON; METRIC_BUILD_CORE_EXAMPLES=ON
+          METRIC_BENCHMARK_REPORT_PLATFORM: ${{ runner.os }} ${{ runner.arch }}
+          METRIC_BENCHMARK_REPORT_ARTIFACT: metric-engine-benchmark-report.md
+          METRIC_BENCHMARK_REPORT_NOTES: workflow_dispatch run ${{ github.run_id }} at ${{ github.sha }}
+        run: |
+          mkdir -p benchmark-artifacts
+          ./build/examples/engine/engine_benchmark_report > benchmark-artifacts/metric-engine-benchmark-report.md
+          cat benchmark-artifacts/metric-engine-benchmark-report.md
+
+      - name: Upload engine benchmark report
+        uses: actions/upload-artifact@v4
+        with:
+          name: metric-engine-benchmark-report
+          path: benchmark-artifacts/metric-engine-benchmark-report.md
+          if-no-files-found: error
+
+      - name: Render hero application benchmarks
+        env:
+          METRIC_HERO_BENCH_FULL: "1"
+          METRIC_HERO_BENCH_BUILD_PROFILE: Release; METRIC_BUILD_BENCHMARKS=ON; METRIC_BUILD_CORE_EXAMPLES=ON
+          METRIC_HERO_BENCH_PLATFORM: ${{ runner.os }} ${{ runner.arch }}
+          METRIC_HERO_BENCH_NOTES: workflow_dispatch run ${{ github.run_id }} at ${{ github.sha }}
+        run: |
+          # Deterministic, byte-stable evidence (stdout) and machine-dependent
+          # wall-clock timing (stderr) are captured into separate artifacts so the
+          # byte-stable report never carries platform timing.
+          ./build/examples/engine/engine_hero_application_benchmarks \
+            > benchmark-artifacts/metric-hero-application-benchmarks.md \
+            2> benchmark-artifacts/metric-hero-application-timing.txt
+          cat benchmark-artifacts/metric-hero-application-benchmarks.md
+          cat benchmark-artifacts/metric-hero-application-timing.txt
+
+      - name: Upload hero application benchmarks
+        uses: actions/upload-artifact@v4
+        with:
+          name: metric-hero-application-benchmarks
+          path: |
+            benchmark-artifacts/metric-hero-application-benchmarks.md
+            benchmark-artifacts/metric-hero-application-timing.txt
+          if-no-files-found: error
 
       - name: Store benchmark result
         uses: rhysd/github-action-benchmark@v1
@@ -61,6 +105,6 @@ jobs:
           tool: 'catch2'
           output-file-path: convolution-benchmark-output
           # Personal access token to deploy GitHub Pages branch
-          github-token: ${{ secrets.CONTINIOUS_BENCHMARK_TOKEN }}
+          github-token: ${{ secrets.CONTINUOUS_BENCHMARK_TOKEN }}
           # Push and deploy GitHub pages branch automatically
           auto-push: true

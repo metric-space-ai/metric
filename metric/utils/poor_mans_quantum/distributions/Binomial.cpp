@@ -9,7 +9,7 @@
 
 #include "Binomial.hpp"
 
-namespace metric {
+namespace mtrc {
 
 Binomial::Binomial() : _generator(std::random_device{}()) {}
 
@@ -170,5 +170,5 @@ float Binomial::cdf(int kk)
 	return betai(k, n - k + 1, p);
 }
 
-} // namespace metric
+} // namespace mtrc
 #endif

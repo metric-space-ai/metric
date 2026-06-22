@@ -27,6 +27,13 @@ target_link_libraries(time_series_twed_space PRIVATE ${METRIC_TARGET_NAME})
 add_executable(histogram_emd_space histogram_emd_space.cpp)
 target_link_libraries(histogram_emd_space PRIVATE ${METRIC_TARGET_NAME})
 
+if (LAPACK_FOUND)
+    get_property(_metric_core_example_targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
+    foreach (_target IN LISTS _metric_core_example_targets)
+        target_link_libraries(${_target} PRIVATE ${LAPACK_LIBRARIES})
+    endforeach ()
+endif ()
+
 if (BUILD_TESTING)
     add_test(NAME example_metric_space_strings COMMAND metric_space_strings)
     add_test(NAME example_custom_metric_space COMMAND custom_metric_space)

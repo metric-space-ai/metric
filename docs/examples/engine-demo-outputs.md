@@ -41,13 +41,13 @@ build/core/examples/engine/engine_process_curves_space
 Expected output:
 
 ```text
-process hero metric winner = late_ramp at 2
-process hero vector baseline winner = flat_hold at 3
-process hero baseline mismatch = yes
-process hero metric margin = 3
-process hero groups = 2
-process hero outliers = 2
-process hero dense evaluations = 25
+process workflow metric winner = late_ramp at 2
+process workflow vector comparison winner = flat_hold at 3
+process workflow baseline mismatch = yes
+process workflow metric margin = 3
+process workflow groups = 2
+process workflow outliers = 2
+process workflow dense evaluations = 25
 process curve graph edges = 4
 process benchmark records = 10
 process benchmark queries = 4
@@ -119,7 +119,7 @@ process PHATE source metric = aligned_curve_distance
 process PHATE feature codec = process_curve_feature_codec
 process PHATE pipeline components = 11
 process PHATE pipeline codec = feature_record_codec
-process PHATE distance provider = matrix_cache_distance_provider
+process PHATE distance provider = distance_table_pairwise_distances
 process PHATE affinity kernel = exponential_affinity_kernel
 process PHATE diffusion operator = lazy_row_normalized_diffusion_operator
 process PHATE geometry target evaluations = 100
@@ -160,7 +160,7 @@ process PHATE gallery queries = 6
 process PHATE gallery source metric = aligned_curve_distance
 process PHATE gallery feature codec = process_curve_gallery_feature_codec
 process PHATE gallery pipeline components = 11
-process PHATE gallery distance provider = matrix_cache_distance_provider
+process PHATE gallery distance provider = distance_table_pairwise_distances
 process PHATE gallery affinity kernel = exponential_affinity_kernel
 process PHATE gallery diffusion operator = lazy_row_normalized_diffusion_operator
 process PHATE gallery target evaluations = 225
@@ -203,11 +203,11 @@ Expected output:
 record_kind = aligned_vector
 metric_law = metric
 vector dimension metadata = 2
-available representations = metric_space,matrix_cache,cover_tree_index,knn_graph_index
+available representations = metric_space,distance_table,cover_tree_index,knn_graph_index
 nearest vector = alpha-0 at 0.141421
 indexed nearest = alpha-0 via cover_tree_index
 runtime policy = exact_lazy_serial via metric_space
-matrix cache reuse = matrix_cache,matrix_cache
+distance table reuse = distance_table,distance_table
 vector groups = 3
 vector outlier = outlier score 10.9567
 mapped vector dimensions = 2
@@ -225,7 +225,7 @@ Expected output:
 
 ```text
 nearest histograms = shifted_mass_0, vector_decoy_6
-histogram runtime representation = matrix_cache
+histogram runtime representation = distance_table
 histogram benchmark metric winner = shifted_mass_0 at 1
 histogram benchmark vector baseline winner = vector_decoy_0 at 0.707107
 histogram benchmark baseline mismatch = yes
@@ -248,12 +248,12 @@ build/core/examples/engine/engine_distribution_image_recoding
 Expected output:
 
 ```text
-distribution hero metric winner = vertical_shift_left at 1
-distribution hero vector baseline winner = horizontal_at_vertical_query at 0.666667
-distribution hero baseline mismatch = yes
-distribution hero metric margin = 0.333333
-distribution hero groups = 2
-distribution hero dense evaluations = 64
+distribution workflow metric winner = vertical_shift_left at 1
+distribution workflow vector comparison winner = horizontal_at_vertical_query at 0.666667
+distribution workflow baseline mismatch = yes
+distribution workflow metric margin = 0.333333
+distribution workflow groups = 2
+distribution workflow dense evaluations = 64
 distribution benchmark records = 8
 distribution benchmark queries = 4
 distribution benchmark metric correct = 4/4
@@ -276,9 +276,9 @@ Expected output:
 nearest mixed records = warmup-drift, warmup-alert
 warmup distance = 0.216838
 message contribution = 0
-mixed record groups = 2 via matrix_cache
+mixed record groups = 2 via distance_table
 mixed record outlier = spike-stop
-runtime policy = exact_materialized_serial via matrix_cache
+runtime policy = exact_materialized_serial via distance_table
 mixed benchmark records = 8
 mixed benchmark queries = 4
 mixed benchmark metric correct = 4/4
@@ -304,6 +304,57 @@ cross-space raw-vector pairing correct = 3/12
 cross-space raw-vector mismatches = 9/12
 ```
 
+## Cross-Space Dependency (Hero)
+
+Permutation-test dependence between event-log text (edit distance) and process
+curves (TWED), with naive-vectorisation baselines. See
+[Cross-Space Dependency (Hero)](cross-space-dependency.md) for the full interpretation.
+
+Command:
+
+```bash
+build/core/examples/engine/engine_cross_space_dependency
+```
+
+Expected output:
+
+```text
+cross-space records = 48
+cross-space left space = event_logs/edit_distance
+cross-space right space = process_curves/twed
+coupled compare() statistic = 0.947979
+coupled MGC statistic = 0.947979
+coupled MGC null mean = 0.002297
+coupled MGC null sd = 0.030674
+coupled MGC standardized effect = 30.830194
+coupled MGC permutation p-value = 0.005000
+coupled MGC permutations = 199
+coupled MGC decision (alpha=0.050000) = dependent
+coupled baseline scalar pearson r = 0.079196
+coupled baseline scalar pearson p-value = 0.618500
+coupled baseline scalar decision (alpha=0.050000) = independent
+coupled baseline forced-vector MGC = 0.510452
+decoupled MGC statistic = -0.007853
+decoupled MGC null mean = 0.002456
+decoupled MGC null sd = 0.033055
+decoupled MGC standardized effect = -0.311873
+decoupled MGC permutation p-value = 0.535000
+decoupled MGC permutations = 199
+decoupled MGC decision (alpha=0.050000) = independent
+decoupled baseline scalar pearson r = 0.056721
+decoupled baseline scalar pearson p-value = 0.732000
+decoupled baseline scalar decision (alpha=0.050000) = independent
+decoupled baseline forced-vector MGC = -0.003169
+permuted MGC statistic = -0.018790
+permuted MGC null mean = -0.003803
+permuted MGC null sd = 0.023432
+permuted MGC standardized effect = -0.639573
+permuted MGC permutation p-value = 0.720000
+permuted MGC permutations = 199
+permuted MGC decision (alpha=0.050000) = independent
+cross-space verdict = metric_detects_dependence_baseline_misses_it
+```
+
 ## Learnable Structure Map
 
 Command:
@@ -319,14 +370,14 @@ source record_kind = aligned_vector
 source metric_law = metric
 source fixture size = 5
 source codec = vector_record_codec
-source nearest neighbors = 2 via matrix_cache
-source groups = 2 via matrix_cache
-source dbscan noise = 0 via matrix_cache
+source nearest neighbors = 2 via distance_table
+source groups = 2 via distance_table
+source dbscan noise = 0 via distance_table
 runtime policy = exact_materialized_serial via knn_graph_index
 pipeline = native_phate_autoencoder_pipeline
 pipeline components = 11
 pipeline codec = vector_record_codec
-pipeline distance provider = matrix_cache_distance_provider
+pipeline distance provider = distance_table_pairwise_distances
 pipeline affinity kernel = exponential_affinity_kernel
 pipeline diffusion operator = lazy_row_normalized_diffusion_operator
 diffusion steps = 2
@@ -366,10 +417,10 @@ phate pipeline builder plan = native_phate_autoencoder_pipeline
 phate pipeline builder components = 11
 phate pipeline builder replacement points = 10
 phate pipeline default executable = yes
-phate pipeline matrix-cache executable = yes
+phate pipeline distance-table executable = yes
 phate pipeline metadata replacement executable = no
 phate pipeline builder codec = vector_record_codec
-phate pipeline builder distance provider = matrix_cache_distance_provider
+phate pipeline builder distance provider = distance_table_pairwise_distances
 phate pipeline builder affinity kernel = exponential_affinity_kernel
 phate pipeline builder diffusion operator = lazy_row_normalized_diffusion_operator
 ```

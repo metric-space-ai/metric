@@ -7,26 +7,21 @@
 
 #include "../space.hpp"
 
-namespace metric::compat {
+namespace mtrc::compat {
 
-template <typename RecType, typename Metric>
-using LegacyMatrix = metric::Matrix<RecType, Metric>;
+template <typename RecType, typename Metric> using LegacyMatrix = mtrc::Matrix<RecType, Metric>;
 
-template <typename RecType, typename Metric>
-using LegacyMatrixSpace = metric::MatrixSpace<RecType, Metric>;
+template <typename RecType, typename Metric> using LegacyMatrixSpace = mtrc::MatrixSpace<RecType, Metric>;
 
-template <typename RecType, typename Metric>
-using LegacyTree = metric::Tree<RecType, Metric>;
+template <typename RecType, typename Metric> using LegacyTree = mtrc::Tree<RecType, Metric>;
 
-template <typename RecType, typename Metric>
-using LegacyTreeSpace = metric::TreeSpace<RecType, Metric>;
+template <typename RecType, typename Metric> using LegacyTreeSpace = mtrc::TreeSpace<RecType, Metric>;
 
 template <typename Sample, typename Distance, typename WeightType = bool, bool isDense = false, bool isSymmetric = true>
-using LegacyGraphSpace = metric::GraphSpace<Sample, Distance, WeightType, isDense, isSymmetric>;
+using LegacyGraphSpace = mtrc::GraphSpace<Sample, Distance, WeightType, isDense, isSymmetric>;
 
-template <typename RecType, typename Metric>
-using LegacyFiniteSpace = metric::FiniteSpace<RecType, Metric>;
+template <typename RecType, typename Metric> using LegacyFiniteSpace = mtrc::FiniteSpace<RecType, Metric>;
 
-} // namespace metric::compat
+} // namespace mtrc::compat
 
 #endif

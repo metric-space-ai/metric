@@ -8,7 +8,7 @@ Copyright (c) 2018 M.Welsch
 
 #include "autoencoder.hpp"
 
-namespace metric {
+namespace mtrc {
 
 template <typename InputDataType, typename Scalar> Autoencoder<InputDataType, Scalar>::Autoencoder() : normValue(255) {}
 
@@ -24,25 +24,25 @@ Autoencoder<InputDataType, Scalar>::Autoencoder(const std::string &jsonString) :
 //	                                                                featuresLength(featuresLength), normValue(normValue)
 //	{
 //		/* Create layers */
-//		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(featuresLength, 1024));
-//		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(1024, 256));
-//		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(256, 64));
-//		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(64, 256));
-//		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(256, 1024));
-//		net.addLayer(dnn::FullyConnected<Scalar, dnn::Sigmoid<Scalar>>(1024, featuresLength));
+//		net.addLayer(solve::parametric::dnn::FullyConnected<Scalar, solve::parametric::dnn::ReLU<Scalar>>(featuresLength, 1024));
+//		net.addLayer(solve::parametric::dnn::FullyConnected<Scalar, solve::parametric::dnn::ReLU<Scalar>>(1024, 256));
+//		net.addLayer(solve::parametric::dnn::FullyConnected<Scalar, solve::parametric::dnn::ReLU<Scalar>>(256, 64));
+//		net.addLayer(solve::parametric::dnn::FullyConnected<Scalar, solve::parametric::dnn::ReLU<Scalar>>(64, 256));
+//		net.addLayer(solve::parametric::dnn::FullyConnected<Scalar, solve::parametric::dnn::ReLU<Scalar>>(256, 1024));
+//		net.addLayer(solve::parametric::dnn::FullyConnected<Scalar, solve::parametric::dnn::Sigmoid<Scalar>>(1024, featuresLength));
 //		//net.addLayer(Conv2d<Scalar, ReLU<Scalar>>(featuresLength, 28, 1, 1, 5, 5));
 //		//net.addLayer(Conv2dTranspose<Scalar, Sigmoid<Scalar>>(24, 24, 1, 1, 5, 5));
 //
-//		net.setCallback(dnn::VerboseCallback<Scalar>());
+//		net.setCallback(solve::parametric::dnn::VerboseCallback<Scalar>());
 //		/* Set output layer */
 //
 //		/* Create optimizer object */
-//		net.setOptimizer(dnn::RMSProp<Scalar>());
+//		net.setOptimizer(solve::parametric::dnn::RMSProp<Scalar>());
 //		//opt->learningRate = 0.01;
 //
 //		/* Set callback function object */
 //
-//		net.setOutput(dnn::RegressionMSE<Scalar>());
+//		net.setOutput(solve::parametric::dnn::RegressionMSE<Scalar>());
 //		/* Initialize parameters with N(0, 0.01^2) using random seed 123 */
 //		net.init(0, 0.01, 123);
 //
@@ -71,7 +71,7 @@ template <typename InputDataType, typename Scalar>
 std::vector<InputDataType> Autoencoder<InputDataType, Scalar>::predict(const std::vector<InputDataType> data)
 {
 	auto t1 = std::chrono::high_resolution_clock::now();
-	auto prediction = dnn::Network<Scalar>::predict(convertData(data));
+	auto prediction = solve::parametric::dnn::Network<Scalar>::predict(convertData(data));
 	auto t2 = std::chrono::high_resolution_clock::now();
 	auto d = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
 	std::cout << "Prediction time: " << d.count() << " s" << std::endl;
@@ -114,7 +114,7 @@ std::vector<InputDataType> Autoencoder<InputDataType, Scalar>::convertToOutput(c
 
 	std::vector<InputDataType> output;
 	for (auto i = 0; i < temp.rows(); ++i) {
-		auto dataPointer = blaze::row(temp, i).data();
+		auto dataPointer = mtrc::numeric::row(temp, i).data();
 		std::vector<Scalar> vectorScalar(dataPointer, dataPointer + temp.columns());
 
 		output.insert(output.end(), vectorScalar.begin(), vectorScalar.end());
@@ -163,4 +163,4 @@ std::vector<InputDataType> Autoencoder<InputDataType, Scalar>::decode(const std:
 	return convertToOutput(output);
 }
 
-} // namespace metric
+} // namespace mtrc

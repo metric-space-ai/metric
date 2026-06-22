@@ -8,12 +8,12 @@ Copyright (c) 2018 M.Welsch */
 #ifndef _METRIC_MAPPING_KMEDOIDS_HPP
 #define _METRIC_MAPPING_KMEDOIDS_HPP
 
-#include "../space/matrix.hpp"
+#include <metric/space/matrix.hpp>
 
 #include <tuple>
 #include <vector>
 
-namespace metric {
+namespace mtrc {
 /**
  * @brief
  *
@@ -22,10 +22,10 @@ namespace metric {
  * @return
  */
 template <typename RecType, typename Metric>
-auto kmedoids(const metric::Matrix<RecType, Metric> &DM, int k)
+auto kmedoids(const mtrc::Matrix<RecType, Metric> &DM, int k)
 	-> std::tuple<std::vector<int>, std::vector<int>, std::vector<int>>;
 
-} // namespace metric
+} // namespace mtrc
 
 #include "kmedoids.cpp"
 #endif

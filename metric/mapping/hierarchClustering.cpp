@@ -11,7 +11,7 @@
 #include <tuple>
 #include <vector>
 
-namespace metric {
+namespace mtrc {
 
 inline std::tuple<int, int> getMinPosition(std::vector<std::vector<double>> &distanceMatrix)
 {
@@ -136,4 +136,4 @@ template <typename T, typename Distance> void HierarchicalClustering<T, Distance
 	}
 }
 
-} // namespace metric
+} // namespace mtrc

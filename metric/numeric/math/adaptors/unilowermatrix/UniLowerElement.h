@@ -1,0 +1,321 @@
+// METRIC numeric assimilation header.
+// Provenance and licensing are documented in metric/numeric/README.md.
+
+#ifndef METRIC_NUMERIC_MATH_ADAPTORS_UNILOWERMATRIX_UNILOWERELEMENT_H
+#define METRIC_NUMERIC_MATH_ADAPTORS_UNILOWERMATRIX_UNILOWERELEMENT_H
+//*************************************************************************************************
+// Includes
+//*************************************************************************************************
+
+#include <metric/numeric/math/Aliases.h>
+#include <metric/numeric/math/Exception.h>
+#include <metric/numeric/math/adaptors/unilowermatrix/UniLowerValue.h>
+#include <metric/numeric/math/constraints/Computation.h>
+#include <metric/numeric/math/constraints/Hermitian.h>
+#include <metric/numeric/math/constraints/Lower.h>
+#include <metric/numeric/math/constraints/Scalar.h>
+#include <metric/numeric/math/constraints/SparseMatrix.h>
+#include <metric/numeric/math/constraints/Symmetric.h>
+#include <metric/numeric/math/constraints/Transformation.h>
+#include <metric/numeric/math/constraints/Upper.h>
+#include <metric/numeric/math/constraints/View.h>
+#include <metric/numeric/math/sparse/SparseElement.h>
+#include <metric/numeric/util/Types.h>
+#include <metric/numeric/util/constraints/Const.h>
+#include <metric/numeric/util/constraints/Pointer.h>
+#include <metric/numeric/util/constraints/Reference.h>
+#include <metric/numeric/util/constraints/Volatile.h>
+
+namespace mtrc::numeric {
+
+//=================================================================================================
+//
+//  CLASS DEFINITION
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*!\brief Representation of an element within a sparse lower unitriangular matrix.
+// \ingroup unilower_matrix
+//
+// The UniLowerElement class represents an element (i.e. value/index pair) within a sparse lower
+// unitriangular matrix. It guarantees that the unilower matrix invariant is not violated, i.e.
+// that elements in the upper part of the matrix remain 0 and the diagonal elements remain 1. The
+// following example illustrates this by means of a \f$ 3 \times 3 \f$ sparse lower unitriangular
+// matrix:
+
+   \code
+   using UniLower = mtrc::numeric::UniLowerMatrix< mtrc::numeric::CompressedMatrix<int> >;
+
+   // Creating a 3x3 lower unitriangular sparse matrix
+   UniLower A( 3UL );
+
+   A(1,0) = -2;  //        (  1 0 0 )
+   A(2,0) =  3;  // => A = ( -2 1 0 )
+   A(2,1) =  5;  //        (  3 5 1 )
+
+   UniLower::Iterator it = A.begin( 1UL );
+   *it = 4;  // Modification of matrix element (1,0)
+   ++it;
+   *it = 9;  // Invalid assignment to diagonal matrix element; results in an exception!
+   \endcode
+*/
+template <typename MT> // Type of the adapted matrix
+class UniLowerElement : private SparseElement {
+  private:
+	//**Type definitions****************************************************************************
+	using ElementType = ElementType_t<MT>; //!< Type of the represented matrix element.
+	using IteratorType = Iterator_t<MT>;   //!< Type of the underlying sparse matrix iterators.
+	//**********************************************************************************************
+
+  public:
+	//**Type definitions****************************************************************************
+	using ValueType = UniLowerValue<MT>;			//!< The value type of the value-index-pair.
+	using IndexType = size_t;						//!< The index type of the value-index-pair.
+	using Reference = UniLowerValue<MT>;			//!< Reference return type.
+	using ConstReference = const UniLowerValue<MT>; //!< Reference-to-const return type.
+	using Pointer = UniLowerElement *;				//!< Pointer return type.
+	//**********************************************************************************************
+
+	//**Constructor*********************************************************************************
+	/*!\name Constructors */
+	//@{
+	inline UniLowerElement(IteratorType pos, bool diagonal);
+	//@}
+	//**********************************************************************************************
+
+	//**Assignment operators************************************************************************
+	/*!\name Assignment operators */
+	//@{
+	template <typename T> inline UniLowerElement &operator=(const T &v);
+	template <typename T> inline UniLowerElement &operator+=(const T &v);
+	template <typename T> inline UniLowerElement &operator-=(const T &v);
+	template <typename T> inline UniLowerElement &operator*=(const T &v);
+	template <typename T> inline UniLowerElement &operator/=(const T &v);
+	//@}
+	//**********************************************************************************************
+
+	//**Access operators****************************************************************************
+	/*!\name Access operators */
+	//@{
+	inline Pointer operator->() noexcept;
+	//@}
+	//**********************************************************************************************
+
+	//**Utility functions***************************************************************************
+	/*!\name Utility functions */
+	//@{
+	inline Reference value() const;
+	inline IndexType index() const;
+	//@}
+	//**********************************************************************************************
+
+  private:
+	//**Member variables****************************************************************************
+	IteratorType pos_; //!< Iterator to the current lower unitriangular matrix element.
+	bool diagonal_;	   //!< \a true in case the element is on the diagonal, \a false if not.
+	//**********************************************************************************************
+
+	//**Compile time checks*************************************************************************
+	/*! \cond METRIC_NUMERIC_INTERNAL */
+	METRIC_NUMERIC_CONSTRAINT_MUST_BE_SPARSE_MATRIX_TYPE(MT);
+	METRIC_NUMERIC_CONSTRAINT_MUST_NOT_BE_REFERENCE_TYPE(MT);
+	METRIC_NUMERIC_CONSTRAINT_MUST_NOT_BE_POINTER_TYPE(MT);
+	METRIC_NUMERIC_CONSTRAINT_MUST_NOT_BE_CONST(MT);
+	METRIC_NUMERIC_CONSTRAINT_MUST_NOT_BE_VOLATILE(MT);
+	METRIC_NUMERIC_CONSTRAINT_MUST_NOT_BE_VIEW_TYPE(MT);
+	METRIC_NUMERIC_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE(MT);
+	METRIC_NUMERIC_CONSTRAINT_MUST_NOT_BE_TRANSFORMATION_TYPE(MT);
+	METRIC_NUMERIC_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE(MT);
+	METRIC_NUMERIC_CONSTRAINT_MUST_NOT_BE_HERMITIAN_MATRIX_TYPE(MT);
+	METRIC_NUMERIC_CONSTRAINT_MUST_NOT_BE_LOWER_MATRIX_TYPE(MT);
+	METRIC_NUMERIC_CONSTRAINT_MUST_NOT_BE_UPPER_MATRIX_TYPE(MT);
+	METRIC_NUMERIC_CONSTRAINT_MUST_BE_SCALAR_TYPE(ElementType);
+	/*! \endcond */
+	//**********************************************************************************************
+};
+//*************************************************************************************************
+
+//=================================================================================================
+//
+//  CONSTRUCTORS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*!\brief Constructor for the UniLowerElement class.
+//
+// \param pos Iterator to the current position with the sparse lower unitriangular matrix.
+// \param diagonal \a true in case the element is on the diagonal, \a false if not.
+*/
+template <typename MT> // Type of the adapted matrix
+inline UniLowerElement<MT>::UniLowerElement(IteratorType pos, bool diagonal)
+	: pos_(pos) // Iterator to the current lower unitriangular matrix element
+	  ,
+	  diagonal_(diagonal) // true in case the element is on the diagonal, false if not
+{
+}
+//*************************************************************************************************
+
+//=================================================================================================
+//
+//  OPERATORS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*!\brief Assignment to the unilower element.
+//
+// \param v The new value of the unilower element.
+// \return Reference to the assigned unilower element.
+// \exception std::invalid_argument Invalid assignment to diagonal matrix element.
+*/
+template <typename MT> // Type of the adapted matrix
+template <typename T>  // Type of the right-hand side value
+inline UniLowerElement<MT> &UniLowerElement<MT>::operator=(const T &v)
+{
+	if (diagonal_) {
+		METRIC_NUMERIC_THROW_INVALID_ARGUMENT("Invalid assignment to diagonal matrix element");
+	}
+
+	*pos_ = v;
+
+	return *this;
+}
+//*************************************************************************************************
+
+//*************************************************************************************************
+/*!\brief Addition assignment to the unilower element.
+//
+// \param v The right-hand side value for the addition.
+// \return Reference to the assigned unilower element.
+// \exception std::invalid_argument Invalid assignment to diagonal matrix element.
+*/
+template <typename MT> // Type of the adapted matrix
+template <typename T>  // Type of the right-hand side value
+inline UniLowerElement<MT> &UniLowerElement<MT>::operator+=(const T &v)
+{
+	if (diagonal_) {
+		METRIC_NUMERIC_THROW_INVALID_ARGUMENT("Invalid assignment to diagonal matrix element");
+	}
+
+	*pos_ += v;
+
+	return *this;
+}
+//*************************************************************************************************
+
+//*************************************************************************************************
+/*!\brief Subtraction assignment to the unilower element.
+//
+// \param v The right-hand side value for the subtraction.
+// \return Reference to the assigned unilower element.
+// \exception std::invalid_argument Invalid assignment to diagonal matrix element.
+*/
+template <typename MT> // Type of the adapted matrix
+template <typename T>  // Type of the right-hand side value
+inline UniLowerElement<MT> &UniLowerElement<MT>::operator-=(const T &v)
+{
+	if (diagonal_) {
+		METRIC_NUMERIC_THROW_INVALID_ARGUMENT("Invalid assignment to diagonal matrix element");
+	}
+
+	*pos_ -= v;
+
+	return *this;
+}
+//*************************************************************************************************
+
+//*************************************************************************************************
+/*!\brief Multiplication assignment to the unilower element.
+//
+// \param v The right-hand side value for the multiplication.
+// \return Reference to the assigned unilower element.
+// \exception std::invalid_argument Invalid assignment to diagonal matrix element.
+*/
+template <typename MT> // Type of the adapted matrix
+template <typename T>  // Type of the right-hand side value
+inline UniLowerElement<MT> &UniLowerElement<MT>::operator*=(const T &v)
+{
+	if (diagonal_) {
+		METRIC_NUMERIC_THROW_INVALID_ARGUMENT("Invalid assignment to diagonal matrix element");
+	}
+
+	*pos_ *= v;
+
+	return *this;
+}
+//*************************************************************************************************
+
+//*************************************************************************************************
+/*!\brief Division assignment to the unilower element.
+//
+// \param v The right-hand side value for the division.
+// \return Reference to the assigned unilower element.
+// \exception std::invalid_argument Invalid assignment to diagonal matrix element.
+*/
+template <typename MT> // Type of the adapted matrix
+template <typename T>  // Type of the right-hand side value
+inline UniLowerElement<MT> &UniLowerElement<MT>::operator/=(const T &v)
+{
+	if (diagonal_) {
+		METRIC_NUMERIC_THROW_INVALID_ARGUMENT("Invalid assignment to diagonal matrix element");
+	}
+
+	*pos_ /= v;
+
+	return *this;
+}
+//*************************************************************************************************
+
+//=================================================================================================
+//
+//  ACCESS OPERATORS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*!\brief Direct access to the unilower element.
+//
+// \return Reference to the value of the unilower element.
+*/
+template <typename MT> // Type of the adapted matrix
+inline typename UniLowerElement<MT>::Pointer UniLowerElement<MT>::operator->() noexcept
+{
+	return this;
+}
+//*************************************************************************************************
+
+//=================================================================================================
+//
+//  UTILITY FUNCTIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*!\brief Access to the current value of the unilower element.
+//
+// \return The current value of the unilower element.
+*/
+template <typename MT> // Type of the adapted matrix
+inline typename UniLowerElement<MT>::Reference UniLowerElement<MT>::value() const
+{
+	return Reference(pos_->value(), diagonal_);
+}
+//*************************************************************************************************
+
+//*************************************************************************************************
+/*!\brief Access to the current index of the unilower element.
+//
+// \return The current index of the unilower element.
+*/
+template <typename MT> // Type of the adapted matrix
+inline typename UniLowerElement<MT>::IndexType UniLowerElement<MT>::index() const
+{
+	return pos_->index();
+}
+//*************************************************************************************************
+
+} // namespace mtrc::numeric
+
+#endif

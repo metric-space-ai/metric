@@ -9,14 +9,14 @@ Copyright (c) 2018 M.Welsch
 #ifndef _METRIC_MAPPING_AFFPROP_HPP
 #define _METRIC_MAPPING_AFFPROP_HPP
 
-#include "../space/matrix.hpp"
+#include <metric/space/matrix.hpp>
 
 #include <algorithm>
 #include <tuple>
 #include <type_traits>
 #include <vector>
 
-namespace metric {
+namespace mtrc {
 
 /*
  A Affinity Propagation implementation based on a similarity matrix.
@@ -57,7 +57,7 @@ template <typename RecType, typename Metric> class AffProp {
 	Value damp = 0.5;
 };
 
-} // namespace metric
+} // namespace mtrc
 
 #include "affprop.cpp"
 

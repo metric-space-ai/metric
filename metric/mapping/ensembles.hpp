@@ -18,7 +18,7 @@ Copyright (c) 2019 Panda Team
 #include <variant>
 #include <vector>
 
-namespace metric {
+namespace mtrc {
 
 /**
  * @class Subsample
@@ -111,7 +111,7 @@ template <class Record> class TestCl {
 	 * @param var_idx_
 	 * @param invert_
 	 */
-	TestCl(int var_idx_, bool invert_);
+	TestCl(int var_idx_ = 0, bool invert_ = false);
 
 	/**
 	 * @brief train model on test data set
@@ -142,9 +142,9 @@ template <class Record> class TestCl {
 	std::shared_ptr<TestCl<Record>> clone();
 
   private:
-	int var_idx;   // specific input param
-	bool invert;   // specific input param
-	double middle; // specific for classifier learned model data
+	int var_idx;	   // specific input param
+	bool invert;	   // specific input param
+	double middle = 0; // specific for classifier learned model data (midpoint threshold)
 };
 
 /**
@@ -368,7 +368,7 @@ class Bagging {
 	int n_features;
 };
 
-} // namespace metric
+} // namespace mtrc
 
 #include "ensembles/ensembles.cpp"
 

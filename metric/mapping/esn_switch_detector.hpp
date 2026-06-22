@@ -18,7 +18,7 @@ template <typename value_type> class SwitchPredictor {
 
   public:
 	/**
-	 * @brief create & train model using Blaze dynamic matrix
+	 * @brief create & train model using Numeric dynamic matrix
 	 *
 	 * @param training_data - 3-dimensional timeseries, samples in rows
 	 * @param labels - matrix with single column of label values: -1, 0 or 1.
@@ -32,8 +32,8 @@ template <typename value_type> class SwitchPredictor {
 	 * @param alpha - ESN parameter
 	 * @param beta - ESN parameter
 	 */
-	SwitchPredictor(const blaze::DynamicMatrix<value_type> &training_data,
-					const blaze::DynamicMatrix<value_type> &labels, const size_t wnd_size_ = 15,
+	SwitchPredictor(const mtrc::numeric::DynamicMatrix<value_type> &training_data,
+					const mtrc::numeric::DynamicMatrix<value_type> &labels, const size_t wnd_size_ = 15,
 					const size_t cmp_wnd_sz_ = 80,				// 150,
 					const size_t washout_ = 500,				// 2500,
 					const value_type contrast_threshold_ = 0.2, // 0.3,
@@ -67,7 +67,7 @@ template <typename value_type> class SwitchPredictor {
 	/**
 	 * @brief load trained model from file
 	 *
-	 * @param filename - file with Blaze image of the model
+	 * @param filename - file with Numeric image of the model
 	 */
 	SwitchPredictor(const std::string &filename);
 
@@ -77,7 +77,7 @@ template <typename value_type> class SwitchPredictor {
 	 * @param dataset - 3-dimensional timeseries with sample in rows
 	 * @return column of -1, 0 or 1 values, where -1 and 1 represent On-Off and Off-On switches respectively
 	 */
-	blaze::DynamicMatrix<value_type> encode(const blaze::DynamicMatrix<value_type> &dataset);
+	mtrc::numeric::DynamicMatrix<value_type> encode(const mtrc::numeric::DynamicMatrix<value_type> &dataset);
 
 	/**
 	 * @brief estimates switches in offline timeseries
@@ -125,7 +125,7 @@ template <typename value_type> class SwitchPredictor {
 	make_pairs(const std::vector<unsigned long long int> &indices, const std::vector<value_type> &raw_switches);
 
 	/**
-	 * @brief saves the model into the Blaze image
+	 * @brief saves the model into the Numeric image
 	 * @param desired filename, file will be overwritten if exists
 	 */
 	void save(const std::string &filename);
@@ -137,7 +137,7 @@ template <typename value_type> class SwitchPredictor {
 	std::tuple<size_t, size_t, size_t, value_type, value_type, value_type> get_parameters();
 
   private:
-	metric::ESN<std::vector<value_type>, void> esn;
+	mtrc::ESN<std::vector<value_type>, void> esn;
 	size_t wnd_size; // size of the window used to compute additional sliding stddev feature
 	// and postprocessing entropy filter, currently hardcoded to 15
 	size_t cmp_wnd_sz; // size of window used to ensure detected entropy peak really turns state (i.e is a switch)
@@ -162,12 +162,12 @@ template <typename value_type> class SwitchPredictor {
 	value_type v_stddev(const std::vector<value_type> &v, const bool population = false);
 
 	/**
-	 * @brief preprocess - adds sliding window wtddev feature to the input dataset given as Blaze matrix
+	 * @brief preprocess - adds sliding window wtddev feature to the input dataset given as Numeric matrix
 	 * @param input - dataset passed by user
 	 * @return - augmented dataset
 	 */
-	blaze::DynamicMatrix<value_type, blaze::rowMajor>
-	preprocess(const blaze::DynamicMatrix<value_type, blaze::rowMajor> &input);
+	mtrc::numeric::DynamicMatrix<value_type, mtrc::numeric::rowMajor>
+	preprocess(const mtrc::numeric::DynamicMatrix<value_type, mtrc::numeric::rowMajor> &input);
 
 	/**
 	 * @brief preprocess - adds sliding window wtddev feature to the input dataset given as vector of RecType samples
@@ -183,14 +183,15 @@ template <typename value_type> class SwitchPredictor {
 	 * @param threshold - bound that separate classes, typically 0.5
 	 * @return entropy value
 	 */
-	value_type class_entropy(const blaze::DynamicVector<value_type> &data, const value_type threshold);
+	value_type class_entropy(const mtrc::numeric::DynamicVector<value_type> &data, const value_type threshold);
 
 	/**
-	 * @brief train - trains model using dataset and labels passed as Blaze matrices
+	 * @brief train - trains model using dataset and labels passed as Numeric matrices
 	 * @param training_data
 	 * @param labels
 	 */
-	void train(const blaze::DynamicMatrix<value_type> &training_data, const blaze::DynamicMatrix<value_type> &labels);
+	void train(const mtrc::numeric::DynamicMatrix<value_type> &training_data,
+			   const mtrc::numeric::DynamicMatrix<value_type> &labels);
 
 	/**
 	 * @brief train - trains model using dataset and labels passed as vectors of samples

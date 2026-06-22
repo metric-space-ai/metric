@@ -1,5 +1,16 @@
-from metric import Space, intrinsic_dimension
-from metric.operators import pairwise_distance_matrix
+"""Histogram transport space — the Python package is an adapter only.
+
+This demo builds an explicit finite metric space over a toy 1-D transport
+metric. The Python layer adapts the records and invokes the caller's metric to
+expose distances and the explicit pairwise matrix. Search / structure analysis
+(nearest, intrinsic dimension) are METRIC algorithms that run in native C++ and
+are reached through bindings; the Python facade reports an explicit
+StrategyUnavailableError until those bindings are exposed.
+"""
+
+from metric import Space
+from metric.exceptions import StrategyUnavailableError
+from metric.operators import intrinsic_dimension, pairwise_distance_matrix
 
 
 def cumulative_transport_distance(lhs, rhs):
@@ -16,6 +27,15 @@ def cumulative_transport_distance(lhs, rhs):
     return distance
 
 
+def requires_native(label, call):
+    try:
+        call()
+    except StrategyUnavailableError:
+        print(f"{label}: requires native C++ binding")
+    else:
+        raise AssertionError(f"{label} should require a native binding")
+
+
 def main():
     names = ["left-edge", "one-step", "right-edge", "split-left", "center"]
     records = [
@@ -28,20 +48,20 @@ def main():
     query = (0.25, 0.75, 0.0, 0.0)
 
     space = Space(records, cumulative_transport_distance)
-    nearest = space.nearest(query)
-    distances = pairwise_distance_matrix(records, cumulative_transport_distance)
-    dimension = intrinsic_dimension(records, cumulative_transport_distance)
 
-    assert names[nearest.id] == "one-step"
-    assert nearest.distance == 0.25
-    assert distances[0][1] == 1.0
+    # Adapter surface: explicit distances over a caller-provided metric.
+    distances = pairwise_distance_matrix(records, cumulative_transport_distance)
+    assert space.distance(0, 1) == 1.0
     assert distances[0][2] == 3.0
     assert distances[3][4] == 1.0
-    assert dimension > 0.0
 
-    print("nearest histogram =", names[nearest.id], nearest.distance)
+    print("records =", ", ".join(names))
     print("distance(left-edge, right-edge) =", distances[0][2])
-    print("intrinsic dimension estimate =", round(dimension, 3))
+    print("distance(split-left, center) =", distances[3][4])
+
+    # Native boundary: search and structure analysis live in C++.
+    requires_native("nearest", lambda: space.nearest(query))
+    requires_native("intrinsic_dimension", lambda: intrinsic_dimension(records, cumulative_transport_distance))
 
 
 if __name__ == "__main__":

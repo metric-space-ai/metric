@@ -4,8 +4,8 @@ except ModuleNotFoundError:
     impl = None
 
 try:
-    from metric._impl.standards import Euclidean
-except ModuleNotFoundError:
+    from metric.distance import Euclidean
+except (ImportError, AttributeError):
     Euclidean = None
 
 
@@ -21,7 +21,7 @@ def Matrix(data=None, metric=None) -> object:
         if Euclidean is None:
             raise RuntimeError(
                 "metric.space.Matrix requires a metric argument in the core wheel; "
-                "the default Euclidean binding is available only in the full build"
+                "the Python package does not implement Euclidean distance itself"
             )
         metric = Euclidean()
     if impl is None:

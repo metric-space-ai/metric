@@ -10,7 +10,7 @@ Copyright (c) 2019 Panda Team
 #include "kmedoids.hpp"
 #include "metric/space/matrix.hpp"
 
-namespace metric {
+namespace mtrc {
 
 namespace KOC_details {
 
@@ -170,8 +170,8 @@ KOC<RecType, Graph, Metric, Distribution>::clusterize_nodes(int num_clusters, in
 	while (current_min_cluster_size < min_cluster_size) {
 		// clustering on the reduced data
 
-		metric::Matrix<RecType, Metric> matrix(nodes_data, metric);
-		auto [assignments, seeds, counts] = metric::kmedoids(matrix, num_clusters);
+		mtrc::Matrix<RecType, Metric> matrix(nodes_data, metric);
+		auto [assignments, seeds, counts] = mtrc::kmedoids(matrix, num_clusters);
 
 		std::vector<int>::iterator result = std::min_element(counts.begin(), counts.end());
 		current_min_cluster_size = counts[std::distance(counts.begin(), result)];
@@ -275,4 +275,4 @@ KOC_factory<RecType, Graph, Metric, Distribution>::operator()(const std::vector<
 	return koc;
 }
 
-} // namespace metric
+} // namespace mtrc

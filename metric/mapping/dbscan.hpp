@@ -19,10 +19,10 @@ A DBSCAN implementation based on distance matrix.
 //       A density-based algorithm for discovering clusters
 //       in large spatial databases with noise. 1996.
 
-#include "../space/matrix.hpp"
+#include <metric/space/matrix.hpp>
 #include <string>
 #include <vector>
-namespace metric {
+namespace mtrc {
 
 /**
  * @brief Density-based spatial clustering of applications with noise (DBSCAN)
@@ -35,10 +35,10 @@ namespace metric {
  *          size of corresponding cluster.
  */
 template <typename RecType, typename Metric, typename T>
-std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> dbscan(const metric::Matrix<RecType, Metric> &dm,
+std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> dbscan(const mtrc::Matrix<RecType, Metric> &dm,
 																		T eps, std::size_t minpts);
 
-} // namespace metric
+} // namespace mtrc
 
 #include "dbscan.cpp"
 #endif

@@ -8,38 +8,26 @@
 #include "metric/metric.hpp"
 
 int main()
-{	
-    // some data
-    std::vector<std::vector<int>> A = {
-        { 0, 1, 1, 1, 1, 1, 2, 3 },
-        { 1, 1, 1, 1, 1, 2, 3, 4 },
-        { 2, 2, 2, 1, 1, 2, 0, 0 },
-        { 3, 3, 2, 2, 1, 1, 0, 0 },
-        { 4, 3, 2, 1, 0, 0, 0, 0 },
-        { 5, 3, 2, 1, 0, 0, 0, 0 },
-        { 4, 6, 2, 2, 1, 1, 0, 0 },
-    };
-	
-    // some other data
-    std::deque<std::string> B = {
-        "this",
-        "test",
-        "tests",
-        "correlation",
-        "of",
-        "arbitrary",
-        "data",
-    };
+{
+	// some data
+	std::vector<std::vector<int>> A = {
+		{0, 1, 1, 1, 1, 1, 2, 3}, {1, 1, 1, 1, 1, 2, 3, 4}, {2, 2, 2, 1, 1, 2, 0, 0}, {3, 3, 2, 2, 1, 1, 0, 0},
+		{4, 3, 2, 1, 0, 0, 0, 0}, {5, 3, 2, 1, 0, 0, 0, 0}, {4, 6, 2, 2, 1, 1, 0, 0},
+	};
 
-	
-    // bind the types and metrics with an constructor to return a functor
-    auto mgc_corr = metric::MGC<std::vector<int>, metric::Euclidean<int>, std::string, metric::Edit<std::string>>();
+	// some other data
+	std::deque<std::string> B = {
+		"this", "test", "tests", "correlation", "of", "arbitrary", "data",
+	};
 
-    // compute the correlation
-    auto result = mgc_corr(A, B);
+	// bind the types and metrics with an constructor to return a functor
+	auto mgc_corr = mtrc::MGC<std::vector<int>, mtrc::Euclidean<int>, std::string, mtrc::Edit<std::string>>();
 
-    std::cout << "Multiscale graph correlation: " << result << std::endl;
-    // output Multiscale graph correlation: 0.0791671 (Time = 7.8e-05s)
+	// compute the correlation
+	auto result = mgc_corr(A, B);
 
-    return 0;
+	std::cout << "Multiscale graph correlation: " << result << std::endl;
+	// output Multiscale graph correlation: 0.0791671 (Time = 7.8e-05s)
+
+	return 0;
 }

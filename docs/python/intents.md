@@ -82,7 +82,7 @@ mapped = Space(records, metric=row_distance).map(
 ```
 
 The promoted mapping path is deterministic `transform=...` plus a target metric.
-No-argument mapping, learned `target=...` mapping, and strategy-driven mapping
+No-argument mapping, fitted `target=...` mapping, and strategy-driven mapping
 raise explicit METRIC errors until those contracts are promoted.
 
 ## Outliers

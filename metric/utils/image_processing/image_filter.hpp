@@ -10,8 +10,8 @@
 #define IMAGEFILTER_H
 
 #include <algorithm>
-#include <blaze/Math.h>
 #include <cmath>
+#include <metric/numeric/Math.h>
 
 /**
  * Module of image filters based on 2 convolution.
@@ -40,13 +40,13 @@
  *   UnsharpFilter
  *   SobelFilter
  */
-namespace metric {
-template <typename T> using Channel = blaze::DynamicMatrix<T>;
+namespace mtrc {
+template <typename T> using Channel = mtrc::numeric::DynamicMatrix<T>;
 
-template <typename T, size_t N> using Image = blaze::StaticVector<Channel<T>, N>;
+template <typename T, size_t N> using Image = mtrc::numeric::StaticVector<Channel<T>, N>;
 
-using FilterKernel = blaze::DynamicMatrix<double>;
-using Shape = blaze::StaticVector<size_t, 2>;
+using FilterKernel = mtrc::numeric::DynamicMatrix<double>;
+using Shape = mtrc::numeric::StaticVector<size_t, 2>;
 
 /**
  * Creates an Image
@@ -82,7 +82,7 @@ template <typename T> class PadModel {
 	 * @param initValue
 	 */
 	PadModel(PadDirection padDirection, PadType padType, T initValue = {})
-		: _padDirection(padDirection), _padType(padType), _initValue(initValue){};
+		: _padDirection(padDirection), _padType(padType), _initValue(initValue) {};
 
 	/**
 	 * Pads the matrix
@@ -90,7 +90,8 @@ template <typename T> class PadModel {
 	 * @param src matrix to pad
 	 * @return the padded matrix
 	 */
-	std::pair<blaze::DynamicMatrix<T>, Shape> pad(const Shape &shape, const blaze::DynamicMatrix<T> &src) const;
+	std::pair<mtrc::numeric::DynamicMatrix<T>, Shape> pad(const Shape &shape,
+															const mtrc::numeric::DynamicMatrix<T> &src) const;
 
   private:
 	PadDirection _padDirection;
@@ -138,7 +139,7 @@ class FilterType {
 		 * Creates circular averaging filter. Kernel size 2*rad+1
 		 * @param rad the radius of the kernel
 		 */
-		explicit DISK(double rad) : _rad(rad){};
+		explicit DISK(double rad) : _rad(rad) {};
 
 		FilterKernel operator()() const
 		{
@@ -291,19 +292,20 @@ namespace image_processing_details {
  * @return returns 2-D grid coordinates based on the coordinates contained in vectors x and y
  */
 template <typename T>
-std::pair<blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>>
-meshgrid(const blaze::DynamicVector<T, blaze::rowVector> &x, const blaze::DynamicVector<T, blaze::columnVector> &y);
+std::pair<mtrc::numeric::DynamicMatrix<T>, mtrc::numeric::DynamicMatrix<T>>
+meshgrid(const mtrc::numeric::DynamicVector<T, mtrc::numeric::rowVector> &x,
+		 const mtrc::numeric::DynamicVector<T, mtrc::numeric::columnVector> &y);
 
 /**
  * Creates a vector as range between two values
  * @tparam T type of the lements
- * @tparam P blaze::columnVector or blaze::rawVector
+ * @tparam P mtrc::numeric::columnVector or mtrc::numeric::rawVector
  * @param start
  * @param stop
  * @param step
  * @return
  */
-template <typename T, bool P> blaze::DynamicVector<T, P> range(T start, T stop, T step = 1);
+template <typename T, bool P> mtrc::numeric::DynamicVector<T, P> range(T start, T stop, T step = 1);
 
 /**
  * Finds elements in an intput matrix that corseponds true in the conditional matrix
@@ -313,8 +315,8 @@ template <typename T, bool P> blaze::DynamicVector<T, P> range(T start, T stop, 
  * @return returns a matrix of coordinates of founded elements
  */
 template <typename T>
-blaze::DynamicVector<std::pair<size_t, size_t>, blaze::columnVector> mfind(const blaze::DynamicMatrix<T> &input,
-																		   const blaze::DynamicMatrix<bool> &cond);
+mtrc::numeric::DynamicVector<std::pair<size_t, size_t>, mtrc::numeric::columnVector>
+mfind(const mtrc::numeric::DynamicMatrix<T> &input, const mtrc::numeric::DynamicMatrix<bool> &cond);
 
 /**
  * Rotetes matrix on 90 degree clockwise
@@ -322,12 +324,12 @@ blaze::DynamicVector<std::pair<size_t, size_t>, blaze::columnVector> mfind(const
  * @param input matrix to rotate
  * @return the rotated matrix
  */
-template <typename T> blaze::DynamicMatrix<T> rot90(const blaze::DynamicMatrix<T> &input)
+template <typename T> mtrc::numeric::DynamicMatrix<T> rot90(const mtrc::numeric::DynamicMatrix<T> &input)
 {
-	blaze::DynamicMatrix<T> out(input.columns(), input.rows());
+	mtrc::numeric::DynamicMatrix<T> out(input.columns(), input.rows());
 	for (int i = 0; i < input.rows(); ++i) {
-		auto r = blaze::trans(blaze::row(input, i));
-		blaze::column(out, input.rows() - i - 1) = r;
+		auto r = mtrc::numeric::trans(mtrc::numeric::row(input, i));
+		mtrc::numeric::column(out, input.rows() - i - 1) = r;
 	}
 
 	return out;
@@ -339,14 +341,15 @@ template <typename T> blaze::DynamicMatrix<T> rot90(const blaze::DynamicMatrix<T
  * @param input matrix to modify
  * @return the flipped matrix
  */
-template <typename T> blaze::DynamicMatrix<T> flipud(const blaze::DynamicMatrix<T> &input);
+template <typename T> mtrc::numeric::DynamicMatrix<T> flipud(const mtrc::numeric::DynamicMatrix<T> &input);
 
 /**
  * Returns the two-dimensional convolution of a matrix and kernel
  * @param kernel the kernel to convolute
  * @return
  */
-static blaze::DynamicMatrix<double> imgcov2(const blaze::DynamicMatrix<double> &input, const FilterKernel &kernel);
+static mtrc::numeric::DynamicMatrix<double> imgcov2(const mtrc::numeric::DynamicMatrix<double> &input,
+													  const FilterKernel &kernel);
 
 /**
  * Filter an one channel
@@ -376,7 +379,7 @@ Image<ChannelType, ChannelNumber> filter(const Image<ChannelType, ChannelNumber>
 										 const PadModel<ChannelType> &padmodel, bool full = true);
 
 } // namespace image_processing_details
-} // namespace metric
+} // namespace mtrc
 
 #include "image_filter.cpp"
 #endif // IMAGE_FILTER

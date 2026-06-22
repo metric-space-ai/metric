@@ -1,4 +1,4 @@
-#include <metric/distance.hpp>
+#include <metric/metric/catalog.hpp>
 #include <metric/engine.hpp>
 
 #include <cassert>
@@ -6,18 +6,36 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 int main()
 {
 	std::vector<std::string> records = {"metric", "map", "engine"};
-	auto space = metric::make_space(records, metric::Edit<char>{});
+	auto space = mtrc::make_space(records, mtrc::Edit<char>{});
+
+	auto manual_space = mtrc::make_space(std::vector<std::size_t>{6, 3}, [](std::size_t lhs, std::size_t rhs) {
+		return lhs > rhs ? lhs - rhs : rhs - lhs;
+	});
+	const auto manual = mtrc::core::make_mapping_result(
+		std::move(manual_space), std::vector<std::vector<mtrc::RecordId>>{{space.id(0)}, {space.id(1)}},
+		std::vector<mtrc::RecordId>{space.id(0), space.id(1)}, space.size(), true, "manual_mapping",
+		"manual_strategy", "manual_representation");
+	assert(manual.size() == 2);
+	assert(!manual.empty());
+	assert(manual.source_record_count == space.size());
+	assert(manual.inverse_supported);
+	assert(manual.mapping == "manual_mapping");
+	assert(manual.strategy == "manual_strategy");
+	assert(manual.representation == "manual_representation");
+	assert(manual.source_records[0][0] == space.id(0));
+	assert(manual.representative_records[1] == space.id(1));
 
 	auto length_distance = [](std::size_t lhs, std::size_t rhs) -> std::size_t {
 		return lhs > rhs ? lhs - rhs : rhs - lhs;
 	};
-	auto mapped = metric::map(
-		space, [](const std::string &record) -> std::size_t { return record.size(); }, length_distance);
+	auto mapped =
+		mtrc::map(space, [](const std::string &record) -> std::size_t { return record.size(); }, length_distance);
 
 	using mapped_type = typename std::decay<decltype(mapped)>::type;
 	static_assert(std::is_same<typename mapped_type::space_type::record_type, std::size_t>::value,
@@ -41,18 +59,18 @@ int main()
 		assert(mapped.representative_records[index] == space.id(index));
 	}
 
-	const auto runtime_mapped = metric::map(
+	const auto runtime_mapped = mtrc::map(
 		space, [](const std::string &record) -> std::size_t { return record.size(); }, length_distance,
-		metric::runtime::exact());
+		mtrc::space::storage::exact());
 	assert(runtime_mapped.representation == "metric_space");
 	assert(runtime_mapped.source_records == mapped.source_records);
 	assert(runtime_mapped.space.record(runtime_mapped.space.id(0)) == 6);
 
 	bool rejected_materialized_runtime = false;
 	try {
-		(void)metric::map(
+		(void)mtrc::map(
 			space, [](const std::string &record) -> std::size_t { return record.size(); }, length_distance,
-			metric::runtime::materialized(metric::runtime::exact()));
+			mtrc::space::storage::materialized(mtrc::space::storage::exact()));
 	} catch (const std::invalid_argument &) {
 		rejected_materialized_runtime = true;
 	}
@@ -60,9 +78,9 @@ int main()
 
 	bool rejected_approximate_runtime = false;
 	try {
-		(void)metric::map(
+		(void)mtrc::map(
 			space, [](const std::string &record) -> std::size_t { return record.size(); }, length_distance,
-			metric::runtime::approximate());
+			mtrc::space::storage::approximate());
 	} catch (const std::invalid_argument &) {
 		rejected_approximate_runtime = true;
 	}

@@ -9,14 +9,15 @@
 
 namespace py = pybind11;
 
-void export_metric_autoencoder(py::module& m);
-void export_metric_DSPCC(py::module& m);
-void export_metric_kmeans(py::module& m);
-void export_metric_kmedoids(py::module& m);
+void export_metric_autoencoder(py::module &m);
+void export_metric_DSPCC(py::module &m);
+void export_metric_kmeans(py::module &m);
+void export_metric_kmedoids(py::module &m);
 
-PYBIND11_MODULE(mapping, m) {
-    export_metric_autoencoder(m);
-    export_metric_DSPCC(m);
-    export_metric_kmeans(m);
-    export_metric_kmedoids(m);
+PYBIND11_MODULE(mapping, m)
+{
+	export_metric_autoencoder(m);
+	export_metric_DSPCC(m);
+	export_metric_kmeans(m);
+	export_metric_kmedoids(m);
 }

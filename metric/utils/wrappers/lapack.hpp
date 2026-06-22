@@ -1,14 +1,14 @@
-#ifndef PANDA_METRIC_LAPACK_HPP
-#define PANDA_METRIC_LAPACK_HPP
+#ifndef METRIC_UTILS_WRAPPERS_LAPACK_HPP
+#define METRIC_UTILS_WRAPPERS_LAPACK_HPP
 
-#include <blaze/Math.h>
+#include <metric/numeric/Math.h>
 
 extern "C" {
 extern void dsygv_(int *itype, char *jobz, char *uplo, int *n, double *A, int *LDA, double *B, int *LDB, double *W,
 				   double *WORK, int *LWORK, int *INFO);
 }
 
-namespace metric {
+namespace mtrc {
 
 inline void dsygv(int itype, char jobz, char uplo, int n, double *A, int lda, double *B, int ldb, double *W,
 				  double *work, int lwork, int info)
@@ -17,8 +17,9 @@ inline void dsygv(int itype, char jobz, char uplo, int n, double *A, int lda, do
 }
 
 template <typename MT, typename VT>
-void sygv(blaze::DynamicMatrix<MT, blaze::rowMajor> A, blaze::DynamicMatrix<MT, blaze::rowMajor> B,
-		  blaze::DynamicVector<VT, blaze::columnVector> &w)
+void sygv(mtrc::numeric::DynamicMatrix<MT, mtrc::numeric::rowMajor> A,
+		  mtrc::numeric::DynamicMatrix<MT, mtrc::numeric::rowMajor> B,
+		  mtrc::numeric::DynamicVector<VT, mtrc::numeric::columnVector> &w)
 {
 	w.resize(A.rows());
 	int lwork = 3 * A.rows() - 1;
@@ -27,6 +28,6 @@ void sygv(blaze::DynamicMatrix<MT, blaze::rowMajor> A, blaze::DynamicMatrix<MT, 
 
 	dsygv(1, 'N', 'U', A.rows(), A.data(), A.spacing(), B.data(), B.spacing(), w.data(), work.data(), lwork, info);
 }
-} // namespace metric
+} // namespace mtrc
 
-#endif // PANDA_METRIC_LAPACK_HPP
+#endif // METRIC_UTILS_WRAPPERS_LAPACK_HPP

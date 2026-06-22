@@ -1,6 +1,18 @@
+"""Mixed structured records — adapter boundary demo.
+
+A rich toy domain metric that combines numeric, categorical, string, spectrum,
+and curve fields. The Python ``Space`` adapts these heterogeneous records and
+exposes explicit distances plus a runtime-policy view (an adapter). Neighbor
+search, clustering, outlier detection, and embedding are native-only METRIC
+algorithms reached through bindings.
+"""
+
 from math import sqrt
 
-from metric import Space
+from metric import RuntimePolicy, Space
+from metric.exceptions import StrategyUnavailableError
+from metric.operators import pairwise_distance_matrix
+from metric.strategies import DBSCAN, KMedoids, MDS
 
 
 WEIGHTS = {
@@ -112,6 +124,15 @@ def make_records():
     ]
 
 
+def requires_native(label, call):
+    try:
+        call()
+    except StrategyUnavailableError:
+        print(f"{label}: requires native C++ binding")
+    else:
+        raise AssertionError(f"{label} should require a native binding")
+
+
 def main():
     names = ["stable-flow", "warmup-drift", "warmup-alert", "cooldown", "spike-stop"]
     records = make_records()
@@ -125,30 +146,26 @@ def main():
 
     space = Space(records, metric=mixed_record_distance, name="mixed_structured_records")
     matrix = space.to_matrix()
-    neighbors = space.neighbors(query, count=2)
-    assert [names[neighbor.id] for neighbor in neighbors.neighbors] == ["warmup-drift", "warmup-alert"]
 
-    explanation = field_contributions(query, neighbors.neighbors[0].record)
-    assert explanation["status"] == 0.0
-    assert explanation["curve"] < 0.01
-
-    groups = space.groups(count=2, representation=matrix)
-    assert groups.cluster_count == 2
-    assert groups.algorithm == "kmedoids"
-
-    outliers = space.outliers(count=1, representation=matrix)
-    assert names[outliers.outliers[0].record_id] == "spike-stop"
-
-    embedding = space.embed(dimensions=2, representation=matrix)
-    assert embedding.dimensions == 2
-    assert embedding.diagnostics.finite_coordinates
-
-    diagnostics = space.runtime_diagnostics(representation=matrix, intent="mixed_record_demo")
+    # Adapter surface: explicit distances and a runtime-policy view.
+    print("records =", ", ".join(names))
+    print("matrix rows =", len(pairwise_distance_matrix(records, mixed_record_distance)))
+    explanation = field_contributions(query, records[1])
+    print("warmup-drift status penalty =", explanation["status"])
+    diagnostics = space.runtime_diagnostics(
+        representation=matrix,
+        runtime=RuntimePolicy(exact=True, cache="materialized"),
+        intent="mixed_record_demo",
+    )
     assert diagnostics.representation == "matrix"
+    print("runtime representation =", diagnostics.representation)
 
-    print("nearest mixed records =", names[neighbors.neighbors[0].id], names[neighbors.neighbors[1].id])
-    print("mixed record groups =", groups.cluster_count)
-    print("mixed record outlier =", names[outliers.outliers[0].record_id])
+    # Native boundary: search / clustering / outliers / embedding live in C++.
+    requires_native("neighbors", lambda: space.neighbors(query, count=2))
+    requires_native("groups", lambda: space.groups(count=2, representation=matrix))
+    requires_native("outliers", lambda: space.outliers(strategy=DBSCAN(radius=2, min_points=2), representation=matrix))
+    requires_native("embed", lambda: space.embed(strategy=MDS(dimensions=2), representation=matrix))
+    requires_native("groups(kmedoids)", lambda: space.groups(strategy=KMedoids(groups=2), representation=matrix))
 
 
 if __name__ == "__main__":

@@ -5,15 +5,15 @@
 #include "../dnn/Layer/Conv2d.h"
 #include "image_filter.hpp"
 
-namespace metric {
+namespace mtrc {
 
 template <typename T, size_t Channels> class Convolution2d {
   public:
-	using Channel = blaze::DynamicMatrix<T>;
-	using Image = blaze::StaticVector<Channel, Channels>;
-	using FilterKernel = blaze::DynamicMatrix<T>;
+	using Channel = mtrc::numeric::DynamicMatrix<T>;
+	using Image = mtrc::numeric::StaticVector<Channel, Channels>;
+	using FilterKernel = mtrc::numeric::DynamicMatrix<T>;
 
-	using ConvLayer2d = dnn::Conv2d<T, dnn::Identity<T>>;
+	using ConvLayer2d = solve::parametric::dnn::Conv2d<T, solve::parametric::dnn::Identity<T>>;
 	using Matrix = typename ConvLayer2d::Matrix;
 	using Clock = std::chrono::high_resolution_clock;
 
@@ -28,9 +28,9 @@ template <typename T, size_t Channels> class Convolution2d {
 	std::shared_ptr<PadModel<T>> padModel;
 	size_t padWidth;
 	size_t padHeight;
-	std::shared_ptr<dnn::Layer<T>> convLayer;
+	std::shared_ptr<solve::parametric::dnn::Layer<T>> convLayer;
 };
-} // namespace metric
+} // namespace mtrc
 
 #include "convolution.cpp"
 

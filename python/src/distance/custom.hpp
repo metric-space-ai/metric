@@ -3,23 +3,22 @@
 #include <functional>
 #include <optional>
 
-namespace metric {
-
+namespace mtrc {
 
 template <typename Container, typename Value = double>
-class PythonMetric : public std::function<Value(const Container&, const Container&)> {
-public:
-    using Callable = std::function<Value(const Container&, const Container&)>;
-    using value_type = Value;
-    using distance_type = value_type;
+class PythonMetric : public std::function<Value(const Container &, const Container &)> {
+  public:
+	using Callable = std::function<Value(const Container &, const Container &)>;
+	using value_type = Value;
+	using distance_type = value_type;
 
-    using Callable::Callable;
+	using Callable::Callable;
 };
 
 // this was a good idea, but not worth the efforts and not transparently convertible
-//template <typename Container, typename V = double>
-//class CustomMetric {
-//public:
+// template <typename Container, typename V = double>
+// class CustomMetric {
+// public:
 //    using value_type = V;
 //    using distance_type = value_type;
 //
@@ -30,7 +29,7 @@ public:
 //        : scalarDistance(scalarDistance), vectorDistance(vectorDistance.value_or(nullptr))
 //    {
 //    }
-    // one can always express scalar distance as distance between vectors with single item
+// one can always express scalar distance as distance between vectors with single item
 //    distance_type operator()(const V& a, const V& b) const
 //    {
 //        return this->scalarDistance(a, b);
@@ -41,9 +40,9 @@ public:
 //        return this->vectorDistance(a, b);
 //    }
 //
-//private:
+// private:
 //    ScalarFunc scalarDistance;
 //    VectorFunc vectorDistance;
 //};
 
-} // metric
+} // namespace mtrc

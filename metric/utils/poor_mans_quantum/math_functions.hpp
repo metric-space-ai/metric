@@ -11,7 +11,7 @@
 
 #include <vector>
 
-namespace metric {
+namespace mtrc {
 
 /**
  * @brief
@@ -63,7 +63,7 @@ template <typename T> std::vector<std::vector<T>> transpose(std::vector<std::vec
  */
 template <typename T> T quickQuantil(std::vector<T> data, T probs);
 
-} // namespace metric
+} // namespace mtrc
 
 #include "math_functions.cpp"
 #endif // header guard

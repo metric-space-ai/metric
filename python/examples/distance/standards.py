@@ -1,6 +1,6 @@
 import sys
 import numpy
-from metric.distance import Euclidean, Euclidean_thresholded, Manhatten, P_norm, Cosine, Chebyshev
+from metric.distance import Euclidean, Euclidean_thresholded, Manhattan, P_norm, Cosine, Chebyshev
 
 
 def main():
@@ -13,8 +13,8 @@ def main():
     distance = Euclidean_thresholded(thres=1000.0, factor=3000.0)
     print('Euclidean Threshold distance:', distance(v0, v1))
 
-    distance = Manhatten()
-    print('Manhatten distance:', distance(v0, v1))
+    distance = Manhattan()
+    print('Manhattan distance:', distance(v0, v1))
 
     distance = P_norm(p=2)
     print('Minkowski (L general) Metric:', distance(v0, v1))

@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <vector>
 
-namespace metric {
+namespace mtrc {
 
 template <typename T> std::vector<T> linspace(T a, T b, int n)
 {
@@ -150,5 +150,5 @@ template <typename T> T quickQuantil(std::vector<T> data, T probs)
 	return quantile;
 }
 
-} // namespace metric
+} // namespace mtrc
 #endif // header guard

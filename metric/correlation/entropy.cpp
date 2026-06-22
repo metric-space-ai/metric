@@ -8,7 +8,7 @@ Copyright (c) 2019 Panda Team
 #ifndef _METRIC_DISTANCE_K_RANDOM_ENTROPY_CPP
 #define _METRIC_DISTANCE_K_RANDOM_ENTROPY_CPP
 
-//#include "metric/utils/type_traits.hpp"
+// #include "metric/utils/type_traits.hpp"
 #include "epmgp.hpp"
 #include "estimator_helpers.hpp"
 #include "metric/space/tree.hpp"
@@ -21,7 +21,7 @@ Copyright (c) 2019 Panda Team
 #define M_PI 3.14159265358979323846
 #endif
 
-namespace metric {
+namespace mtrc {
 
 namespace entropy_details {
 
@@ -191,7 +191,7 @@ inline double erfinv_imp(const double p, const double q)
 inline double erfcinv(const double z)
 {
 	if ((z < 0) || (z > 2))
-		std::cout << "Argument outside range [0,2] in inverse erfc function (got p=%1%)." << std::endl;
+		std::cerr << "Argument outside range [0,2] in inverse erfc function (got p=" << z << ")." << std::endl;
 
 	double p, q, s;
 	if (z > 1) {
@@ -275,22 +275,24 @@ template <typename T> T conv_diff_entropy_inv(T in)
 
 template <typename T1, typename T2> T1 log(T1 logbase, T2 x) { return std::log(x) / std::log(logbase); }
 
-double mvnpdf(blaze::DynamicVector<double> x, blaze::DynamicVector<double> mu, blaze::DynamicMatrix<double> Sigma)
+double mvnpdf(mtrc::numeric::DynamicVector<double> x, mtrc::numeric::DynamicVector<double> mu,
+			  mtrc::numeric::DynamicMatrix<double> Sigma)
 {
 
 	size_t n = x.size();
 	assert(mu.size() == n && Sigma.columns() == n && Sigma.rows() == n);
 
 	auto centered = x - mu;
-	auto p = blaze::trans(centered) * blaze::inv(Sigma) * centered;
-	// return std::exp(-p/2) / ( std::sqrt(blaze::det(Sigma)) * std::pow(2*M_PI, (double)n/2.0) );
-	return std::exp(-p / 2) / std::sqrt(blaze::det(Sigma) * std::pow(2 * M_PI, n));
+	auto p = mtrc::numeric::trans(centered) * mtrc::numeric::inv(Sigma) * centered;
+	// return std::exp(-p/2) / ( std::sqrt(mtrc::numeric::det(Sigma)) * std::pow(2*M_PI, (double)n/2.0) );
+	return std::exp(-p / 2) / std::sqrt(mtrc::numeric::det(Sigma) * std::pow(2 * M_PI, n));
 }
 
-double mvnpdf(blaze::DynamicVector<double> x)
+double mvnpdf(mtrc::numeric::DynamicVector<double> x)
 {
 
-	return (mvnpdf(x, blaze::DynamicVector<double>(x.size(), 0), blaze::IdentityMatrix<double>(x.size())));
+	return (mvnpdf(x, mtrc::numeric::DynamicVector<double>(x.size(), 0),
+				   mtrc::numeric::IdentityMatrix<double>(x.size())));
 }
 
 /* from https://github.com/masakazu-ishihata/irand.git
@@ -409,8 +411,14 @@ double estimate(const Container &data, const Functor &entropy, const size_t samp
 			sampleA.push_back(vectorA[indexes[j]]);
 		}
 
-		// Get sample mgc value
+		// Get sample entropy value
 		double sample_entopy = entropy(sampleA);
+		// A degenerate subsample (e.g. all-identical records) makes the kpN estimator
+		// return the NaN "estimation failed" sentinel. Such a NaN must NOT enter
+		// entropyValues: std::sort below requires a strict weak ordering and NaN violates
+		// it (undefined behavior). Skip the subsample instead.
+		if (std::isnan(sample_entopy))
+			continue;
 		entropyValues.push_back(sample_entopy);
 
 		std::sort(entropyValues.begin(), entropyValues.end());
@@ -429,13 +437,15 @@ double estimate(const Container &data, const Functor &entropy, const size_t samp
 		}
 
 		auto convergence = entropy_details::peak2ems(diff) / n;
-		std::cout << n << " " << convergence << " " << sample_entopy << " " << mu << std::endl;
 
 		if (convergence < threshold) {
 			return mu;
 		}
 	}
 
+	// Every subsample was degenerate: no valid entropy value was collected.
+	if (entropyValues.empty())
+		return std::nan("estimation failed");
 	return mu;
 }
 
@@ -495,8 +505,14 @@ double estimate(const Container &a, const Container &b, const Functor &f, const 
 			sampleB.push_back(vectorB[indexes[j]]);
 		}
 
-		/* Get sample mgc value */
+		/* Get sample value (e.g. VMixing, which calls the kpN entropy internally) */
 		double mgc = f(sampleA, sampleB);
+		// A degenerate subsample can make an internal kpN entropy return the NaN
+		// "estimation failed" sentinel, which propagates through f. Such a NaN must NOT
+		// enter mgcValues: std::sort below requires a strict weak ordering and NaN
+		// violates it (undefined behavior). Skip the subsample instead.
+		if (std::isnan(mgc))
+			continue;
 		mgcValues.push_back(mgc);
 
 		std::sort(mgcValues.begin(), mgcValues.end());
@@ -521,6 +537,9 @@ double estimate(const Container &a, const Container &b, const Functor &f, const 
 		}
 	}
 
+	// Every subsample was degenerate: no valid value was collected.
+	if (mgcValues.empty())
+		return std::nan("estimation failed");
 	return mu;
 }
 
@@ -554,7 +573,7 @@ double EntropySimple<RecType, Metric>::operator()( // non-kpN version, DEPRECATE
 	double entropyEstimate = 0;
 	double log_sum = 0;
 
-	metric::Tree<V, Metric> tree(data[0], -1, metric);
+	mtrc::Tree<V, Metric> tree(data[0], -1, metric);
 	for (std::size_t i = 1; i < data.size(); ++i) {
 		tree.insert_if(data[i], std::numeric_limits<T>::epsilon());
 	}
@@ -565,18 +584,16 @@ double EntropySimple<RecType, Metric>::operator()( // non-kpN version, DEPRECATE
 	}
 	double N = (double)n;
 	entropyEstimate = entropyEstimate * d / N; // mean log * d
-	// entropyEstimate += boost::math::digamma(N) - boost::math::digamma(k) + d*std::log(2.0);
-	entropyEstimate += entropy_details::digamma(N) - entropy_details::digamma(k) + d * std::log(2.0);
+		entropyEstimate += entropy_details::digamma(N) - entropy_details::digamma(k) + d * std::log(2.0);
 
-	if constexpr (!std::is_same<Metric, typename metric::Chebyshev<T>>::value) {
-		double p = 1; // Manhatten and other metrics (TODO check if it is correct for them!)
-		if constexpr (std::is_same<Metric, typename metric::Euclidean<T>>::value) {
+	if constexpr (!std::is_same<Metric, typename mtrc::Chebyshev<T>>::value) {
+		double p = 1; // Manhattan and other metrics (TODO check if it is correct for them!)
+		if constexpr (std::is_same<Metric, typename mtrc::Euclidean<T>>::value) {
 			p = 2; // Euclidean
-		} else if constexpr (std::is_same<Metric, typename metric::P_norm<T>>::value) {
-			p = metric.p; // general Minkowsky
+		} else if constexpr (std::is_same<Metric, typename mtrc::P_norm<T>>::value) {
+			p = metric.exponent(); // general Minkowski
 		}
-		// entropyEstimate += d * std::log(std::tgamma(1 + 1 / p)) - std::log(std::tgamma(1 + d / p)); // boost
-		entropyEstimate += d * std::log(tgamma(1 + 1 / p)) - std::log(tgamma(1 + d / p));
+			entropyEstimate += d * std::log(tgamma(1 + 1 / p)) - std::log(tgamma(1 + d / p));
 	}
 	entropyEstimate /= std::log(logbase);
 	if (exp)
@@ -604,8 +621,19 @@ double Entropy<RecType, Metric>::operator()(const Container &data) const
 	using T = type_traits::underlying_type_t<Container>;
 	using V = type_traits::index_value_type_t<Container>;
 	size_t n = data.size();
+
+	// Degenerate finite spaces: the kpN local-Gaussian estimator needs a handful of
+	// records to form local neighborhoods. Guard on the record count BEFORE touching
+	// data[0] so an empty container cannot trigger out-of-bounds access. NaN is the
+	// documented "estimation failed" sentinel for under-sized inputs.
+	if (n < 4)
+		return std::nan("estimation failed");
+
 	size_t d = data[0].size();
 
+	// NOTE: the requested (k, p) are clamped here for small finite spaces. The
+	// EntropyResult still reports the *requested* k/p, so the effective neighborhood
+	// size can differ from the reported one when n is small (see audit risks).
 	size_t k_ = k;
 	size_t p_ = p;
 	if (p_ >= n)
@@ -617,24 +645,21 @@ double Entropy<RecType, Metric>::operator()(const Container &data) const
 	if (k_ < 2)
 		k_ = 2;
 
-	if (n < 4)
-		return std::nan("estimation failed");
-
 	double h = 0;
 	int got_results = 0; // absents in Matlab original code
 
-	metric::Tree<V, Metric> tree(data, -1, metric);
-	blaze::DynamicMatrix<double> Nodes(p_, d, 0);
-	blaze::DynamicVector<double> mu(d, 0);
-	blaze::DynamicVector<double> lb(d, 0);
-	blaze::DynamicVector<double> ub(d, 0);
-	blaze::DynamicVector<double> x_vector(d, 0);
+	mtrc::Tree<V, Metric> tree(data, -1, metric);
+	mtrc::numeric::DynamicMatrix<double> Nodes(p_, d, 0);
+	mtrc::numeric::DynamicVector<double> mu(d, 0);
+	mtrc::numeric::DynamicVector<double> lb(d, 0);
+	mtrc::numeric::DynamicVector<double> ub(d, 0);
+	mtrc::numeric::DynamicVector<double> x_vector(d, 0);
 	for (size_t i = 0; i < n; ++i) {
 
 		auto res = tree.knn(data[i], p_);
 		auto eps = res[k_ - 1].second;
 
-		blaze::reset(mu);
+		mtrc::numeric::reset(mu);
 		for (size_t p_idx = 0; p_idx < p_; ++p_idx) {	 // r v realizations from the tree
 			for (size_t d_idx = 0; d_idx < d; ++d_idx) { // dimensions
 				// Nodes(p_idx, d_idx) = res[p_idx].first->data[d_idx];
@@ -644,14 +669,14 @@ double Entropy<RecType, Metric>::operator()(const Container &data) const
 			}
 		}
 		mu = mu / p_;
-		Nodes = Nodes - blaze::expand(blaze::trans(mu), Nodes.rows());
+		Nodes = Nodes - mtrc::numeric::expand(mtrc::numeric::trans(mu), Nodes.rows());
 		double offset = 1e-8;
 		// double offset = 1e-5; // TODO consider dependence on machine epsilon
-		auto K =
-			blaze::evaluate((blaze::trans(Nodes) * Nodes) * p_ / (p_ - 1) + blaze::IdentityMatrix<double>(d) * offset);
+		auto K = mtrc::numeric::evaluate((mtrc::numeric::trans(Nodes) * Nodes) * p_ / (p_ - 1) +
+										   mtrc::numeric::IdentityMatrix<double>(d) * offset);
 
-		blaze::reset(lb);
-		blaze::reset(ub);
+		mtrc::numeric::reset(lb);
+		mtrc::numeric::reset(ub);
 		for (size_t d_idx = 0; d_idx < d; ++d_idx) { // dimensions
 			lb[d_idx] = data[i][d_idx] - eps;
 			ub[d_idx] = data[i][d_idx] + eps;
@@ -668,11 +693,40 @@ double Entropy<RecType, Metric>::operator()(const Container &data) const
 		}
 	}
 
-	double result;
-	if (got_results <= 20) // this absents in Matlab original code. TODO adjust min number of points
-		result = std::nan("estimation failed");
-	// result = boost::math::digamma(n) - boost::math::digamma(k) + h/n;
-	result = entropy_details::digamma(n) - entropy_details::digamma(k) + h / n;
+	// Failure sentinel (C11): if NOT A SINGLE point produced a valid local Gaussian
+	// (got_results == 0) there is no information to estimate from -- every eps-box was
+	// degenerate (e.g. a zero-diameter space of identical records, where each truncated
+	// normal collapses to logG = -inf and is rejected). h is then 0 and
+	// digamma(n) - digamma(k) alone is a meaningless finite value, so return the
+	// documented NaN "estimation failed" sentinel, consistent with the n < 4 contract.
+	//
+	// History: the original Matlab code had no such guard. The C4 audit added a
+	// `got_results <= 20` guard but left it INERT (no braces, immediately overwritten by
+	// the unconditional assignment below). A nonzero threshold like 20 would NaN the
+	// promoted n == 4 fixtures (got_results == 4), so the now-live guard is the minimal,
+	// fixture-preserving `== 0` test. See .codex/claude-reports/C11.md.
+	if (got_results == 0)
+		return std::nan("estimation failed");
+
+	// REFERENCE DECISION (C11): the only behavior C11 changes here is the total-failure
+	// sentinel above (got_results == 0 -> NaN). Every NORMALIZATION question is left PINNED
+	// to the promoted regression values, under a single consistent standard: do not alter
+	// valid-input fixtures without sign-off + regeneration against the hal-01272527
+	// reference (no in-repo oracle exists). Three coupled normalization choices are known
+	// to be debatable but are deliberately NOT touched:
+	//   1. The mean uses h / n. h is summed only over the got_results points with a valid
+	//      local Gaussian, so h / n implicitly assigns 0 to rejected points (whose true
+	//      contribution diverges). h / got_results is an equally ad-hoc alternative -- and
+	//      would be internally inconsistent unless digamma(n) also became digamma(got_results).
+	//      For every non-degenerate space got_results == n, so this is moot there.
+	//   2. digamma(n) uses the full record count n.
+	//   3. digamma(k) uses the REQUESTED k, not the clamped effective k_ that actually
+	//      defined eps (eps = res[k_-1].second). For small/clamped spaces this biases the
+	//      estimate by digamma(k) - digamma(k_): empirically the tuned (k=3) and default
+	//      (k=7) n == 4 fixtures run IDENTICAL geometry (k_ == 2, p_ == 3, got_results == 4)
+	//      and differ ONLY by digamma(k); correcting to digamma(k_) collapses them.
+	// All three are deferred together. See .codex/claude-reports/C11.md and the docs.
+		double result = entropy_details::digamma(n) - entropy_details::digamma(k) + h / n;
 	if (exp)
 		return entropy_details::conv_diff_entropy(result); // conversion of values below 1 to exp scale
 	return result;
@@ -850,6 +904,6 @@ VOI(const C& Xc, const C& Yc, int k, int p)
 
 // */
 
-} // namespace metric
+} // namespace mtrc
 
 #endif

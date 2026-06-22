@@ -13,9 +13,9 @@ Copyright (c) 2019  Michael Welsch
 
 namespace helper_functions {
 
-template <typename T, bool SO> void shrinkToFit(blaze::CompressedVector<T, SO> &mat)
+template <typename T, bool SO> void shrinkToFit(mtrc::numeric::CompressedVector<T, SO> &mat)
 {
-	blaze::CompressedVector<T>(~mat).swap(~mat);
+	mtrc::numeric::CompressedVector<T>(~mat).swap(~mat);
 }
 
 template <typename T> T Lerp(T v0, T v1, T t) { return (1 - t) * v0 + t * v1; }
@@ -309,15 +309,15 @@ Container pchip(Container const &x, Container const &y, Container const &xi, boo
 }
 
 template <typename Container>
-blaze::CompressedVector<typename Container::value_type> smoothDenoise(Container const &data,
-																	  typename Container::value_type const &tresh)
+mtrc::numeric::CompressedVector<typename Container::value_type>
+smoothDenoise(Container const &data, typename Container::value_type const &tresh)
 {
 	// smooth reduces of noise by threshold and gives back a sparse vector.
 	//  initialize
 
 	using T = typename Container::value_type;
 
-	blaze::CompressedVector<T> svector(data.size());
+	mtrc::numeric::CompressedVector<T> svector(data.size());
 	svector.reserve(data.size());
 
 	bool lastEqualsZero;
@@ -355,7 +355,7 @@ blaze::CompressedVector<typename Container::value_type> smoothDenoise(Container 
 	return svector;
 }
 
-template <typename T> std::vector<T> sparseToVector(blaze::CompressedVector<T> const &data)
+template <typename T> std::vector<T> sparseToVector(mtrc::numeric::CompressedVector<T> const &data)
 {
 
 	std::vector<T> values_zeropadded;
@@ -366,7 +366,7 @@ template <typename T> std::vector<T> sparseToVector(blaze::CompressedVector<T> c
 	int index;
 	int index_last = -1;
 
-	for (blaze::CompressedVector<double>::ConstIterator it = data.cbegin(); it != data.cend(); ++it) {
+	for (mtrc::numeric::CompressedVector<double>::ConstIterator it = data.cbegin(); it != data.cend(); ++it) {
 		index = it->index(); // Read access to the index of the non-zero element.
 		value = it->value(); // Read access to the value of the non-zero element.
 
@@ -406,7 +406,7 @@ template <typename T> std::vector<T> sparseToVector(blaze::CompressedVector<T> c
 }
 
 template <typename Container>
-Container sparseToContainer(blaze::CompressedVector<typename Container::value_type> const &data)
+Container sparseToContainer(mtrc::numeric::CompressedVector<typename Container::value_type> const &data)
 {
 	using T = typename Container::value_type;
 
@@ -418,7 +418,7 @@ Container sparseToContainer(blaze::CompressedVector<typename Container::value_ty
 	int index;
 	int index_last = -1;
 
-	for (blaze::CompressedVector<double>::ConstIterator it = data.cbegin(); it != data.cend(); ++it) {
+	for (mtrc::numeric::CompressedVector<double>::ConstIterator it = data.cbegin(); it != data.cend(); ++it) {
 		index = it->index(); // Read access to the index of the non-zero element.
 		value = it->value(); // Read access to the value of the non-zero element.
 
@@ -457,10 +457,10 @@ Container sparseToContainer(blaze::CompressedVector<typename Container::value_ty
 	return values_zeropadded;
 }
 
-template <typename T> blaze::CompressedVector<T> zeroPad(blaze::CompressedVector<T> const &data)
+template <typename T> mtrc::numeric::CompressedVector<T> zeroPad(mtrc::numeric::CompressedVector<T> const &data)
 {
-	// adds zero pads to blaze::sparsevector (for preparing sed)
-	blaze::CompressedVector<T> data_zeropadded(data.size());
+	// adds zero pads to mtrc::numeric::sparsevector (for preparing sed)
+	mtrc::numeric::CompressedVector<T> data_zeropadded(data.size());
 	data_zeropadded.reserve(2 + data.nonZeros() * 2);
 	T value;
 	bool addZeroFront;
@@ -473,7 +473,7 @@ template <typename T> blaze::CompressedVector<T> zeroPad(blaze::CompressedVector
 		data_zeropadded.set(data.size() - 1, T(0));
 	} else {
 
-		for (blaze::CompressedVector<double>::ConstIterator it = data.cbegin(); it != data.cend(); ++it) {
+		for (mtrc::numeric::CompressedVector<double>::ConstIterator it = data.cbegin(); it != data.cend(); ++it) {
 			index = it->index(); // Read access to the index of the non-zero element.
 			value = it->value(); // Read access to the value of the non-zero element.
 
@@ -512,7 +512,8 @@ template <typename T> blaze::CompressedVector<T> zeroPad(blaze::CompressedVector
 
 // distance measure by time elastic cost matrix.
 template <typename T>
-T TWED(blaze::CompressedVector<T> const &As, blaze::CompressedVector<T> const &Bs, T const &penalty, T const &elastic)
+T TWED(mtrc::numeric::CompressedVector<T> const &As, mtrc::numeric::CompressedVector<T> const &Bs, T const &penalty,
+	   T const &elastic)
 {
 	// calculates the Time Warp Edit Distance (TWED) for the sparse vectors A(time) und B(time)
 	//
@@ -534,12 +535,12 @@ T TWED(blaze::CompressedVector<T> const &As, blaze::CompressedVector<T> const &B
 	std::vector<T> timeB;
 	timeB.reserve(Bs.nonZeros());
 
-	for (blaze::CompressedVector<double>::ConstIterator it = As.cbegin(); it != As.cend(); ++it) {
+	for (mtrc::numeric::CompressedVector<double>::ConstIterator it = As.cbegin(); it != As.cend(); ++it) {
 		timeA.push_back(it->index()); // Read access to the index of the non-zero element.
 		A.push_back(it->value());	  // Read access to the value of the non-zero element.
 	}
 
-	for (blaze::CompressedVector<double>::ConstIterator it = Bs.cbegin(); it != Bs.cend(); ++it) {
+	for (mtrc::numeric::CompressedVector<double>::ConstIterator it = Bs.cbegin(); it != Bs.cend(); ++it) {
 		timeB.push_back(it->index()); // Read access to the index of the non-zero element.
 		B.push_back(it->value());	  // Read access to the value of the non-zero element.
 	}

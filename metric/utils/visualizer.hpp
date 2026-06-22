@@ -9,7 +9,7 @@
 #ifndef _METRIC_UTILS_VISUALIZER_HPP
 #define _METRIC_UTILS_VISUALIZER_HPP
 
-#include <blaze/Blaze.h>
+#include <metric/numeric.hpp>
 #include <string>
 
 namespace mat2bmp {
@@ -20,7 +20,7 @@ namespace mat2bmp {
  * @param m
  * @param filename
  */
-template <class BlazeMatrix> void blaze2bmp(BlazeMatrix m, std::string filename);
+template <class Matrix> void matrix_to_bmp(Matrix m, std::string filename);
 
 /**
  * @brief
@@ -28,7 +28,7 @@ template <class BlazeMatrix> void blaze2bmp(BlazeMatrix m, std::string filename)
  * @param m
  * @param filename
  */
-template <class BlazeMatrix> void blaze2bmp_norm(BlazeMatrix m, std::string filename);
+template <class Matrix> void matrix_to_bmp_norm(Matrix m, std::string filename);
 
 } // namespace mat2bmp
 

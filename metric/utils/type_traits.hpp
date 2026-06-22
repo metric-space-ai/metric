@@ -11,7 +11,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace metric::type_traits {
+namespace mtrc::type_traits {
 /**
  * @brief if T is a container and implemented operator[] value is true, otherwise value is false
  *
@@ -19,8 +19,7 @@ namespace metric::type_traits {
  *
  */
 template <typename T> class is_has_index_operator {
-	struct nil_t {
-	};
+	struct nil_t {};
 	template <typename U> static constexpr auto test(U *) -> decltype(std::declval<U &>()[0]);
 	template <typename> static constexpr auto test(...) -> nil_t;
 
@@ -35,8 +34,7 @@ template <typename T> class is_has_index_operator {
  * @tparam T checking type
  */
 template <typename T> class is_has_resize_method {
-	struct nil_t {
-	};
+	struct nil_t {};
 	template <typename U> static constexpr auto test(U *) -> decltype(std::declval<U &>().resize(0));
 	template <typename> static constexpr auto test(...) -> nil_t;
 
@@ -134,5 +132,5 @@ template <typename T> struct underlying_type {
  */
 template <typename T> using underlying_type_t = typename underlying_type<T>::type;
 
-} // namespace metric::type_traits
+} // namespace mtrc::type_traits
 #endif

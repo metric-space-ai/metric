@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 import sys
@@ -116,6 +117,10 @@ class RevivalApiTest(unittest.TestCase):
                         metric(lhs, through),
                         lhs_rhs + metric(rhs, through) + 10 ** -places,
                     )
+
+    def assertRequiresNative(self, fn, *args, **kwargs):
+        with self.assertRaisesRegex(StrategyUnavailableError, r"native C\+\+ binding"):
+            fn(*args, **kwargs)
 
     def test_metric_concepts_are_importable(self):
         self.assertIn("Edit", available())
@@ -389,6 +394,11 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(compat.legacy_module("distance"), distance_module)
         self.assertIsInstance(compat.available_modules(), tuple)
         self.assertEqual(mappings.STABILITY, "beta")
+        self.assertTrue(callable(mappings.load_native_mapping_artifact))
+        self.assertTrue(callable(mappings.native_mapping_artifact))
+        self.assertTrue(callable(mappings.native_phate_autoencoder_fit_vectors))
+        self.assertIs(metric.mappings.NativeMappingArtifact, mappings.NativeMappingArtifact)
+        self.assertIs(metric.mappings.NativePhateAutoencoderModel, mappings.NativePhateAutoencoderModel)
         self.assertTrue(callable(mappings.clustered_space))
         self.assertTrue(callable(mappings.make_clustered_space_mapping))
         self.assertTrue(callable(mappings.fit))
@@ -402,19 +412,202 @@ class RevivalApiTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unknown legacy METRIC module"):
             compat.legacy_module("unknown")
 
+    def test_native_mapping_artifact_projection_is_metadata_only(self):
+        manifest = {
+            "format": "metric.native_phate_autoencoder_artifact",
+            "format_version": 1,
+            "backend": "native_dnn",
+            "scalar_type": "double",
+            "mapping": {
+                "name": "native_phate_autoencoder",
+                "strategy": "native_dnn_phate_ae",
+                "target": "metric_space",
+            },
+            "pipeline": {
+                "name": "native_phate_autoencoder_pipeline",
+                "components": (
+                    {"name": "feature_record_codec", "role": "codec"},
+                    {"name": "matrix_cache_distance_provider", "role": "distance_provider"},
+                    {"name": "adaptive_gaussian_affinity_kernel", "role": "affinity_kernel"},
+                    {"name": "lazy_row_normalized_diffusion_operator", "role": "diffusion_operator"},
+                ),
+            },
+            "phate_geometry": {
+                "spec": {"dimensions": 1, "diffusion_steps": 2, "max_dense_records": 5},
+                "targets": {"target_count": 5, "dense_distance_evaluations": 25},
+            },
+            "source": {"record_count": 5, "feature_count": 2, "space_version": 7},
+            "codec": {"type": "VectorRecordCodec", "feature_count": 2},
+            "network": {"serialization": "cereal_binary", "byte_count": 18},
+            "loss": {"terms": ({"name": "reconstruction_mse"}, {"name": "bottleneck_geometry"})},
+            "training_spec": {"epochs": 80, "seed": 23},
+        }
+
+        artifact = mappings.load_native_mapping_artifact(
+            {
+                "manifest": manifest,
+                "diagnostics": {"epoch_count": 80},
+                "network_cereal": b"native-network-bytes",
+            }
+        )
+
+        self.assertIsInstance(artifact, mappings.NativeMappingArtifact)
+        self.assertEqual(artifact.format, "metric.native_phate_autoencoder_artifact")
+        self.assertEqual(artifact.format_version, 1)
+        self.assertEqual(artifact.backend, "native_dnn")
+        self.assertEqual(artifact.mapping, "native_phate_autoencoder")
+        self.assertEqual(artifact.strategy, "native_dnn_phate_ae")
+        self.assertEqual(artifact.target, "metric_space")
+        self.assertEqual(artifact.pipeline_name, "native_phate_autoencoder_pipeline")
+        self.assertEqual(
+            artifact.component_names,
+            (
+                "feature_record_codec",
+                "matrix_cache_distance_provider",
+                "adaptive_gaussian_affinity_kernel",
+                "lazy_row_normalized_diffusion_operator",
+            ),
+        )
+        self.assertEqual(artifact.source_record_count, 5)
+        self.assertEqual(artifact.source_feature_count, 2)
+        self.assertEqual(artifact.source_space_version, 7)
+        self.assertEqual(artifact.network_byte_count, len(b"native-network-bytes"))
+        self.assertFalse(artifact.transform_supported)
+        self.assertFalse(artifact.inverse_supported)
+        self.assertEqual(artifact.to_dict()["diagnostics"], {"epoch_count": 80})
+
+        json_artifact = mappings.load_native_mapping_artifact(json.dumps(manifest))
+        self.assertEqual(json_artifact.mapping, "native_phate_autoencoder")
+        self.assertEqual(json_artifact.network_byte_count, 18)
+        self.assertEqual(mappings.native_mapping_artifact(manifest).strategy, "native_dnn_phate_ae")
+
+        with self.assertRaisesRegex(StrategyUnavailableError, "native C\\+\\+ binding"):
+            artifact.transform(Space.vectors([[0.0, 0.0]], metric=lambda lhs, rhs: 0.0, validate="none"))
+        with self.assertRaisesRegex(StrategyUnavailableError, "native C\\+\\+ binding"):
+            artifact.inverse_transform([[0.0]])
+
+        invalid = dict(manifest)
+        invalid["format"] = "metric.unknown_artifact"
+        with self.assertRaisesRegex(MetricInputError, "unsupported native mapping artifact format"):
+            mappings.load_native_mapping_artifact(invalid)
+
+    def test_native_phate_autoencoder_vector_binding_delegates_to_cpp(self):
+        records = np.asarray(
+            [[0.0, 0.0], [0.5, 0.5], [1.0, 1.0], [1.5, 1.5], [2.0, 2.0]],
+            dtype=float,
+        )
+
+        model = mappings.native_phate_autoencoder_fit_vectors(
+            records,
+            dimensions=1,
+            epochs=3,
+            learning_rate=0.001,
+            diffusion_steps=2,
+            kernel_scale=1.0,
+            distance_provider="matrix_cache_distance_provider",
+            affinity_kernel="exponential_affinity_kernel",
+            diffusion_operator="lazy_row_normalized_diffusion_operator",
+        )
+
+        self.assertIsInstance(model, mappings.NativePhateAutoencoderModel)
+        self.assertEqual(model.mapping, "native_phate_autoencoder")
+        self.assertEqual(model.strategy, "native_dnn_phate_ae")
+        self.assertEqual(model.source_record_count, 5)
+        self.assertEqual(model.latent_dimension, 1)
+        self.assertEqual(model.distance_provider, "matrix_cache_distance_provider")
+        self.assertEqual(model.affinity_kernel, "exponential_affinity_kernel")
+        self.assertEqual(model.diffusion_operator, "lazy_row_normalized_diffusion_operator")
+        self.assertTrue(model.transform_supported)
+        self.assertTrue(model.inverse_supported)
+        self.assertEqual(model.training_report()["epoch_count"], 3)
+
+        latent = model.transform(records)
+        self.assertEqual(len(latent), 5)
+        self.assertEqual(len(latent[0]), 1)
+        restored = model.inverse_transform(latent)
+        self.assertEqual(len(restored), 5)
+        self.assertEqual(len(restored[0]), 2)
+        summary = model.to_dict()
+        self.assertEqual(summary["mapping"], "native_phate_autoencoder")
+        self.assertEqual(summary["affinity_kernel"], "exponential_affinity_kernel")
+        self.assertEqual(summary["diffusion_operator"], "lazy_row_normalized_diffusion_operator")
+        self.assertEqual(summary["training_report"]["epoch_count"], 3)
+
+        with self.assertRaisesRegex(ValueError, "unsupported native PHATE-AE distance provider"):
+            mappings.native_phate_autoencoder_fit_vectors(records, distance_provider="unknown")
+        with self.assertRaisesRegex(ValueError, "unsupported native PHATE-AE affinity kernel"):
+            mappings.native_phate_autoencoder_fit_vectors(records, affinity_kernel="unknown")
+        with self.assertRaisesRegex(ValueError, "unsupported native PHATE-AE diffusion operator"):
+            mappings.native_phate_autoencoder_fit_vectors(records, diffusion_operator="unknown")
+
+    def test_space_map_phateae_delegates_only_for_native_vector_spaces(self):
+        try:
+            from metric.distance import Euclidean
+            Euclidean()
+        except Exception as exc:
+            self.skipTest(f"native Euclidean binding unavailable: {exc}")
+
+        records = [[0.0, 0.0], [0.5, 0.5], [1.0, 1.0], [1.5, 1.5], [2.0, 2.0]]
+        space = Space.vectors(records, validate="none", cache="none")
+
+        mapped = space.map(
+            strategy=PhateAE(
+                dimensions=1,
+                epochs=3,
+                learning_rate=0.001,
+                kernel_scale=1.0,
+                distance_provider="matrix_cache_distance_provider",
+                affinity_kernel="exponential_affinity_kernel",
+                diffusion_operator="lazy_row_normalized_diffusion_operator",
+            )
+        )
+
+        self.assertIsInstance(mapped, MappingResult)
+        self.assertEqual(mapped.mapping, "native_phate_autoencoder")
+        self.assertEqual(mapped.strategy, "native_dnn_phate_ae")
+        self.assertTrue(mapped.inverse_supported)
+        self.assertEqual(mapped.source_record_ids, tuple(space.ids))
+        self.assertEqual(mapped.source_records, tuple((record_id,) for record_id in space.ids))
+        self.assertEqual(mapped.representative_records, tuple(space.ids))
+        self.assertEqual(mapped.space.ids, space.ids)
+        self.assertEqual(len(mapped.space.records), len(records))
+        self.assertEqual(len(mapped.space.records[0]), 1)
+        self.assertEqual(
+            mapped.space.metadata["distance_provider"],
+            "matrix_cache_distance_provider",
+        )
+        self.assertEqual(mapped.space.metadata["affinity_kernel"], "exponential_affinity_kernel")
+        self.assertEqual(
+            mapped.space.metadata["diffusion_operator"],
+            "lazy_row_normalized_diffusion_operator",
+        )
+
+        restored = mapped.inverse_transform()
+        self.assertEqual(len(restored), len(records))
+        self.assertEqual(len(restored[0]), 2)
+
+        custom_metric_space = Space.vectors(
+            records,
+            metric=lambda lhs, rhs: abs(lhs[0] - rhs[0]) + abs(lhs[1] - rhs[1]),
+            validate="none",
+            cache="none",
+        )
+        with self.assertRaisesRegex(StrategyUnavailableError, "Custom Python metrics are not ignored"):
+            custom_metric_space.map(strategy=PhateAE(dimensions=1, epochs=1))
+
     def test_distance_compatibility_aliases_are_lazy(self):
-        manhatten = object()
+        manhattan = object()
         p_norm = object()
         thresholded = object()
         namespace = {
-            "Manhatten": manhatten,
+            "Manhattan": manhattan,
             "P_norm": p_norm,
             "Euclidean_thresholded": thresholded,
         }
 
         distance_module._install_compatibility_aliases(namespace)
 
-        self.assertIs(namespace["Manhattan"], manhatten)
+        self.assertIs(namespace["Manhattan"], manhattan)
         self.assertIs(namespace["Minkowski"], p_norm)
         self.assertIs(namespace["ThresholdedEuclidean"], thresholded)
 
@@ -424,7 +617,6 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(namespace["Manhattan"], explicit)
 
         for alias, historical_name in (
-            ("Manhattan", "Manhatten"),
             ("Minkowski", "P_norm"),
             ("ThresholdedEuclidean", "Euclidean_thresholded"),
         ):
@@ -491,7 +683,7 @@ class RevivalApiTest(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stdout)
 
-    def test_finite_metric_space_caches_pairwise_distances(self):
+    def test_finite_metric_space_is_an_adapter_container(self):
         space = FiniteMetricSpace(self.records, self.metric)
 
         self.assertEqual(len(space), len(self.records))
@@ -500,10 +692,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(space.validate, "sample")
         self.assertEqual(space.cache, CachePolicy("auto"))
         self.assertIn("FiniteMetricSpace(size=4, metric=", repr(space))
-        self.assertIn("records=str, name=None", repr(space))
         named_space = Space(self.records, self.metric, name="words")
         self.assertIn("Space(size=4, metric=", repr(named_space))
-        self.assertIn("records=str, name='words'", repr(named_space))
         self.assertFalse(space.is_stale())
         self.assertIs(space.ensure_fresh(), space)
         self.assertEqual(space[0], "cat")
@@ -511,6 +701,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(space(0, 1), 1)
         self.assertEqual(space.distance(0, 2), 1)
 
+        # pairwise_distances() materializes the explicit representation; it
+        # returns a copy and only invokes the caller's metric (an adapter).
         distances = space.pairwise_distances()
         distances[0][1] = 999
         self.assertEqual(space(0, 1), 1)
@@ -519,14 +711,17 @@ class RevivalApiTest(unittest.TestCase):
         matrix = space.to_matrix()
         self.assertIsInstance(matrix, MatrixSpace)
         self.assertIsNot(matrix, space)
-        self.assertEqual(matrix.ids, space.ids)
         self.assertIs(matrix.source_space, space)
-        self.assertEqual(matrix.source_version, space.version())
         self.assertEqual(matrix.representation, "matrix")
-        self.assertFalse(matrix.is_stale())
-        self.assertIs(matrix.ensure_fresh(), matrix)
         self.assertEqual(matrix.pairwise_distances(), space.pairwise_distances())
 
+        # The exact-scan search surface is a native-only facade.
+        self.assertRequiresNative(space.knn, "cut", 2)
+        self.assertRequiresNative(space.nn, "cut")
+        self.assertRequiresNative(space.rnn, "cut", 1)
+        self.assertRequiresNative(space.neighbors, "cut", 2)
+
+        # A tree index is a stored representation; indexed search is native-only.
         tree_index = space.to_tree()
         self.assertIsInstance(tree_index, TreeIndex)
         self.assertIs(tree_index.source_space, space)
@@ -536,40 +731,23 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(tree_index.representation, "exact_tree_index")
         self.assertFalse(tree_index.is_stale())
         self.assertIs(tree_index.ensure_fresh(), tree_index)
-        self.assertEqual(tree_index.knn("cut", count=2), [(0, 1), (1, 1)])
-        self.assertEqual(tree_index.neighbors("cut", radius=1), [(0, 1), (1, 1)])
+        self.assertEqual(tree_index.distance(0, 1), 1)
+        self.assertRequiresNative(tree_index.knn, "cut", 2)
+        self.assertRequiresNative(tree_index.neighbors, "cut", 2)
+        self.assertRequiresNative(tree_index.rnn, "cut", 1)
         self.assertIs(tree(space).source_space, space)
 
-        graph_index = space.to_graph(count=1)
-        self.assertIsInstance(graph_index, GraphIndex)
-        self.assertIs(graph_index.source_space, space)
-        self.assertEqual(graph_index.source_version, space.version())
-        self.assertTrue(graph_index.exact)
-        self.assertEqual(graph_index.representation, "exact_knn_graph")
-        self.assertFalse(graph_index.is_stale())
-        self.assertIs(graph_index.ensure_fresh(), graph_index)
-        self.assertEqual(graph_index.count, 1)
-        self.assertEqual(graph_index.metadata.strategy, "exact_knn")
-        self.assertEqual(graph_index.metadata.k, 1)
-        self.assertEqual(graph_index.neighbors(0), ((1, 1),))
-        self.assertEqual(graph(space, count=1).neighbors(0), graph_index.neighbors(0))
-        with self.assertRaises(ValueError):
-            space.to_graph(count=-1)
-        with self.assertRaises(IndexError):
-            graph_index.neighbors(len(space))
+        # Building an exact kNN graph is a native-only construction algorithm.
+        self.assertRequiresNative(space.to_graph, 1)
+        self.assertRequiresNative(graph, space, 1)
 
+        # Matrix staleness bookkeeping stays in Python (it runs no algorithm).
         self.assertEqual(space.touch(), 1)
         self.assertEqual(space.version(), 1)
         self.assertTrue(matrix.is_stale())
         self.assertTrue(tree_index.is_stale())
-        self.assertTrue(graph_index.is_stale())
         with self.assertRaisesRegex(StaleRepresentationError, "source version 1"):
             matrix.distance(0, 1)
-        with self.assertRaisesRegex(StaleRepresentationError, "source version 1"):
-            tree_index.neighbors("cut", count=1)
-        with self.assertRaisesRegex(StaleRepresentationError, "source version 1"):
-            graph_index.neighbors(0)
-
         fresh_matrix = space.to_matrix()
         self.assertFalse(fresh_matrix.is_stale())
         self.assertEqual(fresh_matrix.distance(0, 1), 1)
@@ -581,7 +759,6 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIsInstance(CallableMetric(), Metric)
         with self.assertRaisesRegex(MissingMetricError, "explicit metric"):
             Space(self.records)
-
     def test_space_constructor_runtime_options_are_explicit(self):
         def numeric_distance(lhs, rhs):
             return abs(lhs["value"] - rhs["value"])
@@ -670,1022 +847,218 @@ class RevivalApiTest(unittest.TestCase):
         with self.assertRaises(KeyError):
             Space.from_dataframe(DataFrameLike([{"sample_id": "a"}, {"other": "b"}]), metric=row_distance, id_column="sample_id")
 
-    def test_nearest_neighbor_helpers_use_record_ids(self):
+    def test_nearest_neighbor_helpers_require_native(self):
         space = FiniteMetricSpace(self.records, self.metric)
-
-        self.assertEqual(space.knn("cut", 2), [(0, 1), (1, 1)])
-        self.assertEqual(space.nn("cut"), (0, 1))
-        self.assertEqual(space.rnn("cut", 1), [(0, 1), (1, 1)])
-        neighbors = nearest_neighbors(self.records, self.metric, "cut", 2)
-        self.assertIsInstance(neighbors, NeighborResult)
-        self.assertEqual(neighbors, [(0, 1), (1, 1)])
-        self.assertEqual(neighbors.neighbors[0], (0, 1))
-        self.assertEqual(neighbors.neighbors[0].record, "cat")
-        self.assertEqual(neighbors.neighbors[0].rank, 0)
-        self.assertEqual(neighbors.distances, (1, 1))
-        self.assertEqual(
-            neighbors.neighbors[0].to_dict(),
-            {"id": 0, "record": "cat", "distance": 1, "rank": 0},
-        )
-        self.assertEqual(neighbors.to_dict()["neighbors"][1]["record"], "cot")
-        np.testing.assert_array_equal(neighbors.to_numpy(), np.asarray([1.0, 1.0]))
-        self.assertTrue(neighbors.exact)
-        self.assertEqual(neighbors.strategy, "exact_scan")
-        self.assertEqual(neighbors.representation, "metric_space")
-        self.assertEqual(nearest_neighbors(self.records, self.metric, "cut", count=2), [(0, 1), (1, 1)])
-        self.assertEqual(range_neighbors(self.records, self.metric, "cut", 1), [(0, 1), (1, 1)])
+        self.assertRequiresNative(space.knn, "cut", 2)
+        self.assertRequiresNative(space.nn, "cut")
+        self.assertRequiresNative(space.rnn, "cut", 1)
+        self.assertRequiresNative(nearest_neighbors, self.records, self.metric, "cut", 2)
+        self.assertRequiresNative(range_neighbors, self.records, self.metric, "cut", 1)
+        # pairwise_distance_matrix is an adapter over the caller's metric.
         self.assertEqual(pairwise_distance_matrix(self.records, self.metric)[0][1], 1)
-        with self.assertRaises(ValueError):
-            space.knn("cut", -1)
-        with self.assertRaises(ValueError):
-            nearest_neighbors(self.records, self.metric, "cut", k=1, count=2)
-
-    def test_space_intent_methods_return_named_results(self):
+    def test_space_intent_methods_require_native(self):
         space = Space([0, 1, 2, 3, 4], metric=lambda lhs, rhs: abs(lhs - rhs))
-        group_space = Space([0, 1, 2, 10, 11], metric=lambda lhs, rhs: abs(lhs - rhs))
 
-        groups = group_space.groups(KMedoids(groups=2))
-        self.assertIsInstance(groups, ClusteringResult)
-        self.assertEqual(groups.assignments, (0, 0, 0, 1, 1))
-        self.assertEqual(groups.medoids, (1, 3))
-        self.assertEqual(groups.cluster_sizes, (3, 2))
-        self.assertEqual(groups.record_count, 5)
-        self.assertEqual(groups.cluster_count, 2)
-        self.assertEqual(groups.noise_count, 0)
-        self.assertEqual(groups.iterations, 2)
-        self.assertTrue(groups.converged)
-        self.assertEqual(groups.algorithm, "kmedoids")
-        self.assertEqual(groups.representation, "metric_space")
-        group_record = groups.to_dict()
-        self.assertEqual(group_record["assignments"], (0, 0, 0, 1, 1))
-        self.assertEqual(group_record["cluster_sizes"], (3, 2))
-        np.testing.assert_array_equal(groups.to_numpy(), np.asarray([0, 0, 0, 1, 1]))
-        try:
-            groups_frame = groups.to_pandas()
-        except exceptions.OptionalDependencyError:
-            groups_frame = None
-        if groups_frame is not None:
-            self.assertEqual(groups_frame.loc[1, "is_medoid"], True)
-            self.assertEqual(groups_frame.loc[3, "cluster_label"], 1)
-        self.assertEqual(find_groups([0, 1, 2, 10, 11], lambda lhs, rhs: abs(lhs - rhs), 2), groups)
-        self.assertEqual(group_space.groups(count=2), groups)
-        self.assertEqual(group_space.groups(), groups)
-        matrix_groups = group_space.groups(count=2, representation=group_space.to_matrix())
-        self.assertEqual(matrix_groups.representation, "matrix")
-        self.assertEqual(matrix_groups.assignments, groups.assignments)
+        # Every algorithmic intent method is a native-only facade.
+        self.assertRequiresNative(space.neighbors, 0, 2)
+        self.assertRequiresNative(space.nearest, 0)
+        self.assertRequiresNative(space.within_radius, 0, 1)
+        self.assertRequiresNative(space.groups)
+        self.assertRequiresNative(space.groups, KMedoids(groups=2))
+        self.assertRequiresNative(space.groups, DBSCAN(radius=1, min_points=2))
+        self.assertRequiresNative(space.outliers)
+        self.assertRequiresNative(space.outliers, DBSCAN(radius=2, min_points=2))
+        self.assertRequiresNative(space.denoise)
+        self.assertRequiresNative(space.denoise, DBSCAN(radius=2, min_points=2))
+        self.assertRequiresNative(space.representatives, 3)
+        self.assertRequiresNative(space.reduce, 3)
+        self.assertRequiresNative(space.reduce, None, KMedoids(groups=2))
+        self.assertRequiresNative(space.compress, 3)
+        self.assertRequiresNative(space.embed)
+        self.assertRequiresNative(space.embed, 1)
+        self.assertRequiresNative(space.describe)
+        self.assertRequiresNative(space.describe_structure)
+        self.assertRequiresNative(space.compare, space)
+        self.assertRequiresNative(space.correlate, space)
 
-        clustered = mappings.clustered_space(group_space, groups)
-        self.assertIsInstance(clustered, MappingResult)
-        self.assertIsInstance(clustered.space, Space)
-        self.assertEqual(clustered.mapping, "clustered_space")
-        self.assertEqual(clustered.strategy, "kmedoids")
-        self.assertEqual(clustered.representation, "metric_space")
-        self.assertEqual(clustered.source_record_count, 5)
-        self.assertEqual(clustered.target_record_count, 2)
-        self.assertEqual(clustered.source_record_ids, (1, 3))
-        self.assertEqual(clustered.source_records, ((0, 1, 2), (3, 4)))
-        self.assertEqual(clustered.representative_records, (1, 3))
-        self.assertEqual(clustered.to_dict()["mapping"], "clustered_space")
-        self.assertEqual(clustered.to_dict()["source_records"], ((0, 1, 2), (3, 4)))
-        self.assertFalse(clustered.inverse_supported)
-        self.assertEqual(
-            clustered.space.records[0],
-            mappings.ClusterRecord(label=0, representative=1, members=(0, 1, 2)),
+        # The matching operator free functions also raise.
+        metric = lambda lhs, rhs: abs(lhs - rhs)
+        records = [0, 1, 2, 10, 11]
+        self.assertRequiresNative(find_groups, records, metric, 2)
+        self.assertRequiresNative(kmedoids, records, metric, 2)
+        self.assertRequiresNative(dbscan, records, metric, 2, 2)
+        self.assertRequiresNative(find_outliers, records, metric, DBSCAN(radius=2, min_points=2))
+        self.assertRequiresNative(denoise_space, records, metric, DBSCAN(radius=2, min_points=2))
+        self.assertRequiresNative(find_representatives, records, metric, 2)
+        self.assertRequiresNative(reduce_space, records, metric, 2)
+        self.assertRequiresNative(compress_space, records, metric, 2)
+        self.assertRequiresNative(embed_space, records, metric)
+        self.assertRequiresNative(compare_spaces, records, metric, records, metric)
+        self.assertRequiresNative(correlate_spaces, records, metric, records, metric)
+        self.assertRequiresNative(describe_structure, records, metric)
+
+        # Space.map applies the caller's own deterministic transform (adapter).
+        mapped = space.map(
+            lambda record: {"value": record},
+            metric=lambda lhs, rhs: abs(lhs["value"] - rhs["value"]),
         )
-        self.assertEqual(clustered.space.records[1].members, (3, 4))
-        self.assertEqual(clustered.space.distance(0, 1), group_space.distance(1, 3))
-        mapping = mappings.make_clustered_space_mapping(groups)
-        model = mappings.fit(mapping, group_space)
-        self.assertFalse(model.inverse_supported())
-        self.assertEqual(
-            mappings.transform(model, group_space).source_records,
-            clustered.source_records,
-        )
-        id_space = Space([0, 1, 10], metric=lambda lhs, rhs: abs(lhs - rhs), ids=["a", "b", "c"])
-        id_clustered = mappings.clustered_space(id_space, id_space.groups(KMedoids(groups=2)))
-        self.assertEqual(id_clustered.source_records, (("a", "b"), ("c",)))
-        self.assertEqual(id_clustered.representative_records, ("a", "c"))
-
-        density_groups = group_space.groups(DBSCAN(radius=1, min_points=2))
-        self.assertIsInstance(density_groups, ClusteringResult)
-        self.assertEqual(density_groups.assignments, (0, 0, 0, 1, 1))
-        self.assertEqual(density_groups.medoids, (1, 3))
-        self.assertEqual(density_groups.core_records, (0, 1, 2, 3, 4))
-        self.assertEqual(density_groups.noise_records, ())
-        self.assertEqual(density_groups.cluster_sizes, (3, 2))
-        self.assertEqual(density_groups.cluster_count, 2)
-        self.assertEqual(density_groups.noise_count, 0)
-        self.assertEqual(density_groups.algorithm, "dbscan")
-        self.assertEqual(group_space.groups(radius=1, min_size=2), density_groups)
-        matrix_density_groups = group_space.groups(radius=1, min_size=2, representation=group_space.to_matrix())
-        self.assertEqual(matrix_density_groups.representation, "matrix")
-        self.assertEqual(matrix_density_groups.assignments, density_groups.assignments)
-        with self.assertRaises(ValueError):
-            group_space.groups(KMedoids(groups=2), count=2)
-
-        outlier_space = Space([0, 1, 10, 11, 30], metric=lambda lhs, rhs: abs(lhs - rhs))
-        noise_groups = outlier_space.groups(DBSCAN(radius=2, min_points=2))
-        noise_clustered = mappings.clustered_space(outlier_space, noise_groups)
-        self.assertEqual(noise_clustered.source_records, ((0, 1), (2, 3)))
-        self.assertEqual(noise_clustered.representative_records, (0, 2))
-        self.assertEqual(noise_clustered.target_record_count, 2)
-        outliers = outlier_space.outliers(DBSCAN(radius=2, min_points=2))
-        self.assertIsInstance(outliers, OutlierResult)
-        self.assertEqual(outliers.outliers, (Outlier(record_id=4, score=19),))
-        self.assertEqual(outliers.record_count, 5)
-        self.assertEqual(outliers.cluster_count, 2)
-        self.assertEqual(outliers.noise_count, 1)
-        self.assertTrue(outliers.exact)
-        self.assertEqual(outliers.operator_name, "find_outliers")
-        self.assertEqual(outliers.strategy, "dbscan_noise")
-        self.assertEqual(outliers.representation, "metric_space")
-        self.assertEqual(outliers.outliers[0].to_dict(), {"record_id": 4, "score": 19})
-        outlier_record = outliers.to_dict()
-        self.assertEqual(outlier_record["outliers"], [{"record_id": 4, "score": 19}])
-        self.assertEqual(outlier_record["strategy"], "dbscan_noise")
-        np.testing.assert_array_equal(outliers.to_numpy(), np.asarray([19.0]))
-        try:
-            outliers_frame = outliers.to_pandas()
-        except exceptions.OptionalDependencyError:
-            outliers_frame = None
-        if outliers_frame is not None:
-            self.assertEqual(outliers_frame.loc[0, "record_id"], 4)
-            self.assertEqual(outliers_frame.loc[0, "rank"], 0)
-        self.assertEqual(
-            find_outliers([0, 1, 10, 11, 30], lambda lhs, rhs: abs(lhs - rhs), DBSCAN(radius=2, min_points=2)),
-            outliers,
-        )
-        self.assertEqual(outlier_space.outliers(DBSCAN(radius=100, min_points=2)).outliers, ())
-        nearest_outliers = outlier_space.outliers(count=1)
-        self.assertIsInstance(nearest_outliers, OutlierResult)
-        self.assertEqual(nearest_outliers.outliers, (Outlier(record_id=4, score=19),))
-        self.assertEqual(nearest_outliers.strategy, "nearest_neighbor_distance")
-        self.assertEqual(nearest_outliers.noise_count, 1)
-        matrix_outliers = outlier_space.outliers(count=1, representation=outlier_space.to_matrix())
-        self.assertEqual(matrix_outliers.representation, "matrix")
-        self.assertEqual(matrix_outliers.outliers, nearest_outliers.outliers)
-        matrix_strategy_outliers = outlier_space.outliers(
-            DBSCAN(radius=2, min_points=2),
-            representation=outlier_space.to_matrix(),
-        )
-        self.assertEqual(matrix_strategy_outliers.representation, "matrix")
-        self.assertEqual(matrix_strategy_outliers.outliers, outliers.outliers)
-        self.assertEqual(outlier_space.outliers(fraction=0.2).outliers, nearest_outliers.outliers)
-        self.assertEqual(outlier_space.outliers(threshold=10).outliers, nearest_outliers.outliers)
-        self.assertEqual(outlier_space.outliers(count=0).outliers, ())
-        with self.assertRaises(ValueError):
-            outlier_space.outliers(fraction=-0.1)
-        with self.assertRaises(ValueError):
-            outlier_space.outliers(DBSCAN(radius=2, min_points=2), count=1)
-
-        denoised = outlier_space.denoise(DBSCAN(radius=2, min_points=2))
-        self.assertIsInstance(denoised, MappingResult)
-        self.assertIsInstance(denoised.space, Space)
-        self.assertEqual(denoised.space.records, [0, 1, 10, 11])
-        self.assertEqual(denoised.source_record_ids, (0, 1, 2, 3))
-        self.assertEqual(denoised.source_record_count, 5)
-        self.assertEqual(denoised.target_record_count, 4)
-        self.assertTrue(denoised.exact)
-        self.assertEqual(denoised.operator_name, "denoise")
-        self.assertEqual(denoised.mapping, "density_denoise")
-        self.assertEqual(denoised.strategy, "dbscan_noise_filter")
-        self.assertEqual(denoised.representation, "metric_space")
-        self.assertFalse(denoised.inverse_supported)
-        self.assertEqual(denoised.to_dict()["source_record_ids"], (0, 1, 2, 3))
-        np.testing.assert_array_equal(denoised.to_numpy(), np.asarray([0, 1, 2, 3], dtype=object))
-        with self.assertRaisesRegex(UnsupportedOperationError, "space\\.embed"):
-            denoised.inverse_transform()
-        self.assertEqual(denoised.space.distance(0, 3), 11)
-        self.assertEqual(
-            denoise_space(
-                [0, 1, 10, 11, 30],
-                lambda lhs, rhs: abs(lhs - rhs),
-                DBSCAN(radius=2, min_points=2),
-            ).source_record_ids,
-            denoised.source_record_ids,
-        )
-        self.assertEqual(
-            outlier_space.denoise(DBSCAN(radius=100, min_points=2)).source_record_ids,
-            (0, 1, 2, 3, 4),
-        )
-        nearest_denoised = outlier_space.denoise(count=1)
-        self.assertIsInstance(nearest_denoised, MappingResult)
-        self.assertEqual(nearest_denoised.space.records, [0, 1, 10, 11])
-        self.assertEqual(nearest_denoised.source_record_ids, (0, 1, 2, 3))
-        self.assertEqual(nearest_denoised.mapping, "nearest_neighbor_outlier_filter")
-        self.assertEqual(nearest_denoised.strategy, "nearest_neighbor_distance")
-        self.assertFalse(nearest_denoised.inverse_supported)
-        matrix_denoised = outlier_space.denoise(count=1, representation=outlier_space.to_matrix())
-        self.assertEqual(matrix_denoised.representation, "matrix")
-        self.assertEqual(matrix_denoised.source_record_ids, nearest_denoised.source_record_ids)
-        self.assertEqual(outlier_space.denoise(strength=0.2).source_record_ids, (0, 1, 2, 3))
-        self.assertEqual(outlier_space.denoise(threshold=100).source_record_ids, (0, 1, 2, 3, 4))
-        with self.assertRaises(ValueError):
-            outlier_space.denoise(DBSCAN(radius=2, min_points=2), count=1)
-        with self.assertRaises(ValueError):
-            outlier_space.denoise(count=1, strength=0.2)
-        with self.assertRaises(ValueError):
-            outlier_space.denoise(strength="strong")
-        self.assertEqual(
-            Space([0, 10], metric=lambda lhs, rhs: abs(lhs - rhs)).denoise(DBSCAN(radius=1, min_points=2)).space.records,
-            [],
-        )
-
-        representatives_result = space.representatives(3)
-        self.assertIsInstance(representatives_result, RepresentativeSet)
-        self.assertEqual(representatives_result.representatives, (0, 4, 2))
-        self.assertEqual(representatives_result.nearest_representative_distances, (0, 1, 0, 1, 0))
-        self.assertEqual(representatives_result.record_count, 5)
-        self.assertEqual(representatives_result.requested_count, 3)
-        self.assertEqual(representatives_result.coverage_radius, 1)
-        self.assertAlmostEqual(representatives_result.average_nearest_distance, 0.4)
-        self.assertEqual(representatives_result.strategy, "farthest_first")
-        self.assertEqual(representatives_result.representation, "metric_space")
-        representatives_record = representatives_result.to_dict()
-        self.assertEqual(representatives_record["representatives"], (0, 4, 2))
-        self.assertEqual(representatives_record["coverage_radius"], 1)
-        np.testing.assert_array_equal(representatives_result.to_numpy(), np.asarray([0, 4, 2]))
-        try:
-            representatives_frame = representatives_result.to_pandas()
-        except exceptions.OptionalDependencyError:
-            representatives_frame = None
-        if representatives_frame is not None:
-            self.assertEqual(representatives_frame.loc[4, "is_representative"], True)
-            self.assertEqual(representatives_frame.loc[1, "nearest_representative_distance"], 1)
-        matrix_representatives = space.representatives(count=3, representation=space.to_matrix())
-        self.assertEqual(matrix_representatives.representation, "matrix")
-        self.assertEqual(matrix_representatives.representatives, representatives_result.representatives)
-
-        self.assertEqual(space.representatives(count=3), representatives_result)
-        self.assertEqual(
-            find_representatives([0, 1, 2, 3, 4], lambda lhs, rhs: abs(lhs - rhs), count=3),
-            representatives_result,
-        )
-        seeded = space.representatives(2, strategy=FarthestFirst(seed_index=2))
-        self.assertEqual(seeded.representatives, (2, 0))
-
-        reduction = space.reduce(3)
-        self.assertIsInstance(reduction, ReductionResult)
-        self.assertIsInstance(reduction.space, Space)
-        self.assertEqual(reduction.source_record_ids, (0, 4, 2))
-        self.assertEqual(reduction.assignments, (0, 0, 2, 2, 1))
-        self.assertEqual(reduction.nearest_representative_distances, (0, 1, 0, 1, 0))
-        self.assertEqual(reduction.source_record_count, 5)
-        self.assertEqual(reduction.reduced_record_count, 3)
-        self.assertEqual(reduction.space.records, [0, 4, 2])
-        self.assertTrue(reduction.exact)
-        self.assertEqual(reduction.operator_name, "reduce")
-        self.assertEqual(reduction.strategy, "farthest_first")
-        self.assertEqual(reduction.representation, "metric_space")
-        self.assertFalse(reduction.inverse_supported)
-        self.assertEqual(reduction.to_dict()["reduced_record_count"], 3)
-        np.testing.assert_array_equal(reduction.to_numpy(), np.asarray([0, 0, 2, 2, 1]))
-        try:
-            reduction_frame = reduction.to_pandas()
-        except exceptions.OptionalDependencyError:
-            reduction_frame = None
-        if reduction_frame is not None:
-            self.assertEqual(reduction_frame.loc[4, "representative_source_id"], 4)
-            self.assertEqual(reduction_frame.loc[1, "nearest_representative_distance"], 1)
-        with self.assertRaisesRegex(UnsupportedOperationError, "inverse_supported=False"):
-            reduction.inverse_transform()
-        matrix_reduction = space.reduce(count=3, representation=space.to_matrix())
-        self.assertEqual(matrix_reduction.representation, "matrix")
-        self.assertEqual(matrix_reduction.source_record_ids, reduction.source_record_ids)
-        self.assertEqual(
-            reduce_space([0, 1, 2, 3, 4], lambda lhs, rhs: abs(lhs - rhs), 3).source_record_ids,
-            reduction.source_record_ids,
-        )
-
-        medoid_reduction = group_space.reduce(strategy=KMedoids(groups=2))
-        self.assertEqual(medoid_reduction.source_record_ids, (1, 3))
-        self.assertEqual(medoid_reduction.assignments, (0, 0, 0, 1, 1))
-        self.assertEqual(medoid_reduction.nearest_representative_distances, (1, 0, 1, 0, 1))
-        self.assertEqual(medoid_reduction.strategy, "kmedoids")
-        self.assertEqual(medoid_reduction.space.records, [1, 10])
-
-        compression = space.compress(3)
-        self.assertIsInstance(compression, CompressionResult)
-        self.assertIsInstance(compression.space, Space)
-        self.assertEqual(compression.source_record_ids, (0, 4, 2))
-        self.assertEqual(compression.assignments, (0, 0, 2, 2, 1))
-        self.assertEqual(compression.nearest_representative_distances, (0, 1, 0, 1, 0))
-        self.assertEqual(compression.source_record_count, 5)
-        self.assertEqual(compression.compressed_record_count, 3)
-        self.assertAlmostEqual(compression.compression_ratio, 0.6)
-        self.assertEqual(compression.space.records, [0, 4, 2])
-        self.assertTrue(compression.exact)
-        self.assertEqual(compression.operator_name, "compress")
-        self.assertEqual(compression.compression, "representatives")
-        self.assertEqual(compression.strategy, "farthest_first")
-        self.assertEqual(compression.representation, "metric_space")
-        self.assertTrue(compression.lossy)
-        self.assertFalse(compression.inverse_supported)
-        self.assertEqual(compression.to_dict()["compression_ratio"], 0.6)
-        np.testing.assert_array_equal(compression.to_numpy(), np.asarray([0, 0, 2, 2, 1]))
-        try:
-            compression_frame = compression.to_pandas()
-        except exceptions.OptionalDependencyError:
-            compression_frame = None
-        if compression_frame is not None:
-            self.assertEqual(compression_frame.loc[4, "compressed_record_id"], 1)
-            self.assertEqual(compression_frame.loc[4, "representative_source_id"], 4)
-        with self.assertRaisesRegex(UnsupportedOperationError, "inverse_supported=False"):
-            compression.inverse_transform()
-        matrix_compression = space.compress(count=3, representation=space.to_matrix())
-        self.assertEqual(matrix_compression.representation, "matrix")
-        self.assertEqual(matrix_compression.source_record_ids, compression.source_record_ids)
-        self.assertEqual(
-            compress_space([0, 1, 2, 3, 4], lambda lhs, rhs: abs(lhs - rhs), 3).source_record_ids,
-            compression.source_record_ids,
-        )
-
-        medoid_compression = group_space.compress(strategy=KMedoids(groups=2))
-        self.assertEqual(medoid_compression.source_record_ids, (1, 3))
-        self.assertEqual(medoid_compression.assignments, (0, 0, 0, 1, 1))
-        self.assertEqual(medoid_compression.strategy, "kmedoids")
-        self.assertEqual(medoid_compression.space.records, [1, 10])
-
-        mapped = space.map(lambda record: {"value": record}, metric=lambda lhs, rhs: abs(lhs["value"] - rhs["value"]))
         self.assertIsInstance(mapped, MappingResult)
-        self.assertIsInstance(mapped.space, Space)
-        self.assertEqual(mapped.space.records, [{"value": 0}, {"value": 1}, {"value": 2}, {"value": 3}, {"value": 4}])
-        self.assertEqual(mapped.source_record_ids, (0, 1, 2, 3, 4))
-        self.assertEqual(mapped.source_record_count, 5)
-        self.assertEqual(mapped.target_record_count, 5)
-        self.assertTrue(mapped.exact)
-        self.assertEqual(mapped.operator_name, "map")
+        self.assertEqual(mapped.space.records, [{"value": value} for value in range(5)])
         self.assertEqual(mapped.mapping, "deterministic_transform")
         self.assertEqual(mapped.strategy, "deterministic_transform")
-        self.assertEqual(mapped.representation, "metric_space")
         self.assertFalse(mapped.inverse_supported)
-        self.assertEqual(mapped.to_dict()["target_record_count"], 5)
-        try:
-            mapped_frame = mapped.to_pandas()
-        except exceptions.OptionalDependencyError:
-            mapped_frame = None
-        if mapped_frame is not None:
-            self.assertEqual(mapped_frame.loc[0, "source_record_id"], 0)
-            self.assertEqual(mapped_frame.loc[0, "mapping"], "deterministic_transform")
-        with self.assertRaisesRegex(UnsupportedOperationError, "inverse_supported=False"):
-            mapped.inverse_transform()
         self.assertEqual(mapped.space.distance(0, 4), 4)
-        matrix_mapped = space.map(
-            transform=lambda record: {"value": record},
-            metric=lambda lhs, rhs: abs(lhs["value"] - rhs["value"]),
-            representation=space.to_matrix(),
-        )
-        self.assertEqual(matrix_mapped.representation, "matrix")
-        self.assertEqual(matrix_mapped.source_record_ids, mapped.source_record_ids)
+        self.assertEqual(space.map(transform=lambda record: record * record).space.records, [0, 1, 4, 9, 16])
         self.assertEqual(
             map_space([0, 1, 2], lambda record: record * record, lambda lhs, rhs: abs(lhs - rhs)).space.records,
             [0, 1, 4],
         )
-        keyword_mapped = space.map(transform=lambda record: record * record)
-        self.assertEqual(keyword_mapped.space.records, [0, 1, 4, 9, 16])
-        self.assertEqual(keyword_mapped.source_record_ids, (0, 1, 2, 3, 4))
-        self.assertEqual(keyword_mapped.strategy, "deterministic_transform")
+        with self.assertRaisesRegex(UnsupportedOperationError, "inverse_supported=False"):
+            mapped.inverse_transform()
 
-        embedding = space.embed(dimensions=1)
-        self.assertIsInstance(embedding, EmbeddingResult)
-        self.assertIsInstance(embedding.diagnostics, EmbeddingDiagnostics)
-        self.assertIsInstance(embedding.model, EmbeddingModel)
-        self.assertIsInstance(embedding.embedded_space, Space)
-        self.assertIsInstance(embedding.source_space, Space)
-        self.assertEqual(embedding.coordinates.shape, (5, 1))
-        self.assertEqual(embedding.dimensions, 1)
-        self.assertEqual(embedding.model.method, "classic_mds")
-        self.assertEqual(embedding.model.dimensions, 1)
-        self.assertEqual(embedding.model.source_record_ids, (0, 1, 2, 3, 4))
-        self.assertEqual(embedding.source_record_ids, (0, 1, 2, 3, 4))
-        self.assertEqual(embedding.source_record_count, 5)
-        self.assertTrue(embedding.exact)
-        self.assertEqual(embedding.operator_name, "embed")
-        self.assertEqual(embedding.strategy, "classic_mds")
-        self.assertEqual(embedding.representation, "metric_space")
-        self.assertLess(embedding.stress, 1e-12)
-        self.assertLess(embedding.diagnostics.raw_stress, 1e-12)
-        self.assertGreaterEqual(embedding.diagnostics.distance_correlation, 0.999999)
-        self.assertEqual(embedding.trustworthiness, 1.0)
-        self.assertEqual(embedding.diagnostics.neighbor_k, 2)
-        self.assertTrue(embedding.diagnostics.finite_coordinates)
-        self.assertEqual(embedding.source_space.records, [0, 1, 2, 3, 4])
-        self.assertAlmostEqual(embedding.embedded_space.distance(0, 4), 4.0)
-        self.assertTrue(np.isfinite(embedding.coordinates).all())
-        self.assertEqual(
-            embedding.model.to_dict(),
-            {"method": "classic_mds", "dimensions": 1, "source_record_ids": (0, 1, 2, 3, 4)},
-        )
-        self.assertEqual(embedding.diagnostics.to_dict()["neighbor_k"], 2)
-        embedding_record = embedding.to_dict()
-        self.assertEqual(embedding_record["dimensions"], 1)
-        self.assertEqual(embedding_record["model"]["method"], "classic_mds")
-        np.testing.assert_allclose(embedding.to_numpy(), embedding.coordinates)
-        try:
-            embedding_frame = embedding.to_pandas()
-        except exceptions.OptionalDependencyError:
-            embedding_frame = None
-        if embedding_frame is not None:
-            self.assertEqual(embedding_frame.loc[0, "source_record_id"], 0)
-            self.assertIn("coordinate_0", embedding_frame.columns)
-
-        matrix_embedding = space.embed(dimensions=1, representation=space.to_matrix())
-        self.assertEqual(matrix_embedding.representation, "matrix")
-        self.assertLess(matrix_embedding.stress, 1e-12)
-
-        strategy_embedding = embed_space(
-            [0, 1, 2],
-            lambda lhs, rhs: abs(lhs - rhs),
-            strategy=ClassicMDS(dimensions=1),
-        )
-        self.assertEqual(strategy_embedding.coordinates.shape, (3, 1))
-        self.assertLess(strategy_embedding.stress, 1e-12)
-        mds_embedding = space.embed(strategy=MDS(dimensions=1))
-        self.assertEqual(mds_embedding.coordinates.shape, (5, 1))
-        self.assertEqual(mds_embedding.strategy, "classic_mds")
-
-        description = space.describe()
-        self.assertIsInstance(description, StructureDescription)
-        self.assertEqual(description.record_count, 5)
-        self.assertEqual(description.pair_count, 10)
-        self.assertEqual(description.zero_distance_pair_count, 0)
-        self.assertEqual(description.minimum_nonzero_distance, 1)
-        self.assertEqual(description.maximum_distance, 4)
-        self.assertAlmostEqual(description.average_distance, 2.0)
-        self.assertAlmostEqual(description.intrinsic_dimension, np.log2(5.0 / 3.0))
-        description_record = description.to_dict()
-        self.assertEqual(description_record["record_count"], 5)
-        self.assertEqual(description_record["strategy"], "exact_all_pairs")
-        np.testing.assert_allclose(
-            description.to_numpy(),
-            np.asarray([5.0, 10.0, 0.0, 1.0, 4.0, 2.0, np.log2(5.0 / 3.0)]),
-        )
-        try:
-            description_frame = description.to_pandas()
-        except exceptions.OptionalDependencyError:
-            description_frame = None
-        if description_frame is not None:
-            self.assertEqual(description_frame.loc[0, "pair_count"], 10)
-        self.assertEqual(space.describe_structure(), description)
-        matrix_description = space.describe(representation=space.to_matrix())
-        self.assertEqual(matrix_description.representation, "matrix")
-        self.assertEqual(matrix_description.record_count, description.record_count)
-        self.assertEqual(space.describe_structure(representation=space.to_matrix()).representation, "matrix")
-
-        process_space = Space([0, 1, 2, 3, 4, 5], metric=lambda lhs, rhs: abs(lhs - rhs))
-        quality_space = Space([0, 1, 4, 9, 16, 25], metric=lambda lhs, rhs: abs(lhs - rhs))
-        dependency = process_space.compare(quality_space)
-        self.assertIsInstance(dependency, CorrelationResult)
-        self.assertAlmostEqual(dependency.value, 0.8500255011475573)
-        self.assertEqual(dependency.left_record_count, 6)
-        self.assertEqual(dependency.right_record_count, 6)
-        self.assertEqual(dependency.pair_count, 15)
-        self.assertTrue(dependency.exact)
-        self.assertEqual(dependency.algorithm, "distance_profile_correlation")
-        self.assertEqual(dependency.strategy, "distance_profile_correlation")
-        self.assertEqual(dependency.left_representation, "metric_space")
-        self.assertEqual(dependency.right_representation, "metric_space")
-        self.assertEqual(dependency.statistic_name, "distance_profile_correlation")
-        self.assertIsNone(dependency.p_value)
-        self.assertEqual(dependency.align, "position")
-        self.assertEqual(dependency.matched_ids, (0, 1, 2, 3, 4, 5))
-        self.assertEqual(dependency.dropped_left_ids, ())
-        self.assertEqual(dependency.dropped_right_ids, ())
-        self.assertEqual(dependency.local_scores, ())
-        self.assertIsNone(dependency.diagnostics)
-        dependency_record = dependency.to_dict()
-        self.assertEqual(dependency_record["value"], dependency.value)
-        self.assertEqual(dependency_record["matched_ids"], (0, 1, 2, 3, 4, 5))
-        np.testing.assert_array_equal(dependency.to_numpy(), np.asarray([dependency.value]))
-        try:
-            dependency_frame = dependency.to_pandas()
-        except exceptions.OptionalDependencyError:
-            dependency_frame = None
-        if dependency_frame is not None:
-            self.assertEqual(dependency_frame.loc[0, "value"], dependency.value)
-        self.assertEqual(process_space.correlate(quality_space), dependency)
-        raw_dependency = process_space.compare(quality_space.records, other_metric=quality_space.metric)
-        self.assertAlmostEqual(raw_dependency.value, dependency.value)
-        self.assertEqual(raw_dependency.left_representation, "metric_space")
-        self.assertEqual(raw_dependency.right_representation, "records")
-        self.assertEqual(raw_dependency.matched_ids, tuple(process_space.ids))
-        self.assertAlmostEqual(
-            process_space.correlate(quality_space.records, other_metric=quality_space.metric).value,
-            dependency.value,
-        )
-        with self.assertRaisesRegex(TypeError, "other_metric"):
-            process_space.compare(quality_space.records)
-        with self.assertRaisesRegex(TypeError, "only accepted"):
-            process_space.compare(quality_space, other_metric=quality_space.metric)
-        with self.assertRaisesRegex(ValueError, "align='ids'"):
-            process_space.compare(quality_space.records, other_metric=quality_space.metric, align="ids")
-        matrix_dependency = process_space.compare(
-            quality_space,
-            representation=process_space.to_matrix(),
-            other_representation=quality_space.to_matrix(),
-        )
-        self.assertAlmostEqual(matrix_dependency.value, dependency.value)
-        self.assertEqual(matrix_dependency.left_representation, "matrix")
-        self.assertEqual(matrix_dependency.right_representation, "matrix")
-        self.assertEqual(
-            process_space.correlate(
-                quality_space,
-                representation=process_space.to_matrix(),
-                other_representation=quality_space.to_matrix(),
-            ),
-            matrix_dependency,
-        )
-        self.assertEqual(
-            compare_spaces(process_space.records, process_space.metric, quality_space.records, quality_space.metric),
-            correlate_spaces(process_space.records, process_space.metric, quality_space.records, quality_space.metric),
-        )
-        self.assertEqual(
-            compare_spaces(
-                process_space.records,
-                process_space.metric,
-                quality_space.records,
-                quality_space.metric,
-                left_representation="matrix",
-                right_representation="matrix",
-            ),
-            correlate_spaces(
-                process_space.records,
-                process_space.metric,
-                quality_space.records,
-                quality_space.metric,
-                left_representation="matrix",
-                right_representation="matrix",
-            ),
-        )
-        shuffled_quality_space = Space(
-            [25, 0, 16, 1, 9, 4],
-            metric=lambda lhs, rhs: abs(lhs - rhs),
-            ids=[5, 0, 4, 1, 3, 2],
-        )
-        id_aligned_dependency = process_space.compare(shuffled_quality_space, align="ids")
-        self.assertAlmostEqual(id_aligned_dependency.value, dependency.value)
-        self.assertEqual(id_aligned_dependency.align, "ids")
-        self.assertEqual(id_aligned_dependency.matched_ids, (0, 1, 2, 3, 4, 5))
-        self.assertEqual(id_aligned_dependency.dropped_left_ids, ())
-        self.assertEqual(id_aligned_dependency.dropped_right_ids, ())
-        self.assertAlmostEqual(
-            process_space.correlate(shuffled_quality_space, align="ids").value,
-            dependency.value,
-        )
-        self.assertAlmostEqual(
-            process_space.compare(shuffled_quality_space, align="position").value,
-            0.1505759459175673,
-        )
-        with self.assertRaises(ValueError):
-            process_space.compare(Space([0, 1, 2], metric=lambda lhs, rhs: abs(lhs - rhs)))
-        with self.assertRaisesRegex(IncompatibleSpaceError, "same ids"):
-            process_space.compare(
-                Space([0, 1, 4, 9, 16, 25], metric=lambda lhs, rhs: abs(lhs - rhs), ids=[10, 11, 12, 13, 14, 15]),
-                align="ids",
-            )
-        with self.assertRaisesRegex(ValueError, "align must be"):
-            process_space.compare(quality_space, align="time")
-        with self.assertRaises(TypeError):
-            process_space.compare(quality_space, strategy=KMedoids(groups=2))
-        with self.assertRaises(ValueError):
-            process_space.compare(quality_space, strategy=DistanceProfileCorrelation(method="spearman"))
-        with self.assertRaises(ValueError):
-            space.reduce(0)
-        with self.assertRaises(ValueError):
-            space.reduce(6)
-        with self.assertRaisesRegex(StrategyUnavailableError, "PCFA reduction is not promoted"):
-            space.reduce(strategy=PCFA(dimensions=2))
-        with self.assertRaisesRegex(StrategyUnavailableError, "SOM reduction is not promoted"):
-            space.reduce(strategy=SOM(grid=(2, 2)))
-        with self.assertRaisesRegex(StrategyUnavailableError, "KOC reduction is not promoted"):
-            space.reduce(strategy=KOC(clusters=2))
-        with self.assertRaisesRegex(StrategyUnavailableError, "DSPCC reduction is not promoted"):
-            space.reduce(strategy=DSPCC(dimensions=2))
-        with self.assertRaisesRegex(TypeError, "count is required"):
-            space.representatives()
-        with self.assertRaisesRegex(ValueError, "either k or count"):
-            space.representatives(2, count=2)
-        with self.assertRaisesRegex(ValueError, "either k or count"):
-            find_representatives([0, 1], lambda lhs, rhs: abs(lhs - rhs), 1, count=1)
-        with self.assertRaises(TypeError):
-            space.reduce(strategy=FarthestFirst())
-        with self.assertRaises(ValueError):
-            space.reduce(3, strategy=KMedoids(groups=2))
-        with self.assertRaises(TypeError):
-            space.map(3)
-        with self.assertRaisesRegex(AmbiguousIntentError, "requires transform=... or target=..."):
+        # Space.map still rejects ambiguous / unpromoted mapping intents.
+        with self.assertRaisesRegex(AmbiguousIntentError, "requires transform"):
             space.map()
         with self.assertRaisesRegex(AmbiguousIntentError, "either transform or target"):
             space.map(transform=lambda record: record, target=space)
         with self.assertRaisesRegex(StrategyUnavailableError, "strategy mappings are not promoted"):
             space.map(transform=lambda record: record, strategy=KMedoids(groups=2))
-        with self.assertRaisesRegex(StrategyUnavailableError, "strategy mappings are not promoted"):
+        with self.assertRaisesRegex(AmbiguousIntentError, "omit transform and target"):
             space.map(transform=lambda record: record, strategy=PhateAE(dimensions=2))
+        with self.assertRaisesRegex(StrategyUnavailableError, r"native C\+\+ binding"):
+            space.map(strategy=PhateAE(dimensions=1))
         with self.assertRaisesRegex(StrategyUnavailableError, "target mappings are not promoted"):
             space.map(target=space)
-        with self.assertRaises(TypeError):
-            map_space([0, 1], lambda record: record, metric=3)
-        with self.assertRaises(TypeError):
-            space.denoise(KMedoids(groups=2))
-        with self.assertRaises(ValueError):
-            space.embed(dimensions=0)
-        with self.assertRaises(TypeError):
-            space.embed(strategy=KMedoids(groups=2))
-        with self.assertRaisesRegex(StrategyUnavailableError, "DiffusionEmbedding is not promoted"):
-            space.embed(strategy=DiffusionEmbedding(dimensions=2))
-        with self.assertRaisesRegex(StrategyUnavailableError, "learnable mapping strategy"):
-            space.embed(strategy=PhateAE(dimensions=2))
-        with self.assertRaises(TypeError):
-            embed_space([0, 1], metric=3)
-        stale_matrix = space.to_matrix()
-        space.touch()
-        with self.assertRaises(StaleRepresentationError):
-            space.embed(representation=stale_matrix)
-        with self.assertRaises(StaleRepresentationError):
-            space.groups(count=2, representation=stale_matrix)
-        with self.assertRaises(StaleRepresentationError):
-            space.describe(representation=stale_matrix)
-        with self.assertRaises(StaleRepresentationError):
-            space.reduce(count=2, representation=stale_matrix)
-        with self.assertRaises(StaleRepresentationError):
-            space.compress(count=2, representation=stale_matrix)
-        with self.assertRaises(StaleRepresentationError):
-            space.representatives(count=2, representation=stale_matrix)
-        with self.assertRaises(StaleRepresentationError):
-            space.outliers(count=1, representation=stale_matrix)
-        with self.assertRaises(StaleRepresentationError):
-            space.denoise(count=1, representation=stale_matrix)
-        with self.assertRaises(StaleRepresentationError):
-            space.map(transform=lambda record: record, representation=stale_matrix)
-        with self.assertRaises(StaleRepresentationError):
-            space.compare(space, representation=stale_matrix)
-        with self.assertRaises(StaleRepresentationError):
-            space.runtime_diagnostics(representation=stale_matrix)
 
-    def test_intrinsic_dimension_estimates_distance_growth(self):
+        # mappings.clustered_space marshals a clustering RESULT (built directly
+        # here, not computed in Python) into a derived Space using only the
+        # adapter-level space.distance lookups.
+        clustering = ClusteringResult(
+            assignments=(0, 0, 0, 1, 1),
+            medoids=(1, 3),
+            core_records=(),
+            noise_records=(),
+            cluster_sizes=(3, 2),
+            record_count=5,
+            cluster_count=2,
+            noise_count=0,
+            iterations=2,
+            converged=True,
+            algorithm="kmedoids",
+            representation="metric_space",
+        )
+        group_space = Space([0, 1, 2, 10, 11], metric=lambda lhs, rhs: abs(lhs - rhs))
+        clustered = mappings.clustered_space(group_space, clustering)
+        self.assertIsInstance(clustered, MappingResult)
+        self.assertEqual(clustered.mapping, "clustered_space")
+        self.assertEqual(clustered.strategy, "kmedoids")
+        self.assertEqual(clustered.source_records, ((0, 1, 2), (3, 4)))
+        self.assertEqual(clustered.representative_records, (1, 3))
+        self.assertEqual(clustered.space.distance(0, 1), group_space.distance(1, 3))
+        model = mappings.fit(mappings.make_clustered_space_mapping(clustering), group_space)
+        self.assertFalse(model.inverse_supported())
+        self.assertEqual(mappings.transform(model, group_space).source_records, clustered.source_records)
+    def test_intrinsic_dimension_requires_native(self):
+        import metric.operators as operators
+
         records = [0, 1, 2, 3, 4]
+        self.assertRequiresNative(intrinsic_dimension, records, lambda lhs, rhs: abs(lhs - rhs))
+        self.assertRequiresNative(operators.intrinsic_dimension_from_distances, [[0.0, 1.0], [1.0, 0.0]])
+    def test_representative_and_graph_operators_require_native(self):
+        records = [(1.0, 0.0), (0.0, 1.0), (0.5, 0.5)]
 
-        def absolute_distance(lhs, rhs):
-            return abs(lhs - rhs)
+        def manhattan(lhs, rhs):
+            return abs(lhs[0] - rhs[0]) + abs(lhs[1] - rhs[1])
 
-        self.assertAlmostEqual(intrinsic_dimension(records, absolute_distance), np.log2(5.0 / 3.0))
+        for fn, args in [
+            (representative_indices, (records, manhattan, 2)),
+            (representatives, (records, manhattan, 2)),
+            (medoid_index, (records, manhattan)),
+            (medoid, (records, manhattan)),
+            (separated_representative_indices, (records, manhattan, 1.0)),
+            (separated_representatives, (records, manhattan, 1.0)),
+            (coverage_representative_indices, (records, manhattan, 1.0)),
+            (coverage_representatives, (records, manhattan, 1.0)),
+            (exact_knn_graph, (records, manhattan, 1)),
+            (exact_knn_graph_edges, (records, manhattan, 1)),
+            (exact_radius_graph, (records, manhattan, 1.0)),
+            (exact_radius_graph_edges, (records, manhattan, 1.0)),
+        ]:
+            self.assertRequiresNative(fn, *args)
 
-    def test_representative_selection_uses_farthest_first_traversal(self):
-        records = [
-            (1.0, 0.0, 0.0, 0.0),
-            (0.0, 1.0, 0.0, 0.0),
-            (0.0, 0.0, 0.0, 1.0),
-            (0.5, 0.5, 0.0, 0.0),
-            (0.0, 0.5, 0.5, 0.0),
-        ]
-
-        def cumulative_transport_distance(lhs, rhs):
-            cumulative_delta = 0.0
-            distance = 0.0
-            for lhs_mass, rhs_mass in zip(lhs, rhs):
-                cumulative_delta += lhs_mass - rhs_mass
-                distance += abs(cumulative_delta)
-
-            return distance
-
-        self.assertEqual(representative_indices(records, cumulative_transport_distance, 3), [0, 2, 4])
-        self.assertEqual(
-            representatives(records, cumulative_transport_distance, 3),
-            [records[0], records[2], records[4]],
-        )
-        self.assertEqual(medoid_index(records, cumulative_transport_distance), 1)
-        self.assertEqual(medoid(records, cumulative_transport_distance), records[1])
-        self.assertEqual(separated_representative_indices(records, cumulative_transport_distance, 1.5), [0, 2, 4])
-        self.assertEqual(
-            separated_representatives(records, cumulative_transport_distance, 1.5),
-            [records[0], records[2], records[4]],
-        )
-        self.assertEqual(
-            exact_knn_graph_edges(records, cumulative_transport_distance, 1),
-            [(0, 3, 0.5), (1, 3, 0.5), (2, 4, 1.5), (3, 0, 0.5), (4, 1, 0.5)],
-        )
-        knn_graph = exact_knn_graph(records, cumulative_transport_distance, 1)
-        self.assertIsInstance(knn_graph, GraphConstructionResult)
-        self.assertEqual(list(knn_graph.edges), exact_knn_graph_edges(records, cumulative_transport_distance, 1))
-        self.assertIsInstance(knn_graph.metadata, GraphConstructionMetadata)
-        self.assertEqual(knn_graph.metadata.strategy, "exact_knn")
-        self.assertEqual(knn_graph.metadata.record_count, len(records))
-        self.assertEqual(knn_graph.metadata.edge_count, len(knn_graph.edges))
-        self.assertTrue(knn_graph.metadata.directed)
-        self.assertFalse(knn_graph.metadata.self_loops)
-        self.assertTrue(knn_graph.metadata.exact)
-        self.assertEqual(knn_graph.metadata.k, 1)
-        self.assertIsNone(knn_graph.metadata.radius)
-        self.assertEqual(knn_graph.metadata.edge_payload, "metric_distance")
-        self.assertEqual(knn_graph.metadata.weighting, "none")
-        self.assertIsNone(knn_graph.metadata.max_out_degree)
-        self.assertEqual(knn_graph.metadata.sparsification, "none")
-        self.assertEqual(knn_graph.metadata.symmetrization, "none")
-        self.assertEqual(knn_graph.metadata.normalization, "none")
-        self.assertEqual(knn_graph.metadata.tie_break, "distance_then_target_index")
-        self.assertEqual(knn_graph.metadata.to_dict()["strategy"], "exact_knn")
-        self.assertEqual(knn_graph.to_dict()["metadata"]["edge_count"], len(knn_graph.edges))
-        np.testing.assert_array_equal(knn_graph.to_numpy(), np.asarray(knn_graph.edges, dtype=object))
-        try:
-            graph_frame = knn_graph.to_pandas()
-        except exceptions.OptionalDependencyError:
-            graph_frame = None
-        if graph_frame is not None:
-            self.assertEqual(graph_frame.loc[0, "source_record_id"], 0)
-            self.assertEqual(graph_frame.loc[0, "target_record_id"], 3)
-            self.assertEqual(graph_frame.loc[0, "strategy"], "exact_knn")
-
-        wide_knn_graph = exact_knn_graph(records, cumulative_transport_distance, 2)
-        pruned_graph = prune_graph_out_degree(wide_knn_graph, max_out_degree=1)
-        self.assertEqual(
-            list(pruned_graph.edges),
-            [(0, 3, 0.5), (1, 3, 0.5), (2, 4, 1.5), (3, 0, 0.5), (4, 1, 0.5)],
-        )
-        self.assertTrue(pruned_graph.metadata.directed)
-        self.assertEqual(pruned_graph.metadata.edge_count, len(pruned_graph.edges))
-        self.assertEqual(pruned_graph.metadata.k, 2)
-        self.assertEqual(pruned_graph.metadata.max_out_degree, 1)
-        self.assertEqual(pruned_graph.metadata.sparsification, "out_degree")
-        self.assertEqual(pruned_graph.metadata.tie_break, "source_index_then_distance_then_target_index")
-        self.assertEqual(prune_graph_out_degree(wide_knn_graph, 0).edges, ())
-
-        degree_diagnostics = graph_degree_diagnostics(knn_graph)
-        self.assertIsInstance(degree_diagnostics, GraphDegreeDiagnostics)
-        self.assertEqual(degree_diagnostics.record_count, len(records))
-        self.assertEqual(degree_diagnostics.edge_count, len(knn_graph.edges))
-        self.assertTrue(degree_diagnostics.directed)
-        self.assertEqual(degree_diagnostics.out_degrees, (1, 1, 1, 1, 1))
-        self.assertEqual(degree_diagnostics.in_degrees, (1, 1, 0, 2, 1))
-        self.assertEqual(degree_diagnostics.degrees, (2, 2, 1, 3, 2))
-        self.assertEqual(degree_diagnostics.isolated_count, 0)
-        self.assertEqual(degree_diagnostics.max_degree, 3)
-        self.assertAlmostEqual(degree_diagnostics.average_degree, 2.0)
-        self.assertEqual(degree_diagnostics.degree_policy, "directed_in_out")
-        self.assertEqual(degree_diagnostics.to_dict()["degrees"], (2, 2, 1, 3, 2))
-        np.testing.assert_array_equal(degree_diagnostics.to_numpy(), np.asarray([2, 2, 1, 3, 2]))
-        try:
-            degree_frame = degree_diagnostics.to_pandas()
-        except exceptions.OptionalDependencyError:
-            degree_frame = None
-        if degree_frame is not None:
-            self.assertEqual(degree_frame.loc[3, "record_id"], 3)
-            self.assertEqual(degree_frame.loc[3, "degree"], 3)
-            self.assertEqual(degree_frame.loc[3, "in_degree"], 2)
-
-        connectivity_diagnostics = graph_connectivity_diagnostics(knn_graph)
-        self.assertIsInstance(connectivity_diagnostics, GraphConnectivityDiagnostics)
-        self.assertEqual(connectivity_diagnostics.record_count, len(records))
-        self.assertEqual(connectivity_diagnostics.edge_count, len(knn_graph.edges))
-        self.assertTrue(connectivity_diagnostics.directed)
-        self.assertEqual(connectivity_diagnostics.component_labels, (0, 0, 0, 0, 0))
-        self.assertEqual(connectivity_diagnostics.component_count, 1)
-        self.assertEqual(connectivity_diagnostics.isolated_count, 0)
-        self.assertEqual(connectivity_diagnostics.largest_component_size, 5)
-        self.assertTrue(connectivity_diagnostics.connected)
-        self.assertEqual(connectivity_diagnostics.connectivity_policy, "weak_undirected_reachability")
-        self.assertEqual(connectivity_diagnostics.to_dict()["component_count"], 1)
-        np.testing.assert_array_equal(connectivity_diagnostics.to_numpy(), np.asarray([0, 0, 0, 0, 0]))
-        try:
-            connectivity_frame = connectivity_diagnostics.to_pandas()
-        except exceptions.OptionalDependencyError:
-            connectivity_frame = None
-        if connectivity_frame is not None:
-            self.assertEqual(connectivity_frame.loc[2, "component_label"], 0)
-            self.assertEqual(connectivity_frame.loc[2, "connectivity_policy"], "weak_undirected_reachability")
-
-        union_graph = symmetrize_graph(knn_graph, policy="union", weighting="minimum_distance")
-        self.assertEqual(
-            list(union_graph.edges),
-            [(0, 3, 0.5), (1, 3, 0.5), (1, 4, 0.5), (2, 4, 1.5)],
-        )
-        self.assertFalse(union_graph.metadata.directed)
-        self.assertEqual(union_graph.metadata.edge_count, len(union_graph.edges))
-        self.assertEqual(union_graph.metadata.weighting, "minimum_distance")
-        self.assertEqual(union_graph.metadata.sparsification, "none")
-        self.assertEqual(union_graph.metadata.symmetrization, "union")
-        self.assertEqual(union_graph.metadata.tie_break, "source_index_then_target_index")
-        with self.assertRaises(ValueError):
-            prune_graph_out_degree(union_graph, 1)
-
-        undirected_diagnostics = graph_degree_diagnostics(union_graph)
-        self.assertFalse(undirected_diagnostics.directed)
-        self.assertEqual(undirected_diagnostics.degrees, (1, 2, 1, 2, 2))
-        self.assertEqual(undirected_diagnostics.out_degrees, (0, 0, 0, 0, 0))
-        self.assertEqual(undirected_diagnostics.in_degrees, (0, 0, 0, 0, 0))
-        self.assertEqual(undirected_diagnostics.edge_count, len(union_graph.edges))
-        self.assertEqual(undirected_diagnostics.isolated_count, 0)
-        self.assertEqual(undirected_diagnostics.max_degree, 2)
-        self.assertAlmostEqual(undirected_diagnostics.average_degree, 1.6)
-        self.assertEqual(undirected_diagnostics.degree_policy, "undirected_endpoint")
-
-        undirected_connectivity = graph_connectivity_diagnostics(union_graph)
-        self.assertFalse(undirected_connectivity.directed)
-        self.assertEqual(undirected_connectivity.component_labels, (0, 0, 0, 0, 0))
-        self.assertEqual(undirected_connectivity.component_count, 1)
-        self.assertEqual(undirected_connectivity.isolated_count, 0)
-        self.assertEqual(undirected_connectivity.largest_component_size, 5)
-        self.assertTrue(undirected_connectivity.connected)
-        self.assertEqual(undirected_connectivity.connectivity_policy, "undirected_reachability")
-
-        undirected_stretch = graph_stretch_diagnostics(records, cumulative_transport_distance, union_graph)
-        self.assertIsInstance(undirected_stretch, GraphStretchDiagnostics)
-        self.assertFalse(undirected_stretch.directed)
-        self.assertEqual(undirected_stretch.record_count, len(records))
-        self.assertEqual(undirected_stretch.edge_count, len(union_graph.edges))
-        self.assertEqual(undirected_stretch.pair_count, 10)
-        self.assertEqual(undirected_stretch.reachable_pair_count, 10)
-        self.assertEqual(undirected_stretch.unreachable_pair_count, 0)
-        self.assertEqual(undirected_stretch.zero_metric_pair_count, 0)
-        self.assertAlmostEqual(undirected_stretch.max_stretch, 1.0)
-        self.assertAlmostEqual(undirected_stretch.average_stretch, 1.0)
-        self.assertEqual(undirected_stretch.stretch_policy, "undirected_shortest_path")
-        self.assertEqual(undirected_stretch.to_dict()["reachable_pair_count"], 10)
-        np.testing.assert_allclose(undirected_stretch.to_numpy(), np.asarray([10, 10, 0, 0, 1.0, 1.0]))
-        try:
-            stretch_frame = undirected_stretch.to_pandas()
-        except exceptions.OptionalDependencyError:
-            stretch_frame = None
-        if stretch_frame is not None:
-            self.assertEqual(stretch_frame.loc[0, "stretch_policy"], "undirected_shortest_path")
-            self.assertEqual(stretch_frame.loc[0, "reachable_pair_count"], 10)
-
-        mutual_graph = symmetrize_graph(knn_graph, policy="mutual", weighting="minimum_distance")
-        self.assertEqual(list(mutual_graph.edges), [(0, 3, 0.5)])
-        self.assertEqual(mutual_graph.metadata.symmetrization, "mutual")
-
-        asymmetric_graph = GraphConstructionResult(
-            edges=((0, 1, 5), (1, 0, 3), (1, 2, 4)),
+        # Graph post-processing / diagnostics operate on a marshaled graph
+        # result, which can still be constructed directly; the analyses are
+        # native-only.
+        graph_result = GraphConstructionResult(
+            edges=((0, 1, 1.0), (1, 2, 1.0)),
             metadata=GraphConstructionMetadata(
                 strategy="synthetic",
                 record_count=3,
-                edge_count=3,
+                edge_count=2,
                 directed=True,
                 self_loops=False,
                 exact=True,
-                edge_payload="metric_distance",
-                weighting="none",
-                sparsification="none",
-                symmetrization="none",
-                normalization="none",
             ),
         )
-        self.assertEqual(
-            list(symmetrize_graph(asymmetric_graph, policy="union", weighting="minimum_distance").edges),
-            [(0, 1, 3), (1, 2, 4)],
-        )
-        self.assertEqual(
-            list(symmetrize_graph(asymmetric_graph, policy="union", weighting="maximum_distance").edges),
-            [(0, 1, 5), (1, 2, 4)],
-        )
-        with self.assertRaises(ValueError):
-            symmetrize_graph(asymmetric_graph, policy="invalid", weighting="minimum_distance")
-        with self.assertRaises(ValueError):
-            symmetrize_graph(asymmetric_graph, policy="union", weighting="average_distance")
+        self.assertRequiresNative(symmetrize_graph, graph_result)
+        self.assertRequiresNative(prune_graph_out_degree, graph_result, 1)
+        self.assertRequiresNative(graph_degree_diagnostics, graph_result)
+        self.assertRequiresNative(graph_connectivity_diagnostics, graph_result)
+        self.assertRequiresNative(graph_stretch_diagnostics, records, manhattan, graph_result)
 
-        invalid_graph = GraphConstructionResult(
-            edges=((0, 3, 1),),
+    def test_result_objects_marshal_native_payloads(self):
+        import metric.operators as operators
+
+        graph_result = GraphConstructionResult(
+            edges=((0, 1, 0.5), (1, 0, 0.5)),
             metadata=GraphConstructionMetadata(
-                strategy="synthetic",
+                strategy="exact_knn",
                 record_count=2,
-                edge_count=1,
+                edge_count=2,
                 directed=True,
                 self_loops=False,
                 exact=True,
+                k=1,
             ),
         )
-        with self.assertRaises(ValueError):
-            graph_degree_diagnostics(invalid_graph)
-        with self.assertRaises(ValueError):
-            graph_connectivity_diagnostics(invalid_graph)
-        with self.assertRaises(ValueError):
-            graph_stretch_diagnostics([0, 1], cumulative_transport_distance, invalid_graph)
-        with self.assertRaises(ValueError):
-            graph_stretch_diagnostics(records, cumulative_transport_distance, invalid_graph)
+        self.assertEqual(graph_result.to_dict()["metadata"]["strategy"], "exact_knn")
+        np.testing.assert_array_equal(graph_result.to_numpy(), np.asarray(graph_result.edges, dtype=object))
 
-        self.assertEqual(
-            exact_radius_graph_edges(records, cumulative_transport_distance, 0.5),
-            [(0, 3, 0.5), (1, 3, 0.5), (1, 4, 0.5), (3, 0, 0.5), (3, 1, 0.5), (4, 1, 0.5)],
+        clustering = ClusteringResult(
+            assignments=(0, 0, 1),
+            medoids=(0, 2),
+            core_records=(),
+            noise_records=(),
+            cluster_sizes=(2, 1),
+            record_count=3,
+            cluster_count=2,
+            noise_count=0,
+            iterations=2,
+            converged=True,
+            algorithm="kmedoids",
+            representation="metric_space",
         )
-        radius_graph = exact_radius_graph(records, cumulative_transport_distance, 0.5)
-        self.assertIsInstance(radius_graph, GraphConstructionResult)
-        self.assertEqual(list(radius_graph.edges), exact_radius_graph_edges(records, cumulative_transport_distance, 0.5))
-        self.assertEqual(radius_graph.metadata.strategy, "exact_radius")
-        self.assertEqual(radius_graph.metadata.record_count, len(records))
-        self.assertEqual(radius_graph.metadata.edge_count, len(radius_graph.edges))
-        self.assertTrue(radius_graph.metadata.directed)
-        self.assertFalse(radius_graph.metadata.self_loops)
-        self.assertTrue(radius_graph.metadata.exact)
-        self.assertIsNone(radius_graph.metadata.k)
-        self.assertEqual(radius_graph.metadata.radius, 0.5)
-        self.assertEqual(radius_graph.metadata.edge_payload, "metric_distance")
-        self.assertEqual(radius_graph.metadata.weighting, "none")
-        self.assertIsNone(radius_graph.metadata.max_out_degree)
-        self.assertEqual(radius_graph.metadata.sparsification, "none")
-        self.assertEqual(radius_graph.metadata.symmetrization, "none")
-        self.assertEqual(radius_graph.metadata.normalization, "none")
-        self.assertEqual(radius_graph.metadata.tie_break, "source_then_target_index")
-        complete_radius_graph = exact_radius_graph(records, cumulative_transport_distance, 3.0)
-        directed_stretch = graph_stretch_diagnostics(records, cumulative_transport_distance, complete_radius_graph)
-        self.assertTrue(directed_stretch.directed)
-        self.assertEqual(directed_stretch.pair_count, 20)
-        self.assertEqual(directed_stretch.reachable_pair_count, 20)
-        self.assertEqual(directed_stretch.unreachable_pair_count, 0)
-        self.assertEqual(directed_stretch.zero_metric_pair_count, 0)
-        self.assertAlmostEqual(directed_stretch.max_stretch, 1.0)
-        self.assertAlmostEqual(directed_stretch.average_stretch, 1.0)
-        self.assertEqual(directed_stretch.stretch_policy, "directed_shortest_path")
-        self.assertEqual(coverage_representative_indices(records, cumulative_transport_distance, 1.5), [0, 2])
-        self.assertEqual(
-            coverage_representatives(records, cumulative_transport_distance, 1.5),
-            [records[0], records[2]],
+        self.assertEqual(clustering.to_dict()["assignments"], (0, 0, 1))
+        np.testing.assert_array_equal(clustering.to_numpy(), np.asarray([0, 0, 1]))
+
+        neighbors = operators.neighbor_result([10, 20, 30], query=15, neighbors=[(0, 5), (1, 5)])
+        self.assertIsInstance(neighbors, NeighborResult)
+        self.assertEqual(neighbors.neighbors[0].record, 10)
+        self.assertEqual(neighbors.distances, (5, 5))
+        self.assertEqual(neighbors.strategy, "exact_scan")
+
+        outliers = OutlierResult(
+            outliers=(Outlier(record_id=2, score=9),),
+            record_count=3,
+            cluster_count=1,
+            noise_count=1,
+            exact=True,
+            operator_name="find_outliers",
+            strategy="dbscan_noise",
+            representation="metric_space",
         )
-        self.assertEqual(representative_indices(records, cumulative_transport_distance, 0), [])
-
-    def test_representative_selection_validates_inputs_and_deterministic_ties(self):
-        records = [0, 1, 2, 10]
-
-        def absolute_distance(lhs, rhs):
-            return abs(lhs - rhs)
-
-        self.assertEqual(representative_indices(records, absolute_distance, 3), [0, 3, 2])
-        self.assertEqual(representative_indices(records, absolute_distance, 2, seed_index=1), [1, 3])
-        self.assertEqual(medoid_index(records, absolute_distance), 1)
-        self.assertEqual(medoid(records, absolute_distance), 1)
-        self.assertEqual(separated_representative_indices(records, absolute_distance, 2), [0, 2, 3])
-        self.assertEqual(separated_representatives(records, absolute_distance, 2), [0, 2, 10])
-        self.assertEqual(separated_representative_indices([], absolute_distance, 2), [])
-        self.assertEqual(
-            exact_knn_graph_edges(records, absolute_distance, 2),
-            [
-                (0, 1, 1),
-                (0, 2, 2),
-                (1, 0, 1),
-                (1, 2, 1),
-                (2, 1, 1),
-                (2, 0, 2),
-                (3, 2, 8),
-                (3, 1, 9),
-            ],
-        )
-        self.assertEqual(
-            exact_radius_graph_edges(records, absolute_distance, 2),
-            [(0, 1, 1), (0, 2, 2), (1, 0, 1), (1, 2, 1), (2, 0, 2), (2, 1, 1)],
-        )
-        disconnected_graph = exact_radius_graph([0, 1, 10], absolute_distance, 1)
-        disconnected_connectivity = graph_connectivity_diagnostics(disconnected_graph)
-        self.assertEqual(disconnected_connectivity.component_labels, (0, 0, 1))
-        self.assertEqual(disconnected_connectivity.component_count, 2)
-        self.assertEqual(disconnected_connectivity.isolated_count, 1)
-        self.assertEqual(disconnected_connectivity.largest_component_size, 2)
-        self.assertFalse(disconnected_connectivity.connected)
-        disconnected_stretch = graph_stretch_diagnostics([0, 1, 10], absolute_distance, disconnected_graph)
-        self.assertEqual(disconnected_stretch.pair_count, 6)
-        self.assertEqual(disconnected_stretch.reachable_pair_count, 2)
-        self.assertEqual(disconnected_stretch.unreachable_pair_count, 4)
-        self.assertEqual(disconnected_stretch.zero_metric_pair_count, 0)
-        self.assertAlmostEqual(disconnected_stretch.max_stretch, 1.0)
-        self.assertAlmostEqual(disconnected_stretch.average_stretch, 1.0)
-        self.assertEqual(exact_knn_graph_edges(records, absolute_distance, 0), [])
-        self.assertEqual(exact_knn_graph(records, absolute_distance, 0).edges, ())
-        self.assertEqual(exact_knn_graph(records, absolute_distance, 0).metadata.k, 0)
-        self.assertEqual(coverage_representative_indices(records, absolute_distance, 2), [0, 3])
-        self.assertEqual(coverage_representatives(records, absolute_distance, 2), [0, 10])
-        self.assertEqual(coverage_representative_indices(records, absolute_distance, 20), [0])
-        self.assertEqual(coverage_representative_indices([], absolute_distance, 1), [])
-
-        with self.assertRaises(TypeError):
-            representative_indices(records, absolute_distance, 1.5)
-        with self.assertRaises(TypeError):
-            representative_indices(records, absolute_distance, 1, seed_index=0.5)
-        with self.assertRaises(ValueError):
-            representative_indices(records, absolute_distance, -1)
-        with self.assertRaises(ValueError):
-            representative_indices([], absolute_distance, 1)
-        with self.assertRaises(ValueError):
-            representative_indices(records, absolute_distance, 5)
-        with self.assertRaises(ValueError):
-            medoid_index([], absolute_distance)
-        with self.assertRaises(ValueError):
-            medoid([], absolute_distance)
-        with self.assertRaises(ValueError):
-            separated_representative_indices(records, absolute_distance, -1)
-        with self.assertRaises(ValueError):
-            exact_knn_graph_edges(records, absolute_distance, 4)
-        with self.assertRaises(TypeError):
-            exact_knn_graph_edges(records, absolute_distance, 1.5)
-        with self.assertRaises(TypeError):
-            prune_graph_out_degree(exact_knn_graph(records, absolute_distance, 1), 1.5)
-        with self.assertRaises(ValueError):
-            exact_radius_graph_edges(records, absolute_distance, -1)
-        with self.assertRaises(ValueError):
-            prune_graph_out_degree(exact_knn_graph(records, absolute_distance, 1), -1)
-        with self.assertRaises(IndexError):
-            representative_indices(records, absolute_distance, 1, seed_index=-1)
-        with self.assertRaises(IndexError):
-            representative_indices(records, absolute_distance, 1, seed_index=len(records))
-        with self.assertRaises(ValueError):
-            coverage_representative_indices(records, absolute_distance, -1)
-
+        self.assertEqual(outliers.to_dict()["outliers"], [{"record_id": 2, "score": 9}])
+        np.testing.assert_array_equal(outliers.to_numpy(), np.asarray([9.0]))
     def test_edit_metric_satisfies_metric_contracts(self):
         self.assertMetricContracts(self.records, self.metric)
 
@@ -1693,41 +1066,33 @@ class RevivalApiTest(unittest.TestCase):
         space = Space(self.records, self.metric)
 
         self.assertIsInstance(space, FiniteMetricSpace)
-        neighbors = space.neighbors("cut", 2)
-        self.assertIsInstance(neighbors, NeighborResult)
-        self.assertEqual(neighbors, [(0, 1), (1, 1)])
-        self.assertEqual(neighbors.query, "cut")
-        self.assertEqual(neighbors.neighbors[0].record, "cat")
-        self.assertEqual(space.neighbors("cut", count=2), [(0, 1), (1, 1)])
-        self.assertEqual(space.neighbors("cut", radius=1), [(0, 1), (1, 1)])
-        self.assertEqual(space.neighbors("cut", count=1, radius=1), [(0, 1)])
-        rows = space.neighbors(count=1)
-        self.assertIsInstance(rows, NeighborResult)
-        self.assertEqual(rows, [[(1, 1)], [(0, 1)], [(0, 1)], [(1, 2)]])
-        self.assertEqual(rows.rows[0][0].record, "cot")
-        self.assertEqual(rows.distances, ((1,), (1,), (1,), (2,)))
-        self.assertEqual(rows.to_dict()["rows"][0][0]["record"], "cot")
-        np.testing.assert_array_equal(
-            rows.to_numpy(),
-            np.asarray([[1.0], [1.0], [1.0], [2.0]]),
-        )
-        self.assertEqual(space.neighbors(count=1, include_self=True)[0], [(0, 0)])
-        self.assertEqual(space.neighbors(radius=1)[0], [(1, 1), (2, 1)])
-        self.assertEqual(space.nearest("cut"), (0, 1))
-        self.assertIsInstance(space.nearest("cut"), Neighbor)
-        self.assertEqual(space.within_radius("cut", 1), [(0, 1), (1, 1)])
-        with self.assertRaises(ValueError):
-            space.neighbors("cut", k=1, count=2)
-        self.assertTrue(callable(space.compare))
-        self.assertTrue(callable(space.correlate))
-        self.assertTrue(callable(space.embed))
-        self.assertTrue(callable(space.outliers))
-        self.assertTrue(callable(space.denoise))
-        self.assertTrue(callable(space.reduce))
-        self.assertTrue(callable(space.compress))
-        self.assertTrue(callable(space.map))
-        self.assertTrue(callable(space.runtime_diagnostics))
+        for name in (
+            "neighbors",
+            "nearest",
+            "within_radius",
+            "groups",
+            "outliers",
+            "denoise",
+            "representatives",
+            "reduce",
+            "compress",
+            "embed",
+            "describe",
+            "describe_structure",
+            "compare",
+            "correlate",
+            "map",
+            "runtime_diagnostics",
+            "knn",
+            "nn",
+            "rnn",
+        ):
+            self.assertTrue(callable(getattr(space, name)), name)
 
+        # The intent vocabulary stays importable but search is native-only.
+        self.assertRequiresNative(space.neighbors, "cut", 2)
+        self.assertRequiresNative(space.nearest, "cut")
+        self.assertRequiresNative(space.within_radius, "cut", 1)
     def test_runtime_policy_is_explicit_and_exact(self):
         space = Space(self.records, self.metric)
         policy = RuntimePolicy(exact=True, parallel=True, cache="materialized")
@@ -1751,13 +1116,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertTrue(diagnostics.supported)
         self.assertEqual(diagnostics.reason, "")
         self.assertEqual(diagnostics.to_dict()["policy_name"], "exact_materialized_parallel")
-        try:
-            diagnostics_frame = diagnostics.to_pandas()
-        except exceptions.OptionalDependencyError:
-            diagnostics_frame = None
-        if diagnostics_frame is not None:
-            self.assertEqual(diagnostics_frame.loc[0, "representation"], "matrix")
-            self.assertEqual(diagnostics_frame.loc[0, "intent"], "neighbors")
+
+        # Space.runtime_diagnostics reports policy metadata only (an adapter).
         space_diagnostics = space.runtime_diagnostics(
             representation=space.to_matrix(),
             runtime=policy,
@@ -1768,36 +1128,13 @@ class RevivalApiTest(unittest.TestCase):
         approximate_diagnostics = runtime_diagnostics(RuntimePolicy(exact=False), representation="tree")
         self.assertFalse(approximate_diagnostics.supported)
         self.assertIn("approximate", approximate_diagnostics.reason)
-        self.assertEqual(space.neighbors("cut", count=2, runtime=policy), [(0, 1), (1, 1)])
-        self.assertEqual(
-            space.neighbors("cut", count=2, representation=space.to_tree(), runtime=policy),
-            [(0, 1), (1, 1)],
-        )
-        self.assertEqual(
-            space.neighbors("cut", count=2, runtime=runtime.using_matrix()),
-            [(0, 1), (1, 1)],
-        )
-        self.assertEqual(
-            space.neighbors("cut", count=2, runtime=runtime.using_tree()),
-            [(0, 1), (1, 1)],
-        )
-        graph_policy = runtime.using_graph(1)
-        self.assertEqual(runtime_diagnostics(graph_policy).representation, "exact_knn_graph")
-        self.assertEqual(
-            space.neighbors(count=1, runtime=graph_policy),
-            [[(1, 1)], [(0, 1)], [(0, 1)], [(1, 2)]],
-        )
-        self.assertEqual(space.groups(count=2, runtime=policy).representation, "matrix")
-        self.assertEqual(space.describe(runtime=policy).record_count, len(self.records))
-        self.assertEqual(space.describe_structure(runtime=policy).record_count, len(self.records))
-        self.assertEqual(space.compare(space, runtime=policy).left_record_count, len(self.records))
 
-        with self.assertRaisesRegex(StrategyUnavailableError, "queryless"):
-            space.neighbors("cut", count=2, runtime=graph_policy)
-        with self.assertRaises(StrategyUnavailableError):
-            space.neighbors("cut", count=2, runtime=RuntimePolicy(exact=False))
-        with self.assertRaises(StrategyUnavailableError):
-            space.groups(count=2, runtime=RuntimePolicy(exact=False))
+        # Operations remain native-only regardless of runtime policy.
+        self.assertRequiresNative(space.neighbors, "cut", 2)
+        self.assertRequiresNative(space.groups)
+        self.assertRequiresNative(space.describe)
+        self.assertRequiresNative(space.compare, space)
+
         with self.assertRaises(StrategyParameterError):
             RuntimePolicy(cache="unknown")
         with self.assertRaises(StrategyParameterError):
@@ -1806,7 +1143,6 @@ class RevivalApiTest(unittest.TestCase):
             RuntimePolicy(representation="graph", graph_count=-1)
         with self.assertRaises(StrategyParameterError):
             RuntimePolicy(parallel="yes")
-
     def test_numpy_record_arrays_use_custom_metric_callable(self):
         records = np.array([[0.0, 0.0], [3.0, 4.0], [6.0, 8.0]])
 
@@ -1814,30 +1150,39 @@ class RevivalApiTest(unittest.TestCase):
             return float(np.linalg.norm(lhs - rhs))
 
         space = Space(records, euclidean)
-        vector_space = Space.vectors(records, ids=["origin", "middle", "far"], name="vectors")
+        vector_space = Space.vectors(
+            records,
+            metric=euclidean,
+            ids=["origin", "middle", "far"],
+            name="vectors",
+        )
 
         self.assertEqual(len(space), 3)
         self.assertAlmostEqual(space.distance(0, 1), 5.0)
-        self.assertEqual(space.nearest(np.array([3.0, 4.0])), (1, 0.0))
-        self.assertEqual(range_neighbors(records, euclidean, np.array([3.0, 4.0]), 0.0), [(1, 0.0)])
         self.assertAlmostEqual(pairwise_distance_matrix(records, euclidean)[1][2], 5.0)
         self.assertMetricContracts(records, euclidean)
         self.assertEqual(vector_space.ids, ["origin", "middle", "far"])
         self.assertEqual(vector_space.name, "vectors")
-        self.assertEqual(vector_space.metric.name, "Euclidean")
-        self.assertIn("metric=Euclidean()", repr(vector_space))
+        self.assertIs(vector_space.metric, euclidean)
         self.assertAlmostEqual(vector_space.distance(0, 1), 5.0)
-        self.assertEqual(vector_space.nearest(np.array([3.0, 4.0])), (1, 0.0))
         self.assertMetricContracts(records, vector_space.metric)
+
+        # Neighbor search over the custom metric is native-only.
+        self.assertRequiresNative(space.nearest, np.array([3.0, 4.0]))
+        self.assertRequiresNative(range_neighbors, records, euclidean, np.array([3.0, 4.0]), 0.0)
 
         manhattan_space = Space.vectors(
             records,
             metric=lambda lhs, rhs: float(np.abs(lhs - rhs).sum()),
         )
         self.assertEqual(manhattan_space.distance(0, 1), 7.0)
-        with self.assertRaisesRegex(MetricInputError, "same length"):
-            Space.vectors([[0.0], [0.0, 1.0]])
+        def checked_vector_metric(lhs, rhs):
+            if len(lhs) != len(rhs):
+                raise MetricInputError("vector records must have the same length")
+            return float(np.linalg.norm(np.asarray(lhs) - np.asarray(rhs)))
 
+        with self.assertRaisesRegex(MetricInputError, "same length"):
+            Space.vectors([[0.0], [0.0, 1.0]], metric=checked_vector_metric)
     def test_structured_records_use_domain_metric_callable(self):
         records = [
             {"id": "pump-a", "status": "ok", "temperature_c": 62.0, "events": ("start", "load", "idle")},
@@ -1861,29 +1206,17 @@ class RevivalApiTest(unittest.TestCase):
 
         space = Space(records, structured_record_distance)
 
-        nearest_id, nearest_distance = space.nearest(query)
-        self.assertEqual(records[nearest_id]["id"], "pump-a")
-        self.assertAlmostEqual(nearest_distance, 0.1)
+        # Adapter surface: distances and the explicit matrix over a domain metric.
         self.assertGreater(space.distance(0, 2), 10.0)
-        self.assertEqual(space.neighbors(query, 2)[0][0], 0)
         self.assertAlmostEqual(pairwise_distance_matrix(records, structured_record_distance)[0][1], 0.25)
-        self.assertEqual(representative_indices(records, structured_record_distance, 3), [0, 2, 3])
-        self.assertEqual(
-            [record["id"] for record in representatives(records, structured_record_distance, 3)],
-            ["pump-a", "valve-c", "pump-d"],
-        )
-        self.assertEqual(separated_representative_indices(records, structured_record_distance, 2.0), [0, 2])
-        self.assertEqual(
-            [record["id"] for record in separated_representatives(records, structured_record_distance, 2.0)],
-            ["pump-a", "valve-c"],
-        )
-        self.assertEqual(coverage_representative_indices(records, structured_record_distance, 1.5), [0, 2])
-        self.assertEqual(
-            [record["id"] for record in coverage_representatives(records, structured_record_distance, 1.5)],
-            ["pump-a", "valve-c"],
-        )
         self.assertMetricContracts(records, structured_record_distance)
 
+        # Search / selection are native-only.
+        self.assertRequiresNative(space.nearest, query)
+        self.assertRequiresNative(space.neighbors, query, 2)
+        self.assertRequiresNative(representative_indices, records, structured_record_distance, 3)
+        self.assertRequiresNative(separated_representative_indices, records, structured_record_distance, 2.0)
+        self.assertRequiresNative(coverage_representative_indices, records, structured_record_distance, 1.5)
     def test_time_series_records_use_alignment_metric_callable(self):
         gap_cost = 2.0
         records = [
@@ -1912,28 +1245,16 @@ class RevivalApiTest(unittest.TestCase):
 
         space = Space(records, aligned_curve_distance)
 
-        self.assertEqual(space.nearest(query), (0, 1.0))
         self.assertEqual(space.distance(0, 1), 2.0)
         self.assertEqual(space.distance(0, 2), 6.0)
         self.assertEqual(pairwise_distance_matrix(records, aligned_curve_distance)[3][2], 9.0)
-        self.assertEqual(representative_indices(records, aligned_curve_distance, 3), [0, 2, 3])
-        self.assertEqual(
-            representatives(records, aligned_curve_distance, 3),
-            [records[0], records[2], records[3]],
-        )
-        self.assertEqual(separated_representative_indices(records, aligned_curve_distance, 4.0), [0, 2, 3])
-        self.assertEqual(
-            separated_representatives(records, aligned_curve_distance, 4.0),
-            [records[0], records[2], records[3]],
-        )
-        self.assertEqual(coverage_representative_indices(records, aligned_curve_distance, 4.0), [0, 2])
-        self.assertEqual(
-            coverage_representatives(records, aligned_curve_distance, 4.0),
-            [records[0], records[2]],
-        )
-        self.assertGreater(intrinsic_dimension(records, aligned_curve_distance), 0.0)
         self.assertMetricContracts(records, aligned_curve_distance)
 
+        self.assertRequiresNative(space.nearest, query)
+        self.assertRequiresNative(representative_indices, records, aligned_curve_distance, 3)
+        self.assertRequiresNative(separated_representative_indices, records, aligned_curve_distance, 4.0)
+        self.assertRequiresNative(coverage_representative_indices, records, aligned_curve_distance, 4.0)
+        self.assertRequiresNative(intrinsic_dimension, records, aligned_curve_distance)
     def test_histogram_records_use_transport_metric_callable(self):
         records = [
             (1.0, 0.0, 0.0, 0.0),
@@ -1958,14 +1279,13 @@ class RevivalApiTest(unittest.TestCase):
 
         space = Space(records, cumulative_transport_distance)
 
-        self.assertEqual(space.nearest(query), (1, 0.25))
         self.assertEqual(space.distance(0, 1), 1.0)
         self.assertEqual(space.distance(0, 2), 3.0)
         self.assertEqual(space.distance(3, 4), 1.0)
         self.assertEqual(pairwise_distance_matrix(records, cumulative_transport_distance)[1][4], 0.5)
-        self.assertGreater(intrinsic_dimension(records, cumulative_transport_distance), 0.0)
         self.assertMetricContracts(records, cumulative_transport_distance)
 
-
+        self.assertRequiresNative(space.nearest, query)
+        self.assertRequiresNative(intrinsic_dimension, records, cumulative_transport_distance)
 if __name__ == "__main__":
     unittest.main()

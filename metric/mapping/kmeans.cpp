@@ -25,14 +25,14 @@ Copyright (c) 2018 M.Welsch
 	idx: A vector containing the cluster index
 	*/
 
-#include "../distance/k-related/Standards.hpp"
+#include <metric/metric/catalog/vector/Standards.hpp>
 #include <algorithm>
 #include <cassert>
 #include <random>
 #include <string>
 #include <vector>
 
-namespace metric {
+namespace mtrc {
 
 namespace kmeans_details {
 inline std::string default_measure(void) { return "Euclidean"; }
@@ -41,16 +41,16 @@ template <typename T> T distance(const std::vector<T> &a, const std::vector<T> &
 
 	assert(a.size() == b.size()); // data vectors have not the same length
 	if (distance_measure.compare("Euclidean") == 0)
-		return metric::Euclidean<T>()(a, b);
+		return mtrc::Euclidean<T>()(a, b);
 	else if (distance_measure.compare("rms") == 0) {
-		T val = metric::Euclidean<T>()(a, b);
+		T val = mtrc::Euclidean<T>()(a, b);
 		return val * val;
-	} else if (distance_measure.compare("manhatten") == 0)
-		return metric::Manhatten<T>()(a, b);
+	} else if (distance_measure.compare("manhattan") == 0)
+		return mtrc::Manhattan<T>()(a, b);
 	else if (distance_measure.compare("cosine_inverted") == 0)
-		return metric::CosineInverted<T>()(a, b);
+		return mtrc::CosineInverted<T>()(a, b);
 	else {
-		return metric::Euclidean<T>()(a, b);
+		return mtrc::Euclidean<T>()(a, b);
 	}
 }
 
@@ -243,6 +243,6 @@ kmeans(const std::vector<std::vector<T>> &data, int k, int maxiter, std::string 
 	return {assignments, means, counts};
 }
 
-} // namespace metric
+} // namespace mtrc
 
 #endif

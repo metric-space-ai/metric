@@ -1,0 +1,138 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+#ifndef _METRIC_OPERATORS_NEAREST_HPP
+#define _METRIC_OPERATORS_NEAREST_HPP
+
+#include <cstddef>
+#include <stdexcept>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+#include <metric/core/concepts.hpp>
+#include <metric/record/id.hpp>
+#include <metric/core/result.hpp>
+
+namespace mtrc::stats::search {
+
+// Level-1 search investigates an existing finite metric space; it never defines a metric
+// or modifies the space. knn() returns the k nearest records to a query (RecordId queries
+// exclude the query itself); range() returns every record within a radius. Both assume a
+// true metric (finite, non-negative distances). Distances are ordered ascending with
+// RecordId-ascending tie-breaking, so results are deterministic for duplicate/tied records.
+// A degenerate metric that emits a NaN distance does not invoke undefined behavior
+// (NaN-distance neighbors are ordered last) but such an input is outside the metric contract.
+
+namespace engine_detail {
+
+template <typename Radius> auto validate_radius(Radius radius) -> void
+{
+	if (radius < Radius{}) {
+		throw std::invalid_argument("radius must be non-negative");
+	}
+}
+
+} // namespace engine_detail
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto knn(const Space &space, const typename Space::record_type &query, std::size_t k)
+	-> NeighborSet<typename Space::distance_type>
+{
+	using distance_type = typename Space::distance_type;
+
+	auto candidates = core::neighbor_candidates<distance_type>(
+		space.size(), [&space](std::size_t index) { return space.id(index); },
+		[&space, &query](RecordId id, std::size_t) { return space.metric()(query, space.record(id)); });
+
+	return core::nearest_neighbor_set(std::move(candidates), k, space.size(), "metric_space");
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto knn(const Space &space, RecordId query_id, std::size_t k) -> NeighborSet<typename Space::distance_type>
+{
+	using distance_type = typename Space::distance_type;
+
+	(void)space.record(query_id);
+	auto candidates = core::neighbor_candidates_if<distance_type>(
+		space.size(), [&space](std::size_t index) { return space.id(index); },
+		[&space, query_id](RecordId id, std::size_t) { return space.distance(query_id, id); },
+		[query_id](RecordId id, std::size_t) { return id != query_id; });
+
+	return core::nearest_neighbor_set(std::move(candidates), k, space.size(), "metric_space");
+}
+
+template <typename Provider, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
+auto knn(const Provider &provider, RecordId query_id, std::size_t k) -> NeighborSet<typename Provider::distance_type>
+{
+	using distance_type = typename Provider::distance_type;
+
+	if (!provider.contains(query_id)) {
+		throw std::out_of_range("query record id is outside the distance provider");
+	}
+
+	auto candidates = core::neighbor_candidates_if<distance_type>(
+		provider.record_count(), [&provider](std::size_t index) { return provider.id(index); },
+		[&provider, query_id](RecordId id, std::size_t) { return provider.distance(query_id, id); },
+		[query_id](RecordId id, std::size_t) { return id != query_id; });
+
+	return core::nearest_neighbor_set(std::move(candidates), k, provider.record_count(), "pairwise_distances");
+}
+
+template <typename Index, typename std::enable_if<NeighborSearchIndex_v<Index>, int>::type = 0>
+auto knn(const Index &index, const typename Index::record_type &query, std::size_t k)
+	-> NeighborSet<typename Index::distance_type>
+{
+	return core::make_neighbor_set(index.knn(query, k), index.record_count(), k, "knn", "neighbor_index");
+}
+
+template <typename Space, typename Radius, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto range(const Space &space, const typename Space::record_type &query, Radius radius)
+	-> NeighborSet<typename Space::distance_type>
+{
+	using distance_type = typename Space::distance_type;
+
+	engine_detail::validate_radius(radius);
+	auto candidates = core::neighbor_candidates_within<distance_type>(
+		space.size(), [&space](std::size_t index) { return space.id(index); },
+		[&space, &query](RecordId id, std::size_t) { return space.metric()(query, space.record(id)); }, radius);
+
+	return core::range_neighbor_set(std::move(candidates), space.size(), "metric_space");
+}
+
+template <typename Space, typename Radius, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto range(const Space &space, RecordId query_id, Radius radius) -> NeighborSet<typename Space::distance_type>
+{
+	using distance_type = typename Space::distance_type;
+
+	engine_detail::validate_radius(radius);
+	(void)space.record(query_id);
+	auto candidates = core::neighbor_candidates_within_if<distance_type>(
+		space.size(), [&space](std::size_t index) { return space.id(index); },
+		[&space, query_id](RecordId id, std::size_t) { return space.distance(query_id, id); }, radius,
+		[query_id](RecordId id, std::size_t) { return id != query_id; });
+
+	return core::range_neighbor_set(std::move(candidates), space.size(), "metric_space");
+}
+
+template <typename Provider, typename Radius, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
+auto range(const Provider &provider, RecordId query_id, Radius radius) -> NeighborSet<typename Provider::distance_type>
+{
+	using distance_type = typename Provider::distance_type;
+
+	engine_detail::validate_radius(radius);
+	if (!provider.contains(query_id)) {
+		throw std::out_of_range("query record id is outside the distance provider");
+	}
+	auto candidates = core::neighbor_candidates_within_if<distance_type>(
+		provider.record_count(), [&provider](std::size_t index) { return provider.id(index); },
+		[&provider, query_id](RecordId id, std::size_t) { return provider.distance(query_id, id); }, radius,
+		[query_id](RecordId id, std::size_t) { return id != query_id; });
+
+	return core::range_neighbor_set(std::move(candidates), provider.record_count(), "pairwise_distances");
+}
+
+} // namespace mtrc::stats::search
+
+#endif

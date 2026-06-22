@@ -1,6 +1,6 @@
 #include "hog.hpp"
 
-namespace metric {
+namespace mtrc {
 
 template <typename T>
 HOG<T>::HOG(const size_t orientations, const size_t cellSize, const size_t blockSize)
@@ -20,60 +20,61 @@ template <typename T> typename HOG<T>::Vector HOG<T>::encode(const HOG::Matrix &
 	assert(image.columns() % blockSize * cellSize == 0);
 
 	/* Compute dx */
-	blaze::DynamicMatrix<T, blaze::columnMajor> imageColumnMajor = image;
-	blaze::DynamicMatrix<T, blaze::columnMajor> dxColumnMajor(image.rows(), image.columns());
-	blaze::column(dxColumnMajor, 0) = blaze::column(image, 1);
+	mtrc::numeric::DynamicMatrix<T, mtrc::numeric::columnMajor> imageColumnMajor = image;
+	mtrc::numeric::DynamicMatrix<T, mtrc::numeric::columnMajor> dxColumnMajor(image.rows(), image.columns());
+	mtrc::numeric::column(dxColumnMajor, 0) = mtrc::numeric::column(image, 1);
 	for (auto i = 1; i < image.columns() - 1; ++i) {
-		blaze::column(dxColumnMajor, i) = blaze::column(image, i + 1) - blaze::column(image, i - 1);
+		mtrc::numeric::column(dxColumnMajor, i) =
+			mtrc::numeric::column(image, i + 1) - mtrc::numeric::column(image, i - 1);
 	}
-	blaze::column(dxColumnMajor, image.columns() - 1) = -blaze::column(image, image.columns() - 2);
+	mtrc::numeric::column(dxColumnMajor, image.columns() - 1) = -mtrc::numeric::column(image, image.columns() - 2);
 
-	blaze::DynamicMatrix<T> dx = dxColumnMajor;
+	mtrc::numeric::DynamicMatrix<T> dx = dxColumnMajor;
 
 	/* Compute dy */
-	blaze::DynamicMatrix<T> dy(image.rows(), image.columns());
-	blaze::row(dy, 0) = blaze::row(image, 1);
+	mtrc::numeric::DynamicMatrix<T> dy(image.rows(), image.columns());
+	mtrc::numeric::row(dy, 0) = mtrc::numeric::row(image, 1);
 	for (auto i = 1; i < image.rows() - 1; ++i) {
-		blaze::row(dy, i) = blaze::row(image, i + 1) - blaze::row(image, i - 1);
+		mtrc::numeric::row(dy, i) = mtrc::numeric::row(image, i + 1) - mtrc::numeric::row(image, i - 1);
 	}
-	blaze::row(dy, image.rows() - 1) = -blaze::row(image, image.rows() - 2);
+	mtrc::numeric::row(dy, image.rows() - 1) = -mtrc::numeric::row(image, image.rows() - 2);
 
 	/* Compute magnitude */
-	Matrix dx2 = blaze::pow(dx, 2);
-	Matrix dy2 = blaze::pow(dy, 2);
+	Matrix dx2 = mtrc::numeric::pow(dx, 2);
+	Matrix dy2 = mtrc::numeric::pow(dy, 2);
 
-	Matrix magnitude = blaze::sqrt(dx2 + dy2);
+	Matrix magnitude = mtrc::numeric::sqrt(dx2 + dy2);
 
 	/* Compute angle */
 	Matrix angle(image.rows(), image.columns());
 	dx += 2 * std::numeric_limits<T>::epsilon();
 	for (auto i = 0; i < image.rows(); ++i) {
-		blaze::row(angle, i) = blaze::row(dy, i) / blaze::row(dx, i);
+		mtrc::numeric::row(angle, i) = mtrc::numeric::row(dy, i) / mtrc::numeric::row(dx, i);
 	}
 
 	// std::cout << " dev" << std::endl;
-	// std::cout << blaze::row(angle, 0) << std::endl;
+	// std::cout << mtrc::numeric::row(angle, 0) << std::endl;
 	// std::cout << "---" << std::endl;
-	// std::cout << blaze::min(angle) << std::endl;
-	// std::cout << blaze::max(angle) << std::endl;
-	angle = blaze::atan(angle);
+	// std::cout << mtrc::numeric::min(angle) << std::endl;
+	// std::cout << mtrc::numeric::max(angle) << std::endl;
+	angle = mtrc::numeric::atan(angle);
 	// std::cout << " atan" << std::endl;
-	// std::cout << blaze::row(angle, 0) << std::endl;
+	// std::cout << mtrc::numeric::row(angle, 0) << std::endl;
 
-	// std::cout << blaze::min(angle) << std::endl;
-	// std::cout << blaze::max(angle) << std::endl;
+	// std::cout << mtrc::numeric::min(angle) << std::endl;
+	// std::cout << mtrc::numeric::max(angle) << std::endl;
 	angle += M_PI / T(2);
 	// std::cout << " norm" << std::endl;
-	// std::cout << blaze::row(angle, 0) << std::endl;
-	// std::cout << blaze::min(angle) << std::endl;
-	// std::cout << blaze::max(angle) << std::endl;
+	// std::cout << mtrc::numeric::row(angle, 0) << std::endl;
+	// std::cout << mtrc::numeric::min(angle) << std::endl;
+	// std::cout << mtrc::numeric::max(angle) << std::endl;
 	angle /= M_PI / T(orientations);
 	// angle *= 0.9999;//T(1) - 20 * std::numeric_limits<T>::epsilon();
 
-	// std::cout << blaze::min(angle) << std::endl;
-	// std::cout << blaze::max(angle) << std::endl;
+	// std::cout << mtrc::numeric::min(angle) << std::endl;
+	// std::cout << mtrc::numeric::max(angle) << std::endl;
 	// std::cout << " norm" << std::endl;
-	// std::cout << blaze::row(angle, 0) << std::endl;
+	// std::cout << mtrc::numeric::row(angle, 0) << std::endl;
 	// std::cout << angle << std::endl;
 
 	/* Define HOG features */
@@ -96,7 +97,8 @@ template <typename T> typename HOG<T>::Vector HOG<T>::encode(const HOG::Matrix &
 			 blockStartColumn += blockCellSize) {
 
 			/* Compute block histogram */
-			blaze::DynamicMatrix<T> blockHistogram = blaze::zero<T>(blockSize * blockSize, orientations);
+			mtrc::numeric::DynamicMatrix<T> blockHistogram =
+				mtrc::numeric::zero<T>(blockSize * blockSize, orientations);
 			for (auto i = 0; i < blockCellSize; ++i) {
 				for (auto j = 0; j < blockCellSize; ++j) {
 					const size_t cellNumber = (i / cellSize) * blockSize + (j / cellSize);
@@ -110,7 +112,8 @@ template <typename T> typename HOG<T>::Vector HOG<T>::encode(const HOG::Matrix &
 			}
 
 			/* Normalize block */
-			T norm = std::sqrt(blaze::sum(blaze::pow(blockHistogram, 2)) + 2 * std::numeric_limits<T>::epsilon());
+			T norm = std::sqrt(mtrc::numeric::sum(mtrc::numeric::pow(blockHistogram, 2)) +
+							   2 * std::numeric_limits<T>::epsilon());
 
 			// std::cout << norm << std::endl;
 			blockHistogram /= norm;
@@ -118,30 +121,30 @@ template <typename T> typename HOG<T>::Vector HOG<T>::encode(const HOG::Matrix &
 
 			for (size_t k = 0; k < blockHistogram.rows(); ++k) {
 				// std::cout << blockCount * blockHistogramSize + k * orientations << " " << orientations << std::endl;
-				blaze::subvector(features, blockCount * blockHistogramSize + k * orientations, orientations) =
-					blaze::trans(blaze::row(blockHistogram, k));
+				mtrc::numeric::subvector(features, blockCount * blockHistogramSize + k * orientations, orientations) =
+					mtrc::numeric::trans(mtrc::numeric::row(blockHistogram, k));
 
-				// std::cout <<  blaze::row(blockHistogram, k) << std::endl;
+				// std::cout <<  mtrc::numeric::row(blockHistogram, k) << std::endl;
 
-				// std::cout << blaze::subvector(features, blockCount * blockHistogramSize + k * orientations,
+				// std::cout << mtrc::numeric::subvector(features, blockCount * blockHistogramSize + k * orientations,
 				// orientations) << std::endl;
 			}
-			// std::cout << blaze::trans(features) << std::endl;
+			// std::cout << mtrc::numeric::trans(features) << std::endl;
 			++blockCount;
 			// std::cout << blockCount << std::endl;
 		}
 	}
 
 	// std:: cout << "result" << std::endl;
-	// std::cout << blaze::subvector(features, blockCount * blockHistogramSize + 1 * orientations, orientations) <<
-	// std::endl; std::cout << blaze::subvector(features, 0, features.size()) << std::endl; std::cout <<
-	// blaze::trans(features) << std::endl;
+	// std::cout << mtrc::numeric::subvector(features, blockCount * blockHistogramSize + 1 * orientations,
+	// orientations) << std::endl; std::cout << mtrc::numeric::subvector(features, 0, features.size()) << std::endl;
+	// std::cout << mtrc::numeric::trans(features) << std::endl;
 	return features;
 }
 
 template <typename T>
-typename HOG<T>::DistanceMatrix HOG<T>::getGroundDistance(const blaze::DynamicMatrix<T> &image, const T rotation_cost,
-														  const T move_cost, const T threshold)
+typename HOG<T>::DistanceMatrix HOG<T>::getGroundDistance(const mtrc::numeric::DynamicMatrix<T> &image,
+														  const T rotation_cost, const T move_cost, const T threshold)
 {
 	size_t blockStride = 0;
 
@@ -156,7 +159,8 @@ typename HOG<T>::DistanceMatrix HOG<T>::getGroundDistance(const blaze::DynamicMa
 
 	/* Thresholding */
 	if (threshold != 0) {
-		spatialDistance0 = blaze::map(spatialDistance0, [threshold](T d) { return (d > threshold) ? threshold : d; });
+		spatialDistance0 =
+			mtrc::numeric::map(spatialDistance0, [threshold](T d) { return (d > threshold) ? threshold : d; });
 	}
 
 	DistanceMatrix spatialDistance(spatialDistance0.rows() * orientations);
@@ -188,7 +192,7 @@ template <typename T>
 typename HOG<T>::DistanceMatrix HOG<T>::getSpatialDistance(size_t totalBinsNumber, size_t blocks_per_image_rows,
 														   size_t blocks_per_image_columns)
 {
-	Vector cell_i_vect = blaze::zero<T>(totalBinsNumber / orientations);
+	Vector cell_i_vect = mtrc::numeric::zero<T>(totalBinsNumber / orientations);
 	Vector cell_j_vect = cell_i_vect;
 
 	size_t idx = 0;
@@ -244,7 +248,7 @@ template <typename T> typename HOG<T>::DistanceMatrix HOG<T>::getOrientationDist
 		orientsVector[i] = maxAngle * (T(1) - T(1) / orientations) / (orientations - 1) * i;
 	}
 
-	blaze::SymmetricMatrix<Matrix> orientationsDistance(orientations);
+	mtrc::numeric::SymmetricMatrix<Matrix> orientationsDistance(orientations);
 	for (size_t i = 0; i < orientsVector.size(); ++i) {
 		for (size_t j = i + 1; j < orientsVector.size(); ++j) {
 			T normDeg = std::fabs(std::fmod(orientsVector[i] - orientsVector[j], maxAngle));
@@ -257,4 +261,4 @@ template <typename T> typename HOG<T>::DistanceMatrix HOG<T>::getOrientationDist
 	return orientationsDistance;
 }
 
-} // namespace metric
+} // namespace mtrc

@@ -11,7 +11,7 @@ Copyright (c) 2019  Panda Team
 #include <stdexcept>
 #include <type_traits>
 
-namespace metric {
+namespace mtrc {
 
 template <typename RecType, typename Metric>
 auto Matrix<RecType, Metric>::operator()(size_t i, size_t j) const -> distType
@@ -25,6 +25,7 @@ auto Matrix<RecType, Metric>::operator()(size_t i, size_t j) const -> distType
 
 template <typename RecType, typename Metric> auto Matrix<RecType, Metric>::operator[](size_t index) const -> RecType
 {
+	check_index(index); // header documents that out-of-range access throws
 	return data_[index];
 }
 
@@ -88,14 +89,14 @@ template <typename RecType, typename Metric> auto Matrix<RecType, Metric>::erase
 	check_index(index);
 	auto rows = D_.rows();
 	if (index != rows - 1) {
-		auto src = blaze::submatrix(D_, index + 1, index + 1, rows - index - 1, rows - index - 1);
-		auto dst = blaze::submatrix(D_, index, index, rows - index - 1, rows - index - 1);
+		auto src = mtrc::numeric::submatrix(D_, index + 1, index + 1, rows - index - 1, rows - index - 1);
+		auto dst = mtrc::numeric::submatrix(D_, index, index, rows - index - 1, rows - index - 1);
 		dst = src;
 		if (index != 0) {
-			// auto src1 = blaze::submatrix(D_, 0, index + 1, id, rows - index - 1);
-			// auto dst1 = blaze::submatrix(D_, 0, index, index, rows - index - 1);
-			auto src1 = blaze::submatrix(D_, 0, index + 1, index, rows - index - 1);
-			auto dst1 = blaze::submatrix(D_, 0, index, index, rows - index - 1);
+			// auto src1 = mtrc::numeric::submatrix(D_, 0, index + 1, id, rows - index - 1);
+			// auto dst1 = mtrc::numeric::submatrix(D_, 0, index, index, rows - index - 1);
+			auto src1 = mtrc::numeric::submatrix(D_, 0, index + 1, index, rows - index - 1);
+			auto dst1 = mtrc::numeric::submatrix(D_, 0, index, index, rows - index - 1);
 			dst1 = src1;
 		}
 	}
@@ -202,5 +203,5 @@ auto Matrix<RecType, Metric>::nn_(const RecType &p, std::unordered_map<std::size
 	return std::pair{nn_index, min_dist};
 }
 
-} // namespace metric
+} // namespace mtrc
 #endif

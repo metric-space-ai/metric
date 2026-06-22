@@ -6,227 +6,204 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 
-#include <vector>
 #include <random>
+#include <vector>
 
-//#include "metric/distance.hpp"
+// #include "metric/metric/catalog.hpp"
 #include "metric/correlation/entropy.hpp"
 
-#include "metric/distance/k-structured/Edit.hpp"
+#include "metric/metric/catalog/structured/Edit.hpp"
 
+int main()
+{
 
+	std::cout << "Entropy example has started" << std::endl;
+	std::cout << std::endl;
 
-int main() {
+	{
+		// from README.md
+		std::vector<std::vector<double>> v = {{5, 5}, {2, 2}, {3, 3}, {5, 1}};
+		std::vector<std::vector<double>> v1 = {{5, 5}, {2, 2}, {3, 3}, {5, 5}};
+		std::vector<std::vector<double>> v2 = {{5, 5}, {2, 2}, {3, 3}, {1, 1}};
+		{
+			auto estimator = mtrc::Entropy<std::vector<double>>();
+			auto result = estimator(v);
+			std::cout << "default result: " << result << std::endl;
+		}
+		{
+			auto estimator = mtrc::Entropy<void, mtrc::Manhattan<double>>();
+			auto result = estimator(v);
+			std::cout << "Manhattan result: " << result << std::endl;
+		}
+	}
 
-    std::cout << "Entropy example has started" << std::endl;
-    std::cout << std::endl;
+	std::cout << std::endl << "=====" << std::endl;
 
-    {
-        // from README.md
-        std::vector<std::vector<double>> v = { {5,5}, {2,2}, {3,3}, {5,1} };
-        std::vector<std::vector<double>> v1 = {{5,5}, {2,2}, {3,3}, {5,5}};
-        std::vector<std::vector<double>> v2 = {{5,5}, {2,2}, {3,3}, {1,1}};
-        {
-            auto estimator = metric::Entropy<std::vector<double>>();
-            auto result = estimator(v);
-            std::cout << "default result: " << result << std::endl;
-        }
-        {
-            auto estimator = metric::Entropy<void, metric::Manhatten<double>>();
-            auto result = estimator(v);
-            std::cout << "Manhatten result: " << result << std::endl;
-        }
-    }
+	// Entropy
 
-    std::cout << std::endl << "=====" << std::endl;
+	std::cout << "Entropies:" << std::endl;
 
+	std::vector<std::vector<double>> v = {{5, 5}, {2, 2}, {3, 3}, {5, 1}};
 
-    // Entropy
+	{
+		auto e_f = mtrc::EntropySimple<void, mtrc::Chebyshev<double>>(mtrc::Chebyshev<double>(), 3);
+		auto e = e_f(v);
+		std::cout << "using Chebyshev: " << e << std::endl;
+	}
 
-    std::cout << "Entropies:" << std::endl;
+	auto e_f3 = mtrc::EntropySimple<void, mtrc::P_norm<double>>(mtrc::P_norm<double>(3), 3);
+	auto e_f2 = mtrc::EntropySimple<void, mtrc::P_norm<double>>(mtrc::P_norm<double>(2), 3);
+	auto e_f1 = mtrc::EntropySimple<void, mtrc::P_norm<double>>(mtrc::P_norm<double>(1), 3);
+	{
+		auto e = e_f3(v);
+		std::cout << "using General Minkowsky, 3: " << e << std::endl;
+	}
+	{
+		auto e = e_f2(v);
+		std::cout << "using General Minkowsky, 2: " << e << std::endl;
+	}
 
-    std::vector<std::vector<double>> v = { {5,5}, {2,2}, {3,3}, {5,1} };
+	{
+		auto e_f = mtrc::EntropySimple<void, mtrc::Euclidean<double>>(mtrc::Euclidean<double>(), 3);
+		auto e = e_f(v);
+		std::cout << "using Euclidean: " << e << std::endl;
+	}
 
-    {
-        auto e_f = metric::EntropySimple<void, metric::Chebyshev<double>>(metric::Chebyshev<double>(), 3);
-        auto e = e_f(v);
-        std::cout << "using Chebyshev: " << e << std::endl;
-    }
+	{
+		auto e = e_f1(v);
+		std::cout << "using General Minkowsky, 1: " << e << std::endl;
+	}
 
-    auto e_f3 = metric::EntropySimple<void, metric::P_norm<double>>(metric::P_norm<double>(3), 3);
-    auto e_f2 = metric::EntropySimple<void, metric::P_norm<double>>(metric::P_norm<double>(2), 3);
-    auto e_f1 = metric::EntropySimple<void, metric::P_norm<double>>(metric::P_norm<double>(1), 3);
-    {
-        auto e = e_f3(v);
-        std::cout << "using General Minkowsky, 3: " << e << std::endl;
-    }
-    {
-        auto e = e_f2(v);
-        std::cout << "using General Minkowsky, 2: " << e << std::endl;
-    }
+	{
+		auto e_f = mtrc::EntropySimple<void, mtrc::Manhattan<double>>(mtrc::Manhattan<double>(), 3);
+		auto e = e_f(v);
+		std::cout << "using Manhattan: " << e << std::endl;
+	}
 
-    {
-        auto e_f = metric::EntropySimple<void, metric::Euclidean<double>>(metric::Euclidean<double>(), 3);
-        auto e = e_f(v);
-        std::cout << "using Euclidean: " << e << std::endl;
-    }
+	{
+		auto e_f = mtrc::EntropySimple<std::vector<double>>();
+		auto e = e_f(v);
+		std::cout << "using Default: " << e << std::endl;
+	}
 
-    {
-        auto e = e_f1(v);
-        std::cout << "using General Minkowsky, 1: " << e << std::endl;
-    }
+	{
+		auto ekpn = mtrc::Entropy<void, mtrc::Chebyshev<double>>(mtrc::Chebyshev<double>(), 2, 3);
+		auto e = ekpn(v);
+		std::cout << "entropy_kpN, using Chebyshev: " << e << std::endl;
+	}
 
-    {
-        auto e_f = metric::EntropySimple<void, metric::Manhatten<double>>(metric::Manhatten<double>(), 3);
-        auto e = e_f(v);
-        std::cout << "using Manhatten: " << e << std::endl;
-    }
+	std::cout << std::endl;
 
-    {
-        auto e_f = metric::EntropySimple<std::vector<double>>();
-        auto e = e_f(v);
-        std::cout << "using Default: " << e << std::endl;
-    }
+	std::vector<std::string> input = {"AAA", "HJGJHFG", "BBB", "AAAA", "long long long long long long string"};
 
-    {
-        auto ekpn = metric::Entropy<void, metric::Chebyshev<double>>(metric::Chebyshev<double>(), 2, 3);
-        auto e = ekpn(v);
-        std::cout << "entropy_kpN, using Chebyshev: " << e << std::endl;
-    }
+	auto ee_f = mtrc::EntropySimple<void, mtrc::Edit<void>>(
+		mtrc::Edit<void>(),
+		3); // <void> or <char> or anything in Edit does not matter here since Container type is deduced
+	auto ee = ee_f(input);
 
-    std::cout << std::endl;
+	std::cout << "using Edit with strings: " << ee << std::endl << std::endl;
 
+	std::cout << "\n\nTesting entropy function on uniformly distributed r. v.s:\n";
 
+	// std::random_device rd;
+	// std::mt19937 gen(rd());
+	std::mt19937 gen(1);
+	std::uniform_real_distribution<double> dis(0.0, 1.0);
 
-    std::vector<std::string> input = {
-            "AAA",
-            "HJGJHFG",
-            "BBB",
-            "AAAA",
-            "long long long long long long string"
-    };
+	std::vector<std::vector<double>> urv;
+	std::vector<std::vector<double>> urv2;
+	std::vector<std::vector<double>> urv3;
+	std::vector<std::deque<double>> urv4;
 
-    auto ee_f = metric::EntropySimple<void, metric::Edit<void>>(metric::Edit<void>(), 3); // <void> or <char> or anything in Edit does not matter here since Container type is deduced
-    auto ee =  ee_f(input);
+	for (size_t i = 0; i < 1000; ++i) {
+		// urv.push_back({dis(gen), dis(gen), dis(gen), dis(gen), dis(gen), dis(gen), dis(gen)});
+		// urv.push_back({dis(gen), dis(gen), dis(gen)});
+		urv.push_back({dis(gen), dis(gen)});
+		urv2.push_back({dis(gen), dis(gen)});
+		urv4.push_back({dis(gen), dis(gen)});
+		// urv.push_back({dis(gen)});
+	}
+	for (size_t i = 0; i < 250; ++i) {
+		urv3.push_back({dis(gen), dis(gen)});
+	}
 
-    std::cout << "using Edit with strings: " << ee << std::endl << std::endl;
+	auto e_f_cheb = mtrc::EntropySimple<void, mtrc::Chebyshev<double>>(mtrc::Chebyshev<double>(), 3);
+	std::cout << "using Chebyshev: " << e_f_cheb(urv) << ", " << e_f_cheb(urv2) << std::endl;
 
+	auto e_f_eucl = mtrc::EntropySimple<void, mtrc::Euclidean<double>>(mtrc::Euclidean<double>(), 3);
+	auto e = e_f_eucl(urv);
+	std::cout << "using Euclidean: " << e << std::endl;
 
+	auto ekpn_cheb = mtrc::Entropy<void, mtrc::Chebyshev<double>>(mtrc::Chebyshev<double>(), 3, 10);
+	auto ekpn_eucl = mtrc::Entropy<void, mtrc::Euclidean<double>>(mtrc::Euclidean<double>(), 3, 10);
 
-    std::cout << "\n\nTesting entropy function on uniformly distributed r. v.s:\n";
+	std::cout << "entropy_kpN, using Chebyshev: " << ekpn_cheb(urv) << "\n";
 
-    //std::random_device rd;
-    //std::mt19937 gen(rd());
-    std::mt19937 gen(1);
-    std::uniform_real_distribution<double> dis(0.0, 1.0);
+	std::cout << "entropy_kpN, using Euclidean: " << ekpn_eucl(urv) << std::endl;
 
-    std::vector<std::vector<double>> urv;
-    std::vector<std::vector<double>> urv2;
-    std::vector<std::vector<double>> urv3;
-    std::vector<std::deque<double>> urv4;
+	std::cout << "conv test "
+			  << mtrc::entropy_details::conv_diff_entropy_inv(mtrc::entropy_details::conv_diff_entropy(-0.118))
+			  << std::endl;
 
-    for (size_t i = 0; i<1000; ++i) {
-        //urv.push_back({dis(gen), dis(gen), dis(gen), dis(gen), dis(gen), dis(gen), dis(gen)});
-        //urv.push_back({dis(gen), dis(gen), dis(gen)});
-        urv.push_back({dis(gen), dis(gen)});
-        urv2.push_back({dis(gen), dis(gen)});
-        urv4.push_back({dis(gen), dis(gen)});
-        //urv.push_back({dis(gen)});
-    }
-    for (size_t i = 0; i<250; ++i) {
-        urv3.push_back({dis(gen), dis(gen)});
-    }
+	// testing entropy::estimate
 
-    auto e_f_cheb = metric::EntropySimple<void, metric::Chebyshev<double>>(metric::Chebyshev<double>(), 3);
-    std::cout << "using Chebyshev: "
-              << e_f_cheb(urv)
-              << ", "
-              << e_f_cheb(urv2)
-              << std::endl;
+	std::cout << "\n\nstart entropy_avg test\n";
+	auto e_avg = e_f_eucl.estimate(urv);
+	std::cout << "\nentropy_avg result: " << e_avg << "\n\n";
 
-    auto e_f_eucl = metric::EntropySimple<void, metric::Euclidean<double>>(metric::Euclidean<double>(), 3);
-    auto e = e_f_eucl(urv);
-    std::cout << "using Euclidean: " << e << std::endl;
+	auto e_plane = e_f_eucl(urv3);
+	std::cout << "default entropy for vector of sample size 250: " << e_plane << "\n\n";
 
-    auto ekpn_cheb = metric::Entropy<void, metric::Chebyshev<double>>(metric::Chebyshev<double>(), 3, 10);
-    auto ekpn_eucl = metric::Entropy<void, metric::Euclidean<double>>(metric::Euclidean<double>(), 3, 10);
+	// testing types
 
-    std::cout << "entropy_kpN, using Chebyshev: "
-              << ekpn_cheb(urv) << "\n";
+	{
+		auto e_f = mtrc::EntropySimple<void, mtrc::Chebyshev<double>>(mtrc::Chebyshev<double>(), 3);
+		std::cout << "\n\ntesting deque type\n\nChebyshev, full: " << e_f(urv4) << std::endl;
+		std::cout << "Chebyshev estimation:\n" << e_f.estimate(urv4) << std::endl;
+	}
 
-    std::cout << "entropy_kpN, using Euclidean: " << ekpn_eucl(urv) << std::endl;
+	// measuring the entropy estimation bias
+	std::cout << "\n\nmeasuring the entropy estimation bias on random vector\n\n";
 
+	// std::vector<std::deque<double>> urv6 = {{0.1}, {0.3}, {0.5}, {0.7}, {0.9}, {0.51}, {0.5}};
+	using ElType = float; // long double;
+	std::vector<std::deque<ElType>> urv6 = {{0.1, 0.5, 0.7}, {0.3, 0.7, 0.9},	 {0.5, 0.9, 0.1}, {0.7, 0.1, 0.3},
+											{0.9, 0.3, 0.5}, {0.51, 0.91, 0.11}, {0.5, 0.9, 0.1}};
+	// std::cout << "\nshort test vector result: " << urv6.size() << " | " << e_f_eucl(urv6) << "\n\n";
+	std::cout << "\nshort test vector result: " << urv6.size() << " | " << e_f_cheb(urv6) << "\n\n";
 
-    std::cout << "conv test " << metric::entropy_details::conv_diff_entropy_inv(metric::entropy_details::conv_diff_entropy(-0.118)) << std::endl;
+	auto e_f_mink1 = mtrc::EntropySimple<void, mtrc::P_norm<ElType>>(mtrc::P_norm<ElType>(1), 3);
+	auto e_f_mink2 = mtrc::EntropySimple<void, mtrc::P_norm<ElType>>(mtrc::P_norm<ElType>(2), 3);
+	auto e_f_manh = mtrc::EntropySimple<void, mtrc::Manhattan<ElType>>(mtrc::Manhattan<ElType>(), 3);
+	auto e_kpn_cheb = mtrc::Entropy<void, mtrc::Chebyshev<ElType>>(mtrc::Chebyshev<ElType>(), 3, 5);
 
+	std::cout << "short test vector result,  manh: " << urv6.size() << " | " << e_f_manh(urv6) << "\n";
+	std::cout << "short test vector result, mink1: " << urv6.size() << " | " << e_f_mink1(urv6) << "\n";
+	std::cout << "short test vector result,  eucl: " << urv6.size() << " | " << e_f_eucl(urv6) << "\n";
+	std::cout << "short test vector result, mink2: " << urv6.size() << " | " << e_f_mink2(urv6) << "\n";
+	std::cout << "short test vector result,  cheb: " << urv6.size() << " | " << e_f_cheb(urv6) << "\n";
+	std::cout << "short test vector result,   kpN: " << urv6.size() << " | " << e_kpn_cheb(urv6) << "\n";
 
+	size_t step = 1000;
 
+	std::vector<std::deque<double>> urv5;
 
-    // testing entropy::estimate
+	auto e_f_eucl500 = mtrc::EntropySimple<void, mtrc::Euclidean<double>>(mtrc::Euclidean<double>(), 500);
+	std::cout << "\nlength | entropy | kpN entropy\n";
+	for (size_t i = 0; i < 25; ++i) {
+		for (size_t i = 0; i < step; ++i) {
+			// urv5.push_back({dis(gen), dis(gen)});
+			// urv5.push_back({dis(gen)});
+			// urv5.push_back({dis(gen), dis(gen), dis(gen), dis(gen)});
+			urv5.push_back({dis(gen), dis(gen), dis(gen)});
+		}
+		// std::cout << urv5.size() << " | " << e_f_eucl(urv5) << "\n";
+		// std::cout << urv5.size() << " | " << e_f_cheb(urv5) << "\n";
+		// std::cout << urv5.size() << " | " << e_f_manh(urv5) << "\n";
+		// std::cout << urv5.size() << " | " << e_f_mink(urv5, 3, 2.0, mtrc::P_norm<double>(2)) << "\n";
+		std::cout << urv5.size() << " | " << e_f_eucl500(urv5) << " | " << ekpn_cheb(urv5) << "\n";
+	}
 
-    std::cout << "\n\nstart entropy_avg test\n";
-    auto e_avg = e_f_eucl.estimate(urv);
-    std::cout << "\nentropy_avg result: " << e_avg << "\n\n";
-
-    auto e_plane = e_f_eucl(urv3);
-    std::cout << "default entropy for vector of sample size 250: " << e_plane << "\n\n";
-
-
-    // testing types
-
-    {
-        auto e_f = metric::EntropySimple<void, metric::Chebyshev<double>>(metric::Chebyshev<double>(), 3);
-        std::cout << "\n\ntesting deque type\n\nChebyshev, full: " << e_f(urv4) << std::endl;
-        std::cout << "Chebyshev estimation:\n" << e_f.estimate(urv4) << std::endl;
-    }
-
-
-    // measuring the entropy estimation bias
-    std::cout << "\n\nmeasuring the entropy estimation bias on random vector\n\n";
-
-
-    //std::vector<std::deque<double>> urv6 = {{0.1}, {0.3}, {0.5}, {0.7}, {0.9}, {0.51}, {0.5}};
-    using ElType = float; // long double;
-    std::vector<std::deque<ElType>> urv6 =
-        {{0.1, 0.5, 0.7}, {0.3, 0.7, 0.9}, {0.5, 0.9, 0.1}, {0.7, 0.1, 0.3}, {0.9, 0.3, 0.5}, {0.51, 0.91, 0.11}, {0.5, 0.9, 0.1}};
-    //std::cout << "\nshort test vector result: " << urv6.size() << " | " << e_f_eucl(urv6) << "\n\n";
-    std::cout << "\nshort test vector result: " << urv6.size() << " | " << e_f_cheb(urv6) << "\n\n";
-
-
-    auto e_f_mink1 = metric::EntropySimple<void, metric::P_norm<ElType>>(metric::P_norm<ElType>(1), 3);
-    auto e_f_mink2 = metric::EntropySimple<void, metric::P_norm<ElType>>(metric::P_norm<ElType>(2), 3);
-    auto e_f_manh = metric::EntropySimple<void, metric::Manhatten<ElType>>(metric::Manhatten<ElType>(), 3);
-    auto e_kpn_cheb = metric::Entropy<void, metric::Chebyshev<ElType>>(metric::Chebyshev<ElType>(), 3, 5);
-
-    std::cout << "short test vector result,  manh: " << urv6.size() << " | " << e_f_manh(urv6) << "\n";
-    std::cout << "short test vector result, mink1: " << urv6.size() << " | " << e_f_mink1(urv6) << "\n";
-    std::cout << "short test vector result,  eucl: " << urv6.size() << " | " << e_f_eucl(urv6) << "\n";
-    std::cout << "short test vector result, mink2: " << urv6.size() << " | " << e_f_mink2(urv6) << "\n";
-    std::cout << "short test vector result,  cheb: " << urv6.size() << " | " << e_f_cheb(urv6) << "\n";
-    std::cout << "short test vector result,   kpN: " << urv6.size() << " | " << e_kpn_cheb(urv6) << "\n";
-
-    size_t step = 1000;
-
-    std::vector<std::deque<double>> urv5;
-
-    auto e_f_eucl500 = metric::EntropySimple<void, metric::Euclidean<double>>(metric::Euclidean<double>(), 500);
-    std::cout << "\nlength | entropy | kpN entropy\n";
-    for (size_t i = 0; i<25; ++i) {
-        for (size_t i = 0; i<step; ++i) {
-            //urv5.push_back({dis(gen), dis(gen)});
-            //urv5.push_back({dis(gen)});
-            //urv5.push_back({dis(gen), dis(gen), dis(gen), dis(gen)});
-            urv5.push_back({dis(gen), dis(gen), dis(gen)});
-        }
-        //std::cout << urv5.size() << " | " << e_f_eucl(urv5) << "\n";
-        //std::cout << urv5.size() << " | " << e_f_cheb(urv5) << "\n";
-        //std::cout << urv5.size() << " | " << e_f_manh(urv5) << "\n";
-        //std::cout << urv5.size() << " | " << e_f_mink(urv5, 3, 2.0, metric::P_norm<double>(2)) << "\n";
-        std::cout << urv5.size() << " | " << e_f_eucl500(urv5) << " | " << ekpn_cheb(urv5) << "\n";
-    }
-
-
-
-    return 0;
+	return 0;
 }
 //*/

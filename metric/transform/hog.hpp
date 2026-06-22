@@ -1,22 +1,22 @@
-#ifndef PANDA_METRIC_HOG_HPP
-#define PANDA_METRIC_HOG_HPP
+#ifndef METRIC_TRANSFORM_HOG_HPP
+#define METRIC_TRANSFORM_HOG_HPP
 
-#include <blaze/Math.h>
+#include <metric/numeric/Math.h>
 
-namespace metric {
+namespace mtrc {
 
 template <typename T> class HOG {
   public:
-	using Matrix = blaze::DynamicMatrix<T>;
-	using DistanceMatrix = blaze::SymmetricMatrix<Matrix>;
-	using Vector = blaze::DynamicVector<T>;
+	using Matrix = mtrc::numeric::DynamicMatrix<T>;
+	using DistanceMatrix = mtrc::numeric::SymmetricMatrix<Matrix>;
+	using Vector = mtrc::numeric::DynamicVector<T>;
 
 	HOG(const size_t orientations, const size_t cellSize, const size_t blockSize);
 
 	Vector encode(const HOG::Matrix &image) const;
 
-	typename HOG<T>::DistanceMatrix getGroundDistance(const blaze::DynamicMatrix<T> &image, const T rotation_cost,
-													  const T move_cost, const T threshold = 0);
+	typename HOG<T>::DistanceMatrix getGroundDistance(const mtrc::numeric::DynamicMatrix<T> &image,
+													  const T rotation_cost, const T move_cost, const T threshold = 0);
 
   private:
 	size_t orientations;
@@ -27,8 +27,8 @@ template <typename T> class HOG {
 	typename HOG<T>::DistanceMatrix getOrientationDistance(const T angleUnitCost = 20);
 };
 
-} // namespace metric
+} // namespace mtrc
 
 #include "hog.cpp"
 
-#endif // PANDA_METRIC_HOG_HPP
+#endif // METRIC_TRANSFORM_HOG_HPP

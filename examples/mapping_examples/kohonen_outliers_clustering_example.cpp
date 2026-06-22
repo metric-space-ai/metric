@@ -7,14 +7,14 @@ Copyright (c) 2019 Panda Team
 */
 
 #if defined(__linux__)
-	#include <dirent.h>
+#include <dirent.h>
 #endif
 
-#include <vector>
 #include <any>
+#include <vector>
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
 #if defined(_WIN64)
 #include <filesystem>
@@ -22,81 +22,66 @@ Copyright (c) 2019 Panda Team
 
 #include <chrono>
 
-#include "metric/utils/ThreadPool.hpp"
 #include "metric/utils/Semaphore.h"
+#include "metric/utils/ThreadPool.hpp"
 
-#include <nlohmann/json.hpp>
 #include "metric/mapping.hpp"
 
-
-using json = nlohmann::json;
-
-
-template <typename T>
-void matrix_print(const std::vector<std::vector<T>> &mat)
+template <typename T> void matrix_print(const std::vector<std::vector<T>> &mat)
 {
 
-    std::cout << "[";
-    std::cout << std::endl;
-	for (int i = 0; i < mat.size(); i++)
-	{
+	std::cout << "[";
+	std::cout << std::endl;
+	for (int i = 0; i < mat.size(); i++) {
 		std::cout << "  [ ";
-		if (mat[i].size() > 0)
-		{
-			for (int j = 0; j < mat[i].size() - 1; j++)
-			{
+		if (mat[i].size() > 0) {
+			for (int j = 0; j < mat[i].size() - 1; j++) {
 				std::cout << mat[i][j] << ", ";
 			}
 			std::cout << mat[i][mat[i].size() - 1];
 		}
-			
+
 		std::cout << " ]" << std::endl;
-    }
-    std::cout << std::endl;
-    std::cout << "]" << std::endl;
+	}
+	std::cout << std::endl;
+	std::cout << "]" << std::endl;
 }
 
-template <typename T>
-void vector_print(const std::vector<T> &vec)
+template <typename T> void vector_print(const std::vector<T> &vec)
 {
 
-    std::cout << "[ ";
-    for (int i = 0; i < vec.size() - 1; i++)
-    {
-        std::cout << vec[i] << ", ";
-    }
-    std::cout << vec[vec.size() - 1] << " ]" << std::endl;
+	std::cout << "[ ";
+	for (int i = 0; i < vec.size() - 1; i++) {
+		std::cout << vec[i] << ", ";
+	}
+	std::cout << vec[vec.size() - 1] << " ]" << std::endl;
 }
 
-template <typename T>
-void vector_print(const std::vector<T> &vec,const size_t width, const size_t height)
+template <typename T> void vector_print(const std::vector<T> &vec, const size_t width, const size_t height)
 {
 	if ((width * height) != vec.size()) {
 		std::cout << "width * height != vector.size()" << std::endl;
 		return;
 	}
-	
+
 	int max_digits = 1;
 	for (auto index = 0; index < vec.size(); ++index) {
 		int pos = 10;
 		int digits_num = 1;
-		while (vec[index] / pos >= 1)
-		{
+		while (vec[index] / pos >= 1) {
 			digits_num++;
 			pos *= 10;
 		}
-		if (digits_num > max_digits)
-		{
+		if (digits_num > max_digits) {
 			max_digits = digits_num;
 		}
 	}
 
 	for (auto index = 0; index < vec.size(); ++index) {
-		
+
 		int pos = 10;
 		int digits_num = 1;
-		while (vec[index] / pos >= 1)
-		{
+		while (vec[index] / pos >= 1) {
 			digits_num++;
 			pos *= 10;
 		}
@@ -117,21 +102,19 @@ std::vector<std::vector<double>> readCsvData(std::string filename, char delimete
 	std::fstream fin;
 
 	fin.open(filename, std::ios::in);
-	
+
 	std::vector<double> row;
 	std::string line, word, w;
 
 	std::vector<std::vector<double>> rows;
 
 	int i = 0;
-	while (getline(fin, line))
-	{
+	while (getline(fin, line)) {
 		i++;
 		std::stringstream s(line);
 
 		row.clear();
-		while (getline(s, word, delimeter))
-		{
+		while (getline(s, word, delimeter)) {
 			row.push_back(std::stod(word));
 		}
 
@@ -141,61 +124,55 @@ std::vector<std::vector<double>> readCsvData(std::string filename, char delimete
 	return rows;
 }
 
-std::tuple<std::vector<std::string>, std::vector<std::vector<double>>> readCsvData2(std::string filename, char delimeter)
+std::tuple<std::vector<std::string>, std::vector<std::vector<double>>> readCsvData2(std::string filename,
+																					char delimeter)
 {
 	std::fstream fin;
 
 	fin.open(filename, std::ios::in);
-	
+
 	std::vector<std::string> dates;
 	std::vector<double> row;
 	std::string line, word, w;
 
 	std::vector<std::vector<double>> rows;
-	
+
 	int day, month, year, hour, minute, second;
 	int added_days = 0;
 	bool was_yesterday = false;
 
-	// omit headers 
+	// omit headers
 	getline(fin, line);
 
 	int i = 0;
-	while (getline(fin, line))
-	{
+	while (getline(fin, line)) {
 		i++;
 		std::stringstream s(line);
 
 		getline(s, word, delimeter);
 		sscanf(word.c_str(), "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &minute, &second);
-		if (was_yesterday && hour * 60 + minute >= 4 * 60)
-		{
+		if (was_yesterday && hour * 60 + minute >= 4 * 60) {
 			dates.push_back(word);
 			rows.push_back(row);
 			row.clear();
 		}
 
-		if (hour * 60 + minute < 4 * 60)
-		{
+		if (hour * 60 + minute < 4 * 60) {
 			was_yesterday = true;
-		}
-		else
-		{
+		} else {
 			was_yesterday = false;
 		}
 
-		while (getline(s, word, delimeter))
-		{
+		while (getline(s, word, delimeter)) {
 			row.push_back(std::stod(word));
 		}
-
 	}
 
 	// erase first element with partial data
 	rows.erase(rows.begin());
 	dates.erase(dates.end() - 1);
 
-	return { dates, rows };
+	return {dates, rows};
 }
 
 ///
@@ -206,14 +183,13 @@ int main(int argc, char *argv[])
 	std::cout << std::endl;
 
 	using Record = std::vector<double>;
-				
+
 	size_t best_w_grid_size = 3;
 	size_t best_h_grid_size = 2;
 
 	// if overrided from arguments
-	
-	if (argc > 3)
-	{
+
+	if (argc > 3) {
 		best_w_grid_size = std::stod(argv[2]);
 		best_h_grid_size = std::stod(argv[3]);
 	}
@@ -221,7 +197,7 @@ int main(int argc, char *argv[])
 	std::vector<std::vector<Record>> datasets;
 	std::vector<std::vector<Record>> test_sets;
 	std::vector<std::string> dataset_names;
-	
+
 	std::vector<Record> dataset;
 	std::vector<Record> test_set;
 	std::vector<std::string> dates;
@@ -230,43 +206,33 @@ int main(int argc, char *argv[])
 
 	dataset = {
 
-		{0, 0.1},
-		{0.2, 0},
+		{0, 0.1},	{0.2, 0},
 
-		{0, 1.2},
-		{0.1, 1},
+		{0, 1.2},	{0.1, 1},
 
-		{0.1, 2},
-		{0.2, 2},
+		{0.1, 2},	{0.2, 2},
 
-		{1, 0},
-		{1.2, 0.1},
+		{1, 0},		{1.2, 0.1},
 
-		{1.3, 1.1},
-		{0.9, 1},
+		{1.3, 1.1}, {0.9, 1},
 
-		{1.1, 2},
-		{0.9, 1.9},
+		{1.1, 2},	{0.9, 1.9},
 	};
 	datasets.push_back(dataset);
 
 	test_set = {
-		{0, 0},
-		{0, 1},
-		{0.5, 0.5},
-		{0.0, 0.3},
-		{5, 5},
+		{0, 0}, {0, 1}, {0.5, 0.5}, {0.0, 0.3}, {5, 5},
 	};
 	test_sets.push_back(test_set);
 
 	dataset_names.push_back("syntetic dataset");
 
 	//
-	
+
 	dataset = readCsvData("assets/testdataset/compound.csv", ',');
 	datasets.push_back(dataset);
 
-	test_set = { {4, 0} };
+	test_set = {{4, 0}};
 	test_sets.push_back(test_set);
 
 	dataset_names.push_back("compound dataset");
@@ -276,12 +242,7 @@ int main(int argc, char *argv[])
 	dataset = readCsvData("assets/testdataset/fisheriris.csv", ',');
 	datasets.push_back(dataset);
 
-	test_set = {
-		{6.5, 3.2, 5.1, 2.2},
-		{6.1, 3.3, 5.3, 2.3},
-		{5.9, 3.1, 5.2, 1.8},
-		{8.3, 5.0, 5.0, 3.5}
-	};
+	test_set = {{6.5, 3.2, 5.1, 2.2}, {6.1, 3.3, 5.3, 2.3}, {5.9, 3.1, 5.2, 1.8}, {8.3, 5.0, 5.0, 3.5}};
 	test_sets.push_back(test_set);
 
 	dataset_names.push_back("fisheriris dataset");
@@ -291,11 +252,12 @@ int main(int argc, char *argv[])
 	dataset = readCsvData("assets/testdataset/multidim.csv", ',');
 	datasets.push_back(dataset);
 
-	test_set = {
-		{1.86,-0.5,0.01,0.36,-0.04,-0.35,0.11,0.09,0.57,-0.09,-0.03,0.05,-0.21,-0.21,0.04,-0.14,0.14,-0.11,0.18,-0.06,-0.04,0.08,-0.03,-0.13,0.11,0.02,0.04,-0.04,-0.14,-0.1},
-		{0.87,-0.97,0.24,0.18,0.23,0.35,0.21,-0.06,0.01,0.06,-0.1,0.02,-0.13,0.18,-0.43,0.06,-0.24,0.12,0.04,-0.2,-0.12,0.23,0.06,0.2,-0.09,0.01,0.28,0.01,0.11,-0.04},
-		{2,2,0.4,0.01,-0.1,0.1,0.2,0.1,-0.1,0.4,-0.1,-0.01,0.3,0.2,0.3,0.01,0.2,0.1,-0.1,-0.1,-0.4,0.1,0.2,0.3,0.01,0.3,0.1,0.4,0.1,0.1}
-	};
+	test_set = {{1.86,	-0.5, 0.01,	 0.36, -0.04, -0.35, 0.11, 0.09,  0.57,	 -0.09, -0.03, 0.05, -0.21, -0.21, 0.04,
+				 -0.14, 0.14, -0.11, 0.18, -0.06, -0.04, 0.08, -0.03, -0.13, 0.11,	0.02,  0.04, -0.04, -0.14, -0.1},
+				{0.87, -0.97, 0.24, 0.18, 0.23, 0.35,  0.21, -0.06, 0.01, 0.06,	 -0.1, 0.02, -0.13, 0.18, -0.43,
+				 0.06, -0.24, 0.12, 0.04, -0.2, -0.12, 0.23, 0.06,	0.2,  -0.09, 0.01, 0.28, 0.01,	0.11, -0.04},
+				{2,	   2,	0.4, 0.01, -0.1, 0.1,  0.2, 0.1, -0.1, 0.4,	 -0.1, -0.01, 0.3, 0.2, 0.3,
+				 0.01, 0.2, 0.1, -0.1, -0.1, -0.4, 0.1, 0.2, 0.3,  0.01, 0.3,  0.1,	  0.4, 0.1, 0.1}};
 	test_sets.push_back(test_set);
 
 	dataset_names.push_back("multidim dataset");
@@ -305,8 +267,9 @@ int main(int argc, char *argv[])
 	std::tie(dates, dataset) = readCsvData2("assets/testdataset/nyc_taxi.csv", ',');
 	datasets.push_back(dataset);
 
-	test_set = { dataset[2], dataset[12], dataset[22], dataset[53], dataset[84], dataset[122], dataset[123], dataset[149], dataset[162], dataset[163],
-		dataset[183], dataset[184], dataset[192], dataset[199], dataset[201]  };
+	test_set = {dataset[2],	  dataset[12],	dataset[22],  dataset[53],	dataset[84],
+				dataset[122], dataset[123], dataset[149], dataset[162], dataset[163],
+				dataset[183], dataset[184], dataset[192], dataset[199], dataset[201]};
 	test_sets.push_back(test_set);
 
 	dataset_names.push_back("NYC taxi dataset");
@@ -316,7 +279,7 @@ int main(int argc, char *argv[])
 	dataset = readCsvData("assets/testdataset/3d_swissroll.csv", ',');
 	datasets.push_back(dataset);
 
-	test_set = { dataset[2], dataset[12], dataset[22]  };
+	test_set = {dataset[2], dataset[12], dataset[22]};
 	test_sets.push_back(test_set);
 
 	dataset_names.push_back("swissroll dataset");
@@ -327,10 +290,10 @@ int main(int argc, char *argv[])
 	long long random_seed = 777;
 	double sigma = 1.5;
 
-	metric::KOC_factory<Record, metric::Grid4> simple_koc_factory(best_w_grid_size, best_h_grid_size, sigma, 0.5, 0.0, 300, -1, 1, 2, 0.5, random_seed);
+	mtrc::KOC_factory<Record, mtrc::Grid4> simple_koc_factory(best_w_grid_size, best_h_grid_size, sigma, 0.5, 0.0,
+																  300, -1, 1, 2, 0.5, random_seed);
 
-	for (int i = 0; i < datasets.size(); i++)
-	{
+	for (int i = 0; i < datasets.size(); i++) {
 		std::cout << "--------------" << std::endl;
 		std::cout << dataset_names[i] << std::endl;
 		std::cout << "--------------" << std::endl;
@@ -343,7 +306,6 @@ int main(int argc, char *argv[])
 
 		auto simple_koc = simple_koc_factory(dataset, num_clusters);
 
-
 		std::cout << "train dataset:" << std::endl;
 
 		auto anomalies = simple_koc.check_if_anomaly(dataset);
@@ -355,7 +317,6 @@ int main(int argc, char *argv[])
 		std::cout << std::endl;
 		std::cout << "assignments:" << std::endl;
 		vector_print(assignments);
-
 
 		std::cout << std::endl;
 		std::cout << std::endl;
@@ -392,5 +353,5 @@ int main(int argc, char *argv[])
 		std::cout << std::endl;
 	}
 
-    return 0;
+	return 0;
 }

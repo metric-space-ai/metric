@@ -10,14 +10,14 @@ Copyright (c) 2018 Michael Welsch
 #ifndef _METRIC_SPACE_MATRIX_HPP
 #define _METRIC_SPACE_MATRIX_HPP
 
-#include <blaze/Blaze.h>
+#include <metric/numeric.hpp>
 
 #include <iostream>
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
 
-namespace metric {
+namespace mtrc {
 
 /**
  * @class Matrix
@@ -232,13 +232,13 @@ template <typename RecType, typename Metric> class Matrix {
 
 	/*** Properties ***/
 	Metric metric_;
-	blaze::CompressedMatrix<distType> D_;
+	mtrc::numeric::CompressedMatrix<distType> D_;
 	std::vector<RecType> data_;
 	mutable std::unordered_map<std::size_t, std::size_t> index_map_;
 	std::vector<std::size_t> id_map_;
 };
 
-} // namespace metric
+} // namespace mtrc
 #include "matrix.cpp"
 
 #endif // headerguard

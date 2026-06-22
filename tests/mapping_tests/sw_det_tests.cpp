@@ -7,70 +7,37 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 
-//#define CATCH_CONFIG_MAIN
+// #define CATCH_CONFIG_MAIN
 
 #include <catch2/catch.hpp>
 
-//#include "metric/mapping.hpp"
+// #include "metric/mapping.hpp"
 #include "metric/mapping/deterministic_switch_detector.hpp"
 
-//#include <iostream>
+// #include <iostream>
 
+TEMPLATE_TEST_CASE("switch_detector", "[mapping]", float, double)
+{
 
+	mtrc::numeric::DynamicMatrix<TestType> dataset = {
+		{0, 10, 10, 10},	{0, 10, 10, 10},	{0, 10, 10, 10},	{0, 10, 10, 10},	{0, 10, 10, 10},
+		{0, 10, 10, 10},	{0, 10, 10, 10},	{0, 10, 10, 10},	{0, 10, 10, 10},	{0, 10, 10, 10},
+		{0, 10, 10, 10},	{0, 10, 10, 15},	{0, 13, 17, 20},	{0, 25, 22, 25},	{0, 10, 15, 10},
+		{0, 10, 10, 10},	{0, 5, 5, 10},		{0, 5, 2, 5},		{0, 10, 10, 10},	{0, 10, 10, 10},
+		{0, 20, 20, 20},	{0, 30, 30, 30},	{0, 100, 100, 100}, {0, 100, 100, 100}, {0, 100, 100, 100},
+		{0, 100, 100, 100}, {0, 100, 100, 100}, {0, 100, 100, 100}, {0, 100, 100, 100}, {0, 100, 100, 100},
+		{0, 100, 100, 100}, {0, 100, 100, 100}, {0, 10, 10, 10},	{0, 10, 10, 10},	{0, 10, 10, 10},
+		{0, 10, 10, 10},	{0, 10, 10, 10},	{0, 10, 10, 10}};
 
+	auto d = DetSwitchDetector<TestType>(8, 0.5);
+	auto switches = d.encode(dataset);
+	// std::cout << std::endl << "switches:" << std::endl << switches << std::endl;
+	REQUIRE(((mtrc::numeric::sum(mtrc::numeric::abs(switches)) == 2) && (switches(23, 0) == 1) &&
+			 (switches(31, 0) == -1)));
 
-TEMPLATE_TEST_CASE("switch_detector", "[mapping]", float, double) {
+	d = DetSwitchDetector<TestType>(8);
+	switches = d.encode(dataset);
 
-    blaze::DynamicMatrix<TestType> dataset = {
-        {0, 10, 10, 10},
-        {0, 10, 10, 10},
-        {0, 10, 10, 10},
-        {0, 10, 10, 10},
-        {0, 10, 10, 10},
-        {0, 10, 10, 10},
-        {0, 10, 10, 10},
-        {0, 10, 10, 10},
-        {0, 10, 10, 10},
-        {0, 10, 10, 10},
-        {0, 10, 10, 10},
-        {0, 10, 10, 15},
-        {0, 13, 17, 20},
-        {0, 25, 22, 25},
-        {0, 10, 15, 10},
-        {0, 10, 10, 10},
-        {0,  5,  5, 10},
-        {0,  5,  2,  5},
-        {0, 10, 10, 10},
-        {0, 10, 10, 10},
-        {0, 20, 20, 20},
-        {0, 30, 30, 30},
-        {0, 100, 100, 100},
-        {0, 100, 100, 100},
-        {0, 100, 100, 100},
-        {0, 100, 100, 100},
-        {0, 100, 100, 100},
-        {0, 100, 100, 100},
-        {0, 100, 100, 100},
-        {0, 100, 100, 100},
-        {0, 100, 100, 100},
-        {0, 100, 100, 100},
-        {0, 10, 10, 10},
-        {0, 10, 10, 10},
-        {0, 10, 10, 10},
-        {0, 10, 10, 10},
-        {0, 10, 10, 10},
-        {0, 10, 10, 10}
-    };
-
-    auto d = DetSwitchDetector<TestType>(8, 0.5);
-    auto switches = d.encode(dataset);
-    //std::cout << std::endl << "switches:" << std::endl << switches << std::endl;
-    REQUIRE( ((blaze::sum(blaze::abs(switches)) == 2) && (switches(23, 0) == 1) && (switches(31, 0) == -1)) );
-
-    d = DetSwitchDetector<TestType>(8);
-    switches = d.encode(dataset);
-
-    //std::cout << std::endl << "switches:" << std::endl << switches << std::endl;
-    REQUIRE( ((blaze::sum(blaze::abs(switches)) == 1) && (switches(23, 0) == 1)) );
-
+	// std::cout << std::endl << "switches:" << std::endl << switches << std::endl;
+	REQUIRE(((mtrc::numeric::sum(mtrc::numeric::abs(switches)) == 1) && (switches(23, 0) == 1)));
 }

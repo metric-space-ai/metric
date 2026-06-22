@@ -19,15 +19,42 @@ struct AbsoluteDistance {
 
 int main()
 {
-	auto space = metric::make_space(std::vector<int>{0, 1, 10, 11, 30}, AbsoluteDistance{});
-	metric::representations::MatrixCache<decltype(space)> matrix(space);
+	auto space = mtrc::make_space(std::vector<int>{0, 1, 10, 11, 30}, AbsoluteDistance{});
+	mtrc::space::storage::DistanceTable<decltype(space)> matrix(space);
 
-	const auto clustered = metric::operators::dbscan(matrix, 2, 2);
+	using ManualResult = mtrc::ClusteringResult<int>;
+	const auto manual = mtrc::core::make_clustering_result<int>(
+		std::vector<std::size_t>{0, 1, ManualResult::noise_label},
+		std::vector<mtrc::RecordId>{space.id(0), space.id(1)}, std::vector<mtrc::RecordId>{space.id(0)},
+		std::vector<mtrc::RecordId>{space.id(2)}, std::vector<std::size_t>{1, 1}, 3, true, "manual_cluster",
+		"manual_provider");
+	assert(manual.record_count == 3);
+	assert(manual.cluster_count == 2);
+	assert(manual.noise_count == 1);
+	assert(manual.iterations == 3);
+	assert(manual.converged);
+	assert(manual.algorithm == "manual_cluster");
+	assert(manual.representation == "manual_provider");
+	assert(manual.noise_records[0] == space.id(2));
+
+	const auto empty_manual = mtrc::core::make_clustering_result<int>(
+		std::vector<std::size_t>{}, std::vector<mtrc::RecordId>{}, std::vector<mtrc::RecordId>{},
+		std::vector<mtrc::RecordId>{}, std::vector<std::size_t>{}, 0, false, "empty_cluster",
+		"empty_provider");
+	assert(empty_manual.empty());
+	assert(empty_manual.record_count == 0);
+	assert(empty_manual.cluster_count == 0);
+	assert(empty_manual.noise_count == 0);
+	assert(!empty_manual.converged);
+	assert(empty_manual.algorithm == "empty_cluster");
+	assert(empty_manual.representation == "empty_provider");
+
+	const auto clustered = mtrc::stats::structural_analysis::dbscan(matrix, 2, 2);
 	using Result = decltype(clustered);
 	static_assert(std::is_same<typename Result::distance_type, int>::value);
 
 	assert(clustered.algorithm == "dbscan");
-	assert(clustered.representation == "distance_provider");
+	assert(clustered.representation == "pairwise_distances");
 	assert(clustered.record_count == space.size());
 	assert(clustered.cluster_count == 2);
 	assert(clustered.noise_count == 1);
@@ -49,15 +76,25 @@ int main()
 	assert(clustered.noise_records.size() == 1);
 	assert(clustered.noise_records[0] == space.id(4));
 
-	const auto implicit = metric::operators::dbscan(space, 2, 2);
+	const auto implicit = mtrc::stats::structural_analysis::dbscan(space, 2, 2);
 	assert(implicit.representation == "metric_space");
 	assert(implicit.assignments == clustered.assignments);
 	assert(implicit.noise_records == clustered.noise_records);
 	assert(implicit.medoids == clustered.medoids);
 
+	const auto self_core = mtrc::stats::structural_analysis::dbscan(space, 0, 1);
+	assert(self_core.cluster_count == space.size());
+	assert(self_core.noise_count == 0);
+	assert(self_core.core_records.size() == space.size());
+	assert(self_core.core_records[0] == space.id(0));
+	assert(self_core.core_records[4] == space.id(4));
+	assert(self_core.cluster_sizes.size() == space.size());
+	assert(self_core.cluster_sizes[0] == 1);
+	assert(self_core.cluster_sizes[4] == 1);
+
 	bool rejected_bad_radius = false;
 	try {
-		(void)metric::operators::dbscan(matrix, -1, 2);
+		(void)mtrc::stats::structural_analysis::dbscan(matrix, -1, 2);
 	} catch (const std::invalid_argument &) {
 		rejected_bad_radius = true;
 	}
@@ -65,7 +102,7 @@ int main()
 
 	bool rejected_bad_min_points = false;
 	try {
-		(void)metric::operators::dbscan(matrix, 1, 0);
+		(void)mtrc::stats::structural_analysis::dbscan(matrix, 1, 0);
 	} catch (const std::invalid_argument &) {
 		rejected_bad_min_points = true;
 	}

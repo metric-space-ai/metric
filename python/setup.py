@@ -25,6 +25,11 @@ class MetricSdist(sdist):
 
 
 setuptools.setup(
-    ext_modules=[CMakeExtension('all', output_dir=path.join('metric', '_impl'))],
+    ext_modules=[
+        CMakeExtension('metric._impl.metric', target_name='metric'),
+        CMakeExtension('metric._impl.distance', target_name='distance'),
+        CMakeExtension('metric._impl.transform', target_name='transform'),
+        CMakeExtension('metric._impl.space', target_name='space'),
+    ],
     cmdclass={'build_ext': CMakeBuildExt, 'sdist': MetricSdist}
 )

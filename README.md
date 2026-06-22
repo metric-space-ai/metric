@@ -4,44 +4,170 @@
 [![Python core wheel](https://github.com/metric-space-ai/metric/actions/workflows/python-core.yml/badge.svg)](https://github.com/metric-space-ai/metric/actions/workflows/python-core.yml)
 [![Docs and formatting](https://github.com/metric-space-ai/metric/actions/workflows/docs-and-format.yml/badge.svg)](https://github.com/metric-space-ai/metric/actions/workflows/docs-and-format.yml)
 
-METRIC is a native C++ numerical engine for finite metric spaces.
+Native C++ framework for finite metric spaces.
 
-It computes on records whose geometry is defined by an explicit metric. The records can be strings, time series, histograms, image-like distributions, graphs, structured records, or vectors. Vector spaces are supported as one record domain, not treated as the foundation of the framework.
-
-## Links
-
-- Project page: <https://metric-space-ai.github.io/metric/>
-- Technical documentation: <https://metric-space-ai.github.io/metric/docs.html>
-- Docs source: [docs/index.md](docs/index.md)
-- C++ API: [docs/api/cpp.md](docs/api/cpp.md)
-- Finite metric spaces: [docs/concepts/finite-metric-space.md](docs/concepts/finite-metric-space.md)
-- Stability labels: [docs/stability.md](docs/stability.md)
-- Changelog: [CHANGELOG.md](CHANGELOG.md)
-
-## Finite Metric Spaces
-
-A finite metric space is a finite set of records plus a distance function:
+METRIC is built for data that is meaningful before it is forced into vectors:
+strings, process curves, histograms, image distributions, graphs, event
+sequences, and mixed industrial records. Choose a true metric for two records,
+and METRIC makes the whole finite collection computable.
 
 ```text
-X = {x0, x1, ..., xn}
-d(x, y) = distance between two records
-(X, d) = finite metric space
+records + metric -> finite metric space
+finite metric space -> search, entropy, correlation, sampling, transformation
 ```
 
-The metric supplies the geometry. METRIC keeps that metric visible across spaces, representations, operators, mappings, diagnostics, and bindings.
+## TL;DR
 
-This matters when a domain metric is more meaningful than a generic vector embedding:
+METRIC starts from a deliberately small model.
 
-- edit distance for symbolic strings
-- transport cost for histograms and distributions
-- alignment distance for process curves
-- structural distance for graphs or image-like records
-- composed domain metrics for mixed industrial records
+1. There are observations.
+2. Observations are different and distinguishable.
+3. In software we do not have the observations themselves; we have finite
+   records of them.
+4. Records and observations are not identical.
+5. The records themselves do not have to be numbers, vectors, or sortable
+   objects.
+6. What can be ordered is a relation between two records.
+7. A metric is the rule that assigns the smallest admissible relation value to
+   each record pair.
+
+That metric value can be interpreted as distance, minimal recoding effort, path
+length through an imagined intermediate space, or another domain-specific view.
+The interpretation is downstream. The computable object is the finite metric
+space: a finite record set plus one authoritative metric.
+
+The C++ namespace is `mtrc`. The project and package name remain METRIC.
+
+## Why METRIC
+
+Most data analysis stacks assume the data is already numeric, tabular, or
+embedded into vectors. That is often the wrong starting point.
+
+A machine state can include a time series, a categorical state, maintenance
+text, a distribution, and a sensor vector. A process window can be more
+naturally compared by alignment than by coordinate overlap. A histogram or
+image-like distribution can be compared by movement of mass. A string or event
+sequence can be compared by edits.
+
+METRIC keeps those native record forms and lets a metric define the numerical
+structure. The user usually does not need to invent a metric from scratch:
+METRIC provides admitted metrics for common record domains and keeps unproven
+or non-metric pairwise functions out of the normal metric surface.
+
+Once two records can be compared, the finite record set becomes a finite metric
+space. METRIC can then compute neighborhoods, representatives, entropy,
+correlation between paired spaces, outliers, modified spaces, and derived maps
+without requiring one global embedding model first.
+
+## Core Idea
+
+Software never has observations directly. It has records: finite recordings of
+observations. A record is not identical to the observation it records, and it
+does not have to be sortable or numeric.
+
+METRIC starts with a finite set of records and a metric. The metric assigns one
+numeric value to each record pair. That value can later be interpreted as
+distance, recoding cost, transformation cost, path length through an imagined
+intermediate space, diffusion structure, or mapping target, depending on the
+domain and operation.
+
+The metric comes first. The interpretation comes after.
+
+Vector spaces are included as a special case: records are coordinate records and
+the metric is induced by a coordinate metric such as Euclidean, Manhattan, or
+Chebyshev. Embeddings are useful derived spaces, not a required input format.
+
+## What You Can Compute
+
+- nearest-neighbor search and range queries
+- representative selection and finite-space reduction
+- clustering and outlier detection
+- entropy and intrinsic-structure diagnostics
+- correlation and dependence between paired metric spaces
+- sampling and metric-space walks over finite geometry
+- graph, table, tree, and indexed representations of the same source space
+- modified and derived metric spaces, including coordinate spaces when useful
+
+## Documentation Hierarchy
+
+METRIC documentation is organized by the object being computed, not by a list of
+algorithms.
+
+| Level | What belongs here | Examples |
+| --- | --- | --- |
+| Level 1: finite metric-space model | Records, metrics, spaces, entropy, correlation, sampling, and transformation as questions about a finite set `(X, d)`. | "What is the record?", "What is the metric?", "What property or derived space is being computed?" |
+| Level 2: framework components | C++ namespaces and components that own those questions. | `mtrc::record`, `mtrc::metric`, `mtrc::space`, `mtrc::stats::properties`, `mtrc::stats::correlate`, `mtrc::stats::sample`, `mtrc::modify::map`, `mtrc::modify::compose`, `mtrc::solve`. |
+| Level 3: concrete implementations | Algorithms, estimators, papers, and compatibility adapters inside a Level-2 component. | TWED, Wasserstein/EMD, MGC, PHATE, autoencoders, native DNN solvers, PCFA, SOM/KOC, DBSCAN, MDS. |
+
+PHATE, AE, DNN, MGC, and entropy are described through this hierarchy:
+entropy is a property of an existing finite metric space; MGC is a dependence
+test between aligned metric spaces; PHATE and autoencoder workflows construct
+derived coordinate spaces; the native DNN code is a solver used by fitted
+metric-space mappings.
+
+## Metrics
+
+METRIC separates true metrics from similarities, scores, divergences, and other
+pairwise functions. Operators that depend on metric geometry require metrics
+with documented metric-law behavior on their domain.
+
+Core metric families include:
+
+- Euclidean, Manhattan, Chebyshev, and Minkowski/P-norm metrics
+- edit distance for strings and symbolic sequences
+- transport metrics for histograms and distributions
+- time-series and sequence alignment metrics such as TWED/ERP-style distances
+- Ruzicka / weighted Jaccard-style metrics for nonnegative records
+- composed metrics for structured records
+
+See [Metric Discovery](docs/metrics/index.md) and
+[True Metric Catalog](docs/metrics/true-metric-catalog.md).
+
+## Example Applications
+
+### Condition Monitoring
+
+Process windows can remain time-series records. A curve metric can compare
+windows by alignment. Entropy, representatives, outliers, and cross-space
+dependence can then operate on the process geometry directly.
+
+Docs:
+[process curves](docs/examples/process-curve-external-gallery.md),
+[entropy diagnostics](docs/examples/entropy-diagnostics.md),
+[industrial anomaly workflow](docs/examples/industrial-anomaly-workflow.md).
+
+### Distribution And Image Recoding
+
+Histograms and image-like distributions can be compared by movement of mass.
+This captures shifted structure that coordinate-wise overlap can miss.
+
+Docs:
+[histogram transport](docs/examples/histogram-transport-baseline.md),
+[distribution/image recoding](docs/examples/distribution-image-recoding-baseline.md).
+
+### Mixed Records
+
+A record can combine numeric fields, categories, text, histograms, process
+curves, and other record types. METRIC can compose field metrics so the combined
+record remains directly computable.
+
+Docs:
+[mixed structured records](docs/examples/mixed-structured-record-baseline.md),
+[cross-space dependency](docs/examples/cross-space-dependency-baseline.md).
+
+### Metric-Aware Maps
+
+When coordinates are useful, METRIC treats them as derived spaces. PHATE-style
+geometry and autoencoder mappings are used as ways to produce coordinate views
+from an existing metric space, while the source metric remains explicit.
+
+Docs:
+[PHATE-AE pipeline](docs/examples/phate-ae-pipeline-workflow.md).
 
 ## C++ Quickstart
 
 ```cpp
-#include <metric/distance.hpp>
+#include <metric/metric/catalog.hpp>
 #include <metric/engine.hpp>
 
 #include <string>
@@ -51,49 +177,18 @@ int main()
 {
     std::vector<std::string> records = {"metric", "metrics", "matrix", "tree"};
 
-    auto space = metric::make_space(records, metric::Edit<char>{});
-    metric::representations::MatrixCache<decltype(space)> matrix(space);
+    auto space = mtrc::make_space(records, mtrc::Edit<char>{});
 
-    const auto neighbors = metric::find_neighbors(
+    const auto neighbors = mtrc::stats::search::find_neighbors(
         space,
         std::string("metricks"),
-        metric::count{2},
-        metric::strategies::cover_tree{});
+        mtrc::count{2});
 
     return neighbors.size() == 2 ? 0 : 1;
 }
 ```
 
-The same space can be queried lazily, through a materialized distance matrix, through graph or tree representations, or through mapping and diagnostic operators.
-
-## Public Surface
-
-- Native C++ metrics, spaces, representations, operators, mappings, diagnostics, runtime metadata, and examples.
-- Python bindings and adapters for loading user data and calling selected native surfaces.
-- Explicit stability labels for promoted, compatibility, beta, experimental, and historical modules.
-- Deterministic C++ examples under [examples/engine](examples/engine).
-
-Python does not contain independent METRIC algorithms. It is a binding and adapter layer over native functionality.
-
-## Hero Examples
-
-The engine examples compare native metric-space workflows with vector baselines.
-
-| Demo | Native metric result | Vector baseline |
-|---|---:|---:|
-| [String edit](docs/examples/string-edit-baseline.md) | 4/4 expected symbolic families | 4/4 misses |
-| [Histogram transport](docs/examples/histogram-transport-baseline.md) | 4/4 shifted-mass matches | 4/4 misses |
-| [Process curve gallery](docs/examples/process-curve-external-gallery.md) | 16/16 UCR anomaly-window matches | 16/16 misses |
-| [Distribution/image recoding](docs/examples/distribution-image-recoding-baseline.md) | 4/4 shifted-structure matches | 4/4 misses |
-| [Mixed structured records](docs/examples/mixed-structured-record-baseline.md) | 4/4 expected domain families | 4/4 misses |
-| [Cross-space dependency](docs/examples/cross-space-dependency-baseline.md) | MGC detects paired-space dependency | 9/12 raw-pairing misses |
-| [PHATE-AE pipeline](docs/examples/phate-ae-pipeline-hero.md) | process-curve latent nearest families correct for 6/6 held-out queries | 6/6 misses |
-
-These examples are C++ executables with documented output under [docs/examples/engine-demo-outputs.md](docs/examples/engine-demo-outputs.md).
-
 ## Build From Source
-
-The C++ core can be consumed directly from source:
 
 ```shell
 cmake --preset core
@@ -105,33 +200,33 @@ For a package-manager based build, install:
 
 - C++17 compiler
 - CMake 3.19+
-- nlohmann_json
-- cereal
-- BLAS/LAPACK for faster linear algebra paths
+- optional BLAS/LAPACK for LAPACK-backed numerical tests and advanced linear algebra paths
 
 Then configure without dependency fetching:
 
 ```shell
 cmake -S . -B build/core \
   -DMETRIC_BUILD_CORE_TESTS=ON \
-  -DMETRIC_BUILD_CORE_EXAMPLES=ON \
-  -DMETRIC_FETCH_DEPS=OFF
+  -DMETRIC_BUILD_CORE_EXAMPLES=ON
 cmake --build build/core
 ctest --test-dir build/core --output-on-failure
 ```
 
-The numerical matrix/vector core is included in-tree as `metric/numeric`; it is not a separate package-manager dependency.
+The numerical matrix/vector core is included in-tree as `metric/numeric`; it is
+not a separate package-manager dependency.
 
 ## CMake Integration
 
 ```cmake
-find_package(panda_metric REQUIRED)
+find_package(metric REQUIRED)
 
 add_executable(program program.cpp)
-target_link_libraries(program PRIVATE panda_metric::panda_metric)
+target_link_libraries(program PRIVATE metric::metric)
 ```
 
 ## Python Binding
+
+Python is an adapter layer over the native implementation.
 
 ```shell
 python -m pip install ./python
@@ -145,11 +240,22 @@ space = Space(records, Edit())
 print(space.neighbors("read", k=2))
 ```
 
-The Python package adapts Python records to the native engine surface. It does not define a separate algorithmic implementation.
+## Documentation
 
-## Not A Vector Database
+- Project page: <https://metric-space-ai.github.io/metric/>
+- Technical documentation: <https://metric-space-ai.github.io/metric/docs.html>
+- Finite metric spaces: [docs/concepts/finite-metric-space.md](docs/concepts/finite-metric-space.md)
+- METRIC vocabulary: [docs/concepts/metric-vocabulary.md](docs/concepts/metric-vocabulary.md)
+- C++ API: [docs/api/cpp.md](docs/api/cpp.md)
+- Python API: [docs/api/python.md](docs/api/python.md)
+- Stability labels: [docs/stability.md](docs/stability.md)
+- Changelog: [CHANGELOG.md](CHANGELOG.md)
 
-METRIC does not provide managed persistence, online indexing, replication, authorization, or hosted search. Use it when the metric itself is the modeling decision and the record geometry should remain explicit.
+## Scope
+
+METRIC is not a hosted vector database. It does not provide managed
+persistence, replication, authorization, or online service operations. Use it
+when records and their metric are the central object of computation.
 
 ## License
 

@@ -8,24 +8,21 @@
 #include <type_traits>
 #include <utility>
 
-namespace metric {
+namespace mtrc {
 
-template <typename Callable, typename Record, typename = void> struct is_metric_callable : std::false_type {
-};
+template <typename Callable, typename Record, typename = void> struct is_metric_callable : std::false_type {};
 
 template <typename Callable, typename Record>
-struct is_metric_callable<
-	Callable, Record,
-	std::void_t<decltype(std::declval<const Callable &>()(std::declval<const Record &>(),
-														  std::declval<const Record &>()))>> : std::true_type {
-};
+struct is_metric_callable<Callable, Record,
+						  std::void_t<decltype(std::declval<const Callable &>()(
+							  std::declval<const Record &>(), std::declval<const Record &>()))>> : std::true_type {};
 
 template <typename Callable, typename Record>
 constexpr bool is_metric_callable_v = is_metric_callable<Callable, Record>::value;
 
 template <typename Callable, typename Record>
-using metric_distance_t = decltype(std::declval<const Callable &>()(std::declval<const Record &>(),
-																	std::declval<const Record &>()));
+using metric_distance_t =
+	decltype(std::declval<const Callable &>()(std::declval<const Record &>(), std::declval<const Record &>()));
 
 template <typename Record, typename Callable> class Metric {
   public:
@@ -33,11 +30,10 @@ template <typename Record, typename Callable> class Metric {
 	using callable_type = Callable;
 	using distance_type = metric_distance_t<callable_type, record_type>;
 
-	explicit Metric(callable_type callable)
-		: callable_(std::move(callable))
+	explicit Metric(callable_type callable) : callable_(std::move(callable))
 	{
 		static_assert(is_metric_callable_v<callable_type, record_type>,
-					  "metric::Metric requires a callable accepting two records");
+					  "mtrc::Metric requires a callable accepting two records");
 	}
 
 	auto operator()(const record_type &lhs, const record_type &rhs) const -> distance_type
@@ -57,6 +53,6 @@ auto make_metric(Callable callable) -> Metric<Record, typename std::decay<Callab
 	return Metric<Record, typename std::decay<Callable>::type>(std::forward<Callable>(callable));
 }
 
-} // namespace metric
+} // namespace mtrc
 
 #endif

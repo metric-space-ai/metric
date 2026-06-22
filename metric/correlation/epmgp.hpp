@@ -13,7 +13,7 @@ Copyright (c) 2019 Panda Team
 #ifndef _EPMGP_HPP
 #define _EPMGP_HPP
 
-#include <blaze/Blaze.h>
+#include <metric/numeric.hpp>
 
 #include <cmath>
 #include <tuple>
@@ -44,9 +44,11 @@ auto truncNormMoments(std::vector<T> lowerBIN, std::vector<T> upperBIN, std::vec
 	-> std::tuple<std::vector<T>, std::vector<T>, std::vector<T>>;
 
 template <typename T>
-auto local_gaussian_axis_aligned_hyperrectangles(blaze::DynamicVector<T> m, blaze::DynamicMatrix<T> K,
-												 blaze::DynamicVector<T> lowerB, blaze::DynamicVector<T> upperB)
-	-> std::tuple<T, blaze::DynamicVector<T>, blaze::DynamicMatrix<T>>;
+auto local_gaussian_axis_aligned_hyperrectangles(mtrc::numeric::DynamicVector<T> m,
+												 mtrc::numeric::DynamicMatrix<T> K,
+												 mtrc::numeric::DynamicVector<T> lowerB,
+												 mtrc::numeric::DynamicVector<T> upperB)
+	-> std::tuple<T, mtrc::numeric::DynamicVector<T>, mtrc::numeric::DynamicMatrix<T>>;
 
 } // namespace epmgp
 

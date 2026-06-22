@@ -50,7 +50,7 @@ B2 = numpy.array([[2.70625143351230], [1.41259513494005], [0.666086793692617],
 
 
 m_e_e = MGC(metric1="euclidean", metric2="euclidean")
-m_e_m = MGC(metric1="euclidean", metric2="manhatten")
+m_e_m = MGC(metric1="euclidean", metric2="manhattan")
 
 start_time = time.time()
 res = m_e_e(A, B)

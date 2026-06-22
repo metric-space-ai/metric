@@ -1,0 +1,82 @@
+// METRIC numeric assimilation header.
+// Provenance and licensing are documented in metric/numeric/README.md.
+
+#ifndef METRIC_NUMERIC_MATH_TYPETRAITS_HASSIMDLOG2_H
+#define METRIC_NUMERIC_MATH_TYPETRAITS_HASSIMDLOG2_H
+//*************************************************************************************************
+// Includes
+//*************************************************************************************************
+
+#include <metric/numeric/system/Vectorization.h>
+#include <metric/numeric/util/IntegralConstant.h>
+#include <metric/numeric/util/typetraits/IsDouble.h>
+#include <metric/numeric/util/typetraits/IsFloat.h>
+#include <metric/numeric/util/typetraits/RemoveCVRef.h>
+
+namespace mtrc::numeric {
+
+//=================================================================================================
+//
+//  CLASS DEFINITION
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond METRIC_NUMERIC_INTERNAL */
+/*!\brief Auxiliary alias declaration for the HasSIMDLog2 type trait.
+// \ingroup math_type_traits
+*/
+template <typename T> // Type of the operand
+using HasSIMDLog2Helper = BoolConstant<(IsFloat_v<T> || IsDouble_v<T>) &&
+									   (bool(METRIC_NUMERIC_SVML_MODE) || bool(METRIC_NUMERIC_SLEEF_MODE) ||
+										bool(METRIC_NUMERIC_XSIMD_MODE)) &&
+									   (bool(METRIC_NUMERIC_SSE_MODE) || bool(METRIC_NUMERIC_AVX_MODE) ||
+										bool(METRIC_NUMERIC_MIC_MODE) || bool(METRIC_NUMERIC_AVX512F_MODE))>;
+/*! \endcond */
+//*************************************************************************************************
+
+//*************************************************************************************************
+/*!\brief Availability of a SIMD binary logarithm operation for the given data type.
+// \ingroup math_type_traits
+//
+// Depending on the available instruction set (SSE, SSE2, SSE3, SSE4, AVX, AVX2, MIC, ...) and
+// the used compiler, this type trait provides the information whether a SIMD binary logarithm
+// operation exists for the given data type \a T (ignoring the cv-qualifiers). In case the SIMD
+// operation is available, the \a value member constant is set to \a true, the nested type
+// definition \a Type is \a TrueType, and the class derives from \a TrueType. Otherwise \a value
+// is set to \a false, \a Type is \a FalseType, and the class derives from \a FalseType. The
+// following example assumes that the Intel SVML is available:
+
+   \code
+   mtrc::numeric::HasSIMDLog2< float >::value         // Evaluates to 1
+   mtrc::numeric::HasSIMDLog2< double >::Type         // Results in TrueType
+   mtrc::numeric::HasSIMDLog2< const double >         // Is derived from TrueType
+   mtrc::numeric::HasSIMDLog2< unsigned int >::value  // Evaluates to 0
+   mtrc::numeric::HasSIMDLog2< long double >::Type    // Results in FalseType
+   mtrc::numeric::HasSIMDLog2< complex<double> >      // Is derived from FalseType
+   \endcode
+*/
+template <typename T> // Type of the operand
+struct HasSIMDLog2 : public BoolConstant<HasSIMDLog2Helper<RemoveCVRef_t<T>>::value> {};
+//*************************************************************************************************
+
+//*************************************************************************************************
+/*!\brief Auxiliary variable template for the HasSIMDLog2 type trait.
+// \ingroup math_type_traits
+//
+// The HasSIMDLog2_v variable template provides a convenient shortcut to access the nested
+// \a value of the HasSIMDLog2 class template. For instance, given the type \a T the following
+// two statements are identical:
+
+   \code
+   constexpr bool value1 = mtrc::numeric::HasSIMDLog2<T>::value;
+   constexpr bool value2 = mtrc::numeric::HasSIMDLog2_v<T>;
+   \endcode
+*/
+template <typename T> // Type of the operand
+constexpr bool HasSIMDLog2_v = HasSIMDLog2<T>::value;
+//*************************************************************************************************
+
+} // namespace mtrc::numeric
+
+#endif

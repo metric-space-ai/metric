@@ -10,18 +10,19 @@
 
 constexpr double PI = 3.14159265358979323846;
 
-namespace metric {
-using namespace metric::image_processing_details;
+namespace mtrc {
+using namespace mtrc::image_processing_details;
 
 template <typename T, size_t N> Image<T, N> iminit(size_t rows, size_t columns, T initValue)
 {
-	return Image<T, N>(blaze::DynamicMatrix<T>(rows, columns, initValue));
+	return Image<T, N>(mtrc::numeric::DynamicMatrix<T>(rows, columns, initValue));
 }
 
 template <typename T>
-std::pair<blaze::DynamicMatrix<T>, Shape> PadModel<T>::pad(const Shape &shape, const blaze::DynamicMatrix<T> &src) const
+std::pair<mtrc::numeric::DynamicMatrix<T>, Shape> PadModel<T>::pad(const Shape &shape,
+																	 const mtrc::numeric::DynamicMatrix<T> &src) const
 {
-	using namespace blaze;
+	using namespace mtrc::numeric;
 	size_t padRow = shape[0];
 	size_t padCol = shape[1];
 
@@ -30,10 +31,10 @@ std::pair<blaze::DynamicMatrix<T>, Shape> PadModel<T>::pad(const Shape &shape, c
 	switch (_padDirection) {
 	case PadDirection::PRE:
 	case PadDirection::POST:
-		dst = blaze::DynamicMatrix<T>(src.rows() + padRow, src.columns() + padCol, _initValue);
+		dst = mtrc::numeric::DynamicMatrix<T>(src.rows() + padRow, src.columns() + padCol, _initValue);
 		break;
 	case PadDirection::BOTH:
-		dst = blaze::DynamicMatrix<T>(src.rows() + padRow * 2, src.columns() + padCol * 2, _initValue);
+		dst = mtrc::numeric::DynamicMatrix<T>(src.rows() + padRow * 2, src.columns() + padCol * 2, _initValue);
 		break;
 	}
 
@@ -43,7 +44,7 @@ std::pair<blaze::DynamicMatrix<T>, Shape> PadModel<T>::pad(const Shape &shape, c
 		padCol = 0;
 	}
 
-	blaze::submatrix(dst, padRow, padCol, src.rows(), src.columns()) = src;
+	mtrc::numeric::submatrix(dst, padRow, padCol, src.rows(), src.columns()) = src;
 	// Padding
 	for (size_t i = 0; i < dst.rows(); ++i) {
 		for (size_t j = 0; j < dst.columns(); ++j) {
@@ -99,39 +100,39 @@ std::pair<blaze::DynamicMatrix<T>, Shape> PadModel<T>::pad(const Shape &shape, c
 
 //	template <typename ImgT, typename Filter, PadDirection PadDir, PadType PadType>
 //	ImgT imfilter<ImgT, Filter, PadDir, PadType>::operator()(const ImgT& input) {
-//		return ::metric::image_processing_details::filter(input, _filter, _padModel);
+//		return ::mtrc::image_processing_details::filter(input, _filter, _padModel);
 //	}
 template <typename ChannelType, size_t N, typename Filter, PadDirection PadDir, PadType PadType>
 Channel<ChannelType> imfilter<ChannelType, N, Filter, PadDir, PadType>::operator()(const Channel<ChannelType> &input)
 {
-	return ::metric::image_processing_details::filter(input, _filter, _padModel);
+	return ::mtrc::image_processing_details::filter(input, _filter, _padModel);
 }
 
 template <typename ChannelType, size_t N, typename Filter, PadDirection PadDir, PadType PadType>
 Image<ChannelType, N> imfilter<ChannelType, N, Filter, PadDir, PadType>::operator()(const Image<ChannelType, N> &input)
 {
-	return ::metric::image_processing_details::filter(input, _filter, _padModel);
+	return ::mtrc::image_processing_details::filter(input, _filter, _padModel);
 }
 
 inline FilterType::AVERAGE::AVERAGE(size_t rows, size_t columns)
 {
 	FilterKernel f(rows, columns, 1.0);
-	_kernel = f / blaze::prod(Shape{rows, columns});
+	_kernel = f / mtrc::numeric::prod(Shape{rows, columns});
 }
 
 inline FilterType::GAUSSIAN::GAUSSIAN(size_t rows, size_t columns, double sigma)
 {
 	Shape shape{rows, columns};
-	blaze::StaticVector<FilterKernel::ElementType, 2> halfShape =
-		(static_cast<blaze::StaticVector<FilterKernel::ElementType, 2>>(shape) - 1) / 2;
+	mtrc::numeric::StaticVector<FilterKernel::ElementType, 2> halfShape =
+		(static_cast<mtrc::numeric::StaticVector<FilterKernel::ElementType, 2>>(shape) - 1) / 2;
 
-	auto xrange = range<FilterKernel::ElementType, blaze::rowVector>(-halfShape[1], halfShape[1]);
-	auto yrange = range<FilterKernel::ElementType, blaze::columnVector>(-halfShape[0], halfShape[0]);
+	auto xrange = range<FilterKernel::ElementType, mtrc::numeric::rowVector>(-halfShape[1], halfShape[1]);
+	auto yrange = range<FilterKernel::ElementType, mtrc::numeric::columnVector>(-halfShape[0], halfShape[0]);
 	auto [xMat, yMat] = meshgrid(xrange, yrange);
 
 	auto arg = -(xMat % xMat + yMat % yMat) / (2 * sigma * sigma);
-	_kernel = blaze::exp(arg);
-	FilterKernel::ElementType max = blaze::max(_kernel);
+	_kernel = mtrc::numeric::exp(arg);
+	FilterKernel::ElementType max = mtrc::numeric::max(_kernel);
 	for (int i = 0; i < _kernel.rows(); ++i) {
 		for (int j = 0; j < _kernel.columns(); ++j) {
 			_kernel(i, j) =
@@ -139,7 +140,7 @@ inline FilterType::GAUSSIAN::GAUSSIAN(size_t rows, size_t columns, double sigma)
 		}
 	}
 
-	auto sumh = blaze::sum(_kernel);
+	auto sumh = mtrc::numeric::sum(_kernel);
 	if (sumh != 0) {
 		_kernel = _kernel / sumh;
 	}
@@ -166,7 +167,7 @@ inline FilterType::LOG::LOG(size_t rows, size_t columns, double sigma)
 	auto h = gausFilter();
 	_kernel =
 		h % (gausFilter._xMat % gausFilter._xMat + gausFilter._yMat % gausFilter._yMat - 2 * std2) / (std2 * std2);
-	_kernel -= blaze::sum(_kernel) / blaze::prod(shape);
+	_kernel -= mtrc::numeric::sum(_kernel) / mtrc::numeric::prod(shape);
 }
 
 inline FilterType::MOTION::MOTION(double len, int theta)
@@ -184,16 +185,17 @@ inline FilterType::MOTION::MOTION(double len, int theta)
 	auto sx = std::trunc(half * cosphi + linewdt * xsign - len * eps);
 	auto sy = std::trunc(half * sinphi + linewdt - len * eps);
 
-	auto xrange = range<FilterKernel::ElementType, blaze::rowVector>(0, sx, xsign);
-	auto yrange = range<FilterKernel::ElementType, blaze::columnVector>(0, sy);
+	auto xrange = range<FilterKernel::ElementType, mtrc::numeric::rowVector>(0, sx, xsign);
+	auto yrange = range<FilterKernel::ElementType, mtrc::numeric::columnVector>(0, sy);
 	auto [xMat, yMat] = meshgrid(xrange, yrange);
 
 	FilterKernel dist2line = (yMat * cosphi - xMat * sinphi);
-	auto rad = blaze::sqrt(xMat % xMat + yMat % yMat);
+	auto rad = mtrc::numeric::sqrt(xMat % xMat + yMat % yMat);
 
 	// find points beyond the line's end-point but within the line width
-	blaze::DynamicMatrix<bool> cond = blaze::map(rad, [half](const auto &x) { return x >= half; }) &&
-									  blaze::map(abs(dist2line), [linewdt](const auto &x) { return x <= linewdt; });
+	mtrc::numeric::DynamicMatrix<bool> cond =
+		mtrc::numeric::map(rad, [half](const auto &x) { return x >= half; }) &&
+		mtrc::numeric::map(abs(dist2line), [linewdt](const auto &x) { return x <= linewdt; });
 
 	auto lastpix = mfind(static_cast<FilterKernel>(dist2line), cond);
 
@@ -205,15 +207,16 @@ inline FilterType::MOTION::MOTION(double len, int theta)
 
 	dist2line = linewdt + eps - abs(dist2line);
 	// zero out anything beyond line width
-	dist2line = blaze::map(dist2line, [](const FilterKernel::ElementType &v) { return v < 0 ? 0 : v; });
+	dist2line = mtrc::numeric::map(dist2line, [](const FilterKernel::ElementType &v) { return v < 0 ? 0 : v; });
 
 	auto h = rot90(rot90<FilterKernel::ElementType>(dist2line));
 
 	_kernel = FilterKernel(h.rows() * 2 - 1, h.columns() * 2 - 1);
-	blaze::submatrix(_kernel, 0, 0, h.rows(), h.columns()) = h;
-	blaze::submatrix(_kernel, h.rows() - 1, h.columns() - 1, dist2line.rows(), dist2line.columns()) = dist2line;
+	mtrc::numeric::submatrix(_kernel, 0, 0, h.rows(), h.columns()) = h;
+	mtrc::numeric::submatrix(_kernel, h.rows() - 1, h.columns() - 1, dist2line.rows(), dist2line.columns()) =
+		dist2line;
 
-	_kernel /= blaze::sum(_kernel) + eps * len * len;
+	_kernel /= mtrc::numeric::sum(_kernel) + eps * len * len;
 	if (cosphi > 0) {
 		_kernel = flipud(_kernel);
 	}
@@ -227,26 +230,29 @@ inline FilterType::UNSHARP::UNSHARP(double alpha)
 namespace image_processing_details {
 
 template <typename T>
-std::pair<blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>>
-meshgrid(const blaze::DynamicVector<T, blaze::rowVector> &x, const blaze::DynamicVector<T, blaze::columnVector> &y)
+std::pair<mtrc::numeric::DynamicMatrix<T>, mtrc::numeric::DynamicMatrix<T>>
+meshgrid(const mtrc::numeric::DynamicVector<T, mtrc::numeric::rowVector> &x,
+		 const mtrc::numeric::DynamicVector<T, mtrc::numeric::columnVector> &y)
 {
-	blaze::DynamicMatrix<T, blaze::rowMajor> xMat(blaze::size(y), blaze::size(x));
-	blaze::DynamicMatrix<T, blaze::columnMajor> yMat(blaze::size(y), blaze::size(x));
+	mtrc::numeric::DynamicMatrix<T, mtrc::numeric::rowMajor> xMat(mtrc::numeric::size(y),
+																	  mtrc::numeric::size(x));
+	mtrc::numeric::DynamicMatrix<T, mtrc::numeric::columnMajor> yMat(mtrc::numeric::size(y),
+																		 mtrc::numeric::size(x));
 
 	for (int i = 0; i < xMat.rows(); ++i) {
-		blaze::row(xMat, i) = x;
+		mtrc::numeric::row(xMat, i) = x;
 	}
 
 	for (int i = 0; i < yMat.columns(); ++i) {
-		blaze::column(yMat, i) = y;
+		mtrc::numeric::column(yMat, i) = y;
 	}
 
 	return std::make_pair(xMat, yMat);
 }
 
-template <typename T, bool P> blaze::DynamicVector<T, P> range(T start, T stop, T step)
+template <typename T, bool P> mtrc::numeric::DynamicVector<T, P> range(T start, T stop, T step)
 {
-	blaze::DynamicVector<T, P> vec(std::abs((stop - start) / step) + 1);
+	mtrc::numeric::DynamicVector<T, P> vec(std::abs((stop - start) / step) + 1);
 	for (auto &val : vec) {
 		val = start;
 		start += step;
@@ -256,8 +262,8 @@ template <typename T, bool P> blaze::DynamicVector<T, P> range(T start, T stop, 
 }
 
 template <typename T>
-blaze::DynamicVector<std::pair<size_t, size_t>, blaze::columnVector> mfind(const blaze::DynamicMatrix<T> &input,
-																		   const blaze::DynamicMatrix<bool> &cond)
+mtrc::numeric::DynamicVector<std::pair<size_t, size_t>, mtrc::numeric::columnVector>
+mfind(const mtrc::numeric::DynamicMatrix<T> &input, const mtrc::numeric::DynamicMatrix<bool> &cond)
 {
 	std::vector<std::pair<size_t, size_t>> indecies;
 
@@ -269,31 +275,33 @@ blaze::DynamicVector<std::pair<size_t, size_t>, blaze::columnVector> mfind(const
 		}
 	}
 
-	return blaze::DynamicVector<std::pair<size_t, size_t>, blaze::columnVector>(indecies.size(), indecies.data());
+	return mtrc::numeric::DynamicVector<std::pair<size_t, size_t>, mtrc::numeric::columnVector>(indecies.size(),
+																									indecies.data());
 }
 
-template <typename T> blaze::DynamicMatrix<T> flipud(const blaze::DynamicMatrix<T> &input)
+template <typename T> mtrc::numeric::DynamicMatrix<T> flipud(const mtrc::numeric::DynamicMatrix<T> &input)
 {
-	blaze::DynamicMatrix<T> out(input.rows(), input.columns());
+	mtrc::numeric::DynamicMatrix<T> out(input.rows(), input.columns());
 	for (int i = 0; i < input.rows(); ++i) {
-		blaze::row(out, input.rows() - i - 1) = blaze::row(input, i);
+		mtrc::numeric::row(out, input.rows() - i - 1) = mtrc::numeric::row(input, i);
 	}
 
 	return out;
 }
 
-static blaze::DynamicMatrix<double> imgcov2(const blaze::DynamicMatrix<double> &input, const FilterKernel &kernel)
+static mtrc::numeric::DynamicMatrix<double> imgcov2(const mtrc::numeric::DynamicMatrix<double> &input,
+													  const FilterKernel &kernel)
 {
 	size_t funcRows = kernel.rows();
 	size_t funcCols = kernel.columns();
 
-	blaze::DynamicMatrix<double> resultMat(input.rows() - std::ceil((double)funcRows / 2),
-										   input.columns() - std::ceil((double)funcCols / 2));
+	mtrc::numeric::DynamicMatrix<double> resultMat(input.rows() - std::ceil((double)funcRows / 2),
+													 input.columns() - std::ceil((double)funcCols / 2));
 	for (auto i = 0; i < input.rows() - funcRows; ++i) {
 		for (auto j = 0; j < input.columns() - funcCols; ++j) {
-			auto bwProd = blaze::submatrix(input, i, j, funcRows, funcCols) % kernel;
-			auto filteredVal = blaze::sum(bwProd);
-			double val = blaze::round(filteredVal);
+			auto bwProd = mtrc::numeric::submatrix(input, i, j, funcRows, funcCols) % kernel;
+			auto filteredVal = mtrc::numeric::sum(bwProd);
+			double val = mtrc::numeric::round(filteredVal);
 			resultMat(i, j) = val > 0 ? val : 0;
 		}
 	}
@@ -313,8 +321,8 @@ Channel<ChannelType> filter(const Channel<ChannelType> &channel, const Filter &i
 	if (full) {
 		result = filteredChannel;
 	} else {
-		result = blaze::submatrix(filteredChannel, std::max<size_t>(0, imgCord[0] - 1),
-								  std::max<size_t>(0, imgCord[1] - 1), channel.rows(), channel.columns());
+		result = mtrc::numeric::submatrix(filteredChannel, std::max<size_t>(0, imgCord[0] - 1),
+											std::max<size_t>(0, imgCord[1] - 1), channel.rows(), channel.columns());
 	}
 
 	return result;
@@ -333,12 +341,13 @@ Image<ChannelType, ChannelNumber> filter(const Image<ChannelType, ChannelNumber>
 		if (full) {
 			result[ch] = filteredChannel;
 		} else {
-			result[ch] = blaze::submatrix(filteredChannel, std::max<size_t>(0, imgCord[0] - 1),
-										  std::max<size_t>(0, imgCord[1] - 1), img[ch].rows(), img[ch].columns());
+			result[ch] =
+				mtrc::numeric::submatrix(filteredChannel, std::max<size_t>(0, imgCord[0] - 1),
+										   std::max<size_t>(0, imgCord[1] - 1), img[ch].rows(), img[ch].columns());
 		}
 	}
 
 	return result;
 }
 } // namespace image_processing_details
-} // namespace metric
+} // namespace mtrc

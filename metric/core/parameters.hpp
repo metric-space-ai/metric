@@ -7,7 +7,7 @@
 
 #include <cstddef>
 
-namespace metric {
+namespace mtrc {
 
 struct count {
 	std::size_t value{};
@@ -15,6 +15,6 @@ struct count {
 	constexpr auto size() const noexcept -> std::size_t { return value; }
 };
 
-} // namespace metric
+} // namespace mtrc
 
 #endif

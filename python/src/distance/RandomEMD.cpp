@@ -6,33 +6,25 @@
   Copyright (c) 2020 Panda Team
 */
 
-#include "metric/distance/k-random/RandomEMD.hpp"
+#include "metric/metric/catalog/distribution/RandomEMD.hpp"
+#include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <pybind11/numpy.h>
-#include <vector>
 #include <string>
 #include <typeinfo>
+#include <vector>
 
 namespace py = pybind11;
 
+template <typename Sample, typename D = double> void wrap_metric_RandomEMD(py::module &m)
+{
 
-template<typename Sample, typename D = double>
-void wrap_metric_RandomEMD(py::module& m) {
-
-	using Class = metric::RandomEMD<Sample, D>;
-    auto emd = py::class_<Class>(m, "RandomEMD", "Random Earth mover's distance");
-    emd.def(py::init<>(), "Default constructor");
-	emd.def(py::init<double>(),
-			py::arg("precision")
-	);
-	D (Class::*call)(const Sample&, const Sample&) const = &Class::operator();
-    emd.def("__call__", call);
+	using Class = mtrc::RandomEMD<Sample, D>;
+	auto emd = py::class_<Class>(m, "RandomEMD", "Random Earth mover's distance");
+	emd.def(py::init<>(), "Default constructor");
+	emd.def(py::init<double>(), py::arg("precision"));
+	D (Class::*call)(const Sample &, const Sample &) const = &Class::operator();
+	emd.def("__call__", call);
 }
 
-void export_metric_RandomEMD(py::module& m) {
-    wrap_metric_RandomEMD<std::vector<double>, double>(m);
-}
-
-
-
+void export_metric_RandomEMD(py::module &m) { wrap_metric_RandomEMD<std::vector<double>, double>(m); }

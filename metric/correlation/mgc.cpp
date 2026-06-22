@@ -14,6 +14,7 @@
 #include <iterator>
 #include <limits>
 #include <numeric>
+#include <stdexcept>
 #include <vector>
 
 #if defined(_MSC_VER)
@@ -46,13 +47,13 @@
 
 #include <chrono>
 
-#include <blaze/Math.h>
+#include <metric/numeric/Math.h>
 
-#include "../distance.hpp"
+#include <metric/metric/catalog.hpp>
 #include "../utils/graph/connected_components.hpp"
 #include "estimator_helpers.hpp"
 
-namespace metric {
+namespace mtrc {
 
 // computes the (pairwise) distance matrix for arbitrary random access matrix like containers.
 template <typename Container> Container distance_matrix(const Container &data)
@@ -61,7 +62,7 @@ template <typename Container> Container distance_matrix(const Container &data)
 	typedef typename Row::value_type T;
 	Container matrix(data.size(), Row(data.size())); // initialize
 
-	auto distance_function = metric::Euclidean<T>();
+	auto distance_function = mtrc::Euclidean<T>();
 	for (size_t i = 0; i < data.size(); ++i) {
 		matrix[i][i] = 0;
 		for (size_t j = i + 1; j < data.size(); ++j) {
@@ -73,19 +74,20 @@ template <typename Container> Container distance_matrix(const Container &data)
 	return matrix;
 }
 
-template <typename T> blaze::DynamicMatrix<size_t> MGC_direct::rank_distance_matrix(const DistanceMatrix<T> &data)
+template <typename T>
+mtrc::numeric::DynamicMatrix<size_t> MGC_direct::rank_distance_matrix(const DistanceMatrix<T> &data)
 {
-	blaze::DynamicMatrix<size_t> matrix(data.rows(), data.columns());
+	mtrc::numeric::DynamicMatrix<size_t> matrix(data.rows(), data.columns());
 
 	std::vector<size_t> indexes(data.rows());
 	std::iota(indexes.begin(), indexes.end(), 0);
 
 	for (int i = 0; i < data.rows(); ++i) {
-		auto row = blaze::row(data, i);
+		auto row = mtrc::numeric::row(data, i);
 		std::sort(indexes.begin(), indexes.end(), [&row](auto i1, auto i2) { return row[i1] < row[i2]; });
 
 		/* Fill result row */
-		auto outRow = blaze::row(matrix, i);
+		auto outRow = mtrc::numeric::row(matrix, i);
 		for (size_t iter = 0; iter < row.size(); ++iter) {
 			outRow[indexes[iter]] = iter;
 		}
@@ -94,21 +96,23 @@ template <typename T> blaze::DynamicMatrix<size_t> MGC_direct::rank_distance_mat
 	return matrix;
 }
 
-template <typename T> blaze::DynamicMatrix<size_t> MGC_direct::center_ranked_distance_matrix(const DistanceMatrix<T> &X)
+template <typename T>
+mtrc::numeric::DynamicMatrix<size_t> MGC_direct::center_ranked_distance_matrix(const DistanceMatrix<T> &X)
 {
 	auto A = rank_distance_matrix(X);
 
-	// blaze::transpose(A);
+	// mtrc::numeric::transpose(A);
 
 	return A;
 }
 
-template <typename T> blaze::DynamicMatrix<T> MGC_direct::center_distance_matrix(const DistanceMatrix<T> &X)
+template <typename T> mtrc::numeric::DynamicMatrix<T> MGC_direct::center_distance_matrix(const DistanceMatrix<T> &X)
 {
-	blaze::DynamicVector<T, blaze::rowVector> list_of_sums = blaze::sum<blaze::columnwise>(X);
+	mtrc::numeric::DynamicVector<T, mtrc::numeric::rowVector> list_of_sums =
+		mtrc::numeric::sum<mtrc::numeric::columnwise>(X);
 	list_of_sums /= X.rows() - 1;
 
-	blaze::DynamicMatrix<T> centered_distance_matrix(X.rows(), X.columns());
+	mtrc::numeric::DynamicMatrix<T> centered_distance_matrix(X.rows(), X.columns());
 
 	for (auto i = 0; i < X.rows(); ++i) {
 		for (auto j = 0; j < X.rows(); ++j) {
@@ -124,18 +128,19 @@ template <typename T> blaze::DynamicMatrix<T> MGC_direct::center_distance_matrix
 }
 
 template <typename T>
-blaze::DynamicMatrix<T> MGC_direct::local_covariance(const blaze::DynamicMatrix<T> &A, const blaze::DynamicMatrix<T> &B,
-													 const blaze::DynamicMatrix<size_t> &RX,
-													 const blaze::DynamicMatrix<size_t> &RY)
+mtrc::numeric::DynamicMatrix<T> MGC_direct::local_covariance(const mtrc::numeric::DynamicMatrix<T> &A,
+															   const mtrc::numeric::DynamicMatrix<T> &B,
+															   const mtrc::numeric::DynamicMatrix<size_t> &RX,
+															   const mtrc::numeric::DynamicMatrix<size_t> &RY)
 {
 	const size_t n = A.rows();
 
-	const size_t nX = blaze::max(RX) + 1;
-	const size_t nY = blaze::max(RY) + 1;
+	const size_t nX = mtrc::numeric::max(RX) + 1;
+	const size_t nY = mtrc::numeric::max(RY) + 1;
 
-	blaze::DynamicMatrix<T> covXY(nX, nY, 0);
-	blaze::DynamicMatrix<T, blaze::columnMajor> EX(nX, 1, 0);
-	blaze::DynamicMatrix<T> EY(1, nY, 0);
+	mtrc::numeric::DynamicMatrix<T> covXY(nX, nY, 0);
+	mtrc::numeric::DynamicMatrix<T, mtrc::numeric::columnMajor> EX(nX, 1, 0);
+	mtrc::numeric::DynamicMatrix<T> EY(1, nY, 0);
 
 	// summing up the entrywise product of A and B based on the ranks EX and EY
 	for (size_t i = 0; i < n; ++i) {
@@ -156,7 +161,7 @@ blaze::DynamicMatrix<T> MGC_direct::local_covariance(const blaze::DynamicMatrix<
 		EX(k + 1, 0) += EX(k, 0);
 	}
 
-	blaze::DynamicVector<T, blaze::rowVector> covXY0 = blaze::row(covXY, 0);
+	mtrc::numeric::DynamicVector<T, mtrc::numeric::rowVector> covXY0 = mtrc::numeric::row(covXY, 0);
 	for (size_t l = 0; l < nY - 1; ++l) {
 		covXY0[l + 1] += covXY0[l];
 		EY(0, l + 1) += EY(0, l);
@@ -193,7 +198,8 @@ template <typename T> T MGC_direct::normal_CDF_inverse(const T p)
 template <typename T> T MGC_direct::icdf_normal(const T p) { return normal_CDF_inverse(p); }
 
 template <typename T>
-blaze::DynamicMatrix<bool> MGC_direct::significant_local_correlation(const blaze::DynamicMatrix<T> &localCorr, T p)
+mtrc::numeric::DynamicMatrix<bool>
+MGC_direct::significant_local_correlation(const mtrc::numeric::DynamicMatrix<T> &localCorr, T p)
 {
 	/* Sample size minus one */
 	T sz = T(localCorr.rows() - 1);
@@ -205,40 +211,40 @@ blaze::DynamicMatrix<bool> MGC_direct::significant_local_correlation(const blaze
 	thres = std::max(thres, localCorr(localCorr.rows() - 1, localCorr.rows() - 1));
 
 	/* Threshold R = (localCorr > thres) */
-	blaze::DynamicMatrix<bool> R(localCorr.rows(), localCorr.columns(), false);
+	mtrc::numeric::DynamicMatrix<bool> R(localCorr.rows(), localCorr.columns(), false);
 	for (std::size_t i = 0; i < localCorr.rows(); ++i) {
 		for (std::size_t j = 0; j < localCorr.columns(); ++j) {
 			R(i, j) = localCorr(i, j) > thres;
 		}
 	}
 
-	auto components = metric::graph::largest_connected_component(R);
+	auto components = mtrc::graph::largest_connected_component(R);
 
 	if (components.empty()) {
-		return blaze::DynamicMatrix<bool>(R.rows(), R.columns(), false);
+		return mtrc::numeric::DynamicMatrix<bool>(R.rows(), R.columns(), false);
 	} else {
 		return components[0];
 	}
 }
 
-template <typename T> T MGC_direct::frobeniusNorm(const blaze::DynamicMatrix<T> &matrix)
+template <typename T> T MGC_direct::frobeniusNorm(const mtrc::numeric::DynamicMatrix<T> &matrix)
 {
-	const auto m = blaze::invsqrt(matrix);
-	const double result = blaze::sum(m);
+	const auto m = mtrc::numeric::invsqrt(matrix);
+	const double result = mtrc::numeric::sum(m);
 
 	return std::sqrt(result);
 }
 
 template <typename T>
-T MGC_direct::max_in_matrix_regarding_second_boolean_matrix(const blaze::DynamicMatrix<T> &m1,
-															const blaze::DynamicMatrix<bool> &m2)
+T MGC_direct::max_in_matrix_regarding_second_boolean_matrix(const mtrc::numeric::DynamicMatrix<T> &m1,
+															const mtrc::numeric::DynamicMatrix<bool> &m2)
 {
-	return blaze::max(m2 % m1);
+	return mtrc::numeric::max(m2 % m1);
 }
 
 template <typename T>
-T MGC_direct::optimal_local_generalized_correlation(const blaze::DynamicMatrix<T> &corr,
-													const blaze::DynamicMatrix<bool> &R)
+T MGC_direct::optimal_local_generalized_correlation(const mtrc::numeric::DynamicMatrix<T> &corr,
+													const mtrc::numeric::DynamicMatrix<bool> &R)
 {
 	size_t m = corr.rows();
 	size_t n = corr.columns();
@@ -246,7 +252,7 @@ T MGC_direct::optimal_local_generalized_correlation(const blaze::DynamicMatrix<T
 
 	auto optimalScale = m * n; // default the optimal scale to maximal scale
 
-	size_t R_sum = blaze::nonZeros(R);
+	size_t R_sum = mtrc::numeric::nonZeros(R);
 
 	if (frobeniusNorm(R) != double(0) && R_sum != R.rows() * R.columns())
 	// if (frobeniusNorm(R) != double(0) )
@@ -279,17 +285,25 @@ T MGC_direct::optimal_local_generalized_correlation(const blaze::DynamicMatrix<T
 }
 
 template <typename T>
-void MGC_direct::normalize_generalized_correlation(blaze::DynamicMatrix<T> &corr, const blaze::DynamicMatrix<T> &varX,
-												   const blaze::DynamicMatrix<T> &varY)
+void MGC_direct::normalize_generalized_correlation(mtrc::numeric::DynamicMatrix<T> &corr,
+												   const mtrc::numeric::DynamicMatrix<T> &varX,
+												   const mtrc::numeric::DynamicMatrix<T> &varY)
 {
 	for (size_t i = 0; i < corr.rows(); ++i) {
 		for (size_t j = 0; j < corr.rows(); ++j) {
 			corr(i, j) = corr(i, j) / std::sqrt(varX(i, i) * varY(j, j));
 
+			// The MGC sample statistic is a (multiscale) generalized distance
+			// correlation, documented as lying within [-1, 1]. A zero local
+			// variance (e.g. a constant / zero-distance space) yields NaN here and
+			// is mapped to 0 (no detectable dependence). Clamp both tails so the
+			// returned statistic honours the documented [-1, 1] range.
 			if (isnan(corr(i, j))) {
 				corr(i, j) = 0;
 			} else if (corr(i, j) > 1) {
 				corr(i, j) = 1;
+			} else if (corr(i, j) < -1) {
+				corr(i, j) = -1;
 			}
 		}
 	}
@@ -297,49 +311,54 @@ void MGC_direct::normalize_generalized_correlation(blaze::DynamicMatrix<T> &corr
 
 template <typename T> T MGC_direct::operator()(const DistanceMatrix<T> &X, const DistanceMatrix<T> &Y)
 {
-	assert(X.rows() == Y.rows());
+	// MGC is a paired dependence statistic: both distance matrices must describe the
+	// same number of observations. Use a defined exception rather than a bare assert
+	// so the contract holds in NDEBUG/Release builds as well.
+	if (X.rows() != Y.rows()) {
+		throw std::invalid_argument("MGC requires distance matrices with the same record count");
+	}
 
 	// center distance matrix
-	blaze::DynamicMatrix<T> A = center_distance_matrix(X);
-	blaze::DynamicMatrix<T> B = center_distance_matrix(Y);
+	mtrc::numeric::DynamicMatrix<T> A = center_distance_matrix(X);
+	mtrc::numeric::DynamicMatrix<T> B = center_distance_matrix(Y);
 
 	auto RXt = center_ranked_distance_matrix(X);
 	auto RYt = center_ranked_distance_matrix(Y);
 
 	// transpose copies
-	blaze::DynamicMatrix<T> At = blaze::trans(A);
-	blaze::DynamicMatrix<T> Bt = blaze::trans(B);
-	blaze::DynamicMatrix<size_t> RX = blaze::trans(RXt);
-	blaze::DynamicMatrix<size_t> RY = blaze::trans(RYt);
+	mtrc::numeric::DynamicMatrix<T> At = mtrc::numeric::trans(A);
+	mtrc::numeric::DynamicMatrix<T> Bt = mtrc::numeric::trans(B);
+	mtrc::numeric::DynamicMatrix<size_t> RX = mtrc::numeric::trans(RXt);
+	mtrc::numeric::DynamicMatrix<size_t> RY = mtrc::numeric::trans(RYt);
 
 	// compute generalized correlation
 	auto corr = local_covariance(A, Bt, RX, RYt); // compute all local covariances
 	auto varX = local_covariance(A, At, RX, RXt); // compute local variances for first data
 	auto varY = local_covariance(B, Bt, RY, RYt); // compute local variances for second data
 
-	blaze::clear(A);
+	mtrc::numeric::clear(A);
 	A.shrinkToFit();
-	blaze::clear(At);
+	mtrc::numeric::clear(At);
 	At.shrinkToFit();
-	blaze::clear(B);
+	mtrc::numeric::clear(B);
 	B.shrinkToFit();
-	blaze::clear(Bt);
+	mtrc::numeric::clear(Bt);
 	Bt.shrinkToFit();
-	blaze::clear(RXt);
+	mtrc::numeric::clear(RXt);
 	RXt.shrinkToFit();
-	blaze::clear(RX);
+	mtrc::numeric::clear(RX);
 	RX.shrinkToFit();
-	blaze::clear(RY);
+	mtrc::numeric::clear(RY);
 	RY.shrinkToFit();
-	blaze::clear(RYt);
+	mtrc::numeric::clear(RYt);
 	RYt.shrinkToFit();
 
 	// normalize the generalized correlation
 	normalize_generalized_correlation(corr, varX, varY);
 
-	blaze::clear(varX);
+	mtrc::numeric::clear(varX);
 	varX.shrinkToFit();
-	blaze::clear(varY);
+	mtrc::numeric::clear(varY);
 	varY.shrinkToFit();
 
 	/* Find the largest connected region of significant local correlations */
@@ -352,16 +371,18 @@ template <typename T> T MGC_direct::operator()(const DistanceMatrix<T> &X, const
 template <typename T>
 std::vector<double> MGC_direct::xcorr(const DistanceMatrix<T> &a, const DistanceMatrix<T> &b, const unsigned int n)
 {
-	assert(a.rows() == b.rows());
-	assert(n <= std::numeric_limits<int>::max());
+	// Defined preconditions even in NDEBUG/Release builds (bare asserts compile away):
+	// MGC is a paired dependence statistic, so the two distance matrices must describe the
+	// same number of observations and the shift count must fit the signed loop counter.
+	if (a.rows() != b.rows()) {
+		throw std::invalid_argument("MGC xcorr requires paired distance matrices with the same record count");
+	}
+	if (n > static_cast<unsigned int>(std::numeric_limits<int>::max())) {
+		throw std::invalid_argument("MGC xcorr shift count exceeds the supported range");
+	}
 
 	std::vector<double> result;
 	result.reserve(2 * n + 1);
-
-	int s = -n;
-	if (s <= (int)n) {
-		auto g = 9;
-	}
 
 	for (int shift = -n; shift <= (int)n; ++shift) {
 		DistanceMatrix<T> aShifted;
@@ -371,11 +392,11 @@ std::vector<double> MGC_direct::xcorr(const DistanceMatrix<T> &a, const Distance
 		const auto length = a.rows() - start;
 
 		if (shift < 0) {
-			aShifted = blaze::submatrix(a, start, start, length, length);
-			bShifted = blaze::submatrix(b, 0, 0, length, length);
+			aShifted = mtrc::numeric::submatrix(a, start, start, length, length);
+			bShifted = mtrc::numeric::submatrix(b, 0, 0, length, length);
 		} else {
-			aShifted = blaze::submatrix(a, 0, 0, length, length);
-			bShifted = blaze::submatrix(b, start, start, length, length);
+			aShifted = mtrc::numeric::submatrix(a, 0, 0, length, length);
+			bShifted = mtrc::numeric::submatrix(b, start, start, length, length);
 		}
 
 		result.push_back(operator()(aShifted, bShifted));
@@ -388,7 +409,9 @@ template <class RecType1, class Metric1, class RecType2, class Metric2>
 template <typename Container1, typename Container2>
 double MGC<RecType1, Metric1, RecType2, Metric2>::operator()(const Container1 &a, const Container2 &b) const
 {
-	assert(a.size() == b.size());
+	if (a.size() != b.size()) {
+		throw std::invalid_argument("MGC requires paired record containers of equal size");
+	}
 
 	/* Compute distance matrices */
 	auto X = computeDistanceMatrix<Container1>(a, metric1);
@@ -402,11 +425,23 @@ template <typename Container, typename Metric>
 DistanceMatrix<double> MGC<RecType1, Metric1, RecType2, Metric2>::computeDistanceMatrix(const Container &c,
 																						const Metric &metric) const
 {
+	// DistanceMatrix is a SymmetricMatrix (see mgc.hpp), so writing only the upper
+	// triangle mirrors each entry to the lower triangle automatically. Keep this in
+	// sync with the standalone distance_matrix() helper above, which fills both halves.
 	DistanceMatrix<double> X(c.size());
 	for (size_t i = 0; i < X.rows(); ++i) {
 		X(i, i) = 0;
 		for (size_t j = i + 1; j < X.columns(); ++j) {
 			double distance = metric(c[i], c[j]);
+			// MGC ranks the centered distance matrix internally; a non-finite (NaN/Inf)
+			// distance would make that rank sort an invalid comparator (undefined
+			// behavior) and silently corrupt the dependence statistic. A true metric
+			// returns finite distances, so reject non-finite output with a defined
+			// exception instead of propagating it.
+			if (!std::isfinite(distance)) {
+				throw std::invalid_argument(
+					"MGC requires a metric that returns finite distances; got a non-finite distance");
+			}
 			X(i, j) = distance;
 		}
 	}
@@ -420,7 +455,11 @@ double MGC<RecType1, Metric1, RecType2, Metric2>::estimate(const Container1 &a, 
 														   const size_t sampleSize, const double threshold,
 														   size_t maxIterations) const
 {
-	assert(a.size() == b.size());
+	// MGC compares two paired finite metric spaces; mismatched sizes are a defined error
+	// (an NDEBUG-stripped assert would otherwise let them through into the estimator).
+	if (a.size() != b.size()) {
+		throw std::invalid_argument("MGC estimate requires paired inputs with the same record count");
+	}
 
 	const size_t dataSize = a.size();
 
@@ -503,7 +542,11 @@ template <typename Container1, typename Container2>
 std::vector<double> MGC<RecType1, Metric1, RecType2, Metric2>::xcorr(const Container1 &a, const Container2 &b,
 																	 const int n) const
 {
-	assert(a.size() == b.size());
+	// Defined precondition even in NDEBUG builds: xcorr pairs the two spaces observation by
+	// observation, so they must share the same record count.
+	if (a.size() != b.size()) {
+		throw std::invalid_argument("MGC xcorr requires paired inputs with the same record count");
+	}
 
 	/* Compute distance matrices */
 	auto X = computeDistanceMatrix<Container1>(a, metric1);
@@ -512,4 +555,4 @@ std::vector<double> MGC<RecType1, Metric1, RecType2, Metric2>::xcorr(const Conta
 	return MGC_direct().xcorr(X, Y, n);
 }
 
-} // namespace metric
+} // namespace mtrc

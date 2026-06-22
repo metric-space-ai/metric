@@ -2,7 +2,7 @@
 #include <iostream>
 #include <vector>
 
-#include <metric/distance.hpp>
+#include <metric/metric/catalog.hpp>
 #include <metric/space.hpp>
 
 int main()
@@ -11,12 +11,12 @@ int main()
 	const std::vector<double> shifted = {1, 1, 1, 1, 1, 2, 3, 4};
 	const std::vector<double> flat = {2, 2, 2, 2, 2, 2, 2, 2};
 
-	const metric::TWED<double> distance(0, 1);
+	const mtrc::TWED<double> distance(0, 1);
 	assert(distance(baseline, shifted) == 7.0);
 	assert(distance(baseline, flat) == 15.0);
 
 	const std::vector<std::vector<double>> records = {baseline, shifted, flat};
-	metric::MatrixSpace<std::vector<double>, metric::TWED<double>> space(records, distance);
+	mtrc::MatrixSpace<std::vector<double>, mtrc::TWED<double>> space(records, distance);
 
 	assert(space.size() == records.size());
 	assert(space(0, 1) == 7.0);

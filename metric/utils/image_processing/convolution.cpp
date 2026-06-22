@@ -1,6 +1,6 @@
 #include "convolution.hpp"
 
-namespace metric {
+namespace mtrc {
 
 template <typename T, size_t Channels>
 Convolution2d<T, Channels>::Convolution2d(size_t imageWidth, size_t imageHeight, size_t kernelWidth,
@@ -68,4 +68,4 @@ typename Convolution2d<T, Channels>::Image Convolution2d<T, Channels>::operator(
 	setKernel(kernel);
 	return operator()(image);
 }
-} // namespace metric
+} // namespace mtrc

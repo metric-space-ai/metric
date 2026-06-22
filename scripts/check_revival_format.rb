@@ -14,6 +14,7 @@ format_scope = tracked_files.select do |path|
     path.start_with?('docs/') ||
     path.start_with?('examples/core/') ||
     path.start_with?('examples/engine/') ||
+    path.start_with?('metric/numeric/') ||
     path.start_with?('python/examples/metric_space/') ||
     path.start_with?('python/examples/engine/') ||
     path.start_with?('python/pkg/metric/') ||
@@ -37,6 +38,8 @@ tracked_files.each do |path|
 end
 
 text_files.each do |path|
+  next unless File.file?(path)
+
   contents = File.binread(path)
   failures << "#{path}: CRLF line endings" if contents.include?("\r\n")
 

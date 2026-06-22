@@ -9,7 +9,7 @@ Copyright (c) 2019 Panda Team
 #ifndef _METRIC_TRANSFORM_DISCRETE_COSINE_HPP
 #define _METRIC_TRANSFORM_DISCRETE_COSINE_HPP
 
-namespace metric {
+namespace mtrc {
 
 /**
  * @brief apply forward or invese DCT depending on bool flag
@@ -20,8 +20,8 @@ namespace metric {
  * @return false
  */
 
-template <class BlazeMatrix> bool apply_DCT(BlazeMatrix &Slices, bool inverse = false);
+template <class Matrix> bool apply_DCT(Matrix &Slices, bool inverse = false);
 
-} // namespace metric
+} // namespace mtrc
 #include "discrete_cosine.cpp"
 #endif

@@ -11,21 +11,20 @@
 #include <vector>
 
 #include "../core/metric_space.hpp"
-#include "../core/record_id.hpp"
+#include <metric/record/id.hpp>
 
-namespace metric::compat {
+namespace mtrc::compat {
 
-inline constexpr auto record_id_from_legacy_index(std::size_t index) -> metric::RecordId
+inline constexpr auto record_id_from_legacy_index(std::size_t index) -> mtrc::RecordId
 {
-	return metric::RecordId::from_index(index);
+	return mtrc::RecordId::from_index(index);
 }
 
-inline constexpr auto legacy_index(metric::RecordId id) -> std::size_t { return id.index(); }
+inline constexpr auto legacy_index(mtrc::RecordId id) -> std::size_t { return id.index(); }
 
 namespace detail {
 template <typename LegacySpace>
-using legacy_record_t =
-	std::decay_t<decltype(std::declval<const LegacySpace &>()[std::declval<std::size_t>()])>;
+using legacy_record_t = std::decay_t<decltype(std::declval<const LegacySpace &>()[std::declval<std::size_t>()])>;
 } // namespace detail
 
 template <typename LegacySpace>
@@ -41,11 +40,11 @@ auto legacy_records(const LegacySpace &legacy) -> std::vector<detail::legacy_rec
 
 template <typename LegacySpace, typename Metric>
 auto to_metric_space(const LegacySpace &legacy, Metric metric)
-	-> metric::MetricSpace<detail::legacy_record_t<LegacySpace>, std::decay_t<Metric>>
+	-> mtrc::MetricSpace<detail::legacy_record_t<LegacySpace>, std::decay_t<Metric>>
 {
-	return metric::make_space(legacy_records(legacy), std::move(metric));
+	return mtrc::make_space(legacy_records(legacy), std::move(metric));
 }
 
-} // namespace metric::compat
+} // namespace mtrc::compat
 
 #endif

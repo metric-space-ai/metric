@@ -4,7 +4,7 @@ METRIC is currently being revived around a small, reproducible C++ core build. T
 
 ## Quick Developer Build
 
-Use this path from a clean checkout when you do not already have all C++ dependencies installed:
+Use this path from a clean checkout:
 
 ```shell
 cmake --preset dev
@@ -12,11 +12,11 @@ cmake --build --preset dev
 ctest --preset dev
 ```
 
-The `dev` preset enables `METRIC_FETCH_DEPS=ON` and fetches missing header dependencies with CMake `FetchContent`.
+The `dev` preset builds the native C++ core, examples, and smoke tests.
 
 ## Install and Consume
 
-The core target installs a CMake package named `panda_metric`. When configured with `METRIC_FETCH_DEPS=ON`, the fetched header-only dependencies are installed with the package so a downstream CMake consumer can use the installed prefix directly:
+The core target installs a CMake package named `metric`:
 
 ```shell
 cmake --install build/core --prefix build/install-core
@@ -29,10 +29,10 @@ ctest --test-dir build/downstream-consumer --output-on-failure
 Downstream projects link the exported target:
 
 ```cmake
-find_package(panda_metric REQUIRED)
+find_package(metric REQUIRED)
 
 add_executable(program program.cpp)
-target_link_libraries(program PRIVATE panda_metric::panda_metric)
+target_link_libraries(program PRIVATE metric::metric)
 ```
 
 ## Core Dependencies
@@ -41,12 +41,10 @@ The C++ core requires:
 
 - C++17 compiler
 - CMake 3.19+
-- Blaze 3.8
-- nlohmann_json
-- cereal
-- BLAS/LAPACK for faster linear algebra paths
+- the in-tree Metric numeric core under `metric/numeric`
+- optional BLAS/LAPACK for LAPACK-backed numerical tests and advanced linear algebra paths
 
-`METRIC_FETCH_DEPS=ON` can fetch Blaze, nlohmann_json, and cereal for developer builds. Package-manager mode should provide those dependencies before configuring.
+The Metric numeric core is part of this repository and is consumed through the normal Metric include tree; it is not fetched or discovered as a separate package.
 
 ## Package-Manager Build
 
@@ -58,8 +56,7 @@ cmake -S . -B build/core \
   -DMETRIC_BUILD_CORE_EXAMPLES=ON \
   -DMETRIC_BUILD_TESTS=OFF \
   -DMETRIC_BUILD_EXAMPLES=OFF \
-  -DMETRIC_BUILD_BENCHMARKS=OFF \
-  -DMETRIC_FETCH_DEPS=OFF
+  -DMETRIC_BUILD_BENCHMARKS=OFF
 cmake --build build/core
 ctest --test-dir build/core --output-on-failure
 ```
@@ -80,7 +77,6 @@ ctest --test-dir build/core --output-on-failure
 - `METRIC_BUILD_EXAMPLES`: build examples. Default: `OFF`.
 - `METRIC_BUILD_BENCHMARKS`: build benchmarks. Default: `OFF`.
 - `METRIC_BUILD_PYTHON`: build the Python bindings from the top-level CMake project. Default: `OFF`.
-- `METRIC_FETCH_DEPS`: fetch missing C++ dependencies with `FetchContent`. Default: `OFF`.
 - `METRIC_BUILD_LAPACK_CORE`: build LAPACK-dependent core entropy smoke targets when LAPACK is available. Default: `ON`.
 
 The recommended Python package path remains:

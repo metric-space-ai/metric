@@ -1,5 +1,28 @@
 # METRIC | MAPPING
 
+## Production-readiness migration status
+
+`metric/mapping` is a legacy compatibility area. New production APIs for
+derived finite metric spaces belong under `mtrc::modify`; investigation of
+clusters, outliers, and labels belongs under `mtrc::stats::structural_analysis`;
+native fitted solvers belong under `mtrc::solve`.
+
+Decision table for the current legacy algorithms:
+
+| Legacy algorithm | Production decision | Current route |
+| --- | --- | --- |
+| `PCFA` | migrated as a stable finite-space coordinate map | `mtrc::modify::map::pcfa`, `pcfa_space`, and `mtrc::reduce(..., pcfa_options)` wrap the legacy implementation while reporting coordinate-map validity and lineage |
+| native autoencoder wrapper | migrated through the native fitted-map route | use `mtrc::modify::map::native_autoencoder`; the solver lives under `mtrc::solve::parametric::dnn` |
+| native PHATE-AE workflow | migrated as composed map + dynamics | use `mtrc::modify::compose::native_phate_autoencoder` and `mtrc::modify::map::native_phate_autoencoder`; PHATE target generation is diffusion dynamics over the source finite metric space |
+| `KOC` | experimental compatibility only | `mtrc::modify::map::koc` exists as an explicit unpromoted placeholder that rejects use; legacy code needs deterministic fixtures and mapping-result lineage before promotion |
+| `SOM` | experimental compatibility only | belongs conceptually under `mtrc::modify::map`, but the old stochastic trainer is not promoted as a production map |
+| `DSPCC` | experimental/quarantined | domain-specific PCFA + transform stack; needs source-space interpretation, deterministic fixtures, and transform ownership cleanup before promotion |
+| `Redif` | experimental/quarantined | belongs conceptually under `mtrc::modify::dynamics` as reverse diffusion, but the old implementation is not promoted |
+| `ESN` and ESN switch predictor | experimental/quarantined | fitted sequence dynamics/prediction, not a stable finite-space map yet |
+| deterministic switch detector | experimental/quarantined | domain detector, not a general `modify::map` component |
+| `kmedoids`, `kmeans`, `dbscan`, affinity propagation, hierarchical clustering | not promoted as maps | stable structural-analysis routes live under `mtrc::stats::structural_analysis`; use `mtrc::modify::map::clustered_space` only when a clustering result is intentionally converted into a derived cluster-representative space |
+| ensembles and decision-tree classification | foreign to `modify` | classification/ensemble surfaces are not part of finite-space modification and should remain outside production `mtrc::modify` |
+
 ## Overview
 
 Module contains various algorithms that can �calculate� metric spaces or map them into equivalent metric spaces. In
@@ -32,10 +55,6 @@ dimensions per element.
     - Laplacian optimization (spectral clustering) | based on d-full matrices
     - Aggregate | based on d-minimal tree
 
-
-3. Training data
-    - SVM
-    - C4.5
 
 ##### Continuous mappers (encoder/decoder)
 
@@ -250,126 +269,6 @@ for (size_t i = 0; i < hc.clusters.size(); i++)
 #### Aggregate
 ---
 
-#### SVM
-
-Suppose we have set of payments data, where each payment is set of ints:
-
-```cpp
-using Record = std::vector<int>;
-
-std::vector<Record> payments = {
-	{0,3,5,0},
-	{1,4,5,0},
-	{2,5,2,1},
-	{3,6,2,1}
-};
-```
-
-Then we defined features and responce (first three elements is features, last one is a label):
-
-```cpp
-std::vector<std::function<double(Record)>> features;
-
-for (int i = 0; i < (int)payments[0].size() - 1; ++i) {
-	features.push_back(
-		[=](auto r) { return r[i]; }  // we need closure: [=] instead of [&]   !! THIS DIFFERS FROM API !!
-	);
-}
-
-std::function<bool(Record)> response = [](Record r) {
-	if (r[r.size() - 1] >= 0.5)
-		return true;
-	else
-		return false;
-};
-```
-
-And we can define and train SVM model:
-
-```cpp
-metric::edmClassifier<Record, CSVM> svmModel = metric::edmClassifier<Record, CSVM>();
-svmModel.train(payments, features, response);
-```
-
-Once model will been trained we can make predict on a test sample:
-
-```cpp
-std::vector<Record> test_sample = {
-	{0,3,5,0},
-	{3,6,2,1}
-};
-std::vector<bool> prediction;
-
-svmModel.predict(test_sample, features, prediction);
-// out
-// prediction:
-// [0, 1]
-```
-
-*For a full example and more details see `examples/mapping_examples/SVM_example.cpp`*
-
-
----
-
-#### C4.5
-
-Suppose we have set of payments data, where each payment is set of ints:
-
-```cpp
-using Record = std::vector<int>;
-
-std::vector<Record> payments = {
-	{0,3,5,0},
-	{1,4,5,0},
-	{2,5,2,1},
-	{3,6,2,1}
-};
-```
-
-Then we defined features and responce (first three elements is features, last one is a label):
-
-```cpp
-std::vector<std::function<double(Record)>> features;
-
-for (int i = 0; i < (int)payments[0].size() - 1; ++i) {
-	features.push_back(
-		[=](auto r) { return r[i]; }  // we need closure: [=] instead of [&]   !! THIS DIFFERS FROM API !!
-	);
-}
-
-std::function<bool(Record)> response = [](Record r) {
-	if (r[r.size() - 1] >= 0.5)
-		return true;
-	else
-		return false;
-};
-```
-
-And we can define and train C4.5 model:
-
-```cpp
-metric::edmClassifier<Record, CC45> c45Model = metric::edmClassifier<Record, CC45>();
-c45Model.train(payments, features, response);
-```
-
-Once model will been trained we can make predict on a test sample:
-
-```cpp
-std::vector<Record> test_sample = {
-	{0,3,5,0},
-	{3,6,2,1}
-};
-
-c45Model.predict(test_sample, features, prediction);
-// out
-// C4.5 prediction:
-// [0, 1]
-```
-
-*For a full example and more details see `examples/mapping_examples/C45_example.cpp`*
-
----
-
 #### SOM
 
 Suppose we have image `img1` as `std::vector<std::vector<double>>`. Then we can create and train SOM (reduce
@@ -418,13 +317,13 @@ First of all let's create a simple datasets:
 ```cpp
 using RecType = std::vector<float>;
 
-RecType d0_blaze {0, 1, 2};
-RecType d1_blaze {0, 1, 3};
-std::vector<RecType> d_train = {d0_blaze, d1_blaze};
+RecType d0_numeric {0, 1, 2};
+RecType d1_numeric {0, 1, 3};
+std::vector<RecType> d_train = {d0_numeric, d1_numeric};
 
-RecType d2_blaze {0, 1, 4};
-RecType d3_blaze {0, 2, 2};
-std::vector<RecType> d_test = {d0_blaze, d2_blaze, d3_blaze};
+RecType d2_numeric {0, 1, 4};
+RecType d3_numeric {0, 2, 2};
+std::vector<RecType> d_test = {d0_numeric, d2_numeric, d3_numeric};
 ```
 
 And now we can create PCFA model on train data:
@@ -472,7 +371,7 @@ auto d_eigenmodes = pcfa.eigenmodes();
 Suppose we have train, target and test datasets:
 
 ```cpp
-blaze::DynamicMatrix<double, blaze::rowMajor>  SlicesR {
+metric::numeric::DynamicMatrix<double, metric::numeric::rowMajor>  SlicesR {
     {1   , 0.75, 0.5 , 0.25, 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
     {0   , 0.25, 0.5 , 0.75, 1   , 0.75, 0.5 , 0.25, 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
     {0   , 0   , 0   , 0   , 0   , 0.25, 0.5 , 0.75, 1   , 0.75, 0.5 , 0.25, 0   , 0   , 0   , 0   , 0   , 0   },
@@ -481,13 +380,13 @@ blaze::DynamicMatrix<double, blaze::rowMajor>  SlicesR {
     {0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0.25}
 };
 
-blaze::DynamicMatrix<double, blaze::rowMajor> TargetR {
+metric::numeric::DynamicMatrix<double, metric::numeric::rowMajor> TargetR {
     {-0.45, -0.4, -0.35, -0.3, -0.25, -0.2, -0.15, -0.1, -0.05, 0   , 0.05, 0.1, 0.15 , 0.2 , 0.25 , 0.3 , 0.35 , 0.4 },
     {0.5 , 0.25 , 0  , 0.25, 0.5 , 0.25 , 0  , 0.25, 0.5 , 0.25 , 0  , 0.25, 0.5 , 0.25 , 0  , 0.25, 0.5 , 0.25},
 };
 // first line (position of peak) is easy to predict, second is much harder. ESN predicts it better in no-echo mode
 
-blaze::DynamicMatrix<double, blaze::rowMajor>  SlicesTestR {
+metric::numeric::DynamicMatrix<double, metric::numeric::rowMajor>  SlicesTestR {
     {0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0.25},
     {0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0.25, 0.5 , 0.75, 1   , 0.75},
     {0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0.25, 0.5 , 0.75, 1   , 0.75, 0.25, 0   , 0   , 0   },
@@ -557,85 +456,28 @@ std::function<bool(IrisRec)> response_iris = [](IrisRec r) {
 };
 ```
 
+The ensembles are weak-learner agnostic: any classifier implementing the
+`train` / `predict` / `clone` contract can be boosted or bagged. METRIC ships the
+native `mtrc::TestCl` single-feature threshold stump; you can supply your own.
+
 #### Boosting
 
-###### SVM
-
-On the same Iris dataset we can define and train Boosting model.
-
-SVM with default metaparams:
+On the same Iris dataset we can define and train a Boosting model over the native
+weak learner:
 
 ```cpp
-auto svmModel = metric::edmClassifier<IrisRec, CSVM>();
-auto boostSvmModel = metric::Boosting<IrisRec, metric::edmClassifier<IrisRec, CSVM>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, svmModel);
-boostSvmModel.train(iris_str, features_iris, response_iris, true);
+auto weak = mtrc::TestCl<IrisRec>(0, false);
+auto boostModel = mtrc::Boosting<IrisRec, mtrc::TestCl<IrisRec>, mtrc::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, weak);
+boostModel.train(iris_str, features_iris, response_iris, true);
 
-boostSvmModel.predict(IrisTestRec, features_iris, prediction);
+boostModel.predict(IrisTestRec, features_iris, prediction);
 // out
-// Boost SVM predict on single Iris:
+// Boosting predict on single Iris:
 // [1]
 
-boostSvmModel.predict(IrisTestMultipleRec, features_iris, prediction);
+boostModel.predict(IrisTestMultipleRec, features_iris, prediction);
 // out
-// Boost SVM predict on multiple Iris:
-// [1, 1, 0]
-```
-
-SVM with specialized metaparams:
-
-```cpp
-auto svmModel = metric::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
-auto boostSvmModel = metric::Boosting<IrisRec, metric::edmSVM<IrisRec>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, svmModel);
-boostSvmModel.train(iris_str, features_iris, response_iris, true);
-
-boostSvmModel.predict(IrisTestRec, features_iris, prediction);
-// out
-// Boost specialized SVM predict on single Iris:
-// [1]
-
-boostSvmModel.predict(IrisTestMultipleRec, features_iris, prediction);
-// out
-// Boost specialized SVM predict on multiple Iris:
-// [1, 1, 0]
-```
-
----
-
-###### C4.5
-
-C4.5 with default metaparams
-
-```cpp
-auto c45Model = metric::edmClassifier<IrisRec, libedm::CC45>();
-auto boostC45Model = metric::Boosting<IrisRec, metric::edmClassifier<IrisRec, CC45>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model);
-boostC45Model.train(iris_str, features_iris, response_iris, true);
-
-boostC45Model.predict(IrisTestRec, features_iris, prediction);
-// out
-// Boost C4.5 predict on single Iris:
-// [1]
-
-boostC45Model.predict(IrisTestMultipleRec, features_iris, prediction);
-// out
-// Boost C4.5 predict on multiple Iris:
-// [1, 1, 0]
-```
-
-C4.5 with specialized metaparams
-
-```cpp
-auto c45Model = metric::edmC45<IrisRec>(2, 1e-3, 0.25, true);
-auto boostC45Model = metric::Boosting<IrisRec, metric::edmC45<IrisRec>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model);
-boostC45Model.train(iris_str, features_iris, response_iris, true);
-
-boostC45Model.predict(IrisTestRec, features_iris, prediction);
-// out
-// Boost specialized C4.5 predict on single Iris:
-// [1]
-
-boostC45Model.predict(IrisTestMultipleRec, features_iris, prediction);
-// out
-// Boost specialized C4.5 predict on multiple Iris:
+// Boosting predict on multiple Iris:
 // [1, 1, 0]
 ```
 
@@ -645,65 +487,29 @@ boostC45Model.predict(IrisTestMultipleRec, features_iris, prediction);
 
 #### Bagging
 
-###### SVM
-
-Vector with defined models
-
-```cpp
-using WeakLrnVariant = std::variant<metric::edmSVM<IrisRec>, metric::edmClassifier<IrisRec, CSVM> >;
-std::vector<WeakLrnVariant> svmModels = {};
-WeakLrnVariant svmModel_1 = metric::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
-WeakLrnVariant svmModel_2 = metric::edmClassifier<IrisRec, CSVM>();
-svmModels.push_back(svmModel_1);
-svmModels.push_back(svmModel_2);
-```
-
-Bagging on both specialized and default SVM
+Bagging accepts a vector of weak learners passed through a `std::variant`, with a
+per-type share. Here two native weak learners (threshold stumps on different
+features) are bagged:
 
 ```cpp
-auto baggingSVMmodel = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, svmModels); // 30% of first weak learner type, 70% of second
-baggingSVMmodel.train(iris_str, features_iris, response_iris, true);
+using WeakLrnVariant = std::variant<mtrc::TestCl<IrisRec> >;
+std::vector<WeakLrnVariant> models = {};
+WeakLrnVariant model_1 = mtrc::TestCl<IrisRec>(0, false);
+WeakLrnVariant model_2 = mtrc::TestCl<IrisRec>(1, false);
+models.push_back(model_1);
+models.push_back(model_2);
 
-baggingSVMmodel.predict(IrisTestRec, features_iris, prediction);
+auto baggingModel = mtrc::Bagging<IrisRec, WeakLrnVariant, mtrc::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.5, 0.5 }, models); // 50% of each weak learner type
+baggingModel.train(iris_str, features_iris, response_iris, true);
+
+baggingModel.predict(IrisTestRec, features_iris, prediction);
 // out
-// Bagging SVM predict on single Iris:
+// Bagging predict on single Iris:
 // [1]
 
-baggingSVMmodel.predict(IrisTestMultipleRec, features_iris, prediction);
+baggingModel.predict(IrisTestMultipleRec, features_iris, prediction);
 // out
-// Bagging SVM predict on multiple Iris:
-// [1, 1, 0]
-```
-
----
-
-###### C4.5
-
-Vector with defined models
-
-```cpp
-using WeakLrnVariant = std::variant<metric::edmC45<IrisRec>, metric::edmClassifier<IrisRec, CC45> >;
-std::vector<WeakLrnVariant> c45Models = {};
-WeakLrnVariant c45Model_1 = metric::edmC45<IrisRec>(2, 1e-3, 0.25, true);
-WeakLrnVariant c45Model_2 = metric::edmClassifier<IrisRec, CC45>();
-c45Models.push_back(c45Model_1);
-c45Models.push_back(c45Model_2);
-```
-
-Bagging on both specialized and default C4.5
-
-```cpp
-auto baggingC45model = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, c45Models); // 30% of first weak learner type, 70% of second
-baggingC45model.train(iris_str, features_iris, response_iris, true);
-
-baggingC45model.predict(IrisTestRec, features_iris, prediction);
-// out
-// Bagging C4.5 predict on single Iris:
-// [1]
-
-baggingC45model.predict(IrisTestMultipleRec, features_iris, prediction);
-// out
-// Bagging C4.5 predict on multiple Iris:
+// Bagging predict on multiple Iris:
 // [1, 1, 0]
 ```
 
@@ -835,7 +641,7 @@ Then we should create accessors:
     using a4_type = decltype(field4accessors);
 
     auto dim0 = metric::make_dimension(metric::Euclidean<InternalType>(), field0accessors);
-    auto dim1 = metric::make_dimension(metric::Manhatten<InternalType>(), field1accessors);
+    auto dim1 = metric::make_dimension(metric::Manhattan<InternalType>(), field1accessors);
     auto dim2 = metric::make_dimension(metric::P_norm<InternalType>(), field2accessors);
     auto dim3 = metric::make_dimension(metric::Euclidean_thresholded<InternalType>(), field2accessors);
     auto dim4 = metric::make_dimension(metric::Cosine<InternalType>(), field2accessors);
@@ -845,7 +651,7 @@ Then we should create accessors:
     auto dim10 = metric::make_dimension(metric::EMD<InternalType>(8, 8), field2accessors);
 
     typedef std::variant<metric::Dimension<metric::Euclidean<InternalType>, a0_type>,
-        metric::Dimension<metric::Manhatten<InternalType>, a1_type>,
+        metric::Dimension<metric::Manhattan<InternalType>, a1_type>,
         metric::Dimension<metric::P_norm<InternalType>, a2_type>,
         metric::Dimension<metric::Euclidean_thresholded<InternalType>, a2_type>,
         metric::Dimension<metric::Cosine<InternalType>, a2_type>,

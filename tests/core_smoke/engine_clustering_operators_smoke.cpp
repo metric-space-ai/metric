@@ -19,13 +19,13 @@ struct DoubleAbsoluteDistance {
 
 int main()
 {
-	auto space = metric::make_space(std::vector<int>{0, 1, 10, 11}, AbsoluteDistance{});
-	metric::representations::MatrixCache<decltype(space)> matrix(space);
+	auto space = mtrc::make_space(std::vector<int>{0, 1, 10, 11}, AbsoluteDistance{});
+	mtrc::space::storage::DistanceTable<decltype(space)> matrix(space);
 
-	const auto clustered = metric::operators::kmedoids(matrix, 2);
+	const auto clustered = mtrc::stats::structural_analysis::kmedoids(matrix, 2);
 	static_assert(std::is_same<decltype(clustered)::distance_type, int>::value);
 	assert(clustered.algorithm == "kmedoids");
-	assert(clustered.representation == "distance_provider");
+	assert(clustered.representation == "pairwise_distances");
 	assert(clustered.record_count == space.size());
 	assert(clustered.cluster_count == 2);
 	assert(clustered.converged);
@@ -41,21 +41,21 @@ int main()
 	assert(clustered.cluster_sizes[0] == 2);
 	assert(clustered.cluster_sizes[1] == 2);
 
-	const auto implicit = metric::operators::kmedoids(space, 2);
+	const auto implicit = mtrc::stats::structural_analysis::kmedoids(space, 2);
 	assert(implicit.representation == "metric_space");
 	assert(implicit.medoids == clustered.medoids);
 	assert(implicit.assignments == clustered.assignments);
 
 	bool rejected_too_many_clusters = false;
 	try {
-		(void)metric::operators::kmedoids(matrix, 5);
+		(void)mtrc::stats::structural_analysis::kmedoids(matrix, 5);
 	} catch (const std::invalid_argument &) {
 		rejected_too_many_clusters = true;
 	}
 	assert(rejected_too_many_clusters);
 
-	auto continuous_space = metric::make_space(std::vector<double>{0.0, 0.1, 10.0, 10.1}, DoubleAbsoluteDistance{});
-	const auto affinity_groups = metric::operators::affinity_propagation(continuous_space, 0.7);
+	auto continuous_space = mtrc::make_space(std::vector<double>{0.0, 0.1, 10.0, 10.1}, DoubleAbsoluteDistance{});
+	const auto affinity_groups = mtrc::stats::structural_analysis::affinity_propagation(continuous_space, 0.7);
 	static_assert(std::is_same<decltype(affinity_groups)::distance_type, double>::value);
 	assert(affinity_groups.algorithm == "affinity_propagation");
 	assert(affinity_groups.representation == "metric_space");
@@ -66,10 +66,10 @@ int main()
 	assert(!affinity_groups.empty());
 	assert(affinity_groups.iterations > 0);
 
-	metric::representations::MatrixCache<decltype(continuous_space)> continuous_matrix(continuous_space);
-	const auto cached_affinity_groups = metric::operators::affinity_propagation(continuous_matrix, 0.7);
+	mtrc::space::storage::DistanceTable<decltype(continuous_space)> continuous_matrix(continuous_space);
+	const auto cached_affinity_groups = mtrc::stats::structural_analysis::affinity_propagation(continuous_matrix, 0.7);
 	assert(cached_affinity_groups.algorithm == "affinity_propagation");
-	assert(cached_affinity_groups.representation == "distance_provider");
+	assert(cached_affinity_groups.representation == "pairwise_distances");
 	assert(cached_affinity_groups.record_count == continuous_space.size());
 	assert(cached_affinity_groups.assignments == affinity_groups.assignments);
 	assert(cached_affinity_groups.medoids == affinity_groups.medoids);
@@ -77,7 +77,7 @@ int main()
 
 	bool rejected_invalid_preference = false;
 	try {
-		(void)metric::operators::affinity_propagation(continuous_space, 1.0);
+		(void)mtrc::stats::structural_analysis::affinity_propagation(continuous_space, 1.0);
 	} catch (const std::invalid_argument &) {
 		rejected_invalid_preference = true;
 	}

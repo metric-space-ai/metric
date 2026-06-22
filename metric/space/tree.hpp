@@ -10,7 +10,7 @@ Copyright (c) 2018, Michael Welsch
 #ifndef _METRIC_SPACE_TREE_HPP
 #define _METRIC_SPACE_TREE_HPP
 
-#include <blaze/Math.h>
+#include <metric/numeric/Math.h>
 
 #include <atomic>
 #include <cmath>
@@ -27,7 +27,7 @@ Copyright (c) 2018, Michael Welsch
 #include <unordered_set>
 #include <vector>
 
-namespace metric {
+namespace mtrc {
 /*
   _ \         _|             |  |       \  |        |       _)
   |  |  -_)   _| _` |  |  |  |   _|    |\/ |   -_)   _|   _| |   _|
@@ -39,10 +39,8 @@ template <typename, typename> struct SerializedNode;
 
 template <typename, typename> class Node;
 
-struct unsorted_distribution_exception : public std::exception {
-};
-struct bad_distribution_exception : public std::exception {
-};
+struct unsorted_distribution_exception : public std::exception {};
+struct bad_distribution_exception : public std::exception {};
 
 /*
   __ __|
@@ -226,7 +224,7 @@ template <class RecType, class Metric> class Tree {
 	 * @brief find nearest neighbour of data record
 	 *
 	 * @param p searching data record
-	 * @return Node containing nearest neigbour to p
+	 * @return Node containing nearest neighbor to p
 	 */
 	Node_ptr nn(const RecType &p) const;
 
@@ -354,6 +352,13 @@ template <class RecType, class Metric> class Tree {
 	 */
 	bool same_tree(const Node_ptr lhs, const Node_ptr rhs) const;
 
+  private:
+	// unlocked recursion used by same_tree(); the public entry takes the shared lock once. Recursing through
+	// the public method would re-acquire the (non-recursive) shared_timed_mutex on the same thread.
+	bool same_tree_(const Node_ptr lhs, const Node_ptr rhs) const;
+
+  public:
+
 	/**
 	 * @brief recursively iterate through the tree and return all nodes of the tree
 	 *
@@ -400,12 +405,12 @@ template <class RecType, class Metric> class Tree {
 
 	/**
 	 * @brief convert cover tree to distance matrix
-	 * @return blaze::CompressedMatrix with distances between nodes,
+	 * @return mtrc::numeric::CompressedMatrix with distances between nodes,
 	 * Since the matrix is symmetric, we fill only the upper right part of the matrix,
 	 * so matrix will have only N*(N-1)/2 non zeroes elements;
 	 *
 	 */
-	blaze::CompressedMatrix<Distance, blaze::rowMajor> matrix() const;
+	mtrc::numeric::CompressedMatrix<Distance, mtrc::numeric::rowMajor> matrix() const;
 
 	/**
 	 * @brief distance between two nodes
@@ -497,16 +502,20 @@ template <class RecType, class Metric> class Tree {
 	const RecType &get_data(std::size_t ID) { return data[index_map[ID]].first; }
 	void remove_data(std::size_t ID)
 	{
-		auto p = data.begin();
 		auto pi = index_map.find(ID);
+		if (pi == index_map.end()) {
+			return;
+		}
 		std::size_t i = pi->second;
+		auto p = data.begin();
 		std::advance(p, i);
 		data.erase(p);
 		index_map.erase(pi);
+		// every record stored after position i shifts down by one; renumber by data POSITION (kv.second),
+		// not by ID (kv.first) — the two coincide only until the first erase.
 		for (auto &kv : index_map) {
-			if (kv.first <= i)
-				continue;
-			kv.second -= 1;
+			if (kv.second > i)
+				kv.second -= 1;
 		}
 	}
 	std::pair<Distance, std::size_t> distance_to_root(Node_ptr p) const;
@@ -516,7 +525,7 @@ template <class RecType, class Metric> class Tree {
 
 	void get_all_nodes_(Node_ptr node_p, std::vector<Node_ptr> &output);
 };
-} // namespace metric
+} // namespace mtrc
 #include "tree.cpp" // include the implementation
 
 #endif //_METRIC_SPACE_TREE_HPP

@@ -13,8 +13,8 @@ struct PaddedHamming {
 
 std::vector<std::string> records = {"red", "reed", "road", "blue"};
 
-auto distance = metric::make_metric<std::string>(PaddedHamming{});
-auto space = metric::Space::from_records(records, distance);
+auto distance = mtrc::make_metric<std::string>(PaddedHamming{});
+auto space = mtrc::Space::from_records(records, distance);
 ```
 
 The metric determines the geometry. No embedding step is required before nearest-neighbor search:
@@ -26,7 +26,7 @@ auto nearest = space.neighbors(std::string("read"), 2);
 The raw callable can also be used directly with the compatibility representation name:
 
 ```cpp
-metric::Matrix<std::string, PaddedHamming> matrix(records);
+mtrc::Matrix<std::string, PaddedHamming> matrix(records);
 ```
 
-The forthcoming engine facade will put intent names above these representations. The current promoted example uses the representation API because it is compiled in CI.
+`mtrc::Space` already exposes intent names such as `neighbors` over the underlying representation, as the core pattern above shows. `mtrc::Matrix` is the lower-level representation name kept for direct representation access.

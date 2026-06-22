@@ -1,4 +1,4 @@
-w_grid_size,h_grid_size,s_learn_rate,f_learn_rate,initial_neighbour_size,neigbour_range_decay,random_seed,iterations,distribution_type,metric_type,graph_type,score,
+w_grid_size,h_grid_size,s_learn_rate,f_learn_rate,initial_neighbour_size,neighbor_range_decay,random_seed,iterations,distribution_type,metric_type,graph_type,score,
 5,5,0.200000,0.000000,5.000000,1.500000,0,100,uniform_real_distribution,Euclidian,Grid6,0.775622,
 5,5,0.200000,0.000000,5.000000,1.500000,0,100,exponential_distribution,Euclidian,Grid6,0.668002,
 5,5,0.200000,0.000000,5.000000,1.500000,0,1000,exponential_distribution,Euclidian,Grid6,0.645453,

@@ -1,0 +1,50 @@
+// METRIC numeric assimilation header.
+// Provenance and licensing are documented in metric/numeric/README.md.
+
+#ifndef METRIC_NUMERIC_MATH_CONSTRAINTS_STRICTLYLOWER_H
+#define METRIC_NUMERIC_MATH_CONSTRAINTS_STRICTLYLOWER_H
+//*************************************************************************************************
+// Includes
+//*************************************************************************************************
+
+#include <metric/numeric/math/typetraits/IsStrictlyLower.h>
+
+namespace mtrc::numeric {
+
+//=================================================================================================
+//
+//  MUST_BE_STRICTLY_LOWER_MATRIX_TYPE CONSTRAINT
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*!\brief Constraint on the data type.
+// \ingroup math_constraints
+//
+// In case the given data type \a T is not a strictly lower triangular matrix type, a compilation
+// error is created.
+*/
+#define METRIC_NUMERIC_CONSTRAINT_MUST_BE_STRICTLY_LOWER_MATRIX_TYPE(T)                                                \
+	static_assert(::mtrc::numeric::IsStrictlyLower_v<T>, "Non-strictly lower triangular matrix type detected")
+//*************************************************************************************************
+
+//=================================================================================================
+//
+//  MUST_NOT_BE_STRICTLY_LOWER_MATRIX_TYPE CONSTRAINT
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*!\brief Constraint on the data type.
+// \ingroup math_constraints
+//
+// In case the given data type \a T is a strictly lower triangular matrix type, a compilation
+// error is created.
+*/
+#define METRIC_NUMERIC_CONSTRAINT_MUST_NOT_BE_STRICTLY_LOWER_MATRIX_TYPE(T)                                            \
+	static_assert(!::mtrc::numeric::IsStrictlyLower_v<T>, "Strictly lower triangular matrix type detected")
+//*************************************************************************************************
+
+} // namespace mtrc::numeric
+
+#endif

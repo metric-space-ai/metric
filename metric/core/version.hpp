@@ -7,7 +7,7 @@
 
 #include <cstddef>
 
-namespace metric::core {
+namespace mtrc::core {
 
 using SpaceVersion = std::size_t;
 
@@ -15,12 +15,12 @@ inline constexpr SpaceVersion initial_space_version{0};
 
 inline constexpr auto next_space_version(SpaceVersion version) -> SpaceVersion { return version + 1; }
 
-} // namespace metric::core
+} // namespace mtrc::core
 
-namespace metric {
+namespace mtrc {
 using core::initial_space_version;
 using core::next_space_version;
 using core::SpaceVersion;
-} // namespace metric
+} // namespace mtrc
 
 #endif

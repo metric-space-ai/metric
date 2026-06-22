@@ -313,9 +313,10 @@
         <a href="#overview">Overview</a>
         <a href="#space">Finite Metric Spaces</a>
         <a href="#engine">Engine Model</a>
+        <a href="#metrics">Metric Discovery</a>
         <a href="#cpp">C++ API</a>
         <a href="#bindings">Bindings</a>
-        <a href="#examples">Hero Examples</a>
+        <a href="#examples">Application Workflows</a>
         <a href="#status">Status Labels</a>
       </aside>
 
@@ -331,7 +332,7 @@
         <section id="space">
           <h2>Finite Metric Spaces</h2>
           <p>
-            A finite metric space is a finite record set `X = {x0, x1, ..., xn}` plus a distance function `d(x, y)`. The metric gives the dataset its geometry. Operators document when they require non-negativity, identity, symmetry, and the triangle inequality.
+            A finite metric space is a finite record set <code>X = {x0, x1, ..., xn}</code> plus a metric <code>d(x, y)</code>. The metric gives the dataset its geometry. Engine components document when they require non-negativity, identity, symmetry, and the triangle inequality.
           </p>
           <p>
             Records do not need to be vectors. METRIC can use strings with edit distance, histograms with transport distance, process curves with alignment distance, mixed records with composed domain penalties, or vectors with Euclidean distance.
@@ -340,31 +341,46 @@
 
         <section id="engine">
           <h2>Engine Model</h2>
-          <pre><code>RecordSet + Metric -> MetricSpace -> Representation -> Operator -> Result</code></pre>
+          <pre><code>Records + Metric -> MetricSpace -> Stats / Modify / Storage -> Result</code></pre>
           <div class="cards">
             <div class="card"><strong>MetricSpace</strong><span>Stores records, stable IDs, metric traits, metadata, and version state.</span></div>
-            <div class="card"><strong>Representation</strong><span>Runs the same space implicitly, through a distance matrix, graph, tree index, or mapped space.</span></div>
-            <div class="card"><strong>Operator</strong><span>Computes neighbors, groups, representatives, graph diagnostics, entropy, MGC, mappings, and reductions.</span></div>
+            <div class="card"><strong>Storage and indexes</strong><span>Run the same space implicitly, through a distance table, graph, tree index, or mapped space.</span></div>
+            <div class="card"><strong>Stats and modify</strong><span>Compute neighbors, groups, representatives, graph diagnostics, entropy, MGC, mappings, and reductions.</span></div>
             <div class="card"><strong>Result</strong><span>Preserves IDs, strategy metadata, representation metadata, warnings, diagnostics, and lineage.</span></div>
           </div>
         </section>
 
+        <section id="metrics">
+          <h2>Metric Discovery</h2>
+          <p>
+            Metric Discovery guides users from their data type to an implemented metric, an admission candidate, or a quarantined non-metric warning before they write a custom function. Each documented metric states its record domain, meaning, metric-law note, example, and public status: stable, experimental, or quarantine.
+          </p>
+          <div class="cards">
+            <div class="card"><strong>Discovery Guide</strong><span>Choose metrics by domain: vectors, strings, sets, curves, distributions, graphs, images, and structured records.</span></div>
+            <div class="card"><strong>True Metric Catalog</strong><span>Only exact computations and valid domains with proven metric laws enter guarantee-dependent engine paths.</span></div>
+            <div class="card"><strong>Admission Rules</strong><span>Every candidate records triangle-inequality evidence, property tests, numerical edge cases, and C++ implementation ownership.</span></div>
+            <div class="card"><strong>Non-Metric Warnings</strong><span>Raw cosine dissimilarity, KL divergence, raw Jensen-Shannon divergence, default DTW, raw SSIM, generic Tanimoto names, and squared CvM statistics are documented separately from metric variants.</span></div>
+          </div>
+          <p>
+            The source documents are maintained under <a href="https://github.com/metric-space-ai/metric/blob/master/docs/metrics/index.md">docs/metrics/</a>.
+          </p>
+        </section>
+
         <section id="cpp">
           <h2>C++ API</h2>
-          <pre><code>#include &lt;metric/distance.hpp&gt;
+          <pre><code>#include &lt;metric/metric/catalog.hpp&gt;
 #include &lt;metric/engine.hpp&gt;
 
 #include &lt;string&gt;
 #include &lt;vector&gt;
 
 std::vector&lt;std::string&gt; records = {"metric", "metrics", "matrix", "tree"};
-auto space = metric::make_space(records, metric::Edit&lt;char&gt;{});
+auto space = mtrc::make_space(records, mtrc::Edit&lt;char&gt;{});
 
-auto neighbors = metric::find_neighbors(
+auto neighbors = mtrc::stats::search::find_neighbors(
     space,
     std::string("metricks"),
-    metric::count{2},
-    metric::strategies::cover_tree{});</code></pre>
+    mtrc::count{2});</code></pre>
           <p>
             The detailed C++ reference is maintained in <a href="https://github.com/metric-space-ai/metric/blob/master/docs/api/cpp.md">docs/api/cpp.md</a>.
           </p>
@@ -383,16 +399,16 @@ print(space.neighbors("cut", k=2))</code></pre>
         </section>
 
         <section id="examples">
-          <h2>Hero Examples</h2>
-          <ul>
-            <li>String edit space: metric correct 4/4, vector baseline misses 4/4.</li>
-            <li>Histogram transport: metric correct 4/4, vector baseline misses 4/4.</li>
-            <li>External process curves: metric correct 16/16, vector baseline misses 16/16.</li>
-            <li>Distribution/image recoding: metric correct 4/4, vector baseline misses 4/4.</li>
-            <li>Mixed structured records: metric correct 4/4, vector baseline misses 4/4.</li>
-            <li>Cross-space MGC: dependency detected, raw vector pairing misses 9/12.</li>
-            <li>PHATE-AE pipeline: native component provenance plus process-curve latent nearest families correct for 6/6 while the vector baseline misses 6/6.</li>
-          </ul>
+          <h2>Application Workflows</h2>
+          <p>
+            The checked examples are C++ workflows that start from native record types and an admitted or explicitly documented metric computation. They demonstrate modeling patterns for monitoring, distribution recoding, mixed records, dependency analysis, sampling, and metric-aware transformations.
+          </p>
+          <div class="cards">
+            <div class="card"><strong>Condition Monitoring</strong><span>Process windows remain time-series records. Alignment metrics support entropy, outlier, representative, and dependency analysis over the process geometry.</span></div>
+            <div class="card"><strong>Distribution Recoding</strong><span>Histograms and image-like records use movement cost, so shifted structure can remain near even when coordinate overlap is weak.</span></div>
+            <div class="card"><strong>Mixed Industrial Records</strong><span>Sensor vectors, states, text, histograms, and curves can be compared with one composed metric instead of a forced multimodal embedding.</span></div>
+            <div class="card"><strong>Metric-Aware Embeddings</strong><span>PHATE-AE-style pipelines are native engine compositions that produce derived coordinate spaces with provenance and diagnostics.</span></div>
+          </div>
           <p>
             The documented outputs are in <a href="https://github.com/metric-space-ai/metric/blob/master/docs/examples/engine-demo-outputs.md">docs/examples/engine-demo-outputs.md</a>.
           </p>

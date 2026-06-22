@@ -20,14 +20,18 @@ Copyright (c) 2018, Michael Welsch
 #ifndef _METRIC_CORRELATION_DETAILS_MGC_HPP
 #define _METRIC_CORRELATION_DETAILS_MGC_HPP
 
-#include <blaze/Blaze.h>
+#include <metric/numeric.hpp>
 
-namespace metric {
+namespace mtrc {
 
-template <typename T> using DistanceMatrix = blaze::SymmetricMatrix<blaze::DynamicMatrix<T>>;
+template <typename T> using DistanceMatrix = mtrc::numeric::SymmetricMatrix<mtrc::numeric::DynamicMatrix<T>>;
 
 /** @class MGC
  *  @brief Multiscale graph correlation
+ *  @details A dependence/correlation statistic between two paired finite metric
+ *  spaces, NOT a metric. operator() returns a single sample MGC statistic in
+ *  [-1, 1] (~1 strong dependence, ~0 none); it does not compute a p-value or
+ *  significance test. Inputs must be paired and of equal size.
  *  @tparam RecType1 type of the left hand input
  *  @tparam Metric1  type of metric associated with RecType1
  *  @tparam RecType2  type of the right hand input
@@ -43,21 +47,24 @@ template <class RecType1, class Metric1, class RecType2, class Metric2> class MG
 	 */
 	explicit MGC(const Metric1 &m1 = Metric1(), const Metric2 &m2 = Metric2()) : metric1(m1), metric2(m2) {}
 
-	/** @brief return correlation betweeen a and b
+	/** @brief sample MGC dependence statistic between paired spaces a and b
+	 * @details A dependence/correlation statistic in [-1, 1], NOT a metric or distance.
 	 * @param a container of values of type RecType1
 	 * @param b container of values of type RecType2
-	 * @return correlation betwen a and b
+	 * @return sample MGC statistic in [-1, 1] (no p-value); a and b must be paired and equal-sized
 	 */
 	template <typename Container1, typename Container2>
 	double operator()(const Container1 &a, const Container2 &b) const;
 
-	/** @brief return estimate of the correlation betweeen a and b
+	/** @brief subsampled estimate of the MGC dependence statistic between a and b
+	 * @details Same dependence/correlation semantics as operator() (a value in [-1, 1],
+	 * NOT a metric); trades exactness for speed on large inputs.
 	 * @param a container of values of type RecType1
 	 * @param b container of values of type RecType2
 	 * @param sampleSize
 	 * @param threshold
 	 * @param maxIterations
-	 * @return estimate of the correlation betwen a and b
+	 * @return estimated sample MGC statistic in [-1, 1]
 	 */
 	template <typename Container1, typename Container2>
 	double estimate(const Container1 &a, const Container2 &b, const size_t sampleSize = 250,
@@ -118,7 +125,7 @@ struct MGC_direct {
 	 * @param X distance matrix
 	 * @return   centered distance matrix
 	 */
-	template <typename T> blaze::DynamicMatrix<T> center_distance_matrix(const DistanceMatrix<T> &X);
+	template <typename T> mtrc::numeric::DynamicMatrix<T> center_distance_matrix(const DistanceMatrix<T> &X);
 
 	/**
 	 * @brief
@@ -127,7 +134,7 @@ struct MGC_direct {
 	 * @param data distance matrix
 	 * @return
 	 */
-	template <typename T> blaze::DynamicMatrix<size_t> rank_distance_matrix(const DistanceMatrix<T> &data);
+	template <typename T> mtrc::numeric::DynamicMatrix<size_t> rank_distance_matrix(const DistanceMatrix<T> &data);
 
 	/**
 	 * @brief Computes the ranked centered distance matrix
@@ -136,7 +143,8 @@ struct MGC_direct {
 	 * @param X distance matrix
 	 * @return  ranked centered distance matrix
 	 */
-	template <typename T> blaze::DynamicMatrix<size_t> center_ranked_distance_matrix(const DistanceMatrix<T> &X);
+	template <typename T>
+	mtrc::numeric::DynamicMatrix<size_t> center_ranked_distance_matrix(const DistanceMatrix<T> &X);
 
 	/**
 	 * @brief Computes all local correlations
@@ -149,9 +157,10 @@ struct MGC_direct {
 	 * @return all local covariances matrix
 	 */
 	template <typename T>
-	blaze::DynamicMatrix<T> local_covariance(const blaze::DynamicMatrix<T> &A, const blaze::DynamicMatrix<T> &B,
-											 const blaze::DynamicMatrix<size_t> &RX,
-											 const blaze::DynamicMatrix<size_t> &RY);
+	mtrc::numeric::DynamicMatrix<T> local_covariance(const mtrc::numeric::DynamicMatrix<T> &A,
+													   const mtrc::numeric::DynamicMatrix<T> &B,
+													   const mtrc::numeric::DynamicMatrix<size_t> &RX,
+													   const mtrc::numeric::DynamicMatrix<size_t> &RY);
 
 	/**
 	 * @brief
@@ -161,8 +170,9 @@ struct MGC_direct {
 	 * @param varY [in]
 	 */
 	template <typename T>
-	void normalize_generalized_correlation(blaze::DynamicMatrix<T> &corr, const blaze::DynamicMatrix<T> &varX,
-										   const blaze::DynamicMatrix<T> &varY);
+	void normalize_generalized_correlation(mtrc::numeric::DynamicMatrix<T> &corr,
+										   const mtrc::numeric::DynamicMatrix<T> &varX,
+										   const mtrc::numeric::DynamicMatrix<T> &varY);
 
 	/**
 	 * @brief
@@ -197,7 +207,8 @@ struct MGC_direct {
 	 * @return binary matrix of size m and n, with 1's indicating the significant region
 	 */
 	template <typename T>
-	blaze::DynamicMatrix<bool> significant_local_correlation(const blaze::DynamicMatrix<T> &localCorr, T p = 0.02);
+	mtrc::numeric::DynamicMatrix<bool>
+	significant_local_correlation(const mtrc::numeric::DynamicMatrix<T> &localCorr, T p = 0.02);
 
 	/**
 	 * @brief calculate Frobenius norm of given matrix
@@ -206,7 +217,7 @@ struct MGC_direct {
 	 * @param matrix arbitrary matrix
 	 * @return Frobenius norm of given matrix
 	 */
-	template <typename T> T frobeniusNorm(const blaze::DynamicMatrix<T> &matrix);
+	template <typename T> T frobeniusNorm(const mtrc::numeric::DynamicMatrix<T> &matrix);
 
 	/**
 	 * @brief
@@ -217,8 +228,8 @@ struct MGC_direct {
 	 * @return
 	 */
 	template <typename T>
-	T max_in_matrix_regarding_second_boolean_matrix(const blaze::DynamicMatrix<T> &m1,
-													const blaze::DynamicMatrix<bool> &m2);
+	T max_in_matrix_regarding_second_boolean_matrix(const mtrc::numeric::DynamicMatrix<T> &m1,
+													const mtrc::numeric::DynamicMatrix<bool> &m2);
 
 	/**
 	 * @brief Finds the maximal scale within the significant grid that is represented by a boolean matrix R,
@@ -230,10 +241,11 @@ struct MGC_direct {
 	 * @return sample MGC statistic within [-1,1]
 	 */
 	template <typename T>
-	T optimal_local_generalized_correlation(const blaze::DynamicMatrix<T> &corr, const blaze::DynamicMatrix<bool> &R);
+	T optimal_local_generalized_correlation(const mtrc::numeric::DynamicMatrix<T> &corr,
+											const mtrc::numeric::DynamicMatrix<bool> &R);
 };
 
-} // namespace metric
+} // namespace mtrc
 
 #include "mgc.cpp"
 

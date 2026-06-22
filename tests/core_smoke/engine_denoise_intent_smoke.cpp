@@ -4,6 +4,7 @@
 
 #include <cassert>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "metric/engine.hpp"
@@ -18,9 +19,21 @@ struct AbsoluteDistance {
 
 int main()
 {
-	auto space = metric::make_space(std::vector<int>{0, 1, 10, 11, 30}, AbsoluteDistance{});
+	auto space = mtrc::make_space(std::vector<int>{0, 1, 10, 11, 30}, AbsoluteDistance{});
 
-	const auto denoised = metric::denoise(space, metric::strategies::dbscan(2.0, 2));
+	auto empty_manual_space = mtrc::make_space(std::vector<int>{}, AbsoluteDistance{});
+	const auto empty_manual = mtrc::core::make_mapping_result(
+		std::move(empty_manual_space), std::vector<std::vector<mtrc::RecordId>>{},
+		std::vector<mtrc::RecordId>{}, space.size(), false, "manual_empty_mapping", "manual_empty_strategy",
+		"manual_empty_representation");
+	assert(empty_manual.empty());
+	assert(empty_manual.source_record_count == space.size());
+	assert(!empty_manual.inverse_supported);
+	assert(empty_manual.mapping == "manual_empty_mapping");
+	assert(empty_manual.strategy == "manual_empty_strategy");
+	assert(empty_manual.representation == "manual_empty_representation");
+
+	const auto denoised = mtrc::denoise(space, mtrc::stats::structural_analysis::dbscan_options(2.0, 2));
 	using Result = decltype(denoised);
 	static_assert(std::is_same<typename Result::space_type::record_type, int>::value);
 
@@ -37,35 +50,35 @@ int main()
 	assert(denoised.source_records[3][0] == space.id(3));
 	assert(denoised.representative_records[3] == space.id(3));
 
-	const auto direct = metric::denoise(space, 2.0, 2);
+	const auto direct = mtrc::denoise(space, 2.0, 2);
 	assert(direct.space.size() == denoised.space.size());
 	assert(direct.source_record_count == denoised.source_record_count);
 
-	const auto materialized_policy = metric::runtime::materialized(metric::runtime::exact());
-	const auto materialized = metric::denoise(space, metric::strategies::dbscan(2.0, 2), materialized_policy);
-	assert(materialized.representation == "matrix_cache");
+	const auto materialized_policy = mtrc::space::storage::materialized(mtrc::space::storage::exact());
+	const auto materialized = mtrc::denoise(space, mtrc::stats::structural_analysis::dbscan_options(2.0, 2), materialized_policy);
+	assert(materialized.representation == "distance_table");
 	assert(materialized.space.size() == denoised.space.size());
 	assert(materialized.source_records == denoised.source_records);
 	assert(materialized.representative_records == denoised.representative_records);
 
-	const auto materialized_direct = metric::denoise(space, 2.0, 2, materialized_policy);
-	assert(materialized_direct.representation == "matrix_cache");
+	const auto materialized_direct = mtrc::denoise(space, 2.0, 2, materialized_policy);
+	assert(materialized_direct.representation == "distance_table");
 	assert(materialized_direct.space.size() == denoised.space.size());
 
-	const auto dense = metric::denoise(space, metric::strategies::dbscan(100.0, 2));
+	const auto dense = mtrc::denoise(space, mtrc::stats::structural_analysis::dbscan_options(100.0, 2));
 	assert(dense.space.size() == space.size());
 	assert(dense.source_records.size() == space.size());
 
 	bool rejected_approximate_runtime = false;
 	try {
-		(void)metric::denoise(space, metric::strategies::dbscan(2.0, 2), metric::runtime::approximate());
+		(void)mtrc::denoise(space, mtrc::stats::structural_analysis::dbscan_options(2.0, 2), mtrc::space::storage::approximate());
 	} catch (const std::invalid_argument &) {
 		rejected_approximate_runtime = true;
 	}
 	assert(rejected_approximate_runtime);
 
-	auto sparse = metric::make_space(std::vector<int>{0, 10}, AbsoluteDistance{});
-	const auto empty = metric::denoise(sparse, metric::strategies::dbscan(1.0, 2));
+	auto sparse = mtrc::make_space(std::vector<int>{0, 10}, AbsoluteDistance{});
+	const auto empty = mtrc::denoise(sparse, mtrc::stats::structural_analysis::dbscan_options(1.0, 2));
 	assert(empty.space.empty());
 	assert(empty.source_records.empty());
 	assert(empty.representative_records.empty());

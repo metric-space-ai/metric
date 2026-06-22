@@ -87,7 +87,7 @@ metric::Tree<RecType, customMetric> cTree;
 /*** logarithmic complexity ***/
 auto nn = cTree.nn();                       // finds the nearest neighbour.
 auto knn = cTree.knn(5);                    // finds the fives nearest neighbours
-auto rnn = cTree.rnn(a_record, a_distance); // finds all neigbours in a_distance to a_record.
+auto rnn = cTree.rnn(a_record, a_distance); // finds all neighbors in a_distance to a_record.
 
 /*** linear complexity***/
 // when data.sum() gives the sum of the data records elements  ...
@@ -139,18 +139,22 @@ std::cout << data_record[data_record.size() - 1] << "}" << std::endl;
 
 *For a full example and more details see `examples/space_examples/search_and_access_example.cpp`*
 
-#### Use a custom container with custom metric use an "Eigen" Vector and L1 metric.
+#### Use a custom container with a custom L1 metric.
 
 Custom metric:
 
 ```c++
-using RecType = Eigen::VectorXd;
+using RecType = std::vector<double>;
 
 template <typename T>
 struct recMetric {
-    T operator()(const Eigen::VectorXd &p, const Eigen::VectorXd &q) const
+    T operator()(const RecType &p, const RecType &q) const
     {
-        return (p - q).lpNorm<1>(); // L1 norm
+        T total{};
+        for (std::size_t index = 0; index < p.size(); ++index) {
+            total += std::abs(p[index] - q[index]);
+        }
+        return total;
     }
 };
 ``` 
@@ -158,26 +162,17 @@ struct recMetric {
 Then we can create the data and the tree:
 
 ```c++
-RecType x(8);
-	
 std::vector<RecType> table;
 
-x << 0, 1, 1, 1, 1, 1, 2, 3;
-table.push_back(x);
-x << 1, 1, 1, 1, 1, 2, 3, 4;
-table.push_back(x);
-x << 2, 2, 2, 1, 1, 2, 0, 0;
-table.push_back(x);
-x << 3, 3, 2, 2, 1, 1, 0, 0;
-table.push_back(x);
-x << 4, 3, 2, 1, 0, 0, 0, 0;
-table.push_back(x);
-x << 5, 3, 2, 1, 0, 0, 0, 0;
-table.push_back(x);
-x << 4, 6, 2, 2, 1, 1, 0, 0;
-table.push_back(x);
+table.push_back({0, 1, 1, 1, 1, 1, 2, 3});
+table.push_back({1, 1, 1, 1, 1, 2, 3, 4});
+table.push_back({2, 2, 2, 1, 1, 2, 0, 0});
+table.push_back({3, 3, 2, 2, 1, 1, 0, 0});
+table.push_back({4, 3, 2, 1, 0, 0, 0, 0});
+table.push_back({5, 3, 2, 1, 0, 0, 0, 0});
+table.push_back({4, 6, 2, 2, 1, 1, 0, 0});
 		
-metric::Tree<RecType, recMetric<double>> cTree(table);
+mtrc::space::tree::Tree<RecType, recMetric<double>> tree(table);
 ``` 
 
 #### Details

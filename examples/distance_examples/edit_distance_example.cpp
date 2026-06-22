@@ -6,10 +6,10 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 
-#include <vector>
-#include <iostream>
+#include "metric/metric/catalog.hpp"
 #include <chrono>
-#include "metric/distance.hpp"
+#include <iostream>
+#include <vector>
 
 int main()
 {
@@ -23,18 +23,22 @@ int main()
 	std::string str2 = "1000011001100110011011100";
 	std::string str3 = "Absolutly different string";
 
-	metric::Edit<std::string> distance;
+	mtrc::Edit<std::string> distance;
 
 	auto t1 = std::chrono::steady_clock::now();
 	auto result1 = distance(str1, str2);
 	auto t2 = std::chrono::steady_clock::now();
-	std::cout << "result for close strings: " << result1 << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000 << " ms)" << std::endl;
+	std::cout << "result for close strings: " << result1
+			  << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000
+			  << " ms)" << std::endl;
 	std::cout << "" << std::endl;
 
 	auto result2 = distance(str1, str3);
 	auto t3 = std::chrono::steady_clock::now();
-	std::cout << "result for different strings: " << result2 << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count()) / 1000 << " ms)" << std::endl;
+	std::cout << "result for different strings: " << result2
+			  << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count()) / 1000
+			  << " ms)" << std::endl;
 	std::cout << "" << std::endl;
-	
+
 	return 0;
 }

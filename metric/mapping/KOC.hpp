@@ -24,7 +24,7 @@ Copyright (c) 2019 Panda Team
 #define M_PI (3.14159265358979323846)
 #endif
 
-namespace metric {
+namespace mtrc {
 
 namespace KOC_details {
 
@@ -34,7 +34,7 @@ namespace KOC_details {
  *@brief
  *
  */
-template <typename RecType, class Graph = metric::Grid6, class Metric = metric::Euclidean<typename RecType::value_type>,
+template <typename RecType, class Graph = mtrc::Grid6, class Metric = mtrc::Euclidean<typename RecType::value_type>,
 		  class Distribution = std::uniform_real_distribution<typename RecType::value_type>>
 class KOC {
 	typedef typename RecType::value_type T;
@@ -43,9 +43,9 @@ class KOC {
 	/**
 	 * @brief Construct a new KOC object
 	 *
-	 * @param graph - pre created graph (with metric::Graph interface) over which SOM is being constructed. Default is
-	 * metric::Grid6 (hexagones grid).
-	 * @param metric - metric or distance being used for SOM training. Default is metric::Euclidean.
+	 * @param graph - pre created graph (with mtrc::Graph interface) over which SOM is being constructed. Default is
+	 * mtrc::Grid6 (hexagones grid).
+	 * @param metric - metric or distance being used for SOM training. Default is mtrc::Euclidean.
 	 * @param anomaly_sigma
 	 * @param s_learn_rate - start learning rate for SOM training. Shows how error can influence on the sample on the
 	 * first iterations of the training.
@@ -56,7 +56,7 @@ class KOC {
 	 */
 	KOC(const Graph &graph, const Metric &metric, double anomaly_sigma = 1.0, double start_learn_rate = 0.8,
 		double finish_learn_rate = 0.0, size_t iterations = 20, Distribution distribution = Distribution(-1, 1))
-		: som(graph, metric::Euclidean<double>(), start_learn_rate, finish_learn_rate, iterations, distribution),
+		: som(graph, mtrc::Euclidean<double>(), start_learn_rate, finish_learn_rate, iterations, distribution),
 		  metric(metric), anomaly_sigma(anomaly_sigma), iterations(iterations),
 		  random_seed(std::chrono::system_clock::now().time_since_epoch().count())
 	{
@@ -65,9 +65,9 @@ class KOC {
 	/**
 	 * @brief Construct a new KOC object
 	 *
-	 * @param graph - pre created graph (with metric::Graph interface) over which SOM is being constructed. Default is
-	 * metric::Grid6 (hexagones grid).
-	 * @param metric - metric or distance being used for SOM training. Default is metric::Euclidean.
+	 * @param graph - pre created graph (with mtrc::Graph interface) over which SOM is being constructed. Default is
+	 * mtrc::Grid6 (hexagones grid).
+	 * @param metric - metric or distance being used for SOM training. Default is mtrc::Euclidean.
 	 * @param anomaly_sigma
 	 * @param s_learn_rate - start learning rate for SOM training. Shows how error can influence on the sample on the
 	 * first iterations of the training.
@@ -85,7 +85,7 @@ class KOC {
 	KOC(const Graph &graph, const Metric &metric, double anomaly_sigma, double start_learn_rate,
 		double finish_learn_rate, size_t iterations, Distribution distribution, double neighborhood_start_size,
 		double neighborhood_range_decay, long long random_seed)
-		: som(graph, metric::Euclidean<double>(), start_learn_rate, finish_learn_rate, iterations, distribution,
+		: som(graph, mtrc::Euclidean<double>(), start_learn_rate, finish_learn_rate, iterations, distribution,
 			  neighborhood_start_size, neighborhood_range_decay, random_seed),
 		  metric(metric), anomaly_sigma(anomaly_sigma), iterations(iterations), random_seed(random_seed)
 	{
@@ -159,7 +159,7 @@ class KOC {
 	std::vector<T> nodes_std_deviations;
 
 	Metric metric;
-	SOM<RecType, Graph, metric::Euclidean<double>, Distribution> som;
+	SOM<RecType, Graph, mtrc::Euclidean<double>, Distribution> som;
 
 	/**
 	 * @brief
@@ -194,7 +194,7 @@ class KOC {
 
 //
 
-template <typename RecType, class Graph = metric::Grid6, class Metric = metric::Euclidean<typename RecType::value_type>,
+template <typename RecType, class Graph = mtrc::Grid6, class Metric = mtrc::Euclidean<typename RecType::value_type>,
 		  class Distribution = std::uniform_real_distribution<typename RecType::value_type>>
 struct KOC_factory {
 
@@ -253,7 +253,7 @@ struct KOC_factory {
 	 * of the SOM nodes.
 	 * @param neighborhood_start_size - number of neighbours of the checking node which weights (positions) will be
 	 * corrected while SOM training.
-	 * @param neigbour_range_decay - shows how distance from the checking node influence to weights (positions) of the
+	 * @param neighbor_range_decay - shows how distance from the checking node influence to weights (positions) of the
 	 * checking node neighbours while SOM training.
 	 * @param random_seed - the value used to initialize the random number generator, which is used for the initial
 	 * distribution of weight (positions).
@@ -278,7 +278,7 @@ struct KOC_factory {
 	 * of the SOM nodes.
 	 * @param neighborhood_start_size - number of neighbours of the checking node which weights (positions) will be
 	 * corrected while SOM training.
-	 * @param neigbour_range_decay - shows how distance from the checking node influence to weights (positions) of the
+	 * @param neighbor_range_decay - shows how distance from the checking node influence to weights (positions) of the
 	 * checking node neighbours while SOM training.
 	 * @param random_seed - the value used to initialize the random number generator, which is used for the initial
 	 * distribution of weight (positions).
@@ -312,7 +312,7 @@ struct KOC_factory {
 	double anomaly_sigma;
 };
 
-} // namespace metric
+} // namespace mtrc
 
 #include "KOC.cpp"
 

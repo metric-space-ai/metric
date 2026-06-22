@@ -15,7 +15,7 @@ Copyright (c) 2018 Panda Team
 #include <variant> // for DimensionSet
 #include <vector>
 
-namespace metric {
+namespace mtrc {
 
 /**
  * @class Dimension
@@ -64,6 +64,6 @@ inline auto make_dimension(Metric &&m, Accessor a) -> Dimension<Metric, Accessor
 	return Dimension<Metric, Accessor>(a, m);
 }
 
-} // namespace metric
+} // namespace mtrc
 
 #endif // DIMENSION_HPP

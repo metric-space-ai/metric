@@ -1,7 +1,7 @@
 # Process Curve External Gallery
 
 This page records the first licensed external data slices for the process-curve
-hero workflow.
+application workflow.
 
 ![Power demand process-curve gallery](assets/process-curve-power-demand-gallery.svg)
 
@@ -27,7 +27,7 @@ The checked-in sample comes from the Figshare dataset:
 
 The Figshare metadata provides a stable source archive id (`48036268`) and MD5
 (`4740e64e7a3242773b4570c1537095c1`). The full source archive is about 94 MB
-and is intentionally not vendored.
+and is intentionally not checked into the repository.
 
 ## Repository Slice
 
@@ -124,7 +124,7 @@ Interpretation:
   process-window in its own domain slice
 - the alignment metric recovers the expected source-window role for all 16
   queries across the two domains
-- the padded vector baseline misses the expected role for all 16 queries
+- the padded vector comparison misses the expected role for all 16 queries
   because it treats shorter curves as point vectors padded with zeros
 - dense cost is explicit: each 24-window domain materializes 24 x 24
   source-window distance evaluations

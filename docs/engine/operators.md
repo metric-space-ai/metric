@@ -1,55 +1,34 @@
-# Engine Operators
+# Stats And Modify Components
 
-Operators are implementation-level functions that compute on spaces or representations.
+The old word "operator" is too generic for METRIC's public language. New code
+is organized by what happens to the finite metric space.
 
-The operator layer is allowed to use algorithmic names because it is not the first user-facing vocabulary. Intent APIs call into operators after strategies and runtime policies select an execution path.
+## Stats
 
-## C++ Operators
+`mtrc::stats` investigates an existing space without changing its source
+records or metric.
 
-The current C++ engine operators include:
+- `mtrc::stats::search`: neighbor and range queries
+- `mtrc::stats::sample`: sampling and metric-space walks
+- `mtrc::stats::properties`: entropy, density, intrinsic dimension, summaries
+- `mtrc::stats::correlate`: dependence or correlation between paired spaces
+- `mtrc::stats::structural_analysis`: groups, outliers, representatives
 
-- `metric::operators::knn`
-- `metric::operators::range`
-- `metric::operators::kmedoids`
-- `metric::operators::dbscan`
-- `metric::operators::affinity_propagation`
-- `metric::operators::entropy`
-- `metric::operators::mgc`
-- graph construction, diagnostics, symmetrization, and out-degree pruning helpers through `<metric/operators/sparsify.hpp>`
+Entropy is a `stats::properties` computation over one finite metric space. MGC
+is a `stats::correlate` implementation for dependence between two aligned
+finite metric spaces. Neither is a record metric.
 
-They return named result objects:
+## Modify
 
-- `NeighborSet`
-- `ClusteringResult`
-- `EntropyResult`
-- `CorrelationResult`
+`mtrc::modify` constructs a changed or derived finite metric space.
 
-The clustering operators accept a `MetricSpace` directly and, where promoted, engine distance providers such as
-`MatrixCache`. Materialized provider overloads keep all result IDs as stable `RecordId` values while reporting
-`representation == "distance_provider"`.
+- `mtrc::modify::represent`: representative spaces
+- `mtrc::modify::reduce`: thinning or coarsening finite spaces
+- `mtrc::modify::expand`: domain-supported interpolation or expansion
+- `mtrc::modify::resample`: sampling correction and denoise-style workflows
+- `mtrc::modify::map`: maps into derived spaces, including coordinate spaces
+- `mtrc::modify::dynamics`: diffusion and evolution over a finite space
+- `mtrc::modify::compose`: inspectable composed workflows
 
-The graph sparsification header provides the planned operator include path for exact graph construction helpers,
-`symmetrize_graph`, `prune_graph_out_degree`, and graph diagnostics. Existing code can continue including
-`<metric/operators.hpp>`; new engine-oriented code can include `<metric/operators/sparsify.hpp>` or the
-`<metric/engine.hpp>` umbrella.
-
-## Python Operators
-
-The current Python operator layer includes:
-
-- nearest and range helpers
-- exact kNN and radius graph construction
-- graph degree, connectivity, and stretch diagnostics
-- graph symmetrization and out-degree pruning
-- grouping helpers
-- representative selection helpers
-- medoid and separated-representative helpers
-- intrinsic-dimension diagnostics
-- structure diagnostics
-- cross-space comparison helpers
-
-Python operators return dataclasses such as `ClusteringResult`, `GraphConstructionResult`, `RepresentativeSet`, `StructureDescription`, and `CorrelationResult`.
-
-## Compatibility
-
-Older tuple-returning and class-specific APIs remain compatibility surfaces. New promoted examples should prefer named result objects so outputs can carry metadata and compose with other engine layers.
+Concrete implementations such as MGC, DBSCAN, PCFA, or PHATE-AE are named after
+the owning component is clear.

@@ -12,7 +12,7 @@
 #include "Normal.hpp"
 #include <cassert>
 
-namespace metric {
+namespace mtrc {
 
 inline Normal::Normal() : _generator(std::random_device{}()) {}
 
@@ -233,5 +233,5 @@ template <typename T> T erfinv(T z)
 	return s * erfinv_imp(p, q);
 }
 
-} // namespace metric
+} // namespace mtrc
 #endif

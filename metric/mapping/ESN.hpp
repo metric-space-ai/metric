@@ -9,14 +9,14 @@ Copyright (c) 2019 Panda Team
 #ifndef _METRIC_MAPPING_ESN_HPP
 #define _METRIC_MAPPING_ESN_HPP
 
-#include <blaze/Blaze.h>
+#include <metric/numeric.hpp>
 
 #include "PCFA.hpp" // this is for metafunctions determine_container_type and determine_container_type
 // TODO move them to some single common unit and include it instead of PCFA.hpp !!
 
 #include <tuple>
 
-namespace metric {
+namespace mtrc {
 
 /**
  * @class ESN
@@ -61,8 +61,9 @@ template <typename RecType, typename Metric> class ESN {
 	 * @param washout
 	 * @param beta
 	 */
-	ESN(const blaze::DynamicMatrix<value_type> &W_in_, const blaze::CompressedMatrix<value_type> &W_,
-		const blaze::DynamicMatrix<value_type> &W_out_,
+	ESN(const mtrc::numeric::DynamicMatrix<value_type> &W_in_,
+		const mtrc::numeric::CompressedMatrix<value_type> &W_,
+		const mtrc::numeric::DynamicMatrix<value_type> &W_out_,
 		const value_type alpha_ = 0.5, // leak rate
 		const size_t washout_ = 1,	   // number of samples excluded from output for washout
 		const value_type beta_ = 0.5   // ridge solver metaparameter
@@ -74,7 +75,8 @@ template <typename RecType, typename Metric> class ESN {
 	 * @param Samples
 	 * @param Target
 	 */
-	void train(const blaze::DynamicMatrix<value_type> &Samples, const blaze::DynamicMatrix<value_type> &Target);
+	void train(const mtrc::numeric::DynamicMatrix<value_type> &Samples,
+			   const mtrc::numeric::DynamicMatrix<value_type> &Target);
 
 	/**
 	 * @brief
@@ -90,7 +92,7 @@ template <typename RecType, typename Metric> class ESN {
 	 * @param Samples
 	 * @return
 	 */
-	blaze::DynamicMatrix<value_type> predict(const blaze::DynamicMatrix<value_type> &Samples);
+	mtrc::numeric::DynamicMatrix<value_type> predict(const mtrc::numeric::DynamicMatrix<value_type> &Samples);
 
 	/**
 	 * @brief
@@ -111,14 +113,14 @@ template <typename RecType, typename Metric> class ESN {
 	 * @brief get_components - export all components of NN needed
 	 * @return
 	 */
-	std::tuple<blaze::DynamicMatrix<value_type>, blaze::CompressedMatrix<value_type>, blaze::DynamicMatrix<value_type>,
-			   value_type, size_t, value_type>
+	std::tuple<mtrc::numeric::DynamicMatrix<value_type>, mtrc::numeric::CompressedMatrix<value_type>,
+			   mtrc::numeric::DynamicMatrix<value_type>, value_type, size_t, value_type>
 	get_components();
 
   private:
-	blaze::DynamicMatrix<value_type> W_in;
-	blaze::CompressedMatrix<value_type> W;
-	blaze::DynamicMatrix<value_type> W_out = blaze::DynamicMatrix<value_type>(0, 0);
+	mtrc::numeric::DynamicMatrix<value_type> W_in;
+	mtrc::numeric::CompressedMatrix<value_type> W;
+	mtrc::numeric::DynamicMatrix<value_type> W_out = mtrc::numeric::DynamicMatrix<value_type>(0, 0);
 	bool trained = false;
 	value_type alpha = 0.5;
 	value_type beta = 0.5;
@@ -127,19 +129,19 @@ template <typename RecType, typename Metric> class ESN {
 
 	void create_W(const size_t w_size, const value_type w_connections, const value_type w_sr);
 
-	blaze::DynamicMatrix<value_type> vector_to_blaze(const std::vector<RecType> &In);
+	mtrc::numeric::DynamicMatrix<value_type> records_to_matrix(const std::vector<RecType> &In);
 
 	template <typename R>
 	typename std::enable_if<determine_container_type<R>::code == 1, std::vector<R>>::type
-	blaze2RecType(const blaze::DynamicMatrix<typename ESN<R, Metric>::value_type> &In);
+	matrix_to_records(const mtrc::numeric::DynamicMatrix<typename ESN<R, Metric>::value_type> &In);
 
 	template <typename R>
 	typename std::enable_if<determine_container_type<R>::code == 2, std::vector<R>>::type
-	blaze2RecType(const blaze::DynamicMatrix<typename ESN<R, Metric>::value_type> &In);
+	matrix_to_records(const mtrc::numeric::DynamicMatrix<typename ESN<R, Metric>::value_type> &In);
 
 }; // class ESN
 
-} // namespace metric
+} // namespace mtrc
 
 #include "ESN.cpp"
 

@@ -7,24 +7,24 @@ Copyright (c) 2018 M.Welsch
 */
 #include "affprop.hpp"
 
-#include "../distance/k-related/Standards.hpp"
-#include <blaze/Math.h>
+#include <metric/metric/catalog/vector/Standards.hpp>
+#include <metric/numeric/Math.h>
 
 #include <cassert>
 #include <string>
 #include <tuple>
 #include <vector>
 
-namespace metric {
+namespace mtrc {
 
 namespace affprop_details {
 
 // build similarity matrix
 template <typename T, typename DistanceMatrix>
-blaze::SymmetricMatrix<blaze::DynamicMatrix<T, blaze::rowMajor>> similarity_matrix(const DistanceMatrix &DM,
-																				   const T preference)
+mtrc::numeric::SymmetricMatrix<mtrc::numeric::DynamicMatrix<T, mtrc::numeric::rowMajor>>
+similarity_matrix(const DistanceMatrix &DM, const T preference)
 {
-	blaze::SymmetricMatrix<blaze::DynamicMatrix<T, blaze::rowMajor>> SM(DM.size());
+	mtrc::numeric::SymmetricMatrix<mtrc::numeric::DynamicMatrix<T, mtrc::numeric::rowMajor>> SM(DM.size());
 	T pmin = 0;
 	T pmax = -2e21;
 	for (std::size_t i = 0; i < DM.size(); ++i) {
@@ -45,8 +45,8 @@ blaze::SymmetricMatrix<blaze::DynamicMatrix<T, blaze::rowMajor>> similarity_matr
 }
 
 template <typename T, typename SymetricMatrix>
-T update_responsibilities(blaze::DynamicMatrix<T, blaze::rowMajor> &R, const SymetricMatrix &S,
-						  const blaze::DynamicMatrix<T, blaze::rowMajor> &A, const T &damp)
+T update_responsibilities(mtrc::numeric::DynamicMatrix<T, mtrc::numeric::rowMajor> &R, const SymetricMatrix &S,
+						  const mtrc::numeric::DynamicMatrix<T, mtrc::numeric::rowMajor> &A, const T &damp)
 {
 	auto n = S.rows();
 	T maxabs = 0;
@@ -219,10 +219,10 @@ auto AffProp<RecType, Metric>::operator()(const Matrix<RecType, Metric> &DM) con
 	assert(0 <= preference && preference < 1); // preference must be between 0 and 1.
 
 	// build similarity matrix with preference
-	auto S = metric::affprop_details::similarity_matrix(DM, preference);
+	auto S = mtrc::affprop_details::similarity_matrix(DM, preference);
 	// initialize messages
-	blaze::DynamicMatrix<Value, blaze::rowMajor> R(n, n);
-	blaze::DynamicMatrix<Value, blaze::rowMajor> A(n, n);
+	mtrc::numeric::DynamicMatrix<Value, mtrc::numeric::rowMajor> R(n, n);
+	mtrc::numeric::DynamicMatrix<Value, mtrc::numeric::rowMajor> A(n, n);
 	// main loop
 	int t = 0;
 	bool isConverged = false;
@@ -230,18 +230,18 @@ auto AffProp<RecType, Metric>::operator()(const Matrix<RecType, Metric> &DM) con
 		t += 1;
 
 		// compute new messages
-		Value maxabsR = metric::affprop_details::update_responsibilities(R, S, A, damp);
-		Value maxabsA = metric::affprop_details::update_availabilities(A, R, damp);
+		Value maxabsR = mtrc::affprop_details::update_responsibilities(R, S, A, damp);
+		Value maxabsA = mtrc::affprop_details::update_availabilities(A, R, damp);
 
 		// determine convergence
 		Value ch = std::max(maxabsA, maxabsR) / (1 - damp);
 		isConverged = (ch < tol);
 	}
 	// extract exemplars and assignments
-	auto exemplars = metric::affprop_details::extract_exemplars<Value>(A, R);
-	auto [assignments, counts] = metric::affprop_details::get_assignments<Value>(S, exemplars);
+	auto exemplars = mtrc::affprop_details::extract_exemplars<Value>(A, R);
+	auto [assignments, counts] = mtrc::affprop_details::get_assignments<Value>(S, exemplars);
 
 	return {assignments, exemplars, counts};
 }
 
-} // namespace metric
+} // namespace mtrc

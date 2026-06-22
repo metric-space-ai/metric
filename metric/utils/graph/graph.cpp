@@ -9,9 +9,9 @@
 #include <algorithm>
 #include <unordered_map>
 
-namespace metric {
+namespace mtrc {
 
-// Graph based on blaze-lib
+// Graph based on numeric-lib
 
 template <typename WeightType, bool isDense, bool isSymmetric>
 Graph<WeightType, isDense, isSymmetric>::Graph(size_t nodesNumber) : nodesNumber(nodesNumber), valid(false)
@@ -263,7 +263,7 @@ auto Graph<WeightType, isDense, isSymmetric>::get_matrix() const -> const
 
 // end of base class implementation
 
-// Grid4_blaze
+// Grid4_numeric
 
 inline Grid4::Grid4(size_t nodesNumber) : Graph<>(nodesNumber)
 {
@@ -319,7 +319,7 @@ inline void Grid4::construct(size_t width, size_t height)
 	valid = true;
 }
 
-// Grig6_blaze
+// Grig6_numeric
 
 inline Grid6::Grid6(size_t nodesNumber) : Graph<>(nodesNumber)
 {
@@ -403,7 +403,7 @@ inline void Grid6::construct(size_t width, size_t height)
 	buildEdges(edgesPairs);
 }
 
-// Grid8_blaze
+// Grid8_numeric
 
 inline Grid8::Grid8(size_t nodesNumber) : Graph<>(nodesNumber)
 {
@@ -459,7 +459,7 @@ inline void Grid8::construct(size_t width, size_t height)
 	valid = true;
 }
 
-// Paley_blaze
+// Paley_numeric
 
 inline Paley::Paley(size_t nodesNumber) : Graph<>(nodesNumber)
 {
@@ -489,7 +489,7 @@ inline Paley::Paley(size_t nodesNumber) : Graph<>(nodesNumber)
 	valid = true;
 }
 
-// LPS_blaze
+// LPS_numeric
 
 inline LPS::LPS(size_t nodesNumber) : Graph<>(nodesNumber)
 {
@@ -557,7 +557,7 @@ inline bool LPS::miller_rabin_pass(const size_t a, const size_t s, const size_t 
 	return p == nodesNumber - 1;
 }
 
-// Margulis_blaze
+// Margulis_numeric
 
 inline Margulis::Margulis(size_t nodesNumber) : Graph<>(nodesNumber)
 {
@@ -590,7 +590,8 @@ RandomUniform<WType, isDense>::RandomUniform(size_t nNodes, WType lower_bound, W
 {
 	// TODO implement
 
-	using MType = typename std::conditional<isDense, blaze::DynamicMatrix<WType>, blaze::CompressedMatrix<WType>>::type;
+	using MType = typename std::conditional<isDense, mtrc::numeric::DynamicMatrix<WType>,
+											mtrc::numeric::CompressedMatrix<WType>>::type;
 
 	this->matrix = MType(nNodes, nNodes);
 	if (nConnections > 0)
@@ -602,8 +603,8 @@ RandomUniform<WType, isDense>::RandomUniform(size_t nNodes, WType lower_bound, W
 }
 
 template <typename WType, bool isDense> //
-void RandomUniform<WType, isDense>::fill(blaze::DynamicMatrix<WType> &matrix, WType lower_bound, WType upper_bound,
-										 int nConnections)
+void RandomUniform<WType, isDense>::fill(mtrc::numeric::DynamicMatrix<WType> &matrix, WType lower_bound,
+										 WType upper_bound, int nConnections)
 {
 	std::default_random_engine rgen;
 	size_t nNodes = matrix.columns();
@@ -625,8 +626,8 @@ void RandomUniform<WType, isDense>::fill(blaze::DynamicMatrix<WType> &matrix, WT
 }
 
 template <typename WType, bool isDense> // optimized overload for compressed matrix
-void RandomUniform<WType, isDense>::fill(blaze::CompressedMatrix<WType> &matrix, WType lower_bound, WType upper_bound,
-										 int nConnections)
+void RandomUniform<WType, isDense>::fill(mtrc::numeric::CompressedMatrix<WType> &matrix, WType lower_bound,
+										 WType upper_bound, int nConnections)
 {
 	std::default_random_engine rgen;
 	size_t nNodes = matrix.columns();
@@ -646,7 +647,7 @@ void RandomUniform<WType, isDense>::fill(blaze::CompressedMatrix<WType> &matrix,
 	}
 }
 
-template <typename WType, bool isDense> // total fullfilling for both dense and sparse matrices
+template <typename WType, bool isDense> // total fulfilling for both dense and sparse matrices
 template <typename MType>
 void RandomUniform<WType, isDense>::fill(MType &matrix, WType lower_bound, WType upper_bound)
 {
@@ -663,28 +664,31 @@ void RandomUniform<WType, isDense>::fill(MType &matrix, WType lower_bound, WType
 
 // KNN-Graph
 
-// Graph factory based on Blaze matrix of 4 allowed types
+// Graph factory based on Numeric matrix of 4 allowed types
 
-template <class ValueType> Graph<ValueType, false, false> make_graph(blaze::CompressedMatrix<ValueType> &&matrix)
+template <class ValueType>
+Graph<ValueType, false, false> make_graph(mtrc::numeric::CompressedMatrix<ValueType> &&matrix)
 {
 	return Graph<ValueType, false, false>(std::move(matrix));
 }
 
 template <class ValueType>
-Graph<ValueType, false, true> make_graph(blaze::SymmetricMatrix<blaze::CompressedMatrix<ValueType>> &&matrix)
+Graph<ValueType, false, true>
+make_graph(mtrc::numeric::SymmetricMatrix<mtrc::numeric::CompressedMatrix<ValueType>> &&matrix)
 {
 	return Graph<ValueType, false, true>(std::move(matrix));
 }
 
-template <class ValueType> Graph<ValueType, true, false> make_graph(blaze::DynamicMatrix<ValueType> &&matrix)
+template <class ValueType> Graph<ValueType, true, false> make_graph(mtrc::numeric::DynamicMatrix<ValueType> &&matrix)
 {
 	return Graph<ValueType, true, false>(std::move(matrix));
 }
 
 template <class ValueType>
-Graph<ValueType, true, true> make_graph(blaze::SymmetricMatrix<blaze::DynamicMatrix<ValueType>> &&matrix)
+Graph<ValueType, true, true>
+make_graph(mtrc::numeric::SymmetricMatrix<mtrc::numeric::DynamicMatrix<ValueType>> &&matrix)
 {
 	return Graph<ValueType, true, true>(std::move(matrix));
 }
 
-} // end namespace metric
+} // end namespace mtrc

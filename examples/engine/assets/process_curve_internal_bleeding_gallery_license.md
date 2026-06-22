@@ -31,4 +31,4 @@ Derivation:
 - values are copied without smoothing or rescaling
 - labels identify the source window role for gallery narration only
 
-The full 94 MB source archive is intentionally not vendored in this repository.
+The full 94 MB source archive is intentionally not checked into this repository.

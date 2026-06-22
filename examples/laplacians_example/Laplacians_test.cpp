@@ -1,10 +1,10 @@
 /*
-                This Source Code Form is subject to the terms of the Mozilla
+				This Source Code Form is subject to the terms of the Mozilla
    Public License, v. 2.0. If a copy of the MPL was not distributed with this
-                file, You can obtain one at http://mozilla.org/MPL/2.0/.
+				file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-                Copyright (c) 2019 Panda Team
-                Copyright (c) 2019 Oleg Popov
+				Copyright (c) 2019 Panda Team
+				Copyright (c) 2019 Oleg Popov
 */
 /*
 Laplacians is a package containing graph algorithms, with an emphasis on tasks
@@ -30,13 +30,13 @@ void sparsification_test();
 
 int main()
 {
-    pcg_tests();
+	pcg_tests();
 
-    IJVtests();
+	IJVtests();
 
-    CollectionTest();
+	CollectionTest();
 
-    CollectionFunctionTest();
+	CollectionFunctionTest();
 
-    sparsification_test();
+	sparsification_test();
 }

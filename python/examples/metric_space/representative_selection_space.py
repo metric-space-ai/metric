@@ -1,3 +1,12 @@
+"""Representative selection over a transport space — adapter boundary demo.
+
+Representative selection (farthest-first, medoid, separated, coverage) is a
+METRIC algorithm. In the adapter-only Python package these helpers stay
+importable as a stable vocabulary but raise StrategyUnavailableError until the
+native C++ binding is exposed. The Python layer still adapts the records and
+exposes the explicit distances the native selectors consume.
+"""
+
 from metric import (
     Space,
     coverage_representative_indices,
@@ -9,6 +18,7 @@ from metric import (
     separated_representative_indices,
     separated_representatives,
 )
+from metric.exceptions import StrategyUnavailableError
 
 
 def cumulative_transport_distance(lhs, rhs):
@@ -25,6 +35,15 @@ def cumulative_transport_distance(lhs, rhs):
     return distance
 
 
+def requires_native(label, call):
+    try:
+        call()
+    except StrategyUnavailableError:
+        print(f"{label}: requires native C++ binding")
+    else:
+        raise AssertionError(f"{label} should require a native binding")
+
+
 def main():
     names = ["left-edge", "one-step", "right-edge", "split-left", "center"]
     records = [
@@ -36,30 +55,22 @@ def main():
     ]
 
     space = Space(records, cumulative_transport_distance)
-    selected = representative_indices(records, cumulative_transport_distance, k=3)
-    selected_records = representatives(records, cumulative_transport_distance, k=3)
-    center = medoid_index(records, cumulative_transport_distance)
-    center_record = medoid(records, cumulative_transport_distance)
-    separated = separated_representative_indices(records, cumulative_transport_distance, minimum_distance=1.5)
-    separated_records = separated_representatives(records, cumulative_transport_distance, minimum_distance=1.5)
-    covered = coverage_representative_indices(records, cumulative_transport_distance, radius=1.5)
-    covered_records = coverage_representatives(records, cumulative_transport_distance, radius=1.5)
 
-    assert selected == [0, 2, 4]
-    assert selected_records == [records[0], records[2], records[4]]
-    assert center == 1
-    assert center_record == records[1]
-    assert separated == [0, 2, 4]
-    assert separated_records == [records[0], records[2], records[4]]
-    assert covered == [0, 2]
-    assert covered_records == [records[0], records[2]]
-    assert space.distance(selected[0], selected[1]) == 3.0
+    # Adapter surface: explicit distances over a caller-provided metric.
+    assert space.distance(0, 2) == 3.0
+    print("records =", ", ".join(names))
+    print("distance(left-edge, right-edge) =", space.distance(0, 2))
 
-    print("representative histograms =", ", ".join(names[index] for index in selected))
-    print("medoid histogram =", names[center])
-    print("separated histograms =", ", ".join(names[index] for index in separated))
-    print("radius-cover histograms =", ", ".join(names[index] for index in covered))
-    print("farthest seed distance =", space.distance(selected[0], selected[1]))
+    # Native boundary: every representative selector requires the C++ binding.
+    metric = cumulative_transport_distance
+    requires_native("representative_indices", lambda: representative_indices(records, metric, k=3))
+    requires_native("representatives", lambda: representatives(records, metric, k=3))
+    requires_native("medoid_index", lambda: medoid_index(records, metric))
+    requires_native("medoid", lambda: medoid(records, metric))
+    requires_native("separated_representative_indices", lambda: separated_representative_indices(records, metric, 1.5))
+    requires_native("separated_representatives", lambda: separated_representatives(records, metric, 1.5))
+    requires_native("coverage_representative_indices", lambda: coverage_representative_indices(records, metric, 1.5))
+    requires_native("coverage_representatives", lambda: coverage_representatives(records, metric, 1.5))
 
 
 if __name__ == "__main__":

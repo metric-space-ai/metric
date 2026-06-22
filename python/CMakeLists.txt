@@ -71,20 +71,6 @@ if (NOT nlohmann_json_FOUND AND METRIC_PYTHON_FETCH_DEPS)
     set(METRIC_PYTHON_NLOHMANN_JSON_INCLUDE_DIR ${nlohmann_json_SOURCE_DIR}/include)
 endif ()
 
-find_package(blaze 3.8 QUIET)
-if (NOT blaze_FOUND AND METRIC_PYTHON_FETCH_DEPS)
-    FetchContent_Declare(
-        blaze
-        GIT_REPOSITORY https://bitbucket.org/blaze-lib/blaze.git
-        GIT_TAG v3.8
-        GIT_SHALLOW TRUE)
-    FetchContent_GetProperties(blaze)
-    if (NOT blaze_POPULATED)
-        FetchContent_Populate(blaze)
-    endif ()
-    set(METRIC_PYTHON_BLAZE_INCLUDE_DIR ${blaze_SOURCE_DIR})
-endif ()
-
 find_package(cereal QUIET)
 if (NOT cereal_FOUND AND METRIC_PYTHON_FETCH_DEPS)
     FetchContent_Declare(
@@ -113,12 +99,6 @@ if (METRIC_PYTHON_NLOHMANN_JSON_INCLUDE_DIR)
 endif ()
 if (TARGET nlohmann_json::nlohmann_json)
     target_link_libraries(base_python_module INTERFACE nlohmann_json::nlohmann_json)
-endif ()
-if (METRIC_PYTHON_BLAZE_INCLUDE_DIR)
-    target_include_directories(base_python_module INTERFACE ${METRIC_PYTHON_BLAZE_INCLUDE_DIR})
-endif ()
-if (TARGET blaze::blaze)
-    target_link_libraries(base_python_module INTERFACE blaze::blaze)
 endif ()
 if (METRIC_PYTHON_CEREAL_INCLUDE_DIR)
     target_include_directories(base_python_module INTERFACE ${METRIC_PYTHON_CEREAL_INCLUDE_DIR})

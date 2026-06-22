@@ -7,7 +7,7 @@ The edge tuple shape is `(source_index, target_index, distance)`. Self-loops are
 C++ shape:
 
 ```cpp
-#include <metric/operators.hpp>
+#include <metric/space/index/operators.hpp>
 
 #include <cstdlib>
 #include <vector>
@@ -21,17 +21,17 @@ struct AbsoluteDistance {
 
 std::vector<int> records = {0, 1, 2, 3, 4};
 
-auto knn_graph = metric::operators::exact_knn_graph(records, AbsoluteDistance{}, 1);
-auto radius_graph = metric::operators::exact_radius_graph(records, AbsoluteDistance{}, 1);
+auto knn_graph = mtrc::space::index::exact_knn_graph(records, AbsoluteDistance{}, 1);
+auto radius_graph = mtrc::space::index::exact_radius_graph(records, AbsoluteDistance{}, 1);
 
 auto knn_edges = knn_graph.edges;
 auto radius_edges = radius_graph.edges;
-auto connectivity_info = metric::operators::graph_connectivity_diagnostics(knn_graph);
-auto degree_info = metric::operators::graph_degree_diagnostics(knn_graph);
-auto undirected = metric::operators::symmetrize_graph(knn_graph, "union", "minimum_distance");
-auto stretch_info = metric::operators::graph_stretch_diagnostics(records, AbsoluteDistance{}, undirected);
-auto pruned = metric::operators::prune_graph_out_degree(
-    metric::operators::exact_knn_graph(records, AbsoluteDistance{}, 2),
+auto connectivity_info = mtrc::space::index::graph_connectivity_diagnostics(knn_graph);
+auto degree_info = mtrc::space::index::graph_degree_diagnostics(knn_graph);
+auto undirected = mtrc::space::index::symmetrize_graph(knn_graph, "union", "minimum_distance");
+auto stretch_info = mtrc::space::index::graph_stretch_diagnostics(records, AbsoluteDistance{}, undirected);
+auto pruned = mtrc::space::index::prune_graph_out_degree(
+    mtrc::space::index::exact_knn_graph(records, AbsoluteDistance{}, 2),
     1);
 ```
 
@@ -72,7 +72,7 @@ For `records = [0, 1, 2, 3, 4]`, the exact radius graph with radius `1` has dire
 (4, 3, 1)
 ```
 
-These helpers are exact because they evaluate the pairwise distances needed for every source record. The `*_edges` helpers remain available for callers that only need edge tuples. `metric::KNNGraph` remains an approximate compatibility representation and should not be used as evidence for exact graph construction unless its edge set is compared against dense pairwise distances for the fixture.
+These helpers are exact because they evaluate the pairwise distances needed for every source record. The `*_edges` helpers remain available for callers that only need edge tuples. `mtrc::KNNGraph` remains an approximate compatibility representation and should not be used as evidence for exact graph construction unless its edge set is compared against dense pairwise distances for the fixture.
 
 For `records = [0, 1, 2, 3, 4]`, symmetrizing the exact kNN graph with `k=1` and the `union` policy produces undirected edges:
 

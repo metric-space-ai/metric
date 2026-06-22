@@ -8,6 +8,7 @@ on:
       - "v*"
     paths:
       - ".github/workflows/python-core.yml"
+      - "scripts/check_python_wheel_smoke.py"
       - "python/**"
       - "metric/**"
   pull_request:
@@ -15,6 +16,7 @@ on:
       - master
     paths:
       - ".github/workflows/python-core.yml"
+      - "scripts/check_python_wheel_smoke.py"
       - "python/**"
       - "metric/**"
 
@@ -66,6 +68,13 @@ jobs:
         env:
           PYTHONDONTWRITEBYTECODE: "1"
         run: python -m unittest discover -s python/tests/core -v
+
+      - name: Run installed wheel smoke
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        shell: bash
+        env:
+          CMAKE_COMMON_VARIABLES: -DMETRIC_PYTHON_USE_BLAS=OFF
+        run: python scripts/check_python_wheel_smoke.py
 
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v4

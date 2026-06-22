@@ -29,7 +29,6 @@ Chebyshev = _optional_metric("Chebyshev")
 Euclidean = _optional_metric("Euclidean")
 Euclidean_thresholded = _optional_metric("Euclidean_thresholded")
 Manhattan = _optional_metric("Manhattan")
-Manhatten = _optional_metric("Manhatten")
 Minkowski = _optional_metric("Minkowski")
 P_norm = _optional_metric("P_norm")
 ThresholdedEuclidean = _optional_metric("ThresholdedEuclidean")
@@ -41,7 +40,6 @@ def available():
         "Euclidean": Euclidean,
         "Euclidean_thresholded": Euclidean_thresholded,
         "Manhattan": Manhattan,
-        "Manhatten": Manhatten,
         "Minkowski": Minkowski,
         "Chebyshev": Chebyshev,
         "P_norm": P_norm,
@@ -60,7 +58,6 @@ __all__ = [
     "Euclidean_thresholded",
     "Metric",
     "Manhattan",
-    "Manhatten",
     "Minkowski",
     "Chebyshev",
     "P_norm",

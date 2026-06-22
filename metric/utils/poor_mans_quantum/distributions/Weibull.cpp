@@ -13,7 +13,7 @@
 #include <random>
 #include <vector>
 
-namespace metric {
+namespace mtrc {
 
 inline Weibull::Weibull() : _generator(std::random_device{}()) {}
 
@@ -367,5 +367,5 @@ inline std::tuple<float, float> weibull_fit(const std::vector<float> &inputData)
 	return {std::exp((range * muHat) + maxx), 1 / (range * sigmahat)};
 }
 
-} // end namespace metric
+} // end namespace mtrc
 #endif // header guard

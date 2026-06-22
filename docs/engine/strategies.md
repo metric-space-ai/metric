@@ -1,73 +1,20 @@
-# Engine Strategies
+# Implementation Choices
 
-Strategies select how an intent is executed.
+METRIC does not treat strategy names as the framework language. Strategy or
+algorithm names are Level-3 implementation choices inside a Level-2 component.
 
-```text
-Intent + Strategy -> Operator + Representation
-```
+Examples:
 
-Algorithm names belong at this layer. A user asks to find groups; `k_medoids` or `DBSCAN` is the strategy.
+- `mtrc::stats::search::brute_force`
+- `mtrc::stats::search::distance_table`
+- `mtrc::stats::search::cover_tree`
+- `mtrc::stats::search::knn_graph`
+- `mtrc::stats::structural_analysis::k_medoids_options`
+- `mtrc::stats::structural_analysis::dbscan_options`
+- `mtrc::stats::structural_analysis::affinity_propagation_options`
+- `mtrc::stats::correlate::mgc_options`
+- `mtrc::space::select::farthest_first`
 
-## C++ Strategies
-
-The current promoted C++ strategy objects include:
-
-- `metric::strategies::brute_force`
-- `metric::strategies::matrix_cache`
-- `metric::strategies::cover_tree`
-- `metric::strategies::knn_graph`
-- `metric::strategies::k_medoids`
-- `metric::strategies::dbscan`
-- `metric::strategies::affinity_propagation`
-- `metric::strategies::farthest_first`
-- `metric::strategies::mgc`
-- `metric::strategies::pcfa`
-
-The current C++ roadmap strategy objects include:
-
-- `metric::strategies::som`
-- `metric::strategies::koc`
-- `metric::strategies::dspcc`
-
-They validate strategy parameters and raise clear `std::invalid_argument`
-messages from the engine reduction intent until deterministic mapping
-contracts, diagnostics, and CI-backed examples are promoted.
-
-Search strategies also provide the promoted representation-selection vocabulary.
-`metric::representations::make(space, strategy)` materializes:
-
-- `brute_force` as an implicit distance provider
-- `matrix_cache` as a matrix cache
-- `cover_tree` as a cover-tree index
-- `knn_graph(k)` as a kNN graph index
-
-## Python Strategies
-
-The current Python strategy objects include:
-
-- `MDS`
-- `ClassicMDS`
-- `KMedoids`
-- `DBSCAN`
-- `FarthestFirst`
-- `DistanceProfileCorrelation`
-
-`MDS` and `ClassicMDS` execute the promoted classical-MDS embedding path.
-`DiffusionEmbedding`, `PCFA`, `SOM`, `KOC`, `DSPCC`, and `PhateAE` are also importable from
-`metric.strategies` as roadmap vocabulary, but Python intent methods raise
-`StrategyUnavailableError` for those strategies until deterministic fixtures,
-diagnostics, and CI-backed result contracts are promoted.
-
-Python strategy classes are not exported from the top-level `metric` package. Import them from `metric.strategies` so algorithm names stay in the strategy layer.
-
-## Promotion Rule
-
-A strategy should be promoted only when it has:
-
-- deterministic fixtures or documented stochastic controls
-- named result objects
-- examples that use the intent API
-- CI coverage
-- documented assumptions and failure modes
-
-This keeps the public engine from becoming a flat algorithm catalog.
+Use an implementation choice only after the metric-space question is already
+clear. For example, MGC is a concrete dependence test between paired finite
+metric spaces. It is not a metric.

@@ -8,7 +8,7 @@
 #ifndef _METRIC_UTILS_GRAPH_CONNECTED_COMPONENTS_CPP
 #define _METRIC_UTILS_GRAPH_CONNECTED_COMPONENTS_CPP
 #include "connected_components.hpp"
-namespace metric {
+namespace mtrc {
 namespace graph {
 
 template <typename Matrix> void Cracker<Matrix>::ProcessGraph(Matrix &tempGraph)
@@ -20,7 +20,7 @@ template <typename Matrix> void Cracker<Matrix>::ProcessGraph(Matrix &tempGraph)
 	for (size_t i = 0; i != tempGraph.rows(); ++i) {
 		if (ActiveVertices[i]) {
 			// An active vertex
-			auto neighbors = blaze::row(tempGraph, i);
+			auto neighbors = mtrc::numeric::row(tempGraph, i);
 
 			for (size_t j = 0; j != neighbors.size(); ++j) {
 				if ((ActiveVertices[j] && neighbors[j]) || (j == i)) {
@@ -44,7 +44,7 @@ template <typename Matrix> void Cracker<Matrix>::ProcessGraph(Matrix &tempGraph)
 		size_t minVertex = 0;
 		if (ActiveVertices[i]) {
 			// An active vertex
-			auto neighbors = blaze::row(directH, i);
+			auto neighbors = mtrc::numeric::row(directH, i);
 			size_t nbCount = neighborCount(i, neighbors);
 
 			for (size_t j = 0; j != neighbors.size(); ++j) {
@@ -103,7 +103,7 @@ template <typename Matrix> void Cracker<Matrix>::PropagateTrees()
 template <typename Matrix> void Cracker<Matrix>::ProcessTreeNode(const size_t node, std::vector<size_t> &Nodevector)
 {
 	Nodevector.push_back(node);
-	auto children = blaze::row(PropagationTrees, node);
+	auto children = mtrc::numeric::row(PropagationTrees, node);
 
 	for (size_t i = 0; i != children.size(); ++i)
 		if (children[i])
@@ -112,7 +112,8 @@ template <typename Matrix> void Cracker<Matrix>::ProcessTreeNode(const size_t no
 
 template <typename Matrix>
 size_t Cracker<Matrix>::neighborCount(
-	const size_t n, const blaze::DynamicVector<typename Matrix::ElementType, blaze::rowVector> &neighbors) const
+	const size_t n,
+	const mtrc::numeric::DynamicVector<typename Matrix::ElementType, mtrc::numeric::rowVector> &neighbors) const
 {
 	size_t count = 0;
 	for (size_t i = 0; i != neighbors.size(); ++i)
@@ -221,6 +222,6 @@ template <typename Matrix> inline std::vector<Matrix> largest_connected_componen
 }
 
 } // namespace graph
-} // namespace metric
+} // namespace mtrc
 
 #endif

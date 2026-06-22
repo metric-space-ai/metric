@@ -11,7 +11,7 @@ Copyright (c) 2019 Panda Team
 
 #include <vector>
 
-namespace metric {
+namespace mtrc {
 
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid
 // code dubbing
@@ -32,7 +32,7 @@ double mean(const std::vector<double> &data);
 
 double peak2ems(const std::vector<double> &data);
 
-} // namespace metric
+} // namespace mtrc
 
 #include "estimator_helpers.cpp"
 

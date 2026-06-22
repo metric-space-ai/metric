@@ -12,13 +12,13 @@ Copyright (c) 2019 Panda Team
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-#include "metric/3rdparty/DCT/fast-dct-lee.c"
+#include "metric/transform/detail/fast_dct_lee.hpp"
 
-namespace metric {
+namespace mtrc {
 
 // apply forward or invese DCT depending on bool flag
 
-template <class BlazeMatrix> bool apply_DCT(BlazeMatrix &Slices, bool inverse)
+template <class Matrix> bool apply_DCT(Matrix &Slices, bool inverse)
 {
 	bool return_value = true;
 	size_t n = 0;
@@ -108,6 +108,6 @@ bool apply_DCT_STL(OuterContainer<InnerContainer<ValueType, InnerAllocator>, Out
 	return return_value;
 }
 
-} // namespace metric
+} // namespace mtrc
 
 #endif

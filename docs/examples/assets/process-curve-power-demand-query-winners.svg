@@ -12,7 +12,7 @@
   <text x="260" y="214" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#172033">power_demand_044_anomaly_start_18485</text>
   <rect x="612" y="199" width="112" height="20" rx="4" fill="#bbf7d0"/>
   <text x="738" y="214" font-family="Arial, sans-serif" font-size="12" fill="#172033">324</text>
-  <text x="84" y="250" font-family="Arial, sans-serif" font-size="13" fill="#991b1b">Vector baseline miss</text>
+  <text x="84" y="250" font-family="Arial, sans-serif" font-size="13" fill="#991b1b">Vector comparison mismatch</text>
   <text x="260" y="250" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#172033">power_demand_045_pre_anomaly_23152</text>
   <rect x="612" y="235" width="206" height="20" rx="4" fill="#fecaca"/>
   <text x="832" y="250" font-family="Arial, sans-serif" font-size="12" fill="#172033">592.967</text>
@@ -24,7 +24,7 @@
   <text x="260" y="428" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#172033">power_demand_047_recovery_24077</text>
   <rect x="612" y="413" width="112" height="20" rx="4" fill="#bbf7d0"/>
   <text x="738" y="428" font-family="Arial, sans-serif" font-size="12" fill="#172033">324</text>
-  <text x="84" y="464" font-family="Arial, sans-serif" font-size="13" fill="#991b1b">Vector baseline miss</text>
+  <text x="84" y="464" font-family="Arial, sans-serif" font-size="13" fill="#991b1b">Vector comparison mismatch</text>
   <text x="260" y="464" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#172033">power_demand_045_pre_anomaly_23152</text>
   <rect x="612" y="449" width="212" height="20" rx="4" fill="#fecaca"/>
   <text x="838" y="464" font-family="Arial, sans-serif" font-size="12" fill="#172033">612.238</text>

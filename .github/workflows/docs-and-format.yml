@@ -19,6 +19,7 @@ on:
       - "docs/**"
       - "examples/README.md"
       - "examples/core/**"
+      - "metric/numeric/**"
       - "metric/concepts.hpp"
       - "metric/metric.hpp"
       - "metric/operators.hpp"
@@ -43,6 +44,8 @@ on:
       - "python/src/distance/**"
       - "python/tests/core/**"
       - "scripts/check_markdown_links.rb"
+      - "scripts/check_metric_numeric_guard.rb"
+      - "scripts/check_metric_numeric_seams.rb"
       - "scripts/check_revival_format.rb"
       - "scripts/check_revival_whitespace.rb"
       - "tests/README.md"
@@ -64,6 +67,7 @@ on:
       - "docs/**"
       - "examples/README.md"
       - "examples/core/**"
+      - "metric/numeric/**"
       - "metric/concepts.hpp"
       - "metric/metric.hpp"
       - "metric/operators.hpp"
@@ -88,6 +92,8 @@ on:
       - "python/src/distance/**"
       - "python/tests/core/**"
       - "scripts/check_markdown_links.rb"
+      - "scripts/check_metric_numeric_guard.rb"
+      - "scripts/check_metric_numeric_seams.rb"
       - "scripts/check_revival_format.rb"
       - "scripts/check_revival_whitespace.rb"
       - "tests/README.md"
@@ -109,6 +115,12 @@ jobs:
 
       - name: Check Markdown links
         run: ruby scripts/check_markdown_links.rb
+
+      - name: Check Metric numeric guard
+        run: ruby scripts/check_metric_numeric_guard.rb
+
+      - name: Check Metric numeric seam guard
+        run: ruby scripts/check_metric_numeric_seams.rb
 
       - name: Check workflow YAML
         run: ruby -ryaml -e 'Dir[".github/workflows/*.yml"].each { |path| YAML.load_file(path) }; puts "workflow YAML parsed"'

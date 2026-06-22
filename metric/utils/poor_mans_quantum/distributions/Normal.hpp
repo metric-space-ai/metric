@@ -12,7 +12,7 @@
 #include <random>
 #include <vector>
 
-namespace metric {
+namespace mtrc {
 
 /**
  * @class Normal
@@ -99,6 +99,6 @@ class Normal {
 	std::mt19937_64 _generator;
 };
 
-} // end namespace metric
+} // end namespace mtrc
 #include "Normal.cpp"
 #endif // header guard

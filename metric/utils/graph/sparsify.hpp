@@ -19,17 +19,17 @@ to implement dynamic graphs this way.
 https://github.com/danspielman/Laplacians.jl
 */
 
-#ifndef _METRIC_UTILS_GRAPH_SPRSIFY_HPP
-#define _METRIC_UTILS_GRAPH_SPRSIFY_HPP
+#ifndef METRIC_UTILS_GRAPH_SPARSIFY_HPP
+#define METRIC_UTILS_GRAPH_SPARSIFY_HPP
 
-#include "../solver/solver.hpp"
+#include <metric/solve/laplacian/solver.hpp>
 #include <algorithm>
-#include <blaze/Math.h>
 #include <chrono>
 #include <cmath>
+#include <metric/numeric/Math.h>
 #include <vector>
 
-namespace metric {
+namespace mtrc {
 /*
 	Just implements Spielman-Srivastava
 		as = sparsify(a; ep=0.5)
@@ -48,17 +48,18 @@ namespace metric {
  * @return
  */
 template <typename Tv>
-blaze::CompressedMatrix<Tv, blaze::columnMajor>
-sparsify_effective_resistance(const blaze::CompressedMatrix<Tv, blaze::columnMajor> &a, float ep = 0.3F,
-							  float matrixConcConst = 4.0F, float JLfac = 4.0F);
+mtrc::numeric::CompressedMatrix<Tv, mtrc::numeric::columnMajor>
+sparsify_effective_resistance(const mtrc::numeric::CompressedMatrix<Tv, mtrc::numeric::columnMajor> &a,
+							  float ep = 0.3F, float matrixConcConst = 4.0F, float JLfac = 4.0F);
 
 /**
  * Uses Kruskal's algorithm.
  */
 template <typename Tv>
-blaze::CompressedMatrix<Tv, blaze::columnMajor>
-sparsify_spanning_tree(const blaze::CompressedMatrix<Tv, blaze::columnMajor> &a, bool minimum = true);
-} // namespace metric
+mtrc::numeric::CompressedMatrix<Tv, mtrc::numeric::columnMajor>
+sparsify_spanning_tree(const mtrc::numeric::CompressedMatrix<Tv, mtrc::numeric::columnMajor> &a,
+					   bool minimum = true);
+} // namespace mtrc
 
 #include "sparsify.cpp"
-#endif
+#endif // METRIC_UTILS_GRAPH_SPARSIFY_HPP

@@ -18,7 +18,7 @@ This checklist defines the minimum release gates for METRIC.
 ## Required Gates
 
 - core C++ CI passes on Linux, macOS, and Windows
-- C++ install/export consumer passes with `find_package(panda_metric)`
+- C++ install/export consumer passes with `find_package(metric)`
 - Python wheel CI passes on supported CPython versions
 - PyPI publishing workflow builds and checks supported wheels before upload
 - release artifact workflow passes for the release tag
@@ -55,6 +55,8 @@ cmake --build --preset python-cmake --parallel 2
 Python wheel verification:
 
 ```shell
+python scripts/check_python_wheel_smoke.py
+
 python -m pip wheel ./python --no-deps -w wheelhouse
 python -m pip install --force-reinstall wheelhouse/*.whl
 for example in python/examples/metric_space/*.py python/examples/engine/*.py; do
@@ -70,6 +72,8 @@ Docs and formatting verification:
 ruby scripts/check_revival_whitespace.rb
 ruby scripts/check_revival_format.rb
 ruby scripts/check_markdown_links.rb
+ruby scripts/check_metric_numeric_guard.rb
+ruby scripts/check_metric_numeric_seams.rb
 ruby -ryaml -e 'Dir[".github/workflows/*.yml"].each { |path| YAML.load_file(path) }; puts "workflow YAML parsed"'
 git diff --check
 ```

@@ -7,13 +7,13 @@ Copyright (c) 2018 M.Welsch
 */
 #ifndef _METRIC_MAPPING_DBSCAN_CPP
 #define _METRIC_MAPPING_DBSCAN_CPP
-#include "../distance/k-related/Standards.hpp"
+#include <metric/metric/catalog/vector/Standards.hpp>
 #include <cassert>
 #include <deque>
 #include <numeric>
 #include <string>
 #include <vector>
-namespace metric {
+namespace mtrc {
 
 // --------------------------------------------------------------
 // DBSCAN
@@ -108,6 +108,6 @@ std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> dbscan(const Ma
 	return {assignments, seeds, counts};
 }
 
-} // namespace metric
+} // namespace mtrc
 
 #endif

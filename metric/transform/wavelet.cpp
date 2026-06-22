@@ -17,9 +17,9 @@ Copyright (c) 2019  Michael Welsch
 namespace wavelet {
 
 // template <typename T, bool SO>
-// void shrinkToFit(blaze::CompressedVector<T, SO>& mat)
+// void shrinkToFit(mtrc::numeric::CompressedVector<T, SO>& mat)
 //{
-//     blaze::CompressedVector<T>(~mat).swap(~mat);
+//     mtrc::numeric::CompressedVector<T>(~mat).swap(~mat);
 // } // moved to helper_functions.cpp
 
 // valid convolution
@@ -342,7 +342,7 @@ template <typename Container> Container waverec(std::deque<Container> const &sub
 
 template <typename Container>
 typename std::enable_if<
-	!blaze::IsMatrix<Container>::value,
+	!mtrc::numeric::IsMatrix<Container>::value,
 	std::tuple<std::vector<Container>, std::vector<Container>, std::vector<Container>, std::vector<Container>>>::type
 dwt2(std::vector<Container> const &x, int waveletType)
 // template <typename Container>
@@ -407,30 +407,30 @@ dwt2(std::vector<Container> const &x, int waveletType)
 
 template <typename Container2d>
 // std::tuple<Container2d, Container2d, Container2d, Container2d>
-typename std::enable_if<blaze::IsMatrix<Container2d>::value,
-						std::tuple<Container2d, Container2d, Container2d, Container2d>>::type
-dwt2(Container2d const &x, int waveletType)
+typename std::enable_if<mtrc::numeric::IsMatrix<Container2d>::value,
+						std::tuple<Container2d, Container2d, Container2d, Container2d>>::type dwt2(Container2d const &x,
+																								   int waveletType)
 {
 
-	using El =
-		typename Container2d::ElementType; // now we support only Blaze matrices, TODO add type traits, generalize!!
-	Container2d ll, lh, hl, hh, l, h;	   // TODO use sparsed if input is sparsed
+	using El = typename Container2d::ElementType; // currently supports Metric numeric matrices, TODO add type traits,
+												  // generalize!!
+	Container2d ll, lh, hl, hh, l, h;			  // TODO use sparsed if input is sparsed
 
 	for (size_t row_idx = 0; row_idx < x.rows(); ++row_idx) { // top-level split, by rows
-		blaze::DynamicVector<El, blaze::rowVector> curr_row = blaze::row(x, row_idx);
-		// auto row_split = dwt(blaze::row(x, row_idx), waveletType); // TODO check if it's possible!!
+		mtrc::numeric::DynamicVector<El, mtrc::numeric::rowVector> curr_row = mtrc::numeric::row(x, row_idx);
+		// auto row_split = dwt(mtrc::numeric::row(x, row_idx), waveletType); // TODO check if it's possible!!
 		auto row_split = dwt(curr_row, waveletType);
 		if (row_idx < 1) { // first iteration only
 			l = Container2d(x.rows(), std::get<0>(row_split).size());
 			h = Container2d(x.rows(), std::get<1>(row_split).size());
 		}
-		blaze::row(l, row_idx) = std::get<0>(row_split);
-		blaze::row(h, row_idx) = std::get<1>(row_split);
+		mtrc::numeric::row(l, row_idx) = std::get<0>(row_split);
+		mtrc::numeric::row(h, row_idx) = std::get<1>(row_split);
 	}
 
 	for (size_t col_idx = 0; col_idx < l.columns(); col_idx++) { // 2 lower level splits, by colmns
-		blaze::DynamicVector<El> l_col = blaze::column(l, col_idx);
-		blaze::DynamicVector<El> h_col = blaze::column(h, col_idx);
+		mtrc::numeric::DynamicVector<El> l_col = mtrc::numeric::column(l, col_idx);
+		mtrc::numeric::DynamicVector<El> h_col = mtrc::numeric::column(h, col_idx);
 		;
 		{
 			auto col_split_l = dwt(l_col, waveletType);
@@ -441,13 +441,13 @@ dwt2(Container2d const &x, int waveletType)
 				hl = Container2d(r_sz, l.columns());
 				hh = Container2d(r_sz, l.columns());
 			}
-			blaze::column(ll, col_idx) = std::get<0>(col_split_l);
-			blaze::column(lh, col_idx) = std::get<1>(col_split_l);
+			mtrc::numeric::column(ll, col_idx) = std::get<0>(col_split_l);
+			mtrc::numeric::column(lh, col_idx) = std::get<1>(col_split_l);
 		} // remove col_split_l from memory
 		{
 			auto col_split_h = dwt(h_col, waveletType);
-			blaze::column(hl, col_idx) = std::get<0>(col_split_h);
-			blaze::column(hh, col_idx) = std::get<1>(col_split_h);
+			mtrc::numeric::column(hl, col_idx) = std::get<0>(col_split_h);
+			mtrc::numeric::column(hh, col_idx) = std::get<1>(col_split_h);
 		}
 	}
 
@@ -525,7 +525,7 @@ Container2d idwt2(
 			int hx,
 			int wx)
 {
-	using El = typename Container2d::ElementType; // now we support only Blaze matrices, TODO add type traits,
+	using El = typename Container2d::ElementType; // currently supports Metric numeric matrices, TODO add type traits,
 generalize!!
 	// TODO use sparsed if input is sparsed
 
@@ -541,35 +541,34 @@ generalize!!
 	Container2d h;
 	for (size_t row_idx = 0; row_idx<ll.rows(); row_idx++) {
 
-		blaze::DynamicVector<El, blaze::rowVector> row_ll = blaze::row(ll, row_idx);
-		blaze::DynamicVector<El, blaze::rowVector> row_lh = blaze::row(lh, row_idx);
-		blaze::DynamicVector<El, blaze::rowVector> row_hl = blaze::row(hl, row_idx);
-		blaze::DynamicVector<El, blaze::rowVector> row_hh = blaze::row(hh, row_idx);
+		mtrc::numeric::DynamicVector<El, mtrc::numeric::rowVector> row_ll = mtrc::numeric::row(ll, row_idx);
+		mtrc::numeric::DynamicVector<El, mtrc::numeric::rowVector> row_lh = mtrc::numeric::row(lh, row_idx);
+		mtrc::numeric::DynamicVector<El, mtrc::numeric::rowVector> row_hl = mtrc::numeric::row(hl, row_idx);
+		mtrc::numeric::DynamicVector<El, mtrc::numeric::rowVector> row_hh = mtrc::numeric::row(hh, row_idx);
 
 		auto row_split_l = wavelet::idwt(row_ll, row_lh, waveletType, wx);
 		auto row_split_h = wavelet::idwt(row_hl, row_hh, waveletType, wx);
 		if (row_idx < 1) {
-			l = blaze::DynamicMatrix<El>(ll.rows(), row_split_l.size());
-			h = blaze::DynamicMatrix<El>(ll.rows(), row_split_h.size());
+			l = mtrc::numeric::DynamicMatrix<El>(ll.rows(), row_split_l.size());
+			h = mtrc::numeric::DynamicMatrix<El>(ll.rows(), row_split_h.size());
 		}
-		blaze::row(l, row_idx) = row_split_l;
-		blaze::row(h, row_idx) = row_split_h;
+		mtrc::numeric::row(l, row_idx) = row_split_l;
+		mtrc::numeric::row(h, row_idx) = row_split_h;
 	}
 
 	// second idwt
-	blaze::DynamicMatrix<El, blaze::columnMajor> out_col_major; // temporary, TODO replace using type trait
-	for (size_t col_idx = 0; col_idx<l.columns(); ++col_idx) {
-		blaze::DynamicVector<El> col_split_l (l.rows()); // column vector
-		blaze::DynamicVector<El> col_split_h (l.rows());
-		for (size_t row_idx = 0; row_idx<l.rows(); row_idx++) { // row-major to column-major, TODO optimize
-			col_split_l[row_idx] = l(row_idx, col_idx);
+	mtrc::numeric::DynamicMatrix<El, mtrc::numeric::columnMajor> out_col_major; // temporary, TODO replace using
+type trait for (size_t col_idx = 0; col_idx<l.columns(); ++col_idx) { mtrc::numeric::DynamicVector<El> col_split_l
+(l.rows()); // column vector mtrc::numeric::DynamicVector<El> col_split_h (l.rows()); for (size_t row_idx = 0;
+row_idx<l.rows(); row_idx++) { // row-major to column-major, TODO optimize col_split_l[row_idx] = l(row_idx, col_idx);
 			col_split_h[row_idx] = h(row_idx, col_idx);
 		}
 		auto curr_column = idwt(col_split_l, col_split_h, waveletType, hx);
 		if (col_idx < 1) {
-			out_col_major = blaze::DynamicMatrix<El, blaze::columnMajor> (curr_column.size(), l.columns());
+			out_col_major = mtrc::numeric::DynamicMatrix<El, mtrc::numeric::columnMajor> (curr_column.size(),
+l.columns());
 		}
-		blaze::column(out_col_major, col_idx) = curr_column;
+		mtrc::numeric::column(out_col_major, col_idx) = curr_column;
 	}
 	Container2d out = out_col_major; // col-major to row-major
 
@@ -580,12 +579,12 @@ generalize!!
 
 template <typename Container2d>
 // Container2d idwt2(
-typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type
+typename std::enable_if<mtrc::numeric::IsMatrix<Container2d>::value, Container2d>::type
 idwt2(Container2d const &ll, Container2d const &lh, Container2d const &hl, Container2d const &hh, int waveletType,
 	  int hx, int wx)
 {
-	using El =
-		typename Container2d::ElementType; // now we support only Blaze matrices, TODO add type traits, generalize!!
+	using El = typename Container2d::ElementType; // currently supports Metric numeric matrices, TODO add type traits,
+												  // generalize!!
 	// TODO use sparsed if input is sparsed
 
 	assert(ll.rows() == lh.rows()); // TODO replace with exception of nan return
@@ -595,29 +594,31 @@ idwt2(Container2d const &ll, Container2d const &lh, Container2d const &hl, Conta
 	assert(ll.columns() == hl.columns());
 	assert(ll.columns() == hh.columns());
 
-	blaze::DynamicMatrix<El, blaze::columnMajor> ll_cm =
+	mtrc::numeric::DynamicMatrix<El, mtrc::numeric::columnMajor> ll_cm =
 		ll; // row-major to col-major // type is temporary, TODO add type trait
-	blaze::DynamicMatrix<El, blaze::columnMajor> lh_cm = lh;
-	blaze::DynamicMatrix<El, blaze::columnMajor> hl_cm = hl;
-	blaze::DynamicMatrix<El, blaze::columnMajor> hh_cm = hh;
+	mtrc::numeric::DynamicMatrix<El, mtrc::numeric::columnMajor> lh_cm = lh;
+	mtrc::numeric::DynamicMatrix<El, mtrc::numeric::columnMajor> hl_cm = hl;
+	mtrc::numeric::DynamicMatrix<El, mtrc::numeric::columnMajor> hh_cm = hh;
 
-	blaze::DynamicMatrix<El, blaze::columnMajor> l_cm;
-	blaze::DynamicMatrix<El, blaze::columnMajor> h_cm;
+	mtrc::numeric::DynamicMatrix<El, mtrc::numeric::columnMajor> l_cm;
+	mtrc::numeric::DynamicMatrix<El, mtrc::numeric::columnMajor> h_cm;
 	for (size_t col_idx = 0; col_idx < ll_cm.columns(); col_idx++) {
 
-		blaze::DynamicVector<El> col_ll = blaze::column(ll_cm, col_idx);
-		blaze::DynamicVector<El> col_lh = blaze::column(lh_cm, col_idx);
-		blaze::DynamicVector<El> col_hl = blaze::column(hl_cm, col_idx);
-		blaze::DynamicVector<El> col_hh = blaze::column(hh_cm, col_idx);
+		mtrc::numeric::DynamicVector<El> col_ll = mtrc::numeric::column(ll_cm, col_idx);
+		mtrc::numeric::DynamicVector<El> col_lh = mtrc::numeric::column(lh_cm, col_idx);
+		mtrc::numeric::DynamicVector<El> col_hl = mtrc::numeric::column(hl_cm, col_idx);
+		mtrc::numeric::DynamicVector<El> col_hh = mtrc::numeric::column(hh_cm, col_idx);
 
 		auto col_split_l = wavelet::idwt(col_ll, col_lh, waveletType, hx);
 		auto col_split_h = wavelet::idwt(col_hl, col_hh, waveletType, hx);
 		if (col_idx < 1) {
-			l_cm = blaze::DynamicMatrix<El, blaze::columnMajor>(col_split_l.size(), ll_cm.columns());
-			h_cm = blaze::DynamicMatrix<El, blaze::columnMajor>(col_split_h.size(), ll_cm.columns());
+			l_cm =
+				mtrc::numeric::DynamicMatrix<El, mtrc::numeric::columnMajor>(col_split_l.size(), ll_cm.columns());
+			h_cm =
+				mtrc::numeric::DynamicMatrix<El, mtrc::numeric::columnMajor>(col_split_h.size(), ll_cm.columns());
 		}
-		blaze::column(l_cm, col_idx) = col_split_l;
-		blaze::column(h_cm, col_idx) = col_split_h;
+		mtrc::numeric::column(l_cm, col_idx) = col_split_l;
+		mtrc::numeric::column(h_cm, col_idx) = col_split_h;
 	}
 
 	Container2d l = l_cm; // col-major to row-major
@@ -626,13 +627,13 @@ idwt2(Container2d const &ll, Container2d const &lh, Container2d const &hl, Conta
 	// second idwt
 	Container2d out;
 	for (size_t row_idx = 0; row_idx < l.rows(); ++row_idx) {
-		blaze::DynamicVector<El, blaze::rowVector> row_split_l = blaze::row(l, row_idx);
-		blaze::DynamicVector<El, blaze::rowVector> row_split_h = blaze::row(h, row_idx);
+		mtrc::numeric::DynamicVector<El, mtrc::numeric::rowVector> row_split_l = mtrc::numeric::row(l, row_idx);
+		mtrc::numeric::DynamicVector<El, mtrc::numeric::rowVector> row_split_h = mtrc::numeric::row(h, row_idx);
 		auto curr_row = idwt(row_split_l, row_split_h, waveletType, wx);
 		if (row_idx < 1) {
 			out = Container2d(l.rows(), curr_row.size());
 		}
-		blaze::row(out, row_idx) = curr_row;
+		mtrc::numeric::row(out, row_idx) = curr_row;
 	}
 
 	return out;
@@ -649,7 +650,7 @@ idwt2(Container2d const &ll, Container2d const &lh, Container2d const &hl, Conta
  * @return
  */
 template <typename T>
-blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4, Padding padding = Padding::Periodized)
+mtrc::numeric::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4, Padding padding = Padding::Periodized)
 {
 	assert(order % 2 == 0);
 	assert(size >= order);
@@ -661,7 +662,7 @@ blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4, Padding pad
 	std::reverse(Hi_D.begin(), Hi_D.end());
 
 	/* Low filter part */
-	auto mat = blaze::CompressedMatrix<T>(size, size);
+	auto mat = mtrc::numeric::CompressedMatrix<T>(size, size);
 	mat.reserve(size * Lo_D.size());
 	if (padding == Padding::Periodized) {
 		for (size_t i = 0; i < size / 2; ++i) {
@@ -782,23 +783,24 @@ blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4, Padding pad
 	return mat;
 }
 
-template <typename T> blaze::CompressedMatrix<T> DaubechiesMat_e(size_t vector_size, size_t overall_size, int order = 4)
+template <typename T>
+mtrc::numeric::CompressedMatrix<T> DaubechiesMat_e(size_t vector_size, size_t overall_size, int order = 4)
 { // Daubechies Transform matrix generator for serialized image
 
 	assert(overall_size % vector_size == 0);
 
 	auto mat = DaubechiesMat<T>(vector_size, order);
-	blaze::CompressedMatrix<T> out(overall_size, overall_size, 0);
+	mtrc::numeric::CompressedMatrix<T> out(overall_size, overall_size, 0);
 	int n_vectors = overall_size / vector_size;
 	for (size_t i = 0; i < n_vectors; ++i) {
-		blaze::submatrix(out, i * vector_size, i * vector_size, vector_size, vector_size) =
+		mtrc::numeric::submatrix(out, i * vector_size, i * vector_size, vector_size, vector_size) =
 			mat; // TODO optimize via reserve-append-finalize snippet
 	}
 	return out;
 }
 
 template <typename Container2d, typename Container2ds>
-typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type
+typename std::enable_if<mtrc::numeric::IsMatrix<Container2d>::value, Container2d>::type
 dwt2s(Container2d const &x, Container2ds const &dmat_w, Container2ds const &dmat_h)
 { // whole image transform, no dividing by subbands
 
@@ -807,21 +809,21 @@ dwt2s(Container2d const &x, Container2ds const &dmat_w, Container2ds const &dmat
 	assert(dmat_w.rows() == x.columns());
 	assert(dmat_h.rows() == x.rows());
 
-	using El = typename Container2d::ElementType; // now we support only Blaze matrices
+	using El = typename Container2d::ElementType; // currently supports Metric numeric matrices
 
 	Container2d intermediate(x.rows(), x.columns());
 	Container2d out(x.rows(), x.columns());
 
 	for (size_t row_idx = 0; row_idx < x.rows(); ++row_idx) { // split by rows
-		blaze::DynamicVector<El, blaze::rowVector> curr_row = blaze::row(x, row_idx);
-		blaze::DynamicVector<El> row_split = dmat_w * blaze::trans(curr_row);
-		blaze::row(intermediate, row_idx) = blaze::trans(row_split);
+		mtrc::numeric::DynamicVector<El, mtrc::numeric::rowVector> curr_row = mtrc::numeric::row(x, row_idx);
+		mtrc::numeric::DynamicVector<El> row_split = dmat_w * mtrc::numeric::trans(curr_row);
+		mtrc::numeric::row(intermediate, row_idx) = mtrc::numeric::trans(row_split);
 	}
 
 	for (size_t col_idx = 0; col_idx < x.columns(); ++col_idx) { // split by columns
-		blaze::DynamicVector<El> curr_col = blaze::column(intermediate, col_idx);
-		blaze::DynamicVector<El> col_split = dmat_h * curr_col;
-		blaze::column(out, col_idx) = col_split;
+		mtrc::numeric::DynamicVector<El> curr_col = mtrc::numeric::column(intermediate, col_idx);
+		mtrc::numeric::DynamicVector<El> col_split = dmat_h * curr_col;
+		mtrc::numeric::column(out, col_idx) = col_split;
 	}
 
 	return out;
@@ -829,38 +831,41 @@ dwt2s(Container2d const &x, Container2ds const &dmat_w, Container2ds const &dmat
 
 // template <typename Container2d, typename Container2ds> // TODO complete!
 // typename std::enable_if<
-//  blaze::IsMatrix<Container2d>::value,
+//  mtrc::numeric::IsMatrix<Container2d>::value,
 //  Container2d
 //>::type
 // dwt2s_e(Container2d const & x, Container2ds const & dmat_e_w, Container2ds const & dmat_e_h) { // whole image
 // transform, no dividing by subbands
 
-//    using El = typename Container2d::ElementType; // now we support only Blaze matrices
+//    using El = typename Container2d::ElementType; // currently supports Metric numeric matrices
 
 //    // TODO debug
-//    blaze::DynamicMatrix<El, blaze::columnMajor> intermediate_cm;
+//    mtrc::numeric::DynamicMatrix<El, mtrc::numeric::columnMajor> intermediate_cm;
 //    {
-//        blaze::DynamicVector<El> ser_rows (x.columns()*x.rows());
+//        mtrc::numeric::DynamicVector<El> ser_rows (x.columns()*x.rows());
 //        for (size_t i=0; i<x.rows(); ++i) {
-//            blaze::subvector(ser_rows, i*x.columns(), x.columns()) = blaze::trans(blaze::row(x, i));
+//            mtrc::numeric::subvector(ser_rows, i*x.columns(), x.columns()) =
+//            mtrc::numeric::trans(mtrc::numeric::row(x, i));
 //        }
-//        blaze::DynamicVector<El> ser_intermed = dmat_e_w * ser_rows;
-//        blaze::DynamicMatrix<El> intermediate (x.rows(), x.columns());
+//        mtrc::numeric::DynamicVector<El> ser_intermed = dmat_e_w * ser_rows;
+//        mtrc::numeric::DynamicMatrix<El> intermediate (x.rows(), x.columns());
 //        for (size_t i=0; i<x.rows(); ++i) {
-//            blaze::row(intermediate, i) = blaze::trans(blaze::subvector(ser_intermed, i*x.columns(), x.columns()));
+//            mtrc::numeric::row(intermediate, i) = mtrc::numeric::trans(mtrc::numeric::subvector(ser_intermed,
+//            i*x.columns(), x.columns()));
 //        }
 //        intermediate_cm = intermediate;  // to column-major
 //    }
 
 //    Container2d out (x.rows(), x.columns());
 //    {
-//        blaze::DynamicVector<El> ser_cols (x.columns()*x.rows());
+//        mtrc::numeric::DynamicVector<El> ser_cols (x.columns()*x.rows());
 //        for (size_t i=0; i<intermediate_cm.columns(); ++i) {
-//            blaze::subvector(ser_cols, i*x.rows(), x.rows()) = blaze::column(intermediate_cm, i);
+//            mtrc::numeric::subvector(ser_cols, i*x.rows(), x.rows()) = mtrc::numeric::column(intermediate_cm, i);
 //        }
-//        blaze::DynamicVector<El> ser_intermed = dmat_e_h * ser_cols;
+//        mtrc::numeric::DynamicVector<El> ser_intermed = dmat_e_h * ser_cols;
 //        for (size_t i=0; i<intermediate_cm.columns(); ++i) {
-//            blaze::column(out, i) = blaze::subvector(ser_intermed, i*x.rows(), x.rows()); // TODO check if efficient
+//            mtrc::numeric::column(out, i) = mtrc::numeric::subvector(ser_intermed, i*x.rows(), x.rows()); // TODO
+//            check if efficient
 //        }
 //    }
 
@@ -871,38 +876,39 @@ dwt2s(Container2d const &x, Container2ds const &dmat_w, Container2ds const &dmat
 
 template <typename Container2d, typename Container2ds>
 typename std::enable_if<
- blaze::IsMatrix<Container2d>::value,
+ mtrc::numeric::IsMatrix<Container2d>::value,
  Container2d
 >::type
 dwt2s_e(Container2d const & x, Container2ds const & dmat_e_w, Container2ds const & dmat_e_h) { // whole image transform,
 no dividing by subbands
 
-	using El = typename Container2d::ElementType; // now we support only Blaze matrices
+	using El = typename Container2d::ElementType; // currently supports Metric numeric matrices
 
 	// TODO debug
-	blaze::DynamicMatrix<El, blaze::columnMajor> intermediate_cm;
+	mtrc::numeric::DynamicMatrix<El, mtrc::numeric::columnMajor> intermediate_cm;
 	{
-		blaze::DynamicVector<El, blaze::rowVector> ser_rows (x.columns()*x.rows());
+		mtrc::numeric::DynamicVector<El, mtrc::numeric::rowVector> ser_rows (x.columns()*x.rows());
 		for (size_t i=0; i<x.rows(); ++i) {
-			blaze::subvector(ser_rows, i*x.columns(), x.columns()) = blaze::row(x, i);
+			mtrc::numeric::subvector(ser_rows, i*x.columns(), x.columns()) = mtrc::numeric::row(x, i);
 		}
-		blaze::DynamicVector<El, blaze::rowVector> ser_intermed = blaze::trans(dmat_e_w * blaze::trans(ser_rows));
-		blaze::DynamicMatrix<El> intermediate (x.rows(), x.columns());
-		for (size_t i=0; i<x.rows(); ++i) {
-			blaze::row(intermediate, i) = blaze::subvector(ser_intermed, i*x.columns(), x.columns());
+		mtrc::numeric::DynamicVector<El, mtrc::numeric::rowVector> ser_intermed = mtrc::numeric::trans(dmat_e_w *
+mtrc::numeric::trans(ser_rows)); mtrc::numeric::DynamicMatrix<El> intermediate (x.rows(), x.columns()); for (size_t
+i=0; i<x.rows(); ++i) { mtrc::numeric::row(intermediate, i) = mtrc::numeric::subvector(ser_intermed, i*x.columns(),
+x.columns());
 		}
 		intermediate_cm = intermediate;  // to column-major
 	}
 
 	Container2d out (x.rows(), x.columns());
 	{
-		blaze::DynamicVector<El> ser_cols (x.columns()*x.rows());
+		mtrc::numeric::DynamicVector<El> ser_cols (x.columns()*x.rows());
 		for (size_t i=0; i<intermediate_cm.columns(); ++i) {
-			blaze::subvector(ser_cols, i*x.rows(), x.rows()) = blaze::column(intermediate_cm, i);
+			mtrc::numeric::subvector(ser_cols, i*x.rows(), x.rows()) = mtrc::numeric::column(intermediate_cm, i);
 		}
-		blaze::DynamicVector<El> ser_intermed = dmat_e_h * ser_cols;
+		mtrc::numeric::DynamicVector<El> ser_intermed = dmat_e_h * ser_cols;
 		for (size_t i=0; i<intermediate_cm.columns(); ++i) {
-			blaze::column(out, i) = blaze::subvector(ser_intermed, i*x.rows(), x.rows()); // TODO check if efficient
+			mtrc::numeric::column(out, i) = mtrc::numeric::subvector(ser_intermed, i*x.rows(), x.rows()); // TODO
+check if efficient
 		}
 	}
 
@@ -912,42 +918,46 @@ no dividing by subbands
 // */
 
 template <typename Container2d, typename Container2ds> // alternative code woth CustomMatrix, TODO test!
-typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type
+typename std::enable_if<mtrc::numeric::IsMatrix<Container2d>::value, Container2d>::type
 dwt2s_e(Container2d const &x, Container2ds const &dmat_e_w, Container2ds const &dmat_e_h)
 { // whole image transform, no dividing by subbands
 
-	using El = typename Container2d::ElementType; // now we support only Blaze matrices
+	using El = typename Container2d::ElementType; // currently supports Metric numeric matrices
 
 	// TODO test well
-	blaze::DynamicVector<El> ser_cols(x.columns() * x.rows());
-	blaze::CustomMatrix<El, blaze::unaligned, blaze::unpadded, blaze::columnMajor> intermediate_cm(
-		&ser_cols[0], x.rows(), x.columns());
+	mtrc::numeric::DynamicVector<El> ser_cols(x.columns() * x.rows());
+	mtrc::numeric::CustomMatrix<El, mtrc::numeric::unaligned, mtrc::numeric::unpadded,
+								  mtrc::numeric::columnMajor>
+		intermediate_cm(&ser_cols[0], x.rows(), x.columns());
 
 	{
-		blaze::DynamicVector<El, blaze::rowVector> ser_rows(x.columns() * x.rows());
+		mtrc::numeric::DynamicVector<El, mtrc::numeric::rowVector> ser_rows(x.columns() * x.rows());
 		for (size_t i = 0; i < x.rows(); ++i) {
-			blaze::subvector(ser_rows, i * x.columns(), x.columns()) = blaze::row(x, i);
+			mtrc::numeric::subvector(ser_rows, i * x.columns(), x.columns()) = mtrc::numeric::row(x, i);
 		}
 
-		blaze::DynamicVector<El, blaze::rowVector> ser_intermed = blaze::trans(dmat_e_w * blaze::trans(ser_rows));
+		mtrc::numeric::DynamicVector<El, mtrc::numeric::rowVector> ser_intermed =
+			mtrc::numeric::trans(dmat_e_w * mtrc::numeric::trans(ser_rows));
 
-		blaze::CustomMatrix<El, blaze::unaligned, blaze::unpadded, blaze::rowMajor> intermediate(&ser_intermed[0],
-																								 x.rows(), x.columns());
+		mtrc::numeric::CustomMatrix<El, mtrc::numeric::unaligned, mtrc::numeric::unpadded,
+									  mtrc::numeric::rowMajor>
+			intermediate(&ser_intermed[0], x.rows(), x.columns());
 		intermediate_cm = intermediate; // to column-major
 	}
 
-	blaze::DynamicVector<El> ser_intermed = dmat_e_h * ser_cols;
+	mtrc::numeric::DynamicVector<El> ser_intermed = dmat_e_h * ser_cols;
 
 	Container2d out(x.rows(), x.columns());
 	for (size_t i = 0; i < intermediate_cm.columns(); ++i) {
-		blaze::column(out, i) = blaze::subvector(ser_intermed, i * x.rows(), x.rows()); // TODO check if efficient
+		mtrc::numeric::column(out, i) =
+			mtrc::numeric::subvector(ser_intermed, i * x.rows(), x.rows()); // TODO check if efficient
 	}
 
 	return out;
 }
 
 template <typename Container2d, typename Container2ds>
-typename std::enable_if<blaze::IsMatrix<Container2d>::value,
+typename std::enable_if<mtrc::numeric::IsMatrix<Container2d>::value,
 						std::tuple<Container2d, Container2d, Container2d, Container2d>>::type
 dwt2(Container2d const &x, Container2ds const &dmat_w, Container2ds const &dmat_h)
 { // wrapper for dividing by subbands
@@ -961,16 +971,16 @@ dwt2(Container2d const &x, Container2ds const &dmat_w, Container2ds const &dmat_
 	Container2d lh(split_sz_h, split_sz_w);
 	Container2d hl(split_sz_h, split_sz_w);
 	Container2d hh(split_sz_h, split_sz_w);
-	ll = blaze::submatrix(r, 0, 0, split_sz_h, split_sz_w);
-	lh = blaze::submatrix(r, split_sz_h, 0, split_sz_h, split_sz_w);
-	hl = blaze::submatrix(r, 0, split_sz_w, split_sz_h, split_sz_w);
-	hh = blaze::submatrix(r, split_sz_h, split_sz_w, split_sz_h, split_sz_w);
+	ll = mtrc::numeric::submatrix(r, 0, 0, split_sz_h, split_sz_w);
+	lh = mtrc::numeric::submatrix(r, split_sz_h, 0, split_sz_h, split_sz_w);
+	hl = mtrc::numeric::submatrix(r, 0, split_sz_w, split_sz_h, split_sz_w);
+	hh = mtrc::numeric::submatrix(r, split_sz_h, split_sz_w, split_sz_h, split_sz_w);
 
 	return std::make_tuple(ll, lh, hl, hh);
 }
 
 template <typename Container2d, typename Container2ds>
-typename std::enable_if<blaze::IsMatrix<Container2d>::value,
+typename std::enable_if<mtrc::numeric::IsMatrix<Container2d>::value,
 						std::tuple<Container2d, Container2d, Container2d, Container2d>>::type
 dwt2_e(Container2d const &x, Container2ds const &dmat_w_e, Container2ds const &dmat_h_e)
 { // wrapper for dividing by subbands
@@ -984,21 +994,21 @@ dwt2_e(Container2d const &x, Container2ds const &dmat_w_e, Container2ds const &d
 	Container2d lh(split_sz_h, split_sz_w);
 	Container2d hl(split_sz_h, split_sz_w);
 	Container2d hh(split_sz_h, split_sz_w);
-	ll = blaze::submatrix(r, 0, 0, split_sz_h, split_sz_w);
-	lh = blaze::submatrix(r, split_sz_h, 0, split_sz_h, split_sz_w);
-	hl = blaze::submatrix(r, 0, split_sz_w, split_sz_h, split_sz_w);
-	hh = blaze::submatrix(r, split_sz_h, split_sz_w, split_sz_h, split_sz_w);
+	ll = mtrc::numeric::submatrix(r, 0, 0, split_sz_h, split_sz_w);
+	lh = mtrc::numeric::submatrix(r, split_sz_h, 0, split_sz_h, split_sz_w);
+	hl = mtrc::numeric::submatrix(r, 0, split_sz_w, split_sz_h, split_sz_w);
+	hh = mtrc::numeric::submatrix(r, split_sz_h, split_sz_w, split_sz_h, split_sz_w);
 
 	return std::make_tuple(ll, lh, hl, hh);
 }
 
 template <typename Container2d, typename Container2ds>
-typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type
+typename std::enable_if<mtrc::numeric::IsMatrix<Container2d>::value, Container2d>::type
 idwt2( // wrapper for composing from subbands
 	Container2d const &ll, Container2d const &lh, Container2d const &hl, Container2d const &hh,
 	Container2ds const &dmat_w, Container2ds const &dmat_h)
 {
-	using El = typename Container2d::ElementType; // now we support only Blaze matrices
+	using El = typename Container2d::ElementType; // currently supports Metric numeric matrices
 
 	assert(ll.rows() == lh.rows());
 	assert(ll.rows() == hl.rows());
@@ -1010,21 +1020,21 @@ idwt2( // wrapper for composing from subbands
 	assert(dmat_h.rows() == ll.rows() * 2);
 
 	Container2d out(dmat_h.rows(), dmat_w.rows());
-	blaze::submatrix(out, 0, 0, ll.rows(), ll.columns()) = ll;
-	blaze::submatrix(out, ll.rows(), 0, lh.rows(), lh.columns()) = lh;
-	blaze::submatrix(out, 0, ll.columns(), hl.rows(), hl.columns()) = hl;
-	blaze::submatrix(out, ll.rows(), ll.columns(), hh.rows(), hh.columns()) = hh;
+	mtrc::numeric::submatrix(out, 0, 0, ll.rows(), ll.columns()) = ll;
+	mtrc::numeric::submatrix(out, ll.rows(), 0, lh.rows(), lh.columns()) = lh;
+	mtrc::numeric::submatrix(out, 0, ll.columns(), hl.rows(), hl.columns()) = hl;
+	mtrc::numeric::submatrix(out, ll.rows(), ll.columns(), hh.rows(), hh.columns()) = hh;
 
 	return dwt2s(out, dmat_w, dmat_h);
 }
 
 template <typename Container2d, typename Container2ds>
-typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type
+typename std::enable_if<mtrc::numeric::IsMatrix<Container2d>::value, Container2d>::type
 idwt2_e( // wrapper for composing from subbands
 	Container2d const &ll, Container2d const &lh, Container2d const &hl, Container2d const &hh,
 	Container2ds const &dmat_w_e, Container2ds const &dmat_h_e)
 {
-	using El = typename Container2d::ElementType; // now we support only Blaze matrices
+	using El = typename Container2d::ElementType; // currently supports Metric numeric matrices
 
 	assert(ll.rows() == lh.rows());
 	assert(ll.rows() == hl.rows());
@@ -1036,16 +1046,16 @@ idwt2_e( // wrapper for composing from subbands
 	assert(dmat_h_e.rows() == dmat_w_e.rows());
 
 	Container2d out(ll.rows() * 2, ll.columns() * 2);
-	blaze::submatrix(out, 0, 0, ll.rows(), ll.columns()) = ll;
-	blaze::submatrix(out, ll.rows(), 0, lh.rows(), lh.columns()) = lh;
-	blaze::submatrix(out, 0, ll.columns(), hl.rows(), hl.columns()) = hl;
-	blaze::submatrix(out, ll.rows(), ll.columns(), hh.rows(), hh.columns()) = hh;
+	mtrc::numeric::submatrix(out, 0, 0, ll.rows(), ll.columns()) = ll;
+	mtrc::numeric::submatrix(out, ll.rows(), 0, lh.rows(), lh.columns()) = lh;
+	mtrc::numeric::submatrix(out, 0, ll.columns(), hl.rows(), hl.columns()) = hl;
+	mtrc::numeric::submatrix(out, ll.rows(), ll.columns(), hh.rows(), hh.columns()) = hh;
 
 	return dwt2s_e(out, dmat_w_e, dmat_h_e);
 }
 
 template <typename Container2d, typename Container2ds>
-typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type
+typename std::enable_if<mtrc::numeric::IsMatrix<Container2d>::value, Container2d>::type
 idwt2( // wrapper for composing from subbands passed in tuple
 	std::tuple<Container2d, Container2d, Container2d, Container2d> const &in, Container2ds const &dmat_w,
 	Container2ds const &dmat_h)
@@ -1054,7 +1064,7 @@ idwt2( // wrapper for composing from subbands passed in tuple
 }
 
 template <typename Container2d, typename Container2ds>
-typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type
+typename std::enable_if<mtrc::numeric::IsMatrix<Container2d>::value, Container2d>::type
 idwt2_e( // wrapper for composing from subbands passed in tuple
 	std::tuple<Container2d, Container2d, Container2d, Container2d> const &in, Container2ds const &dmat_w_e,
 	Container2ds const &dmat_h_e)
@@ -1065,11 +1075,11 @@ idwt2_e( // wrapper for composing from subbands passed in tuple
 // loop-based version
 
 template <typename Container2d>
-typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type dwt2_l(Container2d const &x,
-																					   int order = 4)
+typename std::enable_if<mtrc::numeric::IsMatrix<Container2d>::value, Container2d>::type dwt2_l(Container2d const &x,
+																								 int order = 4)
 {
 
-	using El = typename Container2d::ElementType; // now we support only Blaze matrices
+	using El = typename Container2d::ElementType; // currently supports Metric numeric matrices
 
 	assert(order % 2 == 0);
 
@@ -1085,7 +1095,7 @@ typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type 
 	}
 
 	Container2d intermediate(x.rows(), x.columns(), 0);
-	// auto mat = blaze::CompressedMatrix<El>(size, size, 0);
+	// auto mat = mtrc::numeric::CompressedMatrix<El>(size, size, 0);
 	size_t split_size = x.columns() / 2;
 	for (size_t r_idx = 0; r_idx < x.rows(); ++r_idx) { // input row
 		for (size_t i = 0; i < split_size; ++i) {		// offsets
@@ -1120,7 +1130,7 @@ typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type 
 
 template <typename Container2d>
 typename std::enable_if<
- blaze::IsMatrix<Container2d>::value,
+ mtrc::numeric::IsMatrix<Container2d>::value,
  std::tuple<Container2d, Container2d, Container2d, Container2d>
 >::type
 dwt2t(Container2d const & x, Container2d const & dmat_w, Container2d const & dmat_h) { // splitting each vector
@@ -1130,31 +1140,32 @@ dwt2t(Container2d const & x, Container2d const & dmat_w, Container2d const & dma
 	assert(dmat_w.rows() == x.columns());
 	assert(dmat_h.rows() == x.rows());
 
-	using El = typename Container2d::ElementType; // now we support only Blaze matrices, TODO add type traits,
+	using El = typename Container2d::ElementType; // currently supports Metric numeric matrices, TODO add type traits,
 generalize!! Container2d ll, lh, hl, hh, l, h; size_t split_sz_w = dmat_w.columns()/2; size_t split_sz_h =
 dmat_h.columns()/2; l = Container2d(x.rows(), split_sz_w); h = Container2d(x.rows(), split_sz_w); ll =
 Container2d(split_sz_h, split_sz_w); lh = Container2d(split_sz_h, split_sz_w); hl = Container2d(split_sz_h, split_sz_w);
 	hh = Container2d(split_sz_h, split_sz_w);
 
 	for (size_t row_idx = 0; row_idx<x.rows(); ++row_idx) { // top-level split, by rows
-		blaze::DynamicVector<El, blaze::rowVector> curr_row = blaze::row(x, row_idx);
-		blaze::DynamicVector<El> row_split = dmat_w*blaze::trans(curr_row);
-		blaze::row(l, row_idx) = blaze::trans(blaze::subvector(row_split, 0, split_sz_w));
-		blaze::row(h, row_idx) = blaze::trans(blaze::subvector(row_split, split_sz_w, split_sz_w));
+		mtrc::numeric::DynamicVector<El, mtrc::numeric::rowVector> curr_row = mtrc::numeric::row(x, row_idx);
+		mtrc::numeric::DynamicVector<El> row_split = dmat_w*mtrc::numeric::trans(curr_row);
+		mtrc::numeric::row(l, row_idx) = mtrc::numeric::trans(mtrc::numeric::subvector(row_split, 0, split_sz_w));
+		mtrc::numeric::row(h, row_idx) = mtrc::numeric::trans(mtrc::numeric::subvector(row_split, split_sz_w,
+split_sz_w));
 	}
 
 	for (size_t col_idx = 0; col_idx<l.columns(); col_idx++) { // 2 lower level splits, by columns
-		blaze::DynamicVector<El> l_col = blaze::column(l, col_idx);
-		blaze::DynamicVector<El> h_col = blaze::column(h, col_idx);;
+		mtrc::numeric::DynamicVector<El> l_col = mtrc::numeric::column(l, col_idx);
+		mtrc::numeric::DynamicVector<El> h_col = mtrc::numeric::column(h, col_idx);;
 		{
-			blaze::DynamicVector<El> col_split_l = dmat_h*l_col;
-			blaze::column(ll, col_idx) = blaze::subvector(col_split_l, 0, split_sz_h);
-			blaze::column(lh, col_idx) = blaze::subvector(col_split_l, split_sz_h, split_sz_h);
+			mtrc::numeric::DynamicVector<El> col_split_l = dmat_h*l_col;
+			mtrc::numeric::column(ll, col_idx) = mtrc::numeric::subvector(col_split_l, 0, split_sz_h);
+			mtrc::numeric::column(lh, col_idx) = mtrc::numeric::subvector(col_split_l, split_sz_h, split_sz_h);
 		} // remove col_split_l from memory
 		{
-			blaze::DynamicVector<El> col_split_h = dmat_h*h_col;
-			blaze::column(hl, col_idx) = blaze::subvector(col_split_h, 0, split_sz_h);
-			blaze::column(hh, col_idx) = blaze::subvector(col_split_h, split_sz_h, split_sz_h);
+			mtrc::numeric::DynamicVector<El> col_split_h = dmat_h*h_col;
+			mtrc::numeric::column(hl, col_idx) = mtrc::numeric::subvector(col_split_h, 0, split_sz_h);
+			mtrc::numeric::column(hh, col_idx) = mtrc::numeric::subvector(col_split_h, split_sz_h, split_sz_h);
 		}
 	}
 
@@ -1165,7 +1176,7 @@ Container2d(split_sz_h, split_sz_w); lh = Container2d(split_sz_h, split_sz_w); h
 
 // // TODO debug
 // template <typename Container2d>
-// typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type dwt2_reordered(
+// typename std::enable_if<mtrc::numeric::IsMatrix<Container2d>::value, Container2d>::type dwt2_reordered(
 //            Container2d const & ll,
 //            Container2d const & lh,
 //            Container2d const & hl,
@@ -1173,7 +1184,7 @@ Container2d(split_sz_h, split_sz_w); lh = Container2d(split_sz_h, split_sz_w); h
 //            Container2d const & dmat_w,
 //            Container2d const & dmat_h)
 //{
-//    using El = typename Container2d::ElementType; // now we support only Blaze matrices
+//    using El = typename Container2d::ElementType; // currently supports Metric numeric matrices
 
 //    assert(ll.rows()==lh.rows());
 //    assert(ll.rows()==hl.rows());
@@ -1182,33 +1193,36 @@ Container2d(split_sz_h, split_sz_w); lh = Container2d(split_sz_h, split_sz_w); h
 //    assert(ll.columns()==hl.columns());
 //    assert(ll.columns()==hh.columns());
 
-//    blaze::DynamicMatrix<El, blaze::columnMajor> ll_cm = ll; // row-major to col-major
-//    blaze::DynamicMatrix<El, blaze::columnMajor> lh_cm = lh;
-//    blaze::DynamicMatrix<El, blaze::columnMajor> hl_cm = hl;
-//    blaze::DynamicMatrix<El, blaze::columnMajor> hh_cm = hh;
+//    mtrc::numeric::DynamicMatrix<El, mtrc::numeric::columnMajor> ll_cm = ll; // row-major to col-major
+//    mtrc::numeric::DynamicMatrix<El, mtrc::numeric::columnMajor> lh_cm = lh;
+//    mtrc::numeric::DynamicMatrix<El, mtrc::numeric::columnMajor> hl_cm = hl;
+//    mtrc::numeric::DynamicMatrix<El, mtrc::numeric::columnMajor> hh_cm = hh;
 
-//    blaze::DynamicMatrix<El, blaze::columnMajor> col_composed_cm (ll.rows() + lh(rows), ll.columns() + lh.columns());
-//    //blaze::DynamicMatrix<El, blaze::columnMajor> h_cm;
+//    mtrc::numeric::DynamicMatrix<El, mtrc::numeric::columnMajor> col_composed_cm (ll.rows() + lh(rows),
+//    ll.columns() + lh.columns());
+//    //mtrc::numeric::DynamicMatrix<El, mtrc::numeric::columnMajor> h_cm;
 //    for (size_t col_idx = 0; col_idx < ll.columns() + lh.columns(); col_idx++) {
 
-//        //blaze::DynamicVector<El> col_ll = blaze::column(ll_cm, col_idx);
-//        //blaze::DynamicVector<El> col_lh = blaze::column(lh_cm, col_idx);
-//        //blaze::DynamicVector<El> col_hl = blaze::column(hl_cm, col_idx);
-//        //blaze::DynamicVector<El> col_hh = blaze::column(hh_cm, col_idx);
-//        blaze::DynamicVector<El> col_concat (ll.rows() + lh(rows));
-//        blaze::subvector(col_concat, 0, ll.rows()) = ll_cm;
-//        blaze::subvector(col_concat, ll.rows(), lh.rows()) = lh_cm;
+//        //mtrc::numeric::DynamicVector<El> col_ll = mtrc::numeric::column(ll_cm, col_idx);
+//        //mtrc::numeric::DynamicVector<El> col_lh = mtrc::numeric::column(lh_cm, col_idx);
+//        //mtrc::numeric::DynamicVector<El> col_hl = mtrc::numeric::column(hl_cm, col_idx);
+//        //mtrc::numeric::DynamicVector<El> col_hh = mtrc::numeric::column(hh_cm, col_idx);
+//        mtrc::numeric::DynamicVector<El> col_concat (ll.rows() + lh(rows));
+//        mtrc::numeric::subvector(col_concat, 0, ll.rows()) = ll_cm;
+//        mtrc::numeric::subvector(col_concat, ll.rows(), lh.rows()) = lh_cm;
 
 //        //auto col_split_l = wavelet::idwt(col_ll, col_lh, waveletType, hx);
 //        //auto col_split_h = wavelet::idwt(col_hl, col_hh, waveletType, hx);
-//        blaze::DynamicVector<El> col_composed_v = dmat_h_t*blaze::trans(col_concat);
+//        mtrc::numeric::DynamicVector<El> col_composed_v = dmat_h_t*mtrc::numeric::trans(col_concat);
 
 //        //if (col_idx < 1) {
-//            //col_composed_cm = blaze::DynamicMatrix<El, blaze::columnMajor>(col_composed.size(), ll_cm.columns());
-//            //h_cm = blaze::DynamicMatrix<El, blaze::columnMajor>(col_split_h.size(), ll_cm.columns());
+//            //col_composed_cm = mtrc::numeric::DynamicMatrix<El, mtrc::numeric::columnMajor>(col_composed.size(),
+//            ll_cm.columns());
+//            //h_cm = mtrc::numeric::DynamicMatrix<El, mtrc::numeric::columnMajor>(col_split_h.size(),
+//            ll_cm.columns());
 //        //}
-//        blaze::column(col_composed_cm, col_idx) = col_composed_v;
-//        //blaze::column(h_cm, col_idx) = col_split_h;
+//        mtrc::numeric::column(col_composed_cm, col_idx) = col_composed_v;
+//        //mtrc::numeric::column(h_cm, col_idx) = col_split_h;
 //    }
 
 //    Container2d col_composed = col_composed_cm; // col-major to row-major
@@ -1217,14 +1231,16 @@ Container2d(split_sz_h, split_sz_w); lh = Container2d(split_sz_h, split_sz_w); h
 //    // second idwt
 //    Container2d out (ll.rows() + lh(rows), ll.columns() + lh.columns());
 //    for (size_t row_idx = 0; row_idx<col_composed.rows(); ++row_idx) {
-//        blaze::DynamicVector<El, blaze::rowVector> row_split = blaze::row(col_composed, row_idx);
-//        //blaze::DynamicVector<El, blaze::rowVector> row_split_h = blaze::row(h, row_idx);
+//        mtrc::numeric::DynamicVector<El, mtrc::numeric::rowVector> row_split = mtrc::numeric::row(col_composed,
+//        row_idx);
+//        //mtrc::numeric::DynamicVector<El, mtrc::numeric::rowVector> row_split_h = mtrc::numeric::row(h,
+//        row_idx);
 //        //auto curr_row = idwt(row_split, row_split_h, waveletType, wx);
-//        blaze::DynamicVector<El> curr_row = dmat_w_t*blaze::trans(row_split);
+//        mtrc::numeric::DynamicVector<El> curr_row = dmat_w_t*mtrc::numeric::trans(row_split);
 //        //if (row_idx < 1) {
 //            //out = Container2d (col_composed.rows(), curr_row.size());
 //        //}
-//        blaze::row(out, row_idx) = blaze::trans(curr_row);
+//        mtrc::numeric::row(out, row_idx) = mtrc::numeric::trans(curr_row);
 //    }
 
 //    return out;

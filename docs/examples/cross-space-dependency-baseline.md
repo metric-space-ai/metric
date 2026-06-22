@@ -1,6 +1,10 @@
 # Cross-Space Dependency Baseline
 
-This report records the first CI-safe cross-space dependency hero fixture for
+> **See also:** the production [Cross-Space Dependency (Hero)](cross-space-dependency.md)
+> extends this minimal fixture with heterogeneous record types (event-log text vs
+> process curves), a permutation-test p-value, and naive-vectorisation baselines.
+
+This report records the first CI-safe cross-space dependency workflow fixture for
 METRIC production readiness.
 
 Command:

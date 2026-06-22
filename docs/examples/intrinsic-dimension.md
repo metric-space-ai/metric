@@ -15,7 +15,7 @@ The promoted C++ example [metric_space_intrinsic_dimension.cpp](../../examples/c
 ## Current C++ Shape
 
 ```cpp
-#include <metric/operators.hpp>
+#include <metric/space/index/operators.hpp>
 
 #include <vector>
 
@@ -27,7 +27,7 @@ struct AbsoluteDistance {
 };
 
 std::vector<int> records = {0, 1, 2, 3, 4};
-double estimate = metric::operators::intrinsic_dimension(records, AbsoluteDistance{});
+double estimate = mtrc::space::index::intrinsic_dimension(records, AbsoluteDistance{});
 ```
 
 ## Current Python Shape

@@ -1,67 +1,36 @@
-# Engine Migration
+# Migration
 
-Existing METRIC APIs remain compatibility surfaces. Migration should be gradual and test-backed.
+New code uses the `mtrc` namespace and the Level-1 source layout.
 
-## Recommended New Code
+## Include Paths
 
-Start new C++ code with:
+Use:
 
 ```cpp
+#include <metric/metric/catalog.hpp>
 #include <metric/engine.hpp>
-
-auto space = metric::make_space(records, metric);
-auto neighbors = metric::find_neighbors(space, query, 2);
+#include <metric/record.hpp>
+#include <metric/space.hpp>
 ```
 
-Start new Python code with:
+Avoid older umbrella paths that describe the pre-revival layout.
 
-```python
-from metric import Space
+## Namespace Direction
 
-space = Space(records, metric)
-neighbors = space.neighbors(query, 2)
-```
+Use:
 
-## Compatibility APIs
+- `mtrc::record`
+- `mtrc::space`
+- `mtrc::metric`
+- `mtrc::stats`
+- `mtrc::modify`
+- `mtrc::solve`
+- `mtrc::numeric`
 
-The following remain valid for existing code:
+Do not add new public C++ code under generic algorithm folders. Put it in the
+namespace that describes its finite metric-space role.
 
-- `metric::Space::from_records`
-- `metric::MatrixSpace`
-- `metric::GraphSpace`
-- `metric::TreeSpace`
-- C++ compatibility aliases under `metric/compat/aliases.hpp`
-- C++ legacy-space adapters under `metric/compat/legacy_space_adapters.hpp`
-- historical mapping classes
-- historical transform classes
-- Python compatibility modules under `metric.distance`, `metric.correlation`, `metric.mapping`, `metric.space`, and `metric.transform`
-- Python compatibility discovery through `metric.compat`
+## Binding Rule
 
-Legacy index-based C++ spaces can be copied into the engine model explicitly when the metric object is available:
-
-```cpp
-#include <metric/compat/legacy_space_adapters.hpp>
-
-auto engine_space = metric::compat::to_metric_space(legacy_space, metric);
-auto id = metric::compat::record_id_from_legacy_index(0);
-```
-
-Python legacy import paths are discoverable without eagerly importing every historical extension module:
-
-```python
-from metric import compat
-
-if "mapping" in compat.available_modules():
-    legacy_mapping = compat.legacy_module("mapping")
-```
-
-## Migration Steps
-
-1. Keep the existing metric callable.
-2. Wrap the records and metric in `MetricSpace` or `Space`.
-3. Replace direct algorithm calls in examples with intent calls where stable equivalents exist.
-4. Replace tuple handling with named result objects.
-5. Introduce strategies only when the default intent path is not enough.
-6. Introduce runtime policies only when representation or execution cost matters.
-
-Do not migrate broad historical examples into the release gate until they have deterministic fixtures, documented assumptions, and CI coverage.
+Python and other languages adapt user data to the native C++ implementation.
+They must not implement real metric math, solvers, or algorithms outside C++.

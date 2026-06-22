@@ -12,7 +12,7 @@
 #include <cstddef>
 #include <vector>
 
-namespace metric {
+namespace mtrc {
 
 // functor for computing energy
 // very simple and inoptimal recursive functor without static members, to be used as reference
@@ -36,7 +36,7 @@ std::size_t subband_size(std::size_t original_size, std::size_t depth, std::size
 
 std::size_t original_size(std::size_t subband_size, std::size_t depth, std::size_t wavelet_length);
 
-} // namespace metric
+} // namespace mtrc
 
 #include "energy_encoder.cpp"
 

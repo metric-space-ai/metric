@@ -59,10 +59,19 @@ class DSPCC:
 
 @dataclass(frozen=True)
 class PhateAE:
-    """Roadmap PHATE-AE-style learnable mapping strategy."""
+    """Binding vocabulary for the native C++ PHATE-AE mapping strategy."""
 
     dimensions: int = 2
     epochs: int = 100
+    learning_rate: float = 0.05
+    diffusion_steps: int = 2
+    kernel_scale: object = None
+    reconstruction_weight: float = 0.05
+    geometry_weight: float = 1.0
+    seed: int = 23
+    distance_provider: str = "exact_metric_space_distance_provider"
+    affinity_kernel: str = "gaussian_affinity_kernel"
+    diffusion_operator: str = "row_normalized_diffusion_operator"
 
 
 @dataclass(frozen=True)

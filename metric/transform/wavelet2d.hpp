@@ -11,13 +11,13 @@
 
 #include "metric/utils/image_processing/convolution.hpp"
 #include "wavelet.hpp"
-//#include <blaze/Blaze.h>
+// #include <metric/numeric.hpp>
 
 #include <cmath> // for only sqrt
 
 namespace wavelet {
 
-template <typename T, size_t Channels> class Convolution2dCustom : public metric::Convolution2d<T, Channels> {
+template <typename T, size_t Channels> class Convolution2dCustom : public mtrc::Convolution2d<T, Channels> {
 
   public:
 	Convolution2dCustom(size_t imageWidth, size_t imageHeight, size_t kernelWidth, size_t kernelHeight
@@ -28,22 +28,22 @@ template <typename T, size_t Channels> class Convolution2dCustom : public metric
 	{
 		//            this->padWidth = kernelWidth - 1;
 		//            this->padHeight = kernelHeight - 1;
-		//            metric::Convolution2d<T, Channels>(imageWidth, imageHeight, kernelWidth, kernelHeight); // TODO
+		//            mtrc::Convolution2d<T, Channels>(imageWidth, imageHeight, kernelWidth, kernelHeight); // TODO
 		//            remove
 
 		this->padWidth = 0;
 		this->padHeight = 0;
 
-		metric::PadDirection pd = metric::PadDirection::POST;
-		// metric::PadDirection pd = metric::PadDirection::BOTH;
-		metric::PadType pt = metric::PadType::CIRCULAR;
-		// metric::PadType pt = metric::PadType::REPLICATE;
+		mtrc::PadDirection pd = mtrc::PadDirection::POST;
+		// mtrc::PadDirection pd = mtrc::PadDirection::BOTH;
+		mtrc::PadType pt = mtrc::PadType::CIRCULAR;
+		// mtrc::PadType pt = mtrc::PadType::REPLICATE;
 		size_t stride = 2;
 
-		this->padModel = std::make_shared<metric::PadModel<T>>(pd, pt, 0);
+		this->padModel = std::make_shared<mtrc::PadModel<T>>(pd, pt, 0);
 
 		// auto t1 = Clock::now();
-		this->convLayer = std::make_shared<typename metric::Convolution2d<T, Channels>::ConvLayer2d>(
+		this->convLayer = std::make_shared<typename mtrc::Convolution2d<T, Channels>::ConvLayer2d>(
 			imageWidth + this->padWidth, imageHeight + this->padHeight, 1, 1, kernelWidth, kernelHeight, stride);
 		// auto t2 = Clock::now();
 		// auto d = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
@@ -54,7 +54,7 @@ template <typename Container2d>
 std::tuple<Container2d, Container2d, Container2d, Container2d> create2dKernels(int order)
 {
 
-	using El = typename Container2d::ElementType; // now we support only Blaze matrices
+	using El = typename Container2d::ElementType; // currently supports Metric numeric matrices
 
 	assert(order % 2 == 0);
 
@@ -96,10 +96,11 @@ std::tuple<Container2d, Container2d, Container2d, Container2d> create2dKernels(i
 }
 
 template <typename T>
-std::tuple<blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>>
-dwt2_conv2(blaze::DynamicMatrix<T> const &x,
-		   std::tuple<blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>,
-					  blaze::DynamicMatrix<T>> const &kernels)
+std::tuple<mtrc::numeric::DynamicMatrix<T>, mtrc::numeric::DynamicMatrix<T>, mtrc::numeric::DynamicMatrix<T>,
+		   mtrc::numeric::DynamicMatrix<T>>
+dwt2_conv2(mtrc::numeric::DynamicMatrix<T> const &x,
+		   std::tuple<mtrc::numeric::DynamicMatrix<T>, mtrc::numeric::DynamicMatrix<T>,
+					  mtrc::numeric::DynamicMatrix<T>, mtrc::numeric::DynamicMatrix<T>> const &kernels)
 { // based on 2d convolution
 
 	auto ll_k = std::get<0>(kernels);
@@ -115,8 +116,8 @@ dwt2_conv2(blaze::DynamicMatrix<T> const &x,
 	assert(ll_k.columns() == hh_k.columns());
 
 	auto c2d = wavelet::Convolution2dCustom<double, 1>(x.rows(), x.columns(), ll_k.rows(), ll_k.columns());
-	// auto c2d = metric::Convolution2d<double, 1>(x.rows(), x.columns(), ll_k.rows(), ll_k.columns());
-	blaze::StaticVector<blaze::DynamicMatrix<double>, 1> vx{x};
+	// auto c2d = mtrc::Convolution2d<double, 1>(x.rows(), x.columns(), ll_k.rows(), ll_k.columns());
+	mtrc::numeric::StaticVector<mtrc::numeric::DynamicMatrix<double>, 1> vx{x};
 	auto ll = c2d(vx, ll_k);
 	auto lh = c2d(vx, lh_k);
 	auto hl = c2d(vx, hl_k);

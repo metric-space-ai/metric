@@ -70,7 +70,7 @@ These result objects preserve lineage through fields such as
 `source_record_ids`, `source_record_count`, `target_record_count`,
 `assignments`, and `nearest_representative_distances`. Current deterministic
 map, denoise, reduction, and compression paths are lossy where reconstruction
-would require a learned inverse, so `inverse_supported` is `False` and
+would require a fitted inverse map, so `inverse_supported` is `False` and
 `inverse_transform(...)` raises `UnsupportedOperationError`.
 
 ## Outliers

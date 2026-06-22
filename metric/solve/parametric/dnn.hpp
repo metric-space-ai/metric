@@ -1,0 +1,6 @@
+#ifndef METRIC_SOLVE_PARAMETRIC_DNN_HPP
+#define METRIC_SOLVE_PARAMETRIC_DNN_HPP
+
+#include "dnn/core/dnn-includes.h"
+
+#endif // METRIC_SOLVE_PARAMETRIC_DNN_HPP

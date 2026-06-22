@@ -1,7 +1,7 @@
 #include "Redif.hpp"
 #include <iostream>
 
-namespace metric {
+namespace mtrc {
 
 template <typename Tv, class Metric>
 Redif<Tv, Metric>::Redif(const std::vector<std::vector<Tv>> &trainData, size_t nNeighbors /* = 10 */,
@@ -10,7 +10,7 @@ Redif<Tv, Metric>::Redif(const std::vector<std::vector<Tv>> &trainData, size_t n
 {
 	this->nNeighbors = nNeighbors;
 	this->metric = metric;
-	xTrain = blaze::DynamicMatrix<Tv>(trainData.size(), trainData[0].size());
+	xTrain = mtrc::numeric::DynamicMatrix<Tv>(trainData.size(), trainData[0].size());
 	for (size_t i = 0; i < xTrain.rows(); i++)
 		for (size_t j = 0; j < xTrain.columns(); j++)
 			xTrain(i, j) = trainData[i][j];
@@ -18,22 +18,22 @@ Redif<Tv, Metric>::Redif(const std::vector<std::vector<Tv>> &trainData, size_t n
 	xTrainEncoded = trainModel(nIter);
 }
 
-template <typename Tv, class Metric> blaze::DynamicMatrix<Tv> Redif<Tv, Metric>::trainModel(size_t nIter)
+template <typename Tv, class Metric> mtrc::numeric::DynamicMatrix<Tv> Redif<Tv, Metric>::trainModel(size_t nIter)
 {
-	blaze::DynamicMatrix<Tv> xTrainDe(this->xTrain);
+	mtrc::numeric::DynamicMatrix<Tv> xTrainDe(this->xTrain);
 	const size_t n = xTrainDe.rows();
 
 	/// Iterative backward Diffusion process
 	for (size_t i = 0; i < nIter; i++) {
-		blaze::DynamicMatrix<Tv> localDistMat = getLocalDistMatrix(xTrainDe);
-		blaze::DynamicMatrix<Tv> graphLap = calcWeightedGraphLaplacian(localDistMat);
+		mtrc::numeric::DynamicMatrix<Tv> localDistMat = getLocalDistMatrix(xTrainDe);
+		mtrc::numeric::DynamicMatrix<Tv> graphLap = calcWeightedGraphLaplacian(localDistMat);
 
 		this->LArray.push_back(graphLap);
-		blaze::DynamicMatrix<Tv> D(n, n, 0);
+		mtrc::numeric::DynamicMatrix<Tv> D(n, n, 0);
 		for (size_t i = 0; i < D.rows(); i++)
 			D(i, i) = graphLap(i, i);
-		blaze::DynamicMatrix<Tv> invLeft(n, n, 0);
-		invLeft = blaze::inv(D + 0.25 * graphLap);
+		mtrc::numeric::DynamicMatrix<Tv> invLeft(n, n, 0);
+		invLeft = mtrc::numeric::inv(D + 0.25 * graphLap);
 		xTrainDe = invLeft * (D * xTrainDe);
 	}
 
@@ -41,24 +41,25 @@ template <typename Tv, class Metric> blaze::DynamicMatrix<Tv> Redif<Tv, Metric>:
 }
 
 template <typename Tv, class Metric>
-blaze::DynamicMatrix<Tv> Redif<Tv, Metric>::getLocalDistMatrix(const blaze::DynamicMatrix<Tv> &dataSample)
+mtrc::numeric::DynamicMatrix<Tv>
+Redif<Tv, Metric>::getLocalDistMatrix(const mtrc::numeric::DynamicMatrix<Tv> &dataSample)
 {
 	size_t n = dataSample.rows();
 
-	blaze::DynamicMatrix<size_t> ixx(nNeighbors, n, 0);
+	mtrc::numeric::DynamicMatrix<size_t> ixx(nNeighbors, n, 0);
 	for (size_t i = 0; i < nNeighbors; i++)
 		for (size_t j = 0; j < n; j++)
 			ixx(i, j) = j;
 
-	blaze::DynamicMatrix<Tv> dist(n, n, 0);
+	mtrc::numeric::DynamicMatrix<Tv> dist(n, n, 0);
 	for (size_t i = 0; i < n; i++)
 		for (size_t j = 0; j < n; j++) {
 			if (i == j) {
 				dist(i, j) = 0;
 				continue;
 			}
-			blaze::DynamicVector<Tv, blaze::rowVector> rowi = row(dataSample, i);
-			blaze::DynamicVector<Tv, blaze::rowVector> rowj = row(dataSample, j);
+			mtrc::numeric::DynamicVector<Tv, mtrc::numeric::rowVector> rowi = row(dataSample, i);
+			mtrc::numeric::DynamicVector<Tv, mtrc::numeric::rowVector> rowj = row(dataSample, j);
 
 			std::vector<Tv> veci, vecj;
 			for (size_t k = 0; k < rowi.size(); ++k) {
@@ -69,12 +70,12 @@ blaze::DynamicMatrix<Tv> Redif<Tv, Metric>::getLocalDistMatrix(const blaze::Dyna
 			dist(i, j) = metric(veci, vecj);
 		}
 
-	blaze::DynamicMatrix<size_t> knnMat(nNeighbors, n, 0);
-	blaze::DynamicMatrix<Tv> knnDistMat(nNeighbors, n, 0);
+	mtrc::numeric::DynamicMatrix<size_t> knnMat(nNeighbors, n, 0);
+	mtrc::numeric::DynamicMatrix<Tv> knnDistMat(nNeighbors, n, 0);
 
 	for (size_t i = 0; i < n; i++) {
-		blaze::DynamicVector<size_t> tempIdx(n);
-		blaze::DynamicVector<Tv> tempDist(n);
+		mtrc::numeric::DynamicVector<size_t> tempIdx(n);
+		mtrc::numeric::DynamicVector<Tv> tempDist(n);
 		for (size_t j = 0; j < n; j++) {
 			tempIdx[j] = j;
 			tempDist[j] = dist(j, i);
@@ -86,13 +87,13 @@ blaze::DynamicMatrix<Tv> Redif<Tv, Metric>::getLocalDistMatrix(const blaze::Dyna
 		}
 	}
 
-	blaze::DynamicMatrix<Tv> localDist(n, n, 0);
+	mtrc::numeric::DynamicMatrix<Tv> localDist(n, n, 0);
 
 	for (size_t i = 0; i < nNeighbors; i++)
 		for (size_t j = 0; j < n; j++)
 			localDist(ixx(i, j), knnMat(i, j)) = knnDistMat(i, j);
 
-	blaze::DynamicMatrix<Tv> retLocalDist(n, n, 0);
+	mtrc::numeric::DynamicMatrix<Tv> retLocalDist(n, n, 0);
 	for (size_t i = 0; i < n; i++)
 		for (size_t j = 0; j < n; j++)
 			retLocalDist(i, j) = (localDist(i, j) > localDist(j, i)) ? localDist(i, j) : localDist(j, i);
@@ -101,12 +102,13 @@ blaze::DynamicMatrix<Tv> Redif<Tv, Metric>::getLocalDistMatrix(const blaze::Dyna
 }
 
 template <typename Tv, class Metric>
-blaze::DynamicMatrix<Tv> Redif<Tv, Metric>::calcWeightedGraphLaplacian(const blaze::DynamicMatrix<Tv> &localDist)
+mtrc::numeric::DynamicMatrix<Tv>
+Redif<Tv, Metric>::calcWeightedGraphLaplacian(const mtrc::numeric::DynamicMatrix<Tv> &localDist)
 {
 	size_t n = localDist.rows();
 
 	/// Degree matrix
-	blaze::DynamicMatrix<Tv> D(n, n, 0);
+	mtrc::numeric::DynamicMatrix<Tv> D(n, n, 0);
 	for (size_t i = 0; i < D.rows(); i++) {
 		double sum = 0;
 		for (size_t j = 0; j < n; j++)
@@ -116,10 +118,10 @@ blaze::DynamicMatrix<Tv> Redif<Tv, Metric>::calcWeightedGraphLaplacian(const bla
 		D(i, i) = 1 / sum;
 	}
 
-	blaze::DynamicMatrix<Tv> A(localDist.rows(), localDist.columns(), 0);
+	mtrc::numeric::DynamicMatrix<Tv> A(localDist.rows(), localDist.columns(), 0);
 	A = D * localDist * D / n;
 
-	blaze::DynamicMatrix<Tv> D1(n, n, 0);
+	mtrc::numeric::DynamicMatrix<Tv> D1(n, n, 0);
 	for (size_t i = 0; i < D.rows(); i++) {
 		double sum = 0;
 		for (size_t j = 0; j < n; j++)
@@ -129,7 +131,7 @@ blaze::DynamicMatrix<Tv> Redif<Tv, Metric>::calcWeightedGraphLaplacian(const bla
 		D1(i, i) = sum;
 	}
 
-	blaze::DynamicMatrix<Tv> graphLap(n, n, 0);
+	mtrc::numeric::DynamicMatrix<Tv> graphLap(n, n, 0);
 	graphLap = D1 - A;
 
 	return graphLap;
@@ -138,7 +140,7 @@ blaze::DynamicMatrix<Tv> Redif<Tv, Metric>::calcWeightedGraphLaplacian(const bla
 template <typename Tv, class Metric>
 std::vector<std::vector<Tv>> Redif<Tv, Metric>::encode(const std::vector<std::vector<Tv>> &x)
 {
-	blaze::DynamicMatrix<Tv> x_as_matrix(x.size(), x[0].size(), 0);
+	mtrc::numeric::DynamicMatrix<Tv> x_as_matrix(x.size(), x[0].size(), 0);
 
 	for (size_t i = 0; i < x_as_matrix.rows(); i++)
 		for (size_t j = 0; j < x_as_matrix.columns(); j++)
@@ -155,26 +157,26 @@ std::vector<std::vector<Tv>> Redif<Tv, Metric>::encode(const std::vector<std::ve
 }
 
 template <typename Tv, class Metric>
-blaze::DynamicMatrix<Tv> Redif<Tv, Metric>::encode(const blaze::DynamicMatrix<Tv> &x)
+mtrc::numeric::DynamicMatrix<Tv> Redif<Tv, Metric>::encode(const mtrc::numeric::DynamicMatrix<Tv> &x)
 {
 	size_t nTrain = xTrain.rows();
 	size_t nX = x.rows();
 	size_t nIter = LArray.size();
 	/// Find nearest Neighbors of each record of x in xTrain
 	size_t l = 1; /// Number of nearest neighbors
-	blaze::DynamicVector<size_t> l_idx = blaze::DynamicVector<Tv>(nX);
+	mtrc::numeric::DynamicVector<size_t> l_idx = mtrc::numeric::DynamicVector<Tv>(nX);
 	size_t k_check = sqrt(nTrain); /// Parameter for checking model on the record
 
 	/// Compute distances
 	for (size_t i = 0; i < nX; i++) {
-		blaze::DynamicMatrix<Tv> distTotal(nTrain + 1, nTrain + 1, 0);
+		mtrc::numeric::DynamicMatrix<Tv> distTotal(nTrain + 1, nTrain + 1, 0);
 		for (size_t k = 0; k < nTrain + 1; k++)
 			for (size_t j = 0; j < nTrain + 1; j++) {
 				if (k == j)
 					continue;
 
-				blaze::DynamicVector<Tv, blaze::rowVector> rowk;
-				blaze::DynamicVector<Tv, blaze::rowVector> rowj;
+				mtrc::numeric::DynamicVector<Tv, mtrc::numeric::rowVector> rowk;
+				mtrc::numeric::DynamicVector<Tv, mtrc::numeric::rowVector> rowj;
 
 				if (k < nTrain)
 					rowk = row(xTrain, k);
@@ -194,9 +196,10 @@ blaze::DynamicMatrix<Tv> Redif<Tv, Metric>::encode(const blaze::DynamicMatrix<Tv
 				distTotal(k, j) = metric(veck, vecj);
 			}
 
-		blaze::DynamicVector<Tv, blaze::columnVector> dist = column(distTotal, distTotal.columns() - 1);
+		mtrc::numeric::DynamicVector<Tv, mtrc::numeric::columnVector> dist =
+			column(distTotal, distTotal.columns() - 1);
 
-		blaze::DynamicVector<size_t> idxVec(dist.size());
+		mtrc::numeric::DynamicVector<size_t> idxVec(dist.size());
 		for (size_t k = 0; k < idxVec.size(); k++)
 			idxVec[k] = k;
 		Quicksort(idxVec, dist, 0, idxVec.size() - 1);
@@ -217,7 +220,7 @@ blaze::DynamicMatrix<Tv> Redif<Tv, Metric>::encode(const blaze::DynamicMatrix<Tv
 			oneDist = dist[1];
 		}
 		/// Check if Model is able to denoise Test Posize_t
-		blaze::DynamicVector<Tv, blaze::columnVector> temp = column(distTotal, l_idx[i]);
+		mtrc::numeric::DynamicVector<Tv, mtrc::numeric::columnVector> temp = column(distTotal, l_idx[i]);
 		for (size_t k = 0; k < idxVec.size(); k++)
 			idxVec[k] = k;
 		Quicksort(idxVec, temp, 0, idxVec.size() - 1);
@@ -225,21 +228,21 @@ blaze::DynamicMatrix<Tv> Redif<Tv, Metric>::encode(const blaze::DynamicMatrix<Tv
 			std::cout << "Error. Testposize_t of Index " << i << " cannot be denoised based on underlying model.\n";
 	}
 
-	blaze::DynamicMatrix<Tv> xEncoded = xTrain;
+	mtrc::numeric::DynamicMatrix<Tv> xEncoded = xTrain;
 	/// Iterative backward Diffusion process
 	for (size_t i = 0; i < nX; i++)
 		for (size_t j = 0; j < xEncoded.columns(); j++)
 			xEncoded(l_idx[i], j) = x(i, j);
 
 	for (size_t i = 0; i < nIter; i++) {
-		blaze::DynamicMatrix<Tv> D(nTrain, nTrain, 0);
+		mtrc::numeric::DynamicMatrix<Tv> D(nTrain, nTrain, 0);
 		for (size_t k = 0; k < D.rows(); k++)
 			D(k, k) = LArray[i](k, k);
 
-		xEncoded = blaze::inv(D + 0.25 * LArray[i]) * (D * xEncoded);
+		xEncoded = mtrc::numeric::inv(D + 0.25 * LArray[i]) * (D * xEncoded);
 	}
 
-	blaze::DynamicMatrix<Tv> xEncodedRes(nX, xEncoded.columns());
+	mtrc::numeric::DynamicMatrix<Tv> xEncodedRes(nX, xEncoded.columns());
 
 	for (size_t i = 0; i < nX; i++) {
 		for (size_t j = 0; j < xEncoded.columns(); j++) {
@@ -253,7 +256,7 @@ blaze::DynamicMatrix<Tv> Redif<Tv, Metric>::encode(const blaze::DynamicMatrix<Tv
 template <typename Tv, class Metric>
 std::vector<std::vector<Tv>> Redif<Tv, Metric>::decode(const std::vector<std::vector<Tv>> &xEncoded)
 {
-	blaze::DynamicMatrix<Tv> x_as_matrix(xEncoded.size(), xEncoded[0].size(), 0);
+	mtrc::numeric::DynamicMatrix<Tv> x_as_matrix(xEncoded.size(), xEncoded[0].size(), 0);
 	for (size_t i = 0; i < x_as_matrix.rows(); i++)
 		for (size_t j = 0; j < x_as_matrix.columns(); j++)
 			x_as_matrix(i, j) = xEncoded[i][j];
@@ -269,16 +272,16 @@ std::vector<std::vector<Tv>> Redif<Tv, Metric>::decode(const std::vector<std::ve
 }
 
 template <typename Tv, class Metric>
-blaze::DynamicMatrix<Tv> Redif<Tv, Metric>::decode(const blaze::DynamicMatrix<Tv> &xEncoded)
+mtrc::numeric::DynamicMatrix<Tv> Redif<Tv, Metric>::decode(const mtrc::numeric::DynamicMatrix<Tv> &xEncoded)
 
 {
 	size_t nX = xEncoded.rows();
 	size_t nTrain = xTrain.rows();
-	blaze::DynamicVector<size_t> l_idx = blaze::DynamicVector<size_t>(nX);
+	mtrc::numeric::DynamicVector<size_t> l_idx = mtrc::numeric::DynamicVector<size_t>(nX);
 
 	/// Compute distances
 	for (size_t i = 0; i < nX; i++) {
-		blaze::DynamicVector<Tv, blaze::rowVector> rowi;
+		mtrc::numeric::DynamicVector<Tv, mtrc::numeric::rowVector> rowi;
 		rowi = row(xEncoded, i);
 		std::vector<Tv> veci;
 		for (size_t s = 0; s < rowi.size(); ++s) {
@@ -287,7 +290,7 @@ blaze::DynamicMatrix<Tv> Redif<Tv, Metric>::decode(const blaze::DynamicMatrix<Tv
 
 		Tv closest_dist = -1;
 		for (size_t k = 0; k < nTrain; k++) {
-			blaze::DynamicVector<Tv, blaze::rowVector> rowi, rowk;
+			mtrc::numeric::DynamicVector<Tv, mtrc::numeric::rowVector> rowi, rowk;
 			rowk = row(xTrainEncoded, k);
 			std::vector<Tv> veck;
 			for (size_t s = 0; s < rowk.size(); ++s) {
@@ -309,13 +312,14 @@ blaze::DynamicMatrix<Tv> Redif<Tv, Metric>::decode(const blaze::DynamicMatrix<Tv
 			xTrainEncoded(l_idx[i], j) = xEncoded(i, j);
 
 	for (size_t i = 0; i < nIter; i++) {
-		blaze::DynamicMatrix<Tv> temp = LArray[nIter - i - 1];
-		blaze::DynamicMatrix<Tv> D(n, n, 0);
+		mtrc::numeric::DynamicMatrix<Tv> temp = LArray[nIter - i - 1];
+		mtrc::numeric::DynamicMatrix<Tv> D(n, n, 0);
 		for (size_t k = 0; k < n; k++)
 			D(k, k) = temp(k, k);
-		xTrainEncoded = blaze::inv(D) * (D + 0.25 * LArray[nIter - i - 1]) * xTrainEncoded;
+		xTrainEncoded = mtrc::numeric::inv(D) * (D + 0.25 * LArray[nIter - i - 1]) * xTrainEncoded;
 	}
-	blaze::DynamicMatrix<Tv> xDecoded = blaze::DynamicMatrix<Tv>(l_idx.size(), xTrainEncoded.columns(), 0);
+	mtrc::numeric::DynamicMatrix<Tv> xDecoded =
+		mtrc::numeric::DynamicMatrix<Tv>(l_idx.size(), xTrainEncoded.columns(), 0);
 	for (size_t i = 0; i < xDecoded.rows(); i++)
 		for (size_t j = 0; j < xDecoded.columns(); j++)
 			xDecoded(i, j) = xTrainEncoded(l_idx[i], j);
@@ -325,8 +329,8 @@ blaze::DynamicMatrix<Tv> Redif<Tv, Metric>::decode(const blaze::DynamicMatrix<Tv
 
 template <typename Tv, class Metric>
 template <bool flag>
-size_t Redif<Tv, Metric>::partition(blaze::DynamicVector<size_t> &idx, blaze::DynamicVector<Tv, flag> &val,
-									size_t start, size_t end)
+size_t Redif<Tv, Metric>::partition(mtrc::numeric::DynamicVector<size_t> &idx,
+									mtrc::numeric::DynamicVector<Tv, flag> &val, size_t start, size_t end)
 {
 	double pivot = val[end];
 
@@ -362,8 +366,8 @@ size_t Redif<Tv, Metric>::partition(blaze::DynamicVector<size_t> &idx, blaze::Dy
 
 template <typename Tv, class Metric>
 template <bool flag>
-void Redif<Tv, Metric>::Quicksort(blaze::DynamicVector<size_t> &idx, blaze::DynamicVector<Tv, flag> &data, size_t start,
-								  size_t end)
+void Redif<Tv, Metric>::Quicksort(mtrc::numeric::DynamicVector<size_t> &idx,
+								  mtrc::numeric::DynamicVector<Tv, flag> &data, size_t start, size_t end)
 {
 	if (start < end) {
 		int P_index = partition(idx, data, start, end);
@@ -373,4 +377,4 @@ void Redif<Tv, Metric>::Quicksort(blaze::DynamicVector<size_t> &idx, blaze::Dyna
 	}
 }
 
-} // namespace metric
+} // namespace mtrc

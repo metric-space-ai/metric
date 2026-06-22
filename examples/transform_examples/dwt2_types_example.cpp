@@ -1,7 +1,7 @@
 
 #include "metric/transform/wavelet.hpp"
 
-#include <blaze/Blaze.h>
+#include <metric/numeric.hpp>
 
 #include <iostream>
 #include <type_traits> // for IsMatrixCheck
@@ -10,13 +10,13 @@
 // ---- IsMatrix test
 
 template <typename Container>
-typename std::enable_if<blaze::IsMatrix<Container>::value, void>::type MatrixCheck(Container)
+typename std::enable_if<mtrc::numeric::IsMatrix<Container>::value, void>::type MatrixCheck(Container)
 {
 	std::cout << "\nMatrix\n";
 }
 
 template <typename Container>
-typename std::enable_if<!blaze::IsMatrix<Container>::value, void>::type MatrixCheck(Container)
+typename std::enable_if<!mtrc::numeric::IsMatrix<Container>::value, void>::type MatrixCheck(Container)
 {
 	std::cout << "\nNot matrix\n";
 }
@@ -36,7 +36,7 @@ template <typename T> std::ostream &operator<<(std::ostream &out, std::deque<T> 
 int main()
 {
 	{
-		using T = blaze::DynamicVector<double>;
+		using T = mtrc::numeric::DynamicVector<double>;
 		// using T = std::deque<double>;
 		T a{0, 0, 0, 0, 1, 0, 0, 0};
 		T b{0, 1, 1, 1, 0};
@@ -60,11 +60,11 @@ int main()
 
 	{
 		// IsMatrix test
-		blaze::DynamicMatrix<double> a{{0}};
+		mtrc::numeric::DynamicMatrix<double> a{{0}};
 		std::vector<std::vector<double>> b{{0}};
-		blaze::DynamicVector<double> c{0};
-		blaze::CompressedMatrix<double> d{{0}};
-		blaze::SymmetricMatrix<blaze::CompressedMatrix<double>> e{{0}};
+		mtrc::numeric::DynamicVector<double> c{0};
+		mtrc::numeric::CompressedMatrix<double> d{{0}};
+		mtrc::numeric::SymmetricMatrix<mtrc::numeric::CompressedMatrix<double>> e{{0}};
 		MatrixCheck(a);
 		MatrixCheck(b);
 		MatrixCheck(c);
@@ -74,9 +74,9 @@ int main()
 	}
 
 	{
-		// using T = blaze::DynamicMatrix<double>;
-		using T = blaze::CompressedMatrix<double>;
-		// using T = std::vector<blaze::DynamicVector<double>>; // runs old overload
+		// using T = mtrc::numeric::DynamicMatrix<double>;
+		using T = mtrc::numeric::CompressedMatrix<double>;
+		// using T = std::vector<mtrc::numeric::DynamicVector<double>>; // runs old overload
 
 		T data2d = {
 			{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -86,13 +86,13 @@ int main()
 			{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 		};
 		auto splitted = wavelet::dwt2(data2d, 4);
-		std::cout << "\n\nblaze 2d test: splitted 1:\n" << std::get<0>(splitted) << "\n\n";
+		std::cout << "\n\nnumeric 2d test: splitted 1:\n" << std::get<0>(splitted) << "\n\n";
 		auto restored =
 			wavelet::idwt2(std::get<0>(splitted), std::get<1>(splitted), std::get<2>(splitted), std::get<3>(splitted),
 						   4, data2d.rows(), data2d.columns()); // for non-matrix type
 		// auto restored = wavelet::idwt2(std::get<0>(splitted), std::get<1>(splitted), std::get<2>(splitted),
 		// std::get<3>(splitted), 4, data2d.size(), data2d[0].size());
-		std::cout << "\n\nblaze 2d test: restored:\n" << restored << "\n\n";
+		std::cout << "\n\nnumeric 2d test: restored:\n" << restored << "\n\n";
 	}
 
 	// old test

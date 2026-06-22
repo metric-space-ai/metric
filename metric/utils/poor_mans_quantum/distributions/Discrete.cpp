@@ -13,7 +13,7 @@
 
 #include "../math_functions.hpp"
 
-namespace metric {
+namespace mtrc {
 
 template <typename T> Discrete<T>::Discrete() : _generator(std::random_device{}()) {}
 
@@ -102,5 +102,5 @@ template <typename T> T Discrete<T>::icdf(const T x)
 	return (T)0;
 }
 
-} // end namespace metric
+} // end namespace mtrc
 #endif // header guard

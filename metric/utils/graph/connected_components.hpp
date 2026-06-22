@@ -22,9 +22,9 @@ https://doi.org/10.1109/TPDS.2016.2591038
 #include <list>
 #include <vector>
 
-#include <blaze/Math.h>
+#include <metric/numeric/Math.h>
 
-namespace metric {
+namespace mtrc {
 namespace graph {
 /**
  * @class Cracker
@@ -48,7 +48,8 @@ template <typename Matrix> class Cracker {
 	void PropagateTrees();
 	void ProcessTreeNode(const size_t node, std::vector<size_t> &Nodevector);
 	size_t neighborCount(const size_t n,
-						 const blaze::DynamicVector<typename Matrix::ElementType, blaze::rowVector> &neighbors) const;
+						 const mtrc::numeric::DynamicVector<typename Matrix::ElementType, mtrc::numeric::rowVector>
+							 &neighbors) const;
 	size_t incomingCount(const size_t n, Matrix &mx) const;
 	void ConvertVertexvectorToMatrix(const std::vector<size_t> &vertices, const Matrix &input, Matrix &output);
 
@@ -85,6 +86,6 @@ template <typename Matrix> std::vector<Matrix> all_connected_components(const Ma
 template <typename Matrix> std::vector<Matrix> largest_connected_component(const Matrix &input);
 
 } // namespace graph
-} // namespace metric
+} // namespace mtrc
 #include "connected_components.cpp"
 #endif

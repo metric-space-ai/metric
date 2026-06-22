@@ -15,7 +15,7 @@ correlation weighted accuracy
 #ifndef _METRIC_MAPPING_ENSEMBLES_DT_CWA_HPP
 #define _METRIC_MAPPING_ENSEMBLES_DT_CWA_HPP
 
-namespace metric {
+namespace mtrc {
 
 /**
  * @brief Correlation weighted accuracy
@@ -26,7 +26,7 @@ namespace metric {
  */
 template <typename Container> double correlation_weighted_accuracy(Container a, Container b);
 
-} // namespace metric
+} // namespace mtrc
 
 #include "correlation_weighted_accuracy.cpp"
 

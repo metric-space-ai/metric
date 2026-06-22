@@ -10,11 +10,11 @@
 #define _METRIC_TRANSFORM_WAVELET_HPP
 
 #include <algorithm>
-#include <blaze/Blaze.h>
 #include <cmath>
 #include <deque>
 #include <functional>
 #include <iostream>
+#include <metric/numeric.hpp>
 #include <tuple>
 #include <vector>
 
@@ -31,8 +31,7 @@ namespace types {
  *
  */
 template <typename T> class has_index_operator {
-	struct nil_t {
-	};
+	struct nil_t {};
 	template <typename U> static constexpr auto test(U *) -> decltype(std::declval<U &>()[0]);
 	template <typename> static constexpr auto test(...) -> nil_t;
 
@@ -52,26 +51,27 @@ template <typename T> using index_value_type_t = typename has_index_operator<T>:
 
 } // namespace types
 
-template <typename Container2d, bool SO, bool F = blaze::IsDenseMatrix<Container2d>::value> struct InternalBlazeType {
+template <typename Container2d, bool SO, bool F = mtrc::numeric::IsDenseMatrix<Container2d>::value>
+struct InternalMatrixTypes {
 }; // internal matrix and vector types of sparsity as Container2d, TODO use on dwt2 or remove
 
-template <typename Container2d, bool SO> struct InternalBlazeType<Container2d, SO, true> {
+template <typename Container2d, bool SO> struct InternalMatrixTypes<Container2d, SO, true> {
 	using El = typename Container2d::ElementType;
-	using vector_type = blaze::DynamicVector<El, SO>;
-	using matrix_type = blaze::DynamicMatrix<El, SO>;
+	using vector_type = mtrc::numeric::DynamicVector<El, SO>;
+	using matrix_type = mtrc::numeric::DynamicMatrix<El, SO>;
 };
 
-template <typename Container2d, bool SO> struct InternalBlazeType<Container2d, SO, false> {
+template <typename Container2d, bool SO> struct InternalMatrixTypes<Container2d, SO, false> {
 	using El = typename Container2d::ElementType;
-	using vector_type = blaze::CompressedVector<El, SO>;
-	using matrix_type = blaze::CompressedMatrix<El, SO>;
+	using vector_type = mtrc::numeric::CompressedVector<El, SO>;
+	using matrix_type = mtrc::numeric::CompressedMatrix<El, SO>;
 };
 
-template <typename Container2d, bool SO = blaze::rowMajor>
-using InternalBlazeVecT = typename InternalBlazeType<Container2d, SO>::vector_type;
+template <typename Container2d, bool SO = mtrc::numeric::rowMajor>
+using InternalMatrixVectorT = typename InternalMatrixTypes<Container2d, SO>::vector_type;
 
-template <typename Container2d, bool SO = blaze::rowMajor>
-using InternalBlazeMatT = typename InternalBlazeType<Container2d, SO>::matrix_type;
+template <typename Container2d, bool SO = mtrc::numeric::rowMajor>
+using InternalMatrixT = typename InternalMatrixTypes<Container2d, SO>::matrix_type;
 
 // wavelet functions
 
@@ -320,16 +320,17 @@ std::tuple<std::deque<Container>, std::deque<Container>> sparse(std::deque<Conta
  * @return
  */
 template <typename T>
-// T TWED(blaze::CompressedVector<T> const& As, blaze::CompressedVector<T> const& Bs, T const& penalty = 0,
+// T TWED(mtrc::numeric::CompressedVector<T> const& As, mtrc::numeric::CompressedVector<T> const& Bs, T const&
+// penalty = 0,
 //     T const& elastic = 1); // original code
-T TWED(blaze::CompressedVector<T> const &As, blaze::CompressedVector<T> const &Bs, T const &penalty,
+T TWED(mtrc::numeric::CompressedVector<T> const &As, mtrc::numeric::CompressedVector<T> const &Bs, T const &penalty,
 	   T const &elastic); // edited by Max F because of "redefinition of default argument" compile-time error. I hope
 						  // this does not break anything..
 
 // 2d functions
 
 ///**
-// * @brief non-blaze dwt2
+// * @brief generic-container dwt2
 // *
 // * @param x
 // * @param waveletType
@@ -339,7 +340,7 @@ T TWED(blaze::CompressedVector<T> const &As, blaze::CompressedVector<T> const &B
 // dwt2(std::vector<Container> const & x, int waveletType);
 
 /**
- * @brief blaze matrix overload of dwt2
+ * @brief Metric numeric matrix overload of dwt2
  *
  * @param x
  * @param waveletType
@@ -347,7 +348,7 @@ T TWED(blaze::CompressedVector<T> const &As, blaze::CompressedVector<T> const &B
  */
 template <typename Container>
 typename std::enable_if<
-	!blaze::IsMatrix<Container>::value,
+	!mtrc::numeric::IsMatrix<Container>::value,
 	std::tuple<std::vector<Container>, std::vector<Container>, std::vector<Container>, std::vector<Container>>>::type
 dwt2(std::vector<Container> const &x, int waveletType);
 
@@ -360,9 +361,9 @@ dwt2(std::vector<Container> const &x, int waveletType);
  */
 template <typename Container2d>
 // std::tuple<Container2d, Container2d, Container2d, Container2d>
-typename std::enable_if<blaze::IsMatrix<Container2d>::value,
-						std::tuple<Container2d, Container2d, Container2d, Container2d>>::type
-dwt2(Container2d const &x, int waveletType);
+typename std::enable_if<mtrc::numeric::IsMatrix<Container2d>::value,
+						std::tuple<Container2d, Container2d, Container2d, Container2d>>::type dwt2(Container2d const &x,
+																								   int waveletType);
 
 /**
  * @brief
@@ -409,7 +410,7 @@ idwt2(std::tuple<std::vector<Container>, std::vector<Container>, std::vector<Con
  */
 template <typename Container2d>
 // Container2d idwt2(
-typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type
+typename std::enable_if<mtrc::numeric::IsMatrix<Container2d>::value, Container2d>::type
 idwt2(Container2d const &ll, Container2d const &lh, Container2d const &hl, Container2d const &hh, int waveletType,
 	  int hx, int wx);
 

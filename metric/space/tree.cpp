@@ -17,23 +17,14 @@ Copyright (c) 2018 Michael Welsch
 #include <stdexcept>
 #include <type_traits>
 #include <vector>
-#if defined BOOST_SERIALIZATION_NVP
-#define SERIALIZATION_NVP2(name, variable) boost::serialization::make_nvp(name, variable)
-#define SERIALIZATION_NVP(variable) BOOST_SERIALIZATION_NVP(variable)
-#else
 #define SERIALIZATION_NVP2(name, variable) (variable)
 #define SERIALIZATION_NVP(variable) (variable)
-#endif
 
-#ifdef BOOST_SERIALIZATION_SPLIT_MEMBER
-#define SERIALIZE_SPLIT_MEMBERS BOOST_SERIALIZATION_SPLIT_MEMBER
-#else
 #ifndef SERIALIZE_SPLIT_MEMBERS
 #define SERIALIZE_SPLIT_MEMBERS()
 #endif
-#endif
 
-namespace metric {
+namespace mtrc {
 /*
   __ \          _|                |  |         \  |        |         _)
   |   |   _ \  |     _` |  |   |  |  __|      |\/ |   _ \  __|   __|  |   __|
@@ -48,7 +39,7 @@ template <typename Container> struct L2_Metric_STL {
 	result_type operator()(const Container &a, const Container &b) const
 	{
 		result_type sum = 0;
-		for (auto it1 = a.begin(), it2 = b.begin(); it1 != a.end() || it2 != b.end(); ++it1, ++it2) {
+		for (auto it1 = a.begin(), it2 = b.begin(); it1 != a.end() && it2 != b.end(); ++it1, ++it2) {
 			sum += (*it1 - *it2) * (*it1 - *it2);
 		}
 		return std::sqrt(sum);
@@ -69,7 +60,7 @@ template <class RecType, class Metric> class Node {
   public:
 	using Distance = typename Tree<RecType, Metric>::Distance;
 
-	explicit Node(Tree<RecType, Metric> *ptr, Distance base = Tree<RecType, Metric>().base) : tree_ptr(ptr), base(base)
+	explicit Node(Tree<RecType, Metric> *ptr) : tree_ptr(ptr), base(ptr == nullptr ? Distance(2) : ptr->base)
 	{
 	}
 	Node() = delete;
@@ -363,7 +354,17 @@ std::size_t Tree<RecType, Metric>::insert_if(const std::vector<RecType> &p, Dist
 {
 	std::size_t inserted = 0;
 	for (const auto &rec : p) {
-		if (root->dist(rec) > treshold) {
+		// an empty tree has no nearest neighbour, so the first record is always inserted
+		if (root == nullptr) {
+			insert(rec);
+			inserted++;
+			continue;
+		}
+		// reject only if the NEAREST existing record is within the threshold (matches the single-record
+		// insert_if); testing distance to the root alone would accept points that are close to a non-root node.
+		std::pair<Node_ptr, Distance> result(root, root->dist(rec));
+		nn_(root, result.second, rec, result);
+		if (result.second > treshold) {
 			insert(rec);
 			inserted++;
 		}
@@ -493,6 +494,10 @@ template <class RecType, class Metric> bool Tree<RecType, Metric>::erase(const R
 	std::unique_lock<std::shared_timed_mutex> lk(global_mut);
 	(void)lk; // prevent AppleCLang warning
 
+	if (root == nullptr) {
+		return false;
+	}
+
 	std::pair<Node_ptr, Distance> result(root, root->dist(p));
 	nn_(root, result.second, p, result);
 
@@ -558,6 +563,10 @@ typename Tree<RecType, Metric>::Node_ptr Tree<RecType, Metric>::nn(const RecType
 	std::shared_lock<std::shared_timed_mutex> lk(global_mut);
 	(void)lk;
 
+	if (root == nullptr) {
+		return nullptr;
+	}
+
 	std::pair<Node_ptr, Distance> result(root, root->dist(p));
 	nn_(root, result.second, p, result);
 	return result.first;
@@ -581,7 +590,11 @@ void Tree<RecType, Metric>::nn_(Node_ptr current, Distance dist_current, const R
 		Node_ptr child = current->children[child_idx];
 		Distance dist_child = dists[child_idx];
 
-		if (nn.second > dist_child - 2 * child->covdist())
+		// Recurse iff dist_child < nn.second + 2*covdist, written to avoid wraparound for unsigned Distance:
+		// the plain `dist_child - 2*covdist` underflows (and the additive form overflows against the max-valued
+		// initial bound). Pruning conservatively (recursing when unsure) is always correctness-safe.
+		const Distance margin = 2 * child->covdist();
+		if (dist_child <= nn.second || dist_child - nn.second < margin)
 			nn_(child, dist_child, p, nn);
 	}
 }
@@ -600,6 +613,9 @@ Tree<RecType, Metric>::knn(const RecType &queryPt, unsigned numNbrs) const
 	(void)lk;
 
 	using NodePtr = typename Tree<RecType, Metric>::Node_ptr;
+	if (root == nullptr) {
+		return {};
+	}
 	// Do the worst initialization
 	std::pair<NodePtr, Distance> dummy(nullptr, std::numeric_limits<Distance>::max());
 	// List of k-nearest points till now
@@ -636,7 +652,10 @@ std::size_t Tree<RecType, Metric>::knn_(Node_ptr current, Distance dist_current,
 	for (const auto &child_idx : idx) {
 		Node_ptr child = current->children[child_idx];
 		Distance dist_child = dists[child_idx];
-		if (nnList.back().second > dist_child - 2 * child->covdist())
+		// see nn_: wraparound-safe form of `nnList.back().second > dist_child - 2*covdist`. nnList.back() starts
+		// at Distance max (the dummy bound), so the additive form would overflow; this form is safe for both.
+		const Distance margin = 2 * child->covdist();
+		if (dist_child <= nnList.back().second || dist_child - nnList.back().second < margin)
 			nnSize = knn_(child, dist_child, p, nnList, nnSize);
 	}
 	return nnSize;
@@ -652,8 +671,14 @@ template <class RecType, class Metric>
 std::vector<std::pair<typename Tree<RecType, Metric>::Node_ptr, typename Tree<RecType, Metric>::Distance>>
 Tree<RecType, Metric>::rnn(const RecType &queryPt, Distance distance) const
 {
+	std::shared_lock<std::shared_timed_mutex> lk(global_mut);
+	(void)lk;
 
 	std::vector<std::pair<Node_ptr, Distance>> nnList; // List of nearest neighbors in the rnn
+
+	if (root == nullptr) {
+		return nnList;
+	}
 
 	Distance dist_root = root->dist(queryPt);
 	rnn_(root, dist_root, queryPt, distance, nnList); // Call with root
@@ -984,9 +1009,17 @@ inline bool Tree<RecType, Metric>::same_tree(const Node_ptr lhs, const Node_ptr 
 {
 	std::shared_lock<std::shared_timed_mutex> lk(global_mut);
 	(void)lk;
-
+	return same_tree_(lhs, rhs);
+}
+template <class RecType, class Metric>
+inline bool Tree<RecType, Metric>::same_tree_(const Node_ptr lhs, const Node_ptr rhs) const
+{
 	if (lhs == rhs) {
 		return true;
+	}
+	// one side empty (e.g. comparing against an empty tree) — not equal, and must not be dereferenced
+	if (lhs == nullptr || rhs == nullptr) {
+		return false;
 	}
 	if (lhs->ID != rhs->ID || lhs->level != rhs->level || lhs->parent_dist != rhs->parent_dist ||
 		lhs->get_data() != rhs->get_data()) {
@@ -996,7 +1029,7 @@ inline bool Tree<RecType, Metric>::same_tree(const Node_ptr lhs, const Node_ptr 
 	if (lhs->children.size() != rhs->children.size())
 		return false;
 	for (std::size_t i = 0; i < lhs->children.size(); i++) {
-		if (!same_tree(lhs->children[i], rhs->children[i]))
+		if (!same_tree_(lhs->children[i], rhs->children[i]))
 			return false;
 	}
 	return true;
@@ -1447,10 +1480,10 @@ auto Tree<RecType, Metric>::distance(const RecType &r1, const RecType &r2) const
 }
 
 template <typename RecType, typename Metric>
-auto Tree<RecType, Metric>::matrix() const -> blaze::CompressedMatrix<Distance, blaze::rowMajor>
+auto Tree<RecType, Metric>::matrix() const -> mtrc::numeric::CompressedMatrix<Distance, mtrc::numeric::rowMajor>
 {
 	auto N = data.size();
-	blaze::CompressedMatrix<Distance, blaze::rowMajor> m(N, N);
+	mtrc::numeric::CompressedMatrix<Distance, mtrc::numeric::rowMajor> m(N, N);
 
 	m.reserve(N * (N - 1) / 2);
 	for (std::size_t i = 0; i < data.size(); i++) {
@@ -1472,16 +1505,28 @@ auto Tree<RecType, Metric>::matrix() const -> blaze::CompressedMatrix<Distance, 
 template <typename RecType, typename Metric>
 auto Tree<RecType, Metric>::operator()(std::size_t id1, std::size_t id2) const -> Distance
 {
-	if (data[id1].second->parent == data[id2].second) {
+	// id1/id2 are node IDs, not positions in `data`; after an erase the two address spaces diverge, so the ID
+	// must be resolved through index_map (as distance_by_id does) before indexing into `data`.
+	auto p1 = index_map.find(id1);
+	if (p1 == index_map.end()) {
+		throw std::runtime_error("tree has no such ID: " + std::to_string(id1));
+	}
+	auto p2 = index_map.find(id2);
+	if (p2 == index_map.end()) {
+		throw std::runtime_error("tree has no such ID: " + std::to_string(id2));
+	}
+	const auto &e1 = data[p1->second];
+	const auto &e2 = data[p2->second];
+	if (e1.second->parent == e2.second) {
 		// node J is a parent for node I, so we can use parent_dist
-		return data[id1].second->parent_dist;
+		return e1.second->parent_dist;
 	}
-	if (data[id2].second->parent == data[id1].second) {
+	if (e2.second->parent == e1.second) {
 		// node I is a parent for node J, so we can use parent_dist
-		return data[id2].second->parent_dist;
+		return e2.second->parent_dist;
 	}
-	return metric(data[id1].first, data[id2].first);
+	return metric(e1.first, e2.first);
 }
-} // namespace metric
+} // namespace mtrc
 
 #endif

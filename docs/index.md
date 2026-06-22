@@ -1,33 +1,35 @@
 # METRIC Docs
 
-METRIC is a native C++ engine for finite metric spaces.
+METRIC is a native C++ framework for finite metric-space computing.
 
-This documentation covers the product concepts, C++ API, bindings, examples, stability labels, and release-facing build rules. The public GitHub Pages site is checked in under `docs/site/`.
+The documentation starts with the mathematical object, then the C++ component
+layout, then concrete metrics, examples, bindings, and release rules.
 
 ## Start Here
 
 1. [Finite Metric Spaces](concepts/finite-metric-space.md)
-2. [Metric Spaces](concepts/metric-space.md)
-3. [Vector Space as a Special Case](concepts/vector-space-as-special-case.md)
-4. [Engine Overview](engine/index.md)
-5. [C++ API](api/cpp.md)
+2. [METRIC Vocabulary](concepts/metric-vocabulary.md)
+3. [Metric Discovery](metrics/index.md)
+4. [C++ API](api/cpp.md)
+5. [Python Binding API](api/python.md)
 6. [Stability Labels](stability.md)
 
 ## Engine
 
 - [Engine Overview](engine/index.md)
+- [Mental Model](engine/mental-model.md)
 - [Metric Space](engine/metric-space.md)
-- [Representations](engine/representations.md)
-- [Intent API](engine/intent-api.md)
-- [Strategies](engine/strategies.md)
-- [Operators](engine/operators.md)
+- [Storage And Indexes](engine/representations.md)
+- [Stats And Modify Components](engine/operators.md)
+- [Implementation Choices](engine/strategies.md)
 - [Mappings](engine/mappings.md)
-- [Runtime Policies](engine/runtime.md)
+- [Execution Policies](engine/runtime.md)
 - [Migration](engine/migration.md)
 
 ## Concepts
 
 - [Finite Metric Spaces](concepts/finite-metric-space.md)
+- [METRIC Vocabulary](concepts/metric-vocabulary.md)
 - [Metric Spaces](concepts/metric-space.md)
 - [Metrics as Recoding Costs](concepts/metrics-as-recoding-costs.md)
 - [Vector Space as a Special Case](concepts/vector-space-as-special-case.md)
@@ -35,11 +37,18 @@ This documentation covers the product concepts, C++ API, bindings, examples, sta
 - [Graph Representation Terminology](concepts/graph-representations.md)
 - [Metric-Space Numerics Manifesto](manifesto.md)
 
+## Metric Discovery
+
+- [Metric Discovery](metrics/index.md)
+- [True Metric Catalog](metrics/true-metric-catalog.md)
+- [Metric Admission Rules](metrics/metric-admission.md)
+- [Rejected Non-Metrics And Metric Variants](metrics/rejected-non-metrics.md)
+- [Metric Quarantine Inventory](metrics/quarantine-inventory.md)
+
 ## APIs
 
 - [C++ API](api/cpp.md)
 - [Python Binding API](api/python.md)
-- [Stability Labels](stability.md)
 - [Testing and CI Scope](testing-and-ci.md)
 - [Release Checklist](release-checklist.md)
 
@@ -54,36 +63,22 @@ Python is a binding and adapter layer over the native engine surface.
 - [Errors And Troubleshooting](python/errors.md)
 - [Python API Reference](api/python.md)
 
-## Hero Examples
+## Application Workflows
 
-- [Engine Demo Expected Outputs](examples/engine-demo-outputs.md)
 - [String Edit Baseline](examples/string-edit-baseline.md)
 - [Histogram Transport Baseline](examples/histogram-transport-baseline.md)
 - [Process Curve External Gallery](examples/process-curve-external-gallery.md)
-- [Process Curve Gallery Benchmark](examples/process-curve-gallery-benchmark.md)
-- [Process Curve PHATE Map](examples/process-curve-phate-map.md)
-- [Process Curve PHATE Gallery](examples/process-curve-phate-gallery.md)
 - [Distribution Image Recoding Baseline](examples/distribution-image-recoding-baseline.md)
 - [Mixed Structured Record Baseline](examples/mixed-structured-record-baseline.md)
+- [Mixed Finite Metric Records (Hero)](examples/mixed-finite-records-hero.md)
+- [Cross-Space Dependency (Hero)](examples/cross-space-dependency.md)
 - [Cross-Space Dependency Baseline](examples/cross-space-dependency-baseline.md)
-- [PHATE-AE Pipeline Hero](examples/phate-ae-pipeline-hero.md)
-- [Engine Benchmark Report](examples/engine-benchmark-report.md)
-
-## Additional Examples
-
-- [Custom Metric Example](examples/custom-metric.md)
-- [Python Custom Metric](examples/python-custom-metric.md)
-- [Python Real-Data Records](examples/python-real-data.md)
-- [Python Compare Spaces](examples/python-compare-spaces.md)
-- [Structured Data](examples/structured-data.md)
-- [Time-Series Space With TWED](examples/time-series-twed.md)
-- [Histogram Space With EMD](examples/histogram-emd.md)
-- [Exact Graph Edge Fixtures](examples/graph-construction.md)
-- [Representative Selection](examples/representative-selection.md)
+- [PHATE-AE Pipeline Workflow](examples/phate-ae-pipeline-workflow.md)
 - [Entropy Diagnostics](examples/entropy-diagnostics.md)
-- [Intrinsic Dimension Diagnostic](examples/intrinsic-dimension.md)
-- [Correlation Between Metric Spaces](examples/correlation-between-spaces.md)
 - [Industrial Anomaly Workflow](examples/industrial-anomaly-workflow.md)
+- [Engine Benchmark Report](examples/engine-benchmark-report.md)
+- [Hero Application Benchmarks](examples/hero-application-benchmarks.md)
+- [Benchmark Report Scaffold](examples/benchmark-report-scaffold.md)
 
 ## GitHub Pages
 

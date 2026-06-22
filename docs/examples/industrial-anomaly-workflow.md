@@ -8,7 +8,7 @@ Industrial records are often mixed objects rather than clean vectors. A single o
 2. Choose a domain metric for each record family.
 3. Build one or more finite metric spaces.
 4. Use neighbor search, grouping, outlier, and comparison operators to inspect local and cross-modal structure.
-5. Use embedding or mapping strategies when a downstream workflow needs coordinates, visualization, or a learned embedding function.
+5. Use embedding or mapping strategies when a downstream workflow needs coordinates, visualization, or a reusable fitted map.
 6. Use result diagnostics to inspect metric assumptions, runtime choices, and source-to-target lineage.
 
 Possible metric choices:
@@ -32,7 +32,7 @@ curve_outliers = curves.outliers(DBSCAN(radius=2.0, min_points=3))
 event_groups = events.groups(DBSCAN(radius=1.0, min_points=2))
 cross_modal = curves.compare(events, DistanceProfileCorrelation())
 
-mapper = curves.map(preserve="diffusion_geometry", learn_mapping=True)
+mapper = curves.map(preserve="diffusion_geometry", fit_map=True)
 latent = mapper.transform(new_curve_windows)
 ```
 

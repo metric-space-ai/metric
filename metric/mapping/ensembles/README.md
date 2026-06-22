@@ -37,85 +37,29 @@ std::function<bool(IrisRec)> response_iris = [](IrisRec r) {
 };
 ```
 
+The ensembles are weak-learner agnostic: any classifier that implements the
+`train` / `predict` / `clone` contract can be boosted or bagged. METRIC ships the
+native `mtrc::TestCl` single-feature threshold stump as a weak learner; you can
+supply your own.
+
 #### Boosting
 
-###### SVM
-
-On the same Iris dataset we can define and train Boosting model.
-
-SVM with default metaparams:
+On the same Iris dataset we can define and train a Boosting model over the native
+weak learner:
 
 ```cpp
-auto svmModel = metric::edmClassifier<IrisRec, CSVM>();
-auto boostSvmModel = metric::Boosting<IrisRec, metric::edmClassifier<IrisRec, CSVM>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, svmModel);
-boostSvmModel.train(iris_str, features_iris, response_iris, true);
+auto weak = mtrc::TestCl<IrisRec>(0, false);
+auto boostModel = mtrc::Boosting<IrisRec, mtrc::TestCl<IrisRec>, mtrc::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, weak);
+boostModel.train(iris_str, features_iris, response_iris, true);
 
-boostSvmModel.predict(IrisTestRec, features_iris, prediction);
+boostModel.predict(IrisTestRec, features_iris, prediction);
 // out
-// Boost SVM predict on single Iris:
+// Boosting predict on single Iris:
 // [1]
 
-boostSvmModel.predict(IrisTestMultipleRec, features_iris, prediction);
+boostModel.predict(IrisTestMultipleRec, features_iris, prediction);
 // out
-// Boost SVM predict on multiple Iris:
-// [1, 1, 0]
-```
-
-SVM with specialized metaparams:
-
-```cpp
-auto svmModel = metric::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
-auto boostSvmModel = metric::Boosting<IrisRec, metric::edmSVM<IrisRec>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, svmModel);
-boostSvmModel.train(iris_str, features_iris, response_iris, true);
-
-boostSvmModel.predict(IrisTestRec, features_iris, prediction);
-// out
-// Boost specialized SVM predict on single Iris:
-// [1]
-
-boostSvmModel.predict(IrisTestMultipleRec, features_iris, prediction);
-// out
-// Boost specialized SVM predict on multiple Iris:
-// [1, 1, 0]
-```
-
----
-
-###### C4.5
-
-C4.5 with default metaparams
-
-```cpp
-auto c45Model = metric::edmClassifier<IrisRec, libedm::CC45>();
-auto boostC45Model = metric::Boosting<IrisRec, metric::edmClassifier<IrisRec, CC45>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model);
-boostC45Model.train(iris_str, features_iris, response_iris, true);
-
-boostC45Model.predict(IrisTestRec, features_iris, prediction);
-// out
-// Boost C4.5 predict on single Iris:
-// [1]
-
-boostC45Model.predict(IrisTestMultipleRec, features_iris, prediction);
-// out
-// Boost C4.5 predict on multiple Iris:
-// [1, 1, 0]
-```
-
-C4.5 with specialized metaparams
-
-```cpp
-auto c45Model = metric::edmC45<IrisRec>(2, 1e-3, 0.25, true);
-auto boostC45Model = metric::Boosting<IrisRec, metric::edmC45<IrisRec>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model);
-boostC45Model.train(iris_str, features_iris, response_iris, true);
-
-boostC45Model.predict(IrisTestRec, features_iris, prediction);
-// out
-// Boost specialized C4.5 predict on single Iris:
-// [1]
-
-boostC45Model.predict(IrisTestMultipleRec, features_iris, prediction);
-// out
-// Boost specialized C4.5 predict on multiple Iris:
+// Boosting predict on multiple Iris:
 // [1, 1, 0]
 ```
 
@@ -125,65 +69,29 @@ boostC45Model.predict(IrisTestMultipleRec, features_iris, prediction);
 
 #### Bagging
 
-###### SVM
-
-Vector with defined models
-
-```cpp
-using WeakLrnVariant = std::variant<metric::edmSVM<IrisRec>, metric::edmClassifier<IrisRec, CSVM> >;
-std::vector<WeakLrnVariant> svmModels = {};
-WeakLrnVariant svmModel_1 = metric::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
-WeakLrnVariant svmModel_2 = metric::edmClassifier<IrisRec, CSVM>();
-svmModels.push_back(svmModel_1);
-svmModels.push_back(svmModel_2);
-```
-
-Bagging on both specialized and default SVM
+Bagging accepts a vector of weak learners passed through a `std::variant`, with a
+per-type share. Here two native weak learners (threshold stumps on different
+features) are bagged:
 
 ```cpp
-auto baggingSVMmodel = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, svmModels); // 30% of first weak learner type, 70% of second
-baggingSVMmodel.train(iris_str, features_iris, response_iris, true);
+using WeakLrnVariant = std::variant<mtrc::TestCl<IrisRec> >;
+std::vector<WeakLrnVariant> models = {};
+WeakLrnVariant model_1 = mtrc::TestCl<IrisRec>(0, false);
+WeakLrnVariant model_2 = mtrc::TestCl<IrisRec>(1, false);
+models.push_back(model_1);
+models.push_back(model_2);
 
-baggingSVMmodel.predict(IrisTestRec, features_iris, prediction);
+auto baggingModel = mtrc::Bagging<IrisRec, WeakLrnVariant, mtrc::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.5, 0.5 }, models); // 50% of each weak learner type
+baggingModel.train(iris_str, features_iris, response_iris, true);
+
+baggingModel.predict(IrisTestRec, features_iris, prediction);
 // out
-// Bagging SVM predict on single Iris:
+// Bagging predict on single Iris:
 // [1]
 
-baggingSVMmodel.predict(IrisTestMultipleRec, features_iris, prediction);
+baggingModel.predict(IrisTestMultipleRec, features_iris, prediction);
 // out
-// Bagging SVM predict on multiple Iris:
-// [1, 1, 0]
-```
-
----
-
-###### C4.5
-
-Vector with defined models
-
-```cpp
-using WeakLrnVariant = std::variant<metric::edmC45<IrisRec>, metric::edmClassifier<IrisRec, CC45> >;
-std::vector<WeakLrnVariant> c45Models = {};
-WeakLrnVariant c45Model_1 = metric::edmC45<IrisRec>(2, 1e-3, 0.25, true);
-WeakLrnVariant c45Model_2 = metric::edmClassifier<IrisRec, CC45>();
-c45Models.push_back(c45Model_1);
-c45Models.push_back(c45Model_2);
-```
-
-Bagging on both specialized and default C4.5
-
-```cpp
-auto baggingC45model = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, c45Models); // 30% of first weak learner type, 70% of second
-baggingC45model.train(iris_str, features_iris, response_iris, true);
-
-baggingC45model.predict(IrisTestRec, features_iris, prediction);
-// out
-// Bagging C4.5 predict on single Iris:
-// [1]
-
-baggingC45model.predict(IrisTestMultipleRec, features_iris, prediction);
-// out
-// Bagging C4.5 predict on multiple Iris:
+// Bagging predict on multiple Iris:
 // [1, 1, 0]
 ```
 
@@ -315,7 +223,7 @@ Then we should create accessors:
     using a4_type = decltype(field4accessors);
 
     auto dim0 = metric::make_dimension(metric::Euclidean<InternalType>(), field0accessors);
-    auto dim1 = metric::make_dimension(metric::Manhatten<InternalType>(), field1accessors);
+    auto dim1 = metric::make_dimension(metric::Manhattan<InternalType>(), field1accessors);
     auto dim2 = metric::make_dimension(metric::P_norm<InternalType>(), field2accessors);
     auto dim3 = metric::make_dimension(metric::Euclidean_thresholded<InternalType>(), field2accessors);
     auto dim4 = metric::make_dimension(metric::Cosine<InternalType>(), field2accessors);
@@ -325,7 +233,7 @@ Then we should create accessors:
     auto dim10 = metric::make_dimension(metric::EMD<InternalType>(8, 8), field2accessors);
 
     typedef std::variant<metric::Dimension<metric::Euclidean<InternalType>, a0_type>,
-        metric::Dimension<metric::Manhatten<InternalType>, a1_type>,
+        metric::Dimension<metric::Manhattan<InternalType>, a1_type>,
         metric::Dimension<metric::P_norm<InternalType>, a2_type>,
         metric::Dimension<metric::Euclidean_thresholded<InternalType>, a2_type>,
         metric::Dimension<metric::Cosine<InternalType>, a2_type>,

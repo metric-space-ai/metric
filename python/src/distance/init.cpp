@@ -9,25 +9,30 @@
 
 namespace py = pybind11;
 
-void export_metric_Edit(py::module& m);
+void export_metric_Edit(py::module &m);
 
 #ifdef METRIC_PYTHON_BUILD_FULL
-void export_metric_EMD(py::module& m);
-void export_metric_RandomEMD(py::module& m);
-void export_metric_kohonen(py::module& m);
-void export_metric_sorensen(py::module& m);
-void export_metric_SSIM(py::module& m);
-void export_metric_TWED(py::module& m);
+void export_metric_EMD(py::module &m);
+void export_metric_RandomEMD(py::module &m);
+void export_metric_kohonen(py::module &m);
+void export_metric_sorensen(py::module &m);
+void export_metric_SSIM(py::module &m);
+void export_metric_TWED(py::module &m);
+#else
+void export_metric_standards(py::module &m);
 #endif
 
-PYBIND11_MODULE(distance, m) {
+PYBIND11_MODULE(distance, m)
+{
 #ifdef METRIC_PYTHON_BUILD_FULL
-    export_metric_EMD(m);
-    export_metric_RandomEMD(m);
-    export_metric_kohonen(m);
-    export_metric_sorensen(m);
-    export_metric_SSIM(m);
-    export_metric_TWED(m);
+	export_metric_EMD(m);
+	export_metric_RandomEMD(m);
+	export_metric_kohonen(m);
+	export_metric_sorensen(m);
+	export_metric_SSIM(m);
+	export_metric_TWED(m);
+#else
+	export_metric_standards(m);
 #endif
-    export_metric_Edit(m);
+	export_metric_Edit(m);
 }

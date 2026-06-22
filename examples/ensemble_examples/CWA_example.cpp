@@ -6,22 +6,22 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 
-#include <vector>
 #include <iostream>
+#include <vector>
 
 #include "metric/mapping/ensembles/DT/correlation_weighted_accuracy.hpp"
 
 int main()
 {
-    std::cout << "Correlation Weighted Accuracy example have started" << std::endl;
-    std::cout << '\n';
+	std::cout << "Correlation Weighted Accuracy example have started" << std::endl;
+	std::cout << '\n';
 
-    std::vector<int> g1 = {3, 2, 2, 3, 1, 1}; // Known groups
-    std::vector<int> g2 = {4, 2, 2, 2, 1, 1}; // Predicted groups
+	std::vector<int> g1 = {3, 2, 2, 3, 1, 1}; // Known groups
+	std::vector<int> g2 = {4, 2, 2, 2, 1, 1}; // Predicted groups
 
-    double cwa = metric::correlation_weighted_accuracy(g1, g2);
+	double cwa = mtrc::correlation_weighted_accuracy(g1, g2);
 
-    std::cout << "CWA: " << cwa << std::endl;
+	std::cout << "CWA: " << cwa << std::endl;
 
-    return 0;
+	return 0;
 }

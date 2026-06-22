@@ -9,14 +9,14 @@ Copyright (c) 2020 Panda Team
 #ifndef _METRIC_DISTANCE_K_RANDOM_ENTROPY_HPP
 #define _METRIC_DISTANCE_K_RANDOM_ENTROPY_HPP
 
-#include "../distance/k-related/Standards.hpp"
+#include <metric/metric/catalog/vector/Standards.hpp>
 #include "metric/utils/type_traits.hpp"
-#include <blaze/Blaze.h>
+#include <metric/numeric.hpp>
 
-namespace metric {
+namespace mtrc {
 
 // non-kpN version, DEPRECATED
-template <typename RecType, typename Metric = metric::Euclidean<typename RecType::value_type>>
+template <typename RecType, typename Metric = mtrc::Euclidean<typename RecType::value_type>>
 class EntropySimple { // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO
 					  // refactor to avoid code dubbing
   public:
@@ -47,8 +47,15 @@ class EntropySimple { // averaged entropy estimation: code COPIED from mgc.*pp w
 	bool exp;
 };
 
-// https://hal.inria.fr/hal-01272527/document
-template <typename RecType, typename Metric = metric::Chebyshev<typename RecType::value_type>> class Entropy {
+// kpN local-Gaussian (Kozachenko-Leonenko style) DIFFERENTIAL entropy estimator of a
+// finite metric space. https://hal.inria.fr/hal-01272527/document
+// Notes: returns nats (no logbase rescaling, unlike the deprecated EntropySimple which
+// uses base 2); the result can be negative; requires at least 4 records (returns
+// std::nan("estimation failed") otherwise); k (neighbors) and p (local realizations)
+// are clamped internally for small spaces. Also returns the same NaN sentinel when no
+// point yields a valid local Gaussian (e.g. a zero-diameter space of identical records),
+// so callers should test std::isnan on the result. See mtrc::stats::properties::entropy.
+template <typename RecType, typename Metric = mtrc::Chebyshev<typename RecType::value_type>> class Entropy {
   public:
 	Entropy(Metric metric = Metric(), size_t k = 7, size_t p = 70, bool exp = false)
 		: metric(metric), k(k), p(p), exp(exp)
@@ -70,7 +77,7 @@ template <typename RecType, typename Metric = metric::Chebyshev<typename RecType
 
 // VMixing
 
-template <typename RecType, typename Metric = metric::Euclidean<typename RecType::value_type>>
+template <typename RecType, typename Metric = mtrc::Euclidean<typename RecType::value_type>>
 class VMixing_simple { // non-kpN version, DEPRECATED
 
   public:
@@ -89,7 +96,7 @@ class VMixing_simple { // non-kpN version, DEPRECATED
 	Metric metric;
 };
 
-template <typename RecType, typename Metric = metric::Euclidean<typename RecType::value_type>> class VMixing {
+template <typename RecType, typename Metric = mtrc::Euclidean<typename RecType::value_type>> class VMixing {
 
   public:
 	VMixing(Metric metric = Metric(), int k = 3, int p = 25) : metric(metric), k(k), p(p) {}
@@ -111,18 +118,18 @@ template <typename RecType, typename Metric = metric::Euclidean<typename RecType
 /* // VOI code, works and may be enabled
 
 
-template <typename C, typename Metric = metric::Chebyshev<type_traits::underlying_type_t<C>>>
+template <typename C, typename Metric = mtrc::Chebyshev<type_traits::underlying_type_t<C>>>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
 VOI_simple(const C& Xc, const C& Yc, int k = 3);
 
 
-template <typename C, typename Metric = metric::Chebyshev<type_traits::underlying_type_t<C>>>
+template <typename C, typename Metric = mtrc::Chebyshev<type_traits::underlying_type_t<C>>>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
 VOI(const C& Xc, const C& Yc, int k = 3, int p = 25);
 
 // */
 
-} // namespace metric
+} // namespace mtrc
 
 #include "entropy.cpp"
 #endif

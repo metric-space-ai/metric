@@ -4,11 +4,9 @@ from collections.abc import Mapping
 import copy as _copy
 import math
 import numbers
-import operator
 
 from metric.exceptions import (
     AmbiguousIntentError,
-    IncompatibleSpaceError,
     MetricContractError,
     MetricInputError,
     MissingMetricError,
@@ -29,43 +27,30 @@ class RecordId(int):
         return int.__new__(cls, value)
 
 
-class _EuclideanVectorMetric:
-    name = "Euclidean"
-
-    def __call__(self, lhs, rhs):
-        lhs_values = self._values(lhs)
-        rhs_values = self._values(rhs)
-        if len(lhs_values) != len(rhs_values):
-            raise MetricInputError("vector records must have the same length")
-
-        total = 0.0
-        for lhs_value, rhs_value in zip(lhs_values, rhs_values):
-            try:
-                delta = float(lhs_value) - float(rhs_value)
-            except (TypeError, ValueError):
-                raise MetricInputError("vector records must contain numeric values") from None
-            total += delta * delta
-        return math.sqrt(total)
-
-    def __repr__(self):
-        return "Euclidean()"
-
-    @staticmethod
-    def _values(record):
-        try:
-            return list(record)
-        except TypeError:
-            raise MetricInputError("vector records must be one-dimensional sequences") from None
-
-
-def _coerce_non_negative_integer(value, name):
+def _native_euclidean_metric():
     try:
-        value = operator.index(value)
+        from metric.distance import Euclidean
+    except (ImportError, AttributeError):
+        Euclidean = None
+    if Euclidean is None:
+        raise MissingMetricError(
+            "Space.vectors requires metric=... unless the native Euclidean binding is available. "
+            "The Python package does not implement Euclidean distance itself."
+        )
+    return Euclidean()
+
+
+def _is_native_euclidean_vector_metric(metric):
+    try:
+        from metric.distance import Euclidean
+    except (ImportError, AttributeError):
+        return False
+    if Euclidean is None:
+        return False
+    try:
+        return isinstance(metric, Euclidean)
     except TypeError:
-        raise TypeError(f"{name} must be an integer") from None
-    if value < 0:
-        raise ValueError(f"{name} must be non-negative")
-    return value
+        return False
 
 
 def _normalize_validation(validate):
@@ -94,6 +79,22 @@ def _validate_distance_value(value, lhs_index, rhs_index):
             f"metric distance for records {lhs_index} and {rhs_index} must be non-negative"
         )
     return value
+
+
+def _require_native_binding(operation, kind):
+    """Raise the adapter-boundary error for an operation with no native binding.
+
+    METRIC is a native C++ finite-metric-space framework. The Python package
+    adapts data, marshals results, and exposes bindings; it does not implement
+    production algorithms. Search/clustering/embedding/correlation/structure
+    operations must run in native C++.
+    """
+    raise StrategyUnavailableError(
+        f"{operation} requires native C++ binding support. The METRIC Python package is an "
+        f"adapter-only surface: {kind} must run in native C++ and be reached through a binding, "
+        f"and is not implemented in Python. No native binding for this operation is exposed in "
+        f"metric._impl yet."
+    )
 
 
 class FiniteMetricSpace:
@@ -169,13 +170,13 @@ class FiniteMetricSpace:
     def vectors(cls, records, metric=None, **kwargs):
         """Construct a finite metric space from vector records.
 
-        Defaults to a pure Python Euclidean metric so the convenience remains
-        available in the core wheel without optional standard-distance bindings.
+        Defaults to the native Euclidean binding when it is available. The
+        Python package does not implement vector-distance math itself.
         """
 
         return cls(
             records,
-            metric=_EuclideanVectorMetric() if metric is None else metric,
+            metric=_native_euclidean_metric() if metric is None else metric,
             **kwargs,
         )
 
@@ -293,33 +294,20 @@ class FiniteMetricSpace:
         return GraphIndex(self, count)
 
     def knn(self, query, k=1):
-        self.ensure_fresh()
-        k = _coerce_non_negative_integer(k, "k")
-        distances = [
-            (index, self.metric(record, query))
-            for index, record in enumerate(self.records)
-        ]
-        return sorted(distances, key=lambda item: item[1])[:k]
+        """Exact-scan k-nearest neighbors (native-only)."""
+        _require_native_binding("FiniteMetricSpace.knn(...)", "exact-scan neighbor search")
 
     def nn(self, query):
-        return self.knn(query, 1)[0]
+        """Exact-scan nearest neighbor (native-only)."""
+        _require_native_binding("FiniteMetricSpace.nn(...)", "exact-scan neighbor search")
 
     def rnn(self, query, radius):
-        return [
-            (index, distance)
-            for index, distance in self.knn(query, len(self.records))
-            if distance <= radius
-        ]
+        """Exact-scan radius neighbors (native-only)."""
+        _require_native_binding("FiniteMetricSpace.rnn(...)", "exact-scan radius search")
 
     def neighbors(self, query, k=None, count=None, radius=None):
-        if k is not None and count is not None:
-            raise ValueError("use either k or count, not both")
-        if radius is not None:
-            if k is not None or count is not None:
-                raise ValueError("radius cannot be combined with k or count")
-            return self.rnn(query, radius)
-        value = 1 if k is None and count is None else count if count is not None else k
-        return self.knn(query, _coerce_non_negative_integer(value, "count"))
+        """Exact-scan neighbor query (native-only)."""
+        _require_native_binding("FiniteMetricSpace.neighbors(...)", "exact-scan neighbor search")
 
     def _compute_distance(self, lhs_index, rhs_index):
         value = self.metric(self.records[lhs_index], self.records[rhs_index])
@@ -349,26 +337,6 @@ class Space(FiniteMetricSpace):
     facade until they have deterministic coverage.
     """
 
-    def _neighbor_count(self, k=None, count=None):
-        if k is not None and count is not None:
-            raise ValueError("use either k or count, not both")
-        value = 1 if k is None and count is None else count if count is not None else k
-        return _coerce_non_negative_integer(value, "count")
-
-    def _neighbor_row(self, source_index, count=None, radius=None, include_self=False):
-        self.ensure_fresh()
-        neighbors = []
-        for candidate_index in range(len(self.records)):
-            if not include_self and candidate_index == source_index:
-                continue
-            distance = self.distance(candidate_index, source_index)
-            if radius is None or distance <= radius:
-                neighbors.append((candidate_index, distance))
-        neighbors.sort(key=lambda item: item[1])
-        if count is not None:
-            neighbors = neighbors[:count]
-        return neighbors
-
     def neighbors(
         self,
         query=None,
@@ -381,101 +349,20 @@ class Space(FiniteMetricSpace):
         representation=None,
         runtime=None,
     ):
-        from metric.operators import neighbor_result
-
-        runtime_policy = require_exact_runtime(runtime)
-        if strategy is not None:
-            raise ValueError("strategy overrides are not promoted for Python neighbors yet")
-
-        has_explicit_count = k is not None or count is not None
-        neighbor_count = self._neighbor_count(k, count) if has_explicit_count or radius is None else None
-        if representation is None:
-            representation = self._runtime_neighbor_representation(
-                runtime_policy,
-                query=query,
-                count=neighbor_count,
-                radius=radius,
-                include_self=include_self,
-            )
-        if query is not None and representation is not None:
-            return neighbor_result(
-                self.records,
-                query=query,
-                neighbors=representation.neighbors(query, k=k, count=count, radius=radius),
-                representation=getattr(representation, "representation", "metric_space"),
-            )
-        if representation is not None:
-            representation.ensure_fresh()
-            if getattr(representation, "representation", None) == "exact_knn_graph":
-                rows = [
-                    list(representation.neighbors(source_index))[:neighbor_count]
-                    for source_index in range(len(self.records))
-                ]
-                return neighbor_result(
-                    self.records,
-                    rows=rows,
-                    representation=representation.representation,
-                )
-
-        if query is None:
-            rows = [
-                self._neighbor_row(source_index, neighbor_count, radius=radius, include_self=include_self)
-                for source_index in range(len(self.records))
-            ]
-            return neighbor_result(self.records, rows=rows)
-
-        if radius is not None:
-            neighbors = self.rnn(query, radius)
-            return neighbor_result(
-                self.records,
-                query=query,
-                neighbors=neighbors if neighbor_count is None else neighbors[:neighbor_count],
-            )
-        return neighbor_result(self.records, query=query, neighbors=self.knn(query, neighbor_count))
+        """Exact-scan neighbor query (native-only)."""
+        _require_native_binding("Space.neighbors(...)", "exact-scan neighbor search")
 
     def nearest(self, query):
-        return self.neighbors(query, count=1).neighbors[0]
+        """Exact-scan nearest neighbor (native-only)."""
+        _require_native_binding("Space.nearest(...)", "exact-scan neighbor search")
 
     def within_radius(self, query, radius):
-        return self.neighbors(query, radius=radius)
+        """Exact-scan radius neighbors (native-only)."""
+        _require_native_binding("Space.within_radius(...)", "exact-scan radius search")
 
     def groups(self, strategy=None, *, count="auto", radius=None, min_size=1, representation=None, runtime=None):
-        runtime_policy = require_exact_runtime(runtime)
-        representation_name = self._representation_name(representation)
-        if representation is None and runtime_policy.cache_mode == "materialized":
-            representation_name = "matrix"
-        if strategy is not None and (count != "auto" or radius is not None):
-            raise ValueError("use either strategy or count/radius, not both")
-
-        from metric.operators import find_groups
-        from metric.strategies import DBSCAN, KMedoids
-
-        if strategy is None:
-            if radius is not None:
-                strategy = DBSCAN(radius=radius, min_points=min_size)
-            else:
-                if count == "auto":
-                    count = 1 if len(self.records) <= 2 else 2
-                strategy = KMedoids(groups=count)
-
-        return find_groups(self.records, self.metric, strategy, representation=representation_name)
-
-    def _nearest_other_distance(self, source_index):
-        candidates = [
-            self.distance(source_index, candidate_index)
-            for candidate_index in range(len(self.records))
-            if candidate_index != source_index
-        ]
-        return min(candidates) if candidates else 0
-
-    def _outlier_count(self, count=None, fraction=0.05):
-        if count is not None:
-            return _coerce_non_negative_integer(count, "count")
-        if fraction < 0 or fraction > 1:
-            raise ValueError("fraction must be between 0 and 1")
-        if not self.records or fraction == 0:
-            return 0
-        return max(1, math.ceil(len(self.records) * fraction))
+        """Group records via clustering (native-only)."""
+        _require_native_binding("Space.groups(...)", "clustering")
 
     def outliers(
         self,
@@ -487,39 +374,8 @@ class Space(FiniteMetricSpace):
         representation=None,
         runtime=None,
     ):
-        require_exact_runtime(runtime)
-        representation_name = self._representation_name(representation)
-        from metric.operators import find_outliers
-
-        if strategy is not None:
-            if count is not None or threshold is not None or fraction != 0.05:
-                raise ValueError("use either strategy or count/fraction/threshold, not both")
-            return find_outliers(self.records, self.metric, strategy, representation=representation_name)
-
-        from metric.operators import Outlier, OutlierResult
-
-        self.ensure_fresh()
-        scored = [
-            Outlier(record_id=record_index, score=self._nearest_other_distance(record_index))
-            for record_index in range(len(self.records))
-        ]
-        if threshold is not None:
-            scored = [outlier for outlier in scored if outlier.score >= threshold]
-        scored.sort(key=lambda outlier: outlier.record_id)
-        scored.sort(key=lambda outlier: outlier.score, reverse=True)
-        if threshold is None:
-            scored = scored[:self._outlier_count(count=count, fraction=fraction)]
-
-        return OutlierResult(
-            outliers=tuple(scored),
-            record_count=len(self.records),
-            cluster_count=0,
-            noise_count=len(scored),
-            exact=True,
-            operator_name="find_outliers",
-            strategy="nearest_neighbor_distance",
-            representation=representation_name,
-        )
+        """Find unusual records (native-only)."""
+        _require_native_binding("Space.outliers(...)", "outlier detection")
 
     def denoise(
         self,
@@ -532,61 +388,12 @@ class Space(FiniteMetricSpace):
         representation=None,
         runtime=None,
     ):
-        require_exact_runtime(runtime)
-        representation_name = self._representation_name(representation)
-        from metric.operators import denoise_space
-
-        if strategy is not None:
-            if count is not None or threshold is not None or fraction != 0.05 or strength != "auto":
-                raise ValueError("use either strategy or count/fraction/threshold/strength, not both")
-            return denoise_space(self.records, self.metric, strategy, representation=representation_name)
-
-        if strength != "auto":
-            if count is not None or threshold is not None or fraction != 0.05:
-                raise ValueError("strength cannot be combined with count, fraction, or threshold")
-            try:
-                fraction = float(strength)
-            except (TypeError, ValueError):
-                raise ValueError("strength must be 'auto' or a fraction between 0 and 1") from None
-
-        from metric.operators import MappingResult
-
-        outlier_ids = {
-            outlier.record_id
-            for outlier in self.outliers(count=count, fraction=fraction, threshold=threshold).outliers
-        }
-        kept_record_ids = tuple(
-            record_index
-            for record_index in range(len(self.records))
-            if record_index not in outlier_ids
-        )
-        denoised_records = [self.records[index] for index in kept_record_ids]
-
-        return MappingResult(
-            space=Space(denoised_records, self.metric),
-            source_record_ids=kept_record_ids,
-            source_record_count=len(self.records),
-            target_record_count=len(denoised_records),
-            exact=True,
-            operator_name="denoise",
-            mapping="nearest_neighbor_outlier_filter",
-            strategy="nearest_neighbor_distance",
-            representation=representation_name,
-            inverse_supported=False,
-        )
+        """Filter noise records into a derived metric space (native-only)."""
+        _require_native_binding("Space.denoise(...)", "density denoising")
 
     def representatives(self, k=None, strategy=None, *, count=None, representation=None, runtime=None):
-        require_exact_runtime(runtime)
-        from metric.operators import find_representatives
-
-        return find_representatives(
-            self.records,
-            self.metric,
-            k,
-            strategy=strategy,
-            count=count,
-            representation=self._representation_name(representation),
-        )
+        """Select representative records (native-only)."""
+        _require_native_binding("Space.representatives(...)", "representative selection")
 
     def _representation_name(self, representation):
         representation_name = "metric_space"
@@ -595,75 +402,84 @@ class Space(FiniteMetricSpace):
             representation_name = getattr(representation, "representation", representation_name)
         return representation_name
 
-    def _runtime_neighbor_representation(
-        self,
-        runtime_policy,
-        *,
-        query,
-        count,
-        radius,
-        include_self,
-    ):
-        if runtime_policy.representation == "auto":
-            if runtime_policy.cache_mode == "materialized":
-                return self.to_matrix()
-            return None
-        if runtime_policy.representation == "metric_space":
-            return None
-        if runtime_policy.representation == "matrix":
-            return self.to_matrix()
-        if runtime_policy.representation == "tree":
-            return self.to_tree()
-        if runtime_policy.representation == "graph":
-            if query is not None:
-                raise StrategyUnavailableError(
-                    "graph runtime representation requires queryless Space.neighbors(...) "
-                    "in the Python facade"
-                )
-            if radius is not None:
-                raise StrategyUnavailableError(
-                    "graph runtime representation does not support radius neighbor queries "
-                    "in the Python facade"
-                )
-            if include_self:
-                raise StrategyUnavailableError(
-                    "graph runtime representation does not support include_self=True "
-                    "in the Python facade"
-                )
-            graph_count = (
-                runtime_policy.graph_count
-                if runtime_policy.graph_count is not None
-                else count
-            )
-            return self.to_graph(count=0 if graph_count is None else graph_count)
-        return None
-
     def reduce(self, count=None, strategy=None, *, representation=None, runtime=None):
-        require_exact_runtime(runtime)
-        from metric.operators import reduce_space
-
-        return reduce_space(
-            self.records,
-            self.metric,
-            count,
-            strategy=strategy,
-            representation=self._representation_name(representation),
-        )
+        """Reduce the space to representative records (native-only)."""
+        _require_native_binding("Space.reduce(...)", "representative reduction")
 
     def compress(self, count=None, strategy=None, *, representation=None, runtime=None):
-        require_exact_runtime(runtime)
-        from metric.operators import compress_space
-
-        return compress_space(
-            self.records,
-            self.metric,
-            count,
-            strategy=strategy,
-            representation=self._representation_name(representation),
-        )
+        """Compress the space by retaining representatives (native-only)."""
+        _require_native_binding("Space.compress(...)", "representative compression")
 
     def map(self, transform=None, metric=None, *, target=None, strategy=None, representation=None, runtime=None):
         require_exact_runtime(runtime)
+        from metric.strategies import PhateAE
+
+        if isinstance(strategy, PhateAE):
+            if transform is not None or target is not None or metric is not None:
+                raise AmbiguousIntentError(
+                    "PhateAE native mappings derive their target from the source space; "
+                    "omit transform and target, and do not pass a metric"
+                )
+            if not _is_native_euclidean_vector_metric(self.metric):
+                raise StrategyUnavailableError(
+                    "Space.map(strategy=PhateAE(...)) only delegates to the native C++ binding for "
+                    "Space.vectors(...) values that use the default native-compatible Euclidean vector metric. "
+                    "Custom Python metrics are not ignored; use "
+                    "metric.mappings.native_phate_autoencoder_fit_vectors(...) explicitly for native Euclidean "
+                    "vector rows or stay in C++ for custom metric semantics."
+                )
+
+            from metric.mappings import native_phate_autoencoder_fit_vectors
+            from metric.operators import MappingResult
+
+            self.ensure_fresh()
+            representation_name = self._representation_name(representation)
+            model = native_phate_autoencoder_fit_vectors(
+                self.records,
+                dimensions=strategy.dimensions,
+                epochs=strategy.epochs,
+                learning_rate=strategy.learning_rate,
+                diffusion_steps=strategy.diffusion_steps,
+                kernel_scale=1.0 if strategy.kernel_scale is None else strategy.kernel_scale,
+                reconstruction_weight=strategy.reconstruction_weight,
+                geometry_weight=strategy.geometry_weight,
+                seed=strategy.seed,
+                distance_provider=strategy.distance_provider,
+                affinity_kernel=strategy.affinity_kernel,
+                diffusion_operator=strategy.diffusion_operator,
+            )
+            latent_records = model.transform(self.records)
+            latent_space = Space.vectors(
+                latent_records,
+                ids=self.ids,
+                validate="none",
+                cache="none",
+                metadata={
+                    "source_space_version": self.version(),
+                    "mapping": model.mapping,
+                    "strategy": model.strategy,
+                    "distance_provider": model.distance_provider,
+                    "affinity_kernel": model.affinity_kernel,
+                    "diffusion_operator": model.diffusion_operator,
+                },
+            )
+            source_ids = tuple(self.ids)
+            return MappingResult(
+                space=latent_space,
+                source_record_ids=source_ids,
+                source_record_count=len(self.records),
+                target_record_count=len(latent_records),
+                exact=True,
+                operator_name="map",
+                mapping=model.mapping,
+                strategy=model.strategy,
+                representation=representation_name,
+                inverse_supported=model.inverse_supported,
+                source_records=tuple((record_id,) for record_id in source_ids),
+                representative_records=source_ids,
+                fitted_model=model,
+            )
+
         if transform is None and target is None:
             raise AmbiguousIntentError("Space.map requires transform=... or target=...")
         if transform is not None and target is not None:
@@ -689,31 +505,22 @@ class Space(FiniteMetricSpace):
         )
 
     def embed(self, dimensions=2, strategy=None, *, representation=None, runtime=None):
-        require_exact_runtime(runtime)
-        representation_name = self._representation_name(representation)
-
-        from metric.operators import embed_space
-
-        return embed_space(
-            self.records,
-            self.metric,
-            dimensions=dimensions,
-            strategy=strategy,
-            representation=representation_name,
-        )
+        """Embed the space into Euclidean coordinates (native-only)."""
+        _require_native_binding("Space.embed(...)", "metric-space embedding (e.g. classical MDS)")
 
     def describe(self, *, representation=None, runtime=None):
-        require_exact_runtime(runtime)
-        representation_name = self._representation_name(representation)
-
-        from metric.operators import describe_structure
-
-        return describe_structure(self.records, self.metric, representation=representation_name)
+        """Describe exact finite-space structure (native-only)."""
+        _require_native_binding("Space.describe(...)", "structural all-pairs statistics")
 
     def describe_structure(self, *, representation=None, runtime=None):
-        return self.describe(representation=representation, runtime=runtime)
+        """Describe exact finite-space structure (native-only)."""
+        _require_native_binding("Space.describe_structure(...)", "structural all-pairs statistics")
 
     def runtime_diagnostics(self, *, representation=None, runtime=None, intent=None):
+        """Inspect the normalized runtime policy and chosen representation.
+
+        Adapter: this reports policy metadata only; it runs no algorithm.
+        """
         from metric.runtime import runtime_diagnostics
 
         return runtime_diagnostics(
@@ -721,24 +528,6 @@ class Space(FiniteMetricSpace):
             representation=self._representation_name(representation),
             intent=intent,
         )
-
-    def _compare_records(self, other, align, other_metric=None):
-        if not isinstance(other, FiniteMetricSpace):
-            if other_metric is None:
-                raise TypeError("other must be a metric.Space or pass other_metric= for raw records")
-            if align != "position":
-                raise ValueError("align='ids' requires other to be a metric.Space")
-            return self.records, list(other), other_metric, tuple(self.ids), (), ()
-
-        if other_metric is not None:
-            raise TypeError("other_metric is only accepted when other is a raw record set")
-        if align == "position":
-            return self.records, other.records, other.metric, tuple(self.ids), (), ()
-        if align != "ids":
-            raise ValueError("align must be 'position' or 'ids'")
-        if set(self.ids) != set(other.ids):
-            raise IncompatibleSpaceError("align='ids' requires both spaces to have the same ids")
-        return self.records, [other.record(record_id) for record_id in self.ids], other.metric, tuple(self.ids), (), ()
 
     def compare(
         self,
@@ -751,34 +540,8 @@ class Space(FiniteMetricSpace):
         other_representation=None,
         runtime=None,
     ):
-        require_exact_runtime(runtime)
-        from metric.operators import compare_spaces
-
-        (
-            left_records,
-            right_records,
-            right_metric,
-            matched_ids,
-            dropped_left_ids,
-            dropped_right_ids,
-        ) = self._compare_records(other, align, other_metric)
-        return compare_spaces(
-            left_records,
-            self.metric,
-            right_records,
-            right_metric,
-            strategy,
-            left_representation=self._representation_name(representation),
-            right_representation=(
-                self._representation_name(other_representation)
-                if other_representation is not None or isinstance(other, FiniteMetricSpace)
-                else "records"
-            ),
-            align=align,
-            matched_ids=matched_ids,
-            dropped_left_ids=dropped_left_ids,
-            dropped_right_ids=dropped_right_ids,
-        )
+        """Compare aligned finite metric spaces (native-only)."""
+        _require_native_binding("Space.compare(...)", "cross-space distance-profile correlation")
 
     def correlate(
         self,
@@ -791,15 +554,8 @@ class Space(FiniteMetricSpace):
         other_representation=None,
         runtime=None,
     ):
-        return self.compare(
-            other,
-            strategy=strategy,
-            align=align,
-            other_metric=other_metric,
-            representation=representation,
-            other_representation=other_representation,
-            runtime=runtime,
-        )
+        """Correlate aligned finite metric spaces (native-only)."""
+        _require_native_binding("Space.correlate(...)", "cross-space distance-profile correlation")
 
 
 MatrixSpace = FiniteMetricSpace

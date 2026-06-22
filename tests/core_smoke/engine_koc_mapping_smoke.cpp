@@ -3,9 +3,9 @@
 #include <string>
 #include <vector>
 
-#include "metric/distance.hpp"
+#include "metric/metric/catalog.hpp"
 #include "metric/engine.hpp"
-#include "metric/mappings/koc.hpp"
+#include "metric/modify/map/koc.hpp"
 
 namespace {
 
@@ -21,20 +21,20 @@ int main()
 {
 	using record_type = std::vector<double>;
 
-	auto space = metric::make_space(std::vector<record_type>{{0.0, 0.0}, {1.0, 1.0}}, metric::Euclidean<double>{});
-	auto mapping = metric::mappings::koc(2);
-	static_assert(metric::Mapping_v<decltype(mapping), decltype(space)>);
+	auto space = mtrc::make_space(std::vector<record_type>{{0.0, 0.0}, {1.0, 1.0}}, mtrc::Euclidean<double>{});
+	auto mapping = mtrc::modify::map::koc(2);
+	static_assert(mtrc::Mapping_v<decltype(mapping), decltype(space)>);
 	assert(mapping.clusters() == 2);
 
-	using model_type = metric::mappings::KOCModel<decltype(space)>;
-	static_assert(metric::MappingModel_v<model_type, decltype(space)>);
+	using model_type = mtrc::modify::map::KOCModel<decltype(space)>;
+	static_assert(mtrc::MappingModel_v<model_type, decltype(space)>);
 	model_type model(2);
 	assert(model.clusters() == 2);
 	assert(!model.inverse_supported());
 
 	bool rejected_fit = false;
 	try {
-		(void)metric::mappings::fit(mapping, space);
+		(void)mtrc::modify::map::fit(mapping, space);
 	} catch (const std::invalid_argument &error) {
 		rejected_fit = is_unpromoted_koc_error(error);
 	}
@@ -42,7 +42,7 @@ int main()
 
 	bool rejected_transform = false;
 	try {
-		(void)metric::mappings::transform(model, space);
+		(void)mtrc::modify::map::transform(model, space);
 	} catch (const std::invalid_argument &error) {
 		rejected_transform = is_unpromoted_koc_error(error);
 	}
@@ -50,7 +50,7 @@ int main()
 
 	bool rejected_map = false;
 	try {
-		(void)metric::map(space, mapping);
+		(void)mtrc::map(space, mapping);
 	} catch (const std::invalid_argument &error) {
 		rejected_map = is_unpromoted_koc_error(error);
 	}
@@ -58,7 +58,7 @@ int main()
 
 	bool rejected_invalid_clusters = false;
 	try {
-		(void)metric::mappings::koc(0);
+		(void)mtrc::modify::map::koc(0);
 	} catch (const std::invalid_argument &) {
 		rejected_invalid_clusters = true;
 	}

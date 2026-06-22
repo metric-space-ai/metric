@@ -9,8 +9,6 @@
 
 namespace py = pybind11;
 
-void export_metric_wavelet(py::module& m);
+void export_metric_wavelet(py::module &m);
 
-PYBIND11_MODULE(transform, m) {
-    export_metric_wavelet(m);
-}
+PYBIND11_MODULE(transform, m) { export_metric_wavelet(m); }

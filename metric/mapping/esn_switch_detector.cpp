@@ -13,9 +13,9 @@ Copyright (c) 2021 Panda Team
 // ---- public
 
 template <typename value_type>
-SwitchPredictor<value_type>::SwitchPredictor(const blaze::DynamicMatrix<value_type> &training_data,
-											 const blaze::DynamicMatrix<value_type> &labels, const size_t wnd_size_,
-											 const size_t cmp_wnd_sz_, const size_t washout_,
+SwitchPredictor<value_type>::SwitchPredictor(const mtrc::numeric::DynamicMatrix<value_type> &training_data,
+											 const mtrc::numeric::DynamicMatrix<value_type> &labels,
+											 const size_t wnd_size_, const size_t cmp_wnd_sz_, const size_t washout_,
 											 const value_type contrast_threshold_, const value_type alpha_,
 											 const value_type beta_)
 	: wnd_size(wnd_size_), cmp_wnd_sz(cmp_wnd_sz_), washout(washout_), contrast_threshold(contrast_threshold_),
@@ -40,13 +40,13 @@ SwitchPredictor<value_type>::SwitchPredictor(const std::vector<RecType> &trainin
 template <typename value_type> SwitchPredictor<value_type>::SwitchPredictor(const std::string &filename)
 {
 
-	blaze::DynamicMatrix<value_type> W_in;
-	blaze::CompressedMatrix<value_type> W;
-	blaze::DynamicMatrix<value_type> W_out;
-	blaze::DynamicVector<value_type> params;
+	mtrc::numeric::DynamicMatrix<value_type> W_in;
+	mtrc::numeric::CompressedMatrix<value_type> W;
+	mtrc::numeric::DynamicMatrix<value_type> W_out;
+	mtrc::numeric::DynamicVector<value_type> params;
 	// saved as: archive << W_in << W << W_out << params;
 
-	blaze::Archive<std::ifstream> archive(filename);
+	mtrc::numeric::Archive<std::ifstream> archive(filename);
 	archive >> W_in;
 	archive >> W;
 	archive >> W_out;
@@ -63,38 +63,41 @@ template <typename value_type> SwitchPredictor<value_type>::SwitchPredictor(cons
 		cmp_wnd_sz = 150;
 		contrast_threshold = 0.3;
 	}
-	esn = metric::ESN<std::vector<value_type>, void>(W_in, W, W_out, alpha, washout, beta);
+	esn = mtrc::ESN<std::vector<value_type>, void>(W_in, W, W_out, alpha, washout, beta);
 }
 
 template <typename value_type>
-blaze::DynamicMatrix<value_type> SwitchPredictor<value_type>::encode(const blaze::DynamicMatrix<value_type> &dataset)
+mtrc::numeric::DynamicMatrix<value_type>
+SwitchPredictor<value_type>::encode(const mtrc::numeric::DynamicMatrix<value_type> &dataset)
 {
 
 	auto data = preprocess(dataset);
 
 	auto prediction = esn.predict(data);
-	blaze::DynamicMatrix<value_type, blaze::rowMajor> out = blaze::trans(prediction);
+	mtrc::numeric::DynamicMatrix<value_type, mtrc::numeric::rowMajor> out = mtrc::numeric::trans(prediction);
 
-	blaze::DynamicMatrix<value_type> sl_entropy(out.rows(), 1, 0);
+	mtrc::numeric::DynamicMatrix<value_type> sl_entropy(out.rows(), 1, 0);
 	for (size_t i = wnd_size; i < out.rows(); ++i) {
-		blaze::DynamicMatrix<value_type> wnd_row = blaze::submatrix(out, i - wnd_size, 0, wnd_size, 1);
-		blaze::DynamicVector<value_type> wnd = blaze::column(wnd_row, 0);
+		mtrc::numeric::DynamicMatrix<value_type> wnd_row =
+			mtrc::numeric::submatrix(out, i - wnd_size, 0, wnd_size, 1);
+		mtrc::numeric::DynamicVector<value_type> wnd = mtrc::numeric::column(wnd_row, 0);
 		sl_entropy(i, 0) = class_entropy(wnd, 0.5);
 	}
 
-	blaze::DynamicMatrix<value_type> postproc(out.rows(), 1, 0);
+	mtrc::numeric::DynamicMatrix<value_type> postproc(out.rows(), 1, 0);
 	bool prev_l_flag = false;
 	for (size_t i = cmp_wnd_sz; i < out.rows() - cmp_wnd_sz; ++i) {
 		bool l_flag = false;
 		if (sl_entropy(i, 0) > 0.4) {
-			blaze::DynamicMatrix<value_type> wnd_past = blaze::submatrix(out, i - cmp_wnd_sz, 0, cmp_wnd_sz, 1);
-			blaze::DynamicMatrix<value_type> wnd_fut = blaze::submatrix(out, i, 0, cmp_wnd_sz, 1);
+			mtrc::numeric::DynamicMatrix<value_type> wnd_past =
+				mtrc::numeric::submatrix(out, i - cmp_wnd_sz, 0, cmp_wnd_sz, 1);
+			mtrc::numeric::DynamicMatrix<value_type> wnd_fut = mtrc::numeric::submatrix(out, i, 0, cmp_wnd_sz, 1);
 			int label = 0;
-			if (blaze::mean(wnd_past) - blaze::mean(wnd_fut) < -contrast_threshold) {
+			if (mtrc::numeric::mean(wnd_past) - mtrc::numeric::mean(wnd_fut) < -contrast_threshold) {
 				label = 1;
 				l_flag = true;
 			}
-			if (blaze::mean(wnd_past) - blaze::mean(wnd_fut) > contrast_threshold) {
+			if (mtrc::numeric::mean(wnd_past) - mtrc::numeric::mean(wnd_fut) > contrast_threshold) {
 				label = -1;
 				l_flag = true;
 			}
@@ -118,7 +121,7 @@ std::vector<value_type> SwitchPredictor<value_type>::encode(const std::vector<Re
 
 	std::vector<value_type> sl_entropy(out.size(), 0);
 	for (size_t i = wnd_size; i < out.size(); ++i) {
-		blaze::DynamicVector<value_type> wnd(wnd_size);
+		mtrc::numeric::DynamicVector<value_type> wnd(wnd_size);
 		for (size_t j = 0; j < wnd_size; ++j) {
 			wnd[j] =
 				out[i - wnd_size + j][0]; // TODO remove ugly inner containers or update for multidimensional labels
@@ -224,8 +227,9 @@ template <typename value_type> void SwitchPredictor<value_type>::save(const std:
 	auto alpha = std::get<3>(components);
 	auto washout = std::get<4>(components);
 	auto beta = std::get<5>(components);
-	blaze::DynamicVector<value_type> params = {alpha, beta, washout, wnd_size, cmp_wnd_sz, contrast_threshold};
-	blaze::Archive<std::ofstream> archive(filename);
+	mtrc::numeric::DynamicVector<value_type> params = {alpha,	   beta,	   washout,
+														 wnd_size, cmp_wnd_sz, contrast_threshold};
+	mtrc::numeric::Archive<std::ofstream> archive(filename);
 	archive << W_in << W << W_out << params;
 }
 
@@ -253,26 +257,27 @@ value_type SwitchPredictor<value_type>::v_stddev(const std::vector<value_type> &
 }
 
 template <typename value_type>
-blaze::DynamicMatrix<value_type, blaze::rowMajor>
-SwitchPredictor<value_type>::preprocess(const blaze::DynamicMatrix<value_type, blaze::rowMajor> &input)
+mtrc::numeric::DynamicMatrix<value_type, mtrc::numeric::rowMajor> SwitchPredictor<value_type>::preprocess(
+	const mtrc::numeric::DynamicMatrix<value_type, mtrc::numeric::rowMajor> &input)
 {
 
-	blaze::DynamicVector<value_type> feature_stddev(input.rows(), 0);
+	mtrc::numeric::DynamicVector<value_type> feature_stddev(input.rows(), 0);
 	int new_label = 0;
 	for (size_t i = wnd_size; i < feature_stddev.size(); ++i) {
-		auto wnd1 = blaze::submatrix(input, i - wnd_size, 0, wnd_size, 1);
-		auto wnd2 = blaze::submatrix(input, i - wnd_size, 1, wnd_size, 1);
-		auto wnd3 = blaze::submatrix(input, i - wnd_size, 2, wnd_size, 1);
+		auto wnd1 = mtrc::numeric::submatrix(input, i - wnd_size, 0, wnd_size, 1);
+		auto wnd2 = mtrc::numeric::submatrix(input, i - wnd_size, 1, wnd_size, 1);
+		auto wnd3 = mtrc::numeric::submatrix(input, i - wnd_size, 2, wnd_size, 1);
 		feature_stddev[i] = stddev(wnd1) + stddev(wnd2) + stddev(wnd3);
 	}
 
-	blaze::DynamicMatrix<value_type> ds_all(input.rows(), 4, 0);
-	// blaze::submatrix(ds_all, 0, 0, input.rows(), 3) = blaze::submatrix(input, 0, 0, input.rows(), 3);
-	blaze::column(ds_all, 0) = blaze::column(input, 0);
-	blaze::column(ds_all, 1) = blaze::column(input, 1);
-	blaze::column(ds_all, 2) = blaze::column(input, 2);
-	blaze::column(ds_all, 3) = feature_stddev;
-	blaze::DynamicMatrix<value_type, blaze::rowMajor> output = blaze::trans(ds_all);
+	mtrc::numeric::DynamicMatrix<value_type> ds_all(input.rows(), 4, 0);
+	// mtrc::numeric::submatrix(ds_all, 0, 0, input.rows(), 3) = mtrc::numeric::submatrix(input, 0, 0, input.rows(),
+	// 3);
+	mtrc::numeric::column(ds_all, 0) = mtrc::numeric::column(input, 0);
+	mtrc::numeric::column(ds_all, 1) = mtrc::numeric::column(input, 1);
+	mtrc::numeric::column(ds_all, 2) = mtrc::numeric::column(input, 2);
+	mtrc::numeric::column(ds_all, 3) = feature_stddev;
+	mtrc::numeric::DynamicMatrix<value_type, mtrc::numeric::rowMajor> output = mtrc::numeric::trans(ds_all);
 
 	return output;
 }
@@ -304,7 +309,7 @@ std::vector<RecType> SwitchPredictor<value_type>::preprocess(const std::vector<R
 }
 
 template <typename value_type>
-value_type SwitchPredictor<value_type>::class_entropy(const blaze::DynamicVector<value_type> &data,
+value_type SwitchPredictor<value_type>::class_entropy(const mtrc::numeric::DynamicVector<value_type> &data,
 													  const value_type threshold)
 {
 	int sum = 0;
@@ -321,8 +326,8 @@ value_type SwitchPredictor<value_type>::class_entropy(const blaze::DynamicVector
 }
 
 template <typename value_type>
-void SwitchPredictor<value_type>::train(const blaze::DynamicMatrix<value_type> &training_data,
-										const blaze::DynamicMatrix<value_type> &labels)
+void SwitchPredictor<value_type>::train(const mtrc::numeric::DynamicMatrix<value_type> &training_data,
+										const mtrc::numeric::DynamicMatrix<value_type> &labels)
 {
 
 	assert(training_data.rows() == labels.rows());
@@ -330,7 +335,7 @@ void SwitchPredictor<value_type>::train(const blaze::DynamicMatrix<value_type> &
 
 	auto data = preprocess(training_data);
 
-	blaze::DynamicMatrix<value_type> target(labels.rows(), 1, 0);
+	mtrc::numeric::DynamicMatrix<value_type> target(labels.rows(), 1, 0);
 	int new_label = 0;
 	for (size_t i = wnd_size; i < labels.rows(); ++i) {
 		if (labels(i, 0) >= 1)
@@ -340,8 +345,8 @@ void SwitchPredictor<value_type>::train(const blaze::DynamicMatrix<value_type> &
 		target(i, 0) = new_label;
 	}
 
-	esn = metric::ESN<std::vector<value_type>, void>(500, 5, 0.99, alpha, washout, beta);
-	esn.train(data, blaze::trans(target));
+	esn = mtrc::ESN<std::vector<value_type>, void>(500, 5, 0.99, alpha, washout, beta);
+	esn.train(data, mtrc::numeric::trans(target));
 }
 
 template <typename value_type>
@@ -364,6 +369,6 @@ void SwitchPredictor<value_type>::train(const std::vector<RecType> &training_dat
 		target[i] = {new_label};
 	}
 
-	esn = metric::ESN<std::vector<value_type>, void>(500, 5, 0.99, alpha, washout, beta);
+	esn = mtrc::ESN<std::vector<value_type>, void>(500, 5, 0.99, alpha, washout, beta);
 	esn.train(data, target);
 }

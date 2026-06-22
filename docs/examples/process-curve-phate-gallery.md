@@ -18,9 +18,9 @@ Fixture:
   padded point vectors
 - native `feature_record_codec` supplies fixed-size DNN input features without
   replacing the source metric
-- native PHATE-style geometry uses `matrix_cache_distance_provider`,
+- native PHATE-style geometry uses `distance_table_pairwise_distances`,
   `exponential_affinity_kernel`, and `lazy_row_normalized_diffusion_operator`
-- native training uses C++ `metric::dnn` with reconstruction loss plus
+- native training uses C++ `mtrc::solve::parametric::dnn` with reconstruction loss plus
   bottleneck-coordinate geometry loss
 
 Expected output:
@@ -31,7 +31,7 @@ process PHATE gallery queries = 6
 process PHATE gallery source metric = aligned_curve_distance
 process PHATE gallery feature codec = process_curve_gallery_feature_codec
 process PHATE gallery pipeline components = 11
-process PHATE gallery distance provider = matrix_cache_distance_provider
+process PHATE gallery distance provider = distance_table_pairwise_distances
 process PHATE gallery affinity kernel = exponential_affinity_kernel
 process PHATE gallery diffusion operator = lazy_row_normalized_diffusion_operator
 process PHATE gallery target evaluations = 225

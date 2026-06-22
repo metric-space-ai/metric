@@ -10,7 +10,7 @@
 #define _METRIC_UTILS_POOR_MANS_QUANTUM_POOR_MANS_QUANTUM_CPP
 #include "../poor_mans_quantum.hpp"
 
-#include <blaze/Math.h>
+#include <metric/numeric/Math.h>
 
 #include <limits>
 #include <map>
@@ -23,10 +23,10 @@
 #include "distributions/Normal.hpp"
 #include "distributions/Weibull.hpp"
 #include "math_functions.hpp"
-//#include "distributions/Binomial.hpp"
+// #include "distributions/Binomial.hpp"
 #include "distributions/Discrete.hpp"
 
-namespace metric {
+namespace mtrc {
 
 /*** constructor for univariate distribution ***/
 template <typename Distribution, typename T>
@@ -423,7 +423,7 @@ std::tuple<PMQ<Discrete<float>>, PMQ<Discrete<float>>> PMQ<Distribution, T>::con
 #if USE_VECTOR_SORT
 		vector_sort::sort(m_0[i]);
 #else
-		std::sort(m_0[i].begin(), m_0[i].end());		   // sort the row
+		std::sort(m_0[i].begin(), m_0[i].end()); // sort the row
 #endif
 		m_0[i] = akimaInterp1(_dist._prob, _dist._data, m_0[i]); // interpolate the random numbers
 	}
@@ -555,5 +555,5 @@ float PMQ<Distribution, T>::out_confidence(const mT1 &set_left, const mT2 &set_r
 	return float(num_out) / float(_dist._data.size());
 }
 
-} // namespace metric
+} // namespace mtrc
 #endif

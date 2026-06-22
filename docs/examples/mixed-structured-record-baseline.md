@@ -1,6 +1,6 @@
 # Mixed Structured Record Baseline
 
-This report records the first CI-safe mixed-record hero fixture for METRIC
+This report records the first CI-safe mixed-record workflow fixture for METRIC
 production readiness.
 
 Command:
@@ -35,7 +35,7 @@ mixed benchmark query evaluations = 32
 Interpretation:
 
 - the composed metric selects the expected mixed-record family for every query
-- the numeric vector baseline selects a shadow record for every query because
+- the numeric vector comparison selects a shadow record for every query because
   it ignores categorical and text semantics
 - the metric margin is measured in the mixed-record metric: it is the distance
   from the query to the vector winner minus the distance to the metric winner

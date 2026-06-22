@@ -5,3 +5,7 @@ __pycache__/
 python/pkg/metric/_impl/*.so
 python/pkg/metric/_impl/*.pyd
 .codex/
+.claude/
+.DS_Store
+Testing/
+a.out

@@ -1,4 +1,13 @@
+"""Histogram transport engine demo — adapter boundary.
+
+The Python ``Space`` adapts histogram records over a toy transport metric and
+exposes explicit distances. Neighbor search and clustering are native-only
+METRIC algorithms reached through bindings.
+"""
+
 from metric import Space
+from metric.exceptions import StrategyUnavailableError
+from metric.operators import pairwise_distance_matrix
 from metric.strategies import KMedoids
 
 
@@ -15,6 +24,15 @@ def cumulative_transport_distance(lhs, rhs):
     return distance
 
 
+def requires_native(label, call):
+    try:
+        call()
+    except StrategyUnavailableError:
+        print(f"{label}: requires native C++ binding")
+    else:
+        raise AssertionError(f"{label} should require a native binding")
+
+
 def main():
     names = ["left-edge", "one-step", "right-edge", "split-left", "center"]
     records = [
@@ -27,16 +45,15 @@ def main():
     query = (0.25, 0.75, 0.0, 0.0)
 
     space = Space(records, cumulative_transport_distance)
-    nearest = space.neighbors(query, 2)
-    assert [neighbor.id for neighbor in nearest.neighbors] == [1, 3]
-    assert [neighbor.distance for neighbor in nearest.neighbors] == [0.25, 0.25]
 
-    groups = space.groups(KMedoids(groups=2))
-    assert groups.algorithm == "kmedoids"
-    assert groups.cluster_count == 2
+    # Adapter surface: explicit pairwise distances.
+    matrix = pairwise_distance_matrix(records, cumulative_transport_distance)
+    print("records =", ", ".join(names))
+    print("matrix rows =", len(matrix))
 
-    print("nearest histograms =", names[nearest.neighbors[0].id], names[nearest.neighbors[1].id])
-    print("histogram groups =", groups.cluster_count)
+    # Native boundary: search and clustering live in C++.
+    requires_native("neighbors", lambda: space.neighbors(query, 2))
+    requires_native("groups", lambda: space.groups(KMedoids(groups=2)))
 
 
 if __name__ == "__main__":

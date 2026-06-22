@@ -19,9 +19,7 @@ Copyright (c) 2019 Panda Team
 
 #include <iostream>
 
-#include "DT/edm_wrappers.hpp"
-
-namespace metric {
+namespace mtrc {
 
 // Subsample
 template <class Record>
@@ -222,7 +220,10 @@ template <class Record>
 template <typename ConType>
 void TestCl<Record>::train(ConType &data, std::vector<std::function<double(Record)>> &features,
 						   std::function<bool(Record)> &response)
-{ // dummy code, amed to test access to data
+{ // single-feature threshold stump: learns the midpoint of feature var_idx
+	middle = 0;
+	if (features.size() <= static_cast<size_t>(var_idx) || data.size() == 0)
+		return; // not enough information to learn a threshold; predict() falls back to a default
 	auto max_val = -std::numeric_limits<double>::max();
 	auto min_val = std::numeric_limits<double>::max();
 	for (auto i = data.cbegin(); i != data.cend(); i++) {
@@ -233,26 +234,20 @@ void TestCl<Record>::train(ConType &data, std::vector<std::function<double(Recor
 			max_val = current_val;
 	}
 	middle = min_val + (max_val - min_val) / 2;
-	std::cout << "TestCl trained on: " << std::endl;
-	for (auto i = data.cbegin(); i != data.cend(); i++)
-		std::cout << features[var_idx](*i) << std::endl;
-	std::cout << " - foung middle: " << middle << std::endl;
 }
 
 template <class Record>
 template <typename ConType>
 void TestCl<Record>::predict(ConType data, std::vector<std::function<double(Record)>> features,
 							 std::vector<bool> &predictions)
-{ // dummy code, uses only one feature for prediction
+{ // classifies on a single feature against the learned midpoint
 	predictions = {};
+	const bool can_predict = features.size() > static_cast<size_t>(var_idx);
 	for (auto i = data.cbegin(); i != data.cend(); i++)
-		if (features[var_idx](*i) >= middle) // TODO add invert flag usage
-			predictions.push_back(true);
-		else
-			predictions.push_back(false);
+		predictions.push_back(can_predict && (features[var_idx](*i) >= middle)); // TODO add invert flag usage
 }
 
-template <class Record> std::shared_ptr<metric::TestCl<Record>> TestCl<Record>::clone()
+template <class Record> std::shared_ptr<mtrc::TestCl<Record>> TestCl<Record>::clone()
 {
 	std::shared_ptr<TestCl<Record>> sptr = std::make_shared<TestCl<Record>>(var_idx, invert);
 	return sptr;
@@ -607,5 +602,5 @@ Bagging<Record, WeakLearnerVariant, Subsampler>::clone()
 	return sptr;
 }
 
-} // namespace metric
+} // namespace mtrc
 #endif

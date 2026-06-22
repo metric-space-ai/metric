@@ -12,14 +12,14 @@ Copyright (c) 2019 Michael Welsch
 #define _METRIC_UTILS_GRAPH_HPP
 
 #include "type_traits.hpp"
-#include <blaze/Blaze.h>
+#include <metric/numeric.hpp>
 
 #include <stack>
 #include <type_traits>
 
-namespace metric {
+namespace mtrc {
 
-// Graph based on blaze-lib
+// Graph based on numeric-lib
 
 /**
  * @class Graph
@@ -30,11 +30,11 @@ template <typename WeightType = bool, bool isDense = false, bool isSymmetric = t
 	// used only in getNeighboursOld, TODO remove if method removed
 	static constexpr bool isWeighted = !std::is_same<WeightType, bool>::value;
 
-	using InnerMatrixType =
-		typename std::conditional<isDense, blaze::DynamicMatrix<WeightType>, blaze::CompressedMatrix<WeightType>>::type;
+	using InnerMatrixType = typename std::conditional<isDense, mtrc::numeric::DynamicMatrix<WeightType>,
+													  mtrc::numeric::CompressedMatrix<WeightType>>::type;
 
-	using MatrixType =
-		typename std::conditional<isSymmetric, blaze::SymmetricMatrix<InnerMatrixType>, InnerMatrixType>::type;
+	using MatrixType = typename std::conditional<isSymmetric, mtrc::numeric::SymmetricMatrix<InnerMatrixType>,
+												 InnerMatrixType>::type;
 
   public:
 	/**
@@ -307,50 +307,53 @@ template <typename WType, bool isDense> class RandomUniform : public Graph<WType
 	RandomUniform(size_t nNodes, WType lower_bound = -1, WType upper_bound = -1, int nConections = 0);
 
   private:
-	void fill(blaze::CompressedMatrix<WType> &matrix, WType lower_bound, WType upper_bound, int nConections);
-	void fill(blaze::DynamicMatrix<WType> &matrix, WType lower_bound, WType upper_bound, int nConections);
+	void fill(mtrc::numeric::CompressedMatrix<WType> &matrix, WType lower_bound, WType upper_bound, int nConections);
+	void fill(mtrc::numeric::DynamicMatrix<WType> &matrix, WType lower_bound, WType upper_bound, int nConections);
 	template <typename MType> void fill(MType &matrix, WType lower_bound, WType upper_bound);
 };
 
 /**
- * @brief create Graph object based on blaze::CompressedMatrix
- *
- * @tparam ValueType
- * @param matrix
- * @return
- */
-template <class ValueType> Graph<ValueType, false, false> make_graph(blaze::CompressedMatrix<ValueType> &&matrix);
-
-/**
- * @brief create Graph object based on blaze::SymetricMatrix<CompressedMatrix>
+ * @brief create Graph object based on mtrc::numeric::CompressedMatrix
  *
  * @tparam ValueType
  * @param matrix
  * @return
  */
 template <class ValueType>
-Graph<ValueType, false, true> make_graph(blaze::SymmetricMatrix<blaze::CompressedMatrix<ValueType>> &&matrix);
+Graph<ValueType, false, false> make_graph(mtrc::numeric::CompressedMatrix<ValueType> &&matrix);
 
 /**
- * @brief create Graph object based on blaze::DynamicMatrix
- *
- * @tparam ValueType
- * @param matrix
- * @return
- */
-template <class ValueType> Graph<ValueType, true, false> make_graph(blaze::DynamicMatrix<ValueType> &&matrix);
-
-/**
- * @brief  create Graph object based on blaze::SymetricMatrix<DynamicMatrix>
+ * @brief create Graph object based on mtrc::numeric::SymetricMatrix<CompressedMatrix>
  *
  * @tparam ValueType
  * @param matrix
  * @return
  */
 template <class ValueType>
-Graph<ValueType, true, true> make_graph(blaze::SymmetricMatrix<blaze::DynamicMatrix<ValueType>> &&matrix);
+Graph<ValueType, false, true>
+make_graph(mtrc::numeric::SymmetricMatrix<mtrc::numeric::CompressedMatrix<ValueType>> &&matrix);
 
-} // end namespace metric
+/**
+ * @brief create Graph object based on mtrc::numeric::DynamicMatrix
+ *
+ * @tparam ValueType
+ * @param matrix
+ * @return
+ */
+template <class ValueType> Graph<ValueType, true, false> make_graph(mtrc::numeric::DynamicMatrix<ValueType> &&matrix);
+
+/**
+ * @brief  create Graph object based on mtrc::numeric::SymetricMatrix<DynamicMatrix>
+ *
+ * @tparam ValueType
+ * @param matrix
+ * @return
+ */
+template <class ValueType>
+Graph<ValueType, true, true>
+make_graph(mtrc::numeric::SymmetricMatrix<mtrc::numeric::DynamicMatrix<ValueType>> &&matrix);
+
+} // end namespace mtrc
 
 #include "graph/graph.cpp"
 

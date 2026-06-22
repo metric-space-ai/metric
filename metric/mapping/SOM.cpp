@@ -7,7 +7,7 @@ Copyright (c) 2019 Panda Team
 */
 #include "SOM.hpp"
 
-namespace metric {
+namespace mtrc {
 
 template <class RecType, class Graph, class Metric, class Distribution>
 SOM<RecType, Graph, Metric, Distribution>::SOM(size_t nodesNumber, Metric metric) : metric(metric), graph(nodesNumber)
@@ -233,4 +233,4 @@ void SOM<RecType, Graph, Metric, Distribution>::subsampled_train(const std::vect
 	}
 }
 
-} // namespace metric
+} // namespace mtrc

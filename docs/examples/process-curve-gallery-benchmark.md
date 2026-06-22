@@ -1,6 +1,6 @@
 # Process Curve Gallery Benchmark
 
-This report records the larger process-curve hero fixture used for gallery and
+This report records the larger process-curve workflow fixture used for gallery and
 benchmark evidence outside the minimal smoke story.
 
 Command:
@@ -33,7 +33,7 @@ process gallery graph edges = 60
 Interpretation:
 
 - the alignment metric selects the expected `late_ramp` family for every query
-- the padded vector baseline misses the expected family for every query
+- the padded vector comparison misses the expected family for every query
 - dense materialization cost is explicit: 15 x 15 distance evaluations
 - the graph diagnostic records 60 threshold edges at distance `<= 3.0`
 - this is still a deterministic repository fixture, not an external
@@ -46,5 +46,5 @@ Next evidence needed:
 - preserve record IDs from raw trace to query result
 - add a third licensed external domain only if it adds a materially different
   metric story
-- keep publication screenshots showing metric winners and vector-baseline misses
+- keep publication screenshots showing metric winners and vector-comparison mismatches
   synchronized with executable output

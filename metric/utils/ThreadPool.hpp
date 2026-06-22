@@ -19,8 +19,7 @@ class ThreadPool {
 	size_t getQueueSize() const { return queue_.size(); }
 
   private:
-	class CloseException : public std::exception {
-	};
+	class CloseException : public std::exception {};
 
   private:
 	std::mutex mutex_;

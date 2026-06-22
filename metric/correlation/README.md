@@ -80,7 +80,7 @@ struct simple_user_euclidian {
 typedef std::vector<double> Rec1;
 typedef std::array<float,3> Rec2;
 typedef simple_user_euclidian Met1;
-typedef metric::Manhatten<float> Met2;
+typedef metric::Manhattan<float> Met2;
 ````
 
 Now build the function (object) and compute the mgc again:

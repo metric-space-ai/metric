@@ -8,12 +8,7 @@
 
 using T = double;
 
-
 TEST_CASE("Daubechies matrix construction", "[transform][wavelet]")
 {
-  BENCHMARK("Daubechies matrix construction")
-  {
-    return wavelet::DaubechiesMat<T>(48000, 2);
-  };
+	BENCHMARK("Daubechies matrix construction") { return wavelet::DaubechiesMat<T>(48000, 2); };
 }
-

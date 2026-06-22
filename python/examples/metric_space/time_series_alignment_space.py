@@ -1,5 +1,13 @@
-from metric import Space, intrinsic_dimension
-from metric.operators import pairwise_distance_matrix
+"""Time-series alignment space — adapter boundary demo.
+
+A toy edit-distance-style alignment metric over short process curves. The
+Python ``Space`` adapts the records and exposes explicit distances. Nearest
+search and intrinsic-dimension estimation are native-only METRIC algorithms.
+"""
+
+from metric import Space
+from metric.exceptions import StrategyUnavailableError
+from metric.operators import intrinsic_dimension, pairwise_distance_matrix
 
 
 GAP_COST = 2.0
@@ -26,6 +34,15 @@ def aligned_curve_distance(lhs, rhs):
     return previous[-1]
 
 
+def requires_native(label, call):
+    try:
+        call()
+    except StrategyUnavailableError:
+        print(f"{label}: requires native C++ binding")
+    else:
+        raise AssertionError(f"{label} should require a native binding")
+
+
 def main():
     names = ["baseline", "shifted", "flat", "spike"]
     records = [
@@ -37,19 +54,17 @@ def main():
     query = (0, 1, 1, 1, 2, 4)
 
     space = Space(records, aligned_curve_distance)
-    nearest = space.nearest(query)
-    distances = pairwise_distance_matrix(records, aligned_curve_distance)
-    dimension = intrinsic_dimension(records, aligned_curve_distance)
 
-    assert names[nearest.id] == "baseline"
-    assert nearest.distance == 1.0
+    # Adapter surface: explicit distances over a caller-provided metric.
+    distances = pairwise_distance_matrix(records, aligned_curve_distance)
     assert distances[0][1] == 2.0
     assert distances[0][2] == 6.0
-    assert dimension > 0.0
-
-    print("nearest process curve =", names[nearest.id], nearest.distance)
+    print("records =", ", ".join(names))
     print("distance(baseline, shifted) =", distances[0][1])
-    print("intrinsic dimension estimate =", round(dimension, 3))
+
+    # Native boundary: search and structure analysis live in C++.
+    requires_native("nearest", lambda: space.nearest(query))
+    requires_native("intrinsic_dimension", lambda: intrinsic_dimension(records, aligned_curve_distance))
 
 
 if __name__ == "__main__":

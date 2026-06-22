@@ -10,7 +10,7 @@
 #include <random>
 #include <vector>
 
-namespace metric {
+namespace mtrc {
 /**
  * @class Binomial
  *
@@ -55,6 +55,6 @@ class Binomial {
 	std::mt19937_64 _generator;
 };
 
-} // namespace metric
+} // namespace mtrc
 #include "Binomial.cpp"
 #endif // header guard

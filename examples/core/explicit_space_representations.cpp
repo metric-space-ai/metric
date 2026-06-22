@@ -9,10 +9,7 @@
 struct AbsoluteDistance {
 	using distance_type = int;
 
-	auto operator()(const int lhs, const int rhs) const -> distance_type
-	{
-		return std::abs(lhs - rhs);
-	}
+	auto operator()(const int lhs, const int rhs) const -> distance_type { return std::abs(lhs - rhs); }
 };
 
 int main()
@@ -20,9 +17,9 @@ int main()
 	const std::vector<int> records = {3, 5, -10, 50, 1, -200, 200};
 	const AbsoluteDistance metric;
 
-	metric::MatrixSpace<int, AbsoluteDistance> matrix(records);
-	metric::TreeSpace<int, AbsoluteDistance> tree(records);
-	metric::GraphSpace<int, AbsoluteDistance> graph(records, 3, records.size());
+	mtrc::MatrixSpace<int, AbsoluteDistance> matrix(records);
+	mtrc::TreeSpace<int, AbsoluteDistance> tree(records);
+	mtrc::GraphSpace<int, AbsoluteDistance> graph(records, 3, records.size());
 
 	assert(matrix.size() == records.size());
 	assert(tree.size() == records.size());

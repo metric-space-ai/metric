@@ -1,10 +1,10 @@
-#ifndef PANDA_METRIC_DSV_HPP
-#define PANDA_METRIC_DSV_HPP
+#ifndef METRIC_UTILS_DSV_HPP
+#define METRIC_UTILS_DSV_HPP
 
-#include <blaze/Math.h>
+#include <metric/numeric/Math.h>
 
-namespace metric {
+namespace mtrc {
 
 }
 
-#endif // PANDA_METRIC_DSV_HPP
+#endif // METRIC_UTILS_DSV_HPP
