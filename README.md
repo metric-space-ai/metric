@@ -279,6 +279,15 @@ package config via `find_dependency(LAPACK)`), so the stats/entropy and
 CMake, link LAPACK yourself, e.g. `c++ -std=c++17 -I. app.cpp -framework Accelerate` on macOS
 or `c++ -std=c++17 -I. app.cpp -llapack` on Linux.
 
+To consume METRIC without a prior install, fetch it directly:
+
+```cmake
+include(FetchContent)
+FetchContent_Declare(metric GIT_REPOSITORY https://github.com/metric-space-ai/metric.git GIT_TAG main)
+FetchContent_MakeAvailable(metric)
+target_link_libraries(program PRIVATE metric::metric)
+```
+
 ## Python Binding
 
 Python is an adapter layer over the native implementation. The current core wheel

@@ -6,6 +6,7 @@
 #define _METRIC_CORE_METRIC_SPACE_HPP
 
 #include <cstddef>
+#include <ostream>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -14,6 +15,7 @@
 #include <metric/record/id.hpp>
 
 #include "concepts.hpp"
+#include "metric_traits.hpp"
 #include "version.hpp"
 
 namespace mtrc::core {
@@ -157,6 +159,17 @@ auto make_space(Container records, Metric metric)
 	using metric_type = typename std::decay<Metric>::type;
 	return MetricSpace<record_type, metric_type>(std::vector<record_type>(records.begin(), records.end()),
 												 std::move(metric));
+}
+
+// One-line summary of a finite metric space: its size and the metric law its
+// metric is admitted under. Lets a caller `std::cout << space;` to see what they
+// hold, complementing describe_structure() (which computes the geometry).
+template <typename Record, typename Metric>
+auto operator<<(std::ostream &os, const MetricSpace<Record, Metric> &space) -> std::ostream &
+{
+	os << "MetricSpace(records=" << space.size()
+	   << ", metric_law=" << metric_law_name(metric_traits<Metric>::law) << ')';
+	return os;
 }
 
 } // namespace mtrc::core
