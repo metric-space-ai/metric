@@ -44,17 +44,17 @@ def test_space_vectors_missing_native_euclidean_has_clear_error(monkeypatch):
         Space.vectors([[0.0], [1.0]], validate="none", cache="none")
 
 
-def test_stats_modify_and_search_calls_are_native_only():
+def test_unpromoted_stats_modify_calls_still_raise():
     space = Space([0.0, 1.0, 2.0], metric=lambda lhs, rhs: abs(lhs - rhs), validate="none")
 
     assert space.nearest(0.0).id == 0
     assert [neighbor.id for neighbor in space.neighbors(0.0, count=1).neighbors] == [0]
+    assert space.reduce(1).source_record_ids == (0,)
+    assert space.compress(1).compressed_record_count == 1
 
     for call in (
         lambda: space.describe(),
         lambda: space.compare(space),
-        lambda: space.reduce(1),
-        lambda: space.compress(1),
         lambda: space.embed(1),
     ):
         with pytest.raises(StrategyUnavailableError, match="adapter-only surface"):

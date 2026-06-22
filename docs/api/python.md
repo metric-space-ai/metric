@@ -6,16 +6,17 @@ helpers, and operator helpers over the native implementation.
 > **Availability in the current core wheel.** The construction and inspection
 > surface runs today: `Space(...)`/`Space.vectors(...)`/`Space.from_dataframe(...)`,
 > `space.distance(...)`, `space.pairwise()`/`pairwise_distances()`, the
-> `to_matrix()`/`to_tree()`/`to_graph()` representation views, `repr(space)`, and
-> the metric constructors. The **algorithmic intent methods** —
-> `neighbors`/`nearest`/`within_radius`, `groups`, `outliers`, `denoise`, `embed`,
-> `reduce`, `compress`, `representatives`, `describe`/`describe_structure`,
-> `compare`/`correlate` (and the matching `metric.operators` free functions) —
-> currently raise `StrategyUnavailableError`: their native bindings are not
-> promoted in the default wheel yet. `metric.correlation` (Entropy/MGC) requires
-> the full build (`METRIC_PYTHON_BUILD_FULL`) and otherwise raises
-> `ModuleNotFoundError`. For neighbor/cluster/embedding analysis today, use the
-> C++ surface (`<metric/workflow.hpp>`).
+> `to_matrix()`/`to_tree()`/`to_graph()` representation views, `repr(space)`,
+> exact neighbor search (`neighbors`/`nearest`/`within_radius`), representative
+> selection, reduction, compression, and the metric constructors. Higher
+> algorithmic intent methods — `groups`, `outliers`, `denoise`, `embed`,
+> `describe`/`describe_structure`, `compare`/`correlate` (and the matching
+> unpromoted `metric.operators` free functions) — currently raise
+> `StrategyUnavailableError`: their native bindings are not promoted in the
+> default wheel yet. `metric.correlation` (Entropy/MGC) requires the full build
+> (`METRIC_PYTHON_BUILD_FULL`) and otherwise raises `ModuleNotFoundError`.
+> For cluster/embedding/dependency analysis today, use the C++ surface
+> (`<metric/workflow.hpp>`).
 
 The entry point is `Space`: a finite record set plus a metric with cached
 pairwise distances. It is the carrier for neighbors, groups, embedding, outliers,
@@ -40,7 +41,7 @@ space = Space(records, metric=Edit())
 
 print(space.distance(0, 1))
 print(space.pairwise())
-# space.neighbors("cut", count=2)  # raises StrategyUnavailableError in the current wheel
+print([neighbor.record for neighbor in space.neighbors("cut", count=2).neighbors])
 ```
 
 The records are strings. Edit distance defines the geometry without an embedding step.
@@ -272,23 +273,6 @@ from metric.strategies import ClassicMDS, DBSCAN, DistanceProfileCorrelation, Fa
 distances = pairwise_distance_matrix(records, Edit())
 neighbors = nearest_neighbors(records, Edit(), "cut", count=2)
 close = range_neighbors(records, Edit(), "cut", radius=1)
-knn_graph = exact_knn_graph(records, Edit(), k=1)
-knn_edges = exact_knn_graph_edges(records, Edit(), k=1)
-radius_graph = exact_radius_graph(records, Edit(), radius=1)
-radius_edges = exact_radius_graph_edges(records, Edit(), radius=1)
-connectivity_info = graph_connectivity_diagnostics(knn_graph)
-degree_info = graph_degree_diagnostics(knn_graph)
-stretch_info = graph_stretch_diagnostics(records, Edit(), radius_graph)
-undirected = symmetrize_graph(knn_graph, policy="union", weighting="minimum_distance")
-pruned = prune_graph_out_degree(exact_knn_graph(records, Edit(), k=2), max_out_degree=1)
-groups = find_groups(records, Edit(), KMedoids(groups=2))
-density_groups = find_groups(records, Edit(), DBSCAN(radius=1, min_points=2))
-outliers = find_outliers(records, Edit(), DBSCAN(radius=1, min_points=2))
-denoised = denoise_space(records, Edit(), DBSCAN(radius=1, min_points=2))
-embedding = embed_space(records, Edit(), dimensions=2)
-mds_embedding = embed_space(records, Edit(), strategy=MDS(dimensions=2))
-dependency = compare_spaces(records, Edit(), other_records, other_metric, DistanceProfileCorrelation())
-facade_dependency = space.compare(other_records, other_metric=other_metric)
 selected_ids = representative_indices(records, Edit(), k=2)
 selected_records = representatives(records, Edit(), k=2)
 center_id = medoid_index(records, Edit())
@@ -297,12 +281,15 @@ separated_ids = separated_representative_indices(records, Edit(), minimum_distan
 separated_records = separated_representatives(records, Edit(), minimum_distance=2)
 covered_ids = coverage_representative_indices(records, Edit(), radius=1)
 covered_records = coverage_representatives(records, Edit(), radius=1)
-dimension = intrinsic_dimension(records, Edit())
 representative_result = find_representatives(records, Edit(), count=2, strategy=FarthestFirst(seed_index=0))
 reduction = reduce_space(records, Edit(), count=2, strategy=FarthestFirst(seed_index=0))
 compression = compress_space(records, Edit(), count=2, strategy=FarthestFirst(seed_index=0))
 mapped = map_space(records, transform, target_metric)
-structure = describe_structure(records, Edit())
+
+# Imported but not promoted in the default wheel yet:
+# exact_knn_graph(...), graph_*_diagnostics(...), find_groups(...),
+# find_outliers(...), denoise_space(...), embed_space(...),
+# compare_spaces(...), intrinsic_dimension(...), describe_structure(...)
 ```
 
 `Space.neighbors(query, count=...)` returns a `NeighborResult` with named
@@ -311,9 +298,9 @@ metadata. It remains sequence-compatible with older `(record_id, distance)`
 tuple lists, so existing unpacking and comparisons continue to work.
 `Space.neighbors(query, radius=...)` returns range-neighbor results through the
 same exact metric path as `Space.within_radius(...)`. Queryless
-`Space.neighbors(count=...)` stores one row of `Neighbor` objects per source
-record in `result.rows`. The older `k` name remains a compatibility alias for
-count-based nearest-neighbor calls; new examples use `count`.
+batch-neighbor queries are not promoted in the Python facade yet. The older `k`
+name remains a compatibility alias for count-based nearest-neighbor calls; new
+examples use `count`.
 Use `NeighborResult.to_dict()` for structured Python data, `to_numpy()` for the
 numeric distance array, and `to_pandas()` when pandas is installed.
 
@@ -331,9 +318,9 @@ numeric distance array, and `to_pandas()` when pandas is installed.
 
 `find_representatives` returns a `RepresentativeSet` with selected source indices, nearest-representative distances for every record, coverage radius, average nearest-representative distance, strategy metadata, and representation metadata. Use `count=` for the semantic target size; the older `k` name remains accepted for compatibility. `Space.representatives(...)` exposes the same result from the `Space` facade. Pass a fresh `representation=` to record representation metadata; stale representations raise `metric.StaleRepresentationError`. Use `RepresentativeSet.to_dict()` for structured metadata, `to_numpy()` for the selected representative IDs, and `to_pandas()` for a record-level coverage table when pandas is installed.
 
-`reduce_space` returns a `ReductionResult` with a reduced `Space`, selected source-record IDs, source-to-reduced assignments, nearest-representative distances, strategy metadata, and explicit `inverse_supported=False` metadata. Calling `inverse_transform()` on this result raises `metric.UnsupportedOperationError`. `Space.reduce(count=..., strategy=...)` exposes the same result. Pass a fresh `representation=` to record representation metadata; stale representations raise `metric.StaleRepresentationError`. Use `ReductionResult.to_dict()` for structured lineage metadata, `to_numpy()` for the assignment vector, and `to_pandas()` for source-to-reduced rows when pandas is installed. The first Python-core strategies are `FarthestFirst` and `KMedoids`, so reduction works for arbitrary records plus a metric rather than only vector records. Native reduction strategy names such as `PCFA`, `SOM`, `KOC`, and `DSPCC` raise `StrategyUnavailableError` until their reconstruction or quantization diagnostics are promoted.
+`reduce_space` returns a `ReductionResult` with a reduced `Space`, selected source-record IDs, source-to-reduced assignments, nearest-representative distances, strategy metadata, and explicit `inverse_supported=False` metadata. Calling `inverse_transform()` on this result raises `metric.UnsupportedOperationError`. `Space.reduce(count=..., strategy=...)` exposes the same result. Pass a fresh `representation=` to record representation metadata; stale representations raise `metric.StaleRepresentationError`. Use `ReductionResult.to_dict()` for structured lineage metadata, `to_numpy()` for the assignment vector, and `to_pandas()` for source-to-reduced rows when pandas is installed. The first promoted Python-core reduction strategy is deterministic `FarthestFirst`, so reduction works for arbitrary records plus a metric rather than only vector records. Clustering-oriented `KMedoids` and native reduction strategy names such as `PCFA`, `SOM`, `KOC`, and `DSPCC` raise `StrategyUnavailableError` until their grouping, reconstruction, or quantization diagnostics are promoted.
 
-`compress_space` returns a `CompressionResult` with a compressed representative `Space`, selected source-record IDs, source-to-compressed assignments, nearest-representative distances, `compression="representatives"`, a compressed/source record-count `compression_ratio`, and explicit `lossy=True` / `inverse_supported=False` metadata. Calling `inverse_transform()` raises `metric.UnsupportedOperationError` until a strategy with explicit reconstruction support is promoted. `Space.compress(count=..., strategy=...)` exposes the same result and accepts fresh `representation=` metadata the same way as `Space.reduce(...)`. Use `CompressionResult.to_dict()` for structured lineage metadata, `to_numpy()` for the assignment vector, and `to_pandas()` for source-to-compressed rows when pandas is installed. The first Python-core compression path uses the same deterministic `FarthestFirst` and `KMedoids` representative strategies as `reduce_space`.
+`compress_space` returns a `CompressionResult` with a compressed representative `Space`, selected source-record IDs, source-to-compressed assignments, nearest-representative distances, `compression="representatives"`, a compressed/source record-count `compression_ratio`, and explicit `lossy=True` / `inverse_supported=False` metadata. Calling `inverse_transform()` raises `metric.UnsupportedOperationError` until a strategy with explicit reconstruction support is promoted. `Space.compress(count=..., strategy=...)` exposes the same result and accepts fresh `representation=` metadata the same way as `Space.reduce(...)`. Use `CompressionResult.to_dict()` for structured lineage metadata, `to_numpy()` for the assignment vector, and `to_pandas()` for source-to-compressed rows when pandas is installed. The promoted Python-core compression path uses the same deterministic `FarthestFirst` representative strategy as `reduce_space`.
 
 `map_space` returns a `MappingResult` with a new `Space`, source-record lineage, target record count, mapping metadata, strategy metadata, and explicit `inverse_supported=False` metadata. Calling `inverse_transform()` raises `metric.UnsupportedOperationError`; denoise results include guidance to use the filtered `result.space`, `space.embed(...)`, or a strategy that declares inverse support. `Space.map(transform=..., metric=...)` exposes the same deterministic transform path from an existing space, while the positional compatibility form `Space.map(transform, metric)` remains supported. Pass a fresh `representation=` to record representation metadata; stale representations raise `metric.StaleRepresentationError`. Use `MappingResult.to_dict()` for structured lineage metadata, `to_numpy()` for target source-record IDs, and `to_pandas()` for target-to-source lineage rows when pandas is installed. Calling `Space.map()` with no `transform` or `target` raises `metric.AmbiguousIntentError`; `target=` and generic strategy mapping forms raise `metric.StrategyUnavailableError` where fitted mapping contracts are not promoted. `Space.map(strategy=PhateAE(...))` delegates to the native C++ PHATE-AE binding only for `Space.vectors(...)` values that use the default native-compatible Euclidean vector metric; spaces with custom Python metrics raise `StrategyUnavailableError` so metric semantics are not silently ignored. The returned `MappingResult` carries one-to-one source lineage, a latent vector `Space`, and a native fitted model handle for C++-delegated inverse reconstruction. Broader fitted mappings remain in the beta mapping surface until stable result contracts and CI fixtures exist.
 

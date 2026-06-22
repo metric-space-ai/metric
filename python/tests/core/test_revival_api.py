@@ -957,10 +957,19 @@ class RevivalApiTest(unittest.TestCase):
         self.assertRequiresNative(space.outliers, DBSCAN(radius=2, min_points=2))
         self.assertRequiresNative(space.denoise)
         self.assertRequiresNative(space.denoise, DBSCAN(radius=2, min_points=2))
-        self.assertRequiresNative(space.representatives, 3)
-        self.assertRequiresNative(space.reduce, 3)
+        representatives_result = space.representatives(3)
+        self.assertIsInstance(representatives_result, RepresentativeSet)
+        self.assertEqual(representatives_result.representatives, (0, 4, 2))
+        self.assertEqual(representatives_result.nearest_representative_distances, (0.0, 1.0, 0.0, 1.0, 0.0))
+        reduced = space.reduce(3)
+        self.assertIsInstance(reduced, ReductionResult)
+        self.assertEqual(reduced.space.records, [0, 4, 2])
+        self.assertEqual(reduced.source_record_ids, (0, 4, 2))
+        compressed = space.compress(3)
+        self.assertIsInstance(compressed, CompressionResult)
+        self.assertEqual(compressed.compressed_record_count, 3)
+        self.assertAlmostEqual(compressed.compression_ratio, 0.6)
         self.assertRequiresNative(space.reduce, None, KMedoids(groups=2))
-        self.assertRequiresNative(space.compress, 3)
         self.assertRequiresNative(space.embed)
         self.assertRequiresNative(space.embed, 1)
         self.assertRequiresNative(space.describe)
@@ -976,9 +985,9 @@ class RevivalApiTest(unittest.TestCase):
         self.assertRequiresNative(dbscan, records, metric, 2, 2)
         self.assertRequiresNative(find_outliers, records, metric, DBSCAN(radius=2, min_points=2))
         self.assertRequiresNative(denoise_space, records, metric, DBSCAN(radius=2, min_points=2))
-        self.assertRequiresNative(find_representatives, records, metric, 2)
-        self.assertRequiresNative(reduce_space, records, metric, 2)
-        self.assertRequiresNative(compress_space, records, metric, 2)
+        self.assertEqual(find_representatives(records, metric, 2).representatives, (0, 4))
+        self.assertEqual(reduce_space(records, metric, 2).source_record_ids, (0, 4))
+        self.assertEqual(compress_space(records, metric, 2).compressed_record_count, 2)
         self.assertRequiresNative(embed_space, records, metric)
         self.assertRequiresNative(compare_spaces, records, metric, records, metric)
         self.assertRequiresNative(correlate_spaces, records, metric, records, metric)
@@ -1057,15 +1066,18 @@ class RevivalApiTest(unittest.TestCase):
         def manhattan(lhs, rhs):
             return abs(lhs[0] - rhs[0]) + abs(lhs[1] - rhs[1])
 
+        self.assertEqual(representative_indices(records, manhattan, 2), (0, 1))
+        self.assertEqual(representatives(records, manhattan, 2), (records[0], records[1]))
+        with self.assertRaisesRegex(ValueError, "positive"):
+            find_representatives(records, manhattan, 0)
+        self.assertEqual(medoid_index(records, manhattan), 2)
+        self.assertEqual(medoid(records, manhattan), records[2])
+        self.assertEqual(separated_representative_indices(records, manhattan, 1.0), (0, 1, 2))
+        self.assertEqual(separated_representatives(records, manhattan, 1.0), tuple(records))
+        self.assertEqual(coverage_representative_indices(records, manhattan, 1.0), (0, 1))
+        self.assertEqual(coverage_representatives(records, manhattan, 1.0), (records[0], records[1]))
+
         for fn, args in [
-            (representative_indices, (records, manhattan, 2)),
-            (representatives, (records, manhattan, 2)),
-            (medoid_index, (records, manhattan)),
-            (medoid, (records, manhattan)),
-            (separated_representative_indices, (records, manhattan, 1.0)),
-            (separated_representatives, (records, manhattan, 1.0)),
-            (coverage_representative_indices, (records, manhattan, 1.0)),
-            (coverage_representatives, (records, manhattan, 1.0)),
             (exact_knn_graph, (records, manhattan, 1)),
             (exact_knn_graph_edges, (records, manhattan, 1)),
             (exact_radius_graph, (records, manhattan, 1.0)),
@@ -1298,9 +1310,9 @@ class RevivalApiTest(unittest.TestCase):
 
         self.assertEqual(space.nearest(query).record["id"], "pump-a")
         self.assertEqual([neighbor.record["id"] for neighbor in space.neighbors(query, 2).neighbors], ["pump-a", "pump-b"])
-        self.assertRequiresNative(representative_indices, records, structured_record_distance, 3)
-        self.assertRequiresNative(separated_representative_indices, records, structured_record_distance, 2.0)
-        self.assertRequiresNative(coverage_representative_indices, records, structured_record_distance, 1.5)
+        self.assertEqual(len(representative_indices(records, structured_record_distance, 3)), 3)
+        self.assertGreaterEqual(len(separated_representative_indices(records, structured_record_distance, 2.0)), 1)
+        self.assertGreaterEqual(len(coverage_representative_indices(records, structured_record_distance, 1.5)), 1)
     def test_time_series_records_use_alignment_metric_callable(self):
         gap_cost = 2.0
         records = [
@@ -1335,9 +1347,9 @@ class RevivalApiTest(unittest.TestCase):
         self.assertMetricContracts(records, aligned_curve_distance)
 
         self.assertEqual(space.nearest(query).id, 0)
-        self.assertRequiresNative(representative_indices, records, aligned_curve_distance, 3)
-        self.assertRequiresNative(separated_representative_indices, records, aligned_curve_distance, 4.0)
-        self.assertRequiresNative(coverage_representative_indices, records, aligned_curve_distance, 4.0)
+        self.assertEqual(len(representative_indices(records, aligned_curve_distance, 3)), 3)
+        self.assertGreaterEqual(len(separated_representative_indices(records, aligned_curve_distance, 4.0)), 1)
+        self.assertGreaterEqual(len(coverage_representative_indices(records, aligned_curve_distance, 4.0)), 1)
         self.assertRequiresNative(intrinsic_dimension, records, aligned_curve_distance)
     def test_histogram_records_use_transport_metric_callable(self):
         records = [

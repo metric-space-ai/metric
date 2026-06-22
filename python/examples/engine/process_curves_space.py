@@ -2,8 +2,8 @@
 
 A toy alignment metric over short process curves. The Python ``Space`` adapts
 the records and exposes explicit distances plus native exact-scan nearest
-search. Representative selection and kNN-graph construction remain native-only
-until their bindings are promoted.
+search and native representative selection. kNN-graph construction remains
+native-only until its binding is promoted.
 """
 
 from metric import Space
@@ -64,8 +64,11 @@ def main():
     assert nearest.id == 0
     print("nearest(query) =", names[nearest.id], "distance =", nearest.distance)
 
-    # Native boundary: selection / graph construction live in C++ but are not promoted here.
-    requires_native("representatives", lambda: space.representatives(2))
+    representatives = space.representatives(2)
+    assert len(representatives.representatives) == 2
+    print("representatives =", [names[index] for index in representatives.representatives])
+
+    # Native boundary: graph construction lives in C++ but is not promoted here.
     requires_native("exact_knn_graph", lambda: exact_knn_graph(records, aligned_curve_distance, 1))
 
 

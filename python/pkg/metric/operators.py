@@ -2,11 +2,12 @@
 
 This module is an adapter boundary, not an algorithm library. The result
 dataclasses marshal native results into stable public objects, and a few
-helpers invoke the caller's own metric/transform callable. Exact-scan pair and
-neighbor loops are exposed through the native C++ binding; higher METRIC
-algorithms (graph construction, clustering, embedding, correlation, intrinsic
-dimension, structural statistics) remain native-only facades until their binding
-is exposed. METRIC's production numerics live in native C++.
+helpers invoke the caller's own metric/transform callable. Exact-scan pair,
+neighbor, representative-selection, reduction, and compression loops are exposed
+through the native C++ binding; higher METRIC algorithms (graph construction,
+clustering, embedding, correlation, intrinsic dimension, structural statistics)
+remain native-only facades until their binding is exposed. METRIC's production
+numerics live in native C++.
 """
 
 from dataclasses import dataclass
@@ -51,6 +52,37 @@ def _normalize_neighbor_count(k=None, count=None):
     if requested < 0:
         raise ValueError("neighbor count must be non-negative")
     return requested
+
+
+def _representative_strategy_seed(strategy):
+    if strategy is None:
+        return 0, "farthest_first"
+
+    from metric.strategies import FarthestFirst
+
+    if isinstance(strategy, FarthestFirst):
+        return _normalize_neighbor_count(strategy.seed_index, None), "farthest_first"
+
+    _require_native_binding(
+        "find_representatives(...)", f"{type(strategy).__name__} representative selection"
+    )
+
+
+def _representative_diagnostics(record_count, distances):
+    if record_count == 0:
+        return 0.0, 0.0
+    coverage_radius = max(distances) if distances else 0.0
+    average_nearest_distance = float(sum(distances) / record_count) if distances else 0.0
+    return coverage_radius, average_nearest_distance
+
+
+def _assign_to_representatives(records, metric, representatives):
+    assignments, distances = _native_metric_module().assign_to_representatives(
+        list(records),
+        metric,
+        list(representatives),
+    )
+    return tuple(assignments), tuple(distances)
 
 
 def _raise_unsupported_inverse(result):
@@ -1237,23 +1269,86 @@ def denoise_space(records, metric, strategy, *, representation="metric_space"):
 
 
 def representative_indices(records, metric, k, seed_index=0):
-    """Farthest-first representative selection by index (native-only)."""
-    _require_native_binding("representative_indices(...)", "farthest-first representative selection")
+    """Farthest-first representative selection by index through the native C++ binding."""
+    return tuple(
+        _native_metric_module().representative_indices(
+            list(records),
+            metric,
+            _normalize_neighbor_count(k, None),
+            _normalize_neighbor_count(seed_index, None),
+        )
+    )
 
 
 def find_representatives(records, metric, k=None, strategy=None, *, count=None, representation="metric_space"):
-    """Representative selection result (native-only)."""
-    _require_native_binding("find_representatives(...)", "representative selection")
+    """Representative selection result through the native C++ binding."""
+    record_list = list(records)
+    requested_count = _normalize_neighbor_count(k, count)
+    if record_list and requested_count == 0:
+        raise ValueError("representative count must be positive for a non-empty record set")
+    seed_index, strategy_name = _representative_strategy_seed(strategy)
+    selected = representative_indices(record_list, metric, requested_count, seed_index=seed_index)
+    assignments, distances = _assign_to_representatives(record_list, metric, selected)
+    coverage_radius, average_nearest_distance = _representative_diagnostics(len(record_list), distances)
+    return RepresentativeSet(
+        representatives=selected,
+        nearest_representative_distances=distances,
+        record_count=len(record_list),
+        requested_count=requested_count,
+        coverage_radius=coverage_radius,
+        average_nearest_distance=average_nearest_distance,
+        exact=True,
+        strategy=strategy_name,
+        representation=representation,
+    )
 
 
 def reduce_space(records, metric, count=None, strategy=None, *, representation="metric_space"):
-    """Reduce a finite metric space to representatives (native-only)."""
-    _require_native_binding("reduce_space(...)", "representative reduction")
+    """Reduce a finite metric space to representative records through the native C++ binding."""
+    record_list = list(records)
+    requested_count = _normalize_neighbor_count(count, None)
+    seed_index, strategy_name = _representative_strategy_seed(strategy)
+    selected = representative_indices(record_list, metric, requested_count, seed_index=seed_index)
+    assignments, distances = _assign_to_representatives(record_list, metric, selected)
+
+    from metric.spaces import Space
+
+    return ReductionResult(
+        space=Space([record_list[index] for index in selected], metric),
+        source_record_ids=selected,
+        assignments=assignments,
+        nearest_representative_distances=distances,
+        source_record_count=len(record_list),
+        reduced_record_count=len(selected),
+        exact=True,
+        operator_name="reduce",
+        strategy=strategy_name,
+        representation=representation,
+        inverse_supported=False,
+    )
 
 
 def compress_space(records, metric, count=None, strategy=None, *, representation="metric_space"):
-    """Compress a finite metric space by retaining representatives (native-only)."""
-    _require_native_binding("compress_space(...)", "representative compression")
+    """Compress a finite metric space by retaining representatives through the native C++ binding."""
+    record_list = list(records)
+    reduction = reduce_space(record_list, metric, count=count, strategy=strategy, representation=representation)
+    ratio = (reduction.reduced_record_count / reduction.source_record_count) if reduction.source_record_count else 0.0
+    return CompressionResult(
+        space=reduction.space,
+        source_record_ids=reduction.source_record_ids,
+        assignments=reduction.assignments,
+        nearest_representative_distances=reduction.nearest_representative_distances,
+        source_record_count=reduction.source_record_count,
+        compressed_record_count=reduction.reduced_record_count,
+        compression_ratio=ratio,
+        exact=True,
+        operator_name="compress",
+        compression="representatives",
+        strategy=reduction.strategy,
+        representation=reduction.representation,
+        lossy=reduction.reduced_record_count < reduction.source_record_count,
+        inverse_supported=False,
+    )
 
 
 def map_space(records, transform, metric, *, representation="metric_space"):
@@ -1296,38 +1391,54 @@ def embed_space(records, metric, dimensions=2, strategy=None, *, representation=
 
 
 def representatives(records, metric, k, seed_index=0):
-    """Farthest-first representative records (native-only)."""
-    _require_native_binding("representatives(...)", "farthest-first representative selection")
+    """Farthest-first representative records through the native C++ binding."""
+    record_list = list(records)
+    return tuple(record_list[index] for index in representative_indices(record_list, metric, k, seed_index))
 
 
 def medoid_index(records, metric):
-    """Index of the record with the smallest total distance (native-only)."""
-    _require_native_binding("medoid_index(...)", "medoid selection")
+    """Index of the record with the smallest total distance through the native C++ binding."""
+    return _native_metric_module().medoid_index(list(records), metric)
 
 
 def medoid(records, metric):
-    """Record with the smallest total distance to all records (native-only)."""
-    _require_native_binding("medoid(...)", "medoid selection")
+    """Record with the smallest total distance to all records through the native C++ binding."""
+    record_list = list(records)
+    return record_list[medoid_index(record_list, metric)]
 
 
 def separated_representative_indices(records, metric, minimum_distance):
-    """Greedy minimum-distance separated representatives by index (native-only)."""
-    _require_native_binding("separated_representative_indices(...)", "separated representative selection")
+    """Greedy minimum-distance separated representatives by index through the native C++ binding."""
+    return tuple(
+        _native_metric_module().separated_representative_indices(
+            list(records),
+            metric,
+            minimum_distance,
+        )
+    )
 
 
 def separated_representatives(records, metric, minimum_distance):
-    """Greedy minimum-distance separated representative records (native-only)."""
-    _require_native_binding("separated_representatives(...)", "separated representative selection")
+    """Greedy minimum-distance separated representative records through the native C++ binding."""
+    record_list = list(records)
+    return tuple(record_list[index] for index in separated_representative_indices(record_list, metric, minimum_distance))
 
 
 def coverage_representative_indices(records, metric, radius):
-    """Greedy radius-cover representatives by index (native-only)."""
-    _require_native_binding("coverage_representative_indices(...)", "coverage representative selection")
+    """Greedy radius-cover representatives by index through the native C++ binding."""
+    return tuple(
+        _native_metric_module().coverage_representative_indices(
+            list(records),
+            metric,
+            radius,
+        )
+    )
 
 
 def coverage_representatives(records, metric, radius):
-    """Greedy radius-cover representative records (native-only)."""
-    _require_native_binding("coverage_representatives(...)", "coverage representative selection")
+    """Greedy radius-cover representative records through the native C++ binding."""
+    record_list = list(records)
+    return tuple(record_list[index] for index in coverage_representative_indices(record_list, metric, radius))
 
 
 def compare_spaces(

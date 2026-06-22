@@ -283,11 +283,12 @@ or `c++ -std=c++17 -I. app.cpp -llapack` on Linux.
 
 Python is an adapter layer over the native implementation. The current core wheel
 runs space construction and inspection (`distance`, `pairwise`, and the
-`to_matrix`/`to_tree`/`to_graph` representation views) plus the metric
-constructors. The algorithmic intent methods (`neighbors`, `groups`, `outliers`,
-`embed`, `reduce`, `compress`, `compare`, ...) currently raise
-`StrategyUnavailableError` because their native bindings are not promoted in the
-default wheel yet. Use the C++ surface for those analyses today.
+`to_matrix`/`to_tree`/`to_graph` representation views), exact neighbor search
+(`neighbors`, `nearest`, `within_radius`), representative selection, reduction,
+compression, and the metric constructors. Higher intent methods such as
+`groups`, `outliers`, `embed`, `compare`, and `describe_structure` still raise
+`StrategyUnavailableError` until their native bindings are promoted in the
+default wheel. Use the C++ surface for those analyses today.
 
 ```shell
 python -m pip install ./python
@@ -301,7 +302,7 @@ space = Space(records, Edit())
 
 print(space.distance(0, 1))   # 1
 print(space.pairwise())       # cached pairwise edit distances
-# space.neighbors("read", k=2)  # raises StrategyUnavailableError in the current wheel
+print([neighbor.record for neighbor in space.neighbors("read", count=2).neighbors])
 ```
 
 ## Documentation

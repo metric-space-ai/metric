@@ -769,8 +769,29 @@ class Space(FiniteMetricSpace):
         _require_native_binding("Space.denoise(...)", "density denoising")
 
     def representatives(self, k=None, strategy=None, *, count=None, representation=None, runtime=None):
-        """Select representative records (native-only)."""
-        _require_native_binding("Space.representatives(...)", "representative selection")
+        """Select representative records through the native C++ binding."""
+        require_exact_runtime(runtime)
+        from metric.operators import RepresentativeSet, find_representatives
+
+        result = find_representatives(
+            self.records,
+            self.metric,
+            k=k,
+            count=count,
+            strategy=strategy,
+            representation=self._representation_name(representation),
+        )
+        return RepresentativeSet(
+            representatives=tuple(self.ids[int(index)] for index in result.representatives),
+            nearest_representative_distances=result.nearest_representative_distances,
+            record_count=result.record_count,
+            requested_count=result.requested_count,
+            coverage_radius=result.coverage_radius,
+            average_nearest_distance=result.average_nearest_distance,
+            exact=result.exact,
+            strategy=result.strategy,
+            representation=result.representation,
+        )
 
     def _representation_name(self, representation):
         representation_name = "metric_space"
@@ -780,12 +801,63 @@ class Space(FiniteMetricSpace):
         return representation_name
 
     def reduce(self, count=None, strategy=None, *, representation=None, runtime=None):
-        """Reduce the space to representative records (native-only)."""
-        _require_native_binding("Space.reduce(...)", "representative reduction")
+        """Reduce the space to representative records through the native C++ binding."""
+        require_exact_runtime(runtime)
+        from metric.operators import ReductionResult, reduce_space
+
+        result = reduce_space(
+            self.records,
+            self.metric,
+            count=count,
+            strategy=strategy,
+            representation=self._representation_name(representation),
+        )
+        selected_positions = [int(index) for index in result.source_record_ids]
+        return ReductionResult(
+            space=Space(
+                [self.records[index] for index in selected_positions],
+                self.metric,
+                ids=[self.ids[index] for index in selected_positions],
+                name=self.name,
+                metadata=self.metadata,
+                validate=self.validate,
+                cache=self.cache,
+            ),
+            source_record_ids=tuple(self.ids[index] for index in selected_positions),
+            assignments=result.assignments,
+            nearest_representative_distances=result.nearest_representative_distances,
+            source_record_count=result.source_record_count,
+            reduced_record_count=result.reduced_record_count,
+            exact=result.exact,
+            operator_name=result.operator_name,
+            strategy=result.strategy,
+            representation=result.representation,
+            inverse_supported=result.inverse_supported,
+        )
 
     def compress(self, count=None, strategy=None, *, representation=None, runtime=None):
-        """Compress the space by retaining representatives (native-only)."""
-        _require_native_binding("Space.compress(...)", "representative compression")
+        """Compress the space by retaining representatives through the native C++ binding."""
+        require_exact_runtime(runtime)
+        from metric.operators import CompressionResult
+
+        reduced = self.reduce(count=count, strategy=strategy, representation=representation, runtime=runtime)
+        ratio = (reduced.reduced_record_count / reduced.source_record_count) if reduced.source_record_count else 0.0
+        return CompressionResult(
+            space=reduced.space,
+            source_record_ids=reduced.source_record_ids,
+            assignments=reduced.assignments,
+            nearest_representative_distances=reduced.nearest_representative_distances,
+            source_record_count=reduced.source_record_count,
+            compressed_record_count=reduced.reduced_record_count,
+            compression_ratio=ratio,
+            exact=reduced.exact,
+            operator_name="compress",
+            compression="representatives",
+            strategy=reduced.strategy,
+            representation=reduced.representation,
+            lossy=reduced.reduced_record_count < reduced.source_record_count,
+            inverse_supported=False,
+        )
 
     def map(self, transform=None, metric=None, *, target=None, strategy=None, representation=None, runtime=None):
         require_exact_runtime(runtime)

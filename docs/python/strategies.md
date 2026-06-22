@@ -4,12 +4,12 @@ Normal Python examples should start with records, a metric, and intent methods.
 Strategy objects are expert controls under `metric.strategies`; they are not
 exported as top-level algorithm names.
 
-## Promoted Strategies
+## Strategy Vocabulary
 
 | Strategy | Intent Path | Notes |
 |---|---|---|
 | `MDS` / `ClassicMDS` | `space.embed(...)` | Deterministic classical MDS over the exact finite distance matrix. |
-| `KMedoids` | `space.groups(...)`, `space.reduce(...)`, `space.compress(...)` | Deterministic representative grouping and reduction. |
+| `KMedoids` | `space.groups(...)` | Deterministic representative grouping vocabulary; not promoted in the default wheel yet. |
 | `DBSCAN` | `space.groups(...)`, `space.outliers(...)`, `space.denoise(...)` | Deterministic density grouping and noise filtering. |
 | `FarthestFirst` | `space.representatives(...)`, `space.reduce(...)`, `space.compress(...)` | Deterministic representative selection. |
 | `DistanceProfileCorrelation` | `space.compare(...)` | Pearson correlation of exact pairwise distance profiles. |
@@ -17,10 +17,12 @@ exported as top-level algorithm names.
 ```python
 from metric import Space
 from metric.metrics import Edit
-from metric.strategies import KMedoids
+from metric.strategies import FarthestFirst, KMedoids
 
 space = Space(["cat", "cot", "coat", "dog"], metric=Edit())
-groups = space.groups(strategy=KMedoids(groups=2, max_iterations=50))
+representatives = space.representatives(count=2, strategy=FarthestFirst(seed_index=0))
+# groups = space.groups(strategy=KMedoids(groups=2, max_iterations=50))
+# KMedoids grouping is importable vocabulary but not promoted in the default wheel yet.
 ```
 
 Use strategy objects only when the default intent behavior is not explicit

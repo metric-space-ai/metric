@@ -1,10 +1,9 @@
-"""Representative selection over a transport space — adapter boundary demo.
+"""Representative selection over a transport space.
 
 Representative selection (farthest-first, medoid, separated, coverage) is a
-METRIC algorithm. In the adapter-only Python package these helpers stay
-importable as a stable vocabulary but raise StrategyUnavailableError until the
-native C++ binding is exposed. The Python layer still adapts the records and
-exposes the explicit distances the native selectors consume.
+METRIC algorithm. The Python facade delegates these selectors to the native C++
+binding and returns deterministic representative IDs / records while keeping the
+records in their original histogram form.
 """
 
 from metric import (
@@ -18,7 +17,6 @@ from metric import (
     separated_representative_indices,
     separated_representatives,
 )
-from metric.exceptions import StrategyUnavailableError
 
 
 def cumulative_transport_distance(lhs, rhs):
@@ -33,15 +31,6 @@ def cumulative_transport_distance(lhs, rhs):
         distance += abs(cumulative_delta)
 
     return distance
-
-
-def requires_native(label, call):
-    try:
-        call()
-    except StrategyUnavailableError:
-        print(f"{label}: requires native C++ binding")
-    else:
-        raise AssertionError(f"{label} should require a native binding")
 
 
 def main():
@@ -61,16 +50,19 @@ def main():
     print("records =", ", ".join(names))
     print("distance(left-edge, right-edge) =", space.distance(0, 2))
 
-    # Native boundary: every representative selector requires the C++ binding.
     metric = cumulative_transport_distance
-    requires_native("representative_indices", lambda: representative_indices(records, metric, k=3))
-    requires_native("representatives", lambda: representatives(records, metric, k=3))
-    requires_native("medoid_index", lambda: medoid_index(records, metric))
-    requires_native("medoid", lambda: medoid(records, metric))
-    requires_native("separated_representative_indices", lambda: separated_representative_indices(records, metric, 1.5))
-    requires_native("separated_representatives", lambda: separated_representatives(records, metric, 1.5))
-    requires_native("coverage_representative_indices", lambda: coverage_representative_indices(records, metric, 1.5))
-    requires_native("coverage_representatives", lambda: coverage_representatives(records, metric, 1.5))
+    selected = representative_indices(records, metric, k=3)
+    assert selected == (0, 2, 4)
+    assert representatives(records, metric, k=3) == tuple(records[index] for index in selected)
+    assert medoid_index(records, metric) == 1
+    assert medoid(records, metric) == records[1]
+    assert separated_representative_indices(records, metric, 1.5) == (0, 2, 4)
+    assert separated_representatives(records, metric, 1.5) == (records[0], records[2], records[4])
+    assert coverage_representative_indices(records, metric, 1.5) == (0, 2)
+    assert coverage_representatives(records, metric, 1.5) == (records[0], records[2])
+
+    print("farthest-first representatives =", [names[index] for index in selected])
+    print("medoid =", names[medoid_index(records, metric)])
 
 
 if __name__ == "__main__":
