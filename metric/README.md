@@ -1,6 +1,6 @@
 ## Modules
 
-**PANDA | METRIC** is organized in several submodules.
+**PANDA | METRIC** is organized into native C++ Level-1 areas.
 
 **[METRIC | DISTANCE](distance/README.md)** provide a extensive collection of metrics, including factory functions for
 configuring complex metrics.  
@@ -38,5 +38,4 @@ combined. On the one hand, there is a high-performance in-memory crossfilter. Th
 patterns from the results of the operations in quasi real time. On the other hand, the METRIC | UTILS module also
 contains a nonlinear and nonparametric signifcance test for independent features (PMQ) of a metric space that were
 obtained by mapping and more. [link](utils/README.md)
-
 

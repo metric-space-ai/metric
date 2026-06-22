@@ -317,8 +317,6 @@ $ clang++ ./examples/ensemble_examples/Boosting_example.cpp -std=c++17
 
 # Clone and build
 
-After cloning repository run next command to update submodules:
-
-`$ git submodule init $ git submodule update`
+The repository no longer requires Git submodules. A normal clone is sufficient.
  
  

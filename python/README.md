@@ -35,7 +35,7 @@ CI builds core wheel artifacts for Linux, macOS, and Windows across the supporte
 # Build from the source
 
 ```
-git clone --recurse-submodules https://github.com/metric-space-ai/metric
+git clone https://github.com/metric-space-ai/metric
 ```
 
 ## Install Prerequisites

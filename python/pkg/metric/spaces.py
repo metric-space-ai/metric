@@ -10,6 +10,7 @@ from metric.exceptions import (
     MetricContractError,
     MetricInputError,
     MissingMetricError,
+    OptionalDependencyError,
     StaleRepresentationError,
     StrategyUnavailableError,
 )
@@ -96,6 +97,21 @@ def _native_record_reader(kind, value_type):
         raise StrategyUnavailableError(f"native C++ record file I/O binding {name} is unavailable") from exc
 
 
+def _native_record_writer(kind, value_type):
+    try:
+        from metric._impl import metric as native_metric
+    except ModuleNotFoundError as exc:
+        raise StrategyUnavailableError(
+            "native C++ record file I/O is unavailable because metric._impl.metric could not be imported"
+        ) from exc
+
+    name = f"write_{kind}_{value_type}_records"
+    try:
+        return getattr(native_metric, name)
+    except AttributeError as exc:
+        raise StrategyUnavailableError(f"native C++ record file I/O binding {name} is unavailable") from exc
+
+
 def _read_native_delimited_records(
     kind,
     path,
@@ -119,6 +135,62 @@ def _read_native_delimited_records(
         require_finite=require_finite,
         quote=quote,
     )
+
+
+def _rows_for_native_export(records, ids, *, value_type, as_scalar, include_ids):
+    normalized = _normalize_record_value_type(value_type)
+    rows = []
+    for row_index, record in enumerate(records):
+        if as_scalar or isinstance(record, (str, bytes)):
+            row = [record]
+        else:
+            try:
+                row = list(record)
+            except TypeError:
+                row = [record]
+        if not row:
+            raise ValueError(f"record {row_index} has no fields")
+        if include_ids:
+            row = [ids[row_index]] + row
+        if normalized == "string":
+            row = [str(value) for value in row]
+        rows.append(row)
+    return rows
+
+
+def _write_native_delimited_records(
+    kind,
+    path,
+    records,
+    ids,
+    *,
+    value_type,
+    as_scalar,
+    include_ids,
+    header,
+    id_header,
+    newline_at_end,
+    quote,
+):
+    normalized = _normalize_record_value_type(value_type)
+    writer = _native_record_writer(kind, normalized)
+    output_header = [] if header is None else list(header)
+    if include_ids and output_header:
+        output_header = [id_header] + output_header
+    writer(
+        str(path),
+        _rows_for_native_export(
+            records,
+            ids,
+            value_type=normalized,
+            as_scalar=as_scalar,
+            include_ids=include_ids,
+        ),
+        newline_at_end=newline_at_end,
+        header=output_header,
+        quote=quote,
+    )
+    return path
 
 
 def _split_record_id_column(records, ids, id_column):
@@ -149,6 +221,16 @@ def _as_scalar_records(records):
             raise ValueError(f"as_scalar=True requires exactly one field per row; row {row_index} has {len(row)}")
         scalar_records.append(row[0])
     return scalar_records
+
+
+def _load_numpy_array(path, *, allow_pickle):
+    try:
+        import numpy as np
+    except ModuleNotFoundError as exc:
+        raise OptionalDependencyError(
+            "Space.from_numpy_file requires numpy. Install numpy or use Space.from_csv/Space.from_tsv."
+        ) from exc
+    return np.load(path, allow_pickle=allow_pickle)
 
 
 def _validate_distance_value(value, lhs_index, rhs_index):
@@ -391,6 +473,26 @@ class FiniteMetricSpace:
             )
         return cls(records, metric=metric, ids=ids, **kwargs)
 
+    @classmethod
+    def from_numpy_file(
+        cls,
+        path,
+        metric=None,
+        *,
+        ids=None,
+        allow_pickle=False,
+        **kwargs,
+    ):
+        """Construct a finite metric space from a NumPy ``.npy`` array."""
+
+        array = _load_numpy_array(path, allow_pickle=allow_pickle)
+        if array.ndim != 2:
+            raise ValueError("Space.from_numpy_file requires a 2D array shaped as records x fields")
+        records = array.tolist()
+        if metric is None:
+            return cls.vectors(records, ids=ids, **kwargs)
+        return cls(records, metric=metric, ids=ids, **kwargs)
+
     def version(self):
         return self._version
 
@@ -443,6 +545,64 @@ class FiniteMetricSpace:
             [self.distance(lhs, rhs) for rhs in positions]
             for lhs in positions
         ]
+
+    def to_csv(
+        self,
+        path,
+        *,
+        value_type="float",
+        as_scalar=False,
+        include_ids=False,
+        header=None,
+        id_header="id",
+        newline_at_end=True,
+        quote='"',
+    ):
+        """Export records through the native C++ CSV writer."""
+
+        self.ensure_fresh()
+        return _write_native_delimited_records(
+            "csv",
+            path,
+            self.records,
+            self.ids,
+            value_type=value_type,
+            as_scalar=as_scalar,
+            include_ids=include_ids,
+            header=header,
+            id_header=id_header,
+            newline_at_end=newline_at_end,
+            quote=quote,
+        )
+
+    def to_tsv(
+        self,
+        path,
+        *,
+        value_type="float",
+        as_scalar=False,
+        include_ids=False,
+        header=None,
+        id_header="id",
+        newline_at_end=True,
+        quote='"',
+    ):
+        """Export records through the native C++ TSV writer."""
+
+        self.ensure_fresh()
+        return _write_native_delimited_records(
+            "tsv",
+            path,
+            self.records,
+            self.ids,
+            value_type=value_type,
+            as_scalar=as_scalar,
+            include_ids=include_ids,
+            header=header,
+            id_header=id_header,
+            newline_at_end=newline_at_end,
+            quote=quote,
+        )
 
     def to_matrix(self):
         return FiniteMetricSpace(

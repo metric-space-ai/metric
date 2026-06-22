@@ -431,6 +431,23 @@ class RevivalApiTest(unittest.TestCase):
             self.assertEqual(space.records, rows)
             self.assertAlmostEqual(space.distance(0, 1), 5.0)
 
+            exported_csv = Path(tmpdir) / "exported_vectors.csv"
+            returned_path = space.to_csv(
+                exported_csv,
+                include_ids=True,
+                header=["x", "y"],
+            )
+            self.assertEqual(returned_path, exported_csv)
+            exported_space = Space.from_csv(exported_csv, has_header=True, id_column=0)
+            self.assertEqual(exported_space.ids, [0.0, 1.0])
+            self.assertEqual(exported_space.records, rows)
+
+            npy_path = Path(tmpdir) / "vectors.npy"
+            np.save(npy_path, np.asarray(rows, dtype=float))
+            numpy_space = Space.from_numpy_file(npy_path)
+            self.assertEqual(numpy_space.records, rows)
+            self.assertAlmostEqual(numpy_space.distance(0, 1), 5.0)
+
             csv_with_id = Path(tmpdir) / "vectors_with_id.csv"
             csv_with_id.write_text("id,x,y\n100,1,2\n101,4,6\n", encoding="utf-8")
             identified = Space.from_csv(csv_with_id, has_header=True, id_column=0)
@@ -453,8 +470,29 @@ class RevivalApiTest(unittest.TestCase):
             self.assertEqual(strings.records, ["cat", "coat"])
             self.assertEqual(strings.distance(0, 1), self.metric("cat", "coat"))
 
+            exported_tsv = Path(tmpdir) / "exported_tokens.tsv"
+            strings.to_tsv(
+                exported_tsv,
+                value_type="string",
+                as_scalar=True,
+                header=["token"],
+            )
+            exported_strings = Space.from_tsv(
+                exported_tsv,
+                metric=self.metric,
+                value_type="string",
+                has_header=True,
+                as_scalar=True,
+            )
+            self.assertEqual(exported_strings.records, ["cat", "coat"])
+
             with self.assertRaisesRegex(MissingMetricError, "requires metric"):
                 Space.from_tsv(tsv_path, value_type="string", has_header=True, as_scalar=True)
+
+            invalid_npy_path = Path(tmpdir) / "invalid.npy"
+            np.save(invalid_npy_path, np.asarray([1.0, 2.0]))
+            with self.assertRaisesRegex(ValueError, "2D array"):
+                Space.from_numpy_file(invalid_npy_path)
 
     def test_native_mapping_artifact_projection_is_metadata_only(self):
         manifest = {
