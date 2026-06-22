@@ -413,6 +413,22 @@ class RevivalApiTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unknown legacy METRIC module"):
             compat.legacy_module("unknown")
 
+    def test_twed_signature_metric_is_promoted_in_default_wheel(self):
+        # TWED is the one promoted signature metric in the default wheel; it is
+        # compiled from python/src/distance/TWED.cpp (native mtrc::TWED<double>).
+        self.assertIn("TWED", available())
+        self.assertIsNotNone(metric.metrics.TWED)
+        self.assertIn("TWED", metric.metrics.__all__)
+        twed = metric.metrics.TWED(penalty=0, elastic=1)
+        self.assertEqual(twed.penalty, 0)
+        self.assertEqual(twed.elastic, 1)
+        # Native evaluation: identity is zero and symmetry holds (no Python math).
+        self.assertEqual(twed([0.0, 1.0, 2.0], [0.0, 1.0, 2.0]), 0.0)
+        self.assertEqual(
+            twed([0.0, 1.0, 2.0, 3.0], [0.0, 1.0, 2.0, 4.0]),
+            twed([0.0, 1.0, 2.0, 4.0], [0.0, 1.0, 2.0, 3.0]),
+        )
+
     def test_native_record_file_io_builds_spaces_without_python_parsing(self):
         from metric._impl import metric as native_metric
 

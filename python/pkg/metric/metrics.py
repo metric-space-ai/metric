@@ -32,6 +32,7 @@ Manhattan = _optional_metric("Manhattan")
 Minkowski = _optional_metric("Minkowski")
 P_norm = _optional_metric("P_norm")
 ThresholdedEuclidean = _optional_metric("ThresholdedEuclidean")
+TWED = _optional_metric("TWED")
 
 
 def available():
@@ -44,6 +45,7 @@ def available():
         "Chebyshev": Chebyshev,
         "P_norm": P_norm,
         "ThresholdedEuclidean": ThresholdedEuclidean,
+        "TWED": TWED,
     }.items():
         if value is not None:
             names.append(name)
@@ -62,6 +64,7 @@ __all__ = [
     "Chebyshev",
     "P_norm",
     "ThresholdedEuclidean",
+    "TWED",
     "available",
     "default",
 ]

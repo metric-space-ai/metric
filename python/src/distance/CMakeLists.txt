@@ -3,7 +3,7 @@ set(LIB_NAME distance)
 if (METRIC_PYTHON_BUILD_FULL)
     file(GLOB DISTANCE_SOURCE_FILES ./*.cpp)
 else ()
-    set(DISTANCE_SOURCE_FILES init.cpp Edit.cpp subs/standards.cpp)
+    set(DISTANCE_SOURCE_FILES init.cpp Edit.cpp TWED.cpp subs/standards.cpp)
 endif ()
 
 pybind11_add_module(${LIB_NAME} ${DISTANCE_SOURCE_FILES})

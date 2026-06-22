@@ -117,6 +117,29 @@ importable when those optional bindings are absent.
 `P_norm`/`Minkowski` delegates to the native C++ metric and accepts only finite
 `p >= 1`; the exponent is exposed read-only in Python.
 
+`TWED` (Time Warp Edit Distance) is the first signature metric promoted into the
+default wheel. It delegates entirely to the native C++ `mtrc::TWED<double>` and
+is a true metric over finite, non-empty, positionally indexed real sequences.
+Construct it from `metric.metrics` or `metric.distance`:
+
+```python
+from metric import metrics
+
+twed = metrics.TWED(penalty=0, elastic=1)
+twed([0.0, 1.0, 2.0, 3.0], [0.0, 1.0, 2.0, 4.0])  # 1.0, computed in C++
+```
+
+`penalty` (`lambda >= 0`) and `elastic` (`nu > 0`) are validated natively at
+construction and on every evaluation; the constructor and each call reject
+non-metric parameters, empty inputs, and non-finite values. `penalty`,
+`elastic`, and `is_zero_padded` are exposed read-only. `metrics.available()`
+includes `"TWED"` in the default wheel.
+
+The remaining signature metrics — `EMD`, `RandomEMD`, `Kohonen`, `Sorensen`, and
+`SSIM` — are still unavailable in the default wheel and are only compiled into
+the full extension set; `metric.metrics.<name>` is `None` for them until they are
+individually promoted.
+
 ## Core Methods
 
 ```python
