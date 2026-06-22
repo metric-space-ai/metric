@@ -56,6 +56,8 @@ template <typename Sample, typename D = double> struct RandomEMD {
 	 * @param sample_2 second sample
 	 * @return distance
 	 */
+	[[deprecated("RandomEMD is a quarantined non-metric (a Monte-Carlo approximation, not a true "
+				 "metric) with degenerate-input failure modes; use mtrc::Wasserstein / mtrc::EMD instead")]]
 	distance_type operator()(const Sample &sample_1, const Sample &sample_2) const;
 
   private:

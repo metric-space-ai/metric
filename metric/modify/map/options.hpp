@@ -22,7 +22,10 @@ struct pcfa_options {
 };
 
 struct som_options {
-	som_options(std::size_t width, std::size_t height) : width(width), height(height)
+	[[deprecated("SOM reduce is not promoted and throws at runtime; use pcfa_options, the "
+				 "native autoencoder, or PHATE-AE (see docs/supported-surface.md)")]]
+	som_options(std::size_t width, std::size_t height)
+		: width(width), height(height)
 	{
 		if (width == 0 || height == 0) {
 			throw std::invalid_argument("SOM grid dimensions must be positive");
@@ -34,7 +37,10 @@ struct som_options {
 };
 
 struct koc_options {
-	explicit koc_options(std::size_t clusters) : clusters(clusters)
+	[[deprecated("KOC reduce is not promoted and throws at runtime; use pcfa_options, the "
+				 "native autoencoder, or PHATE-AE (see docs/supported-surface.md)")]]
+	explicit koc_options(std::size_t clusters)
+		: clusters(clusters)
 	{
 		if (clusters == 0) {
 			throw std::invalid_argument("KOC cluster count must be positive");
@@ -45,7 +51,10 @@ struct koc_options {
 };
 
 struct dspcc_options {
-	explicit dspcc_options(std::size_t components) : components(components)
+	[[deprecated("DSPCC reduce is not promoted and throws at runtime; use pcfa_options, the "
+				 "native autoencoder, or PHATE-AE (see docs/supported-surface.md)")]]
+	explicit dspcc_options(std::size_t components)
+		: components(components)
 	{
 		if (components == 0) {
 			throw std::invalid_argument("DSPCC component count must be positive");

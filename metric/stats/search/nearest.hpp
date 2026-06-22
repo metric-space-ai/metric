@@ -5,17 +5,79 @@
 #ifndef _METRIC_OPERATORS_NEAREST_HPP
 #define _METRIC_OPERATORS_NEAREST_HPP
 
+#include <algorithm>
 #include <cstddef>
+#include <exception>
+#include <mutex>
 #include <stdexcept>
+#include <thread>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
 #include <metric/core/concepts.hpp>
+#include <metric/core/metric_traits.hpp>
 #include <metric/record/id.hpp>
 #include <metric/core/result.hpp>
 
 namespace mtrc::stats::search {
+
+namespace batch_detail {
+
+// Fill results[i] = f(i) for i in [0, n). Each batch query is independent (no
+// shared mutable state), so the work is embarrassingly parallel. We fork
+// std::threads only when the metric is declared thread-safe (concurrent const
+// reads of the space then call only the thread-safe metric) AND the batch is
+// large enough to amortize thread setup; otherwise it runs serially and is
+// byte-identical to the single-query path. An exception in any worker is
+// captured and rethrown after join, preserving the serial throw contract.
+template <typename Result, typename Fn> auto run_parallel(std::size_t n, bool thread_safe, Fn f) -> std::vector<Result>
+{
+	std::vector<Result> results(n);
+	const unsigned hardware = std::thread::hardware_concurrency();
+	if (!thread_safe || n < 64 || hardware < 2) {
+		for (std::size_t index = 0; index < n; ++index) {
+			results[index] = f(index);
+		}
+		return results;
+	}
+
+	const unsigned workers = static_cast<unsigned>(std::min<std::size_t>(hardware, n));
+	const std::size_t chunk = (n + workers - 1) / workers;
+	std::vector<std::thread> pool;
+	pool.reserve(workers);
+	std::exception_ptr first_error;
+	std::mutex error_mutex;
+
+	for (unsigned worker = 0; worker < workers; ++worker) {
+		const std::size_t begin = static_cast<std::size_t>(worker) * chunk;
+		const std::size_t end = (begin + chunk < n) ? begin + chunk : n;
+		if (begin >= end) {
+			break;
+		}
+		pool.emplace_back([&results, &f, &first_error, &error_mutex, begin, end]() {
+			try {
+				for (std::size_t index = begin; index < end; ++index) {
+					results[index] = f(index);
+				}
+			} catch (...) {
+				std::lock_guard<std::mutex> guard(error_mutex);
+				if (!first_error) {
+					first_error = std::current_exception();
+				}
+			}
+		});
+	}
+	for (auto &thread : pool) {
+		thread.join();
+	}
+	if (first_error) {
+		std::rethrow_exception(first_error);
+	}
+	return results;
+}
+
+} // namespace batch_detail
 
 // Level-1 search investigates an existing finite metric space; it never defines a metric
 // or modifies the space. knn() returns the k nearest records to a query (RecordId queries
@@ -142,24 +204,20 @@ template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>
 auto knn_batch(const Space &space, const std::vector<typename Space::record_type> &queries, std::size_t k)
 	-> std::vector<NeighborSet<typename Space::distance_type>>
 {
-	std::vector<NeighborSet<typename Space::distance_type>> results;
-	results.reserve(queries.size());
-	for (const auto &query : queries) {
-		results.push_back(knn(space, query, k));
-	}
-	return results;
+	using result_type = NeighborSet<typename Space::distance_type>;
+	constexpr bool thread_safe = core::metric_thread_safe_v<typename Space::metric_type>;
+	return batch_detail::run_parallel<result_type>(queries.size(), thread_safe,
+												   [&](std::size_t index) { return knn(space, queries[index], k); });
 }
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto knn_batch(const Space &space, const std::vector<RecordId> &query_ids, std::size_t k)
 	-> std::vector<NeighborSet<typename Space::distance_type>>
 {
-	std::vector<NeighborSet<typename Space::distance_type>> results;
-	results.reserve(query_ids.size());
-	for (const auto query_id : query_ids) {
-		results.push_back(knn(space, query_id, k));
-	}
-	return results;
+	using result_type = NeighborSet<typename Space::distance_type>;
+	constexpr bool thread_safe = core::metric_thread_safe_v<typename Space::metric_type>;
+	return batch_detail::run_parallel<result_type>(query_ids.size(), thread_safe,
+												   [&](std::size_t index) { return knn(space, query_ids[index], k); });
 }
 
 template <typename Space, typename Radius, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
@@ -167,12 +225,10 @@ auto range_batch(const Space &space, const std::vector<typename Space::record_ty
 	-> std::vector<NeighborSet<typename Space::distance_type>>
 {
 	engine_detail::validate_radius(radius);
-	std::vector<NeighborSet<typename Space::distance_type>> results;
-	results.reserve(queries.size());
-	for (const auto &query : queries) {
-		results.push_back(range(space, query, radius));
-	}
-	return results;
+	using result_type = NeighborSet<typename Space::distance_type>;
+	constexpr bool thread_safe = core::metric_thread_safe_v<typename Space::metric_type>;
+	return batch_detail::run_parallel<result_type>(queries.size(), thread_safe,
+												   [&](std::size_t index) { return range(space, queries[index], radius); });
 }
 
 template <typename Space, typename Radius, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
@@ -180,12 +236,10 @@ auto range_batch(const Space &space, const std::vector<RecordId> &query_ids, Rad
 	-> std::vector<NeighborSet<typename Space::distance_type>>
 {
 	engine_detail::validate_radius(radius);
-	std::vector<NeighborSet<typename Space::distance_type>> results;
-	results.reserve(query_ids.size());
-	for (const auto query_id : query_ids) {
-		results.push_back(range(space, query_id, radius));
-	}
-	return results;
+	using result_type = NeighborSet<typename Space::distance_type>;
+	constexpr bool thread_safe = core::metric_thread_safe_v<typename Space::metric_type>;
+	return batch_detail::run_parallel<result_type>(query_ids.size(), thread_safe,
+												   [&](std::size_t index) { return range(space, query_ids[index], radius); });
 }
 
 } // namespace mtrc::stats::search
