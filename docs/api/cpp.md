@@ -288,8 +288,17 @@ breaks ties by `RecordId`:
 auto exact = mtrc::stats::search::find_neighbors(space, query, mtrc::count{3});
 auto indexed = mtrc::stats::search::find_neighbors(
     space, query, mtrc::count{3}, mtrc::stats::search::cover_tree{});
+auto close = mtrc::stats::search::range(
+    space, space.id(0), radius, mtrc::stats::search::distance_table{});
 auto batched = mtrc::stats::search::knn_batch(space, queries, 3); // one result per query
 ```
+
+Range queries support the same explicit execution vocabulary as nearest-neighbor
+queries where the representation can answer the request exactly:
+`exact_scan`, `brute_force`, `distance_table` for `RecordId` queries,
+`cover_tree`, `knn_graph`, and `mtrc::space::storage::policy`. A kNN graph range
+query by `RecordId` is accepted only when the graph contains every possible
+neighbor; otherwise it throws instead of returning an incomplete radius result.
 
 `mtrc::stats::correlate` tests dependence between two paired finite metric
 spaces. MGC is a dependence statistic in `[-1, 1]`, **not a metric or distance**.
@@ -316,6 +325,10 @@ source finite metric space authoritative:
 
 These objects trade memory, update cost, and query speed. They do not replace
 the metric; they are derived execution forms.
+
+Lazy `DistanceTable` instances are memoizing snapshots, not live views. After a
+space mutation they throw `StaleRepresentationError` on reads until rebuilt, so
+cached old values and freshly computed new-version values cannot be mixed.
 
 ## Modify
 

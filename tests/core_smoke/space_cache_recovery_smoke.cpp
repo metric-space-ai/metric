@@ -96,6 +96,7 @@ int main()
 	assert(lazy.mode() == mtrc::space::storage::distance_table_mode::lazy);
 	assert(lazy.cached_distances() == 0); // nothing materialized up front
 	records::insert(space, std::vector<int>{60});
+	assert(throws([&] { (void)lazy.distance(id0, id2); }));
 	assert(cache::refresh(lazy, space));
 	assert(lazy.mode() == mtrc::space::storage::distance_table_mode::lazy); // mode preserved
 	assert(lazy.cached_distances() == 0);                                   // still not materialized

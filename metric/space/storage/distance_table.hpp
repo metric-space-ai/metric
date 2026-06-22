@@ -162,6 +162,10 @@ template <typename Space> class DistanceTable {
 
 	auto distance(RecordId lhs, RecordId rhs) const -> distance_type
 	{
+		if (options_.mode == distance_table_mode::lazy && is_stale()) {
+			throw StaleRepresentationError(
+				"lazy distance table is stale: source metric space changed since construction; rebuild the table");
+		}
 		const auto lhs_position = position_of(lhs);
 		const auto rhs_position = position_of(rhs);
 		auto &cached = matrix_[offset(lhs_position, rhs_position)];

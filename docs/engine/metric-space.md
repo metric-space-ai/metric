@@ -91,7 +91,12 @@ auto n  = query::nearest(space, id);              // single nearest (throws if n
 auto kn = query::k_nearest(space, query_record, 5);
 auto rn = query::within(space, id, radius);
 auto kt = query::k_nearest(space, query_record, 5, mtrc::stats::search::cover_tree{});
+auto rt = query::within(space, id, radius, mtrc::stats::search::distance_table{});
 ```
+
+`within` accepts the same exact strategy vocabulary as `stats::search::range`.
+Materialized distance-table range queries require a `RecordId`, because the
+table stores source-space pair values rather than values to external probes.
 
 ### Sub-spaces, merge, and lineage
 

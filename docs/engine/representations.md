@@ -54,3 +54,8 @@ cache::require_fresh(table);        // or throw StaleRepresentationError instead
 
 `mtrc::space::distances::require_fresh` / `checked_value` apply the same rule to a
 pairwise-value provider.
+
+Lazy `DistanceTable` providers also fail fast on direct `distance(...)` reads
+once stale. This is stricter than eager tables: an eager table is a complete
+frozen snapshot of one old version, while a stale lazy table could otherwise mix
+old cached cells with new live metric evaluations on cache misses.

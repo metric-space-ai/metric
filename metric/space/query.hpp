@@ -137,6 +137,14 @@ auto within(const Space &space, RecordId query_id, Radius radius)
 	return stats::search::range(space, query_id, radius);
 }
 
+template <typename Space, typename Radius, typename Strategy,
+		  typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto within(const Space &space, RecordId query_id, Radius radius, Strategy strategy)
+	-> NeighborSet<typename Space::distance_type>
+{
+	return stats::search::range(space, query_id, radius, strategy);
+}
+
 // Every record within `radius` of an external probe record. Throws std::invalid_argument for a
 // negative radius.
 template <typename Space, typename Radius,
@@ -145,6 +153,14 @@ auto within(const Space &space, const typename Space::record_type &query, Radius
 	-> NeighborSet<typename Space::distance_type>
 {
 	return stats::search::range(space, query, radius);
+}
+
+template <typename Space, typename Radius, typename Strategy,
+		  typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto within(const Space &space, const typename Space::record_type &query, Radius radius, Strategy strategy)
+	-> NeighborSet<typename Space::distance_type>
+{
+	return stats::search::range(space, query, radius, strategy);
 }
 
 } // namespace mtrc::space::query

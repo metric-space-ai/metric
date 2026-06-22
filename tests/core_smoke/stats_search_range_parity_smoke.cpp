@@ -20,14 +20,31 @@
 #include <vector>
 
 #include "metric/core/metric_space.hpp"
+#include "metric/space/query.hpp"
 #include "metric/space/storage/distance_table.hpp"
+#include "metric/space/storage/policy.hpp"
 #include "metric/stats/search/nearest.hpp"
+#include "metric/stats/search/neighbors.hpp"
 
 namespace {
 
 struct AbsoluteDistance {
 	auto operator()(int lhs, int rhs) const -> int { return lhs > rhs ? lhs - rhs : rhs - lhs; }
 };
+
+} // namespace
+
+namespace mtrc::core {
+
+template <> struct metric_traits<AbsoluteDistance> {
+	static constexpr auto law = metric_law::metric;
+	static constexpr auto records = record_kind::custom;
+	static constexpr bool thread_safe = true;
+};
+
+} // namespace mtrc::core
+
+namespace {
 
 // A deliberately degenerate "metric": any pair touching the sentinel value (and not equal)
 // yields NaN. Used only to prove neighbor ranking stays defined/deterministic under NaN; a
@@ -114,6 +131,61 @@ void duplicate_records_keep_deterministic_ties()
 	assert(by_provider[0].id == space.id(1));
 }
 
+template <typename Distance>
+void assert_same_neighbors(const mtrc::NeighborSet<Distance> &actual, const mtrc::NeighborSet<Distance> &expected,
+						   const char *representation)
+{
+	assert(actual.representation == representation);
+	assert(actual.operator_name == "range");
+	assert(actual.exact == expected.exact);
+	assert(actual.record_count == expected.record_count);
+	assert(actual.size() == expected.size());
+	for (std::size_t index = 0; index < expected.size(); ++index) {
+		assert(actual[index].id == expected[index].id);
+		assert(actual[index].distance == expected[index].distance);
+	}
+}
+
+void range_strategy_overloads_match_metric_space_path()
+{
+	const auto space = mtrc::make_space(std::vector<int>{0, 2, 5, 9, 14}, AbsoluteDistance{});
+	const auto id0 = space.id(0);
+	const auto expected_by_id = mtrc::stats::search::range(space, id0, 5);
+	assert(expected_by_id.size() == 2);
+
+	assert_same_neighbors(mtrc::stats::search::range(space, id0, 5, mtrc::stats::search::exact_scan{}),
+						  expected_by_id, "exact_scan_index");
+	assert_same_neighbors(mtrc::stats::search::range(space, id0, 5, mtrc::stats::search::brute_force{}),
+						  expected_by_id, "exact_scan_index");
+	assert_same_neighbors(mtrc::stats::search::range(space, id0, 5, mtrc::stats::search::distance_table{}),
+						  expected_by_id, "distance_table");
+	assert_same_neighbors(mtrc::stats::search::range(space, id0, 5, mtrc::stats::search::cover_tree{}),
+						  expected_by_id, "cover_tree_index");
+	assert_same_neighbors(mtrc::stats::search::range(space, id0, 5, mtrc::stats::search::knn_graph{}),
+						  expected_by_id, "knn_graph_index");
+
+	assert_same_neighbors(mtrc::stats::search::range(space, id0, 5, mtrc::space::storage::using_implicit()),
+						  expected_by_id, "implicit");
+	assert_same_neighbors(mtrc::stats::search::range(space, id0, 5, mtrc::space::storage::using_distance_table()),
+						  expected_by_id, "distance_table");
+	assert_same_neighbors(mtrc::stats::search::range(space, id0, 5, mtrc::space::storage::using_cover_tree()),
+						  expected_by_id, "cover_tree_index");
+	assert_same_neighbors(mtrc::stats::search::range(space, id0, 5, mtrc::space::storage::using_knn_graph()),
+						  expected_by_id, "knn_graph_index");
+	assert_same_neighbors(mtrc::space::query::within(space, id0, 5, mtrc::stats::search::cover_tree{}),
+						  expected_by_id, "cover_tree_index");
+
+	const auto expected_by_value = mtrc::stats::search::range(space, 4, 2);
+	assert_same_neighbors(mtrc::stats::search::range(space, 4, 2, mtrc::stats::search::exact_scan{}),
+						  expected_by_value, "exact_scan_index");
+	assert_same_neighbors(mtrc::stats::search::range(space, 4, 2, mtrc::stats::search::cover_tree{}),
+						  expected_by_value, "cover_tree_index");
+	assert_same_neighbors(mtrc::stats::search::range(space, 4, 2, mtrc::stats::search::knn_graph{}),
+						  expected_by_value, "knn_graph_index");
+	assert_same_neighbors(mtrc::space::query::within(space, 4, 2, mtrc::space::storage::using_cover_tree()),
+						  expected_by_value, "cover_tree_index");
+}
+
 void empty_and_invalid_inputs_are_handled()
 {
 	const auto empty = mtrc::make_space(std::vector<int>{}, AbsoluteDistance{});
@@ -130,6 +202,9 @@ void empty_and_invalid_inputs_are_handled()
 	const auto space = mtrc::make_space(std::vector<int>{0, 1, 2}, AbsoluteDistance{});
 	assert(throws_invalid_argument([&] { (void)mtrc::stats::search::range(space, 1, -1); }));
 	assert(throws_invalid_argument([&] { (void)mtrc::stats::search::range(space, space.id(0), -1); }));
+	assert(throws_invalid_argument([&] {
+		(void)mtrc::stats::search::range(space, space.id(0), 2, mtrc::stats::search::knn_graph{1});
+	}));
 }
 
 void nan_distances_sort_last_deterministically()
@@ -160,6 +235,7 @@ int main()
 {
 	record_id_range_matches_provider_path();
 	duplicate_records_keep_deterministic_ties();
+	range_strategy_overloads_match_metric_space_path();
 	empty_and_invalid_inputs_are_handled();
 	nan_distances_sort_last_deterministically();
 	return 0;
