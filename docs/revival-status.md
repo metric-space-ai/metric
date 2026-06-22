@@ -38,3 +38,6 @@ Production-readiness tracks:
   contracts
 - binding and package gates that keep Python adapter-only
 - hero applications with reproducible C++ evidence and public documentation
+
+Active hero work starts with the licensed UCR process-curve condition-monitoring
+package described in [Hero Application Visualization Plan](hero-application-visualization-plan.md).

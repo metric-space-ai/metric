@@ -189,3 +189,13 @@ Near-term branches should stay small and evidence-driven:
 - add additional graph sparsification primitives with documented connectivity or stretch assumptions
 - add MGC interpretation docs for paired metric spaces
 - add an industrial-record fixture that combines strings, process curves, histograms, and numeric penalties
+
+## Active Hero Visualization Workstream
+
+The first public hero application is the licensed UCR process-curve condition
+monitoring package. Its concrete implementation plan is
+[Hero Application Visualization Plan](hero-application-visualization-plan.md).
+
+This workstream is not a generic demo cleanup. It must produce reproducible C++
+evidence exports and static visual assets that show real process-curve records,
+query recovery, metric-space structure, and padded-vector baseline failures.
