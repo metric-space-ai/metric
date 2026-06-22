@@ -9,5 +9,6 @@
 #include <metric/metric/catalog.hpp>
 #include <metric/metric/compose.hpp>
 #include <metric/metric/custom.hpp>
+#include <metric/metric/discovery_report.hpp>
 
 #endif

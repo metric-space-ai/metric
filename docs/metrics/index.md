@@ -24,6 +24,13 @@ Use this section with:
 Metric-only algorithms use `metric_traits`; they do not infer metric validity
 from a class name, example output, or empirical checks.
 
+For applications, `<metric/metric/discovery_report.hpp>` exposes the same
+registry as a native C++ report:
+`mtrc::metric::discover_metrics(mtrc::record_kind::aligned_vector)` returns
+matching catalog entries with admission status, metric law, domain gate,
+recoding principle, and alternatives for quarantined or rejected compatibility
+distances.
+
 ## Current Stable Trait Baseline
 
 The native C++ baseline currently promotes these true metrics:

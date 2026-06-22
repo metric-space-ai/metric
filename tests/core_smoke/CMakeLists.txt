@@ -62,6 +62,9 @@ target_link_libraries(metric_standardized_smoke PRIVATE ${METRIC_TARGET_NAME})
 add_executable(metric_discovery_smoke metric_discovery_smoke.cpp)
 target_link_libraries(metric_discovery_smoke PRIVATE ${METRIC_TARGET_NAME})
 
+add_executable(metric_discovery_report_smoke metric_discovery_report_smoke.cpp)
+target_link_libraries(metric_discovery_report_smoke PRIVATE ${METRIC_TARGET_NAME})
+
 add_executable(space_consistency_smoke space_consistency_smoke.cpp)
 target_link_libraries(space_consistency_smoke PRIVATE ${METRIC_TARGET_NAME})
 
@@ -353,6 +356,7 @@ add_test(NAME metric_distribution_quarantine_smoke COMMAND metric_distribution_q
 add_test(NAME metric_catalog_additions_smoke COMMAND metric_catalog_additions_smoke)
 add_test(NAME metric_standardized_smoke COMMAND metric_standardized_smoke)
 add_test(NAME metric_discovery_smoke COMMAND metric_discovery_smoke)
+add_test(NAME metric_discovery_report_smoke COMMAND metric_discovery_report_smoke)
 add_test(NAME space_consistency_smoke COMMAND space_consistency_smoke)
 add_test(NAME engine_core_smoke COMMAND engine_core_smoke)
 add_test(NAME engine_compat_smoke COMMAND engine_compat_smoke)

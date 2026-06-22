@@ -107,6 +107,28 @@ sizes, and field-specific issues such as "field 2 has 3 records; expected 2".
 This keeps record-shape failures readable at binding/UI boundaries. Metric
 selection still happens later under `mtrc::metric`.
 
+## Metric Discovery
+
+`mtrc::metric::discover_metrics(record_kind)` returns a runtime catalog report
+for the METRIC-provided metrics that match a record family. The status and law
+fields are derived from the same `metric_admission` and `metric_traits` registry
+used by metric-only algorithms, so discovery does not rely on class names.
+
+```cpp
+auto report = mtrc::metric::discover_metrics(mtrc::record_kind::sequence);
+
+for (const auto& entry : report.entries) {
+    if (entry.discoverable()) {
+        // entry.name, entry.domain, entry.gate, entry.recoding
+    }
+}
+```
+
+By default the report lists discoverable true metrics only. Set
+`discovery_options::include_quarantine` or `include_rejected` when an application
+wants to explain why a shipped compatibility distance is not routed as a metric
+and which alternative should be used.
+
 ## Namespace Map
 
 The source tree follows the Level-1 METRIC vocabulary:

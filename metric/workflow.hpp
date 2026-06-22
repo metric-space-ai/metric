@@ -20,6 +20,7 @@
 #include <metric/metric/compose.hpp>
 #include <metric/metric/custom.hpp>
 #include <metric/metric/discovery.hpp>
+#include <metric/metric/discovery_report.hpp>
 
 #include <metric/core/errors.hpp>
 #include <metric/core/metadata.hpp>

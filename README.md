@@ -201,6 +201,11 @@ Mixed records can be imported from parallel typed field columns with
 `mtrc::record::import_mixed_records`; the returned report keeps field-count and
 row-count validation explicit before a composed metric is selected.
 
+Metric Discovery is available at runtime through
+`mtrc::metric::discover_metrics(mtrc::record_kind::sequence)`. The returned
+entries expose the record family, metric-law/admission status, domain gate, and
+metric alternative for quarantined or rejected compatibility distances.
+
 `mtrc::stats::diagnose_space` gives one compact read-only report for an existing
 space: profile, metric-law/admission status, a neighbor check, and k-NN outlier
 scores.
