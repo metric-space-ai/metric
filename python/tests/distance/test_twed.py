@@ -1,11 +1,15 @@
 import numpy
-from metric.distance import TWED
+try:
+    from metric.distance import TWED
+except ImportError:
+    import pytest
+    pytest.skip("TWED requires the FULL Python build", allow_module_level=True)
 
 
 def test_ok():
-    v0 = numpy.float_([0, 1, 1, 1, 1, 1, 2, 3])
-    v1 = numpy.float_([1, 1, 1, 1, 1, 2, 3, 4])
-    v2 = numpy.float_([2, 2, 2, 2, 2, 2, 2, 2])
+    v0 = numpy.float64([0, 1, 1, 1, 1, 1, 2, 3])
+    v1 = numpy.float64([1, 1, 1, 1, 1, 2, 3, 4])
+    v2 = numpy.float64([2, 2, 2, 2, 2, 2, 2, 2])
     distance = TWED(0, 1)
 
     assert distance(v0, v1) == 7.0, "result for a close curves (series): "

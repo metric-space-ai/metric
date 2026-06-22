@@ -1,11 +1,15 @@
 import numpy
-from metric.distance import Kohonen
+try:
+    from metric.distance import Kohonen
+except ImportError:
+    import pytest
+    pytest.skip("Kohonen requires the FULL Python build", allow_module_level=True)
 
 
 def test_distance():
     grid_w = 3
     grid_h = 2
-    simple_grid = numpy.float_([
+    simple_grid = numpy.float64([
         [0, 0],
         [1, 0],
         [2, 0],
@@ -23,7 +27,7 @@ def test_distance():
 def test_print_shortest_path(capsys):
     grid_w = 3
     grid_h = 2
-    simple_grid = numpy.float_([
+    simple_grid = numpy.float64([
         [0, 0],
         [1, 0],
         [2, 0],

@@ -1,5 +1,9 @@
 from metric.distance import Euclidean, Manhattan, Chebyshev, P_norm
-from metric.correlation import Entropy
+try:
+    from metric.correlation import Entropy
+except ImportError:
+    import pytest
+    pytest.skip("correlation.Entropy requires the FULL Python build", allow_module_level=True)
 import numpy
 import math
 from functools import partial
@@ -11,7 +15,7 @@ def my_euclidean(a, b):
 
 
 def test_entropy():
-    v = numpy.float_([[5, 5], [2, 2], [3, 3], [5, 1]])
+    v = numpy.float64([[5, 5], [2, 2], [3, 3], [5, 1]])
     entropy = partial(Entropy, p=3, k=2)
 
     assert pytest.approx(entropy()(v), 1.014045451620507)
@@ -24,7 +28,7 @@ def test_entropy():
 
 
 def test_estimate():
-    v = numpy.float_([[5, 5], [2, 2], [3, 3], [5, 1]])
+    v = numpy.float64([[5, 5], [2, 2], [3, 3], [5, 1]])
     entropy = Entropy(p=10, k=5)
 
     assert entropy.estimate(v) == -0.0692878817128263

@@ -619,6 +619,14 @@ auto exercise_findmax_columnwise() -> void
 	assert(columnwise.second == 0);
 
 	assert_invalid_argument([&] { (void)mtrc::findmax(matrix, 3); });
+
+	// C21-3: mean / findmax / diag reject empty or degenerate inputs instead of
+	// returning NaN (0/0), reading an order-0 row/column out of bounds, or
+	// underflowing the unsigned column count.
+	assert_invalid_argument([&] { (void)mtrc::findmax(SparseMatrix(0, 0), 1); });
+	assert_invalid_argument([&] { (void)mtrc::mean(Vector(0)); });
+	assert_invalid_argument([&] { (void)mtrc::mean(SparseMatrix(0, 0)); });
+	assert_invalid_argument([&] { (void)mtrc::diag(make_spd_system(), 4); }); // offset 4 > 3 columns
 }
 
 // grid2 / sum fixture-builder contracts: the bad-argument branches must throw a

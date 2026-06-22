@@ -1,6 +1,10 @@
 import numpy
 import itertools
-from metric.mapping import KOC
+try:
+    from metric.mapping import KOC
+except ImportError:
+    import pytest
+    pytest.skip("KOC requires the FULL Python build", allow_module_level=True)
 from metric.utils import Grid8, Grid6, Grid4
 from metric.distance import Euclidean, EMD
 
@@ -10,7 +14,7 @@ def test_ok():
     best_h_grid_size = 4
     anomaly_threshold = -0.5
 
-    dataset = numpy.float_([
+    dataset = numpy.float64([
         [0, 0, 0],
         [0, 1, 0],
         [0, 2, 0],
@@ -48,7 +52,7 @@ def test_different_templates():
     metrics = [EMD(), Euclidean(), lambda x, y: 10]
     graphs = [Grid4(10), Grid6(10), Grid8(10)]
 
-    dataset = numpy.float_([
+    dataset = numpy.float64([
         [0, 0, 0],
         [0, 1, 0],
         [0, 2, 0],

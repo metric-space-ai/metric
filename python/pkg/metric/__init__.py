@@ -98,8 +98,13 @@ from .operators import (
 from .runtime import CachePolicy, RuntimeDiagnostics, RuntimePolicy, runtime_diagnostics
 from .spaces import FiniteMetricSpace, MatrixSpace, RecordId, Space
 
+# Low-level native numeric containers are pulled in by the wildcard import above
+# for legacy compatibility, but they are implementation detail, not part of the
+# documented top-level adapter surface, so keep them out of __all__.
+_PRIVATE_NATIVE_NAMES = {"CompressedMatrix", "DynamicMatrix"}
+
 __all__ = sorted(
     name
     for name in globals()
-    if not name.startswith("_") and name not in {"annotations"}
+    if not name.startswith("_") and name not in {"annotations"} | _PRIVATE_NATIVE_NAMES
 )

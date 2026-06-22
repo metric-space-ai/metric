@@ -150,7 +150,7 @@ def fit_mapping_pipeline(
     kernel_scale=1.0,
     reconstruction_weight=0.05,
     geometry_weight=1.0,
-    seed=29,
+    seed=29,  # reserved for API stability; the native map is deterministic (no effect)
     distance_provider="exact_metric_space_distance_provider",
     affinity_kernel="gaussian_affinity_kernel",
     diffusion_operator="row_normalized_diffusion_operator",
@@ -159,6 +159,12 @@ def fit_mapping_pipeline(
 
     Binding adapter only: list/NumPy rows are marshalled to the native C++
     pipeline, which performs all target construction and training.
+
+    The native map is DETERMINISTIC by construction (closed-form weight
+    initialization and no batch shuffling), so a given input always yields the
+    same coordinates. ``seed`` is accepted for API stability but has no effect on
+    the result; reproducibility is guaranteed structurally, not via the seed (see
+    the determinism test in tests/core/test_mapping_pipeline_adapter.py).
     """
     native_metric = _require_native("_metric_space_mapping_pipeline_fit")
     model = native_metric._metric_space_mapping_pipeline_fit(

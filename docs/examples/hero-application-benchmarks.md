@@ -35,6 +35,15 @@
 | cross-space dependency | 12 | 12/12 | 9/12 | - | - | MGC dependence score=1; raw nearest-value pairing correct=3/12 |
 | metric mapping | 16 | 16/16 | 0/16 | 16/16 | - | diffusion-potential anchors: dense_evals=n^2; reproducible (identical coordinates on rerun) |
 
+> Note on the metric-mapping row: `Vector-comparison mismatches 0/16` means the naive
+> vector 1-NN baseline matched the metric-space neighbour on all 16 queries, i.e. on
+> this fixture the headline 1-NN column shows **no** metric advantage — and the hero
+> deliberately does **not** assert that PHATE beats classical MDS on neighbour recall.
+> The asserted advantage is structural: the fitted map is **invertible** and supports
+> an **out-of-sample transform** (a parametric finite-metric-space map), which the
+> non-parametric MDS baseline does not provide. Read this row as evidence of the
+> parametric/invertible capability, not of a nearest-neighbour win.
+
 ## Performance Evidence
 
 | Benchmark | Workload | Records | Shared ops | Naive evals | Materialized evals | Cache-miss evals | Reduction | Exact | Notes |

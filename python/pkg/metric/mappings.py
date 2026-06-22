@@ -362,7 +362,7 @@ def native_phate_autoencoder_fit_vectors(
     kernel_scale=1.0,
     reconstruction_weight=0.05,
     geometry_weight=1.0,
-    seed=23,
+    seed=23,  # reserved for API stability; the native map is deterministic (no effect)
     distance_provider="exact_metric_space_distance_provider",
     affinity_kernel="gaussian_affinity_kernel",
     diffusion_operator="row_normalized_diffusion_operator",
@@ -372,6 +372,11 @@ def native_phate_autoencoder_fit_vectors(
     This is a binding adapter. It marshals Python list/NumPy row data to the
     native C++ implementation and does not compute PHATE geometry or neural
     training behavior in Python.
+
+    The native map is DETERMINISTIC by construction (closed-form weight
+    initialization, no batch shuffling): a given input always yields the same
+    coordinates. ``seed`` is accepted for API stability but has no effect on the
+    result; reproducibility is structural, not seed-driven.
     """
 
     native_metric = _load_native_engine_module()

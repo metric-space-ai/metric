@@ -59,7 +59,13 @@ class DSPCC:
 
 @dataclass(frozen=True)
 class PhateAE:
-    """Binding vocabulary for the native C++ PHATE-AE mapping strategy."""
+    """Binding vocabulary for the native C++ PHATE-AE mapping strategy.
+
+    The native map is DETERMINISTIC by construction (closed-form weight
+    initialization, no batch shuffling), so a given input always yields the same
+    coordinates. ``seed`` is accepted for API stability but has no effect on the
+    result; reproducibility is structural, not seed-driven.
+    """
 
     dimensions: int = 2
     epochs: int = 100
@@ -68,7 +74,7 @@ class PhateAE:
     kernel_scale: object = None
     reconstruction_weight: float = 0.05
     geometry_weight: float = 1.0
-    seed: int = 23
+    seed: int = 23  # reserved; the native PHATE-AE map is deterministic (no effect)
     distance_provider: str = "exact_metric_space_distance_provider"
     affinity_kernel: str = "gaussian_affinity_kernel"
     diffusion_operator: str = "row_normalized_diffusion_operator"

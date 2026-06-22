@@ -164,6 +164,12 @@ auto diffusion_potential_anchor_coordinates(const DiffusionProcess<Scalar> &proc
 		throw std::invalid_argument("diffusion coordinates require a non-empty process");
 	}
 
+	// One anchor record per requested coordinate. NOTE: when `dimensions` exceeds
+	// record_count, every extra coordinate is clamped to the last anchor column, so
+	// the result has REPEATED (collinear) columns and is rank-deficient. This is
+	// intentional and pinned by native_phate_geometry_targets_smoke (repeated_anchor
+	// spec); callers should keep the embedding dimension <= record_count - 1 for a
+	// full-rank target.
 	std::vector<std::size_t> anchor_columns;
 	anchor_columns.reserve(dimensions);
 	for (std::size_t dimension = 0; dimension < dimensions; ++dimension) {

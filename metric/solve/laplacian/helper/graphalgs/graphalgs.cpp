@@ -292,6 +292,9 @@ std::pair<Tv, size_t> findmax(const mtrc::numeric::CompressedMatrix<Tv, mtrc::nu
 	if (wise != 1 && wise != 2)
 		throw std::invalid_argument("findmax: wise must be 1 (rowwise) or 2 (columnwise)");
 
+	if (A.rows() == 0 || A.columns() == 0)
+		throw std::invalid_argument("findmax: matrix must be non-empty");
+
 	size_t index = 0;
 	Tv maxvalue{};
 
@@ -758,6 +761,10 @@ template <typename Tv>
 inline mtrc::numeric::DynamicVector<Tv>
 diag(const mtrc::numeric::CompressedMatrix<Tv, mtrc::numeric::columnMajor> &A, size_t diag_n)
 {
+	// Guard the unsigned subtraction below: diag_n > columns would wrap to a huge
+	// size and allocate/iterate out of bounds.
+	if (diag_n > A.columns())
+		throw std::invalid_argument("diag: diagonal offset exceeds the column count");
 
 	size_t it = A.columns() - diag_n;
 	mtrc::numeric::DynamicVector<Tv> resv(it);
@@ -927,11 +934,15 @@ inline bool isConnected(const mtrc::numeric::CompressedMatrix<Tv, mtrc::numeric:
 
 template <typename Tv> inline Tv mean(const mtrc::numeric::CompressedMatrix<Tv, mtrc::numeric::columnMajor> &A)
 {
+	if (A.rows() == 0 || A.columns() == 0)
+		throw std::invalid_argument("mean: matrix must be non-empty");
 	return mtrc::numeric::sum(A) / (A.rows() * A.columns());
 }
 
 template <typename Tv> inline Tv mean(mtrc::numeric::DynamicVector<Tv> v)
 {
+	if (v.size() == 0)
+		throw std::invalid_argument("mean: vector must be non-empty");
 	return mtrc::numeric::sum(v) / v.size();
 }
 
