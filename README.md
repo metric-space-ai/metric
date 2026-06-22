@@ -180,10 +180,12 @@ int main()
     auto space = mtrc::space::build_checked(records, mtrc::Edit<char>{});
 
     auto profile = mtrc::stats::profile(space);
+    auto diagnosis = mtrc::stats::diagnose_space(space);
     auto neighbors = mtrc::space::query::k_nearest(space, std::string("metricks"), 2);
     auto representatives = mtrc::modify::represent::represent(space, 2);
 
-    return profile.record_count == 4 && neighbors.size() == 2 && representatives.size() == 2 ? 0 : 1;
+    return profile.record_count == 4 && diagnosis.discoverable_metric &&
+           neighbors.size() == 2 && representatives.size() == 2 ? 0 : 1;
 }
 ```
 
@@ -198,6 +200,10 @@ and `modify` creates derived spaces.
 Mixed records can be imported from parallel typed field columns with
 `mtrc::record::import_mixed_records`; the returned report keeps field-count and
 row-count validation explicit before a composed metric is selected.
+
+`mtrc::stats::diagnose_space` gives one compact read-only report for an existing
+space: profile, metric-law/admission status, a neighbor check, and k-NN outlier
+scores.
 
 Finite spaces can also be exported as native C++ artifacts:
 `mtrc::space::persistence::save` stores records, stable `RecordId`s, the space

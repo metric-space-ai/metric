@@ -35,4 +35,6 @@
 #include <metric/stats/structural_analysis/outliers.hpp>
 #include <metric/stats/structural_analysis/representatives.hpp>
 
+#include <metric/stats/diagnose.hpp>
+
 #endif

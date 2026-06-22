@@ -639,17 +639,22 @@ target_link_libraries(stats_user_api_correlate_smoke PRIVATE ${METRIC_TARGET_NAM
 add_executable(stats_user_api_structural_smoke stats_user_api_structural_smoke.cpp)
 target_link_libraries(stats_user_api_structural_smoke PRIVATE ${METRIC_TARGET_NAME})
 
+add_executable(stats_space_diagnosis_smoke stats_space_diagnosis_smoke.cpp)
+target_link_libraries(stats_space_diagnosis_smoke PRIVATE ${METRIC_TARGET_NAME})
+
 if (LAPACK_FOUND)
     target_link_libraries(stats_user_api_properties_smoke PRIVATE ${LAPACK_LIBRARIES})
     target_link_libraries(stats_user_api_search_sample_smoke PRIVATE ${LAPACK_LIBRARIES})
     target_link_libraries(stats_user_api_correlate_smoke PRIVATE ${LAPACK_LIBRARIES})
     target_link_libraries(stats_user_api_structural_smoke PRIVATE ${LAPACK_LIBRARIES})
+    target_link_libraries(stats_space_diagnosis_smoke PRIVATE ${LAPACK_LIBRARIES})
 endif ()
 
 add_test(NAME stats_user_api_properties_smoke COMMAND stats_user_api_properties_smoke)
 add_test(NAME stats_user_api_search_sample_smoke COMMAND stats_user_api_search_sample_smoke)
 add_test(NAME stats_user_api_correlate_smoke COMMAND stats_user_api_correlate_smoke)
 add_test(NAME stats_user_api_structural_smoke COMMAND stats_user_api_structural_smoke)
+add_test(NAME stats_space_diagnosis_smoke COMMAND stats_space_diagnosis_smoke)
 
 # Entropy result-status coverage uses the LAPACK-backed kpN estimator, so it is gated like
 # the other entropy core targets.

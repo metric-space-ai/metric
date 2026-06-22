@@ -55,11 +55,13 @@ int main()
     auto space = mtrc::space::build_checked(records, mtrc::Edit<char>{});
 
     auto profile = mtrc::stats::profile(space);
+    auto diagnosis = mtrc::stats::diagnose_space(space);
     auto nearest = mtrc::space::query::nearest(space, space.id(0));
     auto sample = mtrc::stats::sample::regular_sample(space, 2);
     auto reduced = mtrc::modify::represent::represent(space, 2);
 
-    return profile.record_count == 4 && nearest.id != space.id(0) &&
+    return profile.record_count == 4 && diagnosis.discoverable_metric &&
+           nearest.id != space.id(0) &&
            sample.size() == 2 && reduced.size() == 2 ? 0 : 1;
 }
 ```
@@ -77,6 +79,9 @@ The workflow pieces stay separate:
 
 `mtrc::stats` never mutates the source space. `mtrc::modify` creates changed or
 derived spaces and reports source lineage where the operation supports it.
+`mtrc::stats::diagnose_space` is the compact starting point for inspecting one
+space: it returns the profile, metric-law/admission status, one deterministic
+neighbor check, and k-NN outlier scores without mutating the source space.
 
 ## Record Import And Mixed Records
 
