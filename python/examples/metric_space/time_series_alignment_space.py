@@ -2,12 +2,10 @@
 
 A toy edit-distance-style alignment metric over short process curves. The
 Python ``Space`` adapts the records and exposes explicit distances plus native
-exact-scan nearest search. Intrinsic-dimension estimation remains native-only
-until its binding is promoted.
+exact-scan nearest search and native finite-space structure diagnostics.
 """
 
 from metric import Space
-from metric.exceptions import StrategyUnavailableError
 from metric.operators import intrinsic_dimension, pairwise_distance_matrix
 
 
@@ -35,15 +33,6 @@ def aligned_curve_distance(lhs, rhs):
     return previous[-1]
 
 
-def requires_native(label, call):
-    try:
-        call()
-    except StrategyUnavailableError:
-        print(f"{label}: requires native C++ binding")
-    else:
-        raise AssertionError(f"{label} should require a native binding")
-
-
 def main():
     names = ["baseline", "shifted", "flat", "spike"]
     records = [
@@ -67,8 +56,9 @@ def main():
     assert nearest.id == 0
     print("nearest(query) =", names[nearest.id], "distance =", nearest.distance)
 
-    # Native boundary: structure analysis lives in C++ but is not promoted here.
-    requires_native("intrinsic_dimension", lambda: intrinsic_dimension(records, aligned_curve_distance))
+    dimension = intrinsic_dimension(records, aligned_curve_distance)
+    assert dimension >= 0.0
+    print("intrinsic_dimension =", round(dimension, 6))
 
 
 if __name__ == "__main__":

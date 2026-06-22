@@ -8,14 +8,15 @@ helpers, and operator helpers over the native implementation.
 > `space.distance(...)`, `space.pairwise()`/`pairwise_distances()`, the
 > `to_matrix()`/`to_tree()`/`to_graph()` representation views, `repr(space)`,
 > exact neighbor search (`neighbors`/`nearest`/`within_radius`), representative
-> selection, reduction, compression, and the metric constructors. Higher
+> selection, reduction, compression, structural description,
+> intrinsic-dimension diagnostics, and the metric constructors. Higher
 > algorithmic intent methods — `groups`, `outliers`, `denoise`, `embed`,
-> `describe`/`describe_structure`, `compare`/`correlate` (and the matching
-> unpromoted `metric.operators` free functions) — currently raise
-> `StrategyUnavailableError`: their native bindings are not promoted in the
-> default wheel yet. `metric.correlation` (Entropy/MGC) requires the full build
-> (`METRIC_PYTHON_BUILD_FULL`) and otherwise raises `ModuleNotFoundError`.
-> For cluster/embedding/dependency analysis today, use the C++ surface
+> `compare`/`correlate` (and the matching unpromoted `metric.operators` free
+> functions) — currently raise `StrategyUnavailableError`: their native
+> bindings are not promoted in the default wheel yet. `metric.correlation`
+> (Entropy/MGC) requires the full build (`METRIC_PYTHON_BUILD_FULL`) and
+> otherwise raises `ModuleNotFoundError`. For cluster/embedding/dependency
+> analysis today, use the C++ surface
 > (`<metric/workflow.hpp>`).
 
 The entry point is `Space`: a finite record set plus a metric with cached
@@ -285,11 +286,13 @@ representative_result = find_representatives(records, Edit(), count=2, strategy=
 reduction = reduce_space(records, Edit(), count=2, strategy=FarthestFirst(seed_index=0))
 compression = compress_space(records, Edit(), count=2, strategy=FarthestFirst(seed_index=0))
 mapped = map_space(records, transform, target_metric)
+dimension = intrinsic_dimension(records, Edit())
+structure = describe_structure(records, Edit())
 
 # Imported but not promoted in the default wheel yet:
 # exact_knn_graph(...), graph_*_diagnostics(...), find_groups(...),
 # find_outliers(...), denoise_space(...), embed_space(...),
-# compare_spaces(...), intrinsic_dimension(...), describe_structure(...)
+# compare_spaces(...)
 ```
 
 `Space.neighbors(query, count=...)` returns a `NeighborResult` with named
@@ -304,15 +307,15 @@ examples use `count`.
 Use `NeighborResult.to_dict()` for structured Python data, `to_numpy()` for the
 numeric distance array, and `to_pandas()` when pandas is installed.
 
-`find_groups` returns a `ClusteringResult` with source-record assignments, medoid record IDs, cluster sizes, optional DBSCAN core/noise records, iteration metadata, algorithm metadata, and representation metadata. `Space.groups(...)` exposes the same result from the `Space` facade. Passing an integer group count selects deterministic `KMedoids`; passing `KMedoids` or `DBSCAN` makes the strategy explicit. Pass a fresh `representation=` to record representation metadata; stale representations raise `metric.StaleRepresentationError`. Passing `runtime=RuntimePolicy(cache="materialized")` records `representation == "matrix"` when no explicit representation override is supplied. Use `ClusteringResult.to_dict()` for structured metadata, `to_numpy()` for the assignment vector, and `to_pandas()` for a record-level assignment table when pandas is installed.
+`find_groups`, `kmedoids`, `dbscan`, and `Space.groups(...)` are stable result-contract vocabulary but are not promoted in the default wheel yet. They currently raise `StrategyUnavailableError`; use the C++ surface for clustering until the native binding is exposed. The reserved result type is `ClusteringResult` with source-record assignments, medoid record IDs, cluster sizes, optional DBSCAN core/noise records, iteration metadata, algorithm metadata, and representation metadata.
 
-`find_outliers` returns an `OutlierResult` backed by DBSCAN-noise detection. Each `Outlier` contains the source record ID and a deterministic isolation score based on distance to the nearest non-noise record. `Space.outliers(count=...)` also supports a strategy-free exact default that scores records by distance to the nearest other record; pass a DBSCAN strategy for the density-noise path. Pass a fresh `representation=` to record representation metadata; stale representations raise `metric.StaleRepresentationError`. Use `OutlierResult.to_dict()` for structured metadata, `to_numpy()` for the ordered score vector, and `to_pandas()` for ranked outlier rows when pandas is installed.
+`find_outliers` and `Space.outliers(...)` are stable result-contract vocabulary but are not promoted in the default wheel yet. They currently raise `StrategyUnavailableError`; use the C++ surface for outlier analysis until the native binding is exposed. The reserved result type is `OutlierResult`; each `Outlier` contains the source record ID and an isolation score.
 
-`denoise_space` returns a `MappingResult` backed by DBSCAN-noise filtering. The derived `Space` contains only non-noise source records, `source_record_ids` preserves the original record lineage, and inverse reconstruction is explicitly unsupported. `Space.denoise()` also supports a strategy-free exact default that removes records selected by `Space.outliers(...)`, and it records fresh `representation=` metadata the same way as `Space.outliers(...)`.
+`denoise_space` and `Space.denoise(...)` are stable result-contract vocabulary but are not promoted in the default wheel yet. They currently raise `StrategyUnavailableError`; use the C++ surface for denoising until the native binding is exposed. The reserved result shape is a `MappingResult` over a derived finite metric space with source-record lineage and unsupported inverse reconstruction.
 
-`embed_space` returns an `EmbeddingResult` backed by deterministic classical MDS over the exact finite distance matrix. `MDS` is the preferred strategy name and `ClassicMDS` remains a compatibility name for the same promoted path. The result includes NumPy `coordinates`, an `embedded_space` over coordinate records with a Euclidean metric, the original `source_space`, source-record IDs, exact/operator/representation metadata, a small `EmbeddingModel`, normalized stress, local-neighbor trustworthiness, distance-profile correlation, and finite-coordinate diagnostics. `Space.embed(...)` exposes the same derived coordinate view from the `Space` facade. Pass `representation=space.to_matrix()` or another fresh representation when the result records the execution representation; stale representations raise `metric.StaleRepresentationError`. Use `EmbeddingResult.to_dict()` for structured metadata and coordinates, `to_numpy()` for the coordinate matrix, and `to_pandas()` for source-record ID plus coordinate columns when pandas is installed. Unavailable native strategy objects such as `DiffusionEmbedding` raise `StrategyUnavailableError` until their deterministic fixtures and diagnostics are promoted. `PhateAE` raises on `embed(...)` because it is a fitted metric-space mapping strategy, not an embedding strategy.
+`embed_space` and `Space.embed(...)` are stable result-contract vocabulary but are not promoted in the default wheel yet. They currently raise `StrategyUnavailableError`; use the C++ surface for derived coordinate spaces until the native binding is exposed. The reserved result type is `EmbeddingResult`, with coordinates, an embedded finite metric space, source-record lineage, exact/operator/representation metadata, an `EmbeddingModel`, normalized stress, local-neighbor trustworthiness, distance-profile correlation, and finite-coordinate diagnostics.
 
-`compare_spaces` returns a `CorrelationResult` for two aligned finite metric spaces with the same record count. The first Python-core strategy is `DistanceProfileCorrelation`, which computes the Pearson correlation of upper-triangular pairwise distance profiles. `Space.compare(...)` and `Space.correlate(...)` expose the same result with metric-space representation metadata. The facade defaults to `align="position"` for compatibility and accepts either another `Space` or raw right-hand records plus `other_metric=...`; raw records report right representation metadata as `"records"`. Pass fresh `representation=` and `other_representation=` values to record left/right representation metadata; stale representations raise `metric.StaleRepresentationError`. Pass `align="ids"` to compare spaces with the same stable IDs even when the right-hand space is in a different order; mismatched ID sets raise `metric.IncompatibleSpaceError`, and ID alignment requires a right-hand `Space`. `CorrelationResult` records `statistic_name`, `p_value`, `align`, `matched_ids`, `dropped_left_ids`, `dropped_right_ids`, `local_scores`, and optional diagnostics metadata. Use `CorrelationResult.to_dict()` for structured Python data, `to_numpy()` for the scalar statistic value, and `to_pandas()` when pandas is installed.
+`compare_spaces`, `correlate_spaces`, `Space.compare(...)`, and `Space.correlate(...)` are stable result-contract vocabulary but are not promoted in the default wheel yet. They currently raise `StrategyUnavailableError`; use the C++ surface for cross-space dependence until the native binding is exposed. The reserved result type is `CorrelationResult`, with statistic metadata, alignment metadata, matched/dropped IDs, optional diagnostics, and left/right representation metadata.
 
 `representative_indices` and `representatives` use deterministic farthest-first traversal over the finite metric space. They select existing records rather than vector centroids, start from `seed_index=0` by default, and resolve equal-distance ties by record order.
 

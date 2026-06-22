@@ -3,11 +3,11 @@
 This module is an adapter boundary, not an algorithm library. The result
 dataclasses marshal native results into stable public objects, and a few
 helpers invoke the caller's own metric/transform callable. Exact-scan pair,
-neighbor, representative-selection, reduction, and compression loops are exposed
-through the native C++ binding; higher METRIC algorithms (graph construction,
-clustering, embedding, correlation, intrinsic dimension, structural statistics)
-remain native-only facades until their binding is exposed. METRIC's production
-numerics live in native C++.
+neighbor, representative-selection, reduction, compression, intrinsic-dimension,
+and structure-description loops are exposed through the native C++ binding;
+higher METRIC algorithms (graph construction, clustering, embedding,
+correlation) remain native-only facades until their binding is exposed.
+METRIC's production numerics live in native C++.
 """
 
 from dataclasses import dataclass
@@ -1475,18 +1475,31 @@ def correlate_spaces(
 
 
 def intrinsic_dimension(records, metric):
-    """Estimate intrinsic (expansion) dimension from distance growth (native-only)."""
-    _require_native_binding("intrinsic_dimension(...)", "intrinsic-dimension estimation")
+    """Estimate intrinsic expansion dimension through the native C++ binding."""
+    return float(_native_metric_module().intrinsic_dimension(list(records), metric))
 
 
 def describe_structure(records, metric, *, representation="metric_space"):
-    """Describe exact finite-space structure with all-pairs diagnostics (native-only)."""
-    _require_native_binding("describe_structure(...)", "structural all-pairs statistics")
+    """Describe exact finite-space structure through the native C++ binding."""
+    payload = _native_metric_module().describe_structure(list(records), metric, representation)
+    return StructureDescription(
+        record_count=int(payload["record_count"]),
+        pair_count=int(payload["pair_count"]),
+        zero_distance_pair_count=int(payload["zero_distance_pair_count"]),
+        minimum_nonzero_distance=payload["minimum_nonzero_distance"],
+        maximum_distance=payload["maximum_distance"],
+        average_distance=float(payload["average_distance"]),
+        intrinsic_dimension=float(payload["intrinsic_dimension"]),
+        has_nonzero_distances=bool(payload["has_nonzero_distances"]),
+        exact=bool(payload["exact"]),
+        strategy=str(payload["strategy"]),
+        representation=str(payload["representation"]),
+    )
 
 
 def intrinsic_dimension_from_distances(distances):
-    """Estimate intrinsic dimension from a precomputed distance matrix (native-only)."""
-    _require_native_binding("intrinsic_dimension_from_distances(...)", "intrinsic-dimension estimation")
+    """Estimate intrinsic expansion dimension from a precomputed distance matrix."""
+    return float(_native_metric_module().intrinsic_dimension_from_distances(list(distances)))
 
 
 __all__ = [

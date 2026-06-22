@@ -3,12 +3,10 @@
 This demo builds an explicit finite metric space over a toy 1-D transport
 metric. The Python layer adapts the records and invokes the caller's metric to
 expose distances, the explicit pairwise matrix, and native exact-scan search.
-Structure analysis such as intrinsic dimension remains native-only until its
-binding is promoted.
+Structure analysis such as intrinsic dimension runs through the native binding.
 """
 
 from metric import Space
-from metric.exceptions import StrategyUnavailableError
 from metric.operators import intrinsic_dimension, pairwise_distance_matrix
 
 
@@ -24,15 +22,6 @@ def cumulative_transport_distance(lhs, rhs):
         distance += abs(cumulative_delta)
 
     return distance
-
-
-def requires_native(label, call):
-    try:
-        call()
-    except StrategyUnavailableError:
-        print(f"{label}: requires native C++ binding")
-    else:
-        raise AssertionError(f"{label} should require a native binding")
 
 
 def main():
@@ -62,8 +51,9 @@ def main():
     assert nearest.id == 1
     print("nearest(query) =", names[nearest.id], "distance =", nearest.distance)
 
-    # Native boundary: structure analysis lives in C++ but is not promoted here.
-    requires_native("intrinsic_dimension", lambda: intrinsic_dimension(records, cumulative_transport_distance))
+    dimension = intrinsic_dimension(records, cumulative_transport_distance)
+    assert dimension >= 0.0
+    print("intrinsic_dimension =", round(dimension, 6))
 
 
 if __name__ == "__main__":

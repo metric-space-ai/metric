@@ -51,9 +51,9 @@ def test_unpromoted_stats_modify_calls_still_raise():
     assert [neighbor.id for neighbor in space.neighbors(0.0, count=1).neighbors] == [0]
     assert space.reduce(1).source_record_ids == (0,)
     assert space.compress(1).compressed_record_count == 1
+    assert space.describe().record_count == 3
 
     for call in (
-        lambda: space.describe(),
         lambda: space.compare(space),
         lambda: space.embed(1),
     ):

@@ -972,8 +972,17 @@ class RevivalApiTest(unittest.TestCase):
         self.assertRequiresNative(space.reduce, None, KMedoids(groups=2))
         self.assertRequiresNative(space.embed)
         self.assertRequiresNative(space.embed, 1)
-        self.assertRequiresNative(space.describe)
-        self.assertRequiresNative(space.describe_structure)
+        description = space.describe()
+        self.assertIsInstance(description, StructureDescription)
+        self.assertEqual(description.record_count, 5)
+        self.assertEqual(description.pair_count, 10)
+        self.assertEqual(description.zero_distance_pair_count, 0)
+        self.assertEqual(description.minimum_nonzero_distance, 1.0)
+        self.assertEqual(description.maximum_distance, 4.0)
+        self.assertAlmostEqual(description.average_distance, 2.0)
+        self.assertAlmostEqual(description.intrinsic_dimension, np.log(5.0 / 3.0) / np.log(2.0))
+        self.assertTrue(description.has_nonzero_distances)
+        self.assertEqual(space.describe_structure(), description)
         self.assertRequiresNative(space.compare, space)
         self.assertRequiresNative(space.correlate, space)
 
@@ -991,7 +1000,10 @@ class RevivalApiTest(unittest.TestCase):
         self.assertRequiresNative(embed_space, records, metric)
         self.assertRequiresNative(compare_spaces, records, metric, records, metric)
         self.assertRequiresNative(correlate_spaces, records, metric, records, metric)
-        self.assertRequiresNative(describe_structure, records, metric)
+        structure = describe_structure(records, metric)
+        self.assertEqual(structure.record_count, 5)
+        self.assertEqual(structure.pair_count, 10)
+        self.assertEqual(structure.maximum_distance, 11.0)
 
         # Space.map applies the caller's own deterministic transform (adapter).
         mapped = space.map(
@@ -1054,12 +1066,15 @@ class RevivalApiTest(unittest.TestCase):
         model = mappings.fit(mappings.make_clustered_space_mapping(clustering), group_space)
         self.assertFalse(model.inverse_supported())
         self.assertEqual(mappings.transform(model, group_space).source_records, clustered.source_records)
-    def test_intrinsic_dimension_requires_native(self):
+    def test_intrinsic_dimension_uses_native_binding(self):
         import metric.operators as operators
 
         records = [0, 1, 2, 3, 4]
-        self.assertRequiresNative(intrinsic_dimension, records, lambda lhs, rhs: abs(lhs - rhs))
-        self.assertRequiresNative(operators.intrinsic_dimension_from_distances, [[0.0, 1.0], [1.0, 0.0]])
+        expected = np.log(5.0 / 3.0) / np.log(2.0)
+        self.assertAlmostEqual(intrinsic_dimension(records, lambda lhs, rhs: abs(lhs - rhs)), expected)
+        self.assertEqual(operators.intrinsic_dimension_from_distances([[0.0, 1.0], [1.0, 0.0]]), 0.0)
+        with self.assertRaisesRegex(ValueError, "row 0"):
+            operators.intrinsic_dimension_from_distances([[0.0, 1.0, 2.0], [1.0, 0.0]])
     def test_representative_and_graph_operators_require_native(self):
         records = [(1.0, 0.0), (0.0, 1.0), (0.5, 0.5)]
 
@@ -1230,7 +1245,9 @@ class RevivalApiTest(unittest.TestCase):
 
         self.assertEqual([neighbor.record for neighbor in space.neighbors("cut", 2).neighbors], ["cat", "cot"])
         self.assertRequiresNative(space.groups)
-        self.assertRequiresNative(space.describe)
+        described = space.describe(representation=space.to_matrix(), runtime=policy)
+        self.assertEqual(described.record_count, len(self.records))
+        self.assertEqual(described.representation, "matrix")
         self.assertRequiresNative(space.compare, space)
 
         with self.assertRaises(StrategyParameterError):
@@ -1350,7 +1367,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(len(representative_indices(records, aligned_curve_distance, 3)), 3)
         self.assertGreaterEqual(len(separated_representative_indices(records, aligned_curve_distance, 4.0)), 1)
         self.assertGreaterEqual(len(coverage_representative_indices(records, aligned_curve_distance, 4.0)), 1)
-        self.assertRequiresNative(intrinsic_dimension, records, aligned_curve_distance)
+        self.assertGreaterEqual(intrinsic_dimension(records, aligned_curve_distance), 0.0)
     def test_histogram_records_use_transport_metric_callable(self):
         records = [
             (1.0, 0.0, 0.0, 0.0),
@@ -1382,6 +1399,6 @@ class RevivalApiTest(unittest.TestCase):
         self.assertMetricContracts(records, cumulative_transport_distance)
 
         self.assertEqual(space.nearest(query).id, 1)
-        self.assertRequiresNative(intrinsic_dimension, records, cumulative_transport_distance)
+        self.assertGreaterEqual(intrinsic_dimension(records, cumulative_transport_distance), 0.0)
 if __name__ == "__main__":
     unittest.main()

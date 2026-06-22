@@ -958,12 +958,19 @@ class Space(FiniteMetricSpace):
         _require_native_binding("Space.embed(...)", "metric-space embedding (e.g. classical MDS)")
 
     def describe(self, *, representation=None, runtime=None):
-        """Describe exact finite-space structure (native-only)."""
-        _require_native_binding("Space.describe(...)", "structural all-pairs statistics")
+        """Describe exact finite-space structure through the native C++ binding."""
+        require_exact_runtime(runtime)
+        from metric.operators import describe_structure
+
+        return describe_structure(
+            self.records,
+            self.metric,
+            representation=self._representation_name(representation),
+        )
 
     def describe_structure(self, *, representation=None, runtime=None):
-        """Describe exact finite-space structure (native-only)."""
-        _require_native_binding("Space.describe_structure(...)", "structural all-pairs statistics")
+        """Describe exact finite-space structure through the native C++ binding."""
+        return self.describe(representation=representation, runtime=runtime)
 
     def runtime_diagnostics(self, *, representation=None, runtime=None, intent=None):
         """Inspect the normalized runtime policy and chosen representation.

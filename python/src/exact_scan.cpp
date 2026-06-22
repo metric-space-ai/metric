@@ -7,6 +7,7 @@
 #include <limits>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -131,6 +132,135 @@ auto native_assign_to_representatives(py::sequence records, py::object metric, c
 		nearest_distances[record_index] = best_distance;
 	}
 	return {assignments, nearest_distances};
+}
+
+auto checked_matrix_value(py::handle raw, std::size_t row, std::size_t column) -> double
+{
+	if (PyBool_Check(raw.ptr())) {
+		std::ostringstream message;
+		message << "distance matrix value at (" << row << ", " << column << ") must be a real number";
+		throw std::invalid_argument(message.str());
+	}
+
+	double value = 0.0;
+	try {
+		value = raw.cast<double>();
+	} catch (const py::cast_error &) {
+		std::ostringstream message;
+		message << "distance matrix value at (" << row << ", " << column << ") must be a real number";
+		throw std::invalid_argument(message.str());
+	}
+
+	if (!std::isfinite(value)) {
+		std::ostringstream message;
+		message << "distance matrix value at (" << row << ", " << column << ") must be finite";
+		throw std::invalid_argument(message.str());
+	}
+	if (value < 0.0) {
+		std::ostringstream message;
+		message << "distance matrix value at (" << row << ", " << column << ") must be non-negative";
+		throw std::invalid_argument(message.str());
+	}
+	return value;
+}
+
+auto distance_matrix_from_sequence(py::sequence distances) -> std::vector<std::vector<double>>
+{
+	const auto record_count = static_cast<std::size_t>(distances.size());
+	std::vector<std::vector<double>> matrix(record_count, std::vector<double>(record_count, 0.0));
+	for (std::size_t row_index = 0; row_index < record_count; ++row_index) {
+		auto row = py::reinterpret_borrow<py::sequence>(distances[row_index]);
+		if (static_cast<std::size_t>(row.size()) != record_count) {
+			std::ostringstream message;
+			message << "distance matrix row " << row_index << " has length " << row.size()
+					<< ", expected " << record_count;
+			throw std::invalid_argument(message.str());
+		}
+		for (std::size_t column_index = 0; column_index < record_count; ++column_index) {
+			matrix[row_index][column_index] = checked_matrix_value(row[column_index], row_index, column_index);
+		}
+	}
+	return matrix;
+}
+
+auto expansion_dimension_from_matrix(const std::vector<std::vector<double>> &distances) -> double
+{
+	const auto record_count = distances.size();
+	auto maximum_dimension = 0.0;
+	for (std::size_t row = 0; row < record_count; ++row) {
+		for (std::size_t column = 0; column < record_count; ++column) {
+			const auto radius = distances[row][column];
+			if (radius <= 0.0) {
+				continue;
+			}
+
+			const auto outer_radius = radius + radius;
+			auto inner_count = std::size_t{0};
+			auto outer_count = std::size_t{0};
+			for (std::size_t candidate = 0; candidate < record_count; ++candidate) {
+				const auto value = distances[row][candidate];
+				if (value <= radius) {
+					++inner_count;
+				}
+				if (value <= outer_radius) {
+					++outer_count;
+				}
+			}
+
+			if (inner_count > 0 && outer_count >= inner_count) {
+				maximum_dimension =
+					std::max(maximum_dimension,
+							 std::log(static_cast<double>(outer_count) / static_cast<double>(inner_count)) /
+								 std::log(2.0));
+			}
+		}
+	}
+	return maximum_dimension;
+}
+
+auto structure_description_from_matrix(const std::vector<std::vector<double>> &distances, const std::string &representation)
+	-> py::dict
+{
+	const auto record_count = distances.size();
+	auto pair_count = std::size_t{0};
+	auto zero_distance_pair_count = std::size_t{0};
+	auto minimum_nonzero_distance = 0.0;
+	auto maximum_distance = 0.0;
+	auto distance_sum = 0.0;
+	auto has_nonzero_distances = false;
+	auto has_any_pair = false;
+
+	for (std::size_t row = 0; row < record_count; ++row) {
+		for (std::size_t column = row + 1; column < record_count; ++column) {
+			const auto distance = distances[row][column];
+			++pair_count;
+			distance_sum += distance;
+			if (!has_any_pair || distance > maximum_distance) {
+				maximum_distance = distance;
+				has_any_pair = true;
+			}
+			if (distance <= 0.0) {
+				++zero_distance_pair_count;
+			} else if (!has_nonzero_distances || distance < minimum_nonzero_distance) {
+				minimum_nonzero_distance = distance;
+				has_nonzero_distances = true;
+			}
+		}
+	}
+
+	auto result = py::dict{};
+	result["record_count"] = record_count;
+	result["pair_count"] = pair_count;
+	result["zero_distance_pair_count"] = zero_distance_pair_count;
+	result["minimum_nonzero_distance"] = minimum_nonzero_distance;
+	result["maximum_distance"] = maximum_distance;
+	result["average_distance"] = pair_count == 0 ? 0.0 : distance_sum / static_cast<double>(pair_count);
+	result["intrinsic_dimension"] = expansion_dimension_from_matrix(distances);
+	result["has_nonzero_distances"] = has_nonzero_distances;
+	result["exact"] = true;
+	result["strategy"] = "exact_all_pairs";
+	result["representation"] = representation;
+	return result;
 }
 
 } // namespace
@@ -314,6 +444,22 @@ auto native_coverage_representative_indices(py::sequence records, py::object met
 	return representatives;
 }
 
+auto native_intrinsic_dimension_from_distances(py::sequence distances) -> double
+{
+	return expansion_dimension_from_matrix(distance_matrix_from_sequence(distances));
+}
+
+auto native_intrinsic_dimension(py::sequence records, py::object metric) -> double
+{
+	return expansion_dimension_from_matrix(native_pairwise_distance_matrix(records, metric));
+}
+
+auto native_describe_structure(py::sequence records, py::object metric, const std::string &representation = "metric_space")
+	-> py::dict
+{
+	return structure_description_from_matrix(native_pairwise_distance_matrix(records, metric), representation);
+}
+
 void export_exact_scan(py::module &m)
 {
 	m.def("pairwise_distance_matrix", &native_pairwise_distance_matrix, py::arg("records"), py::arg("metric"));
@@ -330,4 +476,8 @@ void export_exact_scan(py::module &m)
 		  py::arg("metric"), py::arg("radius"));
 	m.def("assign_to_representatives", &native_assign_to_representatives, py::arg("records"), py::arg("metric"),
 		  py::arg("representatives"));
+	m.def("intrinsic_dimension_from_distances", &native_intrinsic_dimension_from_distances, py::arg("distances"));
+	m.def("intrinsic_dimension", &native_intrinsic_dimension, py::arg("records"), py::arg("metric"));
+	m.def("describe_structure", &native_describe_structure, py::arg("records"), py::arg("metric"),
+		  py::arg("representation") = "metric_space");
 }
