@@ -32,9 +32,19 @@ template <typename Record, typename Metric> class MetricSpace {
 					  "mtrc::core::MetricSpace requires a metric callable accepting two records");
 	}
 
+	MetricSpace(std::vector<record_type> records, metric_type metric, std::vector<RecordId> ids,
+				std::size_t next_record_id, SpaceVersion version = initial_space_version)
+		: records_(std::move(records)), metric_(std::move(metric)), ids_(std::move(ids)),
+		  next_record_id_(validate_identity(records_.size(), ids_, next_record_id)), version_(version)
+	{
+		static_assert(MetricCallable_v<metric_type, record_type>,
+					  "mtrc::core::MetricSpace requires a metric callable accepting two records");
+	}
+
 	auto size() const -> std::size_t { return records_.size(); }
 	auto empty() const -> bool { return records_.empty(); }
 	auto version() const -> SpaceVersion { return version_; }
+	auto next_record_id() const -> std::size_t { return next_record_id_; }
 	auto touch() -> void { version_ = next_space_version(version_); }
 
 	auto id(std::size_t position) const -> RecordId { return id_at(position); }
@@ -102,6 +112,27 @@ template <typename Record, typename Metric> class MetricSpace {
 			ids.push_back(RecordId::from_index(index));
 		}
 		return ids;
+	}
+
+	static auto validate_identity(std::size_t record_count, const std::vector<RecordId> &ids,
+								  std::size_t next_record_id) -> std::size_t
+	{
+		if (ids.size() != record_count) {
+			throw std::invalid_argument("metric space identity needs one RecordId per record");
+		}
+		if (has_duplicate_record_ids(ids)) {
+			throw std::invalid_argument("metric space identity contains duplicate RecordIds");
+		}
+		std::size_t minimum_next_id = 0;
+		for (const auto id : ids) {
+			if (id.index() >= minimum_next_id) {
+				minimum_next_id = id.index() + 1;
+			}
+		}
+		if (next_record_id < minimum_next_id) {
+			throw std::invalid_argument("metric space next RecordId would reuse an existing RecordId");
+		}
+		return next_record_id;
 	}
 
 	auto validate_position(std::size_t position) const -> void

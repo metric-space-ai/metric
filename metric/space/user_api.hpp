@@ -18,12 +18,14 @@
 //   mtrc::space::query                           - nearest / k_nearest / within helpers (query.hpp)
 //   mtrc::space (lineage)                        - sub-space / merge lineage + merge_checked (lineage.hpp)
 //   mtrc::space::cache                           - stale detection and rebuild (cache.hpp)
+//   mtrc::space::persistence                     - native finite-space artifacts (persistence.hpp)
 
 #include <metric/space/builder.hpp>
 #include <metric/space/cache.hpp>
 #include <metric/space/distances.hpp>
 #include <metric/space/lineage.hpp>
 #include <metric/space/partition.hpp>
+#include <metric/space/persistence.hpp>
 #include <metric/space/query.hpp>
 #include <metric/space/records.hpp>
 

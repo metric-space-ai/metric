@@ -591,6 +591,9 @@ target_link_libraries(space_cache_recovery_smoke PRIVATE ${METRIC_TARGET_NAME})
 add_executable(space_lineage_workflow_smoke space_lineage_workflow_smoke.cpp)
 target_link_libraries(space_lineage_workflow_smoke PRIVATE ${METRIC_TARGET_NAME})
 
+add_executable(space_persistence_smoke space_persistence_smoke.cpp)
+target_link_libraries(space_persistence_smoke PRIVATE ${METRIC_TARGET_NAME})
+
 if (LAPACK_FOUND)
     target_link_libraries(space_legacy_reps_smoke PRIVATE ${LAPACK_LIBRARIES})
     target_link_libraries(space_partition_lineage_smoke PRIVATE ${LAPACK_LIBRARIES})
@@ -599,6 +602,7 @@ if (LAPACK_FOUND)
     target_link_libraries(space_user_api_smoke PRIVATE ${LAPACK_LIBRARIES})
     target_link_libraries(space_cache_recovery_smoke PRIVATE ${LAPACK_LIBRARIES})
     target_link_libraries(space_lineage_workflow_smoke PRIVATE ${LAPACK_LIBRARIES})
+    target_link_libraries(space_persistence_smoke PRIVATE ${LAPACK_LIBRARIES})
 endif ()
 
 add_test(NAME space_legacy_reps_smoke COMMAND space_legacy_reps_smoke)
@@ -608,6 +612,7 @@ add_test(NAME user_workflow_api_smoke COMMAND user_workflow_api_smoke)
 add_test(NAME space_user_api_smoke COMMAND space_user_api_smoke)
 add_test(NAME space_cache_recovery_smoke COMMAND space_cache_recovery_smoke)
 add_test(NAME space_lineage_workflow_smoke COMMAND space_lineage_workflow_smoke)
+add_test(NAME space_persistence_smoke COMMAND space_persistence_smoke)
 
 # Runtime metric-law coverage for the AIRM Riemannian distance. It instantiates
 # RiemannianDistance::operator(), which calls the LAPACK generalized symmetric

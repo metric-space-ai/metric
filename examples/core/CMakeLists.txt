@@ -10,6 +10,9 @@ target_link_libraries(explicit_space_representations PRIVATE ${METRIC_TARGET_NAM
 add_executable(space_user_workflow space_user_workflow.cpp)
 target_link_libraries(space_user_workflow PRIVATE ${METRIC_TARGET_NAME})
 
+add_executable(space_persistence space_persistence.cpp)
+target_link_libraries(space_persistence PRIVATE ${METRIC_TARGET_NAME})
+
 if (METRIC_BUILD_CORE_ENTROPY)
     add_executable(metric_space_entropy metric_space_entropy.cpp)
     target_link_libraries(metric_space_entropy PRIVATE ${METRIC_TARGET_NAME})
@@ -47,6 +50,7 @@ if (BUILD_TESTING)
     add_test(NAME example_custom_metric_space COMMAND custom_metric_space)
     add_test(NAME example_explicit_space_representations COMMAND explicit_space_representations)
     add_test(NAME example_space_user_workflow COMMAND space_user_workflow)
+    add_test(NAME example_space_persistence COMMAND space_persistence)
     if (METRIC_BUILD_CORE_ENTROPY)
         add_test(NAME example_metric_space_entropy COMMAND metric_space_entropy)
     endif ()

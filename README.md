@@ -195,6 +195,11 @@ underlying ownership stays explicit: `record` handles records, `metric` handles
 metrics, `space` handles finite spaces, `stats` investigates an existing space,
 and `modify` creates derived spaces.
 
+Finite spaces can also be exported as native C++ artifacts:
+`mtrc::space::persistence::save` stores records, stable `RecordId`s, the space
+version, metric identity, and optional materialized pair values; `load` restores
+the space with an explicitly supplied metric.
+
 ## Build From Source
 
 ```shell

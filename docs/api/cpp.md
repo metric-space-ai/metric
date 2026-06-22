@@ -121,6 +121,7 @@ finite metric space without exposing the low-level storage classes. They reuse
 | `mtrc::space::query` | `nearest` / `k_nearest` / `within` (facade over `stats::search`) |
 | `metric/space/lineage.hpp` (in `mtrc::space`) | sub-space/merge lineage lookup (`parent_record_id`, `merge_origin`) and `merge_checked` |
 | `mtrc::space::cache` | stale detection (`is_stale`, `require_fresh`) and `rebuild` / `refresh` |
+| `mtrc::space::persistence` | native finite-space artifacts with records, RecordIds, metric identity, version, and optional pair values |
 
 ```cpp
 auto space = mtrc::space::SpaceBuilder<std::string, mtrc::Edit<char>>(mtrc::Edit<char>{})
@@ -133,6 +134,31 @@ auto row  = mtrc::space::distances::row(space, space.id(0));
 These helpers are aggregated by `<metric/space/user_api.hpp>` and are also
 available through `<metric/engine.hpp>`. See `docs/engine/metric-space.md` and
 `docs/engine/representations.md` for the full workflow.
+
+### Native Space Artifacts
+
+`mtrc::space::persistence` saves a finite metric space as a native artifact:
+records, stable `RecordId`s, the next unused RecordId, the space version, the
+metric cache key, the metric law string, and optional materialized pair values.
+The metric itself is supplied explicitly on load; arbitrary C++ callables are
+not serialized as code.
+
+```cpp
+std::stringstream artifact;
+
+mtrc::space::persistence::save(artifact, space);
+auto loaded = mtrc::space::persistence::load<std::string>(artifact, mtrc::Edit<char>{});
+
+assert(loaded.space.id(0) == space.id(0));
+assert(loaded.space.version() == space.version());
+```
+
+The default `record_text_codec<T>` supports streamable records and preserves
+`std::string` payloads verbatim. Applications with structured records can pass
+a codec with `encode(record) -> std::string` and `decode(payload) -> Record`.
+`verify_distances` checks that saved materialized pair values still agree with
+the supplied metric, so an artifact cannot silently load against the wrong
+metric implementation.
 
 ## Metrics
 
