@@ -23,7 +23,18 @@ Current status:
   `build/dependency-core`
 - current Python adapter gate is green: `38` tests plus `13` subtests, including
   the native mapping-pipeline adapter
+- checkpoint commit `76821601` is pushed to `origin/main`
 
 The revival cleanup phase is now an integration checkpoint. Next phase work is
-feature completion and optimization: metric admission, missing literature
-metrics, production-grade hero applications, performance, and API hardening.
+feature completion and optimization.
+
+Production-readiness tracks:
+
+- metric catalog completion and per-metric discovery documentation
+- space/search/storage and stats hardening
+- modify/map/dynamics hardening, including PHATE-AE as a composed finite-space
+  mapping workflow
+- solve/numeric quality for Laplacian, PCG, native DNN, and promoted numeric
+  contracts
+- binding and package gates that keep Python adapter-only
+- hero applications with reproducible C++ evidence and public documentation
