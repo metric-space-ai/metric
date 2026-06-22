@@ -210,6 +210,17 @@ metric alternative for quarantined or rejected compatibility distances.
 space: profile, metric-law/admission status, a neighbor check, and k-NN outlier
 scores.
 
+Copyable C++ application templates live under
+[`examples/templates`](examples/templates). They cover the practical first
+steps after the TL;DR model:
+
+- time-series condition monitoring with TWED
+- histogram and image-like distribution comparison with strict Wasserstein
+- mixed records assembled from typed columns
+- correlation/dependence between paired finite metric spaces
+- representative record-set reduction
+- derived coordinate spaces when a coordinate view is useful
+
 Finite spaces can also be exported as native C++ artifacts:
 `mtrc::space::persistence::save` stores records, stable `RecordId`s, the space
 version, metric identity, and optional materialized pair values; `load` restores

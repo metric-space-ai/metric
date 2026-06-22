@@ -1,11 +1,11 @@
 # Revival Status
 
-The revival foundation is closed when the repository satisfies the current
-hub plan in `.codex/plans/REVIVAL_PLAN.md`.
+This page records the public revival checkpoint of METRIC: the repository has a
+coherent finite-metric-space vocabulary, native C++ ownership for the framework
+layers, and reproducible examples that show the intended user workflows.
 
 Current status:
 
-- public plans are consolidated under `.codex/plans`
 - root-level plan-file pollution has been removed
 - the active C++ source layout has Level-1 homes for `record`, `space`,
   `metric`, `stats`, `modify`, `solve`, and `numeric`
@@ -18,12 +18,12 @@ Current status:
   spaces before naming concrete algorithms
 - metric discovery and quarantine docs separate admitted metrics from unproven
   or non-metric pairwise functions
+- copyable C++ application templates cover time series, distributions, mixed
+  records, cross-space dependence, record-set reduction, and derived coordinate
+  spaces
 - real algorithms and metric math remain native C++; Python is an adapter layer
-- current C++ integration gate is green: `142/142` CTest tests under
-  `build/dependency-core`
-- current Python adapter gate is green: `38` tests plus `13` subtests, including
-  the native mapping-pipeline adapter
-- checkpoint commit `76821601` is pushed to `origin/main`
+- the core C++ and adapter gates are expected to stay green before changes are
+  merged to `main`
 
 The revival cleanup phase is now an integration checkpoint. Next phase work is
 feature completion and optimization.
