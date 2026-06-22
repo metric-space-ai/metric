@@ -3,10 +3,11 @@
 Aligned vector rows over a custom Euclidean metric. The Python ``Space`` adapts
 the records, exposes explicit distances and the matrix view, and reports a
 runtime-policy view. Search, clustering, outlier detection, graph construction,
-and classical-MDS embedding are native-only METRIC algorithms reached through
-bindings, so the Python facade raises StrategyUnavailableError until they are
-exposed. (Native vector mappings such as PHATE-AE are exercised by the core
-test suite, which pins the native binding contract.)
+and classical-MDS embedding are native algorithms reached through bindings.
+Space-level exact neighbor search is promoted here; clustering, outliers, graph
+construction, and MDS remain unavailable until their bindings are promoted.
+(Native vector mappings such as PHATE-AE are exercised by the core test suite,
+which pins the native binding contract.)
 """
 
 from math import sqrt
@@ -65,8 +66,11 @@ def main():
     assert diagnostics.representation == "metric_space"
     print("runtime policy =", diagnostics.policy_name, "via", diagnostics.representation)
 
-    # Native boundary: search / clustering / outliers / graph / MDS embedding.
-    requires_native("neighbors", lambda: space.neighbors((0.1, 0.1), count=3))
+    neighbors = space.neighbors((0.1, 0.1), count=3)
+    assert [neighbor.id for neighbor in neighbors.neighbors] == [0, 1, 2]
+    print("neighbors((0.1, 0.1)) =", [names[neighbor.id] for neighbor in neighbors.neighbors])
+
+    # Native boundary: indexed search / clustering / outliers / graph / MDS embedding.
     requires_native("to_tree.knn", lambda: space.to_tree().knn((0.1, 0.1), count=3))
     requires_native("to_graph", lambda: space.to_graph(count=2))
     requires_native("groups", lambda: space.groups(strategy=KMedoids(groups=3), representation=matrix))

@@ -1,8 +1,9 @@
-"""Process-curve engine demo — adapter boundary.
+"""Process-curve engine demo — exact search over aligned curves.
 
 A toy alignment metric over short process curves. The Python ``Space`` adapts
-the records and exposes explicit distances. Nearest search, representative
-selection, and kNN-graph construction are native-only METRIC algorithms.
+the records and exposes explicit distances plus native exact-scan nearest
+search. Representative selection and kNN-graph construction remain native-only
+until their bindings are promoted.
 """
 
 from metric import Space
@@ -59,8 +60,11 @@ def main():
     print("records =", ", ".join(names))
     print("matrix rows =", len(matrix))
 
-    # Native boundary: search / selection / graph construction live in C++.
-    requires_native("nearest", lambda: space.nearest(query))
+    nearest = space.nearest(query)
+    assert nearest.id == 0
+    print("nearest(query) =", names[nearest.id], "distance =", nearest.distance)
+
+    # Native boundary: selection / graph construction live in C++ but are not promoted here.
     requires_native("representatives", lambda: space.representatives(2))
     requires_native("exact_knn_graph", lambda: exact_knn_graph(records, aligned_curve_distance, 1))
 

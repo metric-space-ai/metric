@@ -20,6 +20,7 @@
 #include "modify/represent/represent.hpp"
 #include "modify/reduce/compress.hpp"
 #include "modify/expand/expand.hpp"
+#include "modify/expand/generated.hpp"
 #include "modify/resample/denoise.hpp"
 
 #include "modify/map/clustered_space.hpp"
@@ -35,6 +36,8 @@
 #include "modify/map/reduce.hpp"
 
 #include "modify/dynamics/dynamics.hpp"
+#include "modify/dynamics/diffusion.hpp"
+#include "modify/dynamics/finite_dynamics.hpp"
 
 #include "modify/compose/native_phate_autoencoder.hpp"
 #include "modify/compose/pipeline.hpp"

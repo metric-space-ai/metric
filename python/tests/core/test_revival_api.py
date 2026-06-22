@@ -797,11 +797,13 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(matrix.representation, "matrix")
         self.assertEqual(matrix.pairwise_distances(), space.pairwise_distances())
 
-        # The exact-scan search surface is a native-only facade.
-        self.assertRequiresNative(space.knn, "cut", 2)
-        self.assertRequiresNative(space.nn, "cut")
-        self.assertRequiresNative(space.rnn, "cut", 1)
-        self.assertRequiresNative(space.neighbors, "cut", 2)
+        # Exact-scan search now runs the pair loop through the native binding.
+        self.assertEqual([neighbor.record for neighbor in space.knn("cut", 2).neighbors], ["cat", "cot"])
+        self.assertEqual(space.nn("cut").record, "cat")
+        self.assertEqual([neighbor.record for neighbor in space.rnn("cut", 1).neighbors], ["cat", "cot"])
+        self.assertEqual([neighbor.id for neighbor in space.neighbors("cut", 2).neighbors], [0, 1])
+        identified = Space(self.records, self.metric, ids=["cat-id", "cot-id", "coat-id", "dog-id"])
+        self.assertEqual(identified.nearest("cut").id, "cat-id")
 
         # A tree index is a stored representation; indexed search is native-only.
         tree_index = space.to_tree()
@@ -929,22 +931,25 @@ class RevivalApiTest(unittest.TestCase):
         with self.assertRaises(KeyError):
             Space.from_dataframe(DataFrameLike([{"sample_id": "a"}, {"other": "b"}]), metric=row_distance, id_column="sample_id")
 
-    def test_nearest_neighbor_helpers_require_native(self):
+    def test_nearest_neighbor_helpers_use_native_exact_scan(self):
         space = FiniteMetricSpace(self.records, self.metric)
-        self.assertRequiresNative(space.knn, "cut", 2)
-        self.assertRequiresNative(space.nn, "cut")
-        self.assertRequiresNative(space.rnn, "cut", 1)
-        self.assertRequiresNative(nearest_neighbors, self.records, self.metric, "cut", 2)
-        self.assertRequiresNative(range_neighbors, self.records, self.metric, "cut", 1)
-        # pairwise_distance_matrix is an adapter over the caller's metric.
+        self.assertEqual([neighbor.record for neighbor in space.knn("cut", 2).neighbors], ["cat", "cot"])
+        self.assertEqual(space.nn("cut").record, "cat")
+        self.assertEqual([neighbor.record for neighbor in space.rnn("cut", 1).neighbors], ["cat", "cot"])
+        self.assertEqual([neighbor.record for neighbor in nearest_neighbors(self.records, self.metric, "cut", 2).neighbors], ["cat", "cot"])
+        self.assertEqual([neighbor.record for neighbor in range_neighbors(self.records, self.metric, "cut", 1).neighbors], ["cat", "cot"])
+        with self.assertRaises(TypeError):
+            nearest_neighbors(self.records, self.metric, "cut", 2.5)
+        # pairwise_distance_matrix uses the native all-pairs loop over the caller's metric.
         self.assertEqual(pairwise_distance_matrix(self.records, self.metric)[0][1], 1)
     def test_space_intent_methods_require_native(self):
         space = Space([0, 1, 2, 3, 4], metric=lambda lhs, rhs: abs(lhs - rhs))
 
-        # Every algorithmic intent method is a native-only facade.
-        self.assertRequiresNative(space.neighbors, 0, 2)
-        self.assertRequiresNative(space.nearest, 0)
-        self.assertRequiresNative(space.within_radius, 0, 1)
+        self.assertEqual([neighbor.id for neighbor in space.neighbors(0, 2).neighbors], [0, 1])
+        self.assertEqual(space.nearest(0).id, 0)
+        self.assertEqual([neighbor.id for neighbor in space.within_radius(0, 1).neighbors], [0, 1])
+
+        # Higher intent methods remain native-only until promoted bindings exist.
         self.assertRequiresNative(space.groups)
         self.assertRequiresNative(space.groups, KMedoids(groups=2))
         self.assertRequiresNative(space.groups, DBSCAN(radius=1, min_points=2))
@@ -1171,10 +1176,10 @@ class RevivalApiTest(unittest.TestCase):
         ):
             self.assertTrue(callable(getattr(space, name)), name)
 
-        # The intent vocabulary stays importable but search is native-only.
-        self.assertRequiresNative(space.neighbors, "cut", 2)
-        self.assertRequiresNative(space.nearest, "cut")
-        self.assertRequiresNative(space.within_radius, "cut", 1)
+        # The intent vocabulary stays importable and exact search is bound natively.
+        self.assertEqual([neighbor.record for neighbor in space.neighbors("cut", 2).neighbors], ["cat", "cot"])
+        self.assertEqual(space.nearest("cut").record, "cat")
+        self.assertEqual([neighbor.record for neighbor in space.within_radius("cut", 1).neighbors], ["cat", "cot"])
     def test_runtime_policy_is_explicit_and_exact(self):
         space = Space(self.records, self.metric)
         policy = RuntimePolicy(exact=True, parallel=True, cache="materialized")
@@ -1211,8 +1216,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertFalse(approximate_diagnostics.supported)
         self.assertIn("approximate", approximate_diagnostics.reason)
 
-        # Operations remain native-only regardless of runtime policy.
-        self.assertRequiresNative(space.neighbors, "cut", 2)
+        self.assertEqual([neighbor.record for neighbor in space.neighbors("cut", 2).neighbors], ["cat", "cot"])
         self.assertRequiresNative(space.groups)
         self.assertRequiresNative(space.describe)
         self.assertRequiresNative(space.compare, space)
@@ -1249,9 +1253,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertAlmostEqual(vector_space.distance(0, 1), 5.0)
         self.assertMetricContracts(records, vector_space.metric)
 
-        # Neighbor search over the custom metric is native-only.
-        self.assertRequiresNative(space.nearest, np.array([3.0, 4.0]))
-        self.assertRequiresNative(range_neighbors, records, euclidean, np.array([3.0, 4.0]), 0.0)
+        self.assertEqual(space.nearest(np.array([3.0, 4.0])).id, 1)
+        self.assertEqual(range_neighbors(records, euclidean, np.array([3.0, 4.0]), 0.0).neighbors[0].id, 1)
 
         manhattan_space = Space.vectors(
             records,
@@ -1293,9 +1296,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertAlmostEqual(pairwise_distance_matrix(records, structured_record_distance)[0][1], 0.25)
         self.assertMetricContracts(records, structured_record_distance)
 
-        # Search / selection are native-only.
-        self.assertRequiresNative(space.nearest, query)
-        self.assertRequiresNative(space.neighbors, query, 2)
+        self.assertEqual(space.nearest(query).record["id"], "pump-a")
+        self.assertEqual([neighbor.record["id"] for neighbor in space.neighbors(query, 2).neighbors], ["pump-a", "pump-b"])
         self.assertRequiresNative(representative_indices, records, structured_record_distance, 3)
         self.assertRequiresNative(separated_representative_indices, records, structured_record_distance, 2.0)
         self.assertRequiresNative(coverage_representative_indices, records, structured_record_distance, 1.5)
@@ -1332,7 +1334,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(pairwise_distance_matrix(records, aligned_curve_distance)[3][2], 9.0)
         self.assertMetricContracts(records, aligned_curve_distance)
 
-        self.assertRequiresNative(space.nearest, query)
+        self.assertEqual(space.nearest(query).id, 0)
         self.assertRequiresNative(representative_indices, records, aligned_curve_distance, 3)
         self.assertRequiresNative(separated_representative_indices, records, aligned_curve_distance, 4.0)
         self.assertRequiresNative(coverage_representative_indices, records, aligned_curve_distance, 4.0)
@@ -1367,7 +1369,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(pairwise_distance_matrix(records, cumulative_transport_distance)[1][4], 0.5)
         self.assertMetricContracts(records, cumulative_transport_distance)
 
-        self.assertRequiresNative(space.nearest, query)
+        self.assertEqual(space.nearest(query).id, 1)
         self.assertRequiresNative(intrinsic_dimension, records, cumulative_transport_distance)
 if __name__ == "__main__":
     unittest.main()

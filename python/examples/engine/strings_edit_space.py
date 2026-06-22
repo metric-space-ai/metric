@@ -1,8 +1,8 @@
-"""Strings + edit-distance engine demo — adapter boundary.
+"""Strings + edit-distance engine demo — native exact search.
 
 The Python ``Space`` adapts string records over the native ``Edit`` binding and
-exposes explicit distances and the matrix view. Neighbor search and clustering
-are native-only METRIC algorithms reached through bindings.
+exposes explicit distances, the matrix view, and exact-scan neighbor search.
+Clustering remains native-only until its binding is promoted.
 """
 
 from metric import Edit, Space
@@ -28,8 +28,11 @@ def main():
     assert matrix.distance(0, 1) == 1
     print("distance(metric, metrics) =", matrix.distance(0, 1))
 
-    # Native boundary: search and clustering live in C++.
-    requires_native("neighbors", lambda: space.neighbors("metricks", 2))
+    neighbors = space.neighbors("metricks", 2)
+    assert [neighbor.record for neighbor in neighbors.neighbors] == ["metrics", "metric"]
+    print("neighbors(metricks) =", [neighbor.record for neighbor in neighbors.neighbors])
+
+    # Native boundary: clustering lives in C++ but is not promoted here.
     requires_native("groups", lambda: space.groups(KMedoids(groups=2)))
 
 

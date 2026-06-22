@@ -4,7 +4,8 @@ Explicit representations are adapters: the matrix view materializes distances
 through the native ``Edit`` binding, and the tree/graph handles carry source
 lineage and staleness. Indexed/graph *search* and graph *construction* are
 native-only METRIC algorithms, so those operations raise until a native binding
-is exposed. The runtime-diagnostics view is a pure policy adapter.
+is exposed. Space-level exact neighbor search is promoted through the native
+binding. The runtime-diagnostics view is a pure policy adapter.
 """
 
 from metric import Edit, RuntimePolicy, Space
@@ -47,8 +48,11 @@ def main():
     assert diagnostics.policy_name == "exact_materialized_serial"
     print("runtime representation =", diagnostics.representation)
 
-    # Native boundary: implicit search, graph construction, and clustering.
-    requires_native("neighbors", lambda: space.neighbors("metricks", count=2))
+    neighbors = space.neighbors("metricks", count=2)
+    assert [neighbor.record for neighbor in neighbors.neighbors] == ["metrics", "metric"]
+    print("neighbors(metricks) =", [neighbor.record for neighbor in neighbors.neighbors])
+
+    # Native boundary: graph construction and clustering are not promoted here.
     requires_native("to_graph", lambda: space.to_graph(count=2))
     requires_native("groups", lambda: space.groups(count=2, representation=matrix))
 

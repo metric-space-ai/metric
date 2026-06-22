@@ -47,9 +47,10 @@ def test_space_vectors_missing_native_euclidean_has_clear_error(monkeypatch):
 def test_stats_modify_and_search_calls_are_native_only():
     space = Space([0.0, 1.0, 2.0], metric=lambda lhs, rhs: abs(lhs - rhs), validate="none")
 
+    assert space.nearest(0.0).id == 0
+    assert [neighbor.id for neighbor in space.neighbors(0.0, count=1).neighbors] == [0]
+
     for call in (
-        lambda: space.nearest(0.0),
-        lambda: space.neighbors(0.0, count=1),
         lambda: space.describe(),
         lambda: space.compare(space),
         lambda: space.reduce(1),

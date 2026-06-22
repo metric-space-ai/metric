@@ -1,11 +1,10 @@
-"""Histogram transport space — the Python package is an adapter only.
+"""Histogram transport space — finite records with a transport metric.
 
 This demo builds an explicit finite metric space over a toy 1-D transport
 metric. The Python layer adapts the records and invokes the caller's metric to
-expose distances and the explicit pairwise matrix. Search / structure analysis
-(nearest, intrinsic dimension) are METRIC algorithms that run in native C++ and
-are reached through bindings; the Python facade reports an explicit
-StrategyUnavailableError until those bindings are exposed.
+expose distances, the explicit pairwise matrix, and native exact-scan search.
+Structure analysis such as intrinsic dimension remains native-only until its
+binding is promoted.
 """
 
 from metric import Space
@@ -59,8 +58,11 @@ def main():
     print("distance(left-edge, right-edge) =", distances[0][2])
     print("distance(split-left, center) =", distances[3][4])
 
-    # Native boundary: search and structure analysis live in C++.
-    requires_native("nearest", lambda: space.nearest(query))
+    nearest = space.nearest(query)
+    assert nearest.id == 1
+    print("nearest(query) =", names[nearest.id], "distance =", nearest.distance)
+
+    # Native boundary: structure analysis lives in C++ but is not promoted here.
     requires_native("intrinsic_dimension", lambda: intrinsic_dimension(records, cumulative_transport_distance))
 
 

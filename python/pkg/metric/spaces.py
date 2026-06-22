@@ -627,21 +627,55 @@ class FiniteMetricSpace:
 
         return GraphIndex(self, count)
 
+    def _with_space_record_ids(self, result):
+        from metric.operators import Neighbor, NeighborResult
+
+        def map_neighbor(neighbor):
+            return Neighbor(
+                id=self.ids[int(neighbor.id)],
+                record=neighbor.record,
+                distance=neighbor.distance,
+                rank=neighbor.rank,
+            )
+
+        mapped_neighbors = tuple(map_neighbor(neighbor) for neighbor in result.neighbors)
+        mapped_rows = tuple(tuple(map_neighbor(neighbor) for neighbor in row) for row in result.rows)
+        return NeighborResult(
+            query=result.query,
+            query_id=result.query_id,
+            neighbors=mapped_neighbors,
+            rows=mapped_rows,
+            distances=result.distances,
+            exact=result.exact,
+            strategy=result.strategy,
+            representation=result.representation,
+            diagnostics=result.diagnostics,
+        )
+
     def knn(self, query, k=1):
-        """Exact-scan k-nearest neighbors (native-only)."""
-        _require_native_binding("FiniteMetricSpace.knn(...)", "exact-scan neighbor search")
+        """Exact-scan k-nearest neighbors through the native C++ binding."""
+        from metric.operators import nearest_neighbors
+
+        return self._with_space_record_ids(nearest_neighbors(self.records, self.metric, query, count=k))
 
     def nn(self, query):
-        """Exact-scan nearest neighbor (native-only)."""
-        _require_native_binding("FiniteMetricSpace.nn(...)", "exact-scan neighbor search")
+        """Exact-scan nearest neighbor through the native C++ binding."""
+        result = self.knn(query, k=1)
+        return result.neighbors[0] if result.neighbors else None
 
     def rnn(self, query, radius):
-        """Exact-scan radius neighbors (native-only)."""
-        _require_native_binding("FiniteMetricSpace.rnn(...)", "exact-scan radius search")
+        """Exact-scan radius neighbors through the native C++ binding."""
+        from metric.operators import range_neighbors
+
+        return self._with_space_record_ids(range_neighbors(self.records, self.metric, query, radius))
 
     def neighbors(self, query, k=None, count=None, radius=None):
-        """Exact-scan neighbor query (native-only)."""
-        _require_native_binding("FiniteMetricSpace.neighbors(...)", "exact-scan neighbor search")
+        """Exact-scan neighbor query through the native C++ binding."""
+        if radius is not None:
+            return self.rnn(query, radius)
+        from metric.operators import nearest_neighbors
+
+        return self._with_space_record_ids(nearest_neighbors(self.records, self.metric, query, k=k, count=count))
 
     def _compute_distance(self, lhs_index, rhs_index):
         value = self.metric(self.records[lhs_index], self.records[rhs_index])
@@ -683,16 +717,25 @@ class Space(FiniteMetricSpace):
         representation=None,
         runtime=None,
     ):
-        """Exact-scan neighbor query (native-only)."""
-        _require_native_binding("Space.neighbors(...)", "exact-scan neighbor search")
+        """Exact-scan neighbor query through the native C++ binding."""
+        require_exact_runtime(runtime)
+        if strategy is not None:
+            raise StrategyUnavailableError(
+                "Space.neighbors strategy selection is not promoted in Python yet; omit strategy for native exact scan"
+            )
+        if representation is not None:
+            representation.ensure_fresh()
+        if radius is not None:
+            return self.within_radius(query, radius)
+        return super().neighbors(query, k=k, count=count)
 
     def nearest(self, query):
-        """Exact-scan nearest neighbor (native-only)."""
-        _require_native_binding("Space.nearest(...)", "exact-scan neighbor search")
+        """Exact-scan nearest neighbor through the native C++ binding."""
+        return self.nn(query)
 
     def within_radius(self, query, radius):
-        """Exact-scan radius neighbors (native-only)."""
-        _require_native_binding("Space.within_radius(...)", "exact-scan radius search")
+        """Exact-scan radius neighbors through the native C++ binding."""
+        return self.rnn(query, radius)
 
     def groups(self, strategy=None, *, count="auto", radius=None, min_size=1, representation=None, runtime=None):
         """Group records via clustering (native-only)."""

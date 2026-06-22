@@ -1,8 +1,9 @@
-"""Time-series alignment space — adapter boundary demo.
+"""Time-series alignment space — exact search over process curves.
 
 A toy edit-distance-style alignment metric over short process curves. The
-Python ``Space`` adapts the records and exposes explicit distances. Nearest
-search and intrinsic-dimension estimation are native-only METRIC algorithms.
+Python ``Space`` adapts the records and exposes explicit distances plus native
+exact-scan nearest search. Intrinsic-dimension estimation remains native-only
+until its binding is promoted.
 """
 
 from metric import Space
@@ -62,8 +63,11 @@ def main():
     print("records =", ", ".join(names))
     print("distance(baseline, shifted) =", distances[0][1])
 
-    # Native boundary: search and structure analysis live in C++.
-    requires_native("nearest", lambda: space.nearest(query))
+    nearest = space.nearest(query)
+    assert nearest.id == 0
+    print("nearest(query) =", names[nearest.id], "distance =", nearest.distance)
+
+    # Native boundary: structure analysis lives in C++ but is not promoted here.
     requires_native("intrinsic_dimension", lambda: intrinsic_dimension(records, aligned_curve_distance))
 
 

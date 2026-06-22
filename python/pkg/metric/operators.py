@@ -2,20 +2,55 @@
 
 This module is an adapter boundary, not an algorithm library. The result
 dataclasses marshal native results into stable public objects, and a few
-helpers invoke the caller's own metric/transform callable. Every named METRIC
-algorithm (exact-scan search, graph construction, clustering, embedding,
-correlation, intrinsic dimension, structural statistics) is a facade that
-raises :class:`metric.exceptions.StrategyUnavailableError` until its native C++
-binding is exposed. METRIC's production numerics live in native C++.
+helpers invoke the caller's own metric/transform callable. Exact-scan pair and
+neighbor loops are exposed through the native C++ binding; higher METRIC
+algorithms (graph construction, clustering, embedding, correlation, intrinsic
+dimension, structural statistics) remain native-only facades until their binding
+is exposed. METRIC's production numerics live in native C++.
 """
 
 from dataclasses import dataclass
+import operator
 from typing import ClassVar
 
-import numpy as np
-
 from metric.exceptions import OptionalDependencyError, StrategyUnavailableError, UnsupportedOperationError
-from metric.spaces import FiniteMetricSpace
+
+
+def _numpy():
+    try:
+        import numpy as np
+    except ModuleNotFoundError as exc:
+        raise OptionalDependencyError(
+            "This conversion requires numpy. Install numpy or use to_dict()/plain Python results."
+        ) from exc
+    return np
+
+
+def _native_metric_module():
+    try:
+        from metric._impl import metric as native_metric
+    except ModuleNotFoundError as exc:
+        raise StrategyUnavailableError(
+            "native C++ operator bindings are unavailable because metric._impl.metric could not be imported"
+        ) from exc
+    return native_metric
+
+
+def _normalize_neighbor_count(k=None, count=None):
+    if k is not None and count is not None and k != count:
+        raise ValueError("use either k or count, not conflicting values")
+    requested = count if count is not None else k
+    if requested is None:
+        requested = 1
+    if isinstance(requested, bool):
+        raise TypeError("neighbor count must be an integer")
+    try:
+        requested = operator.index(requested)
+    except TypeError:
+        raise TypeError("neighbor count must be an integer") from None
+    if requested < 0:
+        raise ValueError("neighbor count must be non-negative")
+    return requested
 
 
 def _raise_unsupported_inverse(result):
@@ -87,7 +122,7 @@ class GraphConstructionResult:
         }
 
     def to_numpy(self):
-        return np.asarray(self.edges, dtype=object)
+        return _numpy().asarray(self.edges, dtype=object)
 
     def to_pandas(self):
         try:
@@ -147,7 +182,7 @@ class GraphDegreeDiagnostics:
         }
 
     def to_numpy(self):
-        return np.asarray(self.degrees, dtype=int)
+        return _numpy().asarray(self.degrees, dtype=int)
 
     def to_pandas(self):
         try:
@@ -200,7 +235,7 @@ class GraphConnectivityDiagnostics:
         }
 
     def to_numpy(self):
-        return np.asarray(self.component_labels, dtype=int)
+        return _numpy().asarray(self.component_labels, dtype=int)
 
     def to_pandas(self):
         try:
@@ -254,7 +289,7 @@ class GraphStretchDiagnostics:
         }
 
     def to_numpy(self):
-        return np.asarray(
+        return _numpy().asarray(
             [
                 self.pair_count,
                 self.reachable_pair_count,
@@ -384,9 +419,9 @@ class NeighborResult:
 
     def to_numpy(self):
         try:
-            return np.asarray(self.distances, dtype=float)
+            return _numpy().asarray(self.distances, dtype=float)
         except ValueError:
-            return np.asarray(self.distances, dtype=object)
+            return _numpy().asarray(self.distances, dtype=object)
 
     def to_pandas(self):
         try:
@@ -445,7 +480,7 @@ class ClusteringResult:
         }
 
     def to_numpy(self):
-        return np.asarray(self.assignments, dtype=int)
+        return _numpy().asarray(self.assignments, dtype=int)
 
     def to_pandas(self):
         try:
@@ -520,9 +555,9 @@ class OutlierResult:
     def to_numpy(self):
         scores = [outlier.score for outlier in self.outliers]
         try:
-            return np.asarray(scores, dtype=float)
+            return _numpy().asarray(scores, dtype=float)
         except (TypeError, ValueError):
-            return np.asarray(scores, dtype=object)
+            return _numpy().asarray(scores, dtype=object)
 
     def to_pandas(self):
         try:
@@ -572,7 +607,7 @@ class RepresentativeSet:
         }
 
     def to_numpy(self):
-        return np.asarray(self.representatives, dtype=int)
+        return _numpy().asarray(self.representatives, dtype=int)
 
     def to_pandas(self):
         try:
@@ -631,7 +666,7 @@ class ReductionResult:
         }
 
     def to_numpy(self):
-        return np.asarray(self.assignments, dtype=int)
+        return _numpy().asarray(self.assignments, dtype=int)
 
     def to_pandas(self):
         try:
@@ -698,7 +733,7 @@ class CompressionResult:
         }
 
     def to_numpy(self):
-        return np.asarray(self.assignments, dtype=int)
+        return _numpy().asarray(self.assignments, dtype=int)
 
     def to_pandas(self):
         try:
@@ -766,7 +801,7 @@ class MappingResult:
         }
 
     def to_numpy(self):
-        return np.asarray(self.source_record_ids, dtype=object)
+        return _numpy().asarray(self.source_record_ids, dtype=object)
 
     def to_pandas(self):
         try:
@@ -825,7 +860,7 @@ class StructureDescription:
         }
 
     def to_numpy(self):
-        return np.asarray(
+        return _numpy().asarray(
             [
                 self.record_count,
                 self.pair_count,
@@ -893,7 +928,7 @@ class CorrelationResult:
         }
 
     def to_numpy(self):
-        return np.asarray([self.value], dtype=float)
+        return _numpy().asarray([self.value], dtype=float)
 
     def to_pandas(self):
         try:
@@ -967,7 +1002,7 @@ class EmbeddingResult:
 
     def to_dict(self):
         return {
-            "coordinates": np.asarray(self.coordinates).tolist(),
+            "coordinates": _numpy().asarray(self.coordinates).tolist(),
             "model": self.model.to_dict(),
             "source_record_ids": self.source_record_ids,
             "source_record_count": self.source_record_count,
@@ -982,7 +1017,7 @@ class EmbeddingResult:
         }
 
     def to_numpy(self):
-        return np.array(self.coordinates, dtype=float, copy=True)
+        return _numpy().array(self.coordinates, dtype=float, copy=True)
 
     def to_pandas(self):
         try:
@@ -1012,15 +1047,13 @@ class EmbeddingResult:
 # The result dataclasses above are pure marshaling containers: they hold and
 # reshape values, they do not compute METRIC framework results. Everything
 # below this line is the operator surface. METRIC is a native C++ finite
-# metric-space framework; production algorithms (exact-scan search, graph
-# construction, clustering, MDS, correlation, intrinsic dimension, structural
-# statistics) must run in native C++ and be reached through a binding. The
-# Python package is an adapter only:
+# metric-space framework; promoted pairwise/exact-scan loops and production
+# algorithms must run in native C++ and be reached through a binding. The Python
+# package is an adapter only:
 #
 #   * helpers that merely invoke the caller's metric/transform callable or
 #     marshal native results into the dataclasses above stay live, and
-#   * every named algorithm raises StrategyUnavailableError until its native
-#     binding is exposed through ``metric._impl``.
+#   * named algorithms without a promoted binding raise StrategyUnavailableError.
 # ---------------------------------------------------------------------------
 
 
@@ -1036,11 +1069,10 @@ def _require_native_binding(operation, kind):
 def pairwise_distance_matrix(records, metric):
     """Materialize the explicit finite metric-space distance matrix.
 
-    Adapter: this only invokes the caller-provided ``metric`` callable to build
-    the explicit pairwise representation of the records. It does not run a
-    METRIC framework algorithm.
+    Native adapter: the all-pairs loop runs in C++ and invokes the supplied
+    metric callable for each pair.
     """
-    return FiniteMetricSpace(records, metric).pairwise_distances()
+    return _native_metric_module().pairwise_distance_matrix(list(records), metric)
 
 
 def neighbor_result(
@@ -1102,13 +1134,36 @@ def neighbor_result(
 
 
 def nearest_neighbors(records, metric, query, k=None, count=None):
-    """Exact-scan k-nearest-neighbor search (native-only)."""
-    _require_native_binding("nearest_neighbors(...)", "exact-scan neighbor search")
+    """Exact-scan k-nearest-neighbor search through the native C++ binding."""
+    record_list = list(records)
+    pairs = _native_metric_module().exact_scan_neighbors(
+        record_list,
+        metric,
+        query,
+        _normalize_neighbor_count(k, count),
+    )
+    return neighbor_result(
+        record_list,
+        query=query,
+        neighbors=pairs,
+        exact=True,
+        strategy="exact_scan",
+        representation="metric_space",
+    )
 
 
 def range_neighbors(records, metric, query, radius):
-    """Exact-scan radius neighbor search (native-only)."""
-    _require_native_binding("range_neighbors(...)", "exact-scan radius search")
+    """Exact-scan radius neighbor search through the native C++ binding."""
+    record_list = list(records)
+    pairs = _native_metric_module().exact_scan_radius_neighbors(record_list, metric, query, radius)
+    return neighbor_result(
+        record_list,
+        query=query,
+        neighbors=pairs,
+        exact=True,
+        strategy="exact_range",
+        representation="metric_space",
+    )
 
 
 def exact_knn_graph(records, metric, k):

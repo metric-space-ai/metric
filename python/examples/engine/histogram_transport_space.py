@@ -1,8 +1,8 @@
-"""Histogram transport engine demo — adapter boundary.
+"""Histogram transport engine demo — exact search over histograms.
 
 The Python ``Space`` adapts histogram records over a toy transport metric and
-exposes explicit distances. Neighbor search and clustering are native-only
-METRIC algorithms reached through bindings.
+exposes explicit distances plus native exact-scan neighbor search. Clustering
+remains native-only until its binding is promoted.
 """
 
 from metric import Space
@@ -51,8 +51,11 @@ def main():
     print("records =", ", ".join(names))
     print("matrix rows =", len(matrix))
 
-    # Native boundary: search and clustering live in C++.
-    requires_native("neighbors", lambda: space.neighbors(query, 2))
+    neighbors = space.neighbors(query, 2)
+    assert [neighbor.id for neighbor in neighbors.neighbors] == [1, 3]
+    print("neighbors(query) =", [names[neighbor.id] for neighbor in neighbors.neighbors])
+
+    # Native boundary: clustering lives in C++ but is not promoted here.
     requires_native("groups", lambda: space.groups(KMedoids(groups=2)))
 
 

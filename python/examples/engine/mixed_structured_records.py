@@ -1,10 +1,10 @@
-"""Mixed structured records — adapter boundary demo.
+"""Mixed structured records — exact search over heterogeneous records.
 
 A rich toy domain metric that combines numeric, categorical, string, spectrum,
 and curve fields. The Python ``Space`` adapts these heterogeneous records and
-exposes explicit distances plus a runtime-policy view (an adapter). Neighbor
-search, clustering, outlier detection, and embedding are native-only METRIC
-algorithms reached through bindings.
+exposes explicit distances, native exact-scan neighbor search, and a runtime-
+policy view. Clustering, outlier detection, and embedding remain native-only
+until their bindings are promoted.
 """
 
 from math import sqrt
@@ -160,8 +160,11 @@ def main():
     assert diagnostics.representation == "matrix"
     print("runtime representation =", diagnostics.representation)
 
-    # Native boundary: search / clustering / outliers / embedding live in C++.
-    requires_native("neighbors", lambda: space.neighbors(query, count=2))
+    neighbors = space.neighbors(query, count=2)
+    assert [neighbor.id for neighbor in neighbors.neighbors] == [1, 2]
+    print("neighbors(query) =", [names[neighbor.id] for neighbor in neighbors.neighbors])
+
+    # Native boundary: clustering / outliers / embedding live in C++ but are not promoted here.
     requires_native("groups", lambda: space.groups(count=2, representation=matrix))
     requires_native("outliers", lambda: space.outliers(strategy=DBSCAN(radius=2, min_points=2), representation=matrix))
     requires_native("embed", lambda: space.embed(strategy=MDS(dimensions=2), representation=matrix))
