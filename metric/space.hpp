@@ -31,6 +31,7 @@ Copyright (c) PANDA Team
 #include "space/matrix.hpp"
 #include "space/partition.hpp"
 #include "space/tree.hpp"
+#include "space/user_api.hpp"
 
 namespace mtrc {
 

@@ -57,35 +57,40 @@ if (METRIC_PYTHON_USE_BLAS)
     find_package(BLAS QUIET)
 endif ()
 
-find_package(nlohmann_json QUIET)
-if (NOT nlohmann_json_FOUND AND METRIC_PYTHON_FETCH_DEPS)
-    FetchContent_Declare(
-        nlohmann_json
-        GIT_REPOSITORY https://github.com/nlohmann/json.git
-        GIT_TAG v3.11.3
-        GIT_SHALLOW TRUE)
-    FetchContent_GetProperties(nlohmann_json)
-    if (NOT nlohmann_json_POPULATED)
-        FetchContent_Populate(nlohmann_json)
-    endif ()
-    set(METRIC_PYTHON_NLOHMANN_JSON_INCLUDE_DIR ${nlohmann_json_SOURCE_DIR}/include)
-endif ()
-
-find_package(cereal QUIET)
-if (NOT cereal_FOUND AND METRIC_PYTHON_FETCH_DEPS)
-    FetchContent_Declare(
-        cereal
-        GIT_REPOSITORY https://github.com/USCiLab/cereal.git
-        GIT_TAG v1.3.2
-        GIT_SHALLOW TRUE)
-    FetchContent_GetProperties(cereal)
-    if (NOT cereal_POPULATED)
-        FetchContent_Populate(cereal)
-    endif ()
-    set(METRIC_PYTHON_CEREAL_INCLUDE_DIR ${cereal_SOURCE_DIR}/include)
-endif ()
-
+# nlohmann_json and cereal are only needed by the legacy FULL mapping/correlation
+# bindings (like Boost below). The default core wheel links neither, so gating the
+# find/FetchContent here keeps the default build free of an external-lib network
+# dependency (no unconditional GitHub clone) and enforces the dependency-free
+# public-core boundary at the binding build.
 if (METRIC_PYTHON_BUILD_FULL)
+    find_package(nlohmann_json QUIET)
+    if (NOT nlohmann_json_FOUND AND METRIC_PYTHON_FETCH_DEPS)
+        FetchContent_Declare(
+            nlohmann_json
+            GIT_REPOSITORY https://github.com/nlohmann/json.git
+            GIT_TAG v3.11.3
+            GIT_SHALLOW TRUE)
+        FetchContent_GetProperties(nlohmann_json)
+        if (NOT nlohmann_json_POPULATED)
+            FetchContent_Populate(nlohmann_json)
+        endif ()
+        set(METRIC_PYTHON_NLOHMANN_JSON_INCLUDE_DIR ${nlohmann_json_SOURCE_DIR}/include)
+    endif ()
+
+    find_package(cereal QUIET)
+    if (NOT cereal_FOUND AND METRIC_PYTHON_FETCH_DEPS)
+        FetchContent_Declare(
+            cereal
+            GIT_REPOSITORY https://github.com/USCiLab/cereal.git
+            GIT_TAG v1.3.2
+            GIT_SHALLOW TRUE)
+        FetchContent_GetProperties(cereal)
+        if (NOT cereal_POPULATED)
+            FetchContent_Populate(cereal)
+        endif ()
+        set(METRIC_PYTHON_CEREAL_INCLUDE_DIR ${cereal_SOURCE_DIR}/include)
+    endif ()
+
     find_package(Boost REQUIRED)
 endif ()
 

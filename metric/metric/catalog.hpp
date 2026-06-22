@@ -19,6 +19,14 @@
 #include <metric/metric/catalog/distribution/CramervonMises.hpp>
 #include <metric/metric/catalog/distribution/KolmogorovSmirnov.hpp>
 #include <metric/metric/catalog/distribution/RandomEMD.hpp>
-#include <metric/metric/catalog/space/Riemannian.hpp>
+
+// metric/metric/catalog/space/Riemannian.hpp is intentionally NOT included here.
+// RiemannianDistance (AIRM) needs a generalized symmetric eigensolver (LAPACK
+// dsygv via metric/utils/wrappers/lapack.hpp), so pulling it into this umbrella
+// would leak an external-backend runtime dependency into the otherwise
+// header-only public core (<metric/metric.hpp>). Consumers that want AIRM
+// include <metric/metric/catalog/space/Riemannian.hpp> explicitly and link
+// LAPACK; metric/metric/discovery.hpp then registers its admission status
+// (the same opt-in pattern used for the physically-quarantined SSIM/Kohonen).
 
 #endif

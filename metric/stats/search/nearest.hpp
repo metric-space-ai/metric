@@ -133,6 +133,61 @@ auto range(const Provider &provider, RecordId query_id, Radius radius) -> Neighb
 	return core::range_neighbor_set(std::move(candidates), provider.record_count(), "pairwise_distances");
 }
 
+// Batch queries answer the same Level-1 investigation for many queries at once and return
+// one NeighborSet per query, in input order. Each result keeps its own exactness and
+// representation metadata. There is no shared state between queries, so the i-th result is
+// identical to calling the corresponding single-query overload directly (same RecordId tie
+// policy, same self-exclusion for RecordId queries).
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto knn_batch(const Space &space, const std::vector<typename Space::record_type> &queries, std::size_t k)
+	-> std::vector<NeighborSet<typename Space::distance_type>>
+{
+	std::vector<NeighborSet<typename Space::distance_type>> results;
+	results.reserve(queries.size());
+	for (const auto &query : queries) {
+		results.push_back(knn(space, query, k));
+	}
+	return results;
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto knn_batch(const Space &space, const std::vector<RecordId> &query_ids, std::size_t k)
+	-> std::vector<NeighborSet<typename Space::distance_type>>
+{
+	std::vector<NeighborSet<typename Space::distance_type>> results;
+	results.reserve(query_ids.size());
+	for (const auto query_id : query_ids) {
+		results.push_back(knn(space, query_id, k));
+	}
+	return results;
+}
+
+template <typename Space, typename Radius, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto range_batch(const Space &space, const std::vector<typename Space::record_type> &queries, Radius radius)
+	-> std::vector<NeighborSet<typename Space::distance_type>>
+{
+	engine_detail::validate_radius(radius);
+	std::vector<NeighborSet<typename Space::distance_type>> results;
+	results.reserve(queries.size());
+	for (const auto &query : queries) {
+		results.push_back(range(space, query, radius));
+	}
+	return results;
+}
+
+template <typename Space, typename Radius, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto range_batch(const Space &space, const std::vector<RecordId> &query_ids, Radius radius)
+	-> std::vector<NeighborSet<typename Space::distance_type>>
+{
+	engine_detail::validate_radius(radius);
+	std::vector<NeighborSet<typename Space::distance_type>> results;
+	results.reserve(query_ids.size());
+	for (const auto query_id : query_ids) {
+		results.push_back(range(space, query_id, radius));
+	}
+	return results;
+}
+
 } // namespace mtrc::stats::search
 
 #endif

@@ -52,9 +52,13 @@ int main()
 	const auto exact = mtrc::represent(line, 2, mtrc::space::storage::exact());
 	assert(exact.size() == 2);
 
-	const auto empty = mtrc::represent(line, 0);
-	assert(empty.size() == 0);
-	assert(empty.source_record_count == 5);
+	bool rejected_empty_count = false;
+	try {
+		(void)mtrc::represent(line, 0);
+	} catch (const std::invalid_argument &) {
+		rejected_empty_count = true;
+	}
+	assert(rejected_empty_count);
 
 	return 0;
 }

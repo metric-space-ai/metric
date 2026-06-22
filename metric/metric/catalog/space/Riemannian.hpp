@@ -23,5 +23,23 @@ template <typename RecType, typename Metric = Euclidean<typename RecType::value_
 
 } // namespace mtrc
 
+namespace mtrc::core {
+
+// Affine-invariant Riemannian metric (AIRM) on the SPD images of two equal-size
+// finite metric spaces (Pennec, Fillard & Ayache 2006). It is a true metric when
+// the base Metric used to build each space's Laplacian is itself a true metric;
+// the law is inherited from the base exactly as for Hausdorff. The record domain
+// is an ordered, equal-cardinality finite metric space (its distance matrix); the
+// distance is invariant to the global metric scale and to isometry of the
+// configuration.
+template <typename RecType, typename Metric> struct metric_traits<::mtrc::RiemannianDistance<RecType, Metric>> {
+	static constexpr auto law =
+		metric_traits<Metric>::law == metric_law::metric ? metric_law::metric : metric_law::distance;
+	static constexpr auto records = record_kind::structured;
+	static constexpr bool thread_safe = true;
+};
+
+} // namespace mtrc::core
+
 #include "Riemannian.cpp"
 #endif // METRIC_METRIC_CATALOG_SPACE_RIEMANNIAN_HPP

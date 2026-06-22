@@ -14,11 +14,7 @@ void assert_close(const double actual, const double expected) { assert(std::abs(
 
 double expected_edit_entropy()
 {
-#if defined(__APPLE__)
-	return -9.2300109378544839;
-#else
-	return -9.3586207190266926;
-#endif
+	return -6.4090895367392831;
 }
 
 } // namespace
@@ -36,13 +32,16 @@ int main()
 	const double vector_result = vector_entropy(vector_records);
 	assert_close(vector_result, -4.4489104772539489);
 
-	const std::vector<std::string> string_records = {
-		"AAA", "HJGJHFG", "BBB", "AAAA", "long long long long long long string", "abcdefghjklmnopqrstuvwxyz",
-	};
+	const std::vector<std::string> string_records = {"AAA", "BBB", "ABA", "ABB", "BAA", "BAB"};
 
-	const mtrc::Entropy<void, mtrc::Edit<int>> string_entropy(mtrc::Edit<int>(), 3, 2);
+	const mtrc::Entropy<void, mtrc::Edit<char>> string_entropy(mtrc::Edit<char>(), 3, 2);
 	const double string_result = string_entropy(string_records);
 	assert_close(string_result, expected_edit_entropy());
+
+	const std::vector<std::string> ragged_records = {
+		"AAA", "HJGJHFG", "BBB", "AAAA", "long long long long long long string", "abcdefghjklmnopqrstuvwxyz",
+	};
+	assert(std::isnan(string_entropy(ragged_records)));
 
 	std::cout << std::setprecision(12) << "vector entropy = " << vector_result << "\n"
 			  << "string entropy = " << string_result << "\n";

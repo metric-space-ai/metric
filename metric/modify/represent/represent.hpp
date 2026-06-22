@@ -12,10 +12,11 @@
 // compression ratio. The derived space's metric law is exactly the source
 // metric's law, because a metric restricted to a subset is still a metric.
 
-#ifndef _METRIC_INTENT_REPRESENT_HPP
-#define _METRIC_INTENT_REPRESENT_HPP
+#ifndef _METRIC_MODIFY_REPRESENT_HPP
+#define _METRIC_MODIFY_REPRESENT_HPP
 
 #include <cstddef>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -56,6 +57,11 @@ template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>
 auto represent(const Space &space, std::size_t count, space::select::farthest_first strategy = {})
 	-> MappingResult<MetricSpace<typename Space::record_type, typename Space::metric_type>>
 {
+	// Reject the degenerate empty subspace for parity with modify::reduce::compress
+	// (find_representatives returns an empty set for count == 0 rather than throwing).
+	if (count == 0) {
+		throw std::invalid_argument("represent count must be positive");
+	}
 	const auto representatives = find_representatives(space, count, strategy);
 	return detail::represent_from_set(space, representatives);
 }
@@ -65,6 +71,9 @@ auto represent(const Space &space, std::size_t count, space::select::farthest_fi
 			   space::storage::policy runtime_policy)
 	-> MappingResult<MetricSpace<typename Space::record_type, typename Space::metric_type>>
 {
+	if (count == 0) {
+		throw std::invalid_argument("represent count must be positive");
+	}
 	const auto representatives = find_representatives(space, count, strategy, runtime_policy);
 	return detail::represent_from_set(space, representatives);
 }

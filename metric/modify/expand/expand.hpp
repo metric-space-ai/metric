@@ -16,8 +16,8 @@
 // mapping is not invertible and is valid only within the span of source
 // neighbours.
 
-#ifndef _METRIC_INTENT_EXPAND_HPP
-#define _METRIC_INTENT_EXPAND_HPP
+#ifndef _METRIC_MODIFY_EXPAND_HPP
+#define _METRIC_MODIFY_EXPAND_HPP
 
 #include <cstddef>
 #include <type_traits>

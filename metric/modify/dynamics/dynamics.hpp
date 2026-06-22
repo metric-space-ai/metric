@@ -18,8 +18,8 @@
 // diffusion of coordinates is well defined; other record domains throw
 // StrategyUnavailableError rather than producing meaningless output.
 
-#ifndef _METRIC_INTENT_DYNAMICS_HPP
-#define _METRIC_INTENT_DYNAMICS_HPP
+#ifndef _METRIC_MODIFY_DYNAMICS_HPP
+#define _METRIC_MODIFY_DYNAMICS_HPP
 
 #include <cstddef>
 #include <stdexcept>

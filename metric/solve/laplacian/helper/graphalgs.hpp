@@ -57,11 +57,17 @@ template <typename Tv> class Random {
 	Tv rand0_1() { return std::generate_canonical<Tv, 8 * sizeof(Tv)>(gen); }
 
 	/**
-	 * @brief
+	 * @brief Standard-normal N(0, 1) draw.
 	 *
-	 * @return
+	 * Fills the Johnson-Lindenstrauss projection in the Spielman-Srivastava
+	 * effective-resistance sparsifier, whose norm-preservation guarantee
+	 * E[||R^T x||^2 / k] = ||x||^2 requires unit-variance entries. A previous
+	 * version returned rand0_1() * 3.4 - 1.7, i.e. Uniform(-1.7, 1.7), whose
+	 * variance (~0.963) biased the resistance estimates despite the "randn" name.
+	 *
+	 * @return a standard-normal sample
 	 */
-	Tv randn() { return rand0_1() * 3.4 - 1.7; }
+	Tv randn() { return norm(gen); }
 
 	/**
 	 * @brief
@@ -82,6 +88,7 @@ template <typename Tv> class Random {
   private:
 	std::random_device rd;
 	std::mt19937 gen;
+	std::normal_distribution<Tv> norm{Tv(0), Tv(1)};
 };
 
 /**

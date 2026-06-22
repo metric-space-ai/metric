@@ -177,6 +177,18 @@ int main()
 		   1e-12);
 	assert(std::abs(mtrc::Hassanat<double>{}(std::vector<double>{1.0, 2.0}, std::vector<double>{1.0, 4.0}) - 0.4) <
 		   1e-12);
+	// Hassanat is QUARANTINED (discovery.hpp): its negative-min branch deviates from
+	// the published metric (it uses 1+2*min over 1+max+min instead of 1+min+|min|
+	// over 1+max+|min|), which both breaks non-negativity and divides by zero. Pin
+	// the shipped defect so a future in-place edit cannot silently "promote" this
+	// computation to a discoverable metric without an admission record + a new class.
+	{
+		const mtrc::Hassanat<double> hassanat;
+		// d([-3],[0]) = 1 - (1-6)/(1-3) = 1 - 2.5 = -1.5  -> negative distance.
+		assert(hassanat(std::vector<double>{-3.0}, std::vector<double>{0.0}) < 0.0);
+		// d([-3],[2]) divides by 1+max+min = 1+2-3 = 0  -> non-finite (+inf).
+		assert(!std::isfinite(hassanat(std::vector<double>{-3.0}, std::vector<double>{2.0})));
+	}
 	assert(std::abs(mtrc::Ruzicka<double>{}(std::vector<double>{1.0, 2.0}, std::vector<double>{1.0, 4.0}) - 0.4) <
 		   1e-12);
 	assert(mtrc::Ruzicka<double>{}(std::vector<double>{0.0, 0.0}, std::vector<double>{0.0, 0.0}) == 0.0);

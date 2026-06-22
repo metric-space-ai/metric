@@ -66,6 +66,7 @@ The "recoding principle" column states that cost model for each metric.
 | `SqrtJensenShannon<V>` | Normalized measures (√JS) | restricted metric | metric |
 | `EmpiricalCramer<V>` | Samples → empirical CDF (root L2-CDF) | restricted metric | metric |
 | `EmpiricalKolmogorovSmirnov<V>` | Samples → empirical CDF (sup-CDF) | restricted metric | metric |
+| `RiemannianDistance<Rec,Metric>` | Equal-size finite metric spaces (AIRM) | restricted metric | metric |
 | `Cosine<V>` | Vectors (angular/π, unguarded) | quarantine | distance |
 | `Weierstrass<V>` | Vectors (hyperboloid distance, unguarded) | quarantine | distance |
 | `Euclidean_thresholded<V>` | Vectors (`min(thres, factor·L2)`) | quarantine | distance |
@@ -76,7 +77,6 @@ The "recoding principle" column states that cost model for each metric.
 | `RandomEMD<Sample,D>` | Samples (Akima-CDF transport) | quarantine | distance |
 | `CramervonMises<Sample,D>` | Samples (Akima root-CDF) | quarantine | distance |
 | `KolmogorovSmirnov<Sample,D>` | Samples (Akima sup-CDF) | quarantine | distance |
-| `RiemannianDistance<Rec,Metric>` | Finite spaces / SPD (AIRM; impl defect) | quarantine | distance |
 | `SSIM<D,V>` | Images / windows | quarantine | distance |
 | `Kohonen<D,Sample,…>` | Learned SOM-graph distance | quarantine | distance |
 | `CosineInverted<V>` | Vectors (`|1 − cos|`) | rejected | distance |
@@ -275,6 +275,16 @@ References · Example**. `n` = record dimension/length; `|A|`,`|B|` = set sizes.
 - **References:** Cramér (1928); Kolmogorov (1933); Deza & Deza 2016, §14.
 - **Example:** `mtrc::EmpiricalCramer<double>{}(sample_a, sample_b)`.
 
+### Finite metric spaces
+
+#### `RiemannianDistance<Rec,Metric>` — affine-invariant Riemannian (AIRM) — *restricted metric*
+- **Domain:** two ordered, **equal-cardinality** finite metric spaces (point sets); **gate:** the base `Metric` must itself be a true metric (the law is inherited, as for `Hausdorff`); equal, non-empty sizes are required (otherwise `std::invalid_argument`).
+- **Guarantees:** all four laws — each space is encoded as a scale-normalized regularized graph Laplacian `L/s + I` (SPD), and the AIRM `√(Σ log²λᵢ)` over the generalized eigenvalues is the geodesic distance on the SPD manifold. Symmetry and identity hold exactly (verified across 4000 random triples, 0 violations); invariant to global metric scale and to isometry of the configuration. *(Both operands must be encoded by the same SPD construction — a prior version used `−d` for one and `+d` for the other, which broke symmetry and identity; fixed in `Riemannian.cpp`.)*
+- **Complexity:** `O(n²)` to build the Laplacians + `O(n³)` generalized eigensolve (LAPACK `dsygv`).
+- **Recoding principle:** geodesic distance between the two spaces' SPD (regularized-Laplacian) representations on the affine-invariant manifold.
+- **References:** Pennec, Fillard & Ayache (2006), *IJCV* 66(1):41–66; Bhatia (2007), *Positive Definite Matrices*.
+- **Example:** `mtrc::RiemannianDistance<void, mtrc::Euclidean<double>>{}(space_a, space_b)`.
+
 ---
 
 ## Quarantine — non-metric as shipped, metric variant exists
@@ -295,7 +305,6 @@ algorithms. Each row has a salvage path in
 | `RandomEMD<Sample,D>` | Integrates `|F1−F2|` over a PMQ Akima-interpolated CDF on a pair-dependent grid; the CDF overshoots `[0,1]` (triangle fails), NaN on ties, infinite loop on zero range. | Use **`Wasserstein`** / the new **`EmpiricalCramer`**. |
 | `CramervonMises<Sample,D>` | Correct **root**-L2-CDF *form*, but the same Akima CDF breaks triangle and returns NaN on ties. | Admitted replacement: **`EmpiricalCramer`** (tie-safe fixed support). |
 | `KolmogorovSmirnov<Sample,D>` | Sup over a finite grid of the same Akima CDF: returns values `>1`, violates triangle, false-zero on ties. | Admitted replacement: **`EmpiricalKolmogorovSmirnov`**. |
-| `RiemannianDistance<Rec,Metric>` | **Confirmed non-metric defect**: the two operands are encoded with different formulas (`Riemannian.cpp:422` off-diagonal `−d` vs `:432` `+d`), so **symmetry fails** (`d(ds1,ds2)=0.784 ≠ d(ds2,ds1)=1.894`) and **identity fails** (`d(ds2,ds2)=1.41 ≠ 0`) on the repo's own `riemannian_test.cpp` data. | The AIRM `√(Σ log²λᵢ)` *is* a metric on the SPD cone (Pennec et al. 2006); fix the encoding to use the same SPD operator for both operands, then admit. |
 | `SSIM<D,V>` | Raw SSIM-based aggregate; raw SSIM and `1−SSIM` are not metrics. | Admit a theorem-matched SSIM-derived metric (e.g. `√(1−SSIM)` under normalized conditions, Brunet/Vrscay/Wang 2012). |
 | `Kohonen<D,Sample,…>` | `min(m(a,b), m(a,w_Ba)+S(Ba,Bb)+m(w_Bb,b))` with `S` = Dijkstra all-pairs on the SOM graph and **exact** base-metric edges. With a metric base `m`, `S(i,j) >= m(w_i,w_j)` so the detour `>= m(a,b)` and the `min` collapses to `m` — it **is** a true metric (verified on 200k random graphs). Quarantine is defensible only because it is a stateful *trained-model artifact* that adds no metric structure of its own and breaks if templated with a non-metric base (e.g. squared-Euclidean creates a shortcut). The "BMU/residual lift breaks identity/triangle" rationale is false. | Relocate to the mapping/embedding workflow; not a catalog metric (it merely inherits the base metric). |
 

@@ -48,7 +48,9 @@ mtrc::numeric::CompressedMatrix<Tv, mtrc::numeric::columnMajor> grid2(size_t n, 
 
 	mtrc::numeric::CompressedMatrix<Tv, mtrc::numeric::columnMajor> res;
 
-	IJV<Tv> ijv = grid2_ijv<Tv>(n, m);
+	// Forward the anisotropy weight; the 2-arg grid2_ijv would silently default it
+	// to 1 and make grid2(n, m, isotropy) ignore its third argument.
+	IJV<Tv> ijv = grid2_ijv<Tv>(n, m, isotropy);
 
 	res = sparse(ijv);
 
@@ -735,7 +737,7 @@ std::vector<size_t> flipIndex(const mtrc::numeric::CompressedMatrix<Tv, mtrc::nu
 template <typename Tv> inline mtrc::numeric::CompressedMatrix<Tv, mtrc::numeric::columnMajor> grid2(size_t n)
 {
 	if (n < 2)
-		throw("Parameter n must more than 2");
+		throw std::invalid_argument("grid2 requires n >= 2");
 
 	return grid2<Tv>(n, n);
 }
@@ -797,7 +799,7 @@ sum(const mtrc::numeric::CompressedMatrix<Tv, mtrc::numeric::columnMajor> &A, in
 	else if (wise == 2)
 		res = trans(mtrc::numeric::sum<mtrc::numeric::columnwise>(A));
 	else
-		throw("The value of wise parameter must be 1 or 2.");
+		throw std::invalid_argument("sum: wise must be 1 (rowwise) or 2 (columnwise)");
 
 	return res;
 }

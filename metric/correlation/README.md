@@ -4,11 +4,16 @@
 
 ## Overview
 
-Module offers functions to calculate a correlation coefficient of two metric spaces and thus to determine the dependency
-of two arbitrary data sets. METRIC | CORRELATION is used to find relations between metric spaces at all.
+This module measures the **dependence** between two paired finite metric spaces: given the same
+observations described under two (possibly different) metrics, it answers "are these two spaces
+dependent, and how strongly?". The result is a *dependence/correlation statistic*, **not a metric
+or distance** — it does not measure how far apart two records are, and it is never admitted as a
+metric.
 
-Use MGC (Multiscale Graph Correlation)
-as correlation coefficient to find nonlinear dependencies in data sets. It is optimized for small data set sizes.
+Use MGC (Multiscale Graph Correlation) as that statistic to find nonlinear dependencies. It is
+optimized for small data set sizes. The sample statistic lies in `[-1, 1]` (≈1 strong dependence,
+≈0 none); no p-value or significance test is produced here — significance testing is a separate
+concern. The two inputs must be paired and have the same record count.
 
 *Multiscale Graph Correlation, Bridgeford, Eric W and Shen, Censheng and Wang, Shangsi and Vogelstein, Joshua, 2018, doi
 = 10.5281/ZENODO.1246967*
@@ -21,16 +26,16 @@ If you don't have distance matrices, yo can build them at first (euclidean metri
 functions).
 
 ```C++
-auto A = metric::distance_matrix(dataset) // std::vector<std::vector<double> dataset 
+auto A = mtrc::distance_matrix(dataset); // std::vector<std::vector<double>> dataset
 ```
 
 Then just create MGC object and call `()` operator:
 
 ```C++
 typedef std::vector<int> Record;
-typedef metric::Euclidean<double> Distance;
+typedef mtrc::Euclidean<double> Distance;
 
-auto mgc_corr = metric::MGC<Record, Distance, Record, Distance>();
+auto mgc_corr = mtrc::MGC<Record, Distance, Record, Distance>();
 auto result = mgc_corr(A, B);
 
 // out:
@@ -46,9 +51,9 @@ save a lot of time. For use it just call `estimate()` on MGC object:
 
 ```C++
 typedef std::vector<int> Record;
-typedef metric::Euclidean<double> Distance;
+typedef mtrc::Euclidean<double> Distance;
 
-auto mgc_corr = metric::MGC<Record, Distance, Record, Distance>();
+auto mgc_corr = mtrc::MGC<Record, Distance, Record, Distance>();
 auto result = mgc_corr.estimate(A, B);
 
 // out:
@@ -80,13 +85,13 @@ struct simple_user_euclidian {
 typedef std::vector<double> Rec1;
 typedef std::array<float,3> Rec2;
 typedef simple_user_euclidian Met1;
-typedef metric::Manhattan<float> Met2;
+typedef mtrc::Manhattan<float> Met2;
 ````
 
 Now build the function (object) and compute the mgc again:
 
 ```C++
-auto mgc_corr = metric::MGC<Rec1, Met1, Rec2, Met2>();
+auto mgc_corr = mtrc::MGC<Rec1, Met1, Rec2, Met2>();
 auto result2 = mgc_corr(dataset1, dataset2);
 ```
 

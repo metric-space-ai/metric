@@ -167,26 +167,33 @@ Docs:
 ## C++ Quickstart
 
 ```cpp
-#include <metric/metric/catalog.hpp>
-#include <metric/engine.hpp>
+#include <metric/workflow.hpp>
 
 #include <string>
 #include <vector>
 
 int main()
 {
-    std::vector<std::string> records = {"metric", "metrics", "matrix", "tree"};
+    std::vector<std::string> input = {"metric", "metrics", "matrix", "tree"};
 
-    auto space = mtrc::make_space(records, mtrc::Edit<char>{});
+    auto records = mtrc::record::import_records(input);
+    auto space = mtrc::space::build_checked(records, mtrc::Edit<char>{});
 
-    const auto neighbors = mtrc::stats::search::find_neighbors(
-        space,
-        std::string("metricks"),
-        mtrc::count{2});
+    auto profile = mtrc::stats::profile(space);
+    auto neighbors = mtrc::space::query::k_nearest(space, std::string("metricks"), 2);
+    auto representatives = mtrc::modify::represent::represent(space, 2);
 
-    return neighbors.size() == 2 ? 0 : 1;
+    return profile.record_count == 4 && neighbors.size() == 2 && representatives.size() == 2 ? 0 : 1;
 }
 ```
+
+For practical applications the recommended C++ entry point is
+`<metric/workflow.hpp>`. It aggregates the stable Level-1 workflow surfaces:
+record import/validation, metric catalog/admission, space construction and
+pair-value access, read-only stats, and derived-space modify components. The
+underlying ownership stays explicit: `record` handles records, `metric` handles
+metrics, `space` handles finite spaces, `stats` investigates an existing space,
+and `modify` creates derived spaces.
 
 ## Build From Source
 

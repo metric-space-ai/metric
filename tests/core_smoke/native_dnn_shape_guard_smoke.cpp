@@ -1,4 +1,4 @@
-// Track C9 audit: shape guards on public paths, deterministic training fixtures,
+// Shape guards on public paths, deterministic training fixtures,
 // and artifact roundtrip robustness for the native DNN solver.
 //
 // - Layer::setParameters now reports shape mismatches with std::invalid_argument

@@ -1,4 +1,4 @@
-// Track C9 audit: finite-difference gradient checks, loss-normalization checks,
+// Finite-difference gradient checks, loss-normalization checks,
 // and autoencoder bottleneck/topology inference checks for the native DNN solver.
 //
 // These tests treat the DNN purely as a native solver component and validate the

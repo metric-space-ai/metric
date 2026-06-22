@@ -250,6 +250,35 @@ auto metric_walk(const Space &space, std::size_t count, metric_walk_options opti
 	return result;
 }
 
+// regular_sample selects `count` records at evenly spaced positions (the deterministic
+// schedule of regular_sample_positions) and returns the full sampling lineage -- selected
+// RecordIds, their positions, the coverage radius, and the average nearest-sample distance
+// -- so it carries the same result contract as farthest_first / metric_walk. It is a
+// selection over the existing space; it never builds a derived/resampled space (that is
+// mtrc::modify::resample). Invalid counts/offsets are rejected by regular_sample_positions.
+template <typename Provider, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
+auto regular_sample(const Provider &provider, std::size_t count, std::size_t offset = 0)
+	-> SampleResult<typename Provider::distance_type>
+{
+	const auto index_sample = regular_sample_positions(provider.record_count(), count, offset);
+	std::vector<RecordId> selected_ids;
+	selected_ids.reserve(index_sample.positions.size());
+	for (const auto position : index_sample.positions) {
+		selected_ids.push_back(provider.id(position));
+	}
+	return sample_detail::make_sample_result(provider, std::move(selected_ids), count, "regular_sample");
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto regular_sample(const Space &space, std::size_t count, std::size_t offset = 0)
+	-> SampleResult<typename Space::distance_type>
+{
+	space::storage::LiveDistances<Space> provider(space);
+	auto result = regular_sample(provider, count, offset);
+	result.representation = "metric_space";
+	return result;
+}
+
 } // namespace mtrc::stats::sample
 
 #endif

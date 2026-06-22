@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// Smoke coverage for Track C2: the strict EMD/Wasserstein metric split.
+// Smoke coverage for the strict EMD/Wasserstein metric split.
 //
 // `mtrc::Wasserstein<V>` is the admitted strict 1-Wasserstein true metric
 // (equal nonnegative mass over an admitted metric ground cost). `mtrc::EMD<V>`

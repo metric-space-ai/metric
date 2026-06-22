@@ -9,6 +9,7 @@
 #include "metric/metric/catalog/vector/Standards.hpp"
 #include "metric/modify/compose/pipeline.hpp"
 #include "metric/modify/dynamics/diffusion.hpp"
+#include "metric/modify/dynamics/finite_dynamics.hpp"
 #include "metric/modify/expand/generated.hpp"
 #include "metric/modify/map/map.hpp"
 #include "metric/modify/reduce/compress.hpp"
@@ -141,6 +142,31 @@ int main()
 	assert(plan.component_count() == 6);
 	assert(plan.has_component("dynamics", "diffusion_process"));
 	assert(plan.has_component("expand", "generated_records"));
+
+	// modify::dynamics finite_dynamics size guard: the explicit-transition
+	// overloads of metric_diffuse/metric_reconstruct evolve a node signal sized by
+	// the space but iterate transition.node_count. A transition built from a
+	// differently-sized space must be rejected, not read/written out of bounds.
+	{
+		const std::vector<std::vector<double>> big_records{{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}, {1.0, 1.0}};
+		const std::vector<std::vector<double>> small_records{{0.0, 0.0}, {2.0, 2.0}, {4.0, 0.0}};
+		auto big = mtrc::make_space(big_records, mtrc::Euclidean<double>{});
+		auto small = mtrc::make_space(small_records, mtrc::Euclidean<double>{});
+
+		mtrc::modify::dynamics::dynamics_schedule schedule;
+		schedule.neighbors = 2;
+		schedule.steps = 1;
+		const auto big_transition = mtrc::metric_transition(big, schedule); // node_count == 4
+		assert(big_transition.size() == big.size());
+
+		assert(rejects([&] { (void)mtrc::metric_diffuse(small, schedule, big_transition); }));
+		assert(rejects([&] { (void)mtrc::metric_reconstruct(small, schedule, big_transition); }));
+
+		// A matching-size transition still runs and produces steps + 1 frames.
+		const auto forward = mtrc::metric_diffuse(big, schedule, big_transition);
+		assert(forward.size() == big.size());
+		assert(forward.frames.size() == schedule.steps + 1);
+	}
 
 	return 0;
 }

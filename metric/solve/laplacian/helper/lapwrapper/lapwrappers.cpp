@@ -27,7 +27,7 @@ template <typename Tv>
 inline mtrc::numeric::DynamicVector<Tv> nullSolver(const mtrc::numeric::DynamicVector<Tv> &a,
 													 std::vector<size_t> &pcg)
 {
-	return mtrc::numeric::DynamicVector<Tv>(1, 0);
+	return mtrc::numeric::DynamicVector<Tv>(a.size(), Tv(0));
 }
 
 template <typename Tv>
@@ -117,6 +117,12 @@ SubSolver<Tv> lapWrapComponents(SolverA<Tv> solver,
 	// An order-0 graph has no components; max_element would dereference end(). There is nothing
 	// to solve, so hand back the identity (null) solver instead of reading past the empty range.
 	if (co.empty())
+		return SubSolver<Tv>(nullSolver<Tv>);
+
+	// A single isolated vertex has a zero Laplacian and only the constant nullspace. The canonical
+	// mean-zero solution is the zero vector; do not build ApproxCholPQ with degree 0, which would
+	// underflow its degree-minus-one bucket key.
+	if (a.rows() <= 1)
 		return SubSolver<Tv>(nullSolver<Tv>);
 
 	if (*max_element(co.begin(), co.end()) == 1) {

@@ -21,11 +21,7 @@ void assert_close(const char *label, double actual, double expected, double tole
 
 double expected_edit_entropy()
 {
-#if defined(__APPLE__)
-	return -9.2300109378544839;
-#else
-	return -9.3586207190266926;
-#endif
+	return -6.4090895367392831;
 }
 
 int main()
@@ -52,12 +48,15 @@ int main()
 	const mtrc::Entropy<void, Chebyshev> default_entropy;
 	assert_close("default vector entropy", default_entropy(vector_records), -5.3989104772539491);
 
-	const std::vector<std::string> strings = {
+	const std::vector<std::string> strings = {"AAA", "BBB", "ABA", "ABB", "BAA", "BAB"};
+
+	const mtrc::Entropy<void, mtrc::Edit<char>> edit_entropy(mtrc::Edit<char>(), 3, 2);
+	assert_close("edit entropy", edit_entropy(strings), expected_edit_entropy());
+
+	const std::vector<std::string> ragged_strings = {
 		"AAA", "HJGJHFG", "BBB", "AAAA", "long long long long long long string", "abcdefghjklmnopqrstuvwxyz",
 	};
-
-	const mtrc::Entropy<void, mtrc::Edit<int>> edit_entropy(mtrc::Edit<int>(), 3, 2);
-	assert_close("edit entropy", edit_entropy(strings), expected_edit_entropy());
+	assert(std::isnan(edit_entropy(ragged_strings)));
 
 	return 0;
 }

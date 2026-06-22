@@ -37,6 +37,21 @@ license_path = 'metric/numeric/LICENSE.BSD-3-Clause'
 # Provenance/documentation files that are intentionally not owned headers.
 provenance_files = [license_path, 'metric/numeric/README.md']
 
+# Curated METRIC-owned Level-2 facade headers. These deliberately use the .hpp
+# extension to distinguish the small promoted-contract entry points from the
+# inherited .h implementation headers. Any other non-.h file is still rejected.
+facade_files = %w[
+  metric/numeric/scalar.hpp
+  metric/numeric/vector.hpp
+  metric/numeric/matrix.hpp
+  metric/numeric/sparse.hpp
+  metric/numeric/linear_algebra.hpp
+  metric/numeric/graph.hpp
+  metric/numeric/random.hpp
+  metric/numeric/parallel.hpp
+  metric/numeric/io.hpp
+].freeze
+
 unless numeric_files.include?(license_path)
   failures << "#{license_path}: missing Metric numeric-core license/provenance file"
 end
@@ -44,7 +59,7 @@ end
 numeric_files.each do |path|
   next if provenance_files.include?(path)
 
-  unless File.extname(path) == '.h'
+  unless File.extname(path) == '.h' || facade_files.include?(path)
     failures << "#{path}: Metric numeric core should expose source as owned headers only"
   end
 

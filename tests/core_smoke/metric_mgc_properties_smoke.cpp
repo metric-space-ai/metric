@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
-// Statistic-policy and degenerate-case coverage for MGC (Track C4).
+// Statistic-policy and degenerate-case coverage for MGC.
 //
 // MGC is a DEPENDENCE statistic, not a metric: this test pins the documented
 // policy (sample statistic in [-1, 1], identity -> 1, constant space -> 0,

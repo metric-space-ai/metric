@@ -621,6 +621,24 @@ auto exercise_findmax_columnwise() -> void
 	assert_invalid_argument([&] { (void)mtrc::findmax(matrix, 3); });
 }
 
+// grid2 / sum fixture-builder contracts: the bad-argument branches must throw a
+// std::exception (they used to throw a bare const char*, escaping every standard
+// catch and reaching std::terminate), and grid2's anisotropy weight must actually
+// be applied (it used to be silently dropped by calling the 2-arg grid2_ijv).
+auto exercise_grid2_and_sum_contract() -> void
+{
+	// grid2(n < 2) and sum(A, bad-wise) throw std::invalid_argument.
+	assert_invalid_argument([&] { (void)mtrc::grid2<double>(1); });
+	assert_invalid_argument([&] { (void)mtrc::sum(make_spd_system(), 3); });
+
+	// The isotropy weight scales the n-axis path edges. Before the fix
+	// grid2(2, 2, 3.0) was byte-identical to grid2(2, 2, 1.0); the total edge
+	// weight must now be strictly larger when isotropy > 1.
+	const double total_iso1 = mtrc::numeric::sum(mtrc::sum(mtrc::grid2<double>(2, 2, 1.0), 2));
+	const double total_iso3 = mtrc::numeric::sum(mtrc::sum(mtrc::grid2<double>(2, 2, 3.0), 2));
+	assert(total_iso3 > total_iso1 + 1e-9);
+}
+
 } // namespace
 
 auto main() -> int
@@ -639,6 +657,7 @@ auto main() -> int
 	exercise_sddm_wrap_lap();
 	exercise_helper_degenerate_guards();
 	exercise_findmax_columnwise();
+	exercise_grid2_and_sum_contract();
 
 	return 0;
 }

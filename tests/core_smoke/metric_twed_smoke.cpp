@@ -1,4 +1,4 @@
-// TWED admission hardening smoke test (Track C1).
+// TWED admission hardening smoke test.
 //
 // Covers, for the dense (positionally indexed) sequence domain:
 //   * trait promotion to metric_law::metric / record_kind::sequence,

@@ -1,3 +1,15 @@
+# The hero examples double as reproducible evidence / regression checks via
+# assert(). Release defines NDEBUG, which would compile those asserts out and let
+# the binaries (and the published benchmark report generated from a Release build)
+# return 0 / emit green numbers even when an invariant is violated. Keep the
+# evidence checks live in every configuration. (-UNDEBUG is processed after the
+# config's -DNDEBUG, so it wins; in Debug it is a harmless no-op.)
+if (MSVC)
+    add_compile_options(/UNDEBUG)
+else ()
+    add_compile_options(-UNDEBUG)
+endif ()
+
 add_executable(engine_strings_edit_space strings_edit_space.cpp)
 target_link_libraries(engine_strings_edit_space PRIVATE ${METRIC_TARGET_NAME})
 

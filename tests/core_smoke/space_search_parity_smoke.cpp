@@ -109,6 +109,10 @@ static void tree_batch_insert_if_uses_nearest_neighbour()
 	const auto inserted_far = tree.insert_if(std::vector<int>{500}, 2);
 	assert(inserted_far == 1);
 	assert(tree.size() == 4);
+
+	// A zero-neighbour request is valid and returns no neighbours. It must not
+	// invoke UB: knn_ previously read nnList.back() on an empty nnList for k == 0.
+	assert(tree.knn(0, 0).empty());
 }
 
 static void matrix_edges()

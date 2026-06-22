@@ -193,6 +193,7 @@ template <typename Space> class DistanceTable {
 	auto is_stale() const -> bool { return space_->version() != version_; }
 	auto cached_distances() const -> std::size_t { return cached_count_; }
 	auto dense_distance_slots() const -> std::size_t { return dense_distance_slots_; }
+	auto mode() const -> distance_table_mode { return options_.mode; }
 	auto max_dense_records() const -> std::size_t { return options_.max_dense_records; }
 	auto metric_key() const -> const std::string & { return metric_key_; }
 	auto cache_key() const -> const std::string & { return cache_key_; }

@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// Smoke coverage for Track C8: distribution-family metric admission.
+// Smoke coverage for distribution-family metric admission.
 //
 // `mtrc::RandomEMD<Sample,D>`, `mtrc::CramervonMises<Sample,D>` and
 // `mtrc::KolmogorovSmirnov<Sample,D>` are CDF-distance candidates built on the

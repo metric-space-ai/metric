@@ -1,5 +1,7 @@
 
 // #include "metric/metric/catalog/vector/Standards.hpp"
+#include <stdexcept>
+
 #include <metric/utils/wrappers/lapack.hpp>
 #include "metric/utils/type_traits.hpp"
 
@@ -412,30 +414,57 @@ double RiemannianDistance<RecType, Metric>::operator()(const C &Xc, const C &Yc)
 {
 	using V = mtrc::type_traits::underlying_type_t<C>;
 
-	mtrc::numeric::DynamicMatrix<V> distancesX(Xc.size(), Xc.size(), 0);
-	mtrc::numeric::DynamicMatrix<V> distancesY(Yc.size(), Yc.size(), 0);
+	const size_t n = Xc.size();
+	if (n == 0 || Yc.size() != n) {
+		throw std::invalid_argument("RiemannianDistance requires two non-empty finite spaces of equal size");
+	}
 
-	for (size_t i = 0; i < Xc.size(); ++i) {
-		for (size_t j = 0; j < Xc.size(); ++j) {
-			auto d = metric(Xc[i], Xc[j]);
-			if (i < j) {			   // upper triangular area only
-				distancesX(i, j) = -d; // Laplacian matrix
-				distancesX(i, i) += d;
-				distancesX(j, j) += d;
-			}
+	// Build the graph Laplacian of each finite space (upper triangle + diagonal;
+	// LAPACK dsygv reads the upper triangle with uplo='U'). Both operands MUST use
+	// the SAME functional form for the affine-invariant Riemannian distance to be a
+	// metric: a previous version encoded one operand as the Laplacian
+	// (off-diagonal -d) and the other as diag(degree)+adjacency (off-diagonal +d),
+	// which made the generalized eigenproblem asymmetric and broke both symmetry
+	// (d(X,Y) != d(Y,X)) and identity of indiscernibles (d(X,X) != 0).
+	mtrc::numeric::DynamicMatrix<V> spdX(n, n, 0);
+	mtrc::numeric::DynamicMatrix<V> spdY(n, n, 0);
+
+	for (size_t i = 0; i < n; ++i) {
+		for (size_t j = i + 1; j < n; ++j) {
+			const auto dx = metric(Xc[i], Xc[j]);
+			spdX(i, j) = -dx; // Laplacian off-diagonal
+			spdX(i, i) += dx; // accumulate the degree on the diagonal
+			spdX(j, j) += dx;
+
+			const auto dy = metric(Yc[i], Yc[j]);
+			spdY(i, j) = -dy;
+			spdY(i, i) += dy;
+			spdY(j, j) += dy;
 		}
 	}
-	for (size_t i = 0; i < Yc.size(); ++i) {
-		for (size_t j = 0; j < Yc.size(); ++j) {
-			auto d = metric(Yc[i], Yc[j]);
-			if (i < j) { // upper triangular area only
-				distancesY(i, j) = d;
-				distancesY(i, i) += d;
-				distancesY(j, j) += d;
+
+	// Turn each Laplacian into a symmetric positive-definite (SPD) matrix: scale
+	// normalize by the mean degree (so the distance is invariant to the global
+	// metric scale and each operand depends only on its own space) and add the
+	// identity. A bare Laplacian is only positive *semi*-definite -- the constant
+	// vector is a zero eigenvector -- which dsygv's Cholesky of the second operand
+	// cannot accept. Adding the identity keeps the constant mode at a generalized
+	// eigenvalue of 1 (log 1 = 0), so it contributes nothing to the distance.
+	for (auto *spd : {&spdX, &spdY}) {
+		V trace = 0;
+		for (size_t i = 0; i < n; ++i) {
+			trace += (*spd)(i, i);
+		}
+		const V scale = trace > V(0) ? trace / V(n) : V(1);
+		for (size_t i = 0; i < n; ++i) {
+			for (size_t j = i; j < n; ++j) {
+				(*spd)(i, j) /= scale;
 			}
+			(*spd)(i, i) += V(1);
 		}
 	}
-	return matDistance(distancesX, distancesY); // applying Riemannian to these distance matrices
+
+	return matDistance(spdX, spdY); // affine-invariant Riemannian (AIRM) distance on the SPD images
 }
 
 template <typename RecType, typename Metric>
@@ -446,6 +475,12 @@ T RiemannianDistance<RecType, Metric>::matDistance(mtrc::numeric::DynamicMatrix<
 	mtrc::numeric::DynamicVector<T> eigenValues;
 	sygv(A, B, eigenValues);
 
+	// Defensive only: operator() hands matDistance two SPD matrices (regularized
+	// Laplacian scaled + identity), so the generalized eigenvalues of (A, B) are
+	// strictly positive and this branch does not fire for the catalog's own use.
+	// It must stay log-neutral (e = 1 => log = 0) rather than clamp to a small
+	// positive value, because a non-trivial clamp would NOT be invariant under the
+	// eigenvalue inversion that relates d(A,B) and d(B,A) and would break symmetry.
 	for (T &e : eigenValues) {
 		if (e <= std::numeric_limits<T>::epsilon()) {
 			e = 1;

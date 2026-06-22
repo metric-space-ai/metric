@@ -23,6 +23,19 @@ Optional backend boundaries:
   Header inclusion does not make LAPACK a mandatory dependency, but calling
   those routines requires linking an appropriate LAPACK implementation.
 
+Curated facade headers:
+
+Each Level-2 numeric area exposes a small facade header that re-exports the
+promoted contracts for that area, so callers can include exactly the surface they
+need instead of the full umbrella:
+
+- `scalar.hpp`, `vector.hpp`, `matrix.hpp`, `sparse.hpp`, `linear_algebra.hpp`,
+  `graph.hpp`, `random.hpp`, `parallel.hpp`, `io.hpp`
+
+Each facade compiles standalone and declares no symbols of its own. The full
+umbrella remains `<metric/numeric.hpp>`. The promoted-contract map and stability
+classification live in `docs/api/numeric-contracts.md`.
+
 Rules for work in this tree:
 
 - keep public docs and comments centered on METRIC-owned numeric contracts

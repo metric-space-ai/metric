@@ -616,6 +616,11 @@ Tree<RecType, Metric>::knn(const RecType &queryPt, unsigned numNbrs) const
 	if (root == nullptr) {
 		return {};
 	}
+	// A zero-neighbor request has an empty result. Returning early also avoids the
+	// undefined behavior of knn_ reading nnList.back() on an empty nnList below.
+	if (numNbrs == 0) {
+		return {};
+	}
 	// Do the worst initialization
 	std::pair<NodePtr, Distance> dummy(nullptr, std::numeric_limits<Distance>::max());
 	// List of k-nearest points till now

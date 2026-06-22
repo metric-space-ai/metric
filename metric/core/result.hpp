@@ -394,6 +394,14 @@ auto scored_outliers(const std::vector<RecordId> &ids, ScoreFor score_for) -> st
 	return outliers;
 }
 
+// Explicit outcome of a differential-entropy estimate over a finite metric space. A
+// negative differential entropy is a VALID result (estimator_status::valid), never a
+// failure. Failures are distinguished so a caller can react: too_few_records (n < 4,
+// below the estimator's minimum), degenerate (a valid-sized but information-free space,
+// e.g. all-identical / zero-diameter records, where no local Gaussian could be fit), and
+// estimator_failure (a non-finite estimate that is neither of the above).
+enum class entropy_status { valid, too_few_records, degenerate, estimator_failure };
+
 template <typename Value = double> struct EntropyResult {
 	using value_type = Value;
 
@@ -401,10 +409,20 @@ template <typename Value = double> struct EntropyResult {
 	std::size_t record_count{};
 	std::size_t neighbor_count{};
 	std::size_t approximation_order{};
+	// Effective neighbor count (k) and local approximation order (p) actually used by the
+	// estimator after it clamps the requested values for small finite spaces. These can be
+	// smaller than neighbor_count / approximation_order; they are 0 when no estimation was
+	// attempted (too_few_records).
+	std::size_t effective_neighbor_count{};
+	std::size_t effective_approximation_order{};
 	bool exponentiated{false};
 	bool exact{true};
+	entropy_status status{entropy_status::valid};
 	std::string algorithm;
 	std::string representation;
+
+	auto succeeded() const -> bool { return status == entropy_status::valid; }
+	auto failed() const -> bool { return status != entropy_status::valid; }
 };
 
 template <typename Value = double>
@@ -412,14 +430,19 @@ auto make_entropy_result(Value value, std::size_t record_count, std::size_t neig
 						 std::size_t approximation_order, bool exponentiated, std::string representation,
 						 bool exact = true) -> EntropyResult<Value>
 {
-	return EntropyResult<Value>{value,
-								record_count,
-								neighbor_count,
-								approximation_order,
-								exponentiated,
-								exact,
-								"entropy",
-								std::move(representation)};
+	EntropyResult<Value> result;
+	result.value = value;
+	result.record_count = record_count;
+	result.neighbor_count = neighbor_count;
+	result.approximation_order = approximation_order;
+	result.effective_neighbor_count = neighbor_count;
+	result.effective_approximation_order = approximation_order;
+	result.exponentiated = exponentiated;
+	result.exact = exact;
+	result.status = entropy_status::valid;
+	result.algorithm = "entropy";
+	result.representation = std::move(representation);
+	return result;
 }
 
 template <typename Value = double> struct CorrelationResult {
@@ -562,6 +585,7 @@ template <typename Score> using OutlierResult = core::OutlierResult<Score>;
 using core::make_outlier_result;
 using core::scored_outliers;
 using core::sort_outliers;
+using core::entropy_status;
 template <typename Value = double> using EntropyResult = core::EntropyResult<Value>;
 using core::make_entropy_result;
 template <typename Value = double> using CorrelationResult = core::CorrelationResult<Value>;

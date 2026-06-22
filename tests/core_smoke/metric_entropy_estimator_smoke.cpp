@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
-// Estimator-contract coverage for finite-metric-space entropy and VMixing (Track C11).
+// Estimator-contract coverage for finite-metric-space entropy and VMixing.
 //
 // Entropy is a PROPERTY of a finite metric space (a kpN local-Gaussian, Kozachenko-
 // Leonenko-style differential-entropy estimator); VMixing is a correlation/dependence
@@ -15,8 +15,10 @@
 // metric_entropy_properties_smoke instead. Determinism is checked with a NaN-aware
 // equality so a deterministic NaN result never looks like nondeterminism (NaN != NaN).
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <cstddef>
 #include <deque>
 #include <iostream>
 #include <stdexcept>
@@ -31,6 +33,23 @@ using Rec = std::vector<double>;
 using Cheb = mtrc::Chebyshev<double>;
 using Eucl = mtrc::Euclidean<double>;
 
+// Length-tolerant L2 over the common prefix: unlike the catalog metrics it does
+// NOT throw on unequal-length records, so it lets ragged input reach the kpN
+// estimator body. Metric is a free template argument of mtrc::Entropy, so this is
+// a legitimate instantiation -- the equal-length guard must live in the estimator.
+struct LenientL2 {
+	template <typename A, typename B> double operator()(const A &a, const B &b) const
+	{
+		const std::size_t n = std::min(a.size(), b.size());
+		double s = 0.0;
+		for (std::size_t i = 0; i < n; ++i) {
+			const double d = static_cast<double>(a[i]) - static_cast<double>(b[i]);
+			s += d * d;
+		}
+		return std::sqrt(s);
+	}
+};
+
 // Deterministic equality that also treats two NaNs as equal.
 bool same(double a, double b) { return (a == b) || (std::isnan(a) && std::isnan(b)); }
 
@@ -40,7 +59,7 @@ int main()
 {
 	// ---- kpN Entropy, zero-diameter space -> NaN "estimation failed".
 	// All records identical: every eps-box collapses, no point yields a valid local
-	// Gaussian (got_results == 0). The C11 fix returns the NaN sentinel here instead of a
+	// Gaussian (got_results == 0). The estimator returns the NaN sentinel here instead of a
 	// meaningless finite digamma-only value. Deterministic and platform-independent.
 	{
 		const std::vector<Rec> duplicates(6, Rec{4.0, 4.0});
@@ -109,6 +128,24 @@ int main()
 			threw = true;
 		}
 		assert(threw);
+	}
+
+	// ---- kpN Entropy, ragged records: the estimator reads each record to
+	// depth d = data[0].size(). With a length-tolerant metric (so tree.knn does not
+	// throw first) unequal-length records would index past a short record's buffer
+	// (heap-buffer-overflow) or silently truncate a longer one. The equal-length
+	// guard must instead return the documented NaN "estimation failed" sentinel --
+	// for BOTH a longer-than-rest record 0 and a shorter-than-rest record 0.
+	{
+		const mtrc::Entropy<void, LenientL2> e(LenientL2(), 3, 5);
+
+		std::vector<Rec> longer_first = {{1.0, 2.0, 3.0, 4.0, 5.0}, {0.0, 0.0}, {1.0, 1.0}, {2.0, 0.0}, {0.0, 2.0}};
+		const double h_long = e(longer_first);
+		assert(std::isnan(h_long)); // no OOB read; documented failure sentinel
+
+		std::vector<Rec> shorter_first = {{0.0, 0.0}, {1.0, 2.0, 3.0, 4.0, 5.0}, {1.0, 1.0}, {2.0, 0.0}, {0.0, 2.0}};
+		const double h_short = e(shorter_first);
+		assert(std::isnan(h_short)); // no silent truncation; documented failure sentinel
 	}
 
 	// ---- Monte-Carlo averaging estimate(): the default-seeded engine makes a single

@@ -566,6 +566,15 @@ double EntropySimple<RecType, Metric>::operator()( // non-kpN version, DEPRECATE
 	if (data.size() < k + 1)
 		throw std::invalid_argument("number of points in dataset must be larger than k");
 
+	// Equal-length precondition: d = data[0].size() defines the per-record depth
+	// used by the d-dependent volume/digamma terms below; ragged records would
+	// silently change the estimate by truncation. Reject up front, consistent
+	// with the k-precondition throw above.
+	for (std::size_t i = 1; i < data.size(); ++i) {
+		if (data[i].size() != data[0].size())
+			throw std::invalid_argument("entropy estimator requires equal-length records");
+	}
+
 	double d = data[0].size();
 
 	// add_noise(data);
@@ -631,6 +640,19 @@ double Entropy<RecType, Metric>::operator()(const Container &data) const
 
 	size_t d = data[0].size();
 
+	// Equal-length precondition: the kpN estimator reads every record to depth
+	// d = data[0].size() (Nodes / mu / lb / ub / x_vector below). Ragged records
+	// would index past a short record's buffer (heap-buffer-overflow) or silently
+	// truncate a longer one. The default catalog metrics reject unequal lengths
+	// inside tree.knn, but a custom length-tolerant Metric is a legitimate
+	// template argument, so the guard must live here. Return the documented
+	// "estimation failed" NaN sentinel (consistent with the n < 4 and
+	// got_results == 0 paths) rather than reading out of bounds.
+	for (size_t i = 1; i < n; ++i) {
+		if (data[i].size() != d)
+			return std::nan("estimation failed");
+	}
+
 	// NOTE: the requested (k, p) are clamped here for small finite spaces. The
 	// EntropyResult still reports the *requested* k/p, so the effective neighborhood
 	// size can differ from the reported one when n is small (see audit risks).
@@ -693,27 +715,27 @@ double Entropy<RecType, Metric>::operator()(const Container &data) const
 		}
 	}
 
-	// Failure sentinel (C11): if NOT A SINGLE point produced a valid local Gaussian
+	// Failure sentinel: if NOT A SINGLE point produced a valid local Gaussian
 	// (got_results == 0) there is no information to estimate from -- every eps-box was
 	// degenerate (e.g. a zero-diameter space of identical records, where each truncated
 	// normal collapses to logG = -inf and is rejected). h is then 0 and
 	// digamma(n) - digamma(k) alone is a meaningless finite value, so return the
 	// documented NaN "estimation failed" sentinel, consistent with the n < 4 contract.
 	//
-	// History: the original Matlab code had no such guard. The C4 audit added a
-	// `got_results <= 20` guard but left it INERT (no braces, immediately overwritten by
+	// History: the original Matlab code had no such guard. An earlier audit added a
+	// `got_results <= 20` guard but left it inert (no braces, immediately overwritten by
 	// the unconditional assignment below). A nonzero threshold like 20 would NaN the
 	// promoted n == 4 fixtures (got_results == 4), so the now-live guard is the minimal,
-	// fixture-preserving `== 0` test. See .codex/claude-reports/C11.md.
+	// fixture-preserving `== 0` test.
 	if (got_results == 0)
 		return std::nan("estimation failed");
 
-	// REFERENCE DECISION (C11): the only behavior C11 changes here is the total-failure
-	// sentinel above (got_results == 0 -> NaN). Every NORMALIZATION question is left PINNED
+	// Reference decision: the behavior change here is the total-failure sentinel above
+	// (got_results == 0 -> NaN). Every normalization question is left pinned
 	// to the promoted regression values, under a single consistent standard: do not alter
 	// valid-input fixtures without sign-off + regeneration against the hal-01272527
 	// reference (no in-repo oracle exists). Three coupled normalization choices are known
-	// to be debatable but are deliberately NOT touched:
+	// to be debatable but are deliberately not touched:
 	//   1. The mean uses h / n. h is summed only over the got_results points with a valid
 	//      local Gaussian, so h / n implicitly assigns 0 to rejected points (whose true
 	//      contribution diverges). h / got_results is an equally ad-hoc alternative -- and
@@ -725,7 +747,7 @@ double Entropy<RecType, Metric>::operator()(const Container &data) const
 	//      estimate by digamma(k) - digamma(k_): empirically the tuned (k=3) and default
 	//      (k=7) n == 4 fixtures run IDENTICAL geometry (k_ == 2, p_ == 3, got_results == 4)
 	//      and differ ONLY by digamma(k); correcting to digamma(k_) collapses them.
-	// All three are deferred together. See .codex/claude-reports/C11.md and the docs.
+	// All three are deferred together; see the entropy diagnostics documentation.
 		double result = entropy_details::digamma(n) - entropy_details::digamma(k) + h / n;
 	if (exp)
 		return entropy_details::conv_diff_entropy(result); // conversion of values below 1 to exp scale

@@ -6,17 +6,29 @@ is organized by what happens to the finite metric space.
 ## Stats
 
 `mtrc::stats` investigates an existing space without changing its source
-records or metric.
+records or metric. Search, sample, properties, correlate, and structural
+analysis are Level-2 user workflows over one (or two paired) finite metric
+spaces. Vector records are one special case; every workflow is computed from
+metric values, not coordinates.
 
-- `mtrc::stats::search`: neighbor and range queries
-- `mtrc::stats::sample`: sampling and metric-space walks
-- `mtrc::stats::properties`: entropy, density, intrinsic dimension, summaries
-- `mtrc::stats::correlate`: dependence or correlation between paired spaces
-- `mtrc::stats::structural_analysis`: groups, outliers, representatives
+- `mtrc::stats::search`: neighbor, range, and batch queries
+- `mtrc::stats::sample`: deterministic sampling and metric-space walks
+- `mtrc::stats::properties`: `profile`, distance distribution, entropy, density,
+  intrinsic dimension, local volume, summaries
+- `mtrc::stats::correlate`: dependence/correlation between paired spaces and its
+  permutation significance
+- `mtrc::stats::structural_analysis`: groups, outliers, representatives, and
+  cluster validity diagnostics
 
-Entropy is a `stats::properties` computation over one finite metric space. MGC
-is a `stats::correlate` implementation for dependence between two aligned
-finite metric spaces. Neither is a record metric.
+`stats::properties::profile` is a cohesive diagnostic summary of one space, with
+optional distance-distribution and local-volume sections computed only on
+request. Entropy is a `stats::properties` computation over one finite metric
+space; its result reports an explicit success/failure status and a valid
+negative differential entropy is not a failure. Intrinsic dimension is a
+finite-space growth diagnostic, not a manifold-dimension guarantee. MGC is a
+`stats::correlate` implementation for dependence between two aligned finite
+metric spaces -- a statistic in `[-1, 1]`, never a record metric -- and
+`mgc_significance` is its seeded permutation test.
 
 ## Modify
 

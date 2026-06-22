@@ -183,12 +183,6 @@ template <typename Sample, typename D> struct metric_admission<::mtrc::Kolmogoro
 	static constexpr admission_status status = admission_status::quarantine; // sup-CDF metric, Akima grid not
 };
 
-// AIRM on the SPD cone is a metric, but the shipped record model and guards are
-// unproven (possible sign asymmetry in the Laplacian construction).
-template <typename RecType, typename Metric> struct metric_admission<::mtrc::RiemannianDistance<RecType, Metric>> {
-	static constexpr admission_status status = admission_status::quarantine;
-};
-
 // ---------------------------------------------------------------------------
 // rejected: not a metric, and the family's metric variant is a separate,
 // already-present class, so this specific computation is scheduled for removal.
@@ -204,11 +198,28 @@ template <typename V> struct metric_admission<::mtrc::Sorensen<V>> {
 };
 
 // ---------------------------------------------------------------------------
-// Optional registration of the physically-quarantined heavy classes. These are
-// only declared when their headers have already been included by the
-// translation unit, so this registry header stays free of the mapping/SOM/
-// solver dependencies those classes pull in.
+// Optional registration of heavy / external-backend classes. These are only
+// declared when their headers have already been included by the translation
+// unit, so this registry header (and the public catalog.hpp umbrella) stays
+// free of the mapping/SOM/solver/LAPACK dependencies those classes pull in.
 // ---------------------------------------------------------------------------
+
+// conditionally restricted (law inherited from the base metric):
+// Affine-invariant Riemannian metric (AIRM) on the SPD images of two equal-size
+// finite metric spaces. The operand-encoding defect that broke symmetry and
+// identity of indiscernibles is fixed in Riemannian.cpp; it is a restricted
+// metric whenever the base Metric is itself a true metric (the law is inherited,
+// as for Hausdorff). Registered only when Riemannian.hpp is included, because it
+// requires a LAPACK generalized eigensolver and is therefore not part of the
+// header-only public catalog by default (see catalog.hpp).
+#if defined(METRIC_METRIC_CATALOG_SPACE_RIEMANNIAN_HPP)
+template <typename RecType, typename Metric> struct metric_admission<::mtrc::RiemannianDistance<RecType, Metric>> {
+	static constexpr admission_status status =
+		core::metric_traits<::mtrc::RiemannianDistance<RecType, Metric>>::law == core::metric_law::metric
+			? admission_status::restricted_metric
+			: admission_status::quarantine;
+};
+#endif
 
 #if defined(_METRIC_DISTANCE_K_STRUCTURED_SSIM_HPP)
 // Raw SSIM / 1-SSIM are not metrics; SSIM-derived metric variants exist in the

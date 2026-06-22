@@ -170,6 +170,88 @@ auto density(const Space &space, Radius radius) -> LocalVolumeResult<typename Sp
 	return result;
 }
 
+// A multi-radius local-volume profile summarizes how local ball occupancy grows with
+// radius across a finite metric space. Each entry is the per-record-count summary of
+// local_volume at one radius; together they trace the local growth of the space without
+// the manifold-dimension assumptions of intrinsic_dimension. This is a read-only
+// diagnostic: it never builds a metric or a derived space.
+template <typename Distance> struct LocalVolumeProfileEntry {
+	using distance_type = Distance;
+
+	Distance radius{};
+	std::size_t minimum_count{};
+	std::size_t maximum_count{};
+	double average_count{};
+	double minimum_density{};
+	double maximum_density{};
+	double average_density{};
+};
+
+template <typename Distance> struct LocalVolumeProfile {
+	using distance_type = Distance;
+
+	std::vector<LocalVolumeProfileEntry<Distance>> entries;
+	std::size_t record_count{};
+	bool exact{true};
+	std::string algorithm{"local_volume_profile"};
+	std::string representation;
+
+	auto empty() const -> bool { return entries.empty(); }
+	auto size() const -> std::size_t { return entries.size(); }
+};
+
+template <typename Provider, typename Radius, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
+auto local_volume_profile(const Provider &provider, const std::vector<Radius> &radii)
+	-> LocalVolumeProfile<typename Provider::distance_type>
+{
+	using distance_type = typename Provider::distance_type;
+
+	LocalVolumeProfile<distance_type> profile;
+	profile.record_count = provider.record_count();
+	profile.representation = "pairwise_distances";
+	profile.entries.reserve(radii.size());
+
+	for (const auto radius : radii) {
+		const auto volume = local_volume(provider, radius);
+		LocalVolumeProfileEntry<distance_type> entry;
+		entry.radius = static_cast<distance_type>(radius);
+		entry.minimum_count = volume.minimum_count;
+		entry.maximum_count = volume.maximum_count;
+		entry.average_count = volume.average_count;
+		entry.minimum_density = volume.minimum_density;
+		entry.maximum_density = volume.maximum_density;
+		entry.average_density = volume.average_density;
+		profile.entries.push_back(entry);
+	}
+
+	return profile;
+}
+
+template <typename Space, typename Radius, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto local_volume_profile(const Space &space, const std::vector<Radius> &radii)
+	-> LocalVolumeProfile<typename Space::distance_type>
+{
+	space::storage::LiveDistances<Space> provider(space);
+	auto profile = local_volume_profile(provider, radii);
+	profile.representation = "metric_space";
+	return profile;
+}
+
 } // namespace mtrc::stats::properties
+
+namespace mtrc::stats {
+using properties::density;
+using properties::local_volume;
+using properties::local_volume_profile;
+template <typename Distance> using LocalVolumeResult = properties::LocalVolumeResult<Distance>;
+template <typename Distance> using LocalVolumeProfile = properties::LocalVolumeProfile<Distance>;
+template <typename Distance> using LocalVolumeProfileEntry = properties::LocalVolumeProfileEntry<Distance>;
+} // namespace mtrc::stats
+
+namespace mtrc {
+using stats::properties::density;
+using stats::properties::local_volume;
+using stats::properties::local_volume_profile;
+} // namespace mtrc
 
 #endif

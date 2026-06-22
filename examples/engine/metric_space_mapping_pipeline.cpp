@@ -24,9 +24,14 @@
 // As a control we recode the *same metric values* with classical
 // multidimensional scaling (a non-parametric linear distance embedding) and
 // compare neighbor preservation against the PHATE-AE map on identical lineage.
-// The contrast is the point: a linear distance embedding folds a curved
-// manifold, whereas the diffusion target unrolls it -- and only the parametric
-// map offers out-of-sample transform and an inverse.
+// The contrast is the point: classical MDS preserves the raw (ambient) metric
+// values, while the target here is built from the diffusion potential
+// -log(diffused) of the metric space -- it reweights record relations by
+// multi-scale connectivity (anchor-record potential coordinates) rather than raw
+// distance. It is not itself a diffusion-map/MDS embedding of the potential, and
+// only the parametric autoencoder map offers an out-of-sample transform and an
+// inverse. The asserted advantage below is that structural (invertible,
+// out-of-sample) capability, not a claim that PHATE beats MDS on neighbor recall.
 
 #include <cassert>
 #include <cmath>

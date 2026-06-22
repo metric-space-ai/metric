@@ -1,8 +1,7 @@
 // Metric Discovery law verification on small finite domains.
 //
-// This smoke test is the executable backbone of docs/metrics/discovery-table.md
-// and .codex/claude-reports/METRIC_DISCOVERY_PRODUCTION.md. It checks three
-// things that production Metric Discovery depends on:
+// This smoke test is the executable backbone of docs/metrics/discovery-table.md.
+// It checks three things that production Metric Discovery depends on:
 //
 //   1. The in-code admission registry (metric/metric/discovery.hpp) assigns the
 //      expected four-status admission to every catalog class, and the status is
@@ -26,6 +25,12 @@
 #include <cmath>
 #include <cstddef>
 #include <vector>
+
+// RiemannianDistance is no longer part of the header-only public catalog.hpp
+// umbrella (it needs a LAPACK eigensolver). Include it BEFORE discovery.hpp so
+// the macro-guarded admission registration is active in this translation unit
+// (the same include-before-registry pattern as the quarantined SSIM/Kohonen).
+#include <metric/metric/catalog/space/Riemannian.hpp>
 
 #include <metric/metric/discovery.hpp>
 
@@ -201,7 +206,12 @@ static_assert(is_quarantined_status_v<mtrc::EMD<double>>);
 static_assert(is_quarantined_status_v<mtrc::RandomEMD<std::vector<double>, double>>);
 static_assert(is_quarantined_status_v<mtrc::CramervonMises<std::vector<double>, double>>);
 static_assert(is_quarantined_status_v<mtrc::KolmogorovSmirnov<std::vector<double>, double>>);
-static_assert(is_quarantined_status_v<mtrc::RiemannianDistance<std::vector<double>>>);
+
+// RiemannianDistance (AIRM) was promoted from quarantine to a restricted metric
+// after the operand-encoding defect was fixed (symmetry + identity now hold);
+// see tests/core_smoke/metric_riemannian_law_smoke.cpp for the runtime
+// metric-law coverage in the active gate.
+static_assert(is_restricted_metric_v<mtrc::RiemannianDistance<std::vector<double>>>);
 
 // rejected: non-metric, metric variant is a separate already-present class.
 static_assert(is_rejected_v<mtrc::CosineInverted<double>>);

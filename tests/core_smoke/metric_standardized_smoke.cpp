@@ -1,4 +1,4 @@
-// Standardized vector metric admission smoke test (Track C7).
+// Standardized vector metric admission smoke test.
 //
 // Covers, for the aligned finite-real-vector domain:
 //   * trait promotion to metric_law::metric / record_kind::aligned_vector for

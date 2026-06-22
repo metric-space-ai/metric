@@ -1,3 +1,14 @@
+# The smoke gate proves its invariants with assert(). Release defines NDEBUG,
+# which would compile every assert out and let the whole gate pass vacuously.
+# Keep assertions live in every configuration so the gate is protective under the
+# `release` preset and Release CI legs too. (-UNDEBUG is processed after the
+# config's -DNDEBUG, so it wins; in Debug it is a harmless no-op.)
+if (MSVC)
+    add_compile_options(/UNDEBUG)
+else ()
+    add_compile_options(-UNDEBUG)
+endif ()
+
 add_executable(record_layer_smoke record_layer_smoke.cpp)
 target_link_libraries(record_layer_smoke PRIVATE ${METRIC_TARGET_NAME})
 
@@ -254,6 +265,9 @@ target_link_libraries(metric_numeric_sparse_mutation_smoke PRIVATE ${METRIC_TARG
 add_executable(metric_numeric_special_containers_smoke metric_numeric_special_containers_smoke.cpp)
 target_link_libraries(metric_numeric_special_containers_smoke PRIVATE ${METRIC_TARGET_NAME})
 
+add_executable(metric_numeric_facades_smoke metric_numeric_facades_smoke.cpp)
+target_link_libraries(metric_numeric_facades_smoke PRIVATE ${METRIC_TARGET_NAME})
+
 add_executable(pipeline_plan_smoke pipeline_plan_smoke.cpp)
 target_link_libraries(pipeline_plan_smoke PRIVATE ${METRIC_TARGET_NAME})
 
@@ -418,6 +432,16 @@ add_test(NAME metric_numeric_static_hybrid_matrix_smoke COMMAND metric_numeric_s
 add_test(NAME metric_numeric_selection_views_smoke COMMAND metric_numeric_selection_views_smoke)
 add_test(NAME metric_numeric_sparse_mutation_smoke COMMAND metric_numeric_sparse_mutation_smoke)
 add_test(NAME metric_numeric_special_containers_smoke COMMAND metric_numeric_special_containers_smoke)
+add_test(NAME metric_numeric_facades_smoke COMMAND metric_numeric_facades_smoke)
+add_test(
+    NAME metric_numeric_facades_standalone_compile_smoke
+    COMMAND ${CMAKE_COMMAND}
+        -DMETRIC_CXX=${CMAKE_CXX_COMPILER}
+        -DMETRIC_CXX17_FLAG=${CMAKE_CXX17_STANDARD_COMPILE_OPTION}
+        -DMETRIC_SOURCE_DIR=${CMAKE_SOURCE_DIR}
+        -DMETRIC_WORK_DIR=${CMAKE_CURRENT_BINARY_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/numeric_facade_standalone_compile.cmake
+)
 set_tests_properties(
     metric_numeric_custom_matrix_smoke
     metric_numeric_diagonal_identity_smoke
@@ -454,6 +478,8 @@ set_tests_properties(
     metric_numeric_selection_views_smoke
     metric_numeric_sparse_mutation_smoke
     metric_numeric_special_containers_smoke
+    metric_numeric_facades_smoke
+    metric_numeric_facades_standalone_compile_smoke
     PROPERTIES LABELS metric_numeric_core
 )
 add_test(NAME pipeline_plan_smoke COMMAND pipeline_plan_smoke)
@@ -552,12 +578,81 @@ target_link_libraries(space_partition_lineage_smoke PRIVATE ${METRIC_TARGET_NAME
 add_executable(space_search_parity_smoke space_search_parity_smoke.cpp)
 target_link_libraries(space_search_parity_smoke PRIVATE ${METRIC_TARGET_NAME})
 
+add_executable(user_workflow_api_smoke user_workflow_api_smoke.cpp)
+target_link_libraries(user_workflow_api_smoke PRIVATE ${METRIC_TARGET_NAME})
+
+# User-facing mtrc::space API: builder/records/distances/query, stale cache recovery, lineage workflow.
+add_executable(space_user_api_smoke space_user_api_smoke.cpp)
+target_link_libraries(space_user_api_smoke PRIVATE ${METRIC_TARGET_NAME})
+
+add_executable(space_cache_recovery_smoke space_cache_recovery_smoke.cpp)
+target_link_libraries(space_cache_recovery_smoke PRIVATE ${METRIC_TARGET_NAME})
+
+add_executable(space_lineage_workflow_smoke space_lineage_workflow_smoke.cpp)
+target_link_libraries(space_lineage_workflow_smoke PRIVATE ${METRIC_TARGET_NAME})
+
 if (LAPACK_FOUND)
     target_link_libraries(space_legacy_reps_smoke PRIVATE ${LAPACK_LIBRARIES})
     target_link_libraries(space_partition_lineage_smoke PRIVATE ${LAPACK_LIBRARIES})
     target_link_libraries(space_search_parity_smoke PRIVATE ${LAPACK_LIBRARIES})
+    target_link_libraries(user_workflow_api_smoke PRIVATE ${LAPACK_LIBRARIES})
+    target_link_libraries(space_user_api_smoke PRIVATE ${LAPACK_LIBRARIES})
+    target_link_libraries(space_cache_recovery_smoke PRIVATE ${LAPACK_LIBRARIES})
+    target_link_libraries(space_lineage_workflow_smoke PRIVATE ${LAPACK_LIBRARIES})
 endif ()
 
 add_test(NAME space_legacy_reps_smoke COMMAND space_legacy_reps_smoke)
 add_test(NAME space_partition_lineage_smoke COMMAND space_partition_lineage_smoke)
 add_test(NAME space_search_parity_smoke COMMAND space_search_parity_smoke)
+add_test(NAME user_workflow_api_smoke COMMAND user_workflow_api_smoke)
+add_test(NAME space_user_api_smoke COMMAND space_user_api_smoke)
+add_test(NAME space_cache_recovery_smoke COMMAND space_cache_recovery_smoke)
+add_test(NAME space_lineage_workflow_smoke COMMAND space_lineage_workflow_smoke)
+
+# Runtime metric-law coverage for the AIRM Riemannian distance. It instantiates
+# RiemannianDistance::operator(), which calls the LAPACK generalized symmetric
+# eigensolver (sygv), so the target is only built when LAPACK is available.
+# metric_discovery_smoke covers the declared law via static_assert regardless.
+if (LAPACK_FOUND)
+    add_executable(metric_riemannian_law_smoke metric_riemannian_law_smoke.cpp)
+    target_link_libraries(metric_riemannian_law_smoke PRIVATE ${METRIC_TARGET_NAME} ${LAPACK_LIBRARIES})
+    add_test(NAME metric_riemannian_law_smoke COMMAND metric_riemannian_law_smoke)
+endif ()
+
+# User-facing mtrc::stats API: cohesive profile + distance distribution, batch search and
+# sample lineage, MGC significance/permutation + RecordId alignment, cluster validity
+# diagnostics, and k-NN outlier scoring.
+add_executable(stats_user_api_properties_smoke stats_user_api_properties_smoke.cpp)
+target_link_libraries(stats_user_api_properties_smoke PRIVATE ${METRIC_TARGET_NAME})
+
+add_executable(stats_user_api_search_sample_smoke stats_user_api_search_sample_smoke.cpp)
+target_link_libraries(stats_user_api_search_sample_smoke PRIVATE ${METRIC_TARGET_NAME})
+
+add_executable(stats_user_api_correlate_smoke stats_user_api_correlate_smoke.cpp)
+target_link_libraries(stats_user_api_correlate_smoke PRIVATE ${METRIC_TARGET_NAME})
+
+add_executable(stats_user_api_structural_smoke stats_user_api_structural_smoke.cpp)
+target_link_libraries(stats_user_api_structural_smoke PRIVATE ${METRIC_TARGET_NAME})
+
+if (LAPACK_FOUND)
+    target_link_libraries(stats_user_api_properties_smoke PRIVATE ${LAPACK_LIBRARIES})
+    target_link_libraries(stats_user_api_search_sample_smoke PRIVATE ${LAPACK_LIBRARIES})
+    target_link_libraries(stats_user_api_correlate_smoke PRIVATE ${LAPACK_LIBRARIES})
+    target_link_libraries(stats_user_api_structural_smoke PRIVATE ${LAPACK_LIBRARIES})
+endif ()
+
+add_test(NAME stats_user_api_properties_smoke COMMAND stats_user_api_properties_smoke)
+add_test(NAME stats_user_api_search_sample_smoke COMMAND stats_user_api_search_sample_smoke)
+add_test(NAME stats_user_api_correlate_smoke COMMAND stats_user_api_correlate_smoke)
+add_test(NAME stats_user_api_structural_smoke COMMAND stats_user_api_structural_smoke)
+
+# Entropy result-status coverage uses the LAPACK-backed kpN estimator, so it is gated like
+# the other entropy core targets.
+if (METRIC_BUILD_CORE_ENTROPY)
+    add_executable(stats_entropy_status_smoke stats_entropy_status_smoke.cpp)
+    target_link_libraries(stats_entropy_status_smoke PRIVATE ${METRIC_TARGET_NAME})
+    if (LAPACK_FOUND)
+        target_link_libraries(stats_entropy_status_smoke PRIVATE ${LAPACK_LIBRARIES})
+    endif ()
+    add_test(NAME stats_entropy_status_smoke COMMAND stats_entropy_status_smoke)
+endif ()

@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
-// Property and degenerate-case coverage for metric-space entropy (Track C4).
+// Property and degenerate-case coverage for metric-space entropy.
 //
 // Entropy is a PROPERTY of a finite metric space (a kpN local-Gaussian differential
 // entropy estimator), not a metric. This test pins platform-robust mathematical
@@ -95,8 +95,7 @@ int main()
 	// Duplicate records (a zero-diameter space): every eps-box collapses, so no point
 	// yields a valid local Gaussian (got_results == 0) and the estimator returns the NaN
 	// "estimation failed" sentinel rather than a meaningless finite digamma-only value.
-	// (Before the C11 fix this returned finite garbage because the failure guard was
-	// inert; see .codex/claude-reports/C11.md.)
+	// Earlier versions returned finite garbage because the failure guard was inert.
 	const std::vector<Rec> duplicates(6, Rec{4.0, 4.0});
 	assert(std::isnan(entropy_kp(duplicates)));
 

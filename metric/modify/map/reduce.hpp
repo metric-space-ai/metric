@@ -13,8 +13,8 @@
 // (coverage-based coarsening over the same records). Dimension reduction is never
 // labelled compression: see the validity strings populated by pcfa_space.
 
-#ifndef _METRIC_INTENT_REDUCE_HPP
-#define _METRIC_INTENT_REDUCE_HPP
+#ifndef _METRIC_MODIFY_REDUCE_HPP
+#define _METRIC_MODIFY_REDUCE_HPP
 
 #include <cstddef>
 #include <stdexcept>

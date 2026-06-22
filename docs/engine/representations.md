@@ -23,3 +23,34 @@ Use these components when a workflow needs explicit memory/speed tradeoffs,
 reproducible metric-value access, or diagnostics for the execution form. A
 storage/index component is promoted first by correctness and result contract;
 performance claims require separate benchmark evidence.
+
+## Stale Detection And Recovery
+
+A `MetricSpace` carries a version that advances on every record mutation. A
+representation is built for one version and becomes stale the moment the space
+mutates. Each representation reports this through `is_stale()`. Recovery is never
+automatic on a read path, so stale values are never served silently.
+
+`mtrc::space::cache` turns staleness into a workflow:
+
+```cpp
+namespace cache = mtrc::space::cache;
+
+mtrc::space::storage::DistanceTable<decltype(space)> table(space);
+// ... mutate the space ...
+if (cache::is_stale(table)) {
+    cache::refresh(table, space);   // rebuild in place to the current version
+}
+cache::require_fresh(table);        // or throw StaleRepresentationError instead of reading stale data
+```
+
+- `cache::is_stale(rep)` / `cache::status(rep)` report staleness.
+- `cache::require_fresh(rep)` throws `mtrc::StaleRepresentationError` when stale.
+- `cache::rebuild(rep, space)` returns a fresh representation of the same kind,
+  reusing the storage component's own constructor and preserving its defining
+  parameters (for example a `KnnGraphIndex`'s `k`).
+- `cache::refresh(rep, space)` rebuilds in place only when stale and reports
+  whether a rebuild happened.
+
+`mtrc::space::distances::require_fresh` / `checked_value` apply the same rule to a
+pairwise-value provider.

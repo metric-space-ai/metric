@@ -14,6 +14,7 @@ Copyright (c) 2020 Panda Team
 #include "metric/utils/type_traits.hpp"
 
 #include <array>
+#include <cmath>
 #include <deque>
 #include <stdexcept>
 #include <vector>
@@ -43,11 +44,13 @@ TEMPLATE_TEST_CASE("entropy", "[distance]", float, double)
 	REQUIRE(mtrc::Entropy<void, Metric>()(v4) == -5.3989104772539491_a);
 	REQUIRE(mtrc::Entropy<void, Metric>()(v7) == -5.3989104772539491_a);
 
-	std::vector<std::string> v8 = {
-		"AAA", "HJGJHFG", "BBB", "AAAA", "long long long long long long string", "abcdefghjklmnopqrstuvwxyz"};
+	std::vector<std::string> v8 = {"AAA", "BBB", "ABA", "ABB", "BAA", "BAB"};
 
-	REQUIRE(mtrc::Entropy<void, mtrc::Edit<int>>(mtrc::Edit<int>(), 3, 2.0)(v8) ==
-			-9.3586210470159283_a); // 0.58333333333333337));
+	REQUIRE(mtrc::Entropy<void, mtrc::Edit<char>>(mtrc::Edit<char>(), 3, 2.0)(v8) == -6.4090895367392831_a);
+
+	std::vector<std::string> ragged = {
+		"AAA", "HJGJHFG", "BBB", "AAAA", "long long long long long long string", "abcdefghjklmnopqrstuvwxyz"};
+	REQUIRE(std::isnan(mtrc::Entropy<void, mtrc::Edit<char>>(mtrc::Edit<char>(), 3, 2.0)(ragged)));
 }
 
 TEMPLATE_TEST_CASE("vmixing", "[distance]", float, double)

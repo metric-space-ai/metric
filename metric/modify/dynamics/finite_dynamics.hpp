@@ -545,6 +545,14 @@ auto metric_diffuse(const Space &space, const dynamics_schedule &schedule, const
 	static_assert(detail::is_vector_record_v<typename Space::record_type>,
 				  "modify::dynamics::metric_diffuse evolves a vector signal and needs vector records");
 
+	// The node signal is sized by the space, but the heat/Dirichlet steps iterate
+	// transition.node_count. A transition built from a differently-sized space
+	// would read/write the signal out of bounds, so require an exact match.
+	if (transition.node_count != space.size()) {
+		throw std::invalid_argument(
+			"modify::dynamics::metric_diffuse: transition node count must match the space record count");
+	}
+
 	auto signal = detail::signal_from_space(space);
 	const std::size_t dim = signal.empty() ? 0 : signal[0].size();
 
@@ -598,6 +606,14 @@ auto metric_reconstruct(const Space &degraded, const dynamics_schedule &schedule
 {
 	static_assert(detail::is_vector_record_v<typename Space::record_type>,
 				  "modify::dynamics::metric_reconstruct evolves a vector signal and needs vector records");
+
+	// The node signal is sized by `degraded`, but the heat/Dirichlet steps iterate
+	// transition.node_count. A transition built from a differently-sized space
+	// would read/write the signal out of bounds, so require an exact match.
+	if (transition.node_count != degraded.size()) {
+		throw std::invalid_argument(
+			"modify::dynamics::metric_reconstruct: transition node count must match the space record count");
+	}
 
 	auto signal = detail::signal_from_space(degraded);
 	const std::size_t dim = signal.empty() ? 0 : signal[0].size();
