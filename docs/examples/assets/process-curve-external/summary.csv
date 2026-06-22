@@ -1,0 +1,3 @@
+domain,source,license,records,queries,metric_correct,metric_total,vector_mismatches,vector_total,average_metric_margin,dense_evaluations
+power_demand,UCR_Time_Series_Anomaly_Detection_2021,"CC BY 4.0",24,8,8,8,8,8,370.005225,576
+internal_bleeding,UCR_Time_Series_Anomaly_Detection_2021,"CC BY 4.0",24,8,8,8,8,8,345.1635875,576

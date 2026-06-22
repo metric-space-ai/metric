@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="480" viewBox="0 0 920 480" role="img" aria-labelledby="title desc">
+  <title id="title">Power Demand query recovery</title>
+  <desc id="desc">A downsampled Power Demand query, the finite metric-space winner record, and the padded-vector baseline winner record, with their metric values and recovered roles.</desc>
+  <rect width="920" height="480" fill="#f8fafc"/>
+  <text x="54.0" y="44.0" font-family="Arial, sans-serif" font-size="23" font-weight="700" fill="#172033">Power Demand query recovery</text>
+  <text x="54.0" y="70.0" font-family="Arial, sans-serif" font-size="13" fill="#526070">Finite metric space over process curves vs padded-vector baseline. UCR 2021, CC BY 4.0.</text>
+  <line x1="70.0" y1="300.0" x2="856.0" y2="300.0" stroke="#cbd5e1"/>
+  <line x1="70.0" y1="104.0" x2="70.0" y2="300.0" stroke="#cbd5e1"/>
+  <text x="42.0" y="304.0" font-family="Arial, sans-serif" font-size="10" fill="#64748b">low</text>
+  <text x="40.0" y="110.0" font-family="Arial, sans-serif" font-size="10" fill="#64748b">high</text>
+  <polyline fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="70.0,293.3 92.5,288.8 114.9,275.1 137.4,265.5 159.8,247.9 182.3,240.0 204.7,239.4 227.2,235.6 249.7,225.3 272.1,212.5 294.6,206.6 317.0,211.6 339.5,212.9 361.9,217.3 384.4,211.1 406.9,197.2 429.3,183.5 451.8,173.3 474.2,167.8 496.7,160.0 519.1,150.6 541.6,144.2 564.1,140.6 586.5,138.9 609.0,129.9 631.4,122.9 653.9,118.7 676.3,112.3 698.8,105.7 721.3,104.0 743.7,106.2 766.2,105.6 788.6,107.8 811.1,107.5 833.5,110.6 856.0,110.8"/>
+  <polyline fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="70.0,229.0 92.5,228.4 114.9,228.3 137.4,227.6 159.8,237.2 182.3,242.7 204.7,245.8 227.2,203.8 249.7,224.0 272.1,235.5 294.6,266.1 317.0,281.6 339.5,292.2 361.9,295.2 384.4,300.0 406.9,289.4 429.3,278.9 451.8,298.7 474.2,284.7 496.7,258.4 519.1,249.2 541.6,250.9 564.1,248.8 586.5,259.8 609.0,269.2 631.4,272.0 653.9,265.3 676.3,269.6 698.8,263.8 721.3,257.5 743.7,255.4 766.2,204.5 788.6,222.6 811.1,237.7 833.5,251.4 856.0,259.6"/>
+  <polyline fill="none" stroke="#0f172a" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round" stroke-linecap="round" points="70.0,293.3 116.2,275.1 162.5,247.9 208.7,239.4 254.9,225.3 301.2,206.6 347.4,212.9 393.6,211.1 439.9,183.5 486.1,167.8 532.4,150.6 578.6,140.6 624.8,129.9 671.1,118.7 717.3,105.7 763.5,106.2 809.8,107.8 856.0,110.6"/>
+  <rect x="54.0" y="328.0" width="264.0" height="96" rx="8" fill="#ffffff" stroke="#cbd5e1"/>
+  <line x1="72.0" y1="350.0" x2="98.0" y2="350.0" stroke="#0f172a" stroke-width="3"/>
+  <text x="106.0" y="354.0" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#172033">Query (dashed)</text>
+  <text x="72.0" y="378.0" font-family="Arial, sans-serif" font-size="12" fill="#172033">anomaly role, 18 samples</text>
+  <text x="72.0" y="398.0" font-family="Arial, sans-serif" font-size="11" fill="#526070">the record to recover</text>
+  <rect x="328.0" y="328.0" width="264.0" height="96" rx="8" fill="#ffffff" stroke="#cbd5e1"/>
+  <line x1="346.0" y1="350.0" x2="372.0" y2="350.0" stroke="#16a34a" stroke-width="3"/>
+  <text x="380.0" y="354.0" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#166534">Metric-space winner</text>
+  <text x="346.0" y="378.0" font-family="Arial, sans-serif" font-size="12" fill="#172033">anomaly role</text>
+  <text x="346.0" y="398.0" font-family="Arial, sans-serif" font-size="11" fill="#526070">metric value 324</text>
+  <text x="346.0" y="416.0" font-family="Arial, sans-serif" font-size="11" fill="#166534">matches expected role</text>
+  <rect x="602.0" y="328.0" width="264.0" height="96" rx="8" fill="#ffffff" stroke="#cbd5e1"/>
+  <line x1="620.0" y1="350.0" x2="646.0" y2="350.0" stroke="#dc2626" stroke-width="3"/>
+  <text x="654.0" y="354.0" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#991b1b">Baseline winner</text>
+  <text x="620.0" y="378.0" font-family="Arial, sans-serif" font-size="12" fill="#172033">pre_anomaly role</text>
+  <text x="620.0" y="398.0" font-family="Arial, sans-serif" font-size="11" fill="#526070">baseline value 593</text>
+  <text x="620.0" y="416.0" font-family="Arial, sans-serif" font-size="11" fill="#991b1b">wrong role</text>
+  <rect x="54" y="432" width="812" height="44" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="72.0" y="452.0" font-family="Arial, sans-serif" font-size="12" fill="#334155">The alignment metric recovers the anomaly role despite the timing shift.</text>
+  <text x="72.0" y="470.0" font-family="Arial, sans-serif" font-size="12" fill="#334155">The padded-vector baseline compares index by index and locks onto the pre_anomaly level instead.</text>
+</svg>

@@ -125,6 +125,21 @@ See [Metric Discovery](docs/metrics/index.md) and
 
 ## Example Applications
 
+**Featured hero — process-curve condition monitoring.** Real, CC BY 4.0 UCR
+anomaly windows become a finite metric space over process curves, where a
+nearest-record query recovers the right operating condition that a padded
+point-vector baseline misses.
+
+[![Process-curve finite metric space overview](docs/examples/assets/process-curve-external/hero-overview.svg)](docs/examples/process-curve-external-gallery.md)
+
+- real UCR anomaly process windows as records
+- metric-space query recovery: 16/16 queries match the expected role
+- padded-vector baseline miss: 16/16 queries pick the wrong role
+- reproducible native C++ evidence: CSV tables and SVG figures from one
+  checked-in executable
+
+Full evidence: [process-curve external gallery](docs/examples/process-curve-external-gallery.md).
+
 ### Condition Monitoring
 
 Process windows can remain time-series records. A curve metric can compare
