@@ -1,4 +1,5 @@
 #include "metric/space/matrix.hpp"
+#include "metric/metric/catalog/structured/Edit.hpp"
 #include "metric/metric/catalog/vector/Standards.hpp"
 
 #include <pybind11/numpy.h>
@@ -65,4 +66,8 @@ void export_metric_matrix(py::module &m)
 	register_wrapper_matrix<std::vector<double>, mtrc::Euclidean<double>>(m, "Euclidean");
 	register_wrapper_matrix<std::vector<double>, mtrc::Manhattan<double>>(m, "Manhattan");
 	register_wrapper_matrix<std::vector<double>, mtrc::P_norm<double>>(m, "P_norm");
+	// String/edit-distance spaces: the headline "records are strings" case. The
+	// metric matches metric._impl.distance.Edit (mtrc::Edit<char>), so a Python
+	// Edit() space dispatches to the native exact-scan Matrix over std::string.
+	register_wrapper_matrix<std::string, mtrc::Edit<char>>(m, "Edit");
 }

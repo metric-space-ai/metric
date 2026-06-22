@@ -293,21 +293,112 @@ class FiniteMetricSpace:
 
         return GraphIndex(self, count)
 
+    def _native_exact_matrix(self):
+        """Build (and cache) a native exact-scan ``Matrix`` for this space.
+
+        The neighbor search itself runs in native C++ (``metric._impl.space``);
+        the Python side only marshals the query and the result. Returns ``None``
+        when the metric is not a native vector metric that the space extension
+        instantiates (e.g. a custom Python callable, or a metric whose record
+        type is not yet bound), in which case the caller raises the
+        adapter-boundary error. Cached and invalidated on the space version.
+        """
+        self.ensure_fresh()
+        version = self.version()
+        if getattr(self, "_native_matrix", None) is not None and getattr(
+            self, "_native_matrix_version", None
+        ) == version:
+            return self._native_matrix
+        metric = self.metric
+        if not str(getattr(type(metric), "__module__", "")).startswith("metric._impl"):
+            return None
+        try:
+            from metric._impl import space as _native_space
+        except ModuleNotFoundError:
+            return None
+        try:
+            matrix = _native_space.create_matrix(metric, list(self.records))
+        except (TypeError, RuntimeError, ValueError):
+            return None
+        self._native_matrix = matrix
+        self._native_matrix_version = version
+        return matrix
+
+    def _neighbor(self, index, distance, rank):
+        from metric.operators import Neighbor
+
+        return Neighbor(
+            id=int(self.ids[index]),
+            record=self.records[index],
+            distance=distance,
+            rank=rank,
+        )
+
+    def _neighbor_result(self, query, pairs, *, strategy, representation):
+        from metric.operators import NeighborResult
+
+        neighbors = tuple(
+            self._neighbor(index, distance, rank)
+            for rank, (index, distance) in enumerate(pairs)
+        )
+        return NeighborResult(
+            query=query,
+            query_id=None,
+            neighbors=neighbors,
+            rows=(),
+            distances=tuple(distance for _, distance in pairs),
+            exact=True,
+            strategy=strategy,
+            representation=representation,
+            diagnostics=None,
+        )
+
+    def _exact_neighbor_pairs(self, query, *, k=None, count=None, radius=None):
+        """Run the native exact neighbor search; return (id, distance) pairs or None."""
+        matrix = self._native_exact_matrix()
+        if matrix is None:
+            return None
+        requested = k if k is not None else count
+        if radius is not None and requested is None:
+            return list(matrix.rnn(query, radius))
+        if requested is None:
+            requested = 1
+        pairs = list(matrix.knn(query, int(requested)))
+        if radius is not None:
+            pairs = [pair for pair in pairs if pair[1] <= radius]
+        return pairs
+
     def knn(self, query, k=1):
-        """Exact-scan k-nearest neighbors (native-only)."""
-        _require_native_binding("FiniteMetricSpace.knn(...)", "exact-scan neighbor search")
+        """Exact-scan k-nearest neighbors via the native binding."""
+        pairs = self._exact_neighbor_pairs(query, k=k)
+        if pairs is None:
+            _require_native_binding("FiniteMetricSpace.knn(...)", "exact-scan neighbor search")
+        return self._neighbor_result(query, pairs, strategy="exact_scan", representation=self.representation)
 
     def nn(self, query):
-        """Exact-scan nearest neighbor (native-only)."""
-        _require_native_binding("FiniteMetricSpace.nn(...)", "exact-scan neighbor search")
+        """Exact-scan nearest neighbor via the native binding."""
+        pairs = self._exact_neighbor_pairs(query, k=1)
+        if pairs is None:
+            _require_native_binding("FiniteMetricSpace.nn(...)", "exact-scan neighbor search")
+        if not pairs:
+            return None
+        index, distance = pairs[0]
+        return self._neighbor(index, distance, 0)
 
     def rnn(self, query, radius):
-        """Exact-scan radius neighbors (native-only)."""
-        _require_native_binding("FiniteMetricSpace.rnn(...)", "exact-scan radius search")
+        """Exact-scan radius neighbors via the native binding."""
+        pairs = self._exact_neighbor_pairs(query, radius=radius)
+        if pairs is None:
+            _require_native_binding("FiniteMetricSpace.rnn(...)", "exact-scan radius search")
+        return self._neighbor_result(query, pairs, strategy="exact_range", representation=self.representation)
 
     def neighbors(self, query, k=None, count=None, radius=None):
-        """Exact-scan neighbor query (native-only)."""
-        _require_native_binding("FiniteMetricSpace.neighbors(...)", "exact-scan neighbor search")
+        """Exact-scan neighbor query via the native binding."""
+        pairs = self._exact_neighbor_pairs(query, k=k, count=count, radius=radius)
+        if pairs is None:
+            _require_native_binding("FiniteMetricSpace.neighbors(...)", "exact-scan neighbor search")
+        strategy = "exact_range" if (radius is not None and k is None and count is None) else "exact_scan"
+        return self._neighbor_result(query, pairs, strategy=strategy, representation=self.representation)
 
     def _compute_distance(self, lhs_index, rhs_index):
         value = self.metric(self.records[lhs_index], self.records[rhs_index])
@@ -349,16 +440,40 @@ class Space(FiniteMetricSpace):
         representation=None,
         runtime=None,
     ):
-        """Exact-scan neighbor query (native-only)."""
-        _require_native_binding("Space.neighbors(...)", "exact-scan neighbor search")
+        """Exact-scan neighbor query via the native binding.
+
+        Delegates the search to native C++ (``metric._impl.space``) for spaces
+        built on a native vector metric. A custom Python metric, an explicit
+        strategy object, or the no-query per-record batch mode are not wired
+        yet and raise the adapter-boundary error.
+        """
+        if runtime is not None:
+            require_exact_runtime(runtime)
+        if strategy is not None or query is None:
+            _require_native_binding("Space.neighbors(...)", "exact-scan neighbor search")
+        pairs = self._exact_neighbor_pairs(query, k=k, count=count, radius=radius)
+        if pairs is None:
+            _require_native_binding("Space.neighbors(...)", "exact-scan neighbor search")
+        label = "exact_range" if (radius is not None and k is None and count is None) else "exact_scan"
+        result_representation = getattr(representation, "representation", self.representation)
+        return self._neighbor_result(query, pairs, strategy=label, representation=result_representation)
 
     def nearest(self, query):
-        """Exact-scan nearest neighbor (native-only)."""
-        _require_native_binding("Space.nearest(...)", "exact-scan neighbor search")
+        """Exact-scan nearest neighbor via the native binding."""
+        pairs = self._exact_neighbor_pairs(query, k=1)
+        if pairs is None:
+            _require_native_binding("Space.nearest(...)", "exact-scan neighbor search")
+        if not pairs:
+            return None
+        index, distance = pairs[0]
+        return self._neighbor(index, distance, 0)
 
     def within_radius(self, query, radius):
-        """Exact-scan radius neighbors (native-only)."""
-        _require_native_binding("Space.within_radius(...)", "exact-scan radius search")
+        """Exact-scan radius neighbors via the native binding."""
+        pairs = self._exact_neighbor_pairs(query, radius=radius)
+        if pairs is None:
+            _require_native_binding("Space.within_radius(...)", "exact-scan radius search")
+        return self._neighbor_result(query, pairs, strategy="exact_range", representation=self.representation)
 
     def groups(self, strategy=None, *, count="auto", radius=None, min_size=1, representation=None, runtime=None):
         """Group records via clustering (native-only)."""
