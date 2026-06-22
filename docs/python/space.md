@@ -6,9 +6,10 @@ small runtime preferences for validation and distance caching.
 
 > **Availability.** Construction, `distance`, `pairwise`, representation views,
 > exact neighbors, groups, outliers, denoise, representatives, reduce/compress,
-> and structure diagnostics run in the default core wheel. `embed`,
-> `compare`, and `correlate` still raise `StrategyUnavailableError` until their
-> bindings are promoted.
+> structure diagnostics, and aligned distance-profile `compare`/`correlate`
+> (equal-length, `align="position"`) run in the default core wheel. `embed`
+> still raises `StrategyUnavailableError` until its binding is promoted, and
+> non-aligned (`align="ids"`) comparison stays native-only.
 
 ## Constructor
 
@@ -127,3 +128,27 @@ neighbors = space.neighbors("cut", count=2, representation=tree)
 neighbor and local-structure workflows. Representations capture the source
 space version. After `space.touch()`, old representations fail with
 `StaleRepresentationError` until rebuilt.
+
+## Compare Aligned Spaces
+
+```python
+from metric import Space
+
+absolute = lambda lhs, rhs: abs(lhs - rhs)
+process = Space([0.0, 1.0, 2.0, 3.0], metric=absolute, ids=["a", "b", "c", "d"])
+quality = Space([0.0, 2.0, 4.0, 6.0], metric=absolute, ids=["a", "b", "c", "d"])
+
+comparison = process.compare(quality)
+assert comparison.align == "position"
+print(comparison.value)  # Pearson correlation of the two distance profiles
+```
+
+`space.compare(other)` and `space.correlate(other)` are promoted for the
+equal-length, `align="position"` path. They compute the Pearson correlation of
+the two spaces' pairwise distance profiles in native C++ and return a
+`CorrelationResult` (`value`, `pair_count`, `align`, `matched_ids`,
+`statistic_name`, `diagnostics`). Mismatched record counts raise
+`IncompatibleSpaceError`, naming both counts. A degenerate profile (fewer than
+two records, or all pairwise distances equal) is undefined and returns
+`value=0.0` with `diagnostics["defined"] is False`. `align="ids"` comparison
+stays native-only and raises `StrategyUnavailableError`.

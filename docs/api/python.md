@@ -9,11 +9,14 @@ helpers, and operator helpers over the native implementation.
 > `to_matrix()`/`to_tree()`/`to_graph()` representation views, `repr(space)`,
 > exact neighbor search (`neighbors`/`nearest`/`within_radius`), representative
 > selection, reduction, compression, structural description,
-> intrinsic-dimension diagnostics, and the metric constructors. Higher
-> algorithmic intent methods — `embed`, `compare`/`correlate` (and the
-> matching unpromoted `metric.operators` free functions) — currently raise
-> `StrategyUnavailableError`: their native
-> bindings are not promoted in the default wheel yet. `metric.correlation`
+> intrinsic-dimension diagnostics, aligned distance-profile
+> `compare`/`correlate`, and the metric constructors. The remaining higher
+> algorithmic intent method — `embed` (and the matching unpromoted
+> `metric.operators.embed_space`) — currently raises
+> `StrategyUnavailableError`: its native binding is not promoted in the default
+> wheel yet. `compare`/`correlate` are promoted only for equal-length,
+> `align="position"` aligned spaces; non-aligned (`align="ids"`) and MGC
+> dependence remain native-only. `metric.correlation`
 > (Entropy/MGC) is an adapter boundary over the native correlation bindings
 > (`metric._impl.entropy`/`metric._impl.mgc`), which require the full build
 > (`METRIC_PYTHON_BUILD_FULL`). When those bindings are absent, `import
@@ -153,10 +156,11 @@ space.outliers(strategy=DBSCAN(radius=1, min_points=2))
 space.denoise()
 space.denoise(count=2, representation=space.to_matrix())
 space.denoise(strategy=DBSCAN(radius=1, min_points=2))
+space.compare(other_space)  # equal-length, align="position" (promoted)
 space.compare(other_space, strategy=DistanceProfileCorrelation(), representation=space.to_matrix(), other_representation=other_space.to_matrix())
-space.compare(other_space, align="ids")
 space.compare(other_space, runtime=RuntimePolicy(exact=True))
-space.correlate(other_space, align="ids")
+space.correlate(other_space)
+space.compare(other_space, align="ids")  # non-aligned alignment is native-only
 space.representatives(count=3, representation=space.to_matrix())
 space.representatives(count=3, strategy=FarthestFirst(seed_index=1))
 space.reduce(count=3, representation=space.to_matrix())
@@ -292,9 +296,12 @@ mapped = map_space(records, transform, target_metric)
 dimension = intrinsic_dimension(records, Edit())
 structure = describe_structure(records, Edit())
 
+# Aligned distance-profile correlation (equal-length, align="position"):
+comparison = compare_spaces(records, Edit(), records, Edit())
+correlation = correlate_spaces(records, Edit(), records, Edit())
+
 # Imported but not promoted in the default wheel yet:
-# exact_knn_graph(...), graph_*_diagnostics(...), embed_space(...),
-# compare_spaces(...)
+# exact_knn_graph(...), graph_*_diagnostics(...), embed_space(...)
 ```
 
 `Space.neighbors(query, count=...)` returns a `NeighborResult` with named
@@ -317,7 +324,7 @@ numeric distance array, and `to_pandas()` when pandas is installed.
 
 `embed_space` and `Space.embed(...)` are stable result-contract vocabulary but are not promoted in the default wheel yet. They currently raise `StrategyUnavailableError`; use the C++ surface for derived coordinate spaces until the native binding is exposed. The reserved result type is `EmbeddingResult`, with coordinates, an embedded finite metric space, source-record lineage, exact/operator/representation metadata, an `EmbeddingModel`, normalized stress, local-neighbor trustworthiness, distance-profile correlation, and finite-coordinate diagnostics.
 
-`compare_spaces`, `correlate_spaces`, `Space.compare(...)`, and `Space.correlate(...)` are stable result-contract vocabulary but are not promoted in the default wheel yet. They currently raise `StrategyUnavailableError`; use the C++ surface for cross-space dependence until the native binding is exposed. The reserved result type is `CorrelationResult`, with statistic metadata, alignment metadata, matched/dropped IDs, optional diagnostics, and left/right representation metadata.
+`compare_spaces`, `correlate_spaces`, `Space.compare(...)`, and `Space.correlate(...)` run through the native C++ binding for the promoted exact path: two **equal-length, `align="position"`** finite metric spaces. The statistic is the Pearson correlation of the two spaces' off-diagonal pairwise distance profiles (computed in C++; Python only marshals records and results). The result is a `CorrelationResult` with `value` in `[-1, 1]`, `pair_count`, `exact=True`, `algorithm`/`strategy`/`statistic_name="distance_profile_correlation"`, `align="position"`, positional `matched_ids`, left/right representation metadata, and a `diagnostics` dict. `correlate_spaces`/`Space.correlate(...)` are aliases of the compare path. Mismatched record counts raise `metric.exceptions.IncompatibleSpaceError`, naming both counts. A **degenerate** profile — fewer than two records (no pairs) or a zero-variance distance profile (all pairwise distances equal) — makes Pearson correlation undefined; the documented deterministic result is `value=0.0` with `diagnostics["defined"] is False` (and `diagnostics["degenerate"] is True`), so callers branch on the flag rather than trapping a division error. Non-aligned alignment (`align="ids"`), non-Pearson methods, other comparison strategies, and MGC dependence remain native-only and raise `StrategyUnavailableError`.
 
 `representative_indices` and `representatives` use deterministic farthest-first traversal over the finite metric space. They select existing records rather than vector centroids, start from `seed_index=0` by default, and resolve equal-distance ties by record order.
 

@@ -5,9 +5,11 @@ metric, then ask what you want to know about the finite metric space.
 
 > **Availability.** The default core wheel runs construction, `distance`,
 > `pairwise`, representation views, exact neighbors, groups, outliers, denoise,
-> representatives, reduce/compress, and structure diagnostics through native
-> bindings. `embed`, `compare`, and `correlate` still raise
-> `StrategyUnavailableError` until their bindings are promoted.
+> representatives, reduce/compress, structure diagnostics, and aligned
+> distance-profile `compare`/`correlate` (equal-length, `align="position"`)
+> through native bindings. `embed` still raises `StrategyUnavailableError` until
+> its binding is promoted, and non-aligned (`align="ids"`) comparison stays
+> native-only.
 
 ## Neighbors
 
@@ -140,13 +142,18 @@ def absolute_distance(lhs, rhs):
 process_space = Space(process, metric=absolute_distance, ids=records)
 quality_space = Space(quality, metric=absolute_distance, ids=records)
 
-comparison = process_space.compare(quality_space, align="ids")
+comparison = process_space.compare(quality_space)
 print(comparison.value)
 ```
 
-Comparison uses distance-profile correlation for the promoted exact path.
-Use `align="ids"` when both spaces share stable IDs. The compatibility default
-is positional alignment.
+Comparison uses distance-profile correlation (Pearson) for the promoted exact
+path: two equal-length spaces compared by position (`align="position"`). The
+`CorrelationResult` carries `value`, `pair_count`, `matched_ids`, `align`, and a
+`diagnostics` dict. Mismatched record counts raise `IncompatibleSpaceError`,
+naming both counts; a degenerate (zero-variance or empty) profile returns
+`value=0.0` with `diagnostics["defined"] is False`. `correlate(...)` is an alias
+of `compare(...)` for this path. ID-based alignment (`align="ids"`) stays
+native-only and raises `StrategyUnavailableError`.
 
 ## Representations And Runtime
 

@@ -361,6 +361,21 @@ auto assign_to_medoids(const std::vector<std::vector<double>> &distances, const 
 	return assignments;
 }
 
+auto condensed_distance_profile(py::sequence records, py::object metric) -> std::vector<double>
+{
+	const auto record_count = static_cast<std::size_t>(records.size());
+	std::vector<double> profile;
+	if (record_count > 1) {
+		profile.reserve(record_count * (record_count - 1) / 2);
+	}
+	for (std::size_t lhs = 0; lhs < record_count; ++lhs) {
+		for (std::size_t rhs = lhs + 1; rhs < record_count; ++rhs) {
+			profile.push_back(checked_distance(metric, records[lhs], records[rhs], lhs, rhs));
+		}
+	}
+	return profile;
+}
+
 auto farthest_first_from_matrix(const std::vector<std::vector<double>> &distances, std::size_t count) -> std::vector<std::size_t>
 {
 	const auto record_count = distances.size();
@@ -422,6 +437,92 @@ auto native_pairwise_distance_matrix(py::sequence records, py::object metric) ->
 		}
 	}
 	return matrix;
+}
+
+auto native_distance_profile_correlation(py::sequence left_records, py::object left_metric,
+										 py::sequence right_records, py::object right_metric,
+										 const std::string &left_representation = "records",
+										 const std::string &right_representation = "records") -> py::dict
+{
+	const auto left_count = static_cast<std::size_t>(left_records.size());
+	const auto right_count = static_cast<std::size_t>(right_records.size());
+	if (left_count != right_count) {
+		std::ostringstream message;
+		message << "aligned compare requires equal record counts; left has " << left_count
+				<< " records and right has " << right_count << " records";
+		throw std::invalid_argument(message.str());
+	}
+
+	const auto left_profile = condensed_distance_profile(left_records, left_metric);
+	const auto right_profile = condensed_distance_profile(right_records, right_metric);
+	const auto pair_count = left_profile.size();
+
+	auto left_mean = 0.0;
+	auto right_mean = 0.0;
+	for (std::size_t index = 0; index < pair_count; ++index) {
+		left_mean += left_profile[index];
+		right_mean += right_profile[index];
+	}
+	if (pair_count > 0) {
+		left_mean /= static_cast<double>(pair_count);
+		right_mean /= static_cast<double>(pair_count);
+	}
+
+	auto covariance = 0.0;
+	auto left_variance = 0.0;
+	auto right_variance = 0.0;
+	for (std::size_t index = 0; index < pair_count; ++index) {
+		const auto left_delta = left_profile[index] - left_mean;
+		const auto right_delta = right_profile[index] - right_mean;
+		covariance += left_delta * right_delta;
+		left_variance += left_delta * left_delta;
+		right_variance += right_delta * right_delta;
+	}
+
+	// Pearson correlation is undefined when either distance profile is empty
+	// (fewer than two records, so no pairs) or has zero variance (all pairwise
+	// distances equal). METRIC's documented deterministic behavior for these
+	// degenerate aligned profiles is value=0.0 with defined=false so callers
+	// can branch on the diagnostics flag instead of trapping a division error.
+	const auto denominator = std::sqrt(left_variance * right_variance);
+	auto value = 0.0;
+	auto defined = false;
+	if (pair_count > 0 && left_variance > 0.0 && right_variance > 0.0 && std::isfinite(denominator) &&
+		denominator > 0.0) {
+		value = covariance / denominator;
+		if (value > 1.0) {
+			value = 1.0;
+		} else if (value < -1.0) {
+			value = -1.0;
+		}
+		defined = true;
+	}
+
+	auto diagnostics = py::dict{};
+	diagnostics["defined"] = defined;
+	diagnostics["degenerate"] = !defined;
+	diagnostics["left_variance"] = left_variance;
+	diagnostics["right_variance"] = right_variance;
+	diagnostics["left_mean"] = left_mean;
+	diagnostics["right_mean"] = right_mean;
+	diagnostics["covariance"] = covariance;
+
+	auto result = py::dict{};
+	result["value"] = value;
+	result["left_record_count"] = left_count;
+	result["right_record_count"] = right_count;
+	result["pair_count"] = pair_count;
+	result["exact"] = true;
+	result["defined"] = defined;
+	result["algorithm"] = "distance_profile_correlation";
+	result["strategy"] = "distance_profile_correlation";
+	result["statistic_name"] = "distance_profile_correlation";
+	result["method"] = "pearson";
+	result["align"] = "position";
+	result["left_representation"] = left_representation;
+	result["right_representation"] = right_representation;
+	result["diagnostics"] = diagnostics;
+	return result;
 }
 
 auto native_exact_scan_neighbors(py::sequence records, py::object metric, py::object query, std::size_t count)
@@ -790,6 +891,9 @@ auto native_dbscan_outliers(py::sequence records, py::object metric, double radi
 void export_exact_scan(py::module &m)
 {
 	m.def("pairwise_distance_matrix", &native_pairwise_distance_matrix, py::arg("records"), py::arg("metric"));
+	m.def("distance_profile_correlation", &native_distance_profile_correlation, py::arg("left_records"),
+		  py::arg("left_metric"), py::arg("right_records"), py::arg("right_metric"),
+		  py::arg("left_representation") = "records", py::arg("right_representation") = "records");
 	m.def("exact_scan_neighbors", &native_exact_scan_neighbors, py::arg("records"), py::arg("metric"),
 		  py::arg("query"), py::arg("count"));
 	m.def("exact_scan_radius_neighbors", &native_exact_scan_radius_neighbors, py::arg("records"), py::arg("metric"),

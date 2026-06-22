@@ -1014,8 +1014,16 @@ class RevivalApiTest(unittest.TestCase):
         self.assertAlmostEqual(description.intrinsic_dimension, np.log(5.0 / 3.0) / np.log(2.0))
         self.assertTrue(description.has_nonzero_distances)
         self.assertEqual(space.describe_structure(), description)
-        self.assertRequiresNative(space.compare, space)
-        self.assertRequiresNative(space.correlate, space)
+        space_comparison = space.compare(space)
+        self.assertIsInstance(space_comparison, CorrelationResult)
+        self.assertEqual(space_comparison.left_record_count, 5)
+        self.assertEqual(space_comparison.right_record_count, 5)
+        self.assertEqual(space_comparison.pair_count, 10)
+        self.assertAlmostEqual(space_comparison.value, 1.0)
+        self.assertEqual(space_comparison.align, "position")
+        self.assertEqual(space_comparison.statistic_name, "distance_profile_correlation")
+        self.assertTrue(space_comparison.diagnostics["defined"])
+        self.assertIsInstance(space.correlate(space), CorrelationResult)
 
         # The matching operator free functions also raise.
         metric = lambda lhs, rhs: abs(lhs - rhs)
@@ -1032,8 +1040,12 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(reduce_space(records, metric, 2).source_record_ids, (0, 4))
         self.assertEqual(compress_space(records, metric, 2).compressed_record_count, 2)
         self.assertRequiresNative(embed_space, records, metric)
-        self.assertRequiresNative(compare_spaces, records, metric, records, metric)
-        self.assertRequiresNative(correlate_spaces, records, metric, records, metric)
+        free_comparison = compare_spaces(records, metric, records, metric)
+        self.assertIsInstance(free_comparison, CorrelationResult)
+        self.assertAlmostEqual(free_comparison.value, 1.0)
+        self.assertEqual(free_comparison.pair_count, 10)
+        self.assertEqual(free_comparison.matched_ids, (0, 1, 2, 3, 4))
+        self.assertIsInstance(correlate_spaces(records, metric, records, metric), CorrelationResult)
         structure = describe_structure(records, metric)
         self.assertEqual(structure.record_count, 5)
         self.assertEqual(structure.pair_count, 10)
@@ -1252,6 +1264,70 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual([neighbor.record for neighbor in space.neighbors("cut", 2).neighbors], ["cat", "cot"])
         self.assertEqual(space.nearest("cut").record, "cat")
         self.assertEqual([neighbor.record for neighbor in space.within_radius("cut", 1).neighbors], ["cat", "cot"])
+
+    def test_compare_correlate_aligned_distance_profile_is_native(self):
+        absolute = lambda lhs, rhs: abs(lhs - rhs)
+        process = Space([0.0, 1.0, 2.0, 3.0], metric=absolute, ids=["a", "b", "c", "d"])
+        # Monotone transform keeps the distance profile perfectly correlated.
+        scaled = Space([0.0, 2.0, 4.0, 6.0], metric=absolute, ids=["a", "b", "c", "d"])
+
+        comparison = process.compare(scaled)
+        self.assertIsInstance(comparison, CorrelationResult)
+        self.assertEqual(comparison.left_record_count, 4)
+        self.assertEqual(comparison.right_record_count, 4)
+        self.assertEqual(comparison.pair_count, 6)
+        self.assertTrue(comparison.exact)
+        self.assertEqual(comparison.algorithm, "distance_profile_correlation")
+        self.assertEqual(comparison.strategy, "distance_profile_correlation")
+        self.assertEqual(comparison.statistic_name, "distance_profile_correlation")
+        self.assertEqual(comparison.align, "position")
+        self.assertEqual(comparison.matched_ids, (0, 1, 2, 3))
+        self.assertAlmostEqual(comparison.value, 1.0)
+        self.assertTrue(comparison.diagnostics["defined"])
+
+        # correlate_spaces is the operator-level alias of compare_spaces.
+        free = correlate_spaces([0.0, 1.0, 3.0], absolute, [0.0, 2.0, 1.0], absolute)
+        self.assertIsInstance(free, CorrelationResult)
+        self.assertEqual(free.pair_count, 3)
+        self.assertTrue(free.diagnostics["defined"])
+
+        # The DistanceProfileCorrelation strategy token selects the same path.
+        strategy_comparison = process.compare(scaled, strategy=DistanceProfileCorrelation())
+        self.assertAlmostEqual(strategy_comparison.value, 1.0)
+
+    def test_compare_mismatched_counts_names_the_mismatch(self):
+        absolute = lambda lhs, rhs: abs(lhs - rhs)
+        left = Space([0.0, 1.0, 2.0], metric=absolute)
+        right = Space([0.0, 1.0], metric=absolute)
+
+        with self.assertRaisesRegex(IncompatibleSpaceError, r"3 records.*2 records"):
+            left.compare(right)
+        with self.assertRaisesRegex(IncompatibleSpaceError, r"3 records.*2 records"):
+            compare_spaces([0.0, 1.0, 2.0], absolute, [0.0, 1.0], absolute)
+
+    def test_compare_degenerate_profile_returns_undefined_sentinel(self):
+        absolute = lambda lhs, rhs: abs(lhs - rhs)
+
+        # Fewer than two records yields no pairs -> correlation is undefined.
+        single = Space([5.0], metric=absolute)
+        empty_profile = single.compare(single)
+        self.assertEqual(empty_profile.pair_count, 0)
+        self.assertEqual(empty_profile.value, 0.0)
+        self.assertFalse(empty_profile.diagnostics["defined"])
+        self.assertTrue(empty_profile.diagnostics["degenerate"])
+
+        # A constant (zero-variance) distance profile is also undefined.
+        constant = Space([0.0, 1.0, 2.0], metric=lambda lhs, rhs: 0.0 if lhs == rhs else 1.0)
+        varied = Space([0.0, 1.0, 2.0], metric=absolute)
+        degenerate = constant.compare(varied)
+        self.assertEqual(degenerate.pair_count, 3)
+        self.assertEqual(degenerate.value, 0.0)
+        self.assertFalse(degenerate.diagnostics["defined"])
+
+    def test_embed_stays_unpromoted_after_compare_is_promoted(self):
+        space = Space([0.0, 1.0, 2.0], metric=lambda lhs, rhs: abs(lhs - rhs))
+        self.assertRequiresNative(space.embed)
+        self.assertRequiresNative(embed_space, [0.0, 1.0], lambda lhs, rhs: abs(lhs - rhs))
     def test_runtime_policy_is_explicit_and_exact(self):
         space = Space(self.records, self.metric)
         policy = RuntimePolicy(exact=True, parallel=True, cache="materialized")
@@ -1293,7 +1369,9 @@ class RevivalApiTest(unittest.TestCase):
         described = space.describe(representation=space.to_matrix(), runtime=policy)
         self.assertEqual(described.record_count, len(self.records))
         self.assertEqual(described.representation, "matrix")
-        self.assertRequiresNative(space.compare, space)
+        self_comparison = space.compare(space, runtime=policy)
+        self.assertIsInstance(self_comparison, CorrelationResult)
+        self.assertAlmostEqual(self_comparison.value, 1.0)
 
         with self.assertRaises(StrategyParameterError):
             RuntimePolicy(cache="unknown")

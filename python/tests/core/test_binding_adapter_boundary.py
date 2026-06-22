@@ -9,6 +9,7 @@ import metric
 import metric.distance as distance
 from metric import mappings
 from metric.exceptions import MissingMetricError, OptionalDependencyError, StrategyUnavailableError
+from metric.operators import CorrelationResult
 from metric.spaces import Space
 from metric.strategies import PhateAE
 
@@ -110,10 +111,14 @@ def test_unpromoted_stats_modify_calls_still_raise():
     assert len(space.outliers(count=1).outliers) == 1
     assert space.denoise(count=1).target_record_count == 2
 
-    for call in (
-        lambda: space.compare(space),
-        lambda: space.embed(1),
-    ):
+    # compare/correlate are promoted for the aligned (equal-length) path.
+    comparison = space.compare(space)
+    assert isinstance(comparison, CorrelationResult)
+    assert comparison.left_record_count == 3
+    assert comparison.right_record_count == 3
+    assert comparison.align == "position"
+
+    for call in (lambda: space.embed(1),):
         with pytest.raises(StrategyUnavailableError, match="adapter-only surface"):
             call()
 

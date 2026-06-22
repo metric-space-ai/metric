@@ -4,17 +4,23 @@ This module is an adapter boundary, not an algorithm library. The result
 dataclasses marshal native results into stable public objects, and a few
 helpers invoke the caller's own metric/transform callable. Exact-scan pair,
 neighbor, representative-selection, reduction, compression, intrinsic-dimension,
-structure-description, clustering, outlier, and denoise loops are exposed
-through the native C++ binding; higher METRIC algorithms (graph construction,
-embedding, correlation) remain native-only facades until their binding is
-exposed. METRIC's production numerics live in native C++.
+structure-description, clustering, outlier, denoise, and aligned
+distance-profile-correlation loops are exposed through the native C++ binding;
+higher METRIC algorithms (graph construction, embedding, MGC, non-aligned
+correlation) remain native-only facades until their binding is exposed. METRIC's
+production numerics live in native C++.
 """
 
 from dataclasses import dataclass
 import operator
 from typing import ClassVar
 
-from metric.exceptions import OptionalDependencyError, StrategyUnavailableError, UnsupportedOperationError
+from metric.exceptions import (
+    IncompatibleSpaceError,
+    OptionalDependencyError,
+    StrategyUnavailableError,
+    UnsupportedOperationError,
+)
 
 
 def _numpy():
@@ -120,6 +126,74 @@ def _normalize_positive_count(value, name):
     if requested <= 0:
         raise ValueError(f"{name} must be positive")
     return requested
+
+
+def _resolve_distance_profile_strategy(strategy):
+    """Resolve the comparison strategy to its native algorithm name.
+
+    The promoted Python path supports distance-profile (Pearson) correlation.
+    ``None`` and a :class:`metric.strategies.DistanceProfileCorrelation` token
+    both select that native path; any other strategy stays native-only.
+    """
+
+    if strategy is None:
+        return "distance_profile_correlation"
+
+    from metric.strategies import DistanceProfileCorrelation
+
+    if isinstance(strategy, DistanceProfileCorrelation):
+        if strategy.method != "pearson":
+            raise StrategyUnavailableError(
+                "compare/correlate only promote the 'pearson' distance-profile method in Python; "
+                f"{strategy.method!r} is native-only"
+            )
+        return "distance_profile_correlation"
+
+    _require_native_binding(
+        "compare_spaces(...)/correlate_spaces(...)",
+        f"{type(strategy).__name__} cross-space comparison",
+    )
+
+
+def _correlation_result_from_payload(
+    payload,
+    *,
+    matched_ids,
+    dropped_left_ids,
+    dropped_right_ids,
+    align,
+    p_value,
+):
+    diagnostics = payload["diagnostics"]
+    diagnostics = dict(diagnostics) if diagnostics is not None else None
+    return CorrelationResult(
+        value=float(payload["value"]),
+        left_record_count=int(payload["left_record_count"]),
+        right_record_count=int(payload["right_record_count"]),
+        pair_count=int(payload["pair_count"]),
+        exact=bool(payload["exact"]),
+        algorithm=str(payload["algorithm"]),
+        strategy=str(payload["strategy"]),
+        left_representation=str(payload["left_representation"]),
+        right_representation=str(payload["right_representation"]),
+        statistic_name=str(payload["statistic_name"]),
+        p_value=p_value,
+        matched_ids=tuple(matched_ids),
+        dropped_left_ids=tuple(dropped_left_ids),
+        dropped_right_ids=tuple(dropped_right_ids),
+        align=align,
+        local_scores=(),
+        diagnostics=diagnostics,
+    )
+
+
+def _require_aligned_record_counts(left_count, right_count):
+    """Marshal-time guard: aligned comparison needs equal record counts."""
+    if left_count != right_count:
+        raise IncompatibleSpaceError(
+            "aligned compare/correlate requires equal record counts; "
+            f"left space has {left_count} records and right space has {right_count} records"
+        )
 
 
 def _raise_unsupported_inverse(result):
@@ -1560,8 +1634,46 @@ def compare_spaces(
     dropped_right_ids=(),
     p_value=None,
 ):
-    """Compare aligned finite metric spaces by distance-profile correlation (native-only)."""
-    _require_native_binding("compare_spaces(...)", "cross-space distance-profile correlation")
+    """Compare aligned finite metric spaces by distance-profile correlation.
+
+    Native adapter: the off-diagonal pairwise distance profiles of both spaces
+    are computed in C++ and reduced to a Pearson correlation. The Python side
+    only marshals records, validates the aligned ``align="position"`` contract,
+    and wraps the native payload in a :class:`CorrelationResult`.
+
+    Only equal-length, ``align="position"`` comparisons are promoted. Mismatched
+    record counts raise :class:`metric.exceptions.IncompatibleSpaceError`. Other
+    alignment modes (e.g. ``"ids"``) stay native-only. A degenerate profile
+    (fewer than two records or zero-variance distances) returns
+    ``value=0.0`` with ``diagnostics["defined"] is False``.
+    """
+    algorithm = _resolve_distance_profile_strategy(strategy)
+    if align != "position":
+        _require_native_binding(
+            "compare_spaces(...)", f"{align!r}-aligned cross-space distance-profile correlation"
+        )
+
+    left = list(left_records)
+    right = list(right_records)
+    _require_aligned_record_counts(len(left), len(right))
+
+    payload = _native_metric_module().distance_profile_correlation(
+        left,
+        left_metric,
+        right,
+        right_metric,
+        left_representation,
+        right_representation,
+    )
+    matched = tuple(range(len(left))) if matched_ids is None else tuple(matched_ids)
+    return _correlation_result_from_payload(
+        payload,
+        matched_ids=matched,
+        dropped_left_ids=dropped_left_ids,
+        dropped_right_ids=dropped_right_ids,
+        align=align,
+        p_value=p_value,
+    )
 
 
 def correlate_spaces(
@@ -1574,8 +1686,21 @@ def correlate_spaces(
     left_representation="records",
     right_representation="records",
 ):
-    """Correlate aligned finite metric spaces (native-only)."""
-    _require_native_binding("correlate_spaces(...)", "cross-space distance-profile correlation")
+    """Correlate aligned finite metric spaces by distance-profile correlation.
+
+    Native adapter alias of :func:`compare_spaces` for the promoted
+    ``align="position"`` path; see that function for the full contract.
+    """
+    return compare_spaces(
+        left_records,
+        left_metric,
+        right_records,
+        right_metric,
+        strategy,
+        left_representation=left_representation,
+        right_representation=right_representation,
+        align="position",
+    )
 
 
 def intrinsic_dimension(records, metric):

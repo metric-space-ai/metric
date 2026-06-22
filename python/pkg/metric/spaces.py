@@ -1090,6 +1090,47 @@ class Space(FiniteMetricSpace):
             intent=intent,
         )
 
+    def _compare_aligned(
+        self,
+        operator_name,
+        other,
+        strategy,
+        *,
+        align,
+        other_metric,
+        representation,
+        other_representation,
+        runtime,
+    ):
+        """Delegate aligned compare/correlate to the native operator binding."""
+        require_exact_runtime(runtime)
+        if align != "position":
+            _require_native_binding(
+                f"Space.{operator_name}(...)",
+                f"{align!r}-aligned cross-space distance-profile correlation",
+            )
+        self.ensure_fresh()
+        right = other.ensure_fresh() if isinstance(other, FiniteMetricSpace) else other
+        right_records = right.records if isinstance(right, FiniteMetricSpace) else right
+        right_metric = (
+            other_metric
+            if other_metric is not None
+            else (right.metric if isinstance(right, FiniteMetricSpace) else self.metric)
+        )
+
+        from metric.operators import compare_spaces, correlate_spaces
+
+        delegate = compare_spaces if operator_name == "compare" else correlate_spaces
+        return delegate(
+            self.records,
+            self.metric,
+            right_records,
+            right_metric,
+            strategy,
+            left_representation=self._representation_name(representation),
+            right_representation=self._representation_name(other_representation),
+        )
+
     def compare(
         self,
         other,
@@ -1101,8 +1142,23 @@ class Space(FiniteMetricSpace):
         other_representation=None,
         runtime=None,
     ):
-        """Compare aligned finite metric spaces (native-only)."""
-        _require_native_binding("Space.compare(...)", "cross-space distance-profile correlation")
+        """Compare aligned finite metric spaces by distance-profile correlation.
+
+        Promoted for the equal-length ``align="position"`` path through the
+        native C++ binding; mismatched record counts raise
+        :class:`metric.exceptions.IncompatibleSpaceError`. Other alignment modes
+        stay native-only.
+        """
+        return self._compare_aligned(
+            "compare",
+            other,
+            strategy,
+            align=align,
+            other_metric=other_metric,
+            representation=representation,
+            other_representation=other_representation,
+            runtime=runtime,
+        )
 
     def correlate(
         self,
@@ -1115,8 +1171,20 @@ class Space(FiniteMetricSpace):
         other_representation=None,
         runtime=None,
     ):
-        """Correlate aligned finite metric spaces (native-only)."""
-        _require_native_binding("Space.correlate(...)", "cross-space distance-profile correlation")
+        """Correlate aligned finite metric spaces by distance-profile correlation.
+
+        Promoted alias of :meth:`compare` for the ``align="position"`` path.
+        """
+        return self._compare_aligned(
+            "correlate",
+            other,
+            strategy,
+            align=align,
+            other_metric=other_metric,
+            representation=representation,
+            other_representation=other_representation,
+            runtime=runtime,
+        )
 
 
 MatrixSpace = FiniteMetricSpace
