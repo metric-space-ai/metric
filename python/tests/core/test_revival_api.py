@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -411,6 +412,49 @@ class RevivalApiTest(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "unknown legacy METRIC module"):
             compat.legacy_module("unknown")
+
+    def test_native_record_file_io_builds_spaces_without_python_parsing(self):
+        from metric._impl import metric as native_metric
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            csv_path = Path(tmpdir) / "vectors.csv"
+            native_metric.write_csv_double_records(
+                str(csv_path),
+                [[0.0, 0.0], [3.0, 4.0]],
+                header=["x", "y"],
+            )
+
+            rows = native_metric.read_csv_double_records(str(csv_path), has_header=True)
+            self.assertEqual(rows, [[0.0, 0.0], [3.0, 4.0]])
+
+            space = Space.from_csv(csv_path, has_header=True)
+            self.assertEqual(space.records, rows)
+            self.assertAlmostEqual(space.distance(0, 1), 5.0)
+
+            csv_with_id = Path(tmpdir) / "vectors_with_id.csv"
+            csv_with_id.write_text("id,x,y\n100,1,2\n101,4,6\n", encoding="utf-8")
+            identified = Space.from_csv(csv_with_id, has_header=True, id_column=0)
+            self.assertEqual(identified.ids, [100.0, 101.0])
+            self.assertEqual(identified.records, [[1.0, 2.0], [4.0, 6.0]])
+
+            tsv_path = Path(tmpdir) / "tokens.tsv"
+            native_metric.write_tsv_string_records(
+                str(tsv_path),
+                [["cat"], ["coat"]],
+                header=["token"],
+            )
+            strings = Space.from_tsv(
+                tsv_path,
+                metric=self.metric,
+                value_type="string",
+                has_header=True,
+                as_scalar=True,
+            )
+            self.assertEqual(strings.records, ["cat", "coat"])
+            self.assertEqual(strings.distance(0, 1), self.metric("cat", "coat"))
+
+            with self.assertRaisesRegex(MissingMetricError, "requires metric"):
+                Space.from_tsv(tsv_path, value_type="string", has_header=True, as_scalar=True)
 
     def test_native_mapping_artifact_projection_is_metadata_only(self):
         manifest = {

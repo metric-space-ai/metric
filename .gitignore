@@ -6,6 +6,7 @@ python/pkg/metric/_impl/*.so
 python/pkg/metric/_impl/*.pyd
 .codex/
 .claude/
+/*_PLAN.md
 .DS_Store
 Testing/
 a.out

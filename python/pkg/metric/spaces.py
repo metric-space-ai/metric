@@ -65,6 +65,92 @@ def _normalize_cache(cache):
     return cache if isinstance(cache, CachePolicy) else CachePolicy(cache)
 
 
+def _normalize_record_value_type(value_type):
+    aliases = {
+        "float": "double",
+        "float64": "double",
+        "double": "double",
+        float: "double",
+        "str": "string",
+        "string": "string",
+        str: "string",
+    }
+    try:
+        return aliases[value_type]
+    except KeyError as exc:
+        raise ValueError("value_type must be one of 'float', 'double', 'str', or 'string'") from exc
+
+
+def _native_record_reader(kind, value_type):
+    try:
+        from metric._impl import metric as native_metric
+    except ModuleNotFoundError as exc:
+        raise StrategyUnavailableError(
+            "native C++ record file I/O is unavailable because metric._impl.metric could not be imported"
+        ) from exc
+
+    name = f"read_{kind}_{value_type}_records"
+    try:
+        return getattr(native_metric, name)
+    except AttributeError as exc:
+        raise StrategyUnavailableError(f"native C++ record file I/O binding {name} is unavailable") from exc
+
+
+def _read_native_delimited_records(
+    kind,
+    path,
+    *,
+    value_type,
+    has_header,
+    trim_fields,
+    allow_empty_lines,
+    require_uniform_dimension,
+    require_finite,
+    quote,
+):
+    normalized = _normalize_record_value_type(value_type)
+    reader = _native_record_reader(kind, normalized)
+    return reader(
+        str(path),
+        has_header=has_header,
+        trim_fields=trim_fields,
+        allow_empty_lines=allow_empty_lines,
+        require_uniform_dimension=require_uniform_dimension,
+        require_finite=require_finite,
+        quote=quote,
+    )
+
+
+def _split_record_id_column(records, ids, id_column):
+    if id_column is None:
+        return records, ids
+    if ids is not None:
+        raise ValueError("use either ids or id_column, not both")
+    if not isinstance(id_column, int):
+        raise TypeError("id_column must be an integer column index")
+
+    extracted_ids = []
+    feature_records = []
+    for row_index, row in enumerate(records):
+        if not 0 <= id_column < len(row):
+            raise IndexError(f"id_column {id_column} is out of range for row {row_index}")
+        extracted_ids.append(row[id_column])
+        feature_record = [value for column, value in enumerate(row) if column != id_column]
+        if not feature_record:
+            raise ValueError("id_column leaves no record fields")
+        feature_records.append(feature_record)
+    return feature_records, extracted_ids
+
+
+def _as_scalar_records(records):
+    scalar_records = []
+    for row_index, row in enumerate(records):
+        if len(row) != 1:
+            raise ValueError(f"as_scalar=True requires exactly one field per row; row {row_index} has {len(row)}")
+        scalar_records.append(row[0])
+    return scalar_records
+
+
 def _validate_distance_value(value, lhs_index, rhs_index):
     if isinstance(value, bool) or not isinstance(value, numbers.Real):
         raise MetricContractError(
@@ -215,6 +301,94 @@ class FiniteMetricSpace:
                 })
             records = feature_records
 
+        return cls(records, metric=metric, ids=ids, **kwargs)
+
+    @classmethod
+    def from_csv(
+        cls,
+        path,
+        metric=None,
+        *,
+        value_type="float",
+        has_header=False,
+        id_column=None,
+        ids=None,
+        as_scalar=False,
+        trim_fields=True,
+        allow_empty_lines=True,
+        require_uniform_dimension=True,
+        require_finite=True,
+        quote='"',
+        **kwargs,
+    ):
+        """Construct a finite metric space from native C++ CSV record import."""
+
+        records = _read_native_delimited_records(
+            "csv",
+            path,
+            value_type=value_type,
+            has_header=has_header,
+            trim_fields=trim_fields,
+            allow_empty_lines=allow_empty_lines,
+            require_uniform_dimension=require_uniform_dimension,
+            require_finite=require_finite,
+            quote=quote,
+        )
+        records, ids = _split_record_id_column(records, ids, id_column)
+        if as_scalar:
+            records = _as_scalar_records(records)
+
+        if metric is None:
+            if _normalize_record_value_type(value_type) == "double" and not as_scalar:
+                return cls.vectors(records, ids=ids, **kwargs)
+            raise MissingMetricError(
+                "Space.from_csv requires metric=... for non-vector or string records. "
+                "Numeric vector CSV rows use the native Euclidean metric by default."
+            )
+        return cls(records, metric=metric, ids=ids, **kwargs)
+
+    @classmethod
+    def from_tsv(
+        cls,
+        path,
+        metric=None,
+        *,
+        value_type="float",
+        has_header=False,
+        id_column=None,
+        ids=None,
+        as_scalar=False,
+        trim_fields=True,
+        allow_empty_lines=True,
+        require_uniform_dimension=True,
+        require_finite=True,
+        quote='"',
+        **kwargs,
+    ):
+        """Construct a finite metric space from native C++ TSV record import."""
+
+        records = _read_native_delimited_records(
+            "tsv",
+            path,
+            value_type=value_type,
+            has_header=has_header,
+            trim_fields=trim_fields,
+            allow_empty_lines=allow_empty_lines,
+            require_uniform_dimension=require_uniform_dimension,
+            require_finite=require_finite,
+            quote=quote,
+        )
+        records, ids = _split_record_id_column(records, ids, id_column)
+        if as_scalar:
+            records = _as_scalar_records(records)
+
+        if metric is None:
+            if _normalize_record_value_type(value_type) == "double" and not as_scalar:
+                return cls.vectors(records, ids=ids, **kwargs)
+            raise MissingMetricError(
+                "Space.from_tsv requires metric=... for non-vector or string records. "
+                "Numeric vector TSV rows use the native Euclidean metric by default."
+            )
         return cls(records, metric=metric, ids=ids, **kwargs)
 
     def version(self):
