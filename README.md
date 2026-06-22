@@ -356,6 +356,22 @@ print([neighbor.record for neighbor in space.neighbors("read", count=2).neighbor
 print(space.describe().to_dict()["intrinsic_dimension"])
 ```
 
+`metric.available()` reports what the installed wheel actually supports. It
+returns a plain `dict` of `bool` flags, each computed by inspecting the native
+bindings and adapter state at call time:
+
+```python
+import metric
+
+flags = metric.available()
+print(flags["neighbors"])   # True if exact neighbor search is promoted here
+print(flags["embed"])       # False until embedding has a native binding
+```
+
+A `True` value means the path is reachable in this build; a `False` value
+means it is not promoted (or its optional dependency is absent) here. A missing
+dependency is reported as `False` rather than raising.
+
 ## Documentation
 
 - Project page: <https://metric-space-ai.github.io/metric/>

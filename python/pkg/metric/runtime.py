@@ -269,11 +269,109 @@ def using_graph(count=None, policy=None):
     )
 
 
+def _native_core_available():
+    """True iff the native ``metric._impl.metric`` extension imports."""
+    try:
+        from metric._impl import metric as _native  # noqa: F401
+    except (ImportError, ModuleNotFoundError):
+        return False
+    return True
+
+
+def _distance_metrics_available():
+    """True iff at least one distance-metric constructor is exposed."""
+    try:
+        from metric import metrics
+    except (ImportError, ModuleNotFoundError):
+        return False
+    try:
+        return len(metrics.available()) > 0
+    except Exception:
+        return False
+
+
+def _correlation_package_available():
+    """True iff ``import metric.correlation`` succeeds without raising.
+
+    A parallel task makes this import raise ``OptionalDependencyError`` when the
+    native correlation extension is missing; today it raises
+    ``ModuleNotFoundError``. Either way the probe reports ``False`` rather than
+    leaking the underlying error.
+    """
+    try:
+        import metric.correlation  # noqa: F401
+    except Exception:
+        return False
+    return True
+
+
+def capabilities():
+    """Report the installed wheel's actual metric-space capabilities.
+
+    This is factual, installed-capability introspection: every flag is computed
+    by probing the live native bindings and public adapter state at call time,
+    not from a hardcoded snapshot. The returned mapping has stable string keys
+    and ``bool`` values. ``True`` means the path is reachable in this build;
+    ``False`` means it is not promoted (or its dependency is absent) here.
+
+    No optional or missing module is imported in a way that surfaces a raw
+    ``ModuleNotFoundError``: every probe swallows import failures and reports
+    ``False`` instead.
+    """
+    from metric.operators import native_binding_available
+
+    return {
+        # The native C++ extension itself.
+        "native_core": _native_core_available(),
+        # At least one distance-metric constructor (Edit is guaranteed).
+        "distance_metrics": _distance_metrics_available(),
+        # Exact-scan neighbor search.
+        "neighbors": native_binding_available("exact_scan_neighbors"),
+        # Explicit all-pairs distance matrix.
+        "pairwise": native_binding_available("pairwise_distance_matrix"),
+        # Farthest-first representative selection.
+        "representatives": native_binding_available("representative_indices"),
+        # Representative-based reduction/compression (reuses representative
+        # selection plus native assignment).
+        "reduce_compress": (
+            native_binding_available("representative_indices")
+            and native_binding_available("assign_to_representatives")
+        ),
+        # Exact finite-space structure description.
+        "structure": native_binding_available("describe_structure"),
+        # Clustering grouping (k-medoids / DBSCAN).
+        "groups": (
+            native_binding_available("kmedoids")
+            and native_binding_available("dbscan")
+        ),
+        # Outlier detection (nearest-neighbor scoring / DBSCAN noise).
+        "outliers": (
+            native_binding_available("nearest_neighbor_outliers")
+            and native_binding_available("dbscan_outliers")
+        ),
+        # DBSCAN noise filtering into a derived space.
+        "denoise": native_binding_available("dbscan"),
+        # Metric-space embedding (never promoted in this batch).
+        "embed": native_binding_available("embed"),
+        # Cross-space distance-profile comparison/correlation.
+        "compare_correlate": native_binding_available("compare_spaces"),
+        # The optional native correlation package.
+        "correlation_package": _correlation_package_available(),
+    }
+
+
+def available():
+    """Alias for :func:`capabilities` exposed as top-level ``metric.available``."""
+    return capabilities()
+
+
 __all__ = [
     "CachePolicy",
     "RuntimeDiagnostics",
     "RuntimePolicy",
     "approximate",
+    "available",
+    "capabilities",
     "exact",
     "lazy",
     "materialized",

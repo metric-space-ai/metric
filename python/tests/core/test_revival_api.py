@@ -429,6 +429,66 @@ class RevivalApiTest(unittest.TestCase):
             twed([0.0, 1.0, 2.0, 4.0], [0.0, 1.0, 2.0, 3.0]),
         )
 
+    def test_c31_available_capability_flags_are_dynamic_bools(self):
+        required_keys = {
+            "native_core",
+            "distance_metrics",
+            "neighbors",
+            "pairwise",
+            "representatives",
+            "reduce_compress",
+            "structure",
+            "groups",
+            "outliers",
+            "denoise",
+            "embed",
+            "compare_correlate",
+            "correlation_package",
+        }
+
+        result = metric.available()
+        self.assertIsInstance(result, dict)
+        self.assertTrue(set(result) >= required_keys)
+        self.assertTrue(all(isinstance(value, bool) for value in result.values()))
+
+        self.assertIs(result["native_core"], True)
+        self.assertIs(result["distance_metrics"], True)
+        for key in (
+            "neighbors",
+            "pairwise",
+            "representatives",
+            "reduce_compress",
+            "structure",
+            "groups",
+            "outliers",
+            "denoise",
+        ):
+            self.assertIs(result[key], True, key)
+        self.assertIs(result["embed"], False)
+
+        # The dynamic flags must equal their live probes so the test passes both
+        # standalone and after a parallel task promotes compare/correlation.
+        import importlib
+
+        try:
+            native_metric = importlib.import_module("metric._impl.metric")
+        except (ImportError, ModuleNotFoundError):
+            native_metric = None
+        self.assertEqual(
+            result["compare_correlate"],
+            bool(native_metric is not None and hasattr(native_metric, "compare_spaces")),
+        )
+
+        try:
+            importlib.import_module("metric.correlation")
+            correlation_importable = True
+        except Exception:
+            correlation_importable = False
+        self.assertEqual(result["correlation_package"], correlation_importable)
+
+        self.assertEqual(metric.available(), metric.capabilities())
+        self.assertIn("available", metric.__all__)
+
     def test_native_record_file_io_builds_spaces_without_python_parsing(self):
         from metric._impl import metric as native_metric
 

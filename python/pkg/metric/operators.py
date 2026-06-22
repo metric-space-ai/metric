@@ -43,6 +43,31 @@ def _native_metric_module():
     return native_metric
 
 
+def native_metric_module_or_none():
+    """Return the native ``metric._impl.metric`` module, or ``None`` if absent.
+
+    Adapter probe: this swallows the missing-extension import error so callers
+    (capability introspection) can inspect which native bindings exist without
+    ever surfacing a raw ``ModuleNotFoundError``. It performs no computation.
+    """
+    try:
+        from metric._impl import metric as native_metric
+    except (ImportError, ModuleNotFoundError):
+        return None
+    return native_metric
+
+
+def native_binding_available(name):
+    """Report whether the native module exposes the binding ``name``.
+
+    Adapter probe: it imports the native module defensively and checks
+    ``hasattr``. Returns ``False`` when the native extension is missing or the
+    specific binding has not been promoted. No native call is made.
+    """
+    native = native_metric_module_or_none()
+    return native is not None and hasattr(native, name)
+
+
 def _normalize_neighbor_count(k=None, count=None):
     if k is not None and count is not None and k != count:
         raise ValueError("use either k or count, not conflicting values")
@@ -1776,6 +1801,8 @@ __all__ = [
     "map_space",
     "medoid",
     "medoid_index",
+    "native_binding_available",
+    "native_metric_module_or_none",
     "neighbor_result",
     "pairwise_distance_matrix",
     "prune_graph_out_degree",

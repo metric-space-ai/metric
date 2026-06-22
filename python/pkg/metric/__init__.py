@@ -95,7 +95,7 @@ from .operators import (
     separated_representatives,
     symmetrize_graph,
 )
-from .runtime import CachePolicy, RuntimeDiagnostics, RuntimePolicy, runtime_diagnostics
+from .runtime import CachePolicy, RuntimeDiagnostics, RuntimePolicy, available, capabilities, runtime_diagnostics
 from .spaces import FiniteMetricSpace, MatrixSpace, RecordId, Space
 
 # Low-level native numeric containers are pulled in by the wildcard import above

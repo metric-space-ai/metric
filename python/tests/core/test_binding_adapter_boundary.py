@@ -63,6 +63,82 @@ def test_correlation_import_raises_optional_dependency_error_when_native_absent(
     assert mgc_excinfo.value.__cause__ is None
 
 
+C31_REQUIRED_CAPABILITY_KEYS = {
+    "native_core",
+    "distance_metrics",
+    "neighbors",
+    "pairwise",
+    "representatives",
+    "reduce_compress",
+    "structure",
+    "groups",
+    "outliers",
+    "denoise",
+    "embed",
+    "compare_correlate",
+    "correlation_package",
+}
+
+
+def c31_native_metric_module_or_none():
+    try:
+        from metric._impl import metric as native_metric
+    except (ImportError, ModuleNotFoundError):
+        return None
+    return native_metric
+
+
+def c31_can_import_correlation_package():
+    try:
+        import metric.correlation  # noqa: F401
+    except Exception:
+        return False
+    return True
+
+
+def test_c31_available_reports_dict_of_bool_capability_flags():
+    result = metric.available()
+
+    assert isinstance(result, dict)
+    assert set(result) >= C31_REQUIRED_CAPABILITY_KEYS
+    assert all(isinstance(value, bool) for value in result.values())
+
+    # The native .so is present in this environment, so the core flags are True.
+    assert result["native_core"] is True
+    assert result["distance_metrics"] is True
+
+    # Always-promoted operator paths at origin/main.
+    for key in (
+        "neighbors",
+        "pairwise",
+        "representatives",
+        "reduce_compress",
+        "structure",
+        "groups",
+        "outliers",
+        "denoise",
+    ):
+        assert result[key] is True, key
+
+    # Embedding is never promoted in this batch.
+    assert result["embed"] is False
+
+
+def test_c31_dynamic_flags_match_live_probes():
+    result = metric.available()
+
+    # compare_correlate is computed by probing the native binding directly, so
+    # the flag must equal the live probe both before and after integration.
+    native = c31_native_metric_module_or_none()
+    assert result["compare_correlate"] == bool(
+        native is not None and hasattr(native, "compare_spaces")
+    )
+
+    # correlation_package is computed by attempting the import, so the flag must
+    # equal whether that import succeeds right now.
+    assert result["correlation_package"] == c31_can_import_correlation_package()
+
+
 def test_standard_vector_metrics_are_native_distance_exports():
     import metric._impl.distance as native_distance
 

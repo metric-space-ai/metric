@@ -473,6 +473,35 @@ embedding, cross-space comparison/correlation, additional embedding strategies,
 and fitted mapping execution paths still raise `StrategyUnavailableError` until
 they have stable native bindings, result objects, examples, and CI coverage.
 
+## Capability Introspection
+
+`metric.available()` returns a plain `dict` of `bool` flags describing what the
+installed wheel actually supports. Each flag is computed by inspecting the
+native bindings and public adapter state at call time, so it reports the build
+in front of you rather than a fixed list.
+
+```python
+import metric
+
+flags = metric.available()
+# {'native_core': True, 'distance_metrics': True, 'neighbors': True,
+#  'pairwise': True, 'representatives': True, 'reduce_compress': True,
+#  'structure': True, 'groups': True, 'outliers': True, 'denoise': True,
+#  'embed': False, 'compare_correlate': False, 'correlation_package': False}
+
+if flags["neighbors"]:
+    ...
+```
+
+The keys are stable: `native_core`, `distance_metrics`, `neighbors`,
+`pairwise`, `representatives`, `reduce_compress`, `structure`, `groups`,
+`outliers`, `denoise`, `embed`, `compare_correlate`, and
+`correlation_package`. A `True` value means the path is reachable in this
+build; a `False` value means it is not promoted (or its optional dependency is
+absent) here. The function imports no optional module in a way that surfaces a
+raw `ModuleNotFoundError`; a missing dependency simply reports `False`.
+`metric.capabilities()` is the same report under its descriptive name.
+
 ## Error Model
 
 Public Python error classes live in `metric.exceptions` and are re-exported from `metric`, starting with `MetricError`, `MissingMetricError`, and `UnsupportedOperationError`. `Space(records)` without a metric raises `MissingMetricError` with an explicit construction example. Core result objects use these errors for explicit unsupported operations such as inverse reconstruction on lossy reductions, compression, deterministic maps, and denoise filters.
