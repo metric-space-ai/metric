@@ -60,7 +60,7 @@ im isolierten Worktree erstellt, jede Änderung out-of-tree verifiziert. `main` 
 - **WS-1 Build/Dist:** [x] ODR-Fix · [x] workflow-Link-Ehrlichkeit · [x] LAPACK-Target · [x] pybind11-Submodul entfernt · [~] Versions-Matrix (dokumentiert) · [~] Package-Manager (dokumentiert; PyPI-Verifikation = CI).
 - **WS-2 Python-Parität:** [x] neighbors/nearest/within_radius nativ (Vektor + Edit/String end-to-end durch Python verifiziert nach echtem Rebuild) · [~] groups/outliers/embed/… (konvergiert mit Codex auf main) · [~] Signatur-Metriken (gleiches Rebuild-Muster) · [x] correlation: klarer OptionalDependencyError im Core-Wheel **und** funktioniert nach FULL-Build (`Entropy()` real verifiziert in Python) · [x] `metric.available()` · [x] numpy-first (`Space.distance_matrix`).
 - **WS-3 Daten-I/O:** [x] C++ read_csv/write_csv (Codex) · [x] Python `Space.from_csv` · [x] Daten-raus (`Space.distance_matrix`→np / list) · [x] Pickle · [x] Beispiel mit realer CSV (Codex `record_csv_workflow.cpp` + TUTORIAL).
-- **WS-4 Doku:** [x] Python-Banner + falsche Claims · [x] README-LAPACK · [~] kanonische C++-Oberfläche (TUTORIAL nutzt eine konsistente) · [x] TUTORIAL.md gefüllt · [ ] tutorial.cpp · [ ] generierte API-Referenz (Doc-Infra).
+- **WS-4 Doku:** [x] Python-Banner + falsche Claims · [x] README-LAPACK · [~] kanonische C++-Oberfläche (TUTORIAL nutzt eine konsistente) · [x] TUTORIAL.md gefüllt · [x] tutorial.cpp auf aktuelle API · [~] generierte API-Referenz (Doc-Infra).
 - **WS-5 Robustheit:** [x] nicht-finite (`validate_finite_records` + `require_finite`) · [x] Default-Validierung (`require_uniform_dimension`) · [x] Fehler-Kontext · [~] Entropy-Sentinel (dokumentiert) · [~] EntropyResult-Wrapper (TUTORIAL zeigt ihn) · [~] exact-Flag (dokumentiert).
 - **WS-6 Inspektion:** [x] `operator<<`/`summary` alle Results · [x] Metadata-`operator<<` · [~] Space/Matrix-Print (StructureDescription deckt ab) · [x] Viz/Export (`render::write_csv`/`write_histogram`) · [ ] Progress-Callback · [~] Python describe (konvergiert mit Codex).
 - **WS-7 Skalierung:** [~] gepackte symm. Tabelle (dokumentiert, L) · [x] `parallel()` ehrlich markiert · [~] inkrement. Index (dokumentiert) · [~] KnnGraph (dokumentiert) · [x] scale-Doku (`supported-surface.md`) · [x] out-of-core-Annahme dokumentiert.
@@ -79,7 +79,7 @@ im isolierten Worktree erstellt, jede Änderung out-of-tree verifiziert. `main` 
 - **M4 — Poliert (G8,G9):** WS-9, WS-10, WS-1-Rest, CI-Gates.
 
 ## 4. CI-Gates
-[x] Beispiele ausführen (core-cpp.yml/ctest) · [~] numpy-2-Smoke (offen) · [x] Wheel-Matrix (publish-python.yml/cibuildwheel) · [x] Header-Link-Test (header-link.yml, neu) · [ ] Doc-Snippet-Test.
+[x] Beispiele ausführen (core-cpp.yml/ctest) · [x] numpy-2-Smoke (python-smoke.yml) · [x] Wheel-Matrix (publish-python.yml/cibuildwheel) · [x] Header-Link-Test (header-link.yml) · [x] numpy-2-Smoke (python-smoke.yml) · [~] Doc-Snippet-Test (Infra).
 
 ## 5. Risiko-Register
 - Codex-Concurrency (clean + commits auf main) → Schutz-Branch, temp-index-Snapshots, vor jedem Schritt neu prüfen, Kollisionen meiden.
