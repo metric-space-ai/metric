@@ -233,13 +233,13 @@ evidence attached to the dataset, not as SaaS marketing stats.
 
 ## Visualization Architecture Decision
 
-METRIC needs an integrated JavaScript/WebGL visualization layer for hero
-applications and data debugging. The layer must be separate from the C++
+METRIC needs a native JavaScript/WebGL visualization library for metric spaces,
+relations, and algorithm evidence. The library must be separate from the C++
 metric-space core, but it should become a real reusable presentation and
-inspection tool, not a collection of one-off SVG exports.
+inspection surface, not a collection of one-off SVG exports.
 
 The detailed plan for this layer is
-[METRIC Visual Debug Library Plan](visual-debug-library-plan.md).
+[METRIC Visual Library Plan](visual-library-plan.md).
 
 ### What belongs in C++
 
@@ -279,20 +279,20 @@ Static rendering remains necessary for README, GitHub, and offline docs:
 - graph views over finite spaces
 
 This renderer is a fallback and archival layer. It is not the primary
-visual-debug experience.
+interactive visualization experience.
 
 ### Primary Interactive Renderer
 
-The primary visualization track is an interactive browser package for large
-Canvas/WebGL views. An external renderer such as Babyplots should be evaluated
-as a serious base or fork candidate for:
+The primary visualization track is a native browser library for large
+Canvas/WebGL/WebGL-shader views. Babyplots is only a technical reference for:
 
 - PHATE/AE derived coordinate spaces
 - 3D point clouds
 - interactive source-space graph exploration
 - brushing a point to inspect the original record and metric neighbors
 
-If used or forked, Babyplots must remain in the JavaScript/site/notebook layer,
+If Babyplots code is ported as a starting point, it must be fully assimilated
+into native METRIC visual code and must remain in the JavaScript/site layer,
 never as a C++ dependency. The adapter must consume exported METRIC evidence,
 not compute metric results. It must also provide static fallbacks for GitHub and
 offline docs.
