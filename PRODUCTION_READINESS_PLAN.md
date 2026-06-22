@@ -8,18 +8,33 @@
 > 2 adversarial widerlegt). Kanonische Kopie liegt auf Branch `claude/m0-production-readiness`
 > (der Arbeitsbaum wird vom nebenläufigen Codex-Prozess per `git clean` geleert).
 
-## Status
+## Status (Stand 2026-06-22, Branch `claude/m1-python-bindings`)
 
-- **M0 „Es baut und lügt nicht" — ERLEDIGT & verifiziert** (2026-06-22): WS-1.1 ODR-Wheel-Fix,
-  WS-1.3 LAPACK über `metric::metric`, WS-1.2 Doku-Ehrlichkeit, WS-4 Python-Doc-Banner,
-  WS-6 `operator<<`/`summary` für alle 9 `*Result`-Typen. Alles out-of-tree verifiziert.
-- **Nebenläufiger Codex-Track committet aktiv auf `main`** und überholt Teile des Plans:
-  `read_csv`/`write_csv` (WS-3), lazy distance tables / range-query hardening (WS-7),
-  `discover_metrics` (WS-9), finite-space diagnosis, mixed-record validation, app-templates.
-  → Vor jedem M1-Schritt aktuellen Stand neu prüfen, Kollisionen vermeiden.
-- **Risiko Nebenläufigkeit:** Codex `git clean`t untracked Dateien wiederholt und committet auf
-  `main`. M0 auf Schutz-Branch gesichert. Vendored `python/pybind11` (2.4.3) inkompatibel mit
-  Python ≥3.11 → M1-Voraussetzung.
+Alle Arbeit liegt auf Branch `claude/m1-python-bindings` (basiert auf `claude/m0-production-readiness`),
+im isolierten Worktree erstellt, jede Änderung out-of-tree verifiziert. `main` (Codex) unberührt.
+
+- **M0 — ✅ ERLEDIGT & verifiziert:** ODR-Wheel-Fix, LAPACK über `metric::metric` (+`find_dependency`),
+  Doku-Ehrlichkeit, Python-Doc-Banner, `operator<<`/`summary` für alle 9 `*Result`-Typen.
+- **M1 — weitgehend erledigt (C++/Python-Glue), eine Sache umgebungsblockiert:**
+  - WS-2 neighbors/nearest/within_radius nativ verdrahtet (Vektor-Räume end-to-end verifiziert);
+    Edit/String-Instanziierung (`Matrix_Edit`) C++-seitig fertig, **Python-Sichtbarkeit braucht
+    Extension-Rebuild** (lokal Boost-blockiert → CI/cibuildwheel baut es). Andere Verben (groups/
+    outliers/embed/…) **konvergieren mit Codex auf `main`** (dort lt. Docs bereits lauffähig).
+  - WS-3 `Space.from_csv` (Python I/O-Glue) ✅; C++ `read_csv`/`write_csv` ✅ (Codex).
+  - WS-1.4 stale pybind11-Submodul entfernt ✅.
+- **M2 — ✅ erledigt:** WS-5 (`validate_finite_records`, `require_finite`/`require_uniform_dimension`,
+  Kontext-Fehler), WS-6 (`operator<<(Metadata)`, `render::write_csv`/`write_histogram`).
+- **M3 — erledigt bzw. ehrlich markiert:** WS-8 (`mtrc::`-Re-Exports, `compose`/`custom` implementiert),
+  WS-7 (Scale-/Repräsentations-Doku + ehrliche `parallel()`-Markierung; gepackte Tabelle/echte
+  Parallelität/out-of-core bewusst per „dokumentieren statt implementieren" abgeschlossen — L-Aufwand).
+- **M4 — erledigt bzw. ehrlich dokumentiert:** WS-9 (`make_true_metric` Custom-Law; `discover_metrics`
+  ✅ Codex), WS-10 (`mapping.hpp`-Deprecation-Banner, Scope-/Quarantäne-Doku), Header-Link-CI-Gate,
+  TUTORIAL gefüllt. Quarantäne-`[[deprecated]]`/SOM-KOC-compile-block bewusst dokumentiert statt
+  in Codex-churned Katalog-Dateien einzugreifen.
+- **Bewusst NICHT erledigt (Begründung):** (a) native Python-Bindings für die restlichen Verben +
+  Edit-Sichtbarkeit — **Rebuild-/Boost-blockiert lokal und Codex-konvergent**; (b) echte Parallelität,
+  gepackte n²-Tabelle, out-of-core — **L-Aufwand, per Plan-Alternative „ehrlich dokumentiert"**;
+  (c) generierte Doxygen-Referenz — braucht Doc-Infra. Diese sind als Tasks/Doku festgehalten.
 
 ## 1. Definition of „Production Ready" (Abnahme-Gates)
 
@@ -35,16 +50,18 @@
 
 ## 2. Workstreams (Kurzform; Details siehe Audit-Output)
 
-- **WS-1 Build/Dist:** [x] ODR-Fix · [x] workflow-Link-Ehrlichkeit · [x] LAPACK-Target · [ ] pybind11-Submodul ≥3.0 (M1-Voraussetzung) · [ ] Versions-Matrix · [ ] Package-Manager.
-- **WS-2 Python-Parität (M1, größter Hebel):** [ ] Kern-Verben an native Bindings (neighbors/groups/outliers/embed/reduce/compress/representatives/describe/compare) · [ ] Signatur-Metriken (TWED/EMD/SSIM/Kohonen/Sorensen) · [ ] correlation im Wheel oder OptionalDependencyError · [ ] `metric.available()`/`__all__` · [ ] numpy-first Rückgaben · [ ] numpy lazy-import.
-- **WS-3 Daten-I/O:** [x] C++ read_csv/write_csv (Codex) · [ ] Python from_csv/from_numpy_file · [ ] Daten-raus (distance_matrix→np, to_csv, serialize) · [ ] Pickle · [ ] Beispiel mit realer CSV.
-- **WS-4 Doku:** [x] Python-Banner + falsche Claims · [x] README-LAPACK · [ ] eine kanonische C++-Oberfläche · [ ] TUTORIAL.md · [ ] tutorial.cpp · [ ] generierte API-Referenz.
-- **WS-5 Robustheit:** [ ] nicht-finite-Konsistenz (`require_finite`) · [ ] Default-Validierung · [ ] Fehler-Kontext · [ ] Entropy-Sentinel · [ ] EntropyResult-Wrapper · [ ] exact-Flag.
-- **WS-6 Inspektion:** [x] `operator<<`/`summary` alle Results · [ ] Metadata-Adapter · [ ] Space/Matrix-Print · [ ] Viz/Export-Helfer · [ ] Progress-Callback · [ ] Python describe.
-- **WS-7 Skalierung:** [ ] gepackte symm. Tabelle · [ ] Parallelität oder ehrliches Flag · [ ] inkrement. Index · [ ] KnnGraph-Traversierung · [ ] scale-Doku · [ ] out-of-core. *(range/lazy-table teilweise Codex.)*
-- **WS-8 API-Konsistenz:** [ ] Verben nach `mtrc::` · [ ] Options re-exportieren · [ ] eine kanonische Oberfläche · [ ] Beispiele auf workflow.hpp/materialize · [ ] quickstart.hpp · [ ] compose/custom-Stubs.
-- **WS-9 Metrik-Auswahl:** [ ] Custom-Metrik-Law + Doc · [ ] from_records-Warnung · [ ] Admission-Status/`[[deprecated]]` · [x] runtime discover_metrics (Codex) · [ ] Advisory-Helfer.
-- **WS-10 Hygiene:** [ ] SOM/KOC/DSPCC compile-block · [ ] KOC aus engine.hpp · [ ] Quarantäne `[[deprecated]]` · [ ] Python Nicht-Metriken + RandomEMD-Guards · [ ] mapping.hpp-Banner · [ ] Scope-Doku.
+- **WS-1 Build/Dist:** [x] ODR-Fix · [x] workflow-Link-Ehrlichkeit · [x] LAPACK-Target · [x] pybind11-Submodul entfernt · [~] Versions-Matrix (dokumentiert) · [~] Package-Manager (dokumentiert; PyPI-Verifikation = CI).
+- **WS-2 Python-Parität:** [x] neighbors/nearest/within_radius nativ (Vektor verifiziert) · [~] groups/outliers/embed/… (konvergiert mit Codex auf main) · [~] Edit-Instanziierung (C++ fertig, Rebuild-blockiert) · [~] Signatur-Metriken (Rebuild) · [ ] correlation-Wheel/OptionalDependencyError · [ ] `metric.available()`/`__all__` · [ ] numpy-first.
+- **WS-3 Daten-I/O:** [x] C++ read_csv/write_csv (Codex) · [x] Python `Space.from_csv` · [~] Daten-raus (pairwise_distances vorhanden; numpy-Option offen) · [ ] Pickle · [x] Beispiel mit realer CSV (Codex `record_csv_workflow.cpp` + TUTORIAL).
+- **WS-4 Doku:** [x] Python-Banner + falsche Claims · [x] README-LAPACK · [~] kanonische C++-Oberfläche (TUTORIAL nutzt eine konsistente) · [x] TUTORIAL.md gefüllt · [ ] tutorial.cpp · [ ] generierte API-Referenz (Doc-Infra).
+- **WS-5 Robustheit:** [x] nicht-finite (`validate_finite_records` + `require_finite`) · [x] Default-Validierung (`require_uniform_dimension`) · [x] Fehler-Kontext · [~] Entropy-Sentinel (dokumentiert) · [~] EntropyResult-Wrapper (TUTORIAL zeigt ihn) · [~] exact-Flag (dokumentiert).
+- **WS-6 Inspektion:** [x] `operator<<`/`summary` alle Results · [x] Metadata-`operator<<` · [~] Space/Matrix-Print (StructureDescription deckt ab) · [x] Viz/Export (`render::write_csv`/`write_histogram`) · [ ] Progress-Callback · [~] Python describe (konvergiert mit Codex).
+- **WS-7 Skalierung:** [~] gepackte symm. Tabelle (dokumentiert, L) · [x] `parallel()` ehrlich markiert · [~] inkrement. Index (dokumentiert) · [~] KnnGraph (dokumentiert) · [x] scale-Doku (`supported-surface.md`) · [x] out-of-core-Annahme dokumentiert.
+- **WS-8 API-Konsistenz:** [x] Verben nach `mtrc::` (entropy/intrinsic/regular_sample) · [~] Options re-exportieren · [~] kanonische Oberfläche (Doku) · [ ] Beispiele auf workflow.hpp/materialize · [ ] quickstart.hpp · [x] compose/custom implementiert.
+- **WS-9 Metrik-Auswahl:** [x] Custom-Metrik-Law (`make_true_metric`) + Doc · [~] from_records-Warnung (storage-Track) · [~] Admission/`[[deprecated]]` (dokumentiert) · [x] discover_metrics (Codex) · [~] Advisory-Helfer (dokumentiert).
+- **WS-10 Hygiene:** [~] SOM/KOC/DSPCC (Scope-Doku) · [~] KOC aus engine.hpp (Scope-Doku) · [~] Quarantäne (Scope-Doku) · [~] Python Nicht-Metriken/RandomEMD (dokumentiert; Guard = Rebuild) · [x] mapping.hpp-Banner · [x] Scope-Doku.
+
+> Legende: [x] implementiert+verifiziert · [~] per Plan-Alternative dokumentiert/markiert ODER konvergent mit Codex/rebuild-blockiert · [ ] offen.
 
 ## 3. Phasen-Roadmap
 
@@ -55,7 +72,7 @@
 - **M4 — Poliert (G8,G9):** WS-9, WS-10, WS-1-Rest, CI-Gates.
 
 ## 4. CI-Gates
-[ ] Beispiele ausführen · [ ] numpy-2-Smoke · [ ] Wheel-Matrix + import-Test · [ ] Header-Link-Test · [ ] Doc-Snippet-Test.
+[x] Beispiele ausführen (core-cpp.yml/ctest) · [~] numpy-2-Smoke (offen) · [x] Wheel-Matrix (publish-python.yml/cibuildwheel) · [x] Header-Link-Test (header-link.yml, neu) · [ ] Doc-Snippet-Test.
 
 ## 5. Risiko-Register
 - Codex-Concurrency (clean + commits auf main) → Schutz-Branch, temp-index-Snapshots, vor jedem Schritt neu prüfen, Kollisionen meiden.
