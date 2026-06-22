@@ -15,11 +15,17 @@ im isolierten Worktree erstellt, jede Änderung out-of-tree verifiziert. `main` 
 
 - **M0 — ✅ ERLEDIGT & verifiziert:** ODR-Wheel-Fix, LAPACK über `metric::metric` (+`find_dependency`),
   Doku-Ehrlichkeit, Python-Doc-Banner, `operator<<`/`summary` für alle 9 `*Result`-Typen.
-- **M1 — weitgehend erledigt (C++/Python-Glue), eine Sache umgebungsblockiert:**
-  - WS-2 neighbors/nearest/within_radius nativ verdrahtet (Vektor-Räume end-to-end verifiziert);
-    Edit/String-Instanziierung (`Matrix_Edit`) C++-seitig fertig, **Python-Sichtbarkeit braucht
-    Extension-Rebuild** (lokal Boost-blockiert → CI/cibuildwheel baut es). Andere Verben (groups/
-    outliers/embed/…) **konvergieren mit Codex auf `main`** (dort lt. Docs bereits lauffähig).
+- **M1 — erledigt & per echtem Rebuild verifiziert:**
+  - WS-2 neighbors/nearest/within_radius nativ verdrahtet. **Vektor-Räume UND Edit/String-Räume
+    end-to-end durch Python verifiziert** nach echtem Rebuild der `space`-Extension (pybind11 v3.0.1,
+    boost-frei). `Matrix_Edit` exponiert; `Space([...strings...], Edit()).neighbors("read", k=2)`
+    liefert nativ `[(red,1),(reed,1)]`. (Korrektur: der Core-Build braucht **kein** Boost —
+    `find_package(Boost REQUIRED)` steht hinter `METRIC_PYTHON_BUILD_FULL=OFF`; die frühere
+    „Boost-blockiert"-Annahme war falsch.)
+  - WS-1.1 ODR-Fix **im echten pybind-Build verifiziert**: das `metric`-Modul (beide `engine.hpp`-TUs
+    `native_phate_autoencoder.cpp` + `metric_space_mapping_pipeline.cpp`) linkt sauber zu einer `.so`
+    — der Build, der vorher mit „9 duplicate symbols" scheiterte.
+  - Restliche Verben (groups/outliers/embed/…) **konvergieren mit Codex auf `main`** (dort lt. Docs lauffähig).
   - WS-3 `Space.from_csv` (Python I/O-Glue) ✅; C++ `read_csv`/`write_csv` ✅ (Codex).
   - WS-1.4 stale pybind11-Submodul entfernt ✅.
 - **M2 — ✅ erledigt:** WS-5 (`validate_finite_records`, `require_finite`/`require_uniform_dimension`,
@@ -31,10 +37,11 @@ im isolierten Worktree erstellt, jede Änderung out-of-tree verifiziert. `main` 
   ✅ Codex), WS-10 (`mapping.hpp`-Deprecation-Banner, Scope-/Quarantäne-Doku), Header-Link-CI-Gate,
   TUTORIAL gefüllt. Quarantäne-`[[deprecated]]`/SOM-KOC-compile-block bewusst dokumentiert statt
   in Codex-churned Katalog-Dateien einzugreifen.
-- **Bewusst NICHT erledigt (Begründung):** (a) native Python-Bindings für die restlichen Verben +
-  Edit-Sichtbarkeit — **Rebuild-/Boost-blockiert lokal und Codex-konvergent**; (b) echte Parallelität,
-  gepackte n²-Tabelle, out-of-core — **L-Aufwand, per Plan-Alternative „ehrlich dokumentiert"**;
-  (c) generierte Doxygen-Referenz — braucht Doc-Infra. Diese sind als Tasks/Doku festgehalten.
+- **Bewusst NICHT erledigt (Begründung):** (a) native Python-Bindings für die restlichen Verben
+  (groups/outliers/embed/compare/describe) + Signatur-Metriken (TWED/EMD/SSIM) — **Codex-konvergent**
+  (auf `main` bereits in Arbeit); der Rebuild-Mechanismus ist jetzt nachgewiesen, sodass das Wiring
+  dem gleichen Muster folgt; (b) echte Parallelität, gepackte n²-Tabelle, out-of-core — **L-Aufwand,
+  per Plan-Alternative „ehrlich dokumentiert"**; (c) generierte Doxygen-Referenz — braucht Doc-Infra.
 
 ## 1. Definition of „Production Ready" (Abnahme-Gates)
 
@@ -51,7 +58,7 @@ im isolierten Worktree erstellt, jede Änderung out-of-tree verifiziert. `main` 
 ## 2. Workstreams (Kurzform; Details siehe Audit-Output)
 
 - **WS-1 Build/Dist:** [x] ODR-Fix · [x] workflow-Link-Ehrlichkeit · [x] LAPACK-Target · [x] pybind11-Submodul entfernt · [~] Versions-Matrix (dokumentiert) · [~] Package-Manager (dokumentiert; PyPI-Verifikation = CI).
-- **WS-2 Python-Parität:** [x] neighbors/nearest/within_radius nativ (Vektor verifiziert) · [~] groups/outliers/embed/… (konvergiert mit Codex auf main) · [~] Edit-Instanziierung (C++ fertig, Rebuild-blockiert) · [~] Signatur-Metriken (Rebuild) · [ ] correlation-Wheel/OptionalDependencyError · [ ] `metric.available()`/`__all__` · [ ] numpy-first.
+- **WS-2 Python-Parität:** [x] neighbors/nearest/within_radius nativ (Vektor + Edit/String end-to-end durch Python verifiziert nach echtem Rebuild) · [~] groups/outliers/embed/… (konvergiert mit Codex auf main) · [~] Signatur-Metriken (gleiches Rebuild-Muster) · [ ] correlation-Wheel/OptionalDependencyError · [ ] `metric.available()`/`__all__` · [ ] numpy-first.
 - **WS-3 Daten-I/O:** [x] C++ read_csv/write_csv (Codex) · [x] Python `Space.from_csv` · [~] Daten-raus (pairwise_distances vorhanden; numpy-Option offen) · [ ] Pickle · [x] Beispiel mit realer CSV (Codex `record_csv_workflow.cpp` + TUTORIAL).
 - **WS-4 Doku:** [x] Python-Banner + falsche Claims · [x] README-LAPACK · [~] kanonische C++-Oberfläche (TUTORIAL nutzt eine konsistente) · [x] TUTORIAL.md gefüllt · [ ] tutorial.cpp · [ ] generierte API-Referenz (Doc-Infra).
 - **WS-5 Robustheit:** [x] nicht-finite (`validate_finite_records` + `require_finite`) · [x] Default-Validierung (`require_uniform_dimension`) · [x] Fehler-Kontext · [~] Entropy-Sentinel (dokumentiert) · [~] EntropyResult-Wrapper (TUTORIAL zeigt ihn) · [~] exact-Flag (dokumentiert).
