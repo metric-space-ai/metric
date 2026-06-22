@@ -4,8 +4,8 @@ Aligned vector rows over a custom Euclidean metric. The Python ``Space`` adapts
 the records, exposes explicit distances and the matrix view, and reports a
 runtime-policy view. Search, clustering, outlier detection, graph construction,
 and classical-MDS embedding are native algorithms reached through bindings.
-Space-level exact neighbor search is promoted here; clustering, outliers, graph
-construction, and MDS remain unavailable until their bindings are promoted.
+Space-level exact neighbor search, clustering, and outliers are promoted here;
+graph construction and MDS remain unavailable until their bindings are promoted.
 (Native vector mappings such as PHATE-AE are exercised by the core test suite,
 which pins the native binding contract.)
 """
@@ -70,11 +70,17 @@ def main():
     assert [neighbor.id for neighbor in neighbors.neighbors] == [0, 1, 2]
     print("neighbors((0.1, 0.1)) =", [names[neighbor.id] for neighbor in neighbors.neighbors])
 
-    # Native boundary: indexed search / clustering / outliers / graph / MDS embedding.
+    groups = space.groups(strategy=KMedoids(groups=3), representation=matrix)
+    assert groups.cluster_count == 3
+    print("group medoids =", [names[index] for index in groups.medoids])
+
+    outliers = space.outliers(strategy=DBSCAN(radius=0.7, min_points=2), representation=matrix)
+    assert [outlier.record_id for outlier in outliers.outliers] == [8]
+    print("outliers =", [names[outlier.record_id] for outlier in outliers.outliers])
+
+    # Native boundary: indexed search / graph / MDS embedding.
     requires_native("to_tree.knn", lambda: space.to_tree().knn((0.1, 0.1), count=3))
     requires_native("to_graph", lambda: space.to_graph(count=2))
-    requires_native("groups", lambda: space.groups(strategy=KMedoids(groups=3), representation=matrix))
-    requires_native("outliers", lambda: space.outliers(strategy=DBSCAN(radius=0.7, min_points=2), representation=matrix))
     requires_native("embed", lambda: space.embed(strategy=MDS(dimensions=2), representation=matrix))
 
 

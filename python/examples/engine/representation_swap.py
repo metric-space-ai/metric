@@ -52,9 +52,12 @@ def main():
     assert [neighbor.record for neighbor in neighbors.neighbors] == ["metrics", "metric"]
     print("neighbors(metricks) =", [neighbor.record for neighbor in neighbors.neighbors])
 
-    # Native boundary: graph construction and clustering are not promoted here.
+    groups = space.groups(count=2, representation=matrix)
+    assert groups.cluster_count == 2
+    print("group medoids =", [records[index] for index in groups.medoids])
+
+    # Native boundary: graph construction is not promoted here.
     requires_native("to_graph", lambda: space.to_graph(count=2))
-    requires_native("groups", lambda: space.groups(count=2, representation=matrix))
 
     # Staleness bookkeeping stays in Python (no algorithm involved).
     space.touch()

@@ -738,8 +738,42 @@ class Space(FiniteMetricSpace):
         return self.rnn(query, radius)
 
     def groups(self, strategy=None, *, count="auto", radius=None, min_size=1, representation=None, runtime=None):
-        """Group records via clustering (native-only)."""
-        _require_native_binding("Space.groups(...)", "clustering")
+        """Group records through promoted native clustering bindings."""
+        require_exact_runtime(runtime)
+        from metric.operators import ClusteringResult, find_groups
+        from metric.strategies import DBSCAN, KMedoids
+
+        if strategy is None:
+            if radius is not None:
+                strategy = DBSCAN(radius=radius, min_points=min_size)
+            else:
+                requested = 2 if count == "auto" else count
+                strategy = KMedoids(groups=requested, max_iterations=100)
+        result = find_groups(
+            self.records,
+            self.metric,
+            strategy,
+            representation=self._representation_name(representation),
+        )
+        id_by_position = {position: self.ids[position] for position in range(len(self.ids))}
+        assignments = result.assignments
+        medoids = tuple(id_by_position[int(index)] for index in result.medoids)
+        core_records = tuple(id_by_position[int(index)] for index in result.core_records)
+        noise_records = tuple(id_by_position[int(index)] for index in result.noise_records)
+        return ClusteringResult(
+            assignments=assignments,
+            medoids=medoids,
+            core_records=core_records,
+            noise_records=noise_records,
+            cluster_sizes=result.cluster_sizes,
+            record_count=result.record_count,
+            cluster_count=result.cluster_count,
+            noise_count=result.noise_count,
+            iterations=result.iterations,
+            converged=result.converged,
+            algorithm=result.algorithm,
+            representation=result.representation,
+        )
 
     def outliers(
         self,
@@ -751,8 +785,38 @@ class Space(FiniteMetricSpace):
         representation=None,
         runtime=None,
     ):
-        """Find unusual records (native-only)."""
-        _require_native_binding("Space.outliers(...)", "outlier detection")
+        """Find unusual records through promoted native outlier bindings."""
+        require_exact_runtime(runtime)
+        from metric.operators import Outlier, OutlierResult, find_outliers
+
+        if strategy is None:
+            if count is None:
+                if self.records:
+                    count = max(1, int(len(self.records) * fraction))
+                else:
+                    count = 0
+            strategy = count
+        result = find_outliers(
+            self.records,
+            self.metric,
+            strategy,
+            representation=self._representation_name(representation),
+        )
+        outliers = tuple(
+            Outlier(record_id=self.ids[int(outlier.record_id)], score=outlier.score)
+            for outlier in result.outliers
+            if threshold is None or outlier.score >= threshold
+        )
+        return OutlierResult(
+            outliers=outliers,
+            record_count=result.record_count,
+            cluster_count=result.cluster_count,
+            noise_count=len(outliers),
+            exact=result.exact,
+            operator_name=result.operator_name,
+            strategy=result.strategy,
+            representation=result.representation,
+        )
 
     def denoise(
         self,
@@ -765,8 +829,49 @@ class Space(FiniteMetricSpace):
         representation=None,
         runtime=None,
     ):
-        """Filter noise records into a derived metric space (native-only)."""
-        _require_native_binding("Space.denoise(...)", "density denoising")
+        """Filter unusual records into a derived metric space through native bindings."""
+        require_exact_runtime(runtime)
+        from metric.operators import MappingResult, denoise_space
+
+        if strategy is not None:
+            result = denoise_space(
+                self.records,
+                self.metric,
+                strategy,
+                representation=self._representation_name(representation),
+            )
+            kept_positions = [int(index) for index in result.source_record_ids]
+        else:
+            outliers = self.outliers(
+                count=count,
+                fraction=fraction,
+                threshold=threshold,
+                representation=representation,
+                runtime=runtime,
+            )
+            removed_ids = {outlier.record_id for outlier in outliers.outliers}
+            kept_positions = [index for index, record_id in enumerate(self.ids) if record_id not in removed_ids]
+
+        return MappingResult(
+            space=Space(
+                [self.records[index] for index in kept_positions],
+                self.metric,
+                ids=[self.ids[index] for index in kept_positions],
+                name=self.name,
+                metadata=self.metadata,
+                validate=self.validate,
+                cache=self.cache,
+            ),
+            source_record_ids=tuple(self.ids[index] for index in kept_positions),
+            source_record_count=len(self.records),
+            target_record_count=len(kept_positions),
+            exact=True,
+            operator_name="denoise",
+            mapping="noise_filter",
+            strategy=getattr(result, "strategy", "nearest_neighbor_isolation") if strategy is not None else "nearest_neighbor_isolation",
+            representation=self._representation_name(representation),
+            inverse_supported=False,
+        )
 
     def representatives(self, k=None, strategy=None, *, count=None, representation=None, runtime=None):
         """Select representative records through the native C++ binding."""

@@ -446,11 +446,14 @@ def _build_clustered_space_model(space, clustering):
     for label, members in enumerate(source_records):
         if not members:
             raise ValueError("cannot derive a clustered space with empty clusters")
-        representative_position = (
-            _coerce_count(medoids[label], "cluster medoid")
-            if label < len(medoids)
-            else _position_for_source_id(space, members[0])
-        )
+        if label < len(medoids):
+            medoid = _coerce_count(medoids[label], "cluster medoid")
+            try:
+                representative_position = _position_for_source_id(space, medoid)
+            except ValueError:
+                representative_position = medoid
+        else:
+            representative_position = _position_for_source_id(space, members[0])
         if representative_position >= record_count:
             raise ValueError("clustering medoid references an unknown source record")
         representative_positions.append(representative_position)

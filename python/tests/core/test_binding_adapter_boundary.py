@@ -52,6 +52,9 @@ def test_unpromoted_stats_modify_calls_still_raise():
     assert space.reduce(1).source_record_ids == (0,)
     assert space.compress(1).compressed_record_count == 1
     assert space.describe().record_count == 3
+    assert space.groups(2).cluster_count == 2
+    assert len(space.outliers(count=1).outliers) == 1
+    assert space.denoise(count=1).target_record_count == 2
 
     for call in (
         lambda: space.compare(space),

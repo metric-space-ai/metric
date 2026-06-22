@@ -3,13 +3,11 @@
 The Python facade is organized around user intent. Start with records and a
 metric, then ask what you want to know about the finite metric space.
 
-> **Availability.** The intent methods on this page (`neighbors`, `groups`,
-> `embed`, `outliers`, `denoise`, `reduce`, `compress`, `compare`, `describe`,
-> ...) currently raise `StrategyUnavailableError` in the default core wheel —
-> their native bindings are not promoted yet. Space construction, `distance`,
-> `pairwise`, and the `to_matrix`/`to_tree`/`to_graph` views run today. The
-> snippets below show the reserved Python facade shape; for these analyses today
-> use the C++ surface.
+> **Availability.** The default core wheel runs construction, `distance`,
+> `pairwise`, representation views, exact neighbors, groups, outliers, denoise,
+> representatives, reduce/compress, and structure diagnostics through native
+> bindings. `embed`, `compare`, and `correlate` still raise
+> `StrategyUnavailableError` until their bindings are promoted.
 
 ## Neighbors
 

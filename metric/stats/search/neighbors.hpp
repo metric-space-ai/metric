@@ -2,8 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef _METRIC_INTENT_NEIGHBORS_HPP
-#define _METRIC_INTENT_NEIGHBORS_HPP
+#ifndef _METRIC_STATS_SEARCH_NEIGHBORS_HPP
+#define _METRIC_STATS_SEARCH_NEIGHBORS_HPP
 
 #include <cstddef>
 #include <stdexcept>

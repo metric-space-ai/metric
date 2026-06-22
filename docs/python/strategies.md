@@ -9,7 +9,7 @@ exported as top-level algorithm names.
 | Strategy | Intent Path | Notes |
 |---|---|---|
 | `MDS` / `ClassicMDS` | `space.embed(...)` | Deterministic classical MDS over the exact finite distance matrix. |
-| `KMedoids` | `space.groups(...)` | Deterministic representative grouping vocabulary; not promoted in the default wheel yet. |
+| `KMedoids` | `space.groups(...)` | Deterministic representative grouping. |
 | `DBSCAN` | `space.groups(...)`, `space.outliers(...)`, `space.denoise(...)` | Deterministic density grouping and noise filtering. |
 | `FarthestFirst` | `space.representatives(...)`, `space.reduce(...)`, `space.compress(...)` | Deterministic representative selection. |
 | `DistanceProfileCorrelation` | `space.compare(...)` | Pearson correlation of exact pairwise distance profiles. |
@@ -21,8 +21,7 @@ from metric.strategies import FarthestFirst, KMedoids
 
 space = Space(["cat", "cot", "coat", "dog"], metric=Edit())
 representatives = space.representatives(count=2, strategy=FarthestFirst(seed_index=0))
-# groups = space.groups(strategy=KMedoids(groups=2, max_iterations=50))
-# KMedoids grouping is importable vocabulary but not promoted in the default wheel yet.
+groups = space.groups(strategy=KMedoids(groups=2, max_iterations=50))
 ```
 
 Use strategy objects only when the default intent behavior is not explicit

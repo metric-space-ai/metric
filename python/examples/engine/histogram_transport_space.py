@@ -1,12 +1,11 @@
 """Histogram transport engine demo — exact search over histograms.
 
 The Python ``Space`` adapts histogram records over a toy transport metric and
-exposes explicit distances plus native exact-scan neighbor search. Clustering
-remains native-only until its binding is promoted.
+exposes explicit distances plus native exact-scan neighbor search and native
+grouping.
 """
 
 from metric import Space
-from metric.exceptions import StrategyUnavailableError
 from metric.operators import pairwise_distance_matrix
 from metric.strategies import KMedoids
 
@@ -22,15 +21,6 @@ def cumulative_transport_distance(lhs, rhs):
         distance += abs(cumulative_delta)
 
     return distance
-
-
-def requires_native(label, call):
-    try:
-        call()
-    except StrategyUnavailableError:
-        print(f"{label}: requires native C++ binding")
-    else:
-        raise AssertionError(f"{label} should require a native binding")
 
 
 def main():
@@ -55,8 +45,9 @@ def main():
     assert [neighbor.id for neighbor in neighbors.neighbors] == [1, 3]
     print("neighbors(query) =", [names[neighbor.id] for neighbor in neighbors.neighbors])
 
-    # Native boundary: clustering lives in C++ but is not promoted here.
-    requires_native("groups", lambda: space.groups(KMedoids(groups=2)))
+    groups = space.groups(KMedoids(groups=2))
+    assert groups.cluster_count == 2
+    print("group medoids =", [names[index] for index in groups.medoids])
 
 
 if __name__ == "__main__":

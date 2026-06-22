@@ -3,8 +3,8 @@
 A rich toy domain metric that combines numeric, categorical, string, spectrum,
 and curve fields. The Python ``Space`` adapts these heterogeneous records and
 exposes explicit distances, native exact-scan neighbor search, and a runtime-
-policy view. Clustering, outlier detection, and embedding remain native-only
-until their bindings are promoted.
+policy view. Clustering and outlier detection run through native bindings;
+embedding remains unavailable until its binding is promoted.
 """
 
 from math import sqrt
@@ -12,7 +12,7 @@ from math import sqrt
 from metric import RuntimePolicy, Space
 from metric.exceptions import StrategyUnavailableError
 from metric.operators import pairwise_distance_matrix
-from metric.strategies import DBSCAN, KMedoids, MDS
+from metric.strategies import DBSCAN, MDS
 
 
 WEIGHTS = {
@@ -164,11 +164,15 @@ def main():
     assert [neighbor.id for neighbor in neighbors.neighbors] == [1, 2]
     print("neighbors(query) =", [names[neighbor.id] for neighbor in neighbors.neighbors])
 
-    # Native boundary: clustering / outliers / embedding live in C++ but are not promoted here.
-    requires_native("groups", lambda: space.groups(count=2, representation=matrix))
-    requires_native("outliers", lambda: space.outliers(strategy=DBSCAN(radius=2, min_points=2), representation=matrix))
+    groups = space.groups(count=2, representation=matrix)
+    assert groups.cluster_count == 2
+    print("group medoids =", [names[index] for index in groups.medoids])
+
+    outliers = space.outliers(strategy=DBSCAN(radius=2, min_points=2), representation=matrix)
+    print("outliers =", [names[outlier.record_id] for outlier in outliers.outliers])
+
+    # Native boundary: embedding lives in C++ but is not promoted here.
     requires_native("embed", lambda: space.embed(strategy=MDS(dimensions=2), representation=matrix))
-    requires_native("groups(kmedoids)", lambda: space.groups(strategy=KMedoids(groups=2), representation=matrix))
 
 
 if __name__ == "__main__":

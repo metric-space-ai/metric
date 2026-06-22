@@ -4,7 +4,9 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <limits>
+#include <queue>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -263,6 +265,148 @@ auto structure_description_from_matrix(const std::vector<std::vector<double>> &d
 	return result;
 }
 
+auto checked_positive_count(std::size_t value, const char *name) -> std::size_t
+{
+	if (value == 0) {
+		std::ostringstream message;
+		message << name << " must be positive";
+		throw std::invalid_argument(message.str());
+	}
+	return value;
+}
+
+auto checked_positive_iterations(std::size_t value) -> std::size_t
+{
+	if (value == 0) {
+		throw std::invalid_argument("max_iterations must be positive");
+	}
+	return value;
+}
+
+auto cluster_medoids(const std::vector<std::vector<double>> &distances, const std::vector<int> &assignments,
+					 std::size_t cluster_count) -> std::vector<std::size_t>
+{
+	std::vector<std::size_t> medoids(cluster_count, 0);
+	for (std::size_t cluster = 0; cluster < cluster_count; ++cluster) {
+		auto best_index = distances.size();
+		auto best_sum = std::numeric_limits<double>::infinity();
+		for (std::size_t candidate = 0; candidate < distances.size(); ++candidate) {
+			if (assignments[candidate] != static_cast<int>(cluster)) {
+				continue;
+			}
+			auto sum = 0.0;
+			for (std::size_t other = 0; other < distances.size(); ++other) {
+				if (assignments[other] == static_cast<int>(cluster)) {
+					sum += distances[candidate][other];
+				}
+			}
+			if (sum < best_sum || (sum == best_sum && candidate < best_index)) {
+				best_sum = sum;
+				best_index = candidate;
+			}
+		}
+		medoids[cluster] = best_index == distances.size() ? 0 : best_index;
+	}
+	return medoids;
+}
+
+auto cluster_sizes_from_assignments(const std::vector<int> &assignments, std::size_t cluster_count) -> std::vector<std::size_t>
+{
+	std::vector<std::size_t> sizes(cluster_count, 0);
+	for (const auto label : assignments) {
+		if (label >= 0 && static_cast<std::size_t>(label) < cluster_count) {
+			++sizes[static_cast<std::size_t>(label)];
+		}
+	}
+	return sizes;
+}
+
+auto clustering_payload(const std::vector<int> &assignments, const std::vector<std::size_t> &medoids,
+						const std::vector<std::size_t> &core_records, const std::vector<std::size_t> &noise_records,
+						std::size_t iterations, bool converged, const std::string &algorithm,
+						const std::string &representation) -> py::dict
+{
+	auto result = py::dict{};
+	result["assignments"] = assignments;
+	result["medoids"] = medoids;
+	result["core_records"] = core_records;
+	result["noise_records"] = noise_records;
+	result["cluster_sizes"] = cluster_sizes_from_assignments(assignments, medoids.size());
+	result["record_count"] = assignments.size();
+	result["cluster_count"] = medoids.size();
+	result["noise_count"] = noise_records.size();
+	result["iterations"] = iterations;
+	result["converged"] = converged;
+	result["algorithm"] = algorithm;
+	result["representation"] = representation;
+	return result;
+}
+
+auto assign_to_medoids(const std::vector<std::vector<double>> &distances, const std::vector<std::size_t> &medoids)
+	-> std::vector<int>
+{
+	std::vector<int> assignments(distances.size(), -1);
+	for (std::size_t record = 0; record < distances.size(); ++record) {
+		auto best_cluster = std::size_t{0};
+		auto best_distance = std::numeric_limits<double>::infinity();
+		for (std::size_t cluster = 0; cluster < medoids.size(); ++cluster) {
+			const auto distance = distances[record][medoids[cluster]];
+			if (distance < best_distance || (distance == best_distance && medoids[cluster] < medoids[best_cluster])) {
+				best_distance = distance;
+				best_cluster = cluster;
+			}
+		}
+		assignments[record] = static_cast<int>(best_cluster);
+	}
+	return assignments;
+}
+
+auto farthest_first_from_matrix(const std::vector<std::vector<double>> &distances, std::size_t count) -> std::vector<std::size_t>
+{
+	const auto record_count = distances.size();
+	if (count == 0 || record_count == 0) {
+		return {};
+	}
+
+	const auto target_count = std::min(count, record_count);
+	std::vector<std::size_t> representatives;
+	representatives.reserve(target_count);
+	std::vector<bool> selected(record_count, false);
+	std::vector<double> nearest_distances(record_count, std::numeric_limits<double>::infinity());
+
+	representatives.push_back(0);
+	selected[0] = true;
+	for (std::size_t index = 0; index < record_count; ++index) {
+		nearest_distances[index] = distances[index][0];
+	}
+
+	while (representatives.size() < target_count) {
+		auto next_index = record_count;
+		auto next_distance = -1.0;
+		for (std::size_t index = 0; index < record_count; ++index) {
+			if (selected[index]) {
+				continue;
+			}
+			if (nearest_distances[index] > next_distance ||
+				(nearest_distances[index] == next_distance && (next_index == record_count || index < next_index))) {
+				next_distance = nearest_distances[index];
+				next_index = index;
+			}
+		}
+		if (next_index == record_count) {
+			break;
+		}
+		representatives.push_back(next_index);
+		selected[next_index] = true;
+		for (std::size_t index = 0; index < record_count; ++index) {
+			if (distances[index][next_index] < nearest_distances[index]) {
+				nearest_distances[index] = distances[index][next_index];
+			}
+		}
+	}
+	return representatives;
+}
+
 } // namespace
 
 auto native_pairwise_distance_matrix(py::sequence records, py::object metric) -> std::vector<std::vector<double>>
@@ -460,6 +604,189 @@ auto native_describe_structure(py::sequence records, py::object metric, const st
 	return structure_description_from_matrix(native_pairwise_distance_matrix(records, metric), representation);
 }
 
+auto native_kmedoids(py::sequence records, py::object metric, std::size_t groups, std::size_t max_iterations,
+					 const std::string &representation = "metric_space") -> py::dict
+{
+	checked_positive_count(groups, "groups");
+	checked_positive_iterations(max_iterations);
+	const auto distances = native_pairwise_distance_matrix(records, metric);
+	const auto record_count = distances.size();
+	if (record_count == 0) {
+		throw std::invalid_argument("kmedoids requires at least one record");
+	}
+
+	std::vector<std::size_t> medoids = farthest_first_from_matrix(distances, std::min(groups, record_count));
+	auto assignments = assign_to_medoids(distances, medoids);
+	auto converged = false;
+	auto iterations = std::size_t{0};
+	for (; iterations < max_iterations; ++iterations) {
+		const auto updated_medoids = cluster_medoids(distances, assignments, medoids.size());
+		const auto updated_assignments = assign_to_medoids(distances, updated_medoids);
+		converged = updated_medoids == medoids && updated_assignments == assignments;
+		medoids = updated_medoids;
+		assignments = updated_assignments;
+		if (converged) {
+			++iterations;
+			break;
+		}
+	}
+
+	return clustering_payload(assignments, medoids, {}, {}, iterations, converged, "kmedoids", representation);
+}
+
+auto native_dbscan(py::sequence records, py::object metric, double radius, std::size_t min_points,
+				   const std::string &representation = "metric_space") -> py::dict
+{
+	checked_radius(radius, "radius");
+	checked_positive_count(min_points, "min_points");
+	const auto distances = native_pairwise_distance_matrix(records, metric);
+	const auto record_count = distances.size();
+
+	std::vector<std::vector<std::size_t>> neighborhoods(record_count);
+	std::vector<bool> core(record_count, false);
+	for (std::size_t record = 0; record < record_count; ++record) {
+		for (std::size_t candidate = 0; candidate < record_count; ++candidate) {
+			if (distances[record][candidate] <= radius) {
+				neighborhoods[record].push_back(candidate);
+			}
+		}
+		core[record] = neighborhoods[record].size() >= min_points;
+	}
+
+	std::vector<int> assignments(record_count, -1);
+	auto cluster_count = std::size_t{0};
+	for (std::size_t record = 0; record < record_count; ++record) {
+		if (!core[record] || assignments[record] != -1) {
+			continue;
+		}
+		const auto label = static_cast<int>(cluster_count);
+		++cluster_count;
+		std::queue<std::size_t> frontier;
+		assignments[record] = label;
+		frontier.push(record);
+		while (!frontier.empty()) {
+			const auto current = frontier.front();
+			frontier.pop();
+			for (const auto neighbor : neighborhoods[current]) {
+				if (assignments[neighbor] == -1) {
+					assignments[neighbor] = label;
+					if (core[neighbor]) {
+						frontier.push(neighbor);
+					}
+				}
+			}
+		}
+	}
+
+	std::vector<std::size_t> core_records;
+	std::vector<std::size_t> noise_records;
+	for (std::size_t record = 0; record < record_count; ++record) {
+		if (core[record]) {
+			core_records.push_back(record);
+		}
+		if (assignments[record] == -1) {
+			noise_records.push_back(record);
+		}
+	}
+
+	const auto medoids = cluster_medoids(distances, assignments, cluster_count);
+	return clustering_payload(assignments, medoids, core_records, noise_records, 1, true, "dbscan", representation);
+}
+
+auto native_nearest_neighbor_outliers(py::sequence records, py::object metric, std::size_t count,
+									  const std::string &representation = "metric_space") -> py::dict
+{
+	const auto distances = native_pairwise_distance_matrix(records, metric);
+	const auto record_count = distances.size();
+	std::vector<std::pair<std::size_t, double>> scored;
+	scored.reserve(record_count);
+	for (std::size_t record = 0; record < record_count; ++record) {
+		auto nearest = record_count < 2 ? 0.0 : std::numeric_limits<double>::infinity();
+		for (std::size_t candidate = 0; candidate < record_count; ++candidate) {
+			if (record == candidate) {
+				continue;
+			}
+			nearest = std::min(nearest, distances[record][candidate]);
+		}
+		scored.emplace_back(record, nearest);
+	}
+	std::sort(scored.begin(), scored.end(), [](const auto &lhs, const auto &rhs) {
+		if (lhs.second > rhs.second) {
+			return true;
+		}
+		if (rhs.second > lhs.second) {
+			return false;
+		}
+		return lhs.first < rhs.first;
+	});
+	if (scored.size() > count) {
+		scored.resize(count);
+	}
+
+	auto result = py::dict{};
+	result["outliers"] = scored;
+	result["record_count"] = record_count;
+	result["cluster_count"] = 0;
+	result["noise_count"] = scored.size();
+	result["exact"] = true;
+	result["operator_name"] = "find_outliers";
+	result["strategy"] = "nearest_neighbor_isolation";
+	result["representation"] = representation;
+	return result;
+}
+
+auto native_dbscan_outliers(py::sequence records, py::object metric, double radius, std::size_t min_points,
+							const std::string &representation = "metric_space") -> py::dict
+{
+	const auto clustering = native_dbscan(records, metric, radius, min_points, representation);
+	const auto assignments = clustering["assignments"].cast<std::vector<int>>();
+	const auto noise_records = clustering["noise_records"].cast<std::vector<std::size_t>>();
+	const auto distances = native_pairwise_distance_matrix(records, metric);
+
+	std::vector<std::pair<std::size_t, double>> scored;
+	for (const auto record : noise_records) {
+		auto score = 0.0;
+		auto has_reference = false;
+		for (std::size_t candidate = 0; candidate < assignments.size(); ++candidate) {
+			if (assignments[candidate] == -1) {
+				continue;
+			}
+			if (!has_reference || distances[record][candidate] < score) {
+				score = distances[record][candidate];
+				has_reference = true;
+			}
+		}
+		if (!has_reference) {
+			for (std::size_t candidate = 0; candidate < assignments.size(); ++candidate) {
+				if (candidate != record) {
+					score = std::max(score, distances[record][candidate]);
+				}
+			}
+		}
+		scored.emplace_back(record, score);
+	}
+	std::sort(scored.begin(), scored.end(), [](const auto &lhs, const auto &rhs) {
+		if (lhs.second > rhs.second) {
+			return true;
+		}
+		if (rhs.second > lhs.second) {
+			return false;
+		}
+		return lhs.first < rhs.first;
+	});
+
+	auto result = py::dict{};
+	result["outliers"] = scored;
+	result["record_count"] = assignments.size();
+	result["cluster_count"] = clustering["cluster_count"];
+	result["noise_count"] = scored.size();
+	result["exact"] = true;
+	result["operator_name"] = "find_outliers";
+	result["strategy"] = "dbscan_noise";
+	result["representation"] = representation;
+	return result;
+}
+
 void export_exact_scan(py::module &m)
 {
 	m.def("pairwise_distance_matrix", &native_pairwise_distance_matrix, py::arg("records"), py::arg("metric"));
@@ -480,4 +807,12 @@ void export_exact_scan(py::module &m)
 	m.def("intrinsic_dimension", &native_intrinsic_dimension, py::arg("records"), py::arg("metric"));
 	m.def("describe_structure", &native_describe_structure, py::arg("records"), py::arg("metric"),
 		  py::arg("representation") = "metric_space");
+	m.def("kmedoids", &native_kmedoids, py::arg("records"), py::arg("metric"), py::arg("groups"),
+		  py::arg("max_iterations") = 100, py::arg("representation") = "metric_space");
+	m.def("dbscan", &native_dbscan, py::arg("records"), py::arg("metric"), py::arg("radius"),
+		  py::arg("min_points"), py::arg("representation") = "metric_space");
+	m.def("nearest_neighbor_outliers", &native_nearest_neighbor_outliers, py::arg("records"), py::arg("metric"),
+		  py::arg("count"), py::arg("representation") = "metric_space");
+	m.def("dbscan_outliers", &native_dbscan_outliers, py::arg("records"), py::arg("metric"), py::arg("radius"),
+		  py::arg("min_points"), py::arg("representation") = "metric_space");
 }

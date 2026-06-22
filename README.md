@@ -286,8 +286,8 @@ runs space construction and inspection (`distance`, `pairwise`, and the
 `to_matrix`/`to_tree`/`to_graph` representation views), exact neighbor search
 (`neighbors`, `nearest`, `within_radius`), representative selection, reduction,
 compression, structural description, intrinsic-dimension diagnostics, and the
-metric constructors. Higher intent methods such as `groups`, `outliers`,
-`embed`, and `compare` still raise `StrategyUnavailableError` until their native
+metric constructors. Higher intent methods such as `embed` and
+`compare`/`correlate` still raise `StrategyUnavailableError` until their native
 bindings are promoted in the default wheel. Use the C++ surface for those
 analyses today.
 

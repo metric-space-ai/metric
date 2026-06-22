@@ -4,10 +4,10 @@ This module is an adapter boundary, not an algorithm library. The result
 dataclasses marshal native results into stable public objects, and a few
 helpers invoke the caller's own metric/transform callable. Exact-scan pair,
 neighbor, representative-selection, reduction, compression, intrinsic-dimension,
-and structure-description loops are exposed through the native C++ binding;
-higher METRIC algorithms (graph construction, clustering, embedding,
-correlation) remain native-only facades until their binding is exposed.
-METRIC's production numerics live in native C++.
+structure-description, clustering, outlier, and denoise loops are exposed
+through the native C++ binding; higher METRIC algorithms (graph construction,
+embedding, correlation) remain native-only facades until their binding is
+exposed. METRIC's production numerics live in native C++.
 """
 
 from dataclasses import dataclass
@@ -83,6 +83,43 @@ def _assign_to_representatives(records, metric, representatives):
         list(representatives),
     )
     return tuple(assignments), tuple(distances)
+
+
+def _clustering_result_from_payload(payload):
+    return ClusteringResult(
+        assignments=tuple(payload["assignments"]),
+        medoids=tuple(payload["medoids"]),
+        core_records=tuple(payload["core_records"]),
+        noise_records=tuple(payload["noise_records"]),
+        cluster_sizes=tuple(payload["cluster_sizes"]),
+        record_count=int(payload["record_count"]),
+        cluster_count=int(payload["cluster_count"]),
+        noise_count=int(payload["noise_count"]),
+        iterations=int(payload["iterations"]),
+        converged=bool(payload["converged"]),
+        algorithm=str(payload["algorithm"]),
+        representation=str(payload["representation"]),
+    )
+
+
+def _outlier_result_from_payload(payload):
+    return OutlierResult(
+        outliers=tuple(Outlier(record_id=int(record_id), score=score) for record_id, score in payload["outliers"]),
+        record_count=int(payload["record_count"]),
+        cluster_count=int(payload["cluster_count"]),
+        noise_count=int(payload["noise_count"]),
+        exact=bool(payload["exact"]),
+        operator_name=str(payload["operator_name"]),
+        strategy=str(payload["strategy"]),
+        representation=str(payload["representation"]),
+    )
+
+
+def _normalize_positive_count(value, name):
+    requested = _normalize_neighbor_count(value, None)
+    if requested <= 0:
+        raise ValueError(f"{name} must be positive")
+    return requested
 
 
 def _raise_unsupported_inverse(result):
@@ -1244,28 +1281,95 @@ def graph_stretch_diagnostics(records, metric, graph):
 
 
 def kmedoids(records, metric, groups, max_iterations=100, *, representation="metric_space"):
-    """Deterministic k-medoids grouping (native-only)."""
-    _require_native_binding("kmedoids(...)", "k-medoids clustering")
+    """Deterministic k-medoids grouping through the native C++ binding."""
+    return _clustering_result_from_payload(
+        _native_metric_module().kmedoids(
+            list(records),
+            metric,
+            _normalize_positive_count(groups, "groups"),
+            _normalize_positive_count(max_iterations, "max_iterations"),
+            representation,
+        )
+    )
 
 
 def dbscan(records, metric, radius, min_points, *, representation="metric_space"):
-    """Deterministic DBSCAN grouping (native-only)."""
-    _require_native_binding("dbscan(...)", "DBSCAN clustering")
+    """Deterministic DBSCAN grouping through the native C++ binding."""
+    return _clustering_result_from_payload(
+        _native_metric_module().dbscan(
+            list(records),
+            metric,
+            radius,
+            _normalize_positive_count(min_points, "min_points"),
+            representation,
+        )
+    )
 
 
 def find_groups(records, metric, strategy, *, representation="metric_space"):
-    """Group records through a clustering strategy (native-only)."""
-    _require_native_binding("find_groups(...)", "clustering")
+    """Group records through a promoted native clustering strategy."""
+    from metric.strategies import DBSCAN, KMedoids
+
+    if isinstance(strategy, int):
+        return kmedoids(records, metric, strategy, representation=representation)
+    if isinstance(strategy, KMedoids):
+        return kmedoids(records, metric, strategy.groups, strategy.max_iterations, representation=representation)
+    if isinstance(strategy, DBSCAN):
+        return dbscan(records, metric, strategy.radius, strategy.min_points, representation=representation)
+    _require_native_binding("find_groups(...)", f"{type(strategy).__name__} clustering")
 
 
 def find_outliers(records, metric, strategy, *, representation="metric_space"):
-    """Find unusual records through a clustering/scoring strategy (native-only)."""
-    _require_native_binding("find_outliers(...)", "outlier detection")
+    """Find unusual records through a promoted native scoring strategy."""
+    from metric.strategies import DBSCAN
+
+    if isinstance(strategy, DBSCAN):
+        return _outlier_result_from_payload(
+            _native_metric_module().dbscan_outliers(
+                list(records),
+                metric,
+                strategy.radius,
+                _normalize_positive_count(strategy.min_points, "min_points"),
+                representation,
+            )
+        )
+    if isinstance(strategy, int):
+        return _outlier_result_from_payload(
+            _native_metric_module().nearest_neighbor_outliers(
+                list(records),
+                metric,
+                _normalize_neighbor_count(strategy, None),
+                representation,
+            )
+        )
+    _require_native_binding("find_outliers(...)", f"{type(strategy).__name__} outlier detection")
 
 
 def denoise_space(records, metric, strategy, *, representation="metric_space"):
-    """Filter noise records into a derived metric space (native-only)."""
-    _require_native_binding("denoise_space(...)", "density denoising")
+    """Filter DBSCAN noise records into a derived metric space through the native C++ binding."""
+    from metric.strategies import DBSCAN
+    from metric.spaces import Space
+
+    if not isinstance(strategy, DBSCAN):
+        _require_native_binding("denoise_space(...)", f"{type(strategy).__name__} denoising")
+
+    record_list = list(records)
+    clustering = dbscan(record_list, metric, strategy.radius, strategy.min_points, representation=representation)
+    noise = set(clustering.noise_records)
+    kept_ids = tuple(index for index in range(len(record_list)) if index not in noise)
+    filtered = [record_list[index] for index in kept_ids]
+    return MappingResult(
+        space=Space(filtered, metric),
+        source_record_ids=kept_ids,
+        source_record_count=len(record_list),
+        target_record_count=len(filtered),
+        exact=True,
+        operator_name="denoise",
+        mapping="dbscan_noise_filter",
+        strategy="dbscan_noise",
+        representation=representation,
+        inverse_supported=False,
+    )
 
 
 def representative_indices(records, metric, k, seed_index=0):

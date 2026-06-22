@@ -332,6 +332,23 @@ if (LAPACK_FOUND)
     endforeach ()
 endif ()
 
+# These core-smoke targets call LAPACK directly (dsyevd / dpotrf / dpotrs /
+# dgeev / dgesdd / dgesv / dgetrf / dgetri). Without a linked LAPACK they cannot
+# link, so when LAPACK is unavailable they are excluded from the default build
+# here and their tests are DISABLED at the end of this file (the rest of the core
+# gate stays buildable LAPACK-free). LAPACK is a documented OPTIONAL backend, not
+# a hard core dependency.
+set(_metric_core_lapack_required_targets
+    engine_representation_parity_smoke
+    metric_numeric_determinant_pd_smoke
+    metric_numeric_inverse_llh_smoke
+    metric_numeric_solve_eigen_smoke
+    metric_numeric_svd_rank_smoke
+    metric_solve_laplacian_smoke)
+if (NOT LAPACK_FOUND)
+    set_target_properties(${_metric_core_lapack_required_targets} PROPERTIES EXCLUDE_FROM_ALL TRUE)
+endif ()
+
 add_executable(metric_numeric_production_smoke metric_numeric_production_smoke.cpp)
 target_link_libraries(metric_numeric_production_smoke PRIVATE ${METRIC_TARGET_NAME})
 
@@ -669,4 +686,12 @@ if (METRIC_BUILD_CORE_ENTROPY)
         target_link_libraries(stats_entropy_status_smoke PRIVATE ${LAPACK_LIBRARIES})
     endif ()
     add_test(NAME stats_entropy_status_smoke COMMAND stats_entropy_status_smoke)
+endif ()
+
+# The LAPACK-requiring tests stay registered (so the LABELS set_tests_properties
+# calls above resolve) but are DISABLED when LAPACK is absent; their binaries are
+# EXCLUDE_FROM_ALL (see above), so ctest skips them and the no-LAPACK core build
+# and gate stay green. With LAPACK present, nothing here changes.
+if (NOT LAPACK_FOUND)
+    set_tests_properties(${_metric_core_lapack_required_targets} PROPERTIES DISABLED TRUE)
 endif ()

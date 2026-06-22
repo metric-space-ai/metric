@@ -2,21 +2,11 @@
 
 The Python ``Space`` adapts string records over the native ``Edit`` binding and
 exposes explicit distances, the matrix view, and exact-scan neighbor search.
-Clustering remains native-only until its binding is promoted.
+Clustering runs through the native grouping binding.
 """
 
 from metric import Edit, Space
-from metric.exceptions import StrategyUnavailableError
 from metric.strategies import KMedoids
-
-
-def requires_native(label, call):
-    try:
-        call()
-    except StrategyUnavailableError:
-        print(f"{label}: requires native C++ binding")
-    else:
-        raise AssertionError(f"{label} should require a native binding")
 
 
 def main():
@@ -32,8 +22,9 @@ def main():
     assert [neighbor.record for neighbor in neighbors.neighbors] == ["metrics", "metric"]
     print("neighbors(metricks) =", [neighbor.record for neighbor in neighbors.neighbors])
 
-    # Native boundary: clustering lives in C++ but is not promoted here.
-    requires_native("groups", lambda: space.groups(KMedoids(groups=2)))
+    groups = space.groups(KMedoids(groups=2))
+    assert groups.cluster_count == 2
+    print("group medoids =", [records[index] for index in groups.medoids])
 
 
 if __name__ == "__main__":

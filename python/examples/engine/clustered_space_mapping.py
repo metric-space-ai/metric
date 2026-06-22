@@ -1,16 +1,11 @@
 """Clustered-space mapping — adapter boundary demo.
 
 ``mappings.clustered_space`` is a marshaling adapter: given a clustering
-*result* (which a native clustering binding would produce) it derives a
-cluster-level metric Space using only adapter-level ``space.distance`` lookups.
-The clustering itself (``space.groups``) is a native-only METRIC algorithm, so
-this demo constructs the clustering result explicitly and then exercises the
-marshaling adapter.
+*result* from ``space.groups`` it derives a cluster-level metric Space using
+only adapter-level ``space.distance`` lookups.
 """
 
 from metric import Edit, Space, mappings
-from metric.exceptions import StrategyUnavailableError
-from metric.operators import ClusteringResult
 from metric.strategies import KMedoids
 
 
@@ -18,30 +13,7 @@ def main():
     records = ["metric", "metrics", "matrix", "tree", "forest"]
     space = Space(records, metric=Edit(), name="string_clustered_mapping")
 
-    # Clustering is a native-only algorithm in the adapter-only package.
-    try:
-        space.groups(KMedoids(groups=2))
-    except StrategyUnavailableError:
-        print("groups: requires native C++ binding")
-    else:
-        raise AssertionError("groups should require a native binding")
-
-    # A native clustering binding would return a result of this shape. We build
-    # it explicitly here so we can demonstrate the marshaling adapter offline.
-    groups = ClusteringResult(
-        assignments=(0, 0, 0, 0, 1),
-        medoids=(0, 4),
-        core_records=(),
-        noise_records=(),
-        cluster_sizes=(4, 1),
-        record_count=len(records),
-        cluster_count=2,
-        noise_count=0,
-        iterations=2,
-        converged=True,
-        algorithm="kmedoids",
-        representation="metric_space",
-    )
+    groups = space.groups(KMedoids(groups=2))
 
     mapping = mappings.make_clustered_space_mapping(groups)
     model = mappings.fit(mapping, space)

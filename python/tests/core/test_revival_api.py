@@ -949,14 +949,22 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(space.nearest(0).id, 0)
         self.assertEqual([neighbor.id for neighbor in space.within_radius(0, 1).neighbors], [0, 1])
 
-        # Higher intent methods remain native-only until promoted bindings exist.
-        self.assertRequiresNative(space.groups)
-        self.assertRequiresNative(space.groups, KMedoids(groups=2))
-        self.assertRequiresNative(space.groups, DBSCAN(radius=1, min_points=2))
-        self.assertRequiresNative(space.outliers)
-        self.assertRequiresNative(space.outliers, DBSCAN(radius=2, min_points=2))
-        self.assertRequiresNative(space.denoise)
-        self.assertRequiresNative(space.denoise, DBSCAN(radius=2, min_points=2))
+        groups = space.groups(KMedoids(groups=2))
+        self.assertIsInstance(groups, ClusteringResult)
+        self.assertEqual(groups.assignments, (0, 0, 0, 1, 1))
+        self.assertEqual(groups.medoids, (1, 3))
+        self.assertEqual(groups.cluster_sizes, (3, 2))
+        sparse_space = Space([0, 1, 2, 10, 11], metric=lambda lhs, rhs: abs(lhs - rhs))
+        density_groups = sparse_space.groups(DBSCAN(radius=1, min_points=3))
+        self.assertEqual(density_groups.assignments, (0, 0, 0, -1, -1))
+        self.assertEqual(density_groups.noise_records, (3, 4))
+        outliers = sparse_space.outliers(DBSCAN(radius=1, min_points=3))
+        self.assertIsInstance(outliers, OutlierResult)
+        self.assertEqual([outlier.record_id for outlier in outliers.outliers], [4, 3])
+        denoised = sparse_space.denoise(DBSCAN(radius=1, min_points=3))
+        self.assertIsInstance(denoised, MappingResult)
+        self.assertEqual(denoised.space.records, [0, 1, 2])
+        self.assertEqual(denoised.source_record_ids, (0, 1, 2))
         representatives_result = space.representatives(3)
         self.assertIsInstance(representatives_result, RepresentativeSet)
         self.assertEqual(representatives_result.representatives, (0, 4, 2))
@@ -989,11 +997,14 @@ class RevivalApiTest(unittest.TestCase):
         # The matching operator free functions also raise.
         metric = lambda lhs, rhs: abs(lhs - rhs)
         records = [0, 1, 2, 10, 11]
-        self.assertRequiresNative(find_groups, records, metric, 2)
-        self.assertRequiresNative(kmedoids, records, metric, 2)
-        self.assertRequiresNative(dbscan, records, metric, 2, 2)
-        self.assertRequiresNative(find_outliers, records, metric, DBSCAN(radius=2, min_points=2))
-        self.assertRequiresNative(denoise_space, records, metric, DBSCAN(radius=2, min_points=2))
+        self.assertEqual(kmedoids(records, metric, 2).assignments, (0, 0, 0, 1, 1))
+        self.assertEqual(find_groups(records, metric, 2).medoids, (1, 3))
+        self.assertEqual(dbscan(records, metric, 1, 3).noise_records, (3, 4))
+        self.assertEqual(
+            [outlier.record_id for outlier in find_outliers(records, metric, DBSCAN(radius=1, min_points=3)).outliers],
+            [4, 3],
+        )
+        self.assertEqual(denoise_space(records, metric, DBSCAN(radius=1, min_points=3)).space.records, [0, 1, 2])
         self.assertEqual(find_representatives(records, metric, 2).representatives, (0, 4))
         self.assertEqual(reduce_space(records, metric, 2).source_record_ids, (0, 4))
         self.assertEqual(compress_space(records, metric, 2).compressed_record_count, 2)
@@ -1066,6 +1077,17 @@ class RevivalApiTest(unittest.TestCase):
         model = mappings.fit(mappings.make_clustered_space_mapping(clustering), group_space)
         self.assertFalse(model.inverse_supported())
         self.assertEqual(mappings.transform(model, group_space).source_records, clustered.source_records)
+
+        keyed_space = Space(
+            [0, 1, 2, 10, 11],
+            metric=lambda lhs, rhs: abs(lhs - rhs),
+            ids=[10, 11, 12, 20, 21],
+        )
+        keyed_groups = keyed_space.groups(KMedoids(groups=2))
+        self.assertEqual(keyed_groups.medoids, (11, 20))
+        keyed_clustered = mappings.clustered_space(keyed_space, keyed_groups)
+        self.assertEqual(keyed_clustered.source_records, ((10, 11, 12), (20, 21)))
+        self.assertEqual(keyed_clustered.representative_records, (11, 20))
     def test_intrinsic_dimension_uses_native_binding(self):
         import metric.operators as operators
 
@@ -1244,7 +1266,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("approximate", approximate_diagnostics.reason)
 
         self.assertEqual([neighbor.record for neighbor in space.neighbors("cut", 2).neighbors], ["cat", "cot"])
-        self.assertRequiresNative(space.groups)
+        self.assertEqual(space.groups(count=2).cluster_count, 2)
         described = space.describe(representation=space.to_matrix(), runtime=policy)
         self.assertEqual(described.record_count, len(self.records))
         self.assertEqual(described.representation, "matrix")

@@ -10,9 +10,9 @@ helpers, and operator helpers over the native implementation.
 > exact neighbor search (`neighbors`/`nearest`/`within_radius`), representative
 > selection, reduction, compression, structural description,
 > intrinsic-dimension diagnostics, and the metric constructors. Higher
-> algorithmic intent methods — `groups`, `outliers`, `denoise`, `embed`,
-> `compare`/`correlate` (and the matching unpromoted `metric.operators` free
-> functions) — currently raise `StrategyUnavailableError`: their native
+> algorithmic intent methods — `embed`, `compare`/`correlate` (and the
+> matching unpromoted `metric.operators` free functions) — currently raise
+> `StrategyUnavailableError`: their native
 > bindings are not promoted in the default wheel yet. `metric.correlation`
 > (Entropy/MGC) requires the full build (`METRIC_PYTHON_BUILD_FULL`) and
 > otherwise raises `ModuleNotFoundError`. For cluster/embedding/dependency
@@ -290,8 +290,7 @@ dimension = intrinsic_dimension(records, Edit())
 structure = describe_structure(records, Edit())
 
 # Imported but not promoted in the default wheel yet:
-# exact_knn_graph(...), graph_*_diagnostics(...), find_groups(...),
-# find_outliers(...), denoise_space(...), embed_space(...),
+# exact_knn_graph(...), graph_*_diagnostics(...), embed_space(...),
 # compare_spaces(...)
 ```
 
@@ -307,11 +306,11 @@ examples use `count`.
 Use `NeighborResult.to_dict()` for structured Python data, `to_numpy()` for the
 numeric distance array, and `to_pandas()` when pandas is installed.
 
-`find_groups`, `kmedoids`, `dbscan`, and `Space.groups(...)` are stable result-contract vocabulary but are not promoted in the default wheel yet. They currently raise `StrategyUnavailableError`; use the C++ surface for clustering until the native binding is exposed. The reserved result type is `ClusteringResult` with source-record assignments, medoid record IDs, cluster sizes, optional DBSCAN core/noise records, iteration metadata, algorithm metadata, and representation metadata.
+`find_groups`, `kmedoids`, `dbscan`, and `Space.groups(...)` run through native C++ bindings. `KMedoids` gives deterministic representative grouping; `DBSCAN` gives deterministic radius-density grouping over the finite metric space. `ClusteringResult` carries source-record assignments, medoid record IDs, cluster sizes, optional DBSCAN core/noise records, iteration metadata, algorithm metadata, and representation metadata.
 
-`find_outliers` and `Space.outliers(...)` are stable result-contract vocabulary but are not promoted in the default wheel yet. They currently raise `StrategyUnavailableError`; use the C++ surface for outlier analysis until the native binding is exposed. The reserved result type is `OutlierResult`; each `Outlier` contains the source record ID and an isolation score.
+`find_outliers` and `Space.outliers(...)` run through native C++ bindings. Passing a `DBSCAN` strategy reports DBSCAN-noise records; the strategy-free `Space.outliers(count=...)` path uses native nearest-neighbor isolation scores. `OutlierResult` contains ordered `Outlier` records with source record IDs and scores.
 
-`denoise_space` and `Space.denoise(...)` are stable result-contract vocabulary but are not promoted in the default wheel yet. They currently raise `StrategyUnavailableError`; use the C++ surface for denoising until the native binding is exposed. The reserved result shape is a `MappingResult` over a derived finite metric space with source-record lineage and unsupported inverse reconstruction.
+`denoise_space` and `Space.denoise(...)` run through native outlier/grouping bindings and return a `MappingResult` over the retained finite metric space. Source-record lineage is preserved, and inverse reconstruction is explicitly unsupported.
 
 `embed_space` and `Space.embed(...)` are stable result-contract vocabulary but are not promoted in the default wheel yet. They currently raise `StrategyUnavailableError`; use the C++ surface for derived coordinate spaces until the native binding is exposed. The reserved result type is `EmbeddingResult`, with coordinates, an embedded finite metric space, source-record lineage, exact/operator/representation metadata, an `EmbeddingModel`, normalized stress, local-neighbor trustworthiness, distance-profile correlation, and finite-coordinate diagnostics.
 
@@ -434,14 +433,12 @@ The implemented facade covers space construction, the metric constructors,
 representation views (`to_matrix`/`to_tree`/`to_graph`), plus `repr` and version
 introspection.
 
-Neighbor access, grouping, classical-MDS embedding, outlier detection,
-DBSCAN-backed denoising, deterministic mapping, cross-space comparison,
-representative selection/reduction/compression, and structure diagnostics have
-defined result contracts (documented above) but currently raise
-`StrategyUnavailableError` in the default wheel: their native bindings are not
-promoted yet. Additional embedding strategies and fitted mappings likewise remain
-unavailable until they have stable native strategies, result objects, examples,
-and CI coverage.
+Exact neighbor access, grouping, outlier detection, DBSCAN-backed denoising,
+deterministic mapping, representative selection/reduction/compression, and
+structure diagnostics are promoted in the default wheel. Classical-MDS
+embedding, cross-space comparison/correlation, additional embedding strategies,
+and fitted mapping execution paths still raise `StrategyUnavailableError` until
+they have stable native bindings, result objects, examples, and CI coverage.
 
 ## Error Model
 
