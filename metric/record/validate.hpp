@@ -7,7 +7,9 @@
 
 #include <cstddef>
 #include <limits>
+#include <sstream>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include <metric/record/id.hpp>
@@ -29,6 +31,25 @@ struct RecordIdReport {
 	bool has_duplicates{false};
 };
 
+struct RecordColumnIssue {
+	std::size_t field_index{};
+	std::size_t expected_count{};
+	std::size_t actual_count{};
+	std::string message;
+};
+
+struct RecordColumnReport {
+	std::size_t field_count{};
+	std::size_t row_count{};
+	bool empty{true};
+	bool consistent{true};
+	std::vector<std::size_t> field_sizes;
+	std::vector<RecordColumnIssue> issues;
+
+	auto ok() const -> bool { return consistent && issues.empty(); }
+	auto issue_count() const -> std::size_t { return issues.size(); }
+};
+
 inline auto inspect_record_ids(const std::vector<RecordId> &ids) -> RecordIdReport
 {
 	RecordIdReport report;
@@ -47,6 +68,74 @@ inline auto validate_unique_record_ids(
 	if (has_duplicate_record_ids(ids)) {
 		throw std::invalid_argument(message);
 	}
+}
+
+namespace detail {
+
+inline auto append_record_column_issue(RecordColumnReport &report, std::size_t field_index,
+									   std::size_t expected_count, std::size_t actual_count) -> void
+{
+	std::ostringstream message;
+	message << "field " << field_index << " has " << actual_count << " records; expected " << expected_count;
+	report.issues.push_back(RecordColumnIssue{field_index, expected_count, actual_count, message.str()});
+	report.consistent = false;
+}
+
+template <typename First, typename... Rest>
+auto inspect_record_columns_impl(const First &first, const Rest &...rest) -> RecordColumnReport
+{
+	RecordColumnReport report;
+	report.field_count = 1 + sizeof...(Rest);
+	report.row_count = first.size();
+	report.empty = first.empty();
+	report.field_sizes.reserve(report.field_count);
+	report.field_sizes.push_back(first.size());
+
+	std::size_t field_index = 1;
+	auto inspect_next = [&](const auto &column) {
+		const auto size = column.size();
+		report.field_sizes.push_back(size);
+		if (size != report.row_count) {
+			append_record_column_issue(report, field_index, report.row_count, size);
+		}
+		if (size != 0) {
+			report.empty = false;
+		}
+		++field_index;
+	};
+	(inspect_next(rest), ...);
+	return report;
+}
+
+inline auto record_column_report_message(const RecordColumnReport &report) -> std::string
+{
+	std::ostringstream message;
+	message << "mtrc::record field columns are not aligned";
+	for (const auto &issue : report.issues) {
+		message << "; " << issue.message;
+	}
+	return message.str();
+}
+
+} // namespace detail
+
+// Inspect field columns before composing mixed records. The first column defines
+// the expected row count; every later column must have the same number of
+// records. This is a non-throwing diagnostic for UI/binding code.
+template <typename First, typename... Rest>
+auto inspect_record_columns(const std::vector<First> &first, const std::vector<Rest> &...rest) -> RecordColumnReport
+{
+	return detail::inspect_record_columns_impl(first, rest...);
+}
+
+template <typename First, typename... Rest>
+auto validate_record_columns(const std::vector<First> &first, const std::vector<Rest> &...rest) -> RecordColumnReport
+{
+	auto report = inspect_record_columns(first, rest...);
+	if (!report.ok()) {
+		throw std::invalid_argument(detail::record_column_report_message(report));
+	}
+	return report;
 }
 
 template <typename Container>
@@ -97,8 +186,12 @@ inline auto validate_buffer_shape(
 
 namespace mtrc {
 using record::inspect_record_ids;
+using record::inspect_record_columns;
+using record::RecordColumnIssue;
+using record::RecordColumnReport;
 using record::RecordIdReport;
 using record::validate_buffer_shape;
+using record::validate_record_columns;
 using record::validate_records_non_empty;
 using record::validate_uniform_record_dimension;
 using record::validate_unique_record_ids;

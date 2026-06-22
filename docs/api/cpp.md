@@ -78,6 +78,30 @@ The workflow pieces stay separate:
 `mtrc::stats` never mutates the source space. `mtrc::modify` creates changed or
 derived spaces and reports source lineage where the operation supports it.
 
+## Record Import And Mixed Records
+
+`mtrc::record` owns the computer-side record shape before any metric is chosen.
+For homogeneous vector-like records, `import_records_from_buffer` converts a
+flat row-major binding buffer into C++ records. For mixed records,
+`inspect_record_columns` and `validate_record_columns` check parallel field
+columns before they are composed.
+
+```cpp
+std::vector<std::string> name = {"pump", "valve"};
+std::vector<std::vector<double>> spectrum = {{0.2, 0.8}, {0.7, 0.3}};
+std::vector<int> state = {1, 2};
+
+auto report = mtrc::record::inspect_record_columns(name, spectrum, state);
+auto imported = mtrc::record::import_mixed_records(name, spectrum, state);
+
+auto space = mtrc::space::build_checked(imported.records, composed_metric);
+```
+
+The returned `RecordColumnReport` gives row count, field count, per-field
+sizes, and field-specific issues such as "field 2 has 3 records; expected 2".
+This keeps record-shape failures readable at binding/UI boundaries. Metric
+selection still happens later under `mtrc::metric`.
+
 ## Namespace Map
 
 The source tree follows the Level-1 METRIC vocabulary:

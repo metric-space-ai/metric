@@ -211,6 +211,38 @@ static auto test_composed_records() -> void
 	assert(records[0].field<0>() == "a" && records[0].field<1>() == 1);
 	assert(records[1].field<0>() == "b" && records[1].field<1>() == 2);
 
+	const std::vector<std::string> labels{"pump", "valve"};
+	const std::vector<std::vector<double>> spectra{{0.2, 0.8}, {0.7, 0.3}};
+	const std::vector<int> states{1, 2};
+	const auto column_report = mtrc::inspect_record_columns(labels, spectra, states);
+	assert(column_report.ok());
+	assert(column_report.field_count == 3);
+	assert(column_report.row_count == 2);
+	assert((column_report.field_sizes == std::vector<std::size_t>{2, 2, 2}));
+
+	const auto imported_mixed = mtrc::import_mixed_records(labels, spectra, states);
+	assert(imported_mixed.size() == 2);
+	assert(imported_mixed.report.ok());
+	assert(imported_mixed.records[0].field<0>() == "pump");
+	assert((imported_mixed.records[1].field<1>() == std::vector<double>{0.7, 0.3}));
+	assert(imported_mixed.records[1].field<2>() == 2);
+
+	const auto bad_report =
+		mtrc::inspect_record_columns(labels, std::vector<double>{1.0}, std::vector<int>{1, 2, 3});
+	assert(!bad_report.ok());
+	assert(bad_report.issue_count() == 2);
+	assert(bad_report.issues[0].field_index == 1);
+	assert(bad_report.issues[0].expected_count == 2);
+	assert(bad_report.issues[0].actual_count == 1);
+	assert(bad_report.issues[1].field_index == 2);
+	assert(bad_report.issues[1].actual_count == 3);
+	assert(throws_invalid_argument([&] {
+		(void)mtrc::validate_record_columns(labels, std::vector<double>{1.0}, std::vector<int>{1, 2, 3});
+	}));
+	assert(throws_invalid_argument([&] {
+		(void)mtrc::import_mixed_records(labels, std::vector<double>{1.0}, std::vector<int>{1, 2, 3});
+	}));
+
 	// Composed records can live in a metric space; the metric stays in
 	// mtrc::metric, not in mtrc::record. We only check the records are usable
 	// and deduplicate by value here.

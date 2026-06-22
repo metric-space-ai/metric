@@ -195,6 +195,10 @@ underlying ownership stays explicit: `record` handles records, `metric` handles
 metrics, `space` handles finite spaces, `stats` investigates an existing space,
 and `modify` creates derived spaces.
 
+Mixed records can be imported from parallel typed field columns with
+`mtrc::record::import_mixed_records`; the returned report keeps field-count and
+row-count validation explicit before a composed metric is selected.
+
 Finite spaces can also be exported as native C++ artifacts:
 `mtrc::space::persistence::save` stores records, stable `RecordId`s, the space
 version, metric identity, and optional materialized pair values; `load` restores

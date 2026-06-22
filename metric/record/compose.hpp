@@ -12,6 +12,8 @@
 #include <utility>
 #include <vector>
 
+#include <metric/record/validate.hpp>
+
 // record::compose builds composed (mixed) records out of several typed fields,
 // e.g. a record holding a text part, a histogram part, and a time-series part.
 // It only assembles and accesses the data structure. Comparing composed records
@@ -53,27 +55,10 @@ auto compose_record(Fields &&...values) -> ComposedRecord<typename std::decay<Fi
 
 namespace detail {
 
-template <typename First, typename... Rest>
-auto columns_row_count(const First &first, const Rest &...rest) -> std::size_t
-{
-	const std::size_t count = first.size();
-	const bool equal = ((rest.size() == count) && ...);
-	if (!equal) {
-		throw std::invalid_argument("mtrc::record::compose_records requires equal-length field columns");
-	}
-	return count;
-}
-
-} // namespace detail
-
-// Compose a collection of records column-wise: given one column (vector) per
-// field, produce a row-wise collection of composed records. All columns must
-// have equal length.
 template <typename... Columns>
-auto compose_records(const std::vector<Columns> &...columns) -> std::vector<ComposedRecord<Columns...>>
+auto compose_records_with_count(std::size_t count, const std::vector<Columns> &...columns)
+	-> std::vector<ComposedRecord<Columns...>>
 {
-	static_assert(sizeof...(Columns) > 0, "mtrc::record::compose_records requires at least one field column");
-	const std::size_t count = detail::columns_row_count(columns...);
 	std::vector<ComposedRecord<Columns...>> records;
 	records.reserve(count);
 	for (std::size_t row = 0; row < count; ++row) {
@@ -82,12 +67,49 @@ auto compose_records(const std::vector<Columns> &...columns) -> std::vector<Comp
 	return records;
 }
 
+} // namespace detail
+
+template <typename Record> struct MixedRecordImportResult {
+	using record_type = Record;
+
+	std::vector<Record> records;
+	RecordColumnReport report;
+
+	auto size() const -> std::size_t { return records.size(); }
+	auto empty() const -> bool { return records.empty(); }
+};
+
+// Compose a collection of records column-wise: given one column (vector) per
+// field, produce a row-wise collection of composed records. All columns must
+// have equal length.
+template <typename... Columns>
+auto compose_records(const std::vector<Columns> &...columns) -> std::vector<ComposedRecord<Columns...>>
+{
+	static_assert(sizeof...(Columns) > 0, "mtrc::record::compose_records requires at least one field column");
+	const auto report = validate_record_columns(columns...);
+	return detail::compose_records_with_count(report.row_count, columns...);
+}
+
+// Import mixed records from parallel field columns. This is the binding/UI-
+// friendly form: it returns the composed records and the column report that
+// proves the import shape, rather than discarding that diagnostic.
+template <typename... Columns>
+auto import_mixed_records(const std::vector<Columns> &...columns) -> MixedRecordImportResult<ComposedRecord<Columns...>>
+{
+	static_assert(sizeof...(Columns) > 0, "mtrc::record::import_mixed_records requires at least one field column");
+	auto report = validate_record_columns(columns...);
+	return MixedRecordImportResult<ComposedRecord<Columns...>>{
+		detail::compose_records_with_count(report.row_count, columns...), std::move(report)};
+}
+
 } // namespace mtrc::record
 
 namespace mtrc {
 template <typename... Fields> using ComposedRecord = record::ComposedRecord<Fields...>;
+template <typename Record> using MixedRecordImportResult = record::MixedRecordImportResult<Record>;
 using record::compose_record;
 using record::compose_records;
+using record::import_mixed_records;
 } // namespace mtrc
 
 #endif
