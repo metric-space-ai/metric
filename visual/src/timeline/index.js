@@ -1,6 +1,7 @@
 import { clamp01, resolveEasing } from "../animation/index.js";
 
 export const TIMELINE_INTERPOLATION_SCHEMA = "metric.visual.timeline_interpolation.v1";
+export const TIMELINE_ANIMATION_SCHEMA = "metric.visual.timeline_animation.v1";
 
 export class TimelineModel {
   constructor(source = {}, options = {}) {
@@ -317,6 +318,56 @@ export function currentStepInterpolation(timeline, time) {
     model.seek(time);
   }
   return model.currentInterpolation();
+}
+
+export function createTimelineAnimationDescriptor(source = {}, options = {}) {
+  const model = source instanceof TimelineModel
+    ? source
+    : new TimelineModel(source, options);
+  const durationMs = resolveTimelineAnimationDurationMs(model, options);
+  return {
+    schema: TIMELINE_ANIMATION_SCHEMA,
+    mode: options.mode || "timeline-coordinate-morph",
+    clock: options.clock || "render-loop",
+    timelineId: model.id,
+    datasetId: model.datasetId,
+    durationMs,
+    loop: Boolean(options.loop ?? model.loop),
+    direction: options.direction || "alternate",
+    easing: options.easing || model.defaultEasing,
+    playbackRate: model.playbackRate,
+    timelineDuration: model.duration,
+    stepCount: model.steps.length,
+    interpolation: model.currentInterpolation(),
+    keyframes: model.steps.map((step) => ({
+      index: step.index,
+      order: step.order,
+      time: step.time,
+      coordinateId: step.coordinateId,
+      propertyId: step.propertyId,
+      relationId: step.relationId,
+      label: step.label,
+    })),
+  };
+}
+
+export function resolveTimelineAnimationDurationMs(source = {}, options = {}) {
+  if (Number.isFinite(Number(options.durationMs))) return Math.max(1, Number(options.durationMs));
+  const model = source instanceof TimelineModel
+    ? source
+    : new TimelineModel(source, options);
+  const stepDurationMs = Number.isFinite(Number(options.stepDurationMs))
+    ? Number(options.stepDurationMs)
+    : 360;
+  const minDurationMs = Number.isFinite(Number(options.minDurationMs))
+    ? Number(options.minDurationMs)
+    : 5200;
+  const maxDurationMs = Number.isFinite(Number(options.maxDurationMs))
+    ? Number(options.maxDurationMs)
+    : 18000;
+  const stepSpan = Math.max(1, model.steps.length - 1);
+  const natural = stepSpan * Math.max(1, stepDurationMs);
+  return Math.max(minDurationMs, Math.min(maxDurationMs, natural));
 }
 
 function resolveTimeline(source, options) {

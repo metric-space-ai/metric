@@ -28,7 +28,8 @@ const DEFAULT_MISSING_VALUE = Number.NaN;
  * @returns {object}
  */
 export function buildDenseRelationMatrix(source, options = {}) {
-  const recordIds = collectRecordIds(source, options);
+  const sourceRecordIds = collectRecordIds(source, options);
+  const recordIds = resolveMatrixRecordIds(sourceRecordIds, source, options);
   const size = recordIds.length;
   const indexById = indexRecordIds(recordIds);
   const missingValue = options.missingValue ?? DEFAULT_MISSING_VALUE;
@@ -51,8 +52,8 @@ export function buildDenseRelationMatrix(source, options = {}) {
 
   for (const pair of relationPairs(source)) {
     pairCount += 1;
-    const sourceId = pairSourceId(pair, recordIds);
-    const targetId = pairTargetId(pair, recordIds);
+    const sourceId = pairSourceId(pair, sourceRecordIds);
+    const targetId = pairTargetId(pair, sourceRecordIds);
     const sourceIndex = indexById.get(sourceId);
     const targetIndex = indexById.get(targetId);
     const value = pairValue(pair, options.valueKey);
@@ -76,12 +77,33 @@ export function buildDenseRelationMatrix(source, options = {}) {
     }
   }
 
+  let presentValueCount = 0;
+  for (let index = 0; index < present.length; index += 1) {
+    if (present[index]) presentValueCount += 1;
+  }
+  const missingValueCount = present.length - presentValueCount;
+  const blockRanges = normalizeBlockRanges(
+    options.blockRanges
+      || options.block_ranges
+      || source?.metadata?.block_ranges
+      || source?.metadata?.blockRanges,
+    size,
+  );
+  const metricLawDiagnostic = source?.metadata?.law_check
+    || source?.metadata?.lawCheck
+    || source?.diagnostics?.law_check
+    || source?.diagnostics?.lawCheck
+    || null;
+  const ordering = describeMatrixOrdering(sourceRecordIds, recordIds, source, options, blockRanges);
+  const symmetryDiagnostics = diagnoseRelationSymmetry(source, { ...options, recordIds: sourceRecordIds });
+
   return {
     kind: "dense-relation-matrix",
     size,
     width: size,
     height: size,
     recordIds,
+    sourceRecordIds,
     values,
     present,
     missingValue,
@@ -91,8 +113,24 @@ export function buildDenseRelationMatrix(source, options = {}) {
     acceptedPairCount,
     duplicatePairCount,
     skippedPairCount,
+    presentValueCount,
+    missingValueCount,
+    ordering,
+    blockRanges,
+    metricLawDiagnostic,
     finiteSummary: summarizeFiniteMatrix(values, present),
-    diagnostics: diagnoseRelationSymmetry(source, { ...options, recordIds }),
+    diagnostics: {
+      ...symmetryDiagnostics,
+      matrixDimensions: { width: size, height: size, size },
+      presentValueCount,
+      missingValueCount,
+      acceptedPairCount,
+      duplicatePairCount,
+      skippedPairCount,
+      blockRanges,
+      ordering,
+      metricLawDiagnostic,
+    },
   };
 }
 
@@ -237,3 +275,105 @@ function clampByte(value) {
   return Math.max(0, Math.min(255, Math.round(number)));
 }
 
+function resolveMatrixRecordIds(recordIds, source, options) {
+  const requestedOrder = options.recordOrder
+    ?? options.record_order
+    ?? (Array.isArray(options.order) || isPlainObject(options.order) ? options.order : undefined)
+    ?? source?.recordOrder
+    ?? source?.record_order
+    ?? source?.metadata?.recordOrder
+    ?? source?.metadata?.record_order
+    ?? source?.metadata?.tileOrder
+    ?? source?.metadata?.tile_order
+    ?? source?.metadata?.blockOrder
+    ?? source?.metadata?.block_order;
+  return applyRecordOrder(recordIds, requestedOrder);
+}
+
+function applyRecordOrder(recordIds, requestedOrder) {
+  if (!requestedOrder) return recordIds;
+  if (isPlainObject(requestedOrder)) {
+    return applyRecordOrder(
+      recordIds,
+      requestedOrder.recordIds
+        || requestedOrder.record_ids
+        || requestedOrder.ids
+        || requestedOrder.order
+        || requestedOrder.records,
+    );
+  }
+  if (!Array.isArray(requestedOrder)) return recordIds;
+
+  const ordered = [];
+  const seen = new Set();
+  const sourceIds = recordIds.map((id) => String(id));
+  const sourceSet = new Set(sourceIds);
+
+  for (const entry of requestedOrder) {
+    const id = orderEntryToId(entry, recordIds);
+    if (id == null || !sourceSet.has(id) || seen.has(id)) continue;
+    seen.add(id);
+    ordered.push(id);
+  }
+
+  if (!ordered.length) return recordIds;
+  for (const id of sourceIds) {
+    if (!seen.has(id)) ordered.push(id);
+  }
+  return ordered;
+}
+
+function orderEntryToId(entry, recordIds) {
+  if (Number.isInteger(entry) && entry >= 0 && entry < recordIds.length) return String(recordIds[entry]);
+  if (typeof entry === "string" || typeof entry === "number" || typeof entry === "boolean") return String(entry);
+  if (!isPlainObject(entry)) return null;
+  const id = entry.id ?? entry.recordId ?? entry.record_id ?? entry.key;
+  if (id != null) return String(id);
+  if (Number.isInteger(entry.index) && entry.index >= 0 && entry.index < recordIds.length) return String(recordIds[entry.index]);
+  return null;
+}
+
+function describeMatrixOrdering(sourceRecordIds, recordIds, source, options, blockRanges) {
+  const reordered = sourceRecordIds.length === recordIds.length
+    && sourceRecordIds.some((id, index) => String(id) !== String(recordIds[index]));
+  const nativeOrder = source?.metadata?.record_order
+    ?? source?.metadata?.recordOrder
+    ?? source?.record_order
+    ?? source?.recordOrder
+    ?? null;
+  const explicitOrder = options.recordOrder ?? options.record_order ?? null;
+  return {
+    source: explicitOrder ? "options" : nativeOrder ? "native" : "record_ids",
+    nativeOrder,
+    reordered,
+    blockCount: blockRanges.length,
+    recordCount: recordIds.length,
+  };
+}
+
+function normalizeBlockRanges(ranges, size) {
+  if (!Array.isArray(ranges)) return [];
+  const out = [];
+  for (const range of ranges) {
+    if (!isPlainObject(range)) continue;
+    const start = finiteInteger(range.start ?? range.start_index ?? range.startIndex);
+    const end = finiteInteger(range.end_exclusive ?? range.endExclusive ?? range.end ?? range.stop);
+    if (start == null || end == null || end <= start || start < 0 || end > size) continue;
+    out.push({
+      ...range,
+      start,
+      end_exclusive: end,
+      label: range.block_label ?? range.blockLabel ?? range.label ?? range.family ?? "",
+    });
+  }
+  return out.sort((a, b) => a.start - b.start || a.end_exclusive - b.end_exclusive);
+}
+
+function finiteInteger(value) {
+  const number = Number(value);
+  return Number.isInteger(number) ? number : null;
+}
+
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}

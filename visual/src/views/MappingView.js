@@ -1,10 +1,15 @@
 import { BaseView } from "./BaseView.js";
 import { MetricSpaceView, defaultCoordinateId } from "./MetricSpaceView.js";
+import { VisualLayer } from "./VisualLayer.js";
 import {
+  createChannel,
   extractCoordinatePositions,
   extractPropertyValues,
+  inferScalarDomain,
   recordsFor,
   resolveCollectionItem,
+  scalarColor,
+  valueForId,
 } from "./view-utils.js";
 
 /**
@@ -21,6 +26,14 @@ export class MappingView extends BaseView {
     this.recordIds = options.recordIds || [];
     this.sourceCoordinateId = options.sourceCoordinateId || options.coordinateId || null;
     this.targetCoordinateId = options.targetCoordinateId || null;
+    this.showResidualVectors = options.residualVectors !== false;
+    this.residualVectorColor = options.residualVectorColor || options.vectorColor || null;
+    this.residualVectorAlpha = Number.isFinite(Number(options.residualVectorAlpha))
+      ? Number(options.residualVectorAlpha)
+      : 0.58;
+    this.residualVectorWidth = Number.isFinite(Number(options.residualVectorWidth))
+      ? Number(options.residualVectorWidth)
+      : 1;
     this.space = new MetricSpaceView({
       ...options,
       id: `${this.id}:space`,
@@ -96,7 +109,71 @@ export class MappingView extends BaseView {
   }
 
   toLayerDescriptors() {
-    return this.space.toLayerDescriptors();
+    const descriptors = this.space.toLayerDescriptors();
+    const residual = this.residualVectorDescriptor();
+    if (residual) descriptors.push(residual);
+    return descriptors;
+  }
+
+  residualVectorDescriptor() {
+    if (!this.showResidualVectors || !this.space?.targetPositions) return null;
+    const ids = this.recordIds || this.space.recordIds || [];
+    const sourcePosition = new Float32Array(ids.length * 3);
+    const targetPosition = new Float32Array(ids.length * 3);
+    const color = new Float32Array(ids.length * 4);
+    const finiteResiduals = ids
+      .map((id, index) => Number(valueForId(this.residualValues, id, index)))
+      .filter((value) => Number.isFinite(value));
+    const domain = inferScalarDomain(finiteResiduals);
+    let count = 0;
+    for (let index = 0; index < ids.length; index += 1) {
+      const id = ids[index];
+      const source = positionFor(this.space.positions, id);
+      const target = positionFor(this.space.targetPositions, id);
+      if (!source || !target) continue;
+      sourcePosition.set(source, count * 3);
+      targetPosition.set(target, count * 3);
+      const residual = Number(valueForId(this.residualValues, id, index));
+      const nextColor = this.residualVectorColor
+        ? normalizeRgba(this.residualVectorColor, this.residualVectorAlpha)
+        : Number.isFinite(residual)
+          ? scalarColor(residual, domain, this.residualVectorAlpha)
+          : [0.8, 0.22, 0.12, this.residualVectorAlpha];
+      color.set(nextColor, count * 4);
+      count += 1;
+    }
+    if (!count) return null;
+    return new VisualLayer({
+      id: `${this.id}:residual-vectors`,
+      kind: "residual/error-vectors",
+      primitive: "RelationEdgeLayer",
+      order: 36,
+      source: {
+        viewId: this.id,
+        viewKind: "mapping",
+        role: "residual/error",
+        sourceCoordinateId: this.sourceCoordinateId,
+        targetCoordinateId: this.targetCoordinateId,
+        propertyId: this.propertyId,
+      },
+      channels: {
+        sourcePosition: createChannel(sourcePosition.subarray(0, count * 3), 3, "source-position"),
+        targetPosition: createChannel(targetPosition.subarray(0, count * 3), 3, "target-position"),
+        color: createChannel(color.subarray(0, count * 4), 4, "rgba"),
+      },
+      geometry: { width: this.residualVectorWidth },
+      material: { alpha: 1, transparent: true, depthWrite: false },
+      metadata: {
+        ...this.metadata,
+        role: "residual/error",
+        evidenceRole: "mapping-residual-vectors",
+        recordCount: count,
+        sourceCoordinateId: this.sourceCoordinateId,
+        targetCoordinateId: this.targetCoordinateId,
+        residualPropertyId: this.propertyId,
+        algorithmicComputation: false,
+      },
+    }).toDescriptor();
   }
 
   /**
@@ -122,4 +199,24 @@ export class MappingView extends BaseView {
 
 export function createMappingView(options) {
   return new MappingView(options);
+}
+
+function positionFor(map, id) {
+  return map?.get?.(id) || map?.get?.(String(id)) || null;
+}
+
+function normalizeRgba(color, fallbackAlpha) {
+  if (!(Array.isArray(color) || ArrayBuffer.isView(color))) return [0.8, 0.22, 0.12, fallbackAlpha];
+  const source = Array.from(color);
+  const divisor = Math.max(Number(source[0]) || 0, Number(source[1]) || 0, Number(source[2]) || 0) > 1 ? 255 : 1;
+  return [
+    clamp01((Number(source[0]) || 0) / divisor),
+    clamp01((Number(source[1]) || 0) / divisor),
+    clamp01((Number(source[2]) || 0) / divisor),
+    clamp01(source[3] == null ? fallbackAlpha : Number(source[3])),
+  ];
+}
+
+function clamp01(value) {
+  return Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0));
 }

@@ -15,9 +15,6 @@
     .caption { position: absolute; left: 26px; top: 24px; max-width: 430px; pointer-events: none; text-shadow: 0 1px 16px rgba(255, 255, 255, 0.6); }
     .caption h1 { margin: 0 0 7px; font-size: 17px; font-weight: 700; }
     .caption p { margin: 0; font-size: 12px; line-height: 1.5; color: rgba(52, 66, 74, 0.82); max-width: 50ch; }
-    .matrix { position: absolute; right: 22px; top: 22px; padding: 12px 13px; border: 1px solid var(--border); border-radius: 13px; background: var(--panel); backdrop-filter: blur(12px); box-shadow: 0 12px 40px rgba(77, 92, 97, 0.12); }
-    .matrix h2 { margin: 0 0 8px; font-size: 11.5px; font-weight: 720; }
-    .matrix canvas { display: block; }
     .legend { position: absolute; left: 26px; bottom: 22px; display: flex; flex-wrap: wrap; gap: 13px; color: var(--muted); }
     .legend span { display: inline-flex; align-items: center; gap: 6px; }
     .legend i { width: 11px; height: 11px; border-radius: 3px; }
@@ -32,10 +29,6 @@
       <h1>Mixed-record metric space</h1>
       <p>Composed native fixture records are compared in one finite metric space through type-appropriate metrics. Glyph color is the exported record family; edges are selected from the same composite metric relation.</p>
     </section>
-    <aside class="matrix">
-      <h2>family ↔ family distance</h2>
-      <canvas id="family-matrix" width="180" height="180"></canvas>
-    </aside>
     <div class="legend" id="legend"></div>
     <div class="loading" id="loading">Loading mixed-record evidence…</div>
   </main>
@@ -51,7 +44,6 @@
     const canvas = document.getElementById("scene");
     const loading = document.getElementById("loading");
     const legend = document.getElementById("legend");
-    const familyCanvas = document.getElementById("family-matrix");
     const familyById = new Map();
 
     function buildLegend() {
@@ -60,28 +52,6 @@
         const i = document.createElement("i"); i.style.background = FAMILY_COLORS[name];
         span.append(i, document.createTextNode(name));
         return span;
-      }));
-    }
-
-    function drawFamilyMatrix(document_) {
-      const relation = document_.relations.find((item) => item.id === "mixed-finite-records-composite-metric");
-      if (!relation) throw new Error("Missing mixed-finite-records-composite-metric relation.");
-      const sums = {}, counts = {};
-      for (const a of FAMILIES) { sums[a] = {}; counts[a] = {}; for (const b of FAMILIES) { sums[a][b] = 0; counts[a][b] = 0; } }
-      for (const pair of relation.values) {
-        const a = familyById.get(String(pair.row_id)), b = familyById.get(String(pair.column_id));
-        if (!a || !b) continue;
-        sums[a][b] += pair.value; counts[a][b] += 1;
-      }
-      let max = 0;
-      const means = FAMILIES.map((a) => FAMILIES.map((b) => { const m = counts[a][b] ? sums[a][b] / counts[a][b] : NaN; if (Number.isFinite(m)) max = Math.max(max, m); return m; }));
-      const ctx = familyCanvas.getContext("2d");
-      const size = familyCanvas.width, cell = size / FAMILIES.length;
-      ctx.clearRect(0, 0, size, size);
-      means.forEach((row, r) => row.forEach((m, c) => {
-        const t = Number.isFinite(m) ? Math.min(1, m / (max || 1)) : 0;
-        ctx.fillStyle = Number.isFinite(m) ? `rgb(${Math.round(36 + t * 206)}, ${Math.round(124 - t * 44)}, ${Math.round(140 - t * 86)})` : "rgba(120,130,128,0.1)";
-        ctx.fillRect(c * cell, r * cell, Math.ceil(cell), Math.ceil(cell));
       }));
     }
 
@@ -116,7 +86,6 @@
         pointSize: 1.4,
       });
 
-      drawFamilyMatrix(document_);
       document.documentElement.dataset.metricMixedHero = "ready";
       document.documentElement.dataset.metricRecordCount = String(visual.views[0].recordIds.length);
       window.metricMixedHero = { visual, runtime: visual.runtime, getState: () => visual.getState() };

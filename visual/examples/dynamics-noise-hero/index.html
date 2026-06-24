@@ -60,13 +60,26 @@
         timelineId: "reverse-reconstruction",
         propertyField: "best-reconstruction-error",
         preview: "state-history",
+        loop: staticFlow == null,
+        progress: staticFlow ?? undefined,
+        timelineDurationMs: 14400,
+        pathWidth: 3.4,
+        pathAlpha: 0.68,
         pointSize: 1.7,
       });
+      const state = visual.getState();
+      const layerIds = state.descriptors.map((descriptor) => descriptor.id);
+      const pathLayers = state.descriptors.filter((descriptor) => descriptor.metadata?.evidenceRole === "trajectory/path");
       if (staticFlow != null) phaseEl.textContent = staticFlow < 0.2 ? "noisy start" : staticFlow > 0.8 ? "representatives" : "reverse flow";
 
       document.documentElement.dataset.metricDynamicsHero = "ready";
       document.documentElement.dataset.metricRecordCount = String(visual.views[0].recordIds.length);
       document.documentElement.dataset.metricStates = String(states.length);
+      document.documentElement.dataset.metricTimelineIds = "reverse-reconstruction";
+      document.documentElement.dataset.metricCoordinateIds = states.join(",");
+      document.documentElement.dataset.metricLayerIds = layerIds.join(",");
+      document.documentElement.dataset.metricPathLayers = pathLayers.map((descriptor) => descriptor.id).join(",");
+      document.documentElement.dataset.metricMotion = staticFlow == null ? "timeline-coordinate-morph-loop" : `static-${staticFlow}`;
       window.metricDynamicsHero = { visual, runtime: visual.runtime, getState: () => visual.getState() };
 
       loading.remove();

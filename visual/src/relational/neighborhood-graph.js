@@ -4,9 +4,114 @@ import {
   pairSourceId,
   pairTargetId,
   pairValue,
+  recordId,
   relationPairs,
+  uniqueIds,
 } from "./relation-source.js";
 import { createQuantileScaler, summarizeFiniteValues } from "./scaling.js";
+
+/**
+ * Build a relation neighborhood graph, preferring native graph evidence when
+ * supplied and falling back to relation-pair selection only for legacy sources.
+ *
+ * @param {object|Array} source Relation source, native graph, or raw pairs.
+ * @param {object} [options]
+ * @returns {object}
+ */
+export function buildRelationNeighborhoodGraph(source, options = {}) {
+  const nativeGraph = resolveNativeGraph(source, options);
+  if (nativeGraph) {
+    const relation = nativeGraph === source ? options.relation || options.relationSource || {} : source;
+    return buildNativeNeighborhoodGraph(nativeGraph, { ...options, relation });
+  }
+  return buildSparseNeighborhoodGraph(source, options);
+}
+
+/**
+ * Normalize exported graph edges without recomputing graph topology.
+ *
+ * @param {object} graph metric.visual.v1 graph evidence.
+ * @param {object} [options]
+ * @returns {object}
+ */
+export function buildNativeNeighborhoodGraph(graph, options = {}) {
+  const relation = options.relation || options.relationSource || {};
+  const relationRecordIds = collectRecordIds(relation, options);
+  const graphRecordIds = collectGraphRecordIds(graph, relationRecordIds);
+  const orderedRecordIds = options.recordIds || (relationRecordIds.length ? relationRecordIds : graphRecordIds);
+  const recordIds = uniqueIds(orderedRecordIds);
+  const endpointRecordIds = graphRecordIds.length ? graphRecordIds : recordIds;
+  const indexById = indexRecordIds(recordIds);
+  const directed = booleanOption(
+    options.directed,
+    graph?.directed,
+    graph?.metadata?.directed,
+    false,
+  );
+  const edges = [];
+  let skippedEdgeCount = 0;
+
+  for (const edge of graphEdges(graph)) {
+    const sourceId = pairSourceId(edge, endpointRecordIds);
+    const targetId = pairTargetId(edge, endpointRecordIds);
+    const sourceIndex = indexById.get(sourceId);
+    const targetIndex = indexById.get(targetId);
+    const value = pairValue(edge, options.valueKey);
+    if (sourceIndex == null || targetIndex == null) {
+      skippedEdgeCount += 1;
+      continue;
+    }
+
+    edges.push({
+      id: edge?.id || edge?.edge_id || `${sourceId}->${targetId}:${edges.length}`,
+      source: sourceId,
+      target: targetId,
+      sourceIndex,
+      targetIndex,
+      value,
+      directed,
+      pair: edge,
+      native: true,
+    });
+  }
+
+  const nodes = buildNodes(recordIds, options.positions);
+  const relationId = graph?.edge_relation_id
+    || graph?.edgeRelationId
+    || graph?.relation_id
+    || graph?.relationId
+    || relation?.id
+    || options.relationId
+    || null;
+
+  return {
+    kind: "native-neighborhood-graph",
+    id: graph?.id || options.graphId || null,
+    mode: "native",
+    relationKind: options.relationKind || (relation?.relation_type === "similarity" ? "similarity" : "distance"),
+    relationId,
+    graphType: graph?.graph_type || graph?.graphType || null,
+    directed,
+    native: true,
+    recordIds,
+    nodes,
+    edges,
+    edgeCount: edges.length,
+    candidateCount: graphEdges(graph).length,
+    skippedEdgeCount,
+    valueSummary: summarizeFiniteValues(edges.map((edge) => edge.value)),
+    diagnostics: {
+      kind: "native-neighborhood-graph-diagnostics",
+      graphId: graph?.id || null,
+      relationId,
+      recordCount: recordIds.length,
+      graphEdgeCount: edges.length,
+      skippedEdgeCount,
+      nativeEdgeSource: graph?.metadata?.edge_source || graph?.metadata?.edgeSource || null,
+    },
+    channels: buildGraphChannels(nodes, edges, options),
+  };
+}
 
 /**
  * Build sparse neighborhood graph descriptors from exported relation values.
@@ -47,6 +152,7 @@ export function buildSparseNeighborhoodGraph(source, options = {}) {
 
   return {
     kind: "sparse-neighborhood-graph",
+    relationId: source?.id || options.relationId || null,
     mode: options.mode || "topK",
     relationKind,
     directed,
@@ -56,6 +162,14 @@ export function buildSparseNeighborhoodGraph(source, options = {}) {
     edgeCount: edges.length,
     candidateCount: candidates.length,
     valueSummary: summarizeFiniteValues(candidates.map((edge) => edge.value)),
+    diagnostics: {
+      kind: "sparse-neighborhood-graph-diagnostics",
+      relationId: source?.id || options.relationId || null,
+      recordCount: recordIds.length,
+      graphEdgeCount: edges.length,
+      candidateCount: candidates.length,
+      native: false,
+    },
     channels: buildGraphChannels(nodes, edges, options),
   };
 }
@@ -119,6 +233,55 @@ function collectCandidates(source, options) {
     });
   }
   return out;
+}
+
+function resolveNativeGraph(source, options) {
+  if (isGraphEvidence(options.graph)) return options.graph;
+  if (isGraphEvidence(options.nativeGraph)) return options.nativeGraph;
+  if (isGraphEvidence(source)) return source;
+  return null;
+}
+
+function isGraphEvidence(value) {
+  return value && typeof value === "object" && !Array.isArray(value) && Array.isArray(value.edges);
+}
+
+function graphEdges(graph) {
+  return Array.isArray(graph?.edges) ? graph.edges : [];
+}
+
+function collectGraphRecordIds(graph, fallbackRecordIds) {
+  const explicit = graph?.node_record_ids || graph?.nodeRecordIds || graph?.record_ids || graph?.recordIds || graph?.nodes;
+  if (Array.isArray(explicit)) {
+    return uniqueIds(explicit.map((entry) => {
+      if (entry && typeof entry === "object") return entry.id ?? entry.record_id ?? entry.recordId ?? entry.key;
+      return recordId(entry);
+    }).filter(Boolean));
+  }
+
+  const ids = [];
+  const seen = new Set();
+  for (const edge of graphEdges(graph)) {
+    const sourceId = pairSourceId(edge, fallbackRecordIds);
+    const targetId = pairTargetId(edge, fallbackRecordIds);
+    if (sourceId && !seen.has(sourceId)) {
+      seen.add(sourceId);
+      ids.push(sourceId);
+    }
+    if (targetId && !seen.has(targetId)) {
+      seen.add(targetId);
+      ids.push(targetId);
+    }
+  }
+  return ids;
+}
+
+function booleanOption(...values) {
+  for (const value of values) {
+    if (value === true || value === "true" || value === 1 || value === "1") return true;
+    if (value === false || value === "false" || value === 0 || value === "0") return false;
+  }
+  return false;
 }
 
 function selectCandidates(candidates, options, relationKind) {

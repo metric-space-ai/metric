@@ -3,6 +3,10 @@ import { PointCloudView } from "./PointCloudView.js";
 import { VisualLayer } from "./VisualLayer.js";
 import { applyPositionFit, computePositionFit } from "./scene-fit.js";
 import {
+  RECORD_GLYPH_GRAMMAR_SCHEMA,
+  createRecordGlyphGrammar,
+} from "../glyphs/index.js";
+import {
   colorChannelFrom,
   createChannel,
   createStringChannel,
@@ -83,6 +87,9 @@ export class MetricSpaceView extends BaseView {
     this.alpha = Number.isFinite(Number(options.alpha)) ? Number(options.alpha) : 0.95;
     this.shape = options.shape || "sphere";
     this.pointMaterial = { ...CRISP_POINT_MATERIAL, ...(options.pointMaterial || {}) };
+    this.recordGlyphs = options.recordGlyphs !== false;
+    this.recordGlyphGrammar = options.recordGlyphGrammar || null;
+    this.glyphLabelLift = Number.isFinite(Number(options.glyphLabelLift)) ? Number(options.glyphLabelLift) : 0.18;
 
     // Region labels (categorical), placed at per-category centroids.
     this.labelValues = options.labelValues || null;
@@ -210,8 +217,12 @@ export class MetricSpaceView extends BaseView {
       if (labels) descriptors.push(labels);
     }
 
+    const glyphGrammar = this.recordGlyphs
+      ? this.recordGlyphGrammar || createRecordGlyphGrammar(this.records, this.recordIds)
+      : null;
     const point = this.pointView().toLayerDescriptors().map((descriptor) => {
-      if (!this.targetPositions) return descriptor;
+      const typedDescriptor = glyphGrammar ? this.withRecordGlyphGrammar(descriptor, glyphGrammar) : descriptor;
+      if (!this.targetPositions) return typedDescriptor;
       // When looping, omit `progress` so InstancedPointLayer advances the morph
       // from the render-loop clock. A finite `progress` pins it to a static frame.
       const animation = {
@@ -225,10 +236,10 @@ export class MetricSpaceView extends BaseView {
       };
       if (!this.morphLoop) animation.progress = this.morphProgress;
       return {
-        ...descriptor,
+        ...typedDescriptor,
         animation,
         source: {
-          ...descriptor.source,
+          ...typedDescriptor.source,
           sourceCoordinateId: this.sourceCoordinateId,
           targetCoordinateId: this.targetCoordinateId,
         },
@@ -236,6 +247,43 @@ export class MetricSpaceView extends BaseView {
     });
     descriptors.push(...point);
     return descriptors;
+  }
+
+  withRecordGlyphGrammar(descriptor, grammar) {
+    const labelAnchor = createGlyphLabelAnchorChannel(this.positions, this.recordIds, this.glyphLabelLift);
+    const channels = {
+      ...descriptor.channels,
+      ...grammar.channels,
+      labelAnchor,
+    };
+    if (this.targetPositions) {
+      channels.targetLabelAnchor = createGlyphLabelAnchorChannel(this.targetPositions, this.recordIds, this.glyphLabelLift);
+    }
+    return {
+      ...descriptor,
+      channels,
+      geometry: {
+        ...descriptor.geometry,
+        grammar: RECORD_GLYPH_GRAMMAR_SCHEMA,
+        glyphFamilies: grammar.families,
+        payloadKinds: grammar.payloadKinds,
+        labelAnchors: true,
+      },
+      material: {
+        ...descriptor.material,
+        glyphGrammar: "typed-record-glyphs",
+      },
+      metadata: {
+        ...descriptor.metadata,
+        recordGlyphGrammar: {
+          schema: grammar.schema,
+          families: grammar.families,
+          payloadKinds: grammar.payloadKinds,
+          recordCount: grammar.recordCount,
+          labelAnchors: true,
+        },
+      },
+    };
   }
 
   groundDescriptor() {
@@ -390,6 +438,17 @@ function labelOffsetForIndex(index, count, radius) {
   if (!(safeRadius > 0) || count <= 1) return [0, 0];
   const angle = -Math.PI * 0.5 + (index / Math.max(1, count)) * Math.PI * 2;
   return [Math.cos(angle) * safeRadius, Math.sin(angle) * safeRadius];
+}
+
+function createGlyphLabelAnchorChannel(positions, ids, lift) {
+  const anchors = flattenVectors(positions, ids, 3);
+  const yLift = Number.isFinite(Number(lift)) ? Number(lift) : 0;
+  for (let index = 0; index < ids.length; index += 1) {
+    anchors[index * 3 + 1] += yLift;
+  }
+  return createChannel(anchors, 3, "record-label-anchor", {
+    grammar: RECORD_GLYPH_GRAMMAR_SCHEMA,
+  });
 }
 
 export function defaultCoordinateId(document, space, options = {}) {

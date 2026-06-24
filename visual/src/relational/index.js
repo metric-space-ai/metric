@@ -36,6 +36,8 @@ export {
 
 export {
   buildGraphEdgeChannels,
+  buildNativeNeighborhoodGraph,
+  buildRelationNeighborhoodGraph,
   buildSparseNeighborhoodGraph,
 } from "./neighborhood-graph.js";
 

@@ -87,13 +87,39 @@ export async function showDynamics(evidence, options = {}) {
   return visual.showDynamics(options);
 }
 
+export async function showConditionMonitoring(evidence, options = {}) {
+  const visual = await createMetricVisual({ ...options, evidence });
+  return visual.showConditionMonitoring(options);
+}
+
+export async function showMixedRecords(evidence, options = {}) {
+  const visual = await createMetricVisual({ ...options, evidence });
+  return visual.showMixedRecords(options);
+}
+
+export async function showCrossSpace(evidence, options = {}) {
+  const visual = await createMetricVisual({ ...options, evidence });
+  return visual.showCrossSpace(options);
+}
+
+export async function showRelationMatrixNeighborhood(evidence, options = {}) {
+  const visual = await createMetricVisual({ ...options, evidence });
+  return visual.showRelationMatrixNeighborhood(options);
+}
+
 export function createMetricVisualDocumentDiagnostics(document, options = {}) {
   const context = describeMetricVisualContext(options);
   const warnings = createMetricVisualDocumentWarnings(document, context);
+  const evidence = classifyMetricVisualEvidence(document);
   return {
     schema: METRIC_VISUAL_DOCUMENT_DIAGNOSTICS_SCHEMA,
+    evidenceSchema: document?.schema || null,
     loadedSchema: document?.schema || null,
     recordCount: countVisualRecords(document),
+    evidenceKind: evidence.kind,
+    evidenceNative: evidence.native,
+    evidenceDocumentedReference: evidence.documentedReference,
+    evidenceSyntheticFixture: evidence.syntheticFixture,
     synthetic: document?.provenance?.synthetic === true,
     context,
     warnings,
@@ -406,12 +432,21 @@ export class MetricVisualSurface {
 
   recordCommandDiagnostics(options = {}) {
     const runtimeState = safeRuntimeState(this.runtime);
+    const evidence = classifyMetricVisualEvidence(this.document);
+    const command = options.command || "metric-visual-command";
     const entry = {
       schema: METRIC_VISUAL_COMMAND_DIAGNOSTICS_SCHEMA,
-      command: options.command || "metric-visual-command",
+      command,
+      selectedCommand: command,
+      evidenceSchema: this.documentDiagnostics.evidenceSchema,
       loadedSchema: this.documentDiagnostics.loadedSchema,
       recordCount: this.documentDiagnostics.recordCount,
+      evidenceKind: evidence.kind,
+      evidenceNative: evidence.native,
+      evidenceDocumentedReference: evidence.documentedReference,
+      evidenceSyntheticFixture: evidence.syntheticFixture,
       selectedViewKind: options.viewKind ?? inferMetricVisualViewKind(this.views),
+      descriptorCount: this.descriptors.length,
       layerDescriptorCount: this.descriptors.length,
       runtimeLayerCount: runtimeState.layerInstanceCount ?? countRuntimeLayers(this.runtime),
       runtimeLayerState: runtimeState.layerState ? { ...runtimeState.layerState } : null,
@@ -427,9 +462,16 @@ export class MetricVisualSurface {
     const runtimeState = safeRuntimeState(this.runtime);
     return {
       schema: METRIC_VISUAL_API_DIAGNOSTICS_SCHEMA,
+      evidenceSchema: this.documentDiagnostics.evidenceSchema,
       loadedSchema: this.documentDiagnostics.loadedSchema,
       recordCount: this.documentDiagnostics.recordCount,
+      evidenceKind: this.documentDiagnostics.evidenceKind,
+      evidenceNative: this.documentDiagnostics.evidenceNative,
+      evidenceDocumentedReference: this.documentDiagnostics.evidenceDocumentedReference,
+      evidenceSyntheticFixture: this.documentDiagnostics.evidenceSyntheticFixture,
       selectedViewKind: current?.selectedViewKind ?? inferMetricVisualViewKind(this.views),
+      selectedCommand: current?.selectedCommand ?? current?.command ?? null,
+      descriptorCount: current?.descriptorCount ?? this.descriptors.length,
       layerDescriptorCount: current?.layerDescriptorCount ?? this.descriptors.length,
       runtimeLayerCount: current?.runtimeLayerCount ?? runtimeState.layerInstanceCount ?? countRuntimeLayers(this.runtime),
       warnings: cloneDiagnosticEntries(this.documentDiagnostics.warnings),
@@ -661,6 +703,36 @@ function createMetricVisualDocumentWarnings(document, context = {}) {
     context: context.label || "public-gallery",
     generator: document?.provenance?.generator || null,
   }];
+}
+
+export function classifyMetricVisualEvidence(document) {
+  const provenance = document?.provenance || {};
+  const provenanceText = JSON.stringify(provenance).toLowerCase();
+  const syntheticFixture = provenance.synthetic === true || provenance.synthetic_fixture === true;
+  const native = !syntheticFixture && (
+    provenance.native_export === true
+    || provenance.native === true
+    || /\bnative[-_\s]*(c\+\+|cpp|metric)\b/.test(provenanceText)
+    || /\b(c\+\+|cpp|c\+\+17)\b/.test(provenanceText)
+  );
+  const documentedReference = !syntheticFixture && !native && (
+    provenance.documented_reference === true
+    || provenance.reference === true
+    || Boolean(provenance.reference_url || provenance.documentation || provenance.source_document)
+  );
+  const kind = syntheticFixture
+    ? "synthetic_fixture"
+    : native
+      ? "native"
+      : documentedReference
+        ? "documented_reference"
+        : "unknown";
+  return {
+    kind,
+    native,
+    documentedReference,
+    syntheticFixture,
+  };
 }
 
 function inferMetricVisualViewKind(views) {

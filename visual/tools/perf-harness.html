@@ -44,6 +44,19 @@
       };
     }
 
+    function readWebglRenderer() {
+      const gl = canvas.getContext("webgl2") || canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+      if (!gl) return { available: false };
+      const debug = gl.getExtension("WEBGL_debug_renderer_info");
+      return {
+        available: true,
+        vendor: gl.getParameter(gl.VENDOR),
+        renderer: gl.getParameter(gl.RENDERER),
+        unmaskedVendor: debug ? gl.getParameter(debug.UNMASKED_VENDOR_WEBGL) : null,
+        unmaskedRenderer: debug ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) : null,
+      };
+    }
+
     const runtime = new MetricVisualRuntime({ canvas, background: [0.06, 0.08, 0.1, 1], postprocess: { tiltShift: false, fxaa: false }, controls: { enabled: false } });
     const descriptors = [buildPointDescriptor(n)];
     runtime.setLayerDescriptors(descriptors);
@@ -74,6 +87,7 @@
           medianMs: Number(median.toFixed(3)),
           fps: median > 0 ? Number((1000 / median).toFixed(1)) : 0,
           layerInstanceCount: runtime.getState().layerInstanceCount,
+          renderer: readWebglRenderer(),
         };
         document.documentElement.dataset.metricPerfReady = "true";
       }

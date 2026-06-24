@@ -59,6 +59,7 @@
         sourceCoordinateId: "phate-target-2d",
         targetCoordinateId: "source-feature-layout-3d",
         residualProperty: "local-mapping-distortion",
+        residualVectors: false,
         labels: "process-family",
         loop: staticMorph == null,
         progress: staticMorph ?? 0,
@@ -66,10 +67,17 @@
         pointSize: 1.6,
         preview: "record",
       });
+      const state = visual.getState();
+      const layerIds = state.descriptors.map((descriptor) => descriptor.id);
+      const residualLayers = state.descriptors.filter((descriptor) => descriptor.metadata?.role === "residual/error");
       if (staticMorph != null) phaseEl.textContent = staticMorph < 0.2 ? "source (2D)" : staticMorph > 0.8 ? "target (3D)" : "transition";
 
       document.documentElement.dataset.metricMappingHero = "ready";
       document.documentElement.dataset.metricRecordCount = String(visual.views[0].recordIds.length);
+      document.documentElement.dataset.metricCoordinateIds = "phate-target-2d,source-feature-layout-3d";
+      document.documentElement.dataset.metricTimelineIds = "";
+      document.documentElement.dataset.metricLayerIds = layerIds.join(",");
+      document.documentElement.dataset.metricResidualLayers = residualLayers.map((descriptor) => descriptor.id).join(",");
       document.documentElement.dataset.metricMorph = staticMorph == null ? "coordinate-morph-loop" : `static-${staticMorph}`;
       window.metricMappingHero = { visual, runtime: visual.runtime, getState: () => visual.getState() };
 

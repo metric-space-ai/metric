@@ -24,6 +24,16 @@ export class RelationMatrixView extends BaseView {
     this.scale = options.scale || "minMax";
     this.palette = options.palette || "metric";
     this.rect = options.rect || [0, 0, 1, 1];
+    this.recordOrder = options.recordOrder
+      ?? options.record_order
+      ?? this.relation?.metadata?.record_order
+      ?? this.relation?.metadata?.recordOrder
+      ?? null;
+    this.blockRanges = options.blockRanges
+      ?? options.block_ranges
+      ?? this.relation?.metadata?.block_ranges
+      ?? this.relation?.metadata?.blockRanges
+      ?? null;
     // Material translucency (0-1). Kept distinct from the per-texel alpha byte,
     // which createRelationMatrixLayerDescriptor otherwise conflates with this.
     this.materialAlpha = Number.isFinite(Number(options.materialAlpha ?? options.alpha))
@@ -75,6 +85,9 @@ export class RelationMatrixView extends BaseView {
       missingAlpha: this.missingAlpha,
       valueKey: this.valueKey,
       order: this.metadata.order ?? 0,
+      recordOrder: this.recordOrder,
+      blockRanges: this.blockRanges,
+      relationId: this.relationId,
     };
   }
 
@@ -82,7 +95,12 @@ export class RelationMatrixView extends BaseView {
     const descriptor = createRelationMatrixLayerDescriptor(this.relationSource(), this.matrixOptions());
     descriptor.source = { ...descriptor.source, viewId: this.id, viewKind: this.kind, relationId: this.relationId };
     descriptor.material = { ...descriptor.material, alpha: this.materialAlpha };
-    descriptor.metadata = { ...descriptor.metadata, relationType: this.relationType };
+    descriptor.metadata = {
+      ...descriptor.metadata,
+      relationType: this.relationType,
+      relationId: this.relationId,
+      relationName: this.relation?.name || null,
+    };
     return [descriptor];
   }
 

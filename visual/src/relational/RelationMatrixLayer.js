@@ -9,6 +9,8 @@ import {
 } from "../layers/gl-utils.js";
 import { buildRelationMatrixTextureData } from "./matrix-texture.js";
 
+const MAX_BLOCK_BOUNDARIES = 16;
+
 /**
  * WebGL layer for rendering prebuilt relation matrix texture data.
  *
@@ -25,6 +27,8 @@ export class RelationMatrixLayer extends BaseLayer {
     this.buffers = {};
     this.texturePayload = null;
     this.vertexCount = 4;
+    this.blockBoundaries = new Float32Array(MAX_BLOCK_BOUNDARIES);
+    this.blockBoundaryCount = 0;
     this.selection = {
       row: -1,
       column: -1,
@@ -79,6 +83,11 @@ export class RelationMatrixLayer extends BaseLayer {
     this.program.setUniform("uSelectionAlpha", numberOption(material.selectionAlpha, 0.32));
     this.program.setUniform("uSelectionCellAlpha", numberOption(material.selectionCellAlpha, 0.64));
     this.program.setUniform("uSelectionColor", material.selectionColor || [1.0, 0.86, 0.42, 1]);
+    this.program.setUniform("uBlockBoundaryCount", this.blockBoundaryCount);
+    this.program.setUniform("uBlockBoundaries", this.blockBoundaries);
+    this.program.setUniform("uBlockLineColor", material.blockLineColor || [1.0, 1.0, 1.0, 1]);
+    this.program.setUniform("uBlockLineAlpha", numberOption(material.blockLineAlpha, 0.22));
+    this.program.setUniform("uBlockLineWidthCells", numberOption(material.blockLineWidthCells, 0.56));
     bindAttribute(gl, this.program, this.capabilities, "aUnitPosition", this.buffers.quad, 2);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.vertexCount);
     restoreDepthWrite(gl);
@@ -100,6 +109,7 @@ export class RelationMatrixLayer extends BaseLayer {
 
   replaceTexture(payload) {
     const gl = this.gl;
+    this.updateBlockBoundaries(payload);
     if (this.texture) {
       gl.deleteTexture(this.texture);
       this.resources = this.resources.filter((resource) => resource.handle !== this.texture);
@@ -127,6 +137,25 @@ export class RelationMatrixLayer extends BaseLayer {
 
     this.texture = texture;
     this.track({ kind: "texture", handle: texture });
+  }
+
+  updateBlockBoundaries(payload) {
+    this.blockBoundaries.fill(0);
+    this.blockBoundaryCount = 0;
+    const matrix = payload?.matrix || null;
+    const size = Number(matrix?.size);
+    if (!Number.isFinite(size) || size <= 0) return this;
+
+    const seen = new Set();
+    for (const range of matrix.blockRanges || []) {
+      const end = Number(range.end_exclusive ?? range.endExclusive ?? range.end);
+      if (!Number.isFinite(end) || end <= 0 || end >= size || seen.has(end)) continue;
+      if (this.blockBoundaryCount >= MAX_BLOCK_BOUNDARIES) break;
+      seen.add(end);
+      this.blockBoundaries[this.blockBoundaryCount] = end / size;
+      this.blockBoundaryCount += 1;
+    }
+    return this;
   }
 
   dispose() {
@@ -192,6 +221,11 @@ uniform vec2 uSelectedCell;
 uniform vec4 uSelectionColor;
 uniform float uSelectionAlpha;
 uniform float uSelectionCellAlpha;
+uniform int uBlockBoundaryCount;
+uniform float uBlockBoundaries[16];
+uniform vec4 uBlockLineColor;
+uniform float uBlockLineAlpha;
+uniform float uBlockLineWidthCells;
 
 varying vec2 vUv;
 varying vec2 vUnit;
@@ -207,8 +241,19 @@ void main() {
   float hasSelection = step(0.0, uSelectedCell.x) * step(0.0, uSelectedCell.y);
   float lineHit = clamp(max(rowHit, columnHit) * hasSelection, 0.0, 1.0);
   float cellHit = clamp(rowHit * columnHit * hasSelection, 0.0, 1.0);
+  float boundaryHit = 0.0;
+  float boundaryWidth = max(0.0006, uBlockLineWidthCells / max(uTextureSize.x, uTextureSize.y));
+  for (int index = 0; index < 16; index++) {
+    if (index < uBlockBoundaryCount) {
+      float boundary = uBlockBoundaries[index];
+      float distanceToBoundary = min(abs(vUnit.x - boundary), abs(vUnit.y - boundary));
+      boundaryHit = max(boundaryHit, 1.0 - smoothstep(0.0, boundaryWidth, distanceToBoundary));
+    }
+  }
+  color = mix(color, uBlockLineColor.rgb, boundaryHit * uBlockLineAlpha);
   color = mix(color, uSelectionColor.rgb, lineHit * uSelectionAlpha);
   color = mix(color, uSelectionColor.rgb, cellHit * uSelectionCellAlpha);
+  alpha = max(alpha, boundaryHit * uBlockLineColor.a * uBlockLineAlpha * uAlpha);
   alpha = max(alpha, (lineHit * 0.42 + cellHit * 0.58) * uAlpha);
   gl_FragColor = vec4(color, alpha);
 }

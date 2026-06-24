@@ -1,7 +1,14 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
-import { createRelationMatrixPicker, pickRelationMatrixCell, RelationMatrixLayer } from "../src/relational/index.js";
+import { readFileSync } from "node:fs";
+import {
+  buildRelationMatrixTextureData,
+  createRelationGraphEdgeLayerDescriptor,
+  createRelationMatrixPicker,
+  pickRelationMatrixCell,
+  RelationMatrixLayer,
+} from "../src/relational/index.js";
 
 const matrix = {
   kind: "dense-relation-matrix",
@@ -116,5 +123,37 @@ assert.throws(
   () => createRelationMatrixPicker({ metadata: { matrix: { kind: "dense-relation-matrix", size: 0 } } }),
   /positive integer matrix size/,
 );
+
+const nativeDocument = JSON.parse(readFileSync(new URL("../../docs/examples/assets/relation-matrix/metric.visual.json", import.meta.url), "utf8"));
+const nativeRelation = nativeDocument.relations.find((relation) => relation.id === "process-curve-aligned-metric");
+const nativeGraph = nativeDocument.graphs.find((graph) => graph.edge_relation_id === nativeRelation.id);
+const nativeTexture = buildRelationMatrixTextureData(nativeRelation, {
+  symmetric: "mirror",
+  recordIds: nativeRelation.record_ids,
+});
+
+assert.equal(nativeTexture.matrix.size, 130);
+assert.equal(nativeTexture.matrix.blockRanges.length, 5);
+assert.equal(nativeTexture.matrix.missingValueCount, 0);
+assert.equal(nativeTexture.matrix.diagnostics.matrixDimensions.width, 130);
+assert.equal(nativeTexture.matrix.diagnostics.metricLawDiagnostic.triangle, true);
+
+const nativeLayer = new RelationMatrixLayer({ metadata: { matrix: nativeTexture.matrix } });
+nativeLayer.updateBlockBoundaries(nativeTexture);
+assert.equal(nativeLayer.blockBoundaryCount, 4);
+assert.deepEqual(
+  Array.from(nativeLayer.blockBoundaries.slice(0, nativeLayer.blockBoundaryCount)).map((value) => Number(value.toFixed(3))),
+  [0.2, 0.4, 0.6, 0.8],
+);
+
+const graphDescriptor = createRelationGraphEdgeLayerDescriptor(nativeRelation, {
+  graph: nativeGraph,
+  recordIds: nativeRelation.record_ids,
+});
+assert.equal(graphDescriptor.metadata.graph.kind, "native-neighborhood-graph");
+assert.equal(graphDescriptor.metadata.graph.mode, "native");
+assert.equal(graphDescriptor.metadata.graph.relationId, nativeRelation.id);
+assert.equal(graphDescriptor.metadata.graph.edgeCount, nativeGraph.edges.length);
+assert.equal(graphDescriptor.source.nativeGraph, true);
 
 console.log("Relation matrix picker contract passed.");

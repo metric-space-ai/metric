@@ -1,13 +1,14 @@
 import { BaseView } from "./BaseView.js";
 import { PointCloudView } from "./PointCloudView.js";
-import { VisualLayer } from "./VisualLayer.js";
+import { createTrajectoryBundleLayerDescriptor } from "../curves/index.js";
+import {
+  createTimelineAnimationDescriptor,
+  createTimelineModel,
+} from "../timeline/index.js";
 import { applyPositionFit, computePositionFit } from "./scene-fit.js";
 import {
-  createChannel,
-  descriptorSource,
   extractCoordinatePositions,
   extractPropertyValues,
-  flattenVectors,
   recordsFor,
   resolveCollectionItem,
 } from "./view-utils.js";
@@ -30,6 +31,18 @@ export class DynamicsView extends BaseView {
     this.size = Number.isFinite(Number(options.size)) ? Number(options.size) : 1;
     this.showTrajectory = options.trajectory !== false;
     this.colorValues = options.colorValues;
+    this.timelineId = options.timelineId || options.timeline_id || options.metadata?.timelineId || null;
+    this.timelineAnimation = options.timelineAnimation || null;
+    this.motionTargetStep = clampInt(
+      options.motionTargetStep ?? options.targetStep ?? Math.max(0, this.stepStates.length - 1),
+      0,
+      Math.max(0, this.stepStates.length - 1),
+    );
+    this.motionProgress = Number.isFinite(Number(options.progress ?? options.flowProgress))
+      ? Math.max(0, Math.min(1, Number(options.progress ?? options.flowProgress)))
+      : null;
+    this.pathWidth = Number.isFinite(Number(options.pathWidth)) ? Number(options.pathWidth) : 3.2;
+    this.pathAlpha = Number.isFinite(Number(options.pathAlpha)) ? Number(options.pathAlpha) : 0.66;
 
     // Shared fit across all steps so trajectories stay registered.
     const combined = combinePositions(this.stepStates, this.recordIds);
@@ -45,18 +58,34 @@ export class DynamicsView extends BaseView {
   static fromVisualSpace(document, options = {}) {
     const timeline = resolveCollectionItem(document, "timelines", options.timeline || options.timelineId)
       || firstTimeline(document);
-    const steps = Array.isArray(timeline?.steps) ? timeline.steps : [];
+    const timelineModel = timeline
+      ? createTimelineModel(document, {
+        timelineId: timeline.id,
+        loop: options.loop ?? true,
+        playbackRate: options.playbackRate,
+        easing: options.easing,
+      })
+      : null;
+    const steps = timelineModel?.steps?.length
+      ? timelineModel.steps
+      : (Array.isArray(timeline?.steps) ? timeline.steps : []);
     const datasetId = options.datasetId ?? timeline?.dataset_id;
     const records = recordsFor(document, { ...options, datasetId });
 
     let recordIds = options.recordIds || [];
     const stepStates = steps.map((step) => {
-      const coordinate = resolveCollectionItem(document, "coordinates", step.coordinate_id ?? step.coordinateId);
-      const property = resolveCollectionItem(document, "properties", step.property_id ?? step.propertyId);
+      const sourceStep = step.source || step;
+      const coordinateId = step.coordinateId ?? sourceStep.coordinate_id ?? sourceStep.coordinateId;
+      const propertyId = step.propertyId ?? sourceStep.property_id ?? sourceStep.propertyId;
+      const coordinate = resolveCollectionItem(document, "coordinates", coordinateId);
+      const property = resolveCollectionItem(document, "properties", propertyId);
       const positions = extractCoordinatePositions(coordinate, { records, recordIds: recordIds.length ? recordIds : undefined });
       if (!recordIds.length) recordIds = positions.ids;
       return {
-        name: step.name || coordinate?.name || coordinate?.id,
+        name: step.label || sourceStep.name || coordinate?.name || coordinate?.id,
+        stepId: sourceStep.id || null,
+        stepIndex: step.index ?? sourceStep.index ?? sourceStep.step_index ?? sourceStep.step ?? null,
+        time: step.time ?? sourceStep.time ?? sourceStep.t ?? null,
         coordinateId: coordinate?.id,
         propertyId: property?.id,
         positions: positions.positions,
@@ -72,7 +101,24 @@ export class DynamicsView extends BaseView {
       datasetId,
       spaceId: options.spaceId ?? timeline?.space_id,
       name: options.name || timeline?.name,
-      metadata: { ...(options.metadata || {}), timelineId: timeline?.id, stepCount: stepStates.length },
+      timelineId: timeline?.id,
+      timelineAnimation: timelineModel
+        ? createTimelineAnimationDescriptor(timelineModel, {
+          mode: "timeline-coordinate-morph",
+          loop: options.loop ?? true,
+          direction: options.direction || "alternate",
+          durationMs: options.timelineDurationMs ?? options.durationMs,
+          stepDurationMs: options.stepDurationMs ?? 360,
+          minDurationMs: options.minDurationMs ?? 6800,
+          maxDurationMs: options.maxDurationMs ?? 18000,
+        })
+        : null,
+      metadata: {
+        ...(options.metadata || {}),
+        timelineId: timeline?.id,
+        stepCount: stepStates.length,
+        coordinateIds: stepStates.map((state) => state.coordinateId).filter(Boolean),
+      },
     });
   }
 
@@ -83,6 +129,7 @@ export class DynamicsView extends BaseView {
     }
     const active = this.fittedStates[this.activeStep];
     if (active) {
+      const target = this.motionTargetPositions();
       const point = new PointCloudView({
         id: `${this.id}:state`,
         datasetId: this.datasetId,
@@ -90,11 +137,18 @@ export class DynamicsView extends BaseView {
         records: this.records,
         recordIds: this.recordIds,
         positions: active.positions,
+        targetPositions: target || undefined,
         scalarValues: active.scalarValues || undefined,
         colorValues: this.colorValues,
         size: this.size,
         shape: "sphere",
-        metadata: { ...this.metadata, step: this.activeStep },
+        animation: target ? this.stateAnimationDescriptor() : { mode: "none" },
+        metadata: {
+          ...this.metadata,
+          step: this.activeStep,
+          activeCoordinateId: active.coordinateId,
+          targetCoordinateId: target ? this.fittedStates[this.motionTargetStep]?.coordinateId : null,
+        },
       });
       descriptors.push(...point.toLayerDescriptors());
     }
@@ -102,48 +156,105 @@ export class DynamicsView extends BaseView {
   }
 
   trajectoryDescriptor() {
-    const segments = [];
-    for (let stepIndex = 0; stepIndex < this.fittedStates.length - 1; stepIndex += 1) {
-      const from = flattenVectors(this.fittedStates[stepIndex].positions, this.recordIds, 3);
-      const to = flattenVectors(this.fittedStates[stepIndex + 1].positions, this.recordIds, 3);
-      const alpha = 0.18 + 0.5 * (stepIndex / Math.max(1, this.fittedStates.length - 1));
-      for (let record = 0; record < this.recordIds.length; record += 1) {
-        const offset = record * 3;
-        segments.push({
-          source: [from[offset], from[offset + 1], from[offset + 2]],
-          target: [to[offset], to[offset + 1], to[offset + 2]],
-          alpha,
+    const paths = [];
+    for (let recordIndex = 0; recordIndex < this.recordIds.length; recordIndex += 1) {
+      const recordId = this.recordIds[recordIndex];
+      const points = [];
+      for (let stepIndex = 0; stepIndex < this.fittedStates.length; stepIndex += 1) {
+        const state = this.fittedStates[stepIndex];
+        const position = positionFor(state.positions, recordId);
+        if (!position) continue;
+        points.push({
+          x: position[0],
+          y: position[1],
+          z: position[2],
+          time: Number.isFinite(Number(state.time)) ? Number(state.time) : stepIndex,
+          color: timelinePathColor(stepIndex, this.fittedStates.length, this.pathAlpha),
+          width: this.pathWidth,
+        });
+      }
+      if (points.length >= 2) {
+        paths.push({
+          id: `${this.id}:trajectory:${recordId}`,
+          points,
+          metadata: {
+            recordId,
+            evidenceType: "diffusion-trajectory",
+            timelineId: this.timelineId,
+          },
         });
       }
     }
-    const sourcePosition = new Float32Array(segments.length * 3);
-    const targetPosition = new Float32Array(segments.length * 3);
-    const color = new Float32Array(segments.length * 4);
-    for (let index = 0; index < segments.length; index += 1) {
-      sourcePosition.set(segments[index].source, index * 3);
-      targetPosition.set(segments[index].target, index * 3);
-      color.set([0.32, 0.56, 0.66, segments[index].alpha], index * 4);
-    }
-    return new VisualLayer({
+    if (!paths.length) return null;
+    const descriptor = createTrajectoryBundleLayerDescriptor({ paths }, {
       id: `${this.id}:trajectory`,
-      kind: "trajectory",
-      primitive: "RelationEdgeLayer",
-      order: 5,
-      source: descriptorSource(this, { viewKind: "dynamics-trajectory" }),
-      channels: {
-        sourcePosition: createChannel(sourcePosition, 3, "source-position"),
-        targetPosition: createChannel(targetPosition, 3, "target-position"),
-        color: createChannel(color, 4, "rgba"),
-      },
-      geometry: { width: 1 },
-      material: { alpha: 1, transparent: true, depthWrite: false },
-      metadata: { ...this.metadata, segmentCount: segments.length, role: "trajectory" },
-    }).toDescriptor();
+      order: 28,
+      alpha: 1,
+      defaultWidth: this.pathWidth,
+      flowStrength: 0.16,
+      flowScale: 3.1,
+      flowSpeed: 0.28,
+      ambient: 0.42,
+      pointLight: 0.54,
+      coreGlow: 0.18,
+      rimLight: 0.22,
+      saturation: 1.08,
+      depthWrite: false,
+    });
+    descriptor.kind = "trajectory";
+    descriptor.source = {
+      ...descriptor.source,
+      viewId: this.id,
+      viewKind: "dynamics-trajectory",
+      timelineId: this.timelineId,
+    };
+    descriptor.metadata = {
+      ...descriptor.metadata,
+      ...this.metadata,
+      role: "trajectory",
+      evidenceRole: "trajectory/path",
+      stateHistoryRole: "timeline-state-history",
+      pathCount: paths.length,
+      stepCount: this.fittedStates.length,
+      timelineId: this.timelineId,
+      coordinateIds: this.fittedStates.map((state) => state.coordinateId).filter(Boolean),
+      algorithmicComputation: false,
+    };
+    return descriptor;
   }
 
   setActiveStep(step) {
     this.activeStep = clampInt(step, 0, Math.max(0, this.fittedStates.length - 1));
     return this;
+  }
+
+  motionTargetPositions() {
+    if (!this.fittedStates.length || this.motionTargetStep === this.activeStep) return null;
+    return this.fittedStates[this.motionTargetStep]?.positions || null;
+  }
+
+  stateAnimationDescriptor() {
+    const base = this.timelineAnimation || {
+      schema: "metric.visual.timeline_animation.v1",
+      mode: "timeline-coordinate-morph",
+      clock: "render-loop",
+      timelineId: this.timelineId,
+      durationMs: 6800,
+      loop: true,
+      direction: "alternate",
+      easing: "smoothstep",
+      stepCount: this.fittedStates.length,
+    };
+    const animation = {
+      ...base,
+      channel: "targetPosition",
+      requiresChannels: ["position", "targetPosition"],
+    };
+    if (this.motionProgress != null) {
+      animation.loop = false;
+      animation.progress = this.motionProgress;
+    }
+    return animation;
   }
 }
 
@@ -169,6 +280,30 @@ function combinePositions(stepStates, recordIds) {
 function firstTimeline(document) {
   const timelines = Array.isArray(document?.timelines) ? document.timelines : [];
   return timelines[0] || null;
+}
+
+function positionFor(map, id) {
+  return map?.get?.(id) || map?.get?.(String(id)) || null;
+}
+
+function timelinePathColor(stepIndex, stepCount, alpha) {
+  const t = stepCount <= 1 ? 0 : stepIndex / (stepCount - 1);
+  const low = [0.12, 0.25, 0.42];
+  const mid = [0.12, 0.54, 0.52];
+  const high = [0.92, 0.54, 0.22];
+  const color = t < 0.58
+    ? mixColor(low, mid, t / 0.58)
+    : mixColor(mid, high, (t - 0.58) / 0.42);
+  return [color[0], color[1], color[2], alpha];
+}
+
+function mixColor(a, b, t) {
+  const x = Math.max(0, Math.min(1, Number.isFinite(t) ? t : 0));
+  return [
+    a[0] + (b[0] - a[0]) * x,
+    a[1] + (b[1] - a[1]) * x,
+    a[2] + (b[2] - a[2]) * x,
+  ];
 }
 
 function clampInt(value, min, max) {

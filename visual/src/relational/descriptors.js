@@ -1,5 +1,5 @@
 import { buildRelationMatrixTextureData } from "./matrix-texture.js";
-import { buildGraphEdgeChannels, buildSparseNeighborhoodGraph } from "./neighborhood-graph.js";
+import { buildGraphEdgeChannels, buildRelationNeighborhoodGraph } from "./neighborhood-graph.js";
 
 /**
  * Create a layer descriptor for relation matrix rendering.
@@ -31,11 +31,14 @@ export function createRelationMatrixLayerDescriptor(source, options = {}) {
       alpha: options.alpha ?? 1,
       missingAlpha: options.missingAlpha ?? 0,
       background: options.background || [0.02, 0.025, 0.03, 1],
+      blockLineAlpha: options.blockLineAlpha ?? 0.22,
+      blockLineColor: options.blockLineColor || [1, 1, 1, 1],
     },
     metadata: {
       relationVisualization: "matrix",
       diagnostics: texture.diagnostics,
       matrix: texture.matrix,
+      relationId: options.relationId || source?.id || null,
     },
   };
 }
@@ -48,9 +51,9 @@ export function createRelationMatrixLayerDescriptor(source, options = {}) {
  * @returns {object}
  */
 export function createRelationGraphEdgeLayerDescriptor(source, options = {}) {
-  const graph = source?.kind === "sparse-neighborhood-graph"
+  const graph = source?.kind === "sparse-neighborhood-graph" || source?.kind === "native-neighborhood-graph"
     ? source
-    : buildSparseNeighborhoodGraph(source, options);
+    : buildRelationNeighborhoodGraph(source, options);
 
   return {
     id: options.id || "relation-neighborhood-edges",
@@ -61,6 +64,9 @@ export function createRelationGraphEdgeLayerDescriptor(source, options = {}) {
     source: {
       graph,
       recordIds: graph.recordIds,
+      relationId: graph.relationId || options.relationId || source?.id || null,
+      graphId: graph.id || options.graphId || options.graph?.id || null,
+      nativeGraph: graph.native === true,
     },
     channels: options.channels || buildGraphEdgeChannels(graph, options),
     geometry: {
@@ -74,6 +80,7 @@ export function createRelationGraphEdgeLayerDescriptor(source, options = {}) {
     metadata: {
       relationVisualization: "neighborhood-graph",
       graph,
+      diagnostics: graph.diagnostics,
     },
   };
 }
@@ -119,7 +126,7 @@ export function createSelectedRecordFocusDescriptor(source, selectedRecord, opti
     }
   }
 
-  const graph = buildSparseNeighborhoodGraph(source, {
+  const graph = buildRelationNeighborhoodGraph(source, {
     ...options,
     mode: options.focusMode || "topK",
     topK: options.topK || 16,
@@ -159,4 +166,3 @@ function resolveSelectedId(value) {
   if (typeof value === "string" || typeof value === "number") return String(value);
   return String(value.id ?? value.recordId ?? value.key ?? "");
 }
-

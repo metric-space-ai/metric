@@ -2,7 +2,7 @@ import { BaseView } from "./BaseView.js";
 import { VisualLayer } from "./VisualLayer.js";
 import { createChannel, descriptorSource, resolveCollectionItem } from "./view-utils.js";
 
-const TRACE_KEYS = ["residual", "objective", "loss", "value", "error"];
+const TRACE_KEYS = ["residual", "objective", "loss", "value", "error", "mse", "mse_to_clean", "dirichlet_energy", "energy", "cost"];
 
 /**
  * SolverTraceView renders a solver/optimization trace (residuals, objective or
@@ -20,14 +20,21 @@ export class SolverTraceView extends BaseView {
     this.width = Number.isFinite(Number(options.width)) ? Number(options.width) : 3.2;
     this.height = Number.isFinite(Number(options.height)) ? Number(options.height) : 1.8;
     this.color = options.color || [0.94, 0.62, 0.28, 1];
+    this.timelineId = options.timelineId || options.timeline_id || options.metadata?.timelineId || null;
+    this.tracePropertyId = options.tracePropertyId || options.propertyId || options.property_id || null;
   }
 
   static fromVisualSpace(document, options = {}) {
     let series = options.series ? normalizeSeries(options.series) : null;
+    const timeline = resolveCollectionItem(document, "timelines", options.timeline || options.timelineId)
+      || firstTimeline(document);
+    const traceProperty = findTraceProperty(document, timeline, options);
+
+    if (!series && traceProperty && isTimelineStepProperty(traceProperty)) {
+      series = seriesFromTimelineStepProperty(traceProperty, timeline);
+    }
 
     if (!series) {
-      const timeline = resolveCollectionItem(document, "timelines", options.timeline || options.timelineId)
-        || firstTimeline(document);
       if (timeline && Array.isArray(timeline.steps)) {
         const fromSteps = timeline.steps
           .map((step, index) => ({ iteration: numberOr(step.iteration, index), value: pickTraceValue(step) }))
@@ -37,12 +44,24 @@ export class SolverTraceView extends BaseView {
     }
 
     if (!series) {
-      const property = resolveCollectionItem(document, "properties", options.property || options.propertyId);
+      const property = traceProperty || resolveCollectionItem(document, "properties", options.property || options.propertyId);
       const vector = firstVectorValue(property);
       if (vector) series = normalizeSeries(vector);
     }
 
-    return new SolverTraceView({ ...options, series: series || [], datasetId: options.datasetId ?? document?.datasets?.[0]?.id });
+    return new SolverTraceView({
+      ...options,
+      series: series || [],
+      datasetId: options.datasetId ?? timeline?.dataset_id ?? document?.datasets?.[0]?.id,
+      timelineId: timeline?.id,
+      propertyId: traceProperty?.id ?? options.propertyId,
+      tracePropertyId: traceProperty?.id ?? options.propertyId,
+      metadata: {
+        ...(options.metadata || {}),
+        timelineId: timeline?.id,
+        tracePropertyId: traceProperty?.id ?? options.propertyId ?? null,
+      },
+    });
   }
 
   toLayerDescriptors() {
@@ -76,7 +95,12 @@ export class SolverTraceView extends BaseView {
       kind: "solver-trace",
       primitive: "RelationEdgeLayer",
       order: 4,
-      source: descriptorSource(this, { viewKind: "solver-trace", traceLabel: this.label }),
+      source: descriptorSource(this, {
+        viewKind: "solver-trace",
+        traceLabel: this.label,
+        timelineId: this.timelineId,
+        tracePropertyId: this.tracePropertyId,
+      }),
       channels: {
         sourcePosition: createChannel(sourcePosition, 3, "source-position"),
         targetPosition: createChannel(targetPosition, 3, "target-position"),
@@ -84,7 +108,17 @@ export class SolverTraceView extends BaseView {
       },
       geometry: { width: 2 },
       material: { alpha: 1, transparent: true, depthWrite: false },
-      metadata: { ...this.metadata, role: "solver-trace", points: this.series.length, summary, logScale: this.logScale },
+      metadata: {
+        ...this.metadata,
+        role: "solver-trace",
+        evidenceRole: "timeline-residual-objective",
+        points: this.series.length,
+        summary,
+        logScale: this.logScale,
+        timelineId: this.timelineId,
+        tracePropertyId: this.tracePropertyId,
+        algorithmicComputation: false,
+      },
     }).toDescriptor()];
   }
 
@@ -144,6 +178,80 @@ function firstVectorValue(property) {
     if (Array.isArray(candidate)) return candidate;
   }
   return null;
+}
+
+function findTraceProperty(document, timeline, options = {}) {
+  const explicit = options.property || options.propertyId || options.traceProperty || options.tracePropertyId || options.residualProperty || options.objectiveProperty || options.lossProperty;
+  if (explicit) {
+    return resolveCollectionItem(document, "properties", explicit, {
+      required: true,
+      label: "trace property",
+    });
+  }
+  const properties = Array.isArray(document?.properties) ? document.properties : [];
+  return properties.find((property) => (
+    isTimelineStepProperty(property)
+      && tracePropertyLooksRelevant(property)
+      && propertyHasTimelineValues(property, timeline)
+  )) || null;
+}
+
+function seriesFromTimelineStepProperty(property, timeline) {
+  const values = Array.isArray(property?.values)
+    ? property.values
+    : Array.isArray(property?.record_values)
+      ? property.record_values
+      : [];
+  if (!values.length) return null;
+  const timelineId = timeline?.id ?? null;
+  const stepTimes = new Map();
+  const stepIndexes = new Map();
+  for (let order = 0; order < (timeline?.steps || []).length; order += 1) {
+    const step = timeline.steps[order] || {};
+    const index = numberOr(step.index ?? step.step_index ?? step.step, order);
+    const time = numberOr(step.time ?? step.t ?? step.seconds, index);
+    stepTimes.set(String(index), time);
+    if (step.id != null) stepTimes.set(String(step.id), time);
+    if (step.coordinate_id != null) stepTimes.set(String(step.coordinate_id), time);
+    if (step.id != null) stepIndexes.set(String(step.id), index);
+  }
+  const series = [];
+  for (let order = 0; order < values.length; order += 1) {
+    const entry = values[order];
+    if (entry && typeof entry === "object") {
+      const entryTimelineId = entry.timeline_id ?? entry.timelineId;
+      if (timelineId != null && entryTimelineId != null && String(entryTimelineId) !== String(timelineId)) continue;
+      const stepRef = entry.step_id ?? entry.stepId ?? entry.coordinate_id ?? entry.coordinateId;
+      const index = numberOr(entry.index ?? entry.step_index ?? entry.step ?? stepIndexes.get(String(stepRef)), order);
+      const iteration = numberOr(entry.time ?? entry.t ?? entry.seconds ?? stepTimes.get(String(stepRef)) ?? stepTimes.get(String(index)), index);
+      const value = pickTraceValue(entry);
+      if (Number.isFinite(value)) series.push({ iteration, value });
+      continue;
+    }
+    const value = Number(entry);
+    if (Number.isFinite(value)) series.push({ iteration: order, value });
+  }
+  series.sort((a, b) => a.iteration - b.iteration);
+  return series.length > 1 ? series : null;
+}
+
+function isTimelineStepProperty(property) {
+  const target = property?.target_type ?? property?.targetType ?? property?.target;
+  return String(target || "").replace(/-/g, "_") === "timeline_step";
+}
+
+function tracePropertyLooksRelevant(property) {
+  const text = `${property?.id || ""} ${property?.name || ""}`.toLowerCase();
+  return /(residual|objective|loss|error|mse|energy|cost)/.test(text);
+}
+
+function propertyHasTimelineValues(property, timeline) {
+  if (!timeline?.id) return true;
+  const values = Array.isArray(property?.values) ? property.values : [];
+  return values.some((entry) => {
+    const entryTimelineId = entry?.timeline_id ?? entry?.timelineId;
+    return entryTimelineId == null || String(entryTimelineId) === String(timeline.id);
+  });
 }
 
 function firstTimeline(document) {

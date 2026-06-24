@@ -22,10 +22,11 @@ export class NeighborhoodGraphView extends BaseView {
     super({ ...options, kind: "neighborhood-graph" });
     this.recordIds = inferRecordIds(options);
     this.relation = options.relation || null;
+    this.graph = options.graph || null;
     this.relationKind = options.relationKind || "distance";
     this.mode = options.mode || "topK";
     this.topK = Number.isFinite(Number(options.topK)) ? Number(options.topK) : 6;
-    this.directed = Boolean(options.directed);
+    this.directed = options.directed == null ? undefined : Boolean(options.directed);
     this.fitEnabled = options.fit !== false;
     this.groundY = Number.isFinite(Number(options.groundY)) ? Number(options.groundY) : 0;
     this.targetRadius = Number.isFinite(Number(options.targetRadius)) ? Number(options.targetRadius) : 1.6;
@@ -44,7 +45,7 @@ export class NeighborhoodGraphView extends BaseView {
 
   static fromVisualSpace(document, options = {}) {
     const graphRef = options.graph || options.graphId;
-    const graph = resolveCollectionItem(document, "graphs", graphRef, {
+    let graph = resolveCollectionItem(document, "graphs", graphRef, {
       required: graphRef != null,
       label: "graph",
     });
@@ -54,6 +55,7 @@ export class NeighborhoodGraphView extends BaseView {
       label: "relation",
     })
       || firstRelation(document);
+    if (!graph) graph = firstGraphForRelation(document, relation?.id);
     const spaceRef = options.space || options.spaceId || relation?.space_id;
     const space = resolveCollectionItem(document, "spaces", spaceRef, {
       required: (options.space || options.spaceId) != null,
@@ -68,10 +70,13 @@ export class NeighborhoodGraphView extends BaseView {
       label: explicitCoordinateRef != null ? "coordinate" : "default coordinate",
     });
     const datasetId = options.datasetId ?? relation?.dataset_id ?? coordinate?.dataset_id ?? space?.dataset_id;
+    const graphRecordIds = graph?.node_record_ids || graph?.nodeRecordIds;
+    const relationRecordIds = relation?.record_ids || relation?.recordIds;
+    const viewRecordIds = options.recordIds || relationRecordIds || graphRecordIds || space?.record_ids;
     const records = recordsFor(document, { ...options, datasetId });
     const positions = extractCoordinatePositions(coordinate, {
       records,
-      recordIds: options.recordIds || relation?.record_ids || space?.record_ids,
+      recordIds: viewRecordIds,
     });
     const colorPropertyRef = options.colorProperty || options.colorPropertyId;
     const scalarPropertyRef = options.scalarProperty || options.scalarPropertyId;
@@ -89,6 +94,8 @@ export class NeighborhoodGraphView extends BaseView {
       records,
       recordIds: positions.ids,
       relation,
+      graph,
+      graphId: graph?.id,
       relationId: relation?.id,
       relationKind: options.relationKind || (relation?.relation_type === "similarity" ? "similarity" : "distance"),
       datasetId,
@@ -114,6 +121,9 @@ export class NeighborhoodGraphView extends BaseView {
       topK: this.topK,
       directed: this.directed,
       relationKind: this.relationKind,
+      graph: this.graph,
+      graphId: this.graph?.id,
+      relationId: this.relationId || this.relation?.id,
       order: 10,
     };
   }
@@ -139,7 +149,13 @@ export class NeighborhoodGraphView extends BaseView {
       descriptors.push(...point.toLayerDescriptors());
     }
     const edges = createRelationGraphEdgeLayerDescriptor(this.relationSource(), this.edgeOptions());
-    edges.source = { ...edges.source, viewId: this.id, viewKind: this.kind, relationId: this.relationId };
+    edges.source = {
+      ...edges.source,
+      viewId: this.id,
+      viewKind: this.kind,
+      relationId: this.relationId,
+      graphId: this.graph?.id || edges.source?.graphId || null,
+    };
     descriptors.push(edges);
     return descriptors;
   }
@@ -152,4 +168,13 @@ export function createNeighborhoodGraphView(options) {
 function firstRelation(document) {
   const relations = Array.isArray(document?.relations) ? document.relations : [];
   return relations[0] || null;
+}
+
+function firstGraphForRelation(document, relationId) {
+  const graphs = Array.isArray(document?.graphs) ? document.graphs : [];
+  if (relationId != null) {
+    const match = graphs.find((graph) => String(graph.edge_relation_id ?? graph.edgeRelationId) === String(relationId));
+    if (match) return match;
+  }
+  return graphs[0] || null;
 }
