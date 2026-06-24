@@ -4,6 +4,7 @@ import { MetricVisualRuntime } from "./runtime/index.js";
 import { createMiniatureHeroRuntimeOptions } from "./style/miniature/index.js";
 import { createTubeRibbonPathLayerDescriptor } from "./curves/index.js";
 import { RecordPreviewPanel } from "./interaction/index.js";
+import { createRelationMatrixPicker } from "./relational/index.js";
 import {
   DenseFieldView,
   DynamicsView,
@@ -110,6 +111,7 @@ export class MetricVisualSurface {
     this.descriptors = [];
     this.previewPanel = null;
     this.previewSubscriptions = [];
+    this.previewPairPickers = [];
     this.documentDiagnostics = createMetricVisualDocumentDiagnostics(document, options);
     this.commandDiagnostics = [];
     this.lastCommandDiagnostics = null;
@@ -501,14 +503,42 @@ export class MetricVisualSurface {
 
   updatePreviewIndex() {
     this.previewRecords = [];
+    this.previewPairPickers = [];
     for (const view of this.views || []) {
       collectPreviewRecords(this.previewRecords, view);
+    }
+    for (const descriptor of this.descriptors || []) {
+      if (descriptor?.primitive !== "RelationMatrixLayer") continue;
+      try {
+        const picker = createRelationMatrixPicker(descriptor, { canvas: this.canvas });
+        picker.relationId = descriptor.source?.relationId || descriptor.metadata?.relationId || descriptor.relationId || null;
+        this.previewPairPickers.push(picker);
+      } catch {
+        // Non-matrix descriptors or incomplete development descriptors are
+        // ignored here; renderer creation still reports hard layer errors.
+      }
     }
     return this;
   }
 
   handlePreviewPointerMove(event) {
-    if (!this.previewPanel || !this.previewRecords?.length) return;
+    if (!this.previewPanel) return;
+    if (String(this.previewMode || "").toLowerCase().includes("pair")) {
+      const pairHit = this.pickPreviewPair(event);
+      if (pairHit) {
+        this.previewPanel.show({
+          pair: pairHit,
+          x: event.clientX,
+          y: event.clientY,
+        });
+        document.documentElement.dataset.metricSelectedPair = `${pairHit.rowId}|${pairHit.columnId}`;
+        return;
+      }
+    }
+    if (!this.previewRecords?.length) {
+      this.previewPanel.hide();
+      return;
+    }
     const hit = this.pickPreviewRecord(event);
     if (!hit) {
       this.previewPanel.hide();
@@ -520,6 +550,18 @@ export class MetricVisualSurface {
       x: event.clientX,
       y: event.clientY,
     });
+  }
+
+  pickPreviewPair(event) {
+    for (const picker of this.previewPairPickers || []) {
+      const cell = picker.cellAtClientPoint(event.clientX, event.clientY);
+      if (!cell) continue;
+      return {
+        ...cell,
+        relationId: picker.relationId,
+      };
+    }
+    return null;
   }
 
   pickPreviewRecord(event) {
@@ -684,6 +726,7 @@ async function resolveMetricVisualInput(input, options = {}) {
 }
 
 function buildRecordPreview(surface, input = {}) {
+  if (input.pair || input.pairId || input.rowId || input.row_id) return buildPairPreview(surface, input);
   const recordId = input.recordId || input.focusTarget?.recordId;
   if (!recordId) return null;
   const record = surface.visualSpace.getRecord(recordId);
@@ -716,6 +759,49 @@ function buildRecordPreview(surface, input = {}) {
   return preview;
 }
 
+function buildPairPreview(surface, input = {}) {
+  const pair = input.pair || input.focusTarget?.pair || input;
+  const rowId = pair.rowId ?? pair.row_id ?? pair.sourceId ?? pair.source_id;
+  const columnId = pair.columnId ?? pair.column_id ?? pair.targetId ?? pair.target_id;
+  if (rowId == null || columnId == null) return null;
+
+  const relationId = pair.relationId ?? pair.relation_id ?? firstRelationId(surface.document);
+  const relation = relationId ? surface.visualSpace.getRelation(relationId) : null;
+  const entry = pair.value !== undefined
+    ? pair
+    : relationId
+      ? surface.visualSpace.relationValue(relationId, rowId, columnId)
+      : null;
+  const rowRecord = surface.visualSpace.getRecord(rowId);
+  const columnRecord = surface.visualSpace.getRecord(columnId);
+  const value = entry?.value ?? pair.value;
+  const present = pair.present ?? Boolean(entry);
+
+  const fields = [
+    { label: "relation", value: relation?.name || relation?.id || relationId || "relation" },
+    { label: "row", value: labelForRecord(rowRecord, rowId) },
+    { label: "column", value: labelForRecord(columnRecord, columnId) },
+    { label: "value", value: present && Number.isFinite(Number(value)) ? Number(value).toFixed(4) : (present ? value : "no direct pair") },
+  ];
+
+  for (const property of surface.document.properties || []) {
+    if (property.target_type !== "pair") continue;
+    const propertyValue = surface.visualSpace.propertyValue(property.id, {
+      relation_id: relationId,
+      row_id: rowId,
+      column_id: columnId,
+    });
+    if (propertyValue) fields.push({ label: property.name || property.id, value: propertyValue.value });
+    if (fields.length >= 8) break;
+  }
+
+  return {
+    title: `${rowId} ↔ ${columnId}`,
+    subtitle: relation?.relation_type || "pair relation",
+    fields,
+  };
+}
+
 function collectPreviewRecords(out, view) {
   if (!view) return out;
   if (view.recordIds && view.positions) {
@@ -741,6 +827,14 @@ function summarizePreviewValue(value) {
   if (Array.isArray(value)) return `${value.length} values`;
   if (value && typeof value === "object") return Object.keys(value).slice(0, 4).join(", ");
   return value;
+}
+
+function labelForRecord(record, fallback) {
+  return record?.label || record?.id || fallback;
+}
+
+function firstRelationId(document) {
+  return Array.isArray(document?.relations) && document.relations.length ? document.relations[0].id : null;
 }
 
 function resolveMetricVisualCanvas(options = {}) {

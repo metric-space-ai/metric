@@ -16,11 +16,6 @@
     .caption h1 { margin: 0 0 7px; font-size: 17px; font-weight: 700; }
     .caption p { margin: 0; font-size: 12px; line-height: 1.5; color: rgba(52, 66, 74, 0.82); max-width: 50ch; }
     .matrix-label { position: absolute; right: 30px; top: 24px; color: var(--muted); font-weight: 700; font-size: 11.5px; }
-    .pair { position: absolute; right: 30px; bottom: 24px; width: 250px; padding: 11px 13px; border: 1px solid var(--border); border-radius: 13px; background: var(--panel); backdrop-filter: blur(12px); box-shadow: 0 12px 40px rgba(77, 92, 97, 0.12); opacity: 0; transition: opacity 140ms ease; }
-    .pair[data-visible="true"] { opacity: 0.98; }
-    .pair h2 { margin: 0 0 6px; font-size: 12px; font-weight: 720; }
-    .pair dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 4px 10px; }
-    .pair dt { color: var(--muted); font-size: 11px; } .pair dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; font-size: 11px; }
     .loading, .error { position: absolute; inset: 0; display: grid; place-items: center; color: #2a3a3a; }
     .error { color: #7a2222; }
   </style>
@@ -33,26 +28,16 @@
       <p>The native metric relation is rendered as a spatial graph and a dense matrix. The same exported pair values drive both views; hover the matrix to read a pair.</p>
     </section>
     <div class="matrix-label" id="matrix-label">dense metric matrix</div>
-    <aside class="pair" id="pair" data-visible="false">
-      <h2 id="pair-title">pair</h2>
-      <dl><dt>row</dt><dd id="pair-row"></dd><dt>column</dt><dd id="pair-col"></dd><dt>metric</dt><dd id="pair-val"></dd></dl>
-    </aside>
     <div class="loading" id="loading">Loading relation evidence…</div>
   </main>
 
   <script type="module">
     import { createMetricVisual } from "../../src/index.js";
-    import { createRelationMatrixPicker } from "../../src/relational/index.js";
 
     const MATRIX_RECT = [0.635, 0.30, 0.33, 0.44];
     const canvas = document.getElementById("scene");
     const loading = document.getElementById("loading");
     const matrixLabel = document.getElementById("matrix-label");
-    const pairEl = document.getElementById("pair");
-    const pairTitle = document.getElementById("pair-title");
-    const pairRow = document.getElementById("pair-row");
-    const pairCol = document.getElementById("pair-col");
-    const pairVal = document.getElementById("pair-val");
 
     try {
       const response = await fetch("../../../docs/examples/assets/relation-matrix/metric.visual.json");
@@ -77,26 +62,13 @@
       });
 
       const matrixDescriptor = visual.descriptors.find((descriptor) => descriptor.primitive === "RelationMatrixLayer");
-      const matrixPicker = createRelationMatrixPicker(matrixDescriptor, { rect: MATRIX_RECT, canvas });
-      const matrixData = matrixPicker.matrix;
+      const matrixData = matrixDescriptor.metadata.matrix;
       matrixLabel.textContent = `dense metric matrix · ${matrixData.size}²`;
 
       document.documentElement.dataset.metricRelationHero = "ready";
       document.documentElement.dataset.metricRecordCount = String(visual.views.find((view) => view.kind === "neighborhood-graph")?.recordIds.length || 0);
       document.documentElement.dataset.metricMatrixSize = String(matrixData.size);
       window.metricRelationHero = { visual, runtime: visual.runtime, getState: () => visual.getState() };
-
-      canvas.addEventListener("pointermove", (event) => {
-        const cell = matrixPicker.cellAtClientPoint(event.clientX, event.clientY);
-        if (cell) {
-          pairTitle.textContent = `${cell.rowId} ↔ ${cell.columnId}`;
-          pairRow.textContent = cell.rowId; pairCol.textContent = cell.columnId;
-          pairVal.textContent = cell.present ? Number(cell.value).toFixed(3) : "no direct pair";
-          pairEl.dataset.visible = "true";
-          document.documentElement.dataset.metricSelectedPair = `${cell.rowId}|${cell.columnId}`;
-        } else { pairEl.dataset.visible = "false"; }
-      });
-      canvas.addEventListener("pointerleave", () => { pairEl.dataset.visible = "false"; });
 
       loading.remove();
       addEventListener("resize", () => { const r = canvas.getBoundingClientRect(); visual.runtime.resize(Math.max(1, Math.floor(r.width)), Math.max(1, Math.floor(r.height))); });
