@@ -2,16 +2,12 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
-// Property and degenerate-case coverage for metric-space entropy.
+// Property and degenerate-case coverage for coordinate metric-space entropy.
 //
-// Entropy is a PROPERTY of a finite metric space (a kpN local-Gaussian differential
-// entropy estimator), not a metric. This test pins platform-robust mathematical
-// properties (determinism, translation invariance, negative differential entropy,
-// spread ordering, the exponentiated remap) and the degenerate-input contract
-// (n < 4 and empty -> NaN "estimation failed" sentinel, never a crash). Absolute
-// magnitudes are estimator/platform sensitive, so only the order-of-magnitude-stable
-// regression anchor used by the existing smoke is pinned tightly; the rest are
-// relational checks.
+// Entropy is a PROPERTY of an embedded coordinate finite metric space (a kpN
+// local-Gaussian differential entropy estimator), not a direct source records+metric
+// operator. The direct estimator tests below pin platform-robust mathematical
+// properties; the public stats wrapper is exercised only through a MetricSpace.
 
 #include <array>
 #include <cassert>
@@ -112,7 +108,8 @@ int main()
 
 	// The wrapper forwards the NaN sentinel for degenerate spaces (no exception, no
 	// crash); callers detect failure via std::isnan.
-	const auto wrapped_degenerate = mtrc::stats::properties::entropy(too_few, Cheb(), 3, 2);
+	const auto wrapped_degenerate =
+		mtrc::stats::properties::entropy(mtrc::make_space(too_few, Cheb()), 3, 2);
 	assert(std::isnan(wrapped_degenerate.value));
 
 	std::cout << std::setprecision(17) << "entropy base=" << first << " spread=" << spread_h

@@ -130,17 +130,6 @@ auto coordinate_entropy(const Container &records, const Metric &metric, std::siz
 
 } // namespace entropy_detail
 
-template <typename Container, typename Metric,
-		  typename Record = typename std::decay<typename Container::value_type>::type,
-		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
-auto entropy(const Container &records, const Metric &metric, std::size_t k = 7, std::size_t p = 70,
-			 bool exponentiated = false) -> EntropyResult<double>
-{
-	auto result = entropy_detail::coordinate_entropy(records, metric, k, p, exponentiated, "records");
-	result.representation = "records";
-	return result;
-}
-
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto entropy(const Space &space, std::size_t k = 7, std::size_t p = 70, bool exponentiated = false)
 	-> EntropyResult<double>

@@ -6,10 +6,10 @@ is organized by what happens to the finite metric space.
 ## Stats
 
 `mtrc::stats` investigates an existing space without changing its source
-records or metric. Search, sample, properties, correlate, and structural
+records or metric. Search, sample, most properties, correlate, and structural
 analysis are Level-2 user workflows over one (or two paired) finite metric
-spaces. Vector records are one special case; every workflow is computed from
-metric values, not coordinates.
+spaces. Vector records are one special case; distance-only workflows are
+computed from metric values, not coordinates.
 
 - `mtrc::stats::search`: neighbor, range, and batch queries
 - `mtrc::stats::sample`: deterministic sampling and metric-space walks
@@ -22,10 +22,12 @@ metric values, not coordinates.
 
 `stats::properties::profile` is a cohesive diagnostic summary of one space, with
 optional distance-distribution and local-volume sections computed only on
-request. Entropy is a `stats::properties` computation over one finite metric
-space; its result reports an explicit success/failure status and a valid
-negative differential entropy is not a failure. Intrinsic dimension is a
-finite-space growth diagnostic, not a manifold-dimension guarantee. MGC is a
+request. Entropy is the coordinate-space exception in this group: first map or
+embed the source finite metric space into an appropriate Euclidean-style
+coordinate space, then run `entropy` on that derived space or mapping result.
+Its result reports an explicit success/failure status and a valid negative
+differential entropy is not a failure. Intrinsic dimension is a finite-space
+growth diagnostic, not a manifold-dimension guarantee. MGC is a
 `stats::correlate` implementation for dependence between two aligned finite
 metric spaces -- a statistic in `[-1, 1]`, never a record metric -- and
 `mgc_significance` is its seeded permutation test.

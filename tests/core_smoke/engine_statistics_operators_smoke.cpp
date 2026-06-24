@@ -20,6 +20,13 @@ auto close(double actual, double expected, double tolerance = 1e-12) -> bool
 	return std::abs(actual - expected) < tolerance;
 }
 
+struct IntDistance {
+	auto operator()(int lhs, int rhs) const -> double
+	{
+		return static_cast<double>(lhs > rhs ? lhs - rhs : rhs - lhs);
+	}
+};
+
 } // namespace
 
 int main()
@@ -65,9 +72,18 @@ int main()
 	assert(space_entropy.exact);
 	assert(close(space_entropy.value, expected_entropy, 1e-12));
 
-	const auto record_entropy = mtrc::stats::properties::entropy(vector_records, mtrc::Chebyshev<double>(), 3, 2);
-	assert(record_entropy.representation == "records");
-	assert(close(record_entropy.value, space_entropy.value, 1e-12));
+	const auto mapped_entropy_source = mtrc::make_space(std::vector<int>{0, 1, 2, 3}, IntDistance{});
+	const auto mapped_coordinates = mtrc::map(mapped_entropy_source,
+											  [](int value) {
+												  return std::vector<double>{
+													  static_cast<double>(value),
+													  static_cast<double>(value * value),
+												  };
+											  },
+											  mtrc::Euclidean<double>());
+	const auto mapped_entropy = mtrc::stats::properties::entropy(mapped_coordinates, 3, 2);
+	assert(mapped_entropy.representation == "deterministic_transform");
+	assert(mapped_entropy.record_count == mapped_coordinates.space.size());
 
 	std::vector<std::vector<double>> first = {
 		{-1.08661677587398},  {-1.00699896410939},	{-0.814135753976830},  {-0.875364720432552}, {-0.659607023272462},
