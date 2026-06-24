@@ -28,7 +28,7 @@
     <canvas id="scene" aria-label="Mapping morph: 2D projection lifting into a 3D metric space"></canvas>
     <section class="caption" aria-hidden="true">
       <h1>Mapping &amp; dimensionality</h1>
-      <p>2,304 records: the flat 2D projection lifts into the full 3D metric space and back. Color is the exported preservation residual — where the mapping distorts most, the rising fault structure flattening away, it burns red.</p>
+      <p>Native mapping evidence rendered as a coordinate-state morph. The 2D PHATE target lifts into the 3D source-space view; color is the exported local mapping distortion.</p>
     </section>
     <div class="legend"><span>preserved</span><div class="ramp"></div><span>distorted</span></div>
     <div class="phase" id="phase">2D ⇄ 3D morph</div>
@@ -46,7 +46,7 @@
     const staticMorph = morphParam == null ? null : Math.max(0, Math.min(1, Number(morphParam)));
 
     try {
-      const response = await fetch("./evidence.json");
+      const response = await fetch("../../../docs/examples/assets/mapping-dimensionality/metric.visual.json");
       if (!response.ok) throw new Error(`evidence ${response.status}`);
       const document_ = await response.json();
 
@@ -56,10 +56,10 @@
         profileId: "mapping-dimensionality-hero-profile",
       });
       visual.showMapping({
-        sourceCoordinateId: "source-2d",
-        targetCoordinateId: "target-3d",
-        residualProperty: "map-residual",
-        labels: "cluster",
+        sourceCoordinateId: "phate-target-2d",
+        targetCoordinateId: "source-feature-layout-3d",
+        residualProperty: "local-mapping-distortion",
+        labels: "process-family",
         loop: staticMorph == null,
         progress: staticMorph ?? 0,
         morphDurationMs: 6400,

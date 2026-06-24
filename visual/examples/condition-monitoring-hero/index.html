@@ -27,11 +27,11 @@
     <canvas id="scene" aria-label="Condition-monitoring metric space sculpture"></canvas>
     <section class="caption" aria-hidden="true">
       <h1>Condition monitoring</h1>
-      <p>1,536 process windows from sixteen runs become one finite metric space. Color encodes anomaly score, lines show run order, floor imprint shows density, and labels name the regimes.</p>
+      <p>Native C++ condition-monitoring evidence rendered as one finite metric space. Color encodes exported anomaly severity, lines show trajectory order, floor imprint shows local density, and labels name diagnosis states.</p>
       <span class="key">The space sways slowly so depth and the raised fault regime stay readable without a full rotation.</span>
     </section>
     <div class="legend"><span>low anomaly</span><div class="ramp"></div><span>high anomaly</span></div>
-    <div class="loading" id="loading">Loading 1,536 windowed records…</div>
+    <div class="loading" id="loading">Loading native condition evidence…</div>
   </main>
 
   <script type="module">
@@ -41,7 +41,7 @@
     const loading = document.getElementById("loading");
 
     try {
-      const response = await fetch("./evidence.json");
+      const response = await fetch("../../../docs/examples/assets/condition-monitoring/metric.visual.json");
       if (!response.ok) throw new Error(`evidence ${response.status}`);
       const document_ = await response.json();
 
@@ -51,10 +51,10 @@
         profileId: "condition-monitoring-hero-profile",
       });
       visual.showConditionMonitoring({
-        coordinateId: "condition-3d",
-        colorBy: "anomaly",
-        groundField: "density",
-        labels: "cluster",
+        coordinateId: "process-state-trajectory-3d",
+        colorBy: "metric-anomaly-severity",
+        groundField: "local-density",
+        labels: "diagnosis-state",
         preview: "time-series",
         pointSize: 1.0,
       });

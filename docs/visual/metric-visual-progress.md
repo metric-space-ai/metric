@@ -62,19 +62,20 @@ passing when the package is unavailable.
 | --- | --- | --- |
 | MNIST dimension reduction | live | Full 60k visual reference exists and is protected by C++ integrity plus hash checks. |
 | UCR process curves | live | Real dataset, native C++ export, and checked public assets exist. |
-| Mixed records | not live | Native `metric.visual.v1` evidence exists. Public status still needs a distinct mixed-record visual grammar, screenshot review, and gallery wiring away from the synthetic fixture. |
-| Cross-space dependence | not live | Native `metric.visual.v1` evidence exists. Public status still needs a two-space dependence grammar, screenshot review, and gallery wiring away from the synthetic fixture. |
-| Condition monitoring | not live | Native `metric.visual.v1` evidence exists. Public status still needs a curated condition-monitoring visual grammar that does not regress the existing UCR proof. |
-| Relation matrix/neighborhood | not live | Native `metric.visual.v1` evidence exists. Public status still needs a legible matrix/neighborhood visual grammar, screenshot review, and gallery wiring away from the synthetic fixture. |
-| Dynamics/noise | not live | Native `metric.visual.v1` evidence exists. Public status still needs a trajectory/dynamics grammar, screenshot review, and gallery wiring away from the synthetic fixture. |
-| Mapping/dimensionality | not live | Native `metric.visual.v1` evidence exists. Public status still needs a mapping/morph visual grammar, screenshot review, and gallery wiring away from the synthetic fixture. |
+| Mixed records | not live | Native `metric.visual.v1` evidence exists and the development page loads it. Public status still needs screenshot review and gallery wiring. |
+| Cross-space dependence | not live | Native `metric.visual.v1` evidence exists and the development page loads it. Public status still needs screenshot review and gallery wiring. |
+| Condition monitoring | not live | Native `metric.visual.v1` evidence exists and the development page loads it. Public status still needs screenshot review and a curated proof that does not regress the existing UCR proof. |
+| Relation matrix/neighborhood | not live | Native `metric.visual.v1` evidence exists and the development page loads it. Public status still needs screenshot review and gallery wiring. |
+| Dynamics/noise | not live | Native `metric.visual.v1` evidence exists and the development page loads it. Public status still needs screenshot review and gallery wiring. |
+| Mapping/dimensionality | not live | Native `metric.visual.v1` evidence exists and the development page loads it. Public status still needs screenshot review and gallery wiring. |
 | Metric discovery | not live | Needs native metric-admission evidence and rejected-candidate documentation. |
 
 ## Synthetic Development Fixtures
 
-These examples may be useful to develop the renderer, but they must not be
-published as real hero applications until native evidence replaces their
-`provenance.synthetic: true` documents:
+These `evidence.json` files may be useful to develop the renderer, but they must
+not be published as real hero applications. The matching example pages now load
+native assets from `docs/examples/assets/*/metric.visual.json`; these fixture
+files remain only as renderer development inputs:
 
 - `visual/examples/condition-monitoring-hero/evidence.json`
 - `visual/examples/cross-space-dependency-hero/evidence.json`

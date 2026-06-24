@@ -32,7 +32,7 @@
     <div class="tag b">space B</div>
     <section class="hud">
       <h1>Cross-space dependency</h1>
-      <p>Two metric spaces over the same 1,100 paired observations, correlated as spaces — not forced into one shared coordinate system. Color is local dependence; where the spaces disagree it drops to blue. <span class="stat" id="stat"></span></p>
+      <p>Two native metric spaces over the same paired records are compared as spaces, not forced into one shared coordinate system. Color is exported local dependence contribution. <span class="stat" id="stat"></span></p>
     </section>
     <div class="legend"><span>independent</span><div class="ramp"></div><span>dependent</span></div>
     <div class="loading" id="loading">Loading paired-space evidence…</div>
@@ -46,7 +46,7 @@
     const stat = document.getElementById("stat");
 
     try {
-      const response = await fetch("./evidence.json");
+      const response = await fetch("../../../docs/examples/assets/cross-space-dependency/metric.visual.json");
       if (!response.ok) throw new Error(`evidence ${response.status}`);
       const document_ = await response.json();
 
@@ -56,14 +56,15 @@
         profileId: "cross-space-dependency-profile",
       });
       visual.showCrossSpace({
-        coordinateA: "space-a-3d",
-        coordinateB: "space-b-3d",
-        dependenceProperty: "local-dependence",
+        coordinateA: "event-log-landmark-3d",
+        coordinateB: "process-curve-landmark-3d",
+        dependenceProperty: "local-dependence-contribution",
         linkedBrushing: true,
         preview: "paired records",
       });
 
-      const global = document_.provenance?.global_dependence ?? document_.diagnostics?.[0]?.value;
+      const global = document_.diagnostics?.find((entry) => entry.id === "cross-space-mgc-coupled")?.values?.mgc_statistic
+        ?? document_.diagnostics?.[0]?.value;
       stat.textContent = global != null ? `global dependence ${Number(global).toFixed(3)}` : "";
 
       document.documentElement.dataset.metricCrossSpaceHero = "ready";

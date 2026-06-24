@@ -30,9 +30,9 @@
     <canvas id="scene" aria-label="Metric space with relation matrix and neighborhood"></canvas>
     <section class="caption" aria-hidden="true">
       <h1>Relation matrix &amp; neighborhood</h1>
-      <p>The finite metric space is fundamentally pairwise. 144 clustered signals read as a spatial cloud, a dense 144×144 metric matrix and a nearest-neighbor graph — the same relation, three ways. Hover the matrix to read a pair.</p>
+      <p>The native metric relation is rendered as a spatial graph and a dense matrix. The same exported pair values drive both views; hover the matrix to read a pair.</p>
     </section>
-    <div class="matrix-label">dense metric matrix · 144²</div>
+    <div class="matrix-label">dense metric matrix · 130²</div>
     <aside class="pair" id="pair" data-visible="false">
       <h2 id="pair-title">pair</h2>
       <dl><dt>row</dt><dd id="pair-row"></dd><dt>column</dt><dd id="pair-col"></dd><dt>metric</dt><dd id="pair-val"></dd></dl>
@@ -67,7 +67,7 @@
     }
 
     try {
-      const response = await fetch("./evidence.json");
+      const response = await fetch("../../../docs/examples/assets/relation-matrix/metric.visual.json");
       if (!response.ok) throw new Error(`evidence ${response.status}`);
       const document_ = await response.json();
 
@@ -77,12 +77,12 @@
         profileId: "relation-matrix-neighborhood-profile",
       });
       visual.showRelationMatrixNeighborhood({
-        coordinateId: "catalog-3d",
-        relationId: "catalog-metric",
+        coordinateId: "process-curve-block-layout-3d",
+        relationId: "process-curve-aligned-metric",
         matrixRect: MATRIX_RECT,
         symmetric: true,
-        colorProperty: "group",
-        labels: "group",
+        colorProperty: "process-family",
+        labels: "process-family",
         graph: "neighborhood",
         pairPreview: true,
         pointSize: 2.0,

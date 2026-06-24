@@ -30,7 +30,7 @@
     <canvas id="scene" aria-label="Mixed-record metric space"></canvas>
     <section class="caption" aria-hidden="true">
       <h1>Mixed-record metric space</h1>
-      <p>Over two thousand text, vector, curve, histogram and image records compared in one finite metric space through type-appropriate metrics — colored by record family, not by a hand-built vector embedding.</p>
+      <p>Composed industrial records are compared in one finite metric space through type-appropriate native metrics. Glyph color is the exported record family; edges are selected from the same composite metric relation.</p>
     </section>
     <aside class="matrix">
       <h2>family ↔ family distance</h2>
@@ -43,9 +43,10 @@
   <script type="module">
     import { createMetricVisual } from "../../src/index.js";
 
-    const FIXTURE_URL = "./evidence.json";
-    const FAMILY_COLORS = { text: "#3389c6", vector: "#1aab99", curve: "#f28a2e", histogram: "#765ab8", image: "#e0474f" };
-    const FAMILIES = Object.keys(FAMILY_COLORS);
+    const EVIDENCE_URL = "../../../docs/examples/assets/mixed-records/metric.visual.json";
+    const PALETTE = ["#3389c6", "#1aab99", "#f28a2e", "#765ab8", "#e0474f", "#8a9a2a"];
+    let FAMILY_COLORS = {};
+    let FAMILIES = [];
 
     const canvas = document.getElementById("scene");
     const loading = document.getElementById("loading");
@@ -86,11 +87,17 @@
     function fit(runtime) { const r = canvas.getBoundingClientRect(); runtime.resize(Math.max(1, Math.floor(r.width)), Math.max(1, Math.floor(r.height))); }
 
     try {
-      buildLegend();
-      const response = await fetch(FIXTURE_URL);
-      if (!response.ok) throw new Error(`fixture ${response.status}`);
+      const response = await fetch(EVIDENCE_URL);
+      if (!response.ok) throw new Error(`evidence ${response.status}`);
       const document_ = await response.json();
-      for (const p of document_.properties) if (p.id === "family") for (const v of p.values) familyById.set(String(v.record_id), v.value);
+      for (const p of document_.properties) {
+        if (p.id === "family") {
+          for (const v of p.values) familyById.set(String(v.record_id), v.value);
+        }
+      }
+      FAMILIES = Array.from(new Set(familyById.values())).sort();
+      FAMILY_COLORS = Object.fromEntries(FAMILIES.map((name, index) => [name, PALETTE[index % PALETTE.length]]));
+      buildLegend();
 
       const visual = await createMetricVisual({
         canvas,
@@ -98,10 +105,10 @@
         profileId: "mixed-record-hero-profile",
       });
       visual.showMixedRecords({
-        coordinateId: "layout-3d",
+        coordinateId: "mixed-finite-records-family-severity-3d",
         glyphBy: "family",
         labels: "family",
-        relationId: "cross-metric",
+        relationId: "mixed-finite-records-composite-metric",
         crossTypeRelations: true,
         topK: 5,
         preview: "text image curve table",

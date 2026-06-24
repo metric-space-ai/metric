@@ -52,12 +52,12 @@ This plan is authoritative only with the following current-state constraints:
 - The 60k GRAE10/MNIST view is a protected visual reference and must remain
   byte-stable against `visual/regression-baselines/grae10-metric-engine.sha256`.
 - The UCR process-curve hero is real native evidence and may remain public.
-- The current visual pages for condition monitoring, mixed records,
-  cross-space dependency, mapping/dimensionality, dynamics/noise and relation
-  matrix are synthetic development fixtures only.
 - Native `metric.visual.v1` exporter assets now exist for condition
   monitoring, mixed records, cross-space dependency, mapping/dimensionality,
   dynamics/noise and relation matrix under `docs/examples/assets/*/`.
+- The matching development example pages now load those native assets through
+  `createMetricVisual`. Their old local `visual/examples/*/evidence.json`
+  files remain synthetic renderer fixtures only.
 - Synthetic fixtures may be used to develop renderer layers, but they are not
   application evidence and must not be published as real heroes.
 - The next production step is reusable visual-command/gallery integration of

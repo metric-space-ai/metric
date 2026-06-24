@@ -28,11 +28,11 @@
     <canvas id="scene" aria-label="Reverse-flow dynamics over a metric space"></canvas>
     <section class="caption" aria-hidden="true">
       <h1>Dynamics &amp; noise</h1>
-      <p>640 record states across 14 reverse-flow keyframes. Noise becomes movement over a metric relation structure; reverse flow pulls scattered states back toward their representatives. Color is transition cost, the ground field its footprint.</p>
+      <p>Native finite-metric dynamics evidence rendered from exported coordinate states. Forward diffusion and reverse reconstruction are visible as movement over one metric relation structure.</p>
     </section>
     <div class="legend"><span>settled</span><div class="ramp"></div><span>high cost</span></div>
     <div class="phase" id="phase">noisy → representatives</div>
-    <div class="loading" id="loading">Loading dynamics evidence…</div>
+    <div class="loading" id="loading">Loading native dynamics evidence…</div>
   </main>
 
   <script type="module">
@@ -46,10 +46,10 @@
     const staticFlow = flowParam == null ? null : Math.max(0, Math.min(1, Number(flowParam)));
 
     try {
-      const response = await fetch("./evidence.json");
+      const response = await fetch("../../../docs/examples/assets/dynamics-noise/metric.visual.json");
       if (!response.ok) throw new Error(`evidence ${response.status}`);
       const document_ = await response.json();
-      const states = (document_.timelines.find((t) => t.id === "reverse-flow")?.steps || []).map((s) => s.coordinate_id);
+      const states = (document_.timelines.find((t) => t.id === "reverse-reconstruction")?.steps || []).map((s) => s.coordinate_id);
 
       const visual = await createMetricVisual({
         canvas,
@@ -57,8 +57,8 @@
         profileId: "dynamics-noise-hero-profile",
       });
       visual.showDynamics({
-        timelineId: "reverse-flow",
-        propertyField: "transition-cost",
+        timelineId: "reverse-reconstruction",
+        propertyField: "best-reconstruction-error",
         preview: "state-history",
         pointSize: 1.7,
       });
