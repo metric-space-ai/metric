@@ -108,9 +108,20 @@ struct ScalarValue {
   double value;
 };
 
+struct CategoricalValue {
+  std::string record_id;
+  std::string value;
+};
+
 struct Position {
   std::string record_id;
   std::vector<double> position;
+};
+
+struct GraphEdge {
+  std::string source_id;
+  std::string target_id;
+  double weight{1.0};
 };
 
 class Document {
@@ -168,8 +179,21 @@ class Document {
     return *this;
   }
 
-  Document& coordinates3(const std::string& id, const std::string& dataset_id, const std::string& space_id,
-                         const std::string& name, const std::vector<Position>& positions) {
+  Document& categorical_property(const std::string& id, const std::string& dataset_id, const std::string& name,
+                                 const std::vector<CategoricalValue>& values) {
+    std::vector<std::string> entries;
+    entries.reserve(values.size());
+    for (const auto& value : values) {
+      entries.push_back("{\"record_id\":" + quote(value.record_id) + ",\"value\":" + quote(value.value) + "}");
+    }
+    properties_.push_back("{\"id\":" + quote(id) + ",\"dataset_id\":" + quote(dataset_id) +
+                          ",\"name\":" + quote(name) + ",\"target_type\":\"record\",\"value_type\":\"categorical\"" +
+                          ",\"values\":" + array_of(entries) + "}");
+    return *this;
+  }
+
+  Document& coordinates(const std::string& id, const std::string& dataset_id, const std::string& space_id,
+                        const std::string& name, std::size_t dimension, const std::vector<Position>& positions) {
     std::vector<std::string> entries;
     entries.reserve(positions.size());
     for (const auto& p : positions) {
@@ -177,7 +201,36 @@ class Document {
     }
     coordinates_.push_back("{\"id\":" + quote(id) + ",\"dataset_id\":" + quote(dataset_id) +
                            ",\"space_id\":" + quote(space_id) + ",\"name\":" + quote(name) +
-                           ",\"dimension\":3,\"record_positions\":" + array_of(entries) + "}");
+                           ",\"dimension\":" + std::to_string(dimension) + ",\"record_positions\":" +
+                           array_of(entries) + "}");
+    return *this;
+  }
+
+  Document& coordinates3(const std::string& id, const std::string& dataset_id, const std::string& space_id,
+                         const std::string& name, const std::vector<Position>& positions) {
+    return coordinates(id, dataset_id, space_id, name, 3, positions);
+  }
+
+  Document& graph(const std::string& id, const std::string& dataset_id, const std::vector<std::string>& node_record_ids,
+                  const std::string& edge_relation_id, const std::string& graph_type,
+                  const std::vector<GraphEdge>& edges) {
+    std::vector<std::string> entries;
+    entries.reserve(edges.size());
+    for (const auto& edge : edges) {
+      entries.push_back("{\"source_id\":" + quote(edge.source_id) + ",\"target_id\":" + quote(edge.target_id) +
+                        ",\"weight\":" + num(edge.weight) + "}");
+    }
+    graphs_.push_back("{\"id\":" + quote(id) + ",\"dataset_id\":" + quote(dataset_id) +
+                      ",\"node_record_ids\":" + string_array(node_record_ids) + ",\"edge_relation_id\":" +
+                      quote(edge_relation_id) + ",\"graph_type\":" + quote(graph_type) + ",\"edges\":" +
+                      array_of(entries) + "}");
+    return *this;
+  }
+
+  Document& diagnostic(const std::string& id, const std::string& dataset_id, const std::string& kind,
+                       const std::string& payload_json) {
+    diagnostics_.push_back("{\"id\":" + quote(id) + ",\"dataset_id\":" + quote(dataset_id) +
+                           ",\"diagnostic_type\":" + quote(kind) + ",\"payload\":" + payload_json + "}");
     return *this;
   }
 
@@ -188,18 +241,19 @@ class Document {
     out += ",\"relations\":" + array_of(relations_);
     out += ",\"spaces\":" + array_of(spaces_);
     out += ",\"properties\":" + array_of(properties_);
-    out += ",\"graphs\":[]";
+    out += ",\"graphs\":" + array_of(graphs_);
     out += ",\"coordinates\":" + array_of(coordinates_);
     out += ",\"timelines\":[]";
     out += ",\"events\":[]";
     out += ",\"views\":" + array_of(views_);
-    out += ",\"diagnostics\":[]";
+    out += ",\"diagnostics\":" + array_of(diagnostics_);
     out += "}";
     return out;
   }
 
  private:
-  std::vector<std::string> datasets_, records_, relations_, spaces_, properties_, coordinates_, views_;
+  std::vector<std::string> datasets_, records_, relations_, spaces_, properties_, graphs_, coordinates_, views_,
+      diagnostics_;
 };
 
 }  // namespace visual
