@@ -39,6 +39,12 @@ passing when the package is unavailable.
 | MNIST PHATE-AE native smoke/gallery path | checked, not 60k gallery | `examples/engine/mnist_phate_autoencoder_smoke.cpp` and `examples/engine/mnist_phate_autoencoder_gallery.cpp` run native PHATE-AE on a balanced MNIST subset. This does not replace the 60k GRAE10 reference. |
 | UCR process curves | checked | `examples/engine/process_curve_external_gallery.cpp` exports query winners, distance tables, summaries, and SVG assets from the UCR Time Series Anomaly Detection datasets. |
 | Engine application examples | checked | CTest label `metric_application_evidence` covers the current native C++ application examples and assertions. |
+| Condition-monitoring visual evidence | checked native export, not public hero | `examples/engine/condition_monitoring_visual_export.cpp` writes `docs/examples/assets/condition-monitoring/metric.visual.json`; `visual/tools/check-visual-document.mjs` validates the exported `metric.visual.v1` document with `provenance.synthetic: false`. |
+| Mixed-record visual evidence | checked native export, not public hero | `examples/engine/mixed_finite_records_visual_export.cpp` writes `docs/examples/assets/mixed-records/metric.visual.json`; `visual/tools/check-visual-document.mjs` validates records, composed payloads, metric relation, coordinates, properties and diagnostics. |
+| Cross-space dependence visual evidence | checked native export, not public hero | `examples/engine/cross_space_dependency_visual_export.cpp` writes `docs/examples/assets/cross-space-dependency/metric.visual.json`; the document contains two spaces, paired relations and dependence diagnostics computed in C++. |
+| Dynamics/noise visual evidence | checked native export, not public hero | `examples/engine/finite_metric_dynamics_visual_export.cpp` writes `docs/examples/assets/dynamics-noise/metric.visual.json`; the document contains native trajectory, timeline, relation and diagnostic evidence. |
+| Relation-matrix visual evidence | checked native export, not public hero | `examples/engine/relation_matrix_visual_export.cpp` writes `docs/examples/assets/relation-matrix/metric.visual.json`; the document contains a native block-ordered relation table and supporting properties. |
+| Mapping/dimensionality visual evidence | checked native export, not public hero | `examples/engine/mapping_dimensionality_visual_export.cpp` writes `docs/examples/assets/mapping-dimensionality/metric.visual.json`; the document contains source/target spaces, coordinate states and mapping diagnostics. |
 
 ## Proven Visual Engine Capability
 
@@ -56,11 +62,12 @@ passing when the package is unavailable.
 | --- | --- | --- |
 | MNIST dimension reduction | live | Full 60k visual reference exists and is protected by C++ integrity plus hash checks. |
 | UCR process curves | live | Real dataset, native C++ export, and checked public assets exist. |
-| Mixed records | not live | Current visual example is synthetic fixture evidence. Needs native exported evidence from a real heterogeneous source or an explicitly documented checked fixture. |
-| Cross-space dependence | not live | Current visual example is synthetic fixture evidence. Needs native paired-space export from a real paired dataset. |
-| Condition monitoring | not live | Current visual example is synthetic fixture evidence. UCR process curves cover the current real condition-monitoring proof. A separate condition-monitoring hero needs real process-run evidence. |
-| Relation matrix/neighborhood | not live | Current visual example is synthetic fixture evidence. Needs a meaningful native relation table with block order, neighborhoods and pair previews. |
-| Dynamics/noise | not live | Current visual example is synthetic fixture evidence. Needs native trajectory or perturbation evidence. |
+| Mixed records | not live | Native `metric.visual.v1` evidence exists. Public status still needs a distinct mixed-record visual grammar, screenshot review, and gallery wiring away from the synthetic fixture. |
+| Cross-space dependence | not live | Native `metric.visual.v1` evidence exists. Public status still needs a two-space dependence grammar, screenshot review, and gallery wiring away from the synthetic fixture. |
+| Condition monitoring | not live | Native `metric.visual.v1` evidence exists. Public status still needs a curated condition-monitoring visual grammar that does not regress the existing UCR proof. |
+| Relation matrix/neighborhood | not live | Native `metric.visual.v1` evidence exists. Public status still needs a legible matrix/neighborhood visual grammar, screenshot review, and gallery wiring away from the synthetic fixture. |
+| Dynamics/noise | not live | Native `metric.visual.v1` evidence exists. Public status still needs a trajectory/dynamics grammar, screenshot review, and gallery wiring away from the synthetic fixture. |
+| Mapping/dimensionality | not live | Native `metric.visual.v1` evidence exists. Public status still needs a mapping/morph visual grammar, screenshot review, and gallery wiring away from the synthetic fixture. |
 | Metric discovery | not live | Needs native metric-admission evidence and rejected-candidate documentation. |
 
 ## Synthetic Development Fixtures
@@ -78,12 +85,18 @@ published as real hero applications until native evidence replaces their
 
 ## Next Implementation Step
 
-Build native `metric.visual.v1` exporters for the planned heroes, one by one,
-before changing the project page:
+The native exporter foundation now exists for the planned visual families. The
+next production step is not more exporter scaffolding and not custom hero HTML;
+it is to consume the checked `docs/examples/assets/*/metric.visual.json`
+documents through reusable visual commands and distinct semantic grammars:
 
-1. export a real or documented native mixed-record evidence document
-2. export a real paired-space dependence document
-3. export a real relation-matrix/neighborhood document
-4. export a real dynamics or perturbation document
-5. connect each exported document to a distinct visual grammar
-6. add each hero to the public page only after the evidence gate passes
+1. wire each exported document into `createMetricVisual` or the corresponding
+   high-level visual command
+2. replace the public-facing synthetic fixture path only after the native
+   evidence is loaded by that reusable command
+3. give each hero a distinct grammar: metric-space sculpture, mixed-record
+   glyphs, paired-space dependence, relation matrix/neighborhood, dynamics
+   trajectory, or mapping/morph
+4. run browser screenshot review against the visual brief for that grammar
+5. add each hero to the project gallery only after the evidence gate,
+   grammar check, visual document check and screenshot review pass

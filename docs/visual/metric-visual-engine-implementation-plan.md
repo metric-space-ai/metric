@@ -55,10 +55,14 @@ This plan is authoritative only with the following current-state constraints:
 - The current visual pages for condition monitoring, mixed records,
   cross-space dependency, mapping/dimensionality, dynamics/noise and relation
   matrix are synthetic development fixtures only.
+- Native `metric.visual.v1` exporter assets now exist for condition
+  monitoring, mixed records, cross-space dependency, mapping/dimensionality,
+  dynamics/noise and relation matrix under `docs/examples/assets/*/`.
 - Synthetic fixtures may be used to develop renderer layers, but they are not
   application evidence and must not be published as real heroes.
-- The next production step is native C++ `metric.visual.v1` export, not more
-  hand-written hero HTML.
+- The next production step is reusable visual-command/gallery integration of
+  the checked native exports, not more hand-written hero HTML and not more
+  synthetic fixture scenes.
 - Browser load success means only `loads` or `renders`; it never means
   `hero-ready`.
 
@@ -68,8 +72,9 @@ The current public gallery is therefore limited to:
   integrity check.
 - UCR process curves: real dataset plus native C++ export assets.
 
-All other heroes stay planned until native exported evidence exists and passes
-`visual/tools/check-public-gallery-evidence.mjs`.
+All other heroes stay planned until their native exported evidence is consumed
+through a distinct reusable visual grammar and passes
+`visual/tools/check-public-gallery-evidence.mjs` plus browser screenshot review.
 
 ## Goal
 

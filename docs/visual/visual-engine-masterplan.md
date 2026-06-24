@@ -120,13 +120,17 @@ Implemented native slices:
   `visual/examples/miniature-hero-frame/index.html`
 - browser-verified miniature look gallery at
   `visual/examples/miniature-look-gallery/index.html`
+- native `metric.visual.v1` exporter assets for condition monitoring, mixed
+  records, cross-space dependency, dynamics/noise, relation matrix and
+  mapping/dimensionality under `docs/examples/assets/*/metric.visual.json`
 
 Known gaps:
 
 - first full-frame capture path exists; no polished multi-algorithm hero
   application/gallery yet
 - no full visual gallery for every METRIC algorithm family yet
-- relation matrix is integrated but not yet used in the browser probe
+- relation matrix has native exported evidence, but is not yet a polished
+  public matrix/neighborhood hero
 - metric curve-body study-style curve bodies now have a native `CurveTubeMeshLayer`; more
   algorithm-family views still need to adopt it where world-space continuity is
   the main evidence
