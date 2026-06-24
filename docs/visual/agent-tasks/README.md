@@ -28,15 +28,23 @@ set, and one validation path.
 | `condition-monitoring-exporter.md` | native condition-monitoring visual exporter | integrated |
 | `mapping-dimensionality-exporter.md` | native mapping/dimensionality visual exporter | integrated |
 | `exporter-quality-audit.md` | read-only/patch-light audit of native exporters | ready to assign |
+| `visual-command-api-gallery-workstream.md` | public command API and gallery wiring | ready to assign |
+| `relation-matrix-graph-grammar-workstream.md` | relation matrix, graph and pair-selection grammar | ready to assign |
+| `record-glyph-field-grammar-workstream.md` | typed record glyphs and property fields | ready to assign |
+| `mapping-dynamics-motion-grammar-workstream.md` | mapping, dynamics, timeline and solver-trace grammar | ready to assign |
+| `visual-regression-performance-workstream.md` | browser regression and performance gates | ready to assign |
 
 ## Next Slots
 
 The current native evidence exporter wave is integrated. The next parallel wave
-should start from visual grammars and gallery assets, not from synthetic data:
+starts from reusable engine capabilities, visual grammars and gallery assets,
+not from synthetic data or one-off pages:
 
-- build `metric.visual.v1` assets from the integrated exporters
-- design one distinct visual grammar per hero
-- run screenshot review against the GRAE10 visual reference
+- harden the public command API so examples call semantic commands
+- make relation, glyph/field and mapping/dynamics grammars first-class engine
+  capabilities
+- run screenshot/performance review against the GRAE10 visual reference and
+  each grammar brief
 - keep public gallery promotion behind `check-public-gallery-evidence.mjs`
 
 ## Shared Validation Commands

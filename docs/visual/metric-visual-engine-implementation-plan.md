@@ -481,6 +481,23 @@ Acceptance:
 
 These streams can run in parallel after the schema shape is fixed.
 
+The current executable workstream briefs live under
+`docs/visual/agent-tasks/`:
+
+- `visual-command-api-gallery-workstream.md` for the public command API and
+  project gallery wiring
+- `relation-matrix-graph-grammar-workstream.md` for relation matrix, graph,
+  pair preview and linked selection grammar
+- `record-glyph-field-grammar-workstream.md` for mixed records, typed glyphs
+  and property fields
+- `mapping-dynamics-motion-grammar-workstream.md` for mapping, dynamics,
+  timelines, residuals and solver traces
+- `visual-regression-performance-workstream.md` for screenshot, interaction and
+  performance gates
+
+These briefs are the unit of parallel agent execution. A worker must follow the
+write scope and stop rules in its brief before editing files.
+
 ### A. Data And Schema
 
 Scope:
