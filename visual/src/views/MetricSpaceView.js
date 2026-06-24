@@ -110,13 +110,25 @@ export class MetricSpaceView extends BaseView {
   }
 
   static fromVisualSpace(document, options = {}) {
-    const space = resolveCollectionItem(document, "spaces", options.space || options.spaceId || options.space_id);
+    const spaceRef = options.space || options.spaceId || options.space_id;
+    const space = resolveCollectionItem(document, "spaces", spaceRef, {
+      required: spaceRef != null,
+      label: "space",
+    });
+    const explicitCoordinateRef = options.coordinate ?? options.coordinateId ?? options.coordinate_id;
     const coordinateRef = options.coordinate
       ?? options.coordinateId
       ?? options.coordinate_id
       ?? defaultCoordinateId(document, space, { dimension: 3 });
-    const coordinate = resolveCollectionItem(document, "coordinates", coordinateRef);
-    const targetCoordinate = resolveCollectionItem(document, "coordinates", options.targetCoordinate || options.targetCoordinateId);
+    const coordinate = resolveCollectionItem(document, "coordinates", coordinateRef, {
+      required: coordinateRef != null,
+      label: explicitCoordinateRef != null ? "coordinate" : "default coordinate",
+    });
+    const targetCoordinateRef = options.targetCoordinate || options.targetCoordinateId;
+    const targetCoordinate = resolveCollectionItem(document, "coordinates", targetCoordinateRef, {
+      required: targetCoordinateRef != null,
+      label: "target coordinate",
+    });
 
     const datasetId = options.datasetId ?? coordinate?.dataset_id ?? coordinate?.datasetId ?? space?.dataset_id;
     const records = recordsFor(document, { ...options, datasetId });
@@ -125,10 +137,26 @@ export class MetricSpaceView extends BaseView {
       ? extractCoordinatePositions(targetCoordinate, { records, recordIds: positions.ids }).positions
       : null;
 
-    const colorProperty = resolveCollectionItem(document, "properties", options.colorProperty || options.colorPropertyId);
-    const scalarProperty = resolveCollectionItem(document, "properties", options.scalarProperty || options.scalarPropertyId);
-    const sizeProperty = resolveCollectionItem(document, "properties", options.sizeProperty || options.sizePropertyId);
-    const labelProperty = resolveCollectionItem(document, "properties", options.labelProperty || options.labelPropertyId);
+    const colorPropertyRef = options.colorProperty || options.colorPropertyId;
+    const scalarPropertyRef = options.scalarProperty || options.scalarPropertyId;
+    const sizePropertyRef = options.sizeProperty || options.sizePropertyId;
+    const labelPropertyRef = options.labelProperty || options.labelPropertyId;
+    const colorProperty = resolveCollectionItem(document, "properties", colorPropertyRef, {
+      required: colorPropertyRef != null,
+      label: "color property",
+    });
+    const scalarProperty = resolveCollectionItem(document, "properties", scalarPropertyRef, {
+      required: scalarPropertyRef != null,
+      label: "scalar property",
+    });
+    const sizeProperty = resolveCollectionItem(document, "properties", sizePropertyRef, {
+      required: sizePropertyRef != null,
+      label: "size property",
+    });
+    const labelProperty = resolveCollectionItem(document, "properties", labelPropertyRef, {
+      required: labelPropertyRef != null,
+      label: "label property",
+    });
 
     return new MetricSpaceView({
       ...options,

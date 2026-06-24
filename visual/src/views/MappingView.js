@@ -33,13 +33,43 @@ export class MappingView extends BaseView {
   }
 
   static fromVisualSpace(document, options = {}) {
-    const space = resolveCollectionItem(document, "spaces", options.space || options.spaceId);
-    const sourceRef = options.sourceCoordinate ?? options.sourceCoordinateId ?? defaultCoordinateId(document, space, { dimension: 2 });
-    const targetRef = options.targetCoordinate ?? options.targetCoordinateId ?? defaultCoordinateId(document, space, { dimension: 3 });
-    const sourceCoordinate = resolveCollectionItem(document, "coordinates", sourceRef);
-    const targetCoordinate = resolveCollectionItem(document, "coordinates", targetRef);
-    const residualProperty = resolveCollectionItem(document, "properties", options.residualProperty || options.residualPropertyId || options.scalarProperty);
-    const colorProperty = resolveCollectionItem(document, "properties", options.colorProperty || options.colorPropertyId);
+    const spaceRef = options.space || options.spaceId;
+    const space = resolveCollectionItem(document, "spaces", spaceRef, {
+      required: spaceRef != null,
+      label: "space",
+    });
+    const explicitSourceRef = options.sourceCoordinate ?? options.sourceCoordinateId;
+    const explicitTargetRef = options.targetCoordinate ?? options.targetCoordinateId;
+    const sourceRef = explicitSourceRef ?? defaultCoordinateId(document, space, { dimension: 2 });
+    const targetRef = explicitTargetRef ?? defaultCoordinateId(document, space, { dimension: 3 });
+    const sourceCoordinate = resolveCollectionItem(document, "coordinates", sourceRef, {
+      required: sourceRef != null,
+      label: explicitSourceRef != null ? "source coordinate" : "default source coordinate",
+    });
+    const targetCoordinate = resolveCollectionItem(document, "coordinates", targetRef, {
+      required: targetRef != null,
+      label: explicitTargetRef != null ? "target coordinate" : "default target coordinate",
+    });
+    const residualPropertyRef = options.residualProperty || options.residualPropertyId || options.scalarProperty;
+    const colorPropertyRef = options.colorProperty || options.colorPropertyId;
+    const labelPropertyRef = options.labelProperty || options.labelPropertyId || (typeof options.labels === "string" ? options.labels : undefined);
+    const residualProperty = resolveCollectionItem(document, "properties", residualPropertyRef, {
+      required: residualPropertyRef != null,
+      label: "residual property",
+    });
+    const colorProperty = resolveCollectionItem(document, "properties", colorPropertyRef, {
+      required: colorPropertyRef != null,
+      label: "color property",
+    });
+    const labelProperty = resolveCollectionItem(
+      document,
+      "properties",
+      labelPropertyRef,
+      {
+        required: labelPropertyRef != null,
+        label: "label property",
+      },
+    );
 
     const datasetId = options.datasetId ?? sourceCoordinate?.dataset_id ?? space?.dataset_id;
     const records = recordsFor(document, { ...options, datasetId });
@@ -55,6 +85,7 @@ export class MappingView extends BaseView {
       targetPositions: target.positions,
       residualValues,
       colorValues: colorProperty ? extractPropertyValues(colorProperty, { records, recordIds: source.ids }) : options.colorValues,
+      labelValues: labelProperty ? extractPropertyValues(labelProperty, { records, recordIds: source.ids }) : options.labelValues,
       datasetId,
       spaceId: options.spaceId ?? space?.id,
       coordinateId: sourceCoordinate?.id,

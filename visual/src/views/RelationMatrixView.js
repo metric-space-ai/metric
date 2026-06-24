@@ -36,9 +36,17 @@ export class RelationMatrixView extends BaseView {
   }
 
   static fromVisualSpace(document, options = {}) {
-    const relation = resolveCollectionItem(document, "relations", options.relation || options.relationId || options.relation_id)
+    const relationRef = options.relation || options.relationId || options.relation_id;
+    const relation = resolveCollectionItem(document, "relations", relationRef, {
+      required: relationRef != null,
+      label: "relation",
+    })
       || firstRelation(document, options);
-    const space = resolveCollectionItem(document, "spaces", options.space || options.spaceId);
+    const spaceRef = options.space || options.spaceId;
+    const space = resolveCollectionItem(document, "spaces", spaceRef, {
+      required: spaceRef != null,
+      label: "space",
+    });
     return new RelationMatrixView({
       ...options,
       relation,

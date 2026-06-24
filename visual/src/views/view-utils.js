@@ -293,11 +293,20 @@ export function hashString(value) {
   return hash >>> 0;
 }
 
-export function resolveCollectionItem(document, collectionName, ref) {
-  if (!document || !collectionName || ref == null) return undefined;
+export function resolveCollectionItem(document, collectionName, ref, options = {}) {
+  if (!document || !collectionName || ref == null) {
+    if (options.required) {
+      throw new Error(`Missing required ${options.label || collectionName} reference.`);
+    }
+    return undefined;
+  }
   if (isObject(ref)) return ref;
   const collection = ensureArray(document[collectionName]);
-  return collection.find((entry) => String(entry.id ?? entry.name) === String(ref));
+  const item = collection.find((entry) => String(entry.id ?? entry.name) === String(ref));
+  if (!item && options.required) {
+    throw new Error(`Unknown ${options.label || collectionName} reference: ${String(ref)}`);
+  }
+  return item;
 }
 
 export function recordsFor(document, options = {}) {

@@ -43,22 +43,46 @@ export class NeighborhoodGraphView extends BaseView {
   }
 
   static fromVisualSpace(document, options = {}) {
-    const graph = resolveCollectionItem(document, "graphs", options.graph || options.graphId);
-    const relation = resolveCollectionItem(document, "relations", options.relation || options.relationId || graph?.edge_relation_id)
+    const graphRef = options.graph || options.graphId;
+    const graph = resolveCollectionItem(document, "graphs", graphRef, {
+      required: graphRef != null,
+      label: "graph",
+    });
+    const relationRef = options.relation || options.relationId || graph?.edge_relation_id;
+    const relation = resolveCollectionItem(document, "relations", relationRef, {
+      required: relationRef != null,
+      label: "relation",
+    })
       || firstRelation(document);
-    const space = resolveCollectionItem(document, "spaces", options.space || options.spaceId || relation?.space_id);
+    const spaceRef = options.space || options.spaceId || relation?.space_id;
+    const space = resolveCollectionItem(document, "spaces", spaceRef, {
+      required: (options.space || options.spaceId) != null,
+      label: "space",
+    });
+    const explicitCoordinateRef = options.coordinate ?? options.coordinateId;
     const coordinateRef = options.coordinate
       ?? options.coordinateId
       ?? defaultCoordinateId(document, space, { dimension: 3 });
-    const coordinate = resolveCollectionItem(document, "coordinates", coordinateRef);
+    const coordinate = resolveCollectionItem(document, "coordinates", coordinateRef, {
+      required: coordinateRef != null,
+      label: explicitCoordinateRef != null ? "coordinate" : "default coordinate",
+    });
     const datasetId = options.datasetId ?? relation?.dataset_id ?? coordinate?.dataset_id ?? space?.dataset_id;
     const records = recordsFor(document, { ...options, datasetId });
     const positions = extractCoordinatePositions(coordinate, {
       records,
       recordIds: options.recordIds || relation?.record_ids || space?.record_ids,
     });
-    const colorProperty = resolveCollectionItem(document, "properties", options.colorProperty || options.colorPropertyId);
-    const scalarProperty = resolveCollectionItem(document, "properties", options.scalarProperty || options.scalarPropertyId);
+    const colorPropertyRef = options.colorProperty || options.colorPropertyId;
+    const scalarPropertyRef = options.scalarProperty || options.scalarPropertyId;
+    const colorProperty = resolveCollectionItem(document, "properties", colorPropertyRef, {
+      required: colorPropertyRef != null,
+      label: "color property",
+    });
+    const scalarProperty = resolveCollectionItem(document, "properties", scalarPropertyRef, {
+      required: scalarPropertyRef != null,
+      label: "scalar property",
+    });
 
     return new NeighborhoodGraphView({
       ...options,
