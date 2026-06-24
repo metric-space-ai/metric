@@ -27,6 +27,7 @@ fixture/foundation status. A public preview is not a hero acceptance claim.
 ```bash
 node visual/tools/check-grae10-golden.mjs
 node visual/tools/check-views.mjs
+node visual/tools/check-relation-matrix-picker.mjs
 node visual/tools/check-hero-grammar-contract.mjs
 node visual/tools/check-single-render-pipeline.mjs
 node visual/tools/check-public-gallery-evidence.mjs
@@ -58,6 +59,7 @@ passing when the package is unavailable.
 | --- | --- | --- |
 | GRAE10 protected visual | checked | `visual/examples/grae10-metric-engine/index.html` must match `visual/regression-baselines/grae10-metric-engine.sha256`; `visual/tools/check-grae10-golden.mjs` enforces this. |
 | Shared semantic views | checked headlessly | `visual/tools/check-views.mjs` verifies the current semantic views produce renderable descriptors. |
+| Relation matrix picking | checked headlessly and in browser | `visual/src/relational/matrix-picking.js` maps pointer positions to exported dense-matrix cells; `visual/tools/check-relation-matrix-picker.mjs` verifies the contract and the relation-matrix page uses that engine helper for pair preview. |
 | Grammar contract | checked headlessly | `visual/tools/check-hero-grammar-contract.mjs` rejects collapsing unrelated hero concepts into one point-cloud-only grammar. |
 | Single runtime path | checked headlessly | `visual/tools/check-single-render-pipeline.mjs` protects the one-runtime pipeline rule. |
 | Public gallery evidence gate | checked headlessly | `visual/tools/check-public-gallery-evidence.mjs` blocks synthetic hero fixtures from the public site and protects the GRAE10 reference hash. |

@@ -40,6 +40,11 @@ export {
 } from "./neighborhood-graph.js";
 
 export {
+  createRelationMatrixPicker,
+  pickRelationMatrixCell,
+} from "./matrix-picking.js";
+
+export {
   createRelationGraphEdgeLayerDescriptor,
   createRelationMatrixLayerDescriptor,
   createSelectedRecordFocusDescriptor,
@@ -50,4 +55,3 @@ export {
   MATRIX_VERTEX_SHADER,
   RelationMatrixLayer,
 } from "./RelationMatrixLayer.js";
-

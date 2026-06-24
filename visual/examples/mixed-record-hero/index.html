@@ -64,7 +64,8 @@
     }
 
     function drawFamilyMatrix(document_) {
-      const relation = document_.relations[0];
+      const relation = document_.relations.find((item) => item.id === "mixed-finite-records-composite-metric");
+      if (!relation) throw new Error("Missing mixed-finite-records-composite-metric relation.");
       const sums = {}, counts = {};
       for (const a of FAMILIES) { sums[a] = {}; counts[a] = {}; for (const b of FAMILIES) { sums[a][b] = 0; counts[a][b] = 0; } }
       for (const pair of relation.values) {
