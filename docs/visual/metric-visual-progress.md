@@ -12,9 +12,15 @@ A public hero is ready only when all of these are true:
 - the result is checked by native C++ code, not by JavaScript-only fixture logic
 - the visualization reads that checked evidence or a documented reference asset
 - the public page exposes no synthetic fixture as a live result
+- the page does not present generated foundation fixtures as real-world dataset
+  evidence
 
 Synthetic visual fixtures may exist under `visual/examples/*/evidence.json`.
 They are engine development fixtures only. They are not public heroes.
+
+Native generated fixtures may be linked as public previews when their
+`metric.visual.v1` export is native, schema-valid, and explicit about its
+fixture/foundation status. A public preview is not a hero acceptance claim.
 
 ## Checks
 
@@ -62,12 +68,12 @@ passing when the package is unavailable.
 | --- | --- | --- |
 | MNIST dimension reduction | live | Full 60k visual reference exists and is protected by C++ integrity plus hash checks. |
 | UCR process curves | live | Real dataset, native C++ export, and checked public assets exist. |
-| Mixed records | not live | Native `metric.visual.v1` evidence exists and the development page loads it. Public status still needs screenshot review and gallery wiring. |
-| Cross-space dependence | not live | Native `metric.visual.v1` evidence exists and the development page loads it. Public status still needs screenshot review and gallery wiring. |
-| Condition monitoring | not live | Native `metric.visual.v1` evidence exists and the development page loads it. Public status still needs screenshot review and a curated proof that does not regress the existing UCR proof. |
-| Relation matrix/neighborhood | not live | Native `metric.visual.v1` evidence exists and the development page loads it. Public status still needs screenshot review and gallery wiring. |
-| Dynamics/noise | not live | Native `metric.visual.v1` evidence exists and the development page loads it. Public status still needs screenshot review and gallery wiring. |
-| Mapping/dimensionality | not live | Native `metric.visual.v1` evidence exists and the development page loads it. Public status still needs screenshot review and gallery wiring. |
+| Mixed records | public preview, not hero-accepted | Native `metric.visual.v1` evidence exists, the page loads it, and the project page links it. Screenshot acceptance and larger public data are still pending. |
+| Cross-space dependence | public preview, not hero-accepted | Native `metric.visual.v1` evidence exists, the page loads it, and the project page links it. Screenshot acceptance and stronger visual curation are still pending. |
+| Condition monitoring | public preview, not hero-accepted | Native `metric.visual.v1` evidence exists, the page loads it, and the project page links it. Screenshot acceptance and a curated proof that does not regress the existing UCR proof are still pending. |
+| Relation matrix/neighborhood | public preview, not hero-accepted | Native `metric.visual.v1` evidence exists, the page loads it, and the project page links it. Screenshot acceptance and matrix readability review are still pending. |
+| Dynamics/noise | public preview, not hero-accepted | Native `metric.visual.v1` evidence exists, the page loads it, and the project page links it. Screenshot acceptance and trajectory readability review are still pending. |
+| Mapping/dimensionality | public preview, not hero-accepted | Native `metric.visual.v1` evidence exists, the page loads it, and the project page links it. Screenshot acceptance and morph readability review are still pending. |
 | Metric discovery | not live | Needs native metric-admission evidence and rejected-candidate documentation. |
 
 ## Synthetic Development Fixtures
@@ -86,18 +92,19 @@ files remain only as renderer development inputs:
 
 ## Next Implementation Step
 
-The native exporter foundation now exists for the planned visual families. The
-next production step is not more exporter scaffolding and not custom hero HTML;
-it is to consume the checked `docs/examples/assets/*/metric.visual.json`
-documents through reusable visual commands and distinct semantic grammars:
+The native exporter foundation now exists for the planned visual families, and
+the project page contains public preview links for those native views. The next
+production step is not more exporter scaffolding and not custom hero HTML; it is
+to turn each preview into an accepted hero through screenshot review, stronger
+visual grammar and larger public evidence where needed:
 
-1. wire each exported document into `createMetricVisual` or the corresponding
-   high-level visual command
-2. replace the public-facing synthetic fixture path only after the native
-   evidence is loaded by that reusable command
-3. give each hero a distinct grammar: metric-space sculpture, mixed-record
+1. keep each public page on native `docs/examples/assets/*/metric.visual.json`
+   evidence through `createMetricVisual`
+2. give each hero a distinct grammar: metric-space sculpture, mixed-record
    glyphs, paired-space dependence, relation matrix/neighborhood, dynamics
    trajectory, or mapping/morph
-4. run browser screenshot review against the visual brief for that grammar
-5. add each hero to the project gallery only after the evidence gate,
-   grammar check, visual document check and screenshot review pass
+3. run browser screenshot review against the visual brief for that grammar
+4. replace small native fixtures with larger public evidence where the current
+   record count does not yet prove application value
+5. mark a preview as hero-accepted only after evidence gate, grammar check,
+   visual document check and screenshot review pass

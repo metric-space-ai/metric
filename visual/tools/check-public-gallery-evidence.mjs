@@ -68,8 +68,39 @@ function includesExampleReference(text, name) {
 
 async function exampleLoadsLocalSyntheticEvidence(name) {
   const index = await maybeRead(resolve(EXAMPLES, name, "index.html"));
-  return /fetch\(\s*["']\.\/evidence\.json["']\s*\)/.test(index)
-    || /const\s+FIXTURE_URL\s*=\s*["']\.\/evidence\.json["']/.test(index);
+  return extractFetchTargets(index).some((target) => target === "./evidence.json");
+}
+
+function extractFetchTargets(index) {
+  const constants = new Map();
+  const constantPattern = /const\s+([A-Z0-9_]+)\s*=\s*["']([^"']+)["']/g;
+  for (const match of index.matchAll(constantPattern)) {
+    constants.set(match[1], match[2]);
+  }
+
+  const targets = [];
+  const fetchPattern = /fetch\(\s*(?:(["'])([^"']+)\1|([A-Z0-9_]+))\s*\)/g;
+  for (const match of index.matchAll(fetchPattern)) {
+    if (match[2]) {
+      targets.push(match[2]);
+    } else if (match[3] && constants.has(match[3])) {
+      targets.push(constants.get(match[3]));
+    }
+  }
+  return targets;
+}
+
+async function publicNativeAssetsForExample(name) {
+  const index = await maybeRead(resolve(EXAMPLES, name, "index.html"));
+  const targets = extractFetchTargets(index);
+  const assets = [];
+  for (const target of targets) {
+    if (!/docs\/examples\/assets\/.+\/metric\.visual\.json$/.test(target)) continue;
+    const assetPath = resolve(EXAMPLES, name, target);
+    if (!assetPath.startsWith(ROOT)) continue;
+    assets.push({ target, assetPath });
+  }
+  return assets;
 }
 
 async function main() {
@@ -92,9 +123,49 @@ async function main() {
 
   const synthetic = await syntheticExamples();
   const publicSynthetic = [];
+  const publicNativeAssets = [];
   for (const name of synthetic) {
-    if (includesExampleReference(site, name) && await exampleLoadsLocalSyntheticEvidence(name)) {
+    if (!includesExampleReference(site, name)) continue;
+    if (await exampleLoadsLocalSyntheticEvidence(name)) {
       publicSynthetic.push(name);
+      continue;
+    }
+    const nativeAssets = await publicNativeAssetsForExample(name);
+    if (!nativeAssets.length) {
+      issues.push({
+        code: "public_example_without_native_metric_visual_asset",
+        example: name,
+        page: `visual/examples/${name}/index.html`,
+      });
+      continue;
+    }
+    for (const asset of nativeAssets) {
+      publicNativeAssets.push({ example: name, target: asset.target });
+      try {
+        const document = JSON.parse(await readFile(asset.assetPath, "utf8"));
+        if (document?.schema !== "metric.visual.v1") {
+          issues.push({
+            code: "public_native_asset_wrong_schema",
+            example: name,
+            target: asset.target,
+            schema: document?.schema ?? null,
+          });
+        }
+        if (document?.provenance?.synthetic === true) {
+          issues.push({
+            code: "public_native_asset_marked_synthetic",
+            example: name,
+            target: asset.target,
+          });
+        }
+      } catch (error) {
+        issues.push({
+          code: "public_native_asset_unreadable",
+          example: name,
+          target: asset.target,
+          message: error.message,
+        });
+      }
     }
   }
   for (const name of publicSynthetic) {
@@ -128,6 +199,7 @@ async function main() {
     grae10Hash: actualHash,
     syntheticExamples: synthetic,
     publicSynthetic,
+    publicNativeAssets,
     syntheticDone,
     issues,
   }, null, 2));
