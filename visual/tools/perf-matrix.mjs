@@ -15,8 +15,10 @@
 
 import { createServer } from "node:http";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { existsSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, extname, resolve } from "node:path";
+import { homedir } from "node:os";
+import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -26,8 +28,49 @@ const COUNTS = (process.env.METRIC_PERF_COUNTS || "1000,10000,30000,60000,100000
 const MIME = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".json": "application/json", ".css": "text/css" };
 
 async function importPlaywright() {
-  try { return await import("playwright"); }
-  catch { return createRequire(import.meta.url)("playwright"); }
+  const require = createRequire(import.meta.url);
+  try {
+    return await import("playwright");
+  } catch (importError) {
+    try {
+      return require("playwright");
+    } catch {
+      // Continue with explicit development-runtime candidates below.
+    }
+    const tried = [];
+    for (const candidate of playwrightModuleCandidates()) {
+      if (!candidate || !existsSync(candidate)) continue;
+      tried.push(candidate);
+      try {
+        return require(candidate);
+      } catch {
+        // Keep searching; the final error lists every explicit candidate.
+      }
+    }
+    const message = [
+      "Cannot find module 'playwright'.",
+      "Install Playwright for browser-backed performance checks or set METRIC_VISUAL_PLAYWRIGHT_MODULE to an installed playwright package directory.",
+      `Original dynamic import error: ${importError instanceof Error ? importError.message : String(importError)}`,
+      tried.length ? `Tried explicit candidates: ${tried.join(", ")}` : "No explicit candidates existed.",
+    ].join(" ");
+    throw new Error(message);
+  }
+}
+
+function playwrightModuleCandidates() {
+  const candidates = [
+    process.env.METRIC_VISUAL_PLAYWRIGHT_MODULE,
+    resolve(REPO_ROOT, "node_modules", "playwright"),
+    resolve(REPO_ROOT, "visual", "node_modules", "playwright"),
+  ];
+  const codexRuntimeRoot = join(homedir(), ".cache", "codex-runtimes");
+  if (existsSync(codexRuntimeRoot)) {
+    for (const entry of readdirSync(codexRuntimeRoot, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      candidates.push(join(codexRuntimeRoot, entry.name, "dependencies", "node", "node_modules", "playwright"));
+    }
+  }
+  return candidates.filter(Boolean);
 }
 
 function startServer(rootDir) {

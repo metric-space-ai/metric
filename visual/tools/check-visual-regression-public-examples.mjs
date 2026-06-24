@@ -16,8 +16,8 @@ import { createHash } from "node:crypto";
 import { createServer } from "node:http";
 import { inflateSync } from "node:zlib";
 import { mkdtemp, mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, readdirSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { dirname, extname, join, resolve } from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -933,10 +933,10 @@ class CdpPage {
   }
 
   async navigate(url) {
-    const load = waitForEvent(this, "Page.loadEventFired", () => true, NAV_TIMEOUT_MS);
+    const domContent = waitForEvent(this, "Page.domContentEventFired", () => true, NAV_TIMEOUT_MS).catch(() => null);
     const result = await this.send("Page.navigate", { url });
     if (result.errorText) throw new Error(`navigation failed: ${result.errorText}`);
-    await load;
+    await Promise.race([domContent, sleep(Math.min(2500, NAV_TIMEOUT_MS))]);
   }
 
   send(method, params = {}) {
@@ -1064,8 +1064,19 @@ async function reservePort() {
 }
 
 function findChromeExecutable() {
+  const home = homedir();
+  const cacheCandidates = [
+    join(home, "Library", "Caches", "ms-playwright"),
+    join(home, ".cache", "ms-playwright"),
+  ];
+  const chromeForTesting = [];
+  for (const cacheRoot of cacheCandidates) {
+    if (!existsSync(cacheRoot)) continue;
+    chromeForTesting.push(...findChromeForTestingExecutables(cacheRoot));
+  }
   const candidates = [
     process.env.METRIC_VISUAL_CHROME,
+    ...chromeForTesting,
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     "/Applications/Chromium.app/Contents/MacOS/Chromium",
     "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
@@ -1074,6 +1085,36 @@ function findChromeExecutable() {
     "/usr/bin/chromium-browser",
   ].filter(Boolean);
   return candidates.find((candidate) => existsSync(candidate)) || null;
+}
+
+function findChromeForTestingExecutables(cacheRoot) {
+  const candidates = [];
+  const stack = [cacheRoot];
+  const maxEntries = 400;
+  let visited = 0;
+  while (stack.length && visited < maxEntries) {
+    visited += 1;
+    const current = stack.pop();
+    let entries = [];
+    try {
+      entries = readdirSync(current, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      const full = join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(full);
+      } else if (
+        entry.isFile() &&
+        (entry.name === "chrome" || entry.name === "Google Chrome for Testing") &&
+        full.includes("chrome")
+      ) {
+        candidates.push(full);
+      }
+    }
+  }
+  return candidates.sort().reverse();
 }
 
 async function writeReport(report) {

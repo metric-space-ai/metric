@@ -22,7 +22,9 @@
 
 import { createServer } from "node:http";
 import { readFile, readdir, mkdir, stat } from "node:fs/promises";
+import { existsSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
+import { homedir } from "node:os";
 import { dirname, extname, resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -50,12 +52,49 @@ const RENDER_TIMEOUT_MS = 30000;
 const SETTLE_MS = 2200;
 
 async function importPlaywright() {
+  const require = createRequire(import.meta.url);
   try {
     return await import("playwright");
-  } catch {
-    const require = createRequire(import.meta.url);
-    return require("playwright");
+  } catch (importError) {
+    try {
+      return require("playwright");
+    } catch {
+      // Continue with explicit development-runtime candidates below.
+    }
+    const tried = [];
+    for (const candidate of playwrightModuleCandidates()) {
+      if (!candidate || !existsSync(candidate)) continue;
+      tried.push(candidate);
+      try {
+        return require(candidate);
+      } catch {
+        // Keep searching; the final error lists every explicit candidate.
+      }
+    }
+    const message = [
+      "Cannot find module 'playwright'.",
+      "Install Playwright for browser-backed visual checks or set METRIC_VISUAL_PLAYWRIGHT_MODULE to an installed playwright package directory.",
+      `Original dynamic import error: ${importError instanceof Error ? importError.message : String(importError)}`,
+      tried.length ? `Tried explicit candidates: ${tried.join(", ")}` : "No explicit candidates existed.",
+    ].join(" ");
+    throw new Error(message);
   }
+}
+
+function playwrightModuleCandidates() {
+  const candidates = [
+    process.env.METRIC_VISUAL_PLAYWRIGHT_MODULE,
+    resolve(REPO_ROOT, "node_modules", "playwright"),
+    resolve(REPO_ROOT, "visual", "node_modules", "playwright"),
+  ];
+  const codexRuntimeRoot = join(homedir(), ".cache", "codex-runtimes");
+  if (existsSync(codexRuntimeRoot)) {
+    for (const entry of readdirSync(codexRuntimeRoot, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      candidates.push(join(codexRuntimeRoot, entry.name, "dependencies", "node", "node_modules", "playwright"));
+    }
+  }
+  return candidates.filter(Boolean);
 }
 
 function startStaticServer(rootDir, port) {

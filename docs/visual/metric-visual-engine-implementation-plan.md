@@ -842,16 +842,23 @@ Scope:
 
 Deliverables:
 
-- `visual/tools/check-visual-examples.mjs`
-- screenshot capture tool
-- performance report generator
+- `visual/tools/check-visual-regression-public-examples.mjs` as the
+  authoritative public-example browser gate
+- `visual/tools/check-visual-examples.mjs` as a targeted legacy smoke checker
+  for named example folders
+- screenshot capture artifacts under `output/visual/check-visual-regression-public-examples/`
+- performance gates:
+  `visual/tools/check-visual-performance-large-scenes.mjs` and
+  `visual/tools/perf-matrix.mjs`
 - baseline images for hero scenes
 
 Acceptance:
 
-- no example ships without a browser check
+- no public example ships without the public regression browser gate
 - 60k-record point cloud remains interactive
 - visual regressions are visible in generated artifacts
+- loading a page is never hero acceptance; accepted heroes still require native
+  evidence, grammar proof and screenshot review
 
 ### H. C++ Export Integration
 
@@ -2059,6 +2066,15 @@ Verified:
 - `node visual/tools/check-views.mjs`
 - `node visual/tools/check-grae10-golden.mjs`
 - `node visual/tools/check-public-gallery-evidence.mjs`
+- `node visual/tools/check-visual-regression-public-examples.mjs`
+- `node visual/tools/check-visual-performance-large-scenes.mjs`
+- `METRIC_PERF_COUNTS=1000,10000,60000 node visual/tools/perf-matrix.mjs`
+- `node visual/tools/verify-miniature-rig.mjs`
+- `node visual/tools/verify-postfx-depth-dof-contract.mjs`
+- targeted legacy smoke checks:
+  `METRIC_VISUAL_EXAMPLES=grae10-metric-engine node visual/tools/check-visual-examples.mjs`
+  and
+  `METRIC_VISUAL_EXAMPLES=condition-monitoring-hero node visual/tools/check-visual-examples.mjs`
 
 Corrected status:
 
@@ -2085,7 +2101,8 @@ Not visually accepted yet:
 
 Next mandatory engine work:
 
-1. Implement native visual exporters for planned heroes.
+1. Promote the native preview exports into polished hero-specific visual
+   grammars only after screenshot review.
 2. Implement reusable pair preview contracts.
 3. Integrate GPU picking with the existing record preview CPU fallback.
 4. Improve `RelationMatrixLayer` readability: block ordering, mip/LOD strategy,

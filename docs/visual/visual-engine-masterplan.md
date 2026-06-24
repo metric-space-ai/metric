@@ -95,6 +95,9 @@ Implemented native slices:
   same focus state for the final photographic frame response and reports the
   optical model as `camera-depth-circle-of-confusion` with raw camera depth,
   aperture-relative defocus and near/far-plane reconstruction
+- the reusable hero stage now carries the full physical camera DoF contract:
+  focus distance, aperture, focal length, f-stop, sensor scale, max blur and
+  focal range
 - `MiniatureFramePass` applies floor/sky/focus/edge shaping, subject isolation, tabletop matte,
   floor sheen, stage spotlight, stage shadow and studio-light cues before final
   grade
@@ -124,6 +127,11 @@ Implemented native slices:
   records, cross-space dependency, dynamics/noise, relation matrix and
   mapping/dimensionality under `docs/examples/assets/*/metric.visual.json`
 - header-only C++ writer foundation under `visual/cpp/mtrc_visual.hpp`
+- browser-backed public regression gate for the accepted GRAE10 reference and
+  native preview examples:
+  `visual/tools/check-visual-regression-public-examples.mjs`
+- large-scene performance gate for 1k, 10k and 60k point-cloud workloads:
+  `visual/tools/check-visual-performance-large-scenes.mjs`
 
 Known gaps:
 
