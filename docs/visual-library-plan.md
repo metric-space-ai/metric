@@ -24,8 +24,9 @@ and renders them with plain JavaScript, Canvas 2D, raw WebGL, and METRIC-owned
 GLSL shaders. There is no npm dependency, no TypeScript requirement, no bundler,
 and no external renderer.
 
-Babyplots is only a technical reference for high-volume point clouds, morph
-animation, turntable camera behavior, and interaction quality. Any useful ideas
-or code must be assimilated into native METRIC visual code with license
-obligations preserved and without Babyplots public APIs, namespaces, data
-contracts, package structure, or dependencies.
+Historical point-cloud renderers are only technical references for high-volume
+point clouds, morph animation, turntable camera behavior, and interaction
+quality. Any useful ideas or code must be assimilated into native METRIC visual
+code with license obligations preserved and without importing the reference
+renderer's public APIs, namespaces, data contracts, package structure, or
+dependencies.

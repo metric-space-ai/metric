@@ -1,0 +1,4844 @@
+{
+  "schema": "metric.visual.v1",
+  "provenance": {
+    "generator": "visual/tools/build-fixtures.mjs",
+    "synthetic": true,
+    "note": "Synthetic stand-in for METRIC C++ metric.visual.v1 export."
+  },
+  "datasets": [
+    {
+      "id": "sensor-condition",
+      "title": "Sensor condition monitoring",
+      "description": "Windowed vibration records across healthy, drift, fault and recovery regimes.",
+      "source": "synthetic",
+      "license": "CC0-1.0"
+    }
+  ],
+  "records": [
+    {
+      "id": "rec-00",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "healthy 0",
+      "payload": {
+        "kind": "time_series",
+        "regime": "healthy",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          0.5478,
+          0.6196,
+          0.5549,
+          0.583,
+          0.5454,
+          0.5522,
+          0.5984,
+          0.4617,
+          0.4224,
+          0.3683,
+          0.4463,
+          0.3914,
+          0.4131,
+          0.4667,
+          0.4792,
+          0.5214,
+          0.5287,
+          0.6211,
+          0.5964,
+          0.6652,
+          0.6159,
+          0.5914,
+          0.5429,
+          0.5848,
+          0.4678,
+          0.4401,
+          0.3415,
+          0.4419,
+          0.4696,
+          0.4027,
+          0.4134,
+          0.4275
+        ],
+        "features": {
+          "rms": 0.5109,
+          "peak": 0.6652,
+          "crest_factor": 1.302,
+          "amplitude": 0.2206
+        },
+        "summary": "Window 0 sampled in the healthy regime"
+      }
+    },
+    {
+      "id": "rec-01",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "drift 0",
+      "payload": {
+        "kind": "time_series",
+        "regime": "drift",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          0.4862,
+          0.7254,
+          0.6638,
+          0.7285,
+          0.7137,
+          0.7771,
+          0.7049,
+          0.5642,
+          0.2946,
+          0.2353,
+          0.2964,
+          0.3047,
+          0.2894,
+          0.2252,
+          0.5101,
+          0.4851,
+          0.6463,
+          0.6844,
+          0.7422,
+          0.7585,
+          0.7302,
+          0.5875,
+          0.501,
+          0.3524,
+          0.2773,
+          0.3409,
+          0.196,
+          0.2527,
+          0.3444,
+          0.4852,
+          0.4577,
+          0.5956
+        ],
+        "features": {
+          "rms": 0.5331,
+          "peak": 0.7771,
+          "crest_factor": 1.4577,
+          "amplitude": 0.4659
+        },
+        "summary": "Window 1 sampled in the drift regime"
+      }
+    },
+    {
+      "id": "rec-02",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "fault 0",
+      "payload": {
+        "kind": "time_series",
+        "regime": "fault",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          0.7855,
+          0.7394,
+          1.1044,
+          1.0412,
+          0.9308,
+          0.724,
+          0.4711,
+          0.3168,
+          0.3151,
+          -0.0732,
+          0.2612,
+          0.0047,
+          0.2852,
+          0.1592,
+          0.4085,
+          0.5699,
+          0.7703,
+          0.7129,
+          0.8197,
+          0.9205,
+          0.9554,
+          0.5069,
+          0.6281,
+          0.3688,
+          0.072,
+          0.1212,
+          0.0179,
+          0.3118,
+          0.2539,
+          0.3898,
+          0.5469,
+          0.8908
+        ],
+        "features": {
+          "rms": 0.6046,
+          "peak": 1.1044,
+          "crest_factor": 1.8267,
+          "amplitude": 0.8857
+        },
+        "summary": "Window 2 sampled in the fault regime"
+      }
+    },
+    {
+      "id": "rec-03",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "recovery 0",
+      "payload": {
+        "kind": "time_series",
+        "regime": "recovery",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          0.6906,
+          0.8295,
+          0.6432,
+          0.7813,
+          0.6647,
+          0.7002,
+          0.4293,
+          0.3163,
+          0.423,
+          0.1718,
+          0.1413,
+          0.2995,
+          0.2308,
+          0.4293,
+          0.4341,
+          0.6072,
+          0.72,
+          0.8692,
+          0.7293,
+          0.5937,
+          0.7241,
+          0.5901,
+          0.3484,
+          0.1937,
+          0.3504,
+          0.1749,
+          0.3196,
+          0.1994,
+          0.3144,
+          0.5683,
+          0.6777,
+          0.5787
+        ],
+        "features": {
+          "rms": 0.5368,
+          "peak": 0.8692,
+          "crest_factor": 1.6192,
+          "amplitude": 0.5356
+        },
+        "summary": "Window 3 sampled in the recovery regime"
+      }
+    },
+    {
+      "id": "rec-04",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "healthy 1",
+      "payload": {
+        "kind": "time_series",
+        "regime": "healthy",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          0.6721,
+          0.6557,
+          0.5709,
+          0.6405,
+          0.614,
+          0.5876,
+          0.4225,
+          0.4027,
+          0.4563,
+          0.4424,
+          0.39,
+          0.3794,
+          0.385,
+          0.4895,
+          0.6156,
+          0.5567,
+          0.6445,
+          0.6836,
+          0.5521,
+          0.6054,
+          0.5428,
+          0.4693,
+          0.5201,
+          0.45,
+          0.341,
+          0.3829,
+          0.4488,
+          0.4439,
+          0.4353,
+          0.5526,
+          0.5743,
+          0.5524
+        ],
+        "features": {
+          "rms": 0.5241,
+          "peak": 0.6836,
+          "crest_factor": 1.3043,
+          "amplitude": 0.2268
+        },
+        "summary": "Window 4 sampled in the healthy regime"
+      }
+    },
+    {
+      "id": "rec-05",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "drift 1",
+      "payload": {
+        "kind": "time_series",
+        "regime": "drift",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          0.7317,
+          0.7226,
+          0.6543,
+          0.6371,
+          0.6411,
+          0.4939,
+          0.4884,
+          0.4004,
+          0.2788,
+          0.397,
+          0.3424,
+          0.3872,
+          0.3603,
+          0.5442,
+          0.6115,
+          0.739,
+          0.6403,
+          0.6246,
+          0.5643,
+          0.5115,
+          0.5698,
+          0.5003,
+          0.2773,
+          0.2258,
+          0.2943,
+          0.4172,
+          0.2542,
+          0.4216,
+          0.506,
+          0.7034,
+          0.5448,
+          0.7296
+        ],
+        "features": {
+          "rms": 0.5291,
+          "peak": 0.739,
+          "crest_factor": 1.3967,
+          "amplitude": 0.3875
+        },
+        "summary": "Window 5 sampled in the drift regime"
+      }
+    },
+    {
+      "id": "rec-06",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "fault 1",
+      "payload": {
+        "kind": "time_series",
+        "regime": "fault",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          0.9512,
+          1.0761,
+          0.9646,
+          0.5382,
+          0.6108,
+          0.2816,
+          0.2496,
+          0.0677,
+          -0.0244,
+          0.0946,
+          0.2275,
+          0.269,
+          0.4399,
+          0.5437,
+          0.802,
+          0.9508,
+          0.9851,
+          0.96,
+          0.8729,
+          0.3873,
+          0.2786,
+          0.1962,
+          -0.0149,
+          -0.0591,
+          -0.1107,
+          0.1079,
+          0.1913,
+          0.3009,
+          0.505,
+          0.9447,
+          0.8587,
+          1.0079
+        ],
+        "features": {
+          "rms": 0.611,
+          "peak": 1.0761,
+          "crest_factor": 1.7612,
+          "amplitude": 0.8697
+        },
+        "summary": "Window 6 sampled in the fault regime"
+      }
+    },
+    {
+      "id": "rec-07",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "recovery 1",
+      "payload": {
+        "kind": "time_series",
+        "regime": "recovery",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          0.8542,
+          0.6876,
+          0.6982,
+          0.398,
+          0.4344,
+          0.4864,
+          0.163,
+          0.2928,
+          0.3832,
+          0.2997,
+          0.4864,
+          0.4324,
+          0.4479,
+          0.669,
+          0.5718,
+          0.6687,
+          0.709,
+          0.5872,
+          0.6662,
+          0.5388,
+          0.3293,
+          0.2426,
+          0.3554,
+          0.3665,
+          0.3639,
+          0.3746,
+          0.3757,
+          0.4065,
+          0.5504,
+          0.5751,
+          0.8434,
+          0.8125
+        ],
+        "features": {
+          "rms": 0.5322,
+          "peak": 0.8542,
+          "crest_factor": 1.605,
+          "amplitude": 0.4406
+        },
+        "summary": "Window 7 sampled in the recovery regime"
+      }
+    },
+    {
+      "id": "rec-08",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "healthy 2",
+      "payload": {
+        "kind": "time_series",
+        "regime": "healthy",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          0.5155,
+          0.5566,
+          0.4778,
+          0.5547,
+          0.4872,
+          0.4753,
+          0.3572,
+          0.3751,
+          0.425,
+          0.3943,
+          0.4264,
+          0.5206,
+          0.5235,
+          0.5265,
+          0.6057,
+          0.5572,
+          0.492,
+          0.458,
+          0.4813,
+          0.4715,
+          0.5058,
+          0.4789,
+          0.4672,
+          0.3711,
+          0.4955,
+          0.4872,
+          0.4362,
+          0.4858,
+          0.5506,
+          0.5476,
+          0.5551,
+          0.5627
+        ],
+        "features": {
+          "rms": 0.492,
+          "peak": 0.6057,
+          "crest_factor": 1.2311,
+          "amplitude": 0.16
+        },
+        "summary": "Window 8 sampled in the healthy regime"
+      }
+    },
+    {
+      "id": "rec-09",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "drift 2",
+      "payload": {
+        "kind": "time_series",
+        "regime": "drift",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          0.5517,
+          0.5503,
+          0.4354,
+          0.4925,
+          0.4303,
+          0.3385,
+          0.3828,
+          0.4432,
+          0.3152,
+          0.3723,
+          0.5805,
+          0.499,
+          0.54,
+          0.7122,
+          0.6081,
+          0.75,
+          0.608,
+          0.5535,
+          0.4598,
+          0.3565,
+          0.3314,
+          0.4057,
+          0.3884,
+          0.3464,
+          0.332,
+          0.4234,
+          0.6232,
+          0.6196,
+          0.7262,
+          0.766,
+          0.6439,
+          0.6811
+        ],
+        "features": {
+          "rms": 0.5259,
+          "peak": 0.766,
+          "crest_factor": 1.4566,
+          "amplitude": 0.3899
+        },
+        "summary": "Window 9 sampled in the drift regime"
+      }
+    },
+    {
+      "id": "rec-10",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "fault 2",
+      "payload": {
+        "kind": "time_series",
+        "regime": "fault",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          0.5303,
+          0.6922,
+          0.2123,
+          0.2498,
+          -0.1003,
+          -0.0555,
+          0.0852,
+          0.2529,
+          0.4437,
+          0.5286,
+          0.5581,
+          0.803,
+          1.0682,
+          0.7599,
+          1.0952,
+          0.9145,
+          0.537,
+          0.4909,
+          0.4891,
+          0.1288,
+          0.1973,
+          0.1126,
+          0.0139,
+          0.2226,
+          0.5185,
+          0.405,
+          0.8624,
+          0.856,
+          0.7424,
+          0.7325,
+          0.6691,
+          0.6785
+        ],
+        "features": {
+          "rms": 0.5845,
+          "peak": 1.0952,
+          "crest_factor": 1.8737,
+          "amplitude": 0.8855
+        },
+        "summary": "Window 10 sampled in the fault regime"
+      }
+    },
+    {
+      "id": "rec-11",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "recovery 2",
+      "payload": {
+        "kind": "time_series",
+        "regime": "recovery",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          0.5436,
+          0.3781,
+          0.3865,
+          0.3185,
+          0.3143,
+          0.3288,
+          0.2474,
+          0.4178,
+          0.3415,
+          0.5407,
+          0.54,
+          0.7954,
+          0.9141,
+          0.7866,
+          0.6425,
+          0.6826,
+          0.5403,
+          0.5506,
+          0.3015,
+          0.2056,
+          0.2861,
+          0.2054,
+          0.4185,
+          0.5342,
+          0.4033,
+          0.7063,
+          0.7494,
+          0.8881,
+          0.6456,
+          0.7386,
+          0.6049,
+          0.5024
+        ],
+        "features": {
+          "rms": 0.5507,
+          "peak": 0.9141,
+          "crest_factor": 1.6599,
+          "amplitude": 0.5705
+        },
+        "summary": "Window 11 sampled in the recovery regime"
+      }
+    },
+    {
+      "id": "rec-12",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "healthy 3",
+      "payload": {
+        "kind": "time_series",
+        "regime": "healthy",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          0.5675,
+          0.5247,
+          0.5048,
+          0.3442,
+          0.4005,
+          0.4131,
+          0.3662,
+          0.5245,
+          0.5331,
+          0.5354,
+          0.5111,
+          0.601,
+          0.5659,
+          0.6409,
+          0.5795,
+          0.5409,
+          0.4555,
+          0.4944,
+          0.4804,
+          0.396,
+          0.4729,
+          0.398,
+          0.4891,
+          0.429,
+          0.4533,
+          0.5046,
+          0.5666,
+          0.5531,
+          0.6563,
+          0.6286,
+          0.5888,
+          0.545
+        ],
+        "features": {
+          "rms": 0.5143,
+          "peak": 0.6563,
+          "crest_factor": 1.2761,
+          "amplitude": 0.2012
+        },
+        "summary": "Window 12 sampled in the healthy regime"
+      }
+    },
+    {
+      "id": "rec-13",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "drift 3",
+      "payload": {
+        "kind": "time_series",
+        "regime": "drift",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          0.5207,
+          0.2471,
+          0.2629,
+          0.2491,
+          0.2497,
+          0.2072,
+          0.3076,
+          0.4559,
+          0.5944,
+          0.5608,
+          0.7151,
+          0.6339,
+          0.8413,
+          0.7079,
+          0.5081,
+          0.4241,
+          0.3151,
+          0.3873,
+          0.295,
+          0.2244,
+          0.2629,
+          0.4482,
+          0.5146,
+          0.4887,
+          0.6617,
+          0.7346,
+          0.6148,
+          0.7221,
+          0.6173,
+          0.5931,
+          0.4617,
+          0.4832
+        ],
+        "features": {
+          "rms": 0.5098,
+          "peak": 0.8413,
+          "crest_factor": 1.6503,
+          "amplitude": 0.4782
+        },
+        "summary": "Window 13 sampled in the drift regime"
+      }
+    },
+    {
+      "id": "rec-14",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "fault 3",
+      "payload": {
+        "kind": "time_series",
+        "regime": "fault",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          0.3698,
+          0.2929,
+          0.1872,
+          0.199,
+          0.301,
+          0.4112,
+          0.5571,
+          0.7543,
+          0.901,
+          0.6396,
+          1.0878,
+          0.9712,
+          0.6181,
+          0.7549,
+          0.4191,
+          0.2143,
+          0.108,
+          0.1986,
+          0.2195,
+          -0.0445,
+          0.0268,
+          0.4444,
+          0.5609,
+          0.7267,
+          0.6086,
+          0.8594,
+          0.7321,
+          0.6993,
+          0.7183,
+          0.5011,
+          0.3381,
+          0.4759
+        ],
+        "features": {
+          "rms": 0.5685,
+          "peak": 1.0878,
+          "crest_factor": 1.9135,
+          "amplitude": 0.7961
+        },
+        "summary": "Window 14 sampled in the fault regime"
+      }
+    },
+    {
+      "id": "rec-15",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "recovery 3",
+      "payload": {
+        "kind": "time_series",
+        "regime": "recovery",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          0.443,
+          0.307,
+          0.1156,
+          0.265,
+          0.4288,
+          0.3578,
+          0.5927,
+          0.6647,
+          0.8271,
+          0.8899,
+          0.7921,
+          0.6248,
+          0.707,
+          0.704,
+          0.561,
+          0.3193,
+          0.1509,
+          0.1903,
+          0.2515,
+          0.2583,
+          0.2686,
+          0.4216,
+          0.6544,
+          0.6066,
+          0.795,
+          0.7021,
+          0.713,
+          0.5783,
+          0.7065,
+          0.6188,
+          0.428,
+          0.4525
+        ],
+        "features": {
+          "rms": 0.555,
+          "peak": 0.8899,
+          "crest_factor": 1.6034,
+          "amplitude": 0.5283
+        },
+        "summary": "Window 15 sampled in the recovery regime"
+      }
+    },
+    {
+      "id": "rec-16",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "healthy 4",
+      "payload": {
+        "kind": "time_series",
+        "regime": "healthy",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          0.3522,
+          0.3038,
+          0.3276,
+          0.3665,
+          0.3994,
+          0.4681,
+          0.6084,
+          0.546,
+          0.5838,
+          0.6603,
+          0.6319,
+          0.5534,
+          0.5973,
+          0.5264,
+          0.3993,
+          0.4005,
+          0.3526,
+          0.3743,
+          0.3969,
+          0.4248,
+          0.4687,
+          0.5646,
+          0.6314,
+          0.675,
+          0.6882,
+          0.5841,
+          0.6212,
+          0.559,
+          0.5231,
+          0.4974,
+          0.3473,
+          0.3296
+        ],
+        "features": {
+          "rms": 0.5062,
+          "peak": 0.6882,
+          "crest_factor": 1.3595,
+          "amplitude": 0.2658
+        },
+        "summary": "Window 16 sampled in the healthy regime"
+      }
+    },
+    {
+      "id": "rec-17",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "drift 4",
+      "payload": {
+        "kind": "time_series",
+        "regime": "drift",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          0.3677,
+          0.3437,
+          0.3562,
+          0.3473,
+          0.3644,
+          0.6076,
+          0.5089,
+          0.6336,
+          0.5879,
+          0.7318,
+          0.5434,
+          0.5581,
+          0.6233,
+          0.3688,
+          0.3514,
+          0.4469,
+          0.2291,
+          0.365,
+          0.2689,
+          0.4944,
+          0.4595,
+          0.6505,
+          0.5596,
+          0.7266,
+          0.7513,
+          0.758,
+          0.7144,
+          0.4815,
+          0.5407,
+          0.4266,
+          0.454,
+          0.444
+        ],
+        "features": {
+          "rms": 0.5225,
+          "peak": 0.758,
+          "crest_factor": 1.4507,
+          "amplitude": 0.351
+        },
+        "summary": "Window 17 sampled in the drift regime"
+      }
+    },
+    {
+      "id": "rec-18",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "fault 4",
+      "payload": {
+        "kind": "time_series",
+        "regime": "fault",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          -0.1161,
+          0.2442,
+          0.3139,
+          0.5219,
+          0.4007,
+          0.6419,
+          0.7302,
+          0.6849,
+          0.9588,
+          0.9587,
+          0.9156,
+          0.5743,
+          0.6397,
+          0.4082,
+          0.2584,
+          0.1018,
+          0.1814,
+          0.3618,
+          0.2633,
+          0.5946,
+          0.5651,
+          0.7186,
+          0.7912,
+          1.0084,
+          0.8905,
+          0.6357,
+          0.6246,
+          0.5667,
+          0.3747,
+          0.0434,
+          0.2523,
+          0.1381
+        ],
+        "features": {
+          "rms": 0.583,
+          "peak": 1.0084,
+          "crest_factor": 1.7297,
+          "amplitude": 0.8189
+        },
+        "summary": "Window 18 sampled in the fault regime"
+      }
+    },
+    {
+      "id": "rec-19",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "recovery 4",
+      "payload": {
+        "kind": "time_series",
+        "regime": "recovery",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          0.2096,
+          0.2921,
+          0.5032,
+          0.3947,
+          0.4695,
+          0.7615,
+          0.6491,
+          0.9382,
+          0.7979,
+          0.6827,
+          0.7179,
+          0.5261,
+          0.3325,
+          0.1456,
+          0.3454,
+          0.1449,
+          0.3427,
+          0.4392,
+          0.3048,
+          0.5537,
+          0.5813,
+          0.8479,
+          0.7956,
+          0.8805,
+          0.6255,
+          0.6767,
+          0.6038,
+          0.3232,
+          0.4066,
+          0.3896,
+          0.2517,
+          0.3625
+        ],
+        "features": {
+          "rms": 0.5537,
+          "peak": 0.9382,
+          "crest_factor": 1.6944,
+          "amplitude": 0.5895
+        },
+        "summary": "Window 19 sampled in the recovery regime"
+      }
+    },
+    {
+      "id": "rec-20",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "healthy 5",
+      "payload": {
+        "kind": "time_series",
+        "regime": "healthy",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          0.3521,
+          0.4954,
+          0.4997,
+          0.5216,
+          0.5621,
+          0.5529,
+          0.5894,
+          0.5821,
+          0.6796,
+          0.6258,
+          0.5713,
+          0.4439,
+          0.4046,
+          0.3864,
+          0.3966,
+          0.4233,
+          0.4253,
+          0.4068,
+          0.452,
+          0.5982,
+          0.656,
+          0.5651,
+          0.6186,
+          0.6015,
+          0.6237,
+          0.6205,
+          0.4812,
+          0.431,
+          0.3459,
+          0.3177,
+          0.4002,
+          0.3496
+        ],
+        "features": {
+          "rms": 0.51,
+          "peak": 0.6796,
+          "crest_factor": 1.3325,
+          "amplitude": 0.2746
+        },
+        "summary": "Window 20 sampled in the healthy regime"
+      }
+    },
+    {
+      "id": "rec-21",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "drift 5",
+      "payload": {
+        "kind": "time_series",
+        "regime": "drift",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          0.3381,
+          0.3209,
+          0.4482,
+          0.597,
+          0.6987,
+          0.6043,
+          0.6231,
+          0.7904,
+          0.5416,
+          0.5765,
+          0.3888,
+          0.4242,
+          0.3284,
+          0.375,
+          0.2123,
+          0.4194,
+          0.4766,
+          0.5154,
+          0.4232,
+          0.6843,
+          0.5656,
+          0.746,
+          0.7894,
+          0.681,
+          0.4999,
+          0.5635,
+          0.3613,
+          0.3757,
+          0.1929,
+          0.3351,
+          0.3294,
+          0.4098
+        ],
+        "features": {
+          "rms": 0.5134,
+          "peak": 0.7904,
+          "crest_factor": 1.5395,
+          "amplitude": 0.4043
+        },
+        "summary": "Window 21 sampled in the drift regime"
+      }
+    },
+    {
+      "id": "rec-22",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "fault 5",
+      "payload": {
+        "kind": "time_series",
+        "regime": "fault",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          0.4842,
+          0.4769,
+          0.4273,
+          0.8489,
+          1.0135,
+          1.0298,
+          0.7468,
+          0.7375,
+          0.8532,
+          0.5497,
+          0.4656,
+          0.05,
+          0.2919,
+          0.1489,
+          0.061,
+          0.2984,
+          0.4168,
+          0.3546,
+          0.4748,
+          0.7432,
+          0.792,
+          1.0113,
+          0.7501,
+          0.5794,
+          0.7493,
+          0.5269,
+          0.1813,
+          0.1597,
+          -0.0123,
+          0.0005,
+          0.3709,
+          0.3061
+        ],
+        "features": {
+          "rms": 0.5798,
+          "peak": 1.0298,
+          "crest_factor": 1.7761,
+          "amplitude": 0.7653
+        },
+        "summary": "Window 22 sampled in the fault regime"
+      }
+    },
+    {
+      "id": "rec-23",
+      "dataset_id": "sensor-condition",
+      "record_type": "time_series_window",
+      "label": "recovery 5",
+      "payload": {
+        "kind": "time_series",
+        "regime": "recovery",
+        "unit": "normalized amplitude",
+        "sample_rate_hz": 256,
+        "series": [
+          0.5035,
+          0.4481,
+          0.582,
+          0.7567,
+          0.7193,
+          0.7581,
+          0.6798,
+          0.7347,
+          0.5164,
+          0.4676,
+          0.188,
+          0.1089,
+          0.1213,
+          0.2849,
+          0.3039,
+          0.3545,
+          0.5168,
+          0.4559,
+          0.5518,
+          0.6334,
+          0.817,
+          0.66,
+          0.631,
+          0.7363,
+          0.4384,
+          0.4311,
+          0.3355,
+          0.2116,
+          0.1893,
+          0.3916,
+          0.343,
+          0.5206
+        ],
+        "features": {
+          "rms": 0.5197,
+          "peak": 0.817,
+          "crest_factor": 1.5721,
+          "amplitude": 0.5709
+        },
+        "summary": "Window 23 sampled in the recovery regime"
+      }
+    }
+  ],
+  "relations": [
+    {
+      "id": "sensor-metric",
+      "dataset_id": "sensor-condition",
+      "name": "feature-space metric",
+      "relation_type": "metric",
+      "value_type": "scalar",
+      "record_ids": [
+        "rec-00",
+        "rec-01",
+        "rec-02",
+        "rec-03",
+        "rec-04",
+        "rec-05",
+        "rec-06",
+        "rec-07",
+        "rec-08",
+        "rec-09",
+        "rec-10",
+        "rec-11",
+        "rec-12",
+        "rec-13",
+        "rec-14",
+        "rec-15",
+        "rec-16",
+        "rec-17",
+        "rec-18",
+        "rec-19",
+        "rec-20",
+        "rec-21",
+        "rec-22",
+        "rec-23"
+      ],
+      "storage": "sparse_edge_list",
+      "values": [
+        {
+          "row_id": "rec-00",
+          "column_id": "rec-04",
+          "value": 0.0236
+        },
+        {
+          "row_id": "rec-00",
+          "column_id": "rec-12",
+          "value": 0.0337
+        },
+        {
+          "row_id": "rec-00",
+          "column_id": "rec-20",
+          "value": 0.0637
+        },
+        {
+          "row_id": "rec-00",
+          "column_id": "rec-16",
+          "value": 0.0768
+        },
+        {
+          "row_id": "rec-00",
+          "column_id": "rec-08",
+          "value": 0.1122
+        },
+        {
+          "row_id": "rec-00",
+          "column_id": "rec-05",
+          "value": 0.2064
+        },
+        {
+          "row_id": "rec-01",
+          "column_id": "rec-09",
+          "value": 0.0772
+        },
+        {
+          "row_id": "rec-01",
+          "column_id": "rec-21",
+          "value": 0.1051
+        },
+        {
+          "row_id": "rec-01",
+          "column_id": "rec-05",
+          "value": 0.1065
+        },
+        {
+          "row_id": "rec-01",
+          "column_id": "rec-17",
+          "value": 0.1172
+        },
+        {
+          "row_id": "rec-01",
+          "column_id": "rec-23",
+          "value": 0.1609
+        },
+        {
+          "row_id": "rec-01",
+          "column_id": "rec-07",
+          "value": 0.1682
+        },
+        {
+          "row_id": "rec-02",
+          "column_id": "rec-10",
+          "value": 0.0519
+        },
+        {
+          "row_id": "rec-02",
+          "column_id": "rec-06",
+          "value": 0.0734
+        },
+        {
+          "row_id": "rec-02",
+          "column_id": "rec-14",
+          "value": 0.1309
+        },
+        {
+          "row_id": "rec-02",
+          "column_id": "rec-22",
+          "value": 0.1524
+        },
+        {
+          "row_id": "rec-02",
+          "column_id": "rec-18",
+          "value": 0.1535
+        },
+        {
+          "row_id": "rec-02",
+          "column_id": "rec-19",
+          "value": 0.368
+        },
+        {
+          "row_id": "rec-03",
+          "column_id": "rec-15",
+          "value": 0.0326
+        },
+        {
+          "row_id": "rec-03",
+          "column_id": "rec-11",
+          "value": 0.0713
+        },
+        {
+          "row_id": "rec-03",
+          "column_id": "rec-13",
+          "value": 0.076
+        },
+        {
+          "row_id": "rec-03",
+          "column_id": "rec-23",
+          "value": 0.0805
+        },
+        {
+          "row_id": "rec-03",
+          "column_id": "rec-07",
+          "value": 0.0973
+        },
+        {
+          "row_id": "rec-03",
+          "column_id": "rec-19",
+          "value": 0.1166
+        },
+        {
+          "row_id": "rec-04",
+          "column_id": "rec-00",
+          "value": 0.0236
+        },
+        {
+          "row_id": "rec-04",
+          "column_id": "rec-12",
+          "value": 0.0479
+        },
+        {
+          "row_id": "rec-04",
+          "column_id": "rec-20",
+          "value": 0.0574
+        },
+        {
+          "row_id": "rec-04",
+          "column_id": "rec-16",
+          "value": 0.0701
+        },
+        {
+          "row_id": "rec-04",
+          "column_id": "rec-08",
+          "value": 0.1301
+        },
+        {
+          "row_id": "rec-04",
+          "column_id": "rec-05",
+          "value": 0.1935
+        },
+        {
+          "row_id": "rec-05",
+          "column_id": "rec-09",
+          "value": 0.0658
+        },
+        {
+          "row_id": "rec-05",
+          "column_id": "rec-17",
+          "value": 0.0682
+        },
+        {
+          "row_id": "rec-05",
+          "column_id": "rec-01",
+          "value": 0.1065
+        },
+        {
+          "row_id": "rec-05",
+          "column_id": "rec-16",
+          "value": 0.1389
+        },
+        {
+          "row_id": "rec-05",
+          "column_id": "rec-20",
+          "value": 0.1441
+        },
+        {
+          "row_id": "rec-05",
+          "column_id": "rec-21",
+          "value": 0.1535
+        },
+        {
+          "row_id": "rec-06",
+          "column_id": "rec-02",
+          "value": 0.0734
+        },
+        {
+          "row_id": "rec-06",
+          "column_id": "rec-18",
+          "value": 0.0946
+        },
+        {
+          "row_id": "rec-06",
+          "column_id": "rec-10",
+          "value": 0.1182
+        },
+        {
+          "row_id": "rec-06",
+          "column_id": "rec-22",
+          "value": 0.1193
+        },
+        {
+          "row_id": "rec-06",
+          "column_id": "rec-14",
+          "value": 0.1748
+        },
+        {
+          "row_id": "rec-06",
+          "column_id": "rec-19",
+          "value": 0.3245
+        },
+        {
+          "row_id": "rec-07",
+          "column_id": "rec-13",
+          "value": 0.0643
+        },
+        {
+          "row_id": "rec-07",
+          "column_id": "rec-03",
+          "value": 0.0973
+        },
+        {
+          "row_id": "rec-07",
+          "column_id": "rec-15",
+          "value": 0.0974
+        },
+        {
+          "row_id": "rec-07",
+          "column_id": "rec-21",
+          "value": 0.1002
+        },
+        {
+          "row_id": "rec-07",
+          "column_id": "rec-23",
+          "value": 0.14
+        },
+        {
+          "row_id": "rec-07",
+          "column_id": "rec-11",
+          "value": 0.1543
+        },
+        {
+          "row_id": "rec-08",
+          "column_id": "rec-12",
+          "value": 0.0823
+        },
+        {
+          "row_id": "rec-08",
+          "column_id": "rec-00",
+          "value": 0.1122
+        },
+        {
+          "row_id": "rec-08",
+          "column_id": "rec-04",
+          "value": 0.1301
+        },
+        {
+          "row_id": "rec-08",
+          "column_id": "rec-20",
+          "value": 0.1709
+        },
+        {
+          "row_id": "rec-08",
+          "column_id": "rec-16",
+          "value": 0.1862
+        },
+        {
+          "row_id": "rec-08",
+          "column_id": "rec-05",
+          "value": 0.3136
+        },
+        {
+          "row_id": "rec-09",
+          "column_id": "rec-17",
+          "value": 0.0403
+        },
+        {
+          "row_id": "rec-09",
+          "column_id": "rec-05",
+          "value": 0.0658
+        },
+        {
+          "row_id": "rec-09",
+          "column_id": "rec-01",
+          "value": 0.0772
+        },
+        {
+          "row_id": "rec-09",
+          "column_id": "rec-21",
+          "value": 0.0885
+        },
+        {
+          "row_id": "rec-09",
+          "column_id": "rec-16",
+          "value": 0.1768
+        },
+        {
+          "row_id": "rec-09",
+          "column_id": "rec-07",
+          "value": 0.18
+        },
+        {
+          "row_id": "rec-10",
+          "column_id": "rec-02",
+          "value": 0.0519
+        },
+        {
+          "row_id": "rec-10",
+          "column_id": "rec-14",
+          "value": 0.0994
+        },
+        {
+          "row_id": "rec-10",
+          "column_id": "rec-06",
+          "value": 0.1182
+        },
+        {
+          "row_id": "rec-10",
+          "column_id": "rec-22",
+          "value": 0.1681
+        },
+        {
+          "row_id": "rec-10",
+          "column_id": "rec-18",
+          "value": 0.1809
+        },
+        {
+          "row_id": "rec-10",
+          "column_id": "rec-19",
+          "value": 0.3813
+        },
+        {
+          "row_id": "rec-11",
+          "column_id": "rec-19",
+          "value": 0.0463
+        },
+        {
+          "row_id": "rec-11",
+          "column_id": "rec-03",
+          "value": 0.0713
+        },
+        {
+          "row_id": "rec-11",
+          "column_id": "rec-15",
+          "value": 0.0747
+        },
+        {
+          "row_id": "rec-11",
+          "column_id": "rec-13",
+          "value": 0.1248
+        },
+        {
+          "row_id": "rec-11",
+          "column_id": "rec-23",
+          "value": 0.1345
+        },
+        {
+          "row_id": "rec-11",
+          "column_id": "rec-07",
+          "value": 0.1543
+        },
+        {
+          "row_id": "rec-12",
+          "column_id": "rec-00",
+          "value": 0.0337
+        },
+        {
+          "row_id": "rec-12",
+          "column_id": "rec-04",
+          "value": 0.0479
+        },
+        {
+          "row_id": "rec-12",
+          "column_id": "rec-08",
+          "value": 0.0823
+        },
+        {
+          "row_id": "rec-12",
+          "column_id": "rec-20",
+          "value": 0.0956
+        },
+        {
+          "row_id": "rec-12",
+          "column_id": "rec-16",
+          "value": 0.1105
+        },
+        {
+          "row_id": "rec-12",
+          "column_id": "rec-05",
+          "value": 0.2373
+        },
+        {
+          "row_id": "rec-13",
+          "column_id": "rec-07",
+          "value": 0.0643
+        },
+        {
+          "row_id": "rec-13",
+          "column_id": "rec-03",
+          "value": 0.076
+        },
+        {
+          "row_id": "rec-13",
+          "column_id": "rec-15",
+          "value": 0.0955
+        },
+        {
+          "row_id": "rec-13",
+          "column_id": "rec-23",
+          "value": 0.1241
+        },
+        {
+          "row_id": "rec-13",
+          "column_id": "rec-11",
+          "value": 0.1248
+        },
+        {
+          "row_id": "rec-13",
+          "column_id": "rec-21",
+          "value": 0.1426
+        },
+        {
+          "row_id": "rec-14",
+          "column_id": "rec-10",
+          "value": 0.0994
+        },
+        {
+          "row_id": "rec-14",
+          "column_id": "rec-02",
+          "value": 0.1309
+        },
+        {
+          "row_id": "rec-14",
+          "column_id": "rec-22",
+          "value": 0.1527
+        },
+        {
+          "row_id": "rec-14",
+          "column_id": "rec-06",
+          "value": 0.1748
+        },
+        {
+          "row_id": "rec-14",
+          "column_id": "rec-18",
+          "value": 0.202
+        },
+        {
+          "row_id": "rec-14",
+          "column_id": "rec-19",
+          "value": 0.3366
+        },
+        {
+          "row_id": "rec-15",
+          "column_id": "rec-03",
+          "value": 0.0326
+        },
+        {
+          "row_id": "rec-15",
+          "column_id": "rec-11",
+          "value": 0.0747
+        },
+        {
+          "row_id": "rec-15",
+          "column_id": "rec-13",
+          "value": 0.0955
+        },
+        {
+          "row_id": "rec-15",
+          "column_id": "rec-23",
+          "value": 0.0967
+        },
+        {
+          "row_id": "rec-15",
+          "column_id": "rec-07",
+          "value": 0.0974
+        },
+        {
+          "row_id": "rec-15",
+          "column_id": "rec-19",
+          "value": 0.1198
+        },
+        {
+          "row_id": "rec-16",
+          "column_id": "rec-20",
+          "value": 0.0299
+        },
+        {
+          "row_id": "rec-16",
+          "column_id": "rec-04",
+          "value": 0.0701
+        },
+        {
+          "row_id": "rec-16",
+          "column_id": "rec-00",
+          "value": 0.0768
+        },
+        {
+          "row_id": "rec-16",
+          "column_id": "rec-12",
+          "value": 0.1105
+        },
+        {
+          "row_id": "rec-16",
+          "column_id": "rec-05",
+          "value": 0.1389
+        },
+        {
+          "row_id": "rec-16",
+          "column_id": "rec-17",
+          "value": 0.1439
+        },
+        {
+          "row_id": "rec-17",
+          "column_id": "rec-09",
+          "value": 0.0403
+        },
+        {
+          "row_id": "rec-17",
+          "column_id": "rec-05",
+          "value": 0.0682
+        },
+        {
+          "row_id": "rec-17",
+          "column_id": "rec-21",
+          "value": 0.1089
+        },
+        {
+          "row_id": "rec-17",
+          "column_id": "rec-01",
+          "value": 0.1172
+        },
+        {
+          "row_id": "rec-17",
+          "column_id": "rec-16",
+          "value": 0.1439
+        },
+        {
+          "row_id": "rec-17",
+          "column_id": "rec-20",
+          "value": 0.1616
+        },
+        {
+          "row_id": "rec-18",
+          "column_id": "rec-22",
+          "value": 0.0741
+        },
+        {
+          "row_id": "rec-18",
+          "column_id": "rec-06",
+          "value": 0.0946
+        },
+        {
+          "row_id": "rec-18",
+          "column_id": "rec-02",
+          "value": 0.1535
+        },
+        {
+          "row_id": "rec-18",
+          "column_id": "rec-10",
+          "value": 0.1809
+        },
+        {
+          "row_id": "rec-18",
+          "column_id": "rec-14",
+          "value": 0.202
+        },
+        {
+          "row_id": "rec-18",
+          "column_id": "rec-19",
+          "value": 0.2442
+        },
+        {
+          "row_id": "rec-19",
+          "column_id": "rec-11",
+          "value": 0.0463
+        },
+        {
+          "row_id": "rec-19",
+          "column_id": "rec-03",
+          "value": 0.1166
+        },
+        {
+          "row_id": "rec-19",
+          "column_id": "rec-15",
+          "value": 0.1198
+        },
+        {
+          "row_id": "rec-19",
+          "column_id": "rec-13",
+          "value": 0.1602
+        },
+        {
+          "row_id": "rec-19",
+          "column_id": "rec-23",
+          "value": 0.1765
+        },
+        {
+          "row_id": "rec-19",
+          "column_id": "rec-07",
+          "value": 0.1941
+        },
+        {
+          "row_id": "rec-20",
+          "column_id": "rec-16",
+          "value": 0.0299
+        },
+        {
+          "row_id": "rec-20",
+          "column_id": "rec-04",
+          "value": 0.0574
+        },
+        {
+          "row_id": "rec-20",
+          "column_id": "rec-00",
+          "value": 0.0637
+        },
+        {
+          "row_id": "rec-20",
+          "column_id": "rec-12",
+          "value": 0.0956
+        },
+        {
+          "row_id": "rec-20",
+          "column_id": "rec-05",
+          "value": 0.1441
+        },
+        {
+          "row_id": "rec-20",
+          "column_id": "rec-17",
+          "value": 0.1616
+        },
+        {
+          "row_id": "rec-21",
+          "column_id": "rec-09",
+          "value": 0.0885
+        },
+        {
+          "row_id": "rec-21",
+          "column_id": "rec-07",
+          "value": 0.1002
+        },
+        {
+          "row_id": "rec-21",
+          "column_id": "rec-01",
+          "value": 0.1051
+        },
+        {
+          "row_id": "rec-21",
+          "column_id": "rec-17",
+          "value": 0.1089
+        },
+        {
+          "row_id": "rec-21",
+          "column_id": "rec-13",
+          "value": 0.1426
+        },
+        {
+          "row_id": "rec-21",
+          "column_id": "rec-05",
+          "value": 0.1535
+        },
+        {
+          "row_id": "rec-22",
+          "column_id": "rec-18",
+          "value": 0.0741
+        },
+        {
+          "row_id": "rec-22",
+          "column_id": "rec-06",
+          "value": 0.1193
+        },
+        {
+          "row_id": "rec-22",
+          "column_id": "rec-02",
+          "value": 0.1524
+        },
+        {
+          "row_id": "rec-22",
+          "column_id": "rec-14",
+          "value": 0.1527
+        },
+        {
+          "row_id": "rec-22",
+          "column_id": "rec-10",
+          "value": 0.1681
+        },
+        {
+          "row_id": "rec-22",
+          "column_id": "rec-19",
+          "value": 0.216
+        },
+        {
+          "row_id": "rec-23",
+          "column_id": "rec-03",
+          "value": 0.0805
+        },
+        {
+          "row_id": "rec-23",
+          "column_id": "rec-15",
+          "value": 0.0967
+        },
+        {
+          "row_id": "rec-23",
+          "column_id": "rec-13",
+          "value": 0.1241
+        },
+        {
+          "row_id": "rec-23",
+          "column_id": "rec-11",
+          "value": 0.1345
+        },
+        {
+          "row_id": "rec-23",
+          "column_id": "rec-07",
+          "value": 0.14
+        },
+        {
+          "row_id": "rec-23",
+          "column_id": "rec-01",
+          "value": 0.1609
+        }
+      ],
+      "metadata": {
+        "symmetric": false,
+        "neighbors": 6,
+        "law_check": {
+          "triangle": "exported",
+          "symmetry": "directed_knn"
+        }
+      }
+    }
+  ],
+  "spaces": [
+    {
+      "id": "sensor-space",
+      "dataset_id": "sensor-condition",
+      "record_ids": [
+        "rec-00",
+        "rec-01",
+        "rec-02",
+        "rec-03",
+        "rec-04",
+        "rec-05",
+        "rec-06",
+        "rec-07",
+        "rec-08",
+        "rec-09",
+        "rec-10",
+        "rec-11",
+        "rec-12",
+        "rec-13",
+        "rec-14",
+        "rec-15",
+        "rec-16",
+        "rec-17",
+        "rec-18",
+        "rec-19",
+        "rec-20",
+        "rec-21",
+        "rec-22",
+        "rec-23"
+      ],
+      "primary_relation_id": "sensor-metric",
+      "space_type": "finite_metric_space",
+      "metadata": {
+        "dimension_hint": 3,
+        "regimes": [
+          "healthy",
+          "drift",
+          "fault",
+          "recovery"
+        ]
+      }
+    }
+  ],
+  "properties": [
+    {
+      "id": "entropy",
+      "dataset_id": "sensor-condition",
+      "target_type": "record",
+      "value_type": "scalar",
+      "name": "local entropy",
+      "values": [
+        {
+          "record_id": "rec-00",
+          "value": 0.4922
+        },
+        {
+          "record_id": "rec-01",
+          "value": 0.6352
+        },
+        {
+          "record_id": "rec-02",
+          "value": 0.8023
+        },
+        {
+          "record_id": "rec-03",
+          "value": 0.7154
+        },
+        {
+          "record_id": "rec-04",
+          "value": 0.5277
+        },
+        {
+          "record_id": "rec-05",
+          "value": 0.6531
+        },
+        {
+          "record_id": "rec-06",
+          "value": 0.8191
+        },
+        {
+          "record_id": "rec-07",
+          "value": 0.6899
+        },
+        {
+          "record_id": "rec-08",
+          "value": 0.5405
+        },
+        {
+          "record_id": "rec-09",
+          "value": 0.6206
+        },
+        {
+          "record_id": "rec-10",
+          "value": 0.8271
+        },
+        {
+          "record_id": "rec-11",
+          "value": 0.6898
+        },
+        {
+          "record_id": "rec-12",
+          "value": 0.5397
+        },
+        {
+          "record_id": "rec-13",
+          "value": 0.6526
+        },
+        {
+          "record_id": "rec-14",
+          "value": 0.8316
+        },
+        {
+          "record_id": "rec-15",
+          "value": 0.706
+        },
+        {
+          "record_id": "rec-16",
+          "value": 0.4524
+        },
+        {
+          "record_id": "rec-17",
+          "value": 0.6203
+        },
+        {
+          "record_id": "rec-18",
+          "value": 0.8037
+        },
+        {
+          "record_id": "rec-19",
+          "value": 0.6416
+        },
+        {
+          "record_id": "rec-20",
+          "value": 0.4694
+        },
+        {
+          "record_id": "rec-21",
+          "value": 0.6119
+        },
+        {
+          "record_id": "rec-22",
+          "value": 0.8407
+        },
+        {
+          "record_id": "rec-23",
+          "value": 0.6867
+        }
+      ]
+    },
+    {
+      "id": "density",
+      "dataset_id": "sensor-condition",
+      "target_type": "record",
+      "value_type": "scalar",
+      "name": "local density",
+      "values": [
+        {
+          "record_id": "rec-00",
+          "value": 0.8871
+        },
+        {
+          "record_id": "rec-01",
+          "value": 0.7172
+        },
+        {
+          "record_id": "rec-02",
+          "value": 0.47
+        },
+        {
+          "record_id": "rec-03",
+          "value": 0.6838
+        },
+        {
+          "record_id": "rec-04",
+          "value": 0.8484
+        },
+        {
+          "record_id": "rec-05",
+          "value": 0.7797
+        },
+        {
+          "record_id": "rec-06",
+          "value": 0.459
+        },
+        {
+          "record_id": "rec-07",
+          "value": 0.7109
+        },
+        {
+          "record_id": "rec-08",
+          "value": 0.8467
+        },
+        {
+          "record_id": "rec-09",
+          "value": 0.7277
+        },
+        {
+          "record_id": "rec-10",
+          "value": 0.5084
+        },
+        {
+          "record_id": "rec-11",
+          "value": 0.7066
+        },
+        {
+          "record_id": "rec-12",
+          "value": 0.8577
+        },
+        {
+          "record_id": "rec-13",
+          "value": 0.7868
+        },
+        {
+          "record_id": "rec-14",
+          "value": 0.4688
+        },
+        {
+          "record_id": "rec-15",
+          "value": 0.6377
+        },
+        {
+          "record_id": "rec-16",
+          "value": 0.8652
+        },
+        {
+          "record_id": "rec-17",
+          "value": 0.7445
+        },
+        {
+          "record_id": "rec-18",
+          "value": 0.4698
+        },
+        {
+          "record_id": "rec-19",
+          "value": 0.7048
+        },
+        {
+          "record_id": "rec-20",
+          "value": 0.9041
+        },
+        {
+          "record_id": "rec-21",
+          "value": 0.7729
+        },
+        {
+          "record_id": "rec-22",
+          "value": 0.5307
+        },
+        {
+          "record_id": "rec-23",
+          "value": 0.6521
+        }
+      ]
+    },
+    {
+      "id": "anomaly",
+      "dataset_id": "sensor-condition",
+      "target_type": "record",
+      "value_type": "scalar",
+      "name": "anomaly score",
+      "values": [
+        {
+          "record_id": "rec-00",
+          "value": 0.2035
+        },
+        {
+          "record_id": "rec-01",
+          "value": 0.3643
+        },
+        {
+          "record_id": "rec-02",
+          "value": 0.8159
+        },
+        {
+          "record_id": "rec-03",
+          "value": 0.5536
+        },
+        {
+          "record_id": "rec-04",
+          "value": 0.1555
+        },
+        {
+          "record_id": "rec-05",
+          "value": 0.3982
+        },
+        {
+          "record_id": "rec-06",
+          "value": 0.7979
+        },
+        {
+          "record_id": "rec-07",
+          "value": 0.5213
+        },
+        {
+          "record_id": "rec-08",
+          "value": 0.1292
+        },
+        {
+          "record_id": "rec-09",
+          "value": 0.4283
+        },
+        {
+          "record_id": "rec-10",
+          "value": 0.85
+        },
+        {
+          "record_id": "rec-11",
+          "value": 0.4873
+        },
+        {
+          "record_id": "rec-12",
+          "value": 0.1254
+        },
+        {
+          "record_id": "rec-13",
+          "value": 0.3423
+        },
+        {
+          "record_id": "rec-14",
+          "value": 0.7924
+        },
+        {
+          "record_id": "rec-15",
+          "value": 0.4738
+        },
+        {
+          "record_id": "rec-16",
+          "value": 0.1813
+        },
+        {
+          "record_id": "rec-17",
+          "value": 0.3415
+        },
+        {
+          "record_id": "rec-18",
+          "value": 0.7947
+        },
+        {
+          "record_id": "rec-19",
+          "value": 0.4548
+        },
+        {
+          "record_id": "rec-20",
+          "value": 0.1881
+        },
+        {
+          "record_id": "rec-21",
+          "value": 0.4065
+        },
+        {
+          "record_id": "rec-22",
+          "value": 0.7805
+        },
+        {
+          "record_id": "rec-23",
+          "value": 0.5064
+        }
+      ]
+    },
+    {
+      "id": "cluster",
+      "dataset_id": "sensor-condition",
+      "target_type": "record",
+      "value_type": "categorical",
+      "name": "regime cluster",
+      "values": [
+        {
+          "record_id": "rec-00",
+          "value": "healthy"
+        },
+        {
+          "record_id": "rec-01",
+          "value": "drift"
+        },
+        {
+          "record_id": "rec-02",
+          "value": "fault"
+        },
+        {
+          "record_id": "rec-03",
+          "value": "recovery"
+        },
+        {
+          "record_id": "rec-04",
+          "value": "healthy"
+        },
+        {
+          "record_id": "rec-05",
+          "value": "drift"
+        },
+        {
+          "record_id": "rec-06",
+          "value": "fault"
+        },
+        {
+          "record_id": "rec-07",
+          "value": "recovery"
+        },
+        {
+          "record_id": "rec-08",
+          "value": "healthy"
+        },
+        {
+          "record_id": "rec-09",
+          "value": "drift"
+        },
+        {
+          "record_id": "rec-10",
+          "value": "fault"
+        },
+        {
+          "record_id": "rec-11",
+          "value": "recovery"
+        },
+        {
+          "record_id": "rec-12",
+          "value": "healthy"
+        },
+        {
+          "record_id": "rec-13",
+          "value": "drift"
+        },
+        {
+          "record_id": "rec-14",
+          "value": "fault"
+        },
+        {
+          "record_id": "rec-15",
+          "value": "recovery"
+        },
+        {
+          "record_id": "rec-16",
+          "value": "healthy"
+        },
+        {
+          "record_id": "rec-17",
+          "value": "drift"
+        },
+        {
+          "record_id": "rec-18",
+          "value": "fault"
+        },
+        {
+          "record_id": "rec-19",
+          "value": "recovery"
+        },
+        {
+          "record_id": "rec-20",
+          "value": "healthy"
+        },
+        {
+          "record_id": "rec-21",
+          "value": "drift"
+        },
+        {
+          "record_id": "rec-22",
+          "value": "fault"
+        },
+        {
+          "record_id": "rec-23",
+          "value": "recovery"
+        }
+      ]
+    },
+    {
+      "id": "map-residual",
+      "dataset_id": "sensor-condition",
+      "target_type": "record",
+      "value_type": "scalar",
+      "name": "mapping residual",
+      "values": [
+        {
+          "record_id": "rec-00",
+          "value": 0.0571
+        },
+        {
+          "record_id": "rec-01",
+          "value": 0.0498
+        },
+        {
+          "record_id": "rec-02",
+          "value": 0.1058
+        },
+        {
+          "record_id": "rec-03",
+          "value": 0.1523
+        },
+        {
+          "record_id": "rec-04",
+          "value": 0.1244
+        },
+        {
+          "record_id": "rec-05",
+          "value": 0.1212
+        },
+        {
+          "record_id": "rec-06",
+          "value": 0.1906
+        },
+        {
+          "record_id": "rec-07",
+          "value": 0.177
+        },
+        {
+          "record_id": "rec-08",
+          "value": 0.1607
+        },
+        {
+          "record_id": "rec-09",
+          "value": 0.1012
+        },
+        {
+          "record_id": "rec-10",
+          "value": 0.473
+        },
+        {
+          "record_id": "rec-11",
+          "value": 0.6126
+        },
+        {
+          "record_id": "rec-12",
+          "value": 0.0981
+        },
+        {
+          "record_id": "rec-13",
+          "value": 0.401
+        },
+        {
+          "record_id": "rec-14",
+          "value": 0.7918
+        },
+        {
+          "record_id": "rec-15",
+          "value": 0.685
+        },
+        {
+          "record_id": "rec-16",
+          "value": 0.2574
+        },
+        {
+          "record_id": "rec-17",
+          "value": 0.4922
+        },
+        {
+          "record_id": "rec-18",
+          "value": 0.6722
+        },
+        {
+          "record_id": "rec-19",
+          "value": 0.3219
+        },
+        {
+          "record_id": "rec-20",
+          "value": 0.2548
+        },
+        {
+          "record_id": "rec-21",
+          "value": 0.3623
+        },
+        {
+          "record_id": "rec-22",
+          "value": 0.3125
+        },
+        {
+          "record_id": "rec-23",
+          "value": 0.158
+        }
+      ]
+    }
+  ],
+  "graphs": [
+    {
+      "id": "sensor-knn",
+      "dataset_id": "sensor-condition",
+      "node_record_ids": [
+        "rec-00",
+        "rec-01",
+        "rec-02",
+        "rec-03",
+        "rec-04",
+        "rec-05",
+        "rec-06",
+        "rec-07",
+        "rec-08",
+        "rec-09",
+        "rec-10",
+        "rec-11",
+        "rec-12",
+        "rec-13",
+        "rec-14",
+        "rec-15",
+        "rec-16",
+        "rec-17",
+        "rec-18",
+        "rec-19",
+        "rec-20",
+        "rec-21",
+        "rec-22",
+        "rec-23"
+      ],
+      "edge_relation_id": "sensor-metric",
+      "graph_type": "k-nearest graph",
+      "edges": [
+        {
+          "source": "rec-00",
+          "target": "rec-04",
+          "value": 0.0236
+        },
+        {
+          "source": "rec-00",
+          "target": "rec-12",
+          "value": 0.0337
+        },
+        {
+          "source": "rec-00",
+          "target": "rec-20",
+          "value": 0.0637
+        },
+        {
+          "source": "rec-00",
+          "target": "rec-16",
+          "value": 0.0768
+        },
+        {
+          "source": "rec-00",
+          "target": "rec-08",
+          "value": 0.1122
+        },
+        {
+          "source": "rec-00",
+          "target": "rec-05",
+          "value": 0.2064
+        },
+        {
+          "source": "rec-01",
+          "target": "rec-09",
+          "value": 0.0772
+        },
+        {
+          "source": "rec-01",
+          "target": "rec-21",
+          "value": 0.1051
+        },
+        {
+          "source": "rec-01",
+          "target": "rec-05",
+          "value": 0.1065
+        },
+        {
+          "source": "rec-01",
+          "target": "rec-17",
+          "value": 0.1172
+        },
+        {
+          "source": "rec-01",
+          "target": "rec-23",
+          "value": 0.1609
+        },
+        {
+          "source": "rec-01",
+          "target": "rec-07",
+          "value": 0.1682
+        },
+        {
+          "source": "rec-02",
+          "target": "rec-10",
+          "value": 0.0519
+        },
+        {
+          "source": "rec-02",
+          "target": "rec-06",
+          "value": 0.0734
+        },
+        {
+          "source": "rec-02",
+          "target": "rec-14",
+          "value": 0.1309
+        },
+        {
+          "source": "rec-02",
+          "target": "rec-22",
+          "value": 0.1524
+        },
+        {
+          "source": "rec-02",
+          "target": "rec-18",
+          "value": 0.1535
+        },
+        {
+          "source": "rec-02",
+          "target": "rec-19",
+          "value": 0.368
+        },
+        {
+          "source": "rec-03",
+          "target": "rec-15",
+          "value": 0.0326
+        },
+        {
+          "source": "rec-03",
+          "target": "rec-11",
+          "value": 0.0713
+        },
+        {
+          "source": "rec-03",
+          "target": "rec-13",
+          "value": 0.076
+        },
+        {
+          "source": "rec-03",
+          "target": "rec-23",
+          "value": 0.0805
+        },
+        {
+          "source": "rec-03",
+          "target": "rec-07",
+          "value": 0.0973
+        },
+        {
+          "source": "rec-03",
+          "target": "rec-19",
+          "value": 0.1166
+        },
+        {
+          "source": "rec-04",
+          "target": "rec-00",
+          "value": 0.0236
+        },
+        {
+          "source": "rec-04",
+          "target": "rec-12",
+          "value": 0.0479
+        },
+        {
+          "source": "rec-04",
+          "target": "rec-20",
+          "value": 0.0574
+        },
+        {
+          "source": "rec-04",
+          "target": "rec-16",
+          "value": 0.0701
+        },
+        {
+          "source": "rec-04",
+          "target": "rec-08",
+          "value": 0.1301
+        },
+        {
+          "source": "rec-04",
+          "target": "rec-05",
+          "value": 0.1935
+        },
+        {
+          "source": "rec-05",
+          "target": "rec-09",
+          "value": 0.0658
+        },
+        {
+          "source": "rec-05",
+          "target": "rec-17",
+          "value": 0.0682
+        },
+        {
+          "source": "rec-05",
+          "target": "rec-01",
+          "value": 0.1065
+        },
+        {
+          "source": "rec-05",
+          "target": "rec-16",
+          "value": 0.1389
+        },
+        {
+          "source": "rec-05",
+          "target": "rec-20",
+          "value": 0.1441
+        },
+        {
+          "source": "rec-05",
+          "target": "rec-21",
+          "value": 0.1535
+        },
+        {
+          "source": "rec-06",
+          "target": "rec-02",
+          "value": 0.0734
+        },
+        {
+          "source": "rec-06",
+          "target": "rec-18",
+          "value": 0.0946
+        },
+        {
+          "source": "rec-06",
+          "target": "rec-10",
+          "value": 0.1182
+        },
+        {
+          "source": "rec-06",
+          "target": "rec-22",
+          "value": 0.1193
+        },
+        {
+          "source": "rec-06",
+          "target": "rec-14",
+          "value": 0.1748
+        },
+        {
+          "source": "rec-06",
+          "target": "rec-19",
+          "value": 0.3245
+        },
+        {
+          "source": "rec-07",
+          "target": "rec-13",
+          "value": 0.0643
+        },
+        {
+          "source": "rec-07",
+          "target": "rec-03",
+          "value": 0.0973
+        },
+        {
+          "source": "rec-07",
+          "target": "rec-15",
+          "value": 0.0974
+        },
+        {
+          "source": "rec-07",
+          "target": "rec-21",
+          "value": 0.1002
+        },
+        {
+          "source": "rec-07",
+          "target": "rec-23",
+          "value": 0.14
+        },
+        {
+          "source": "rec-07",
+          "target": "rec-11",
+          "value": 0.1543
+        },
+        {
+          "source": "rec-08",
+          "target": "rec-12",
+          "value": 0.0823
+        },
+        {
+          "source": "rec-08",
+          "target": "rec-00",
+          "value": 0.1122
+        },
+        {
+          "source": "rec-08",
+          "target": "rec-04",
+          "value": 0.1301
+        },
+        {
+          "source": "rec-08",
+          "target": "rec-20",
+          "value": 0.1709
+        },
+        {
+          "source": "rec-08",
+          "target": "rec-16",
+          "value": 0.1862
+        },
+        {
+          "source": "rec-08",
+          "target": "rec-05",
+          "value": 0.3136
+        },
+        {
+          "source": "rec-09",
+          "target": "rec-17",
+          "value": 0.0403
+        },
+        {
+          "source": "rec-09",
+          "target": "rec-05",
+          "value": 0.0658
+        },
+        {
+          "source": "rec-09",
+          "target": "rec-01",
+          "value": 0.0772
+        },
+        {
+          "source": "rec-09",
+          "target": "rec-21",
+          "value": 0.0885
+        },
+        {
+          "source": "rec-09",
+          "target": "rec-16",
+          "value": 0.1768
+        },
+        {
+          "source": "rec-09",
+          "target": "rec-07",
+          "value": 0.18
+        },
+        {
+          "source": "rec-10",
+          "target": "rec-02",
+          "value": 0.0519
+        },
+        {
+          "source": "rec-10",
+          "target": "rec-14",
+          "value": 0.0994
+        },
+        {
+          "source": "rec-10",
+          "target": "rec-06",
+          "value": 0.1182
+        },
+        {
+          "source": "rec-10",
+          "target": "rec-22",
+          "value": 0.1681
+        },
+        {
+          "source": "rec-10",
+          "target": "rec-18",
+          "value": 0.1809
+        },
+        {
+          "source": "rec-10",
+          "target": "rec-19",
+          "value": 0.3813
+        },
+        {
+          "source": "rec-11",
+          "target": "rec-19",
+          "value": 0.0463
+        },
+        {
+          "source": "rec-11",
+          "target": "rec-03",
+          "value": 0.0713
+        },
+        {
+          "source": "rec-11",
+          "target": "rec-15",
+          "value": 0.0747
+        },
+        {
+          "source": "rec-11",
+          "target": "rec-13",
+          "value": 0.1248
+        },
+        {
+          "source": "rec-11",
+          "target": "rec-23",
+          "value": 0.1345
+        },
+        {
+          "source": "rec-11",
+          "target": "rec-07",
+          "value": 0.1543
+        },
+        {
+          "source": "rec-12",
+          "target": "rec-00",
+          "value": 0.0337
+        },
+        {
+          "source": "rec-12",
+          "target": "rec-04",
+          "value": 0.0479
+        },
+        {
+          "source": "rec-12",
+          "target": "rec-08",
+          "value": 0.0823
+        },
+        {
+          "source": "rec-12",
+          "target": "rec-20",
+          "value": 0.0956
+        },
+        {
+          "source": "rec-12",
+          "target": "rec-16",
+          "value": 0.1105
+        },
+        {
+          "source": "rec-12",
+          "target": "rec-05",
+          "value": 0.2373
+        },
+        {
+          "source": "rec-13",
+          "target": "rec-07",
+          "value": 0.0643
+        },
+        {
+          "source": "rec-13",
+          "target": "rec-03",
+          "value": 0.076
+        },
+        {
+          "source": "rec-13",
+          "target": "rec-15",
+          "value": 0.0955
+        },
+        {
+          "source": "rec-13",
+          "target": "rec-23",
+          "value": 0.1241
+        },
+        {
+          "source": "rec-13",
+          "target": "rec-11",
+          "value": 0.1248
+        },
+        {
+          "source": "rec-13",
+          "target": "rec-21",
+          "value": 0.1426
+        },
+        {
+          "source": "rec-14",
+          "target": "rec-10",
+          "value": 0.0994
+        },
+        {
+          "source": "rec-14",
+          "target": "rec-02",
+          "value": 0.1309
+        },
+        {
+          "source": "rec-14",
+          "target": "rec-22",
+          "value": 0.1527
+        },
+        {
+          "source": "rec-14",
+          "target": "rec-06",
+          "value": 0.1748
+        },
+        {
+          "source": "rec-14",
+          "target": "rec-18",
+          "value": 0.202
+        },
+        {
+          "source": "rec-14",
+          "target": "rec-19",
+          "value": 0.3366
+        },
+        {
+          "source": "rec-15",
+          "target": "rec-03",
+          "value": 0.0326
+        },
+        {
+          "source": "rec-15",
+          "target": "rec-11",
+          "value": 0.0747
+        },
+        {
+          "source": "rec-15",
+          "target": "rec-13",
+          "value": 0.0955
+        },
+        {
+          "source": "rec-15",
+          "target": "rec-23",
+          "value": 0.0967
+        },
+        {
+          "source": "rec-15",
+          "target": "rec-07",
+          "value": 0.0974
+        },
+        {
+          "source": "rec-15",
+          "target": "rec-19",
+          "value": 0.1198
+        },
+        {
+          "source": "rec-16",
+          "target": "rec-20",
+          "value": 0.0299
+        },
+        {
+          "source": "rec-16",
+          "target": "rec-04",
+          "value": 0.0701
+        },
+        {
+          "source": "rec-16",
+          "target": "rec-00",
+          "value": 0.0768
+        },
+        {
+          "source": "rec-16",
+          "target": "rec-12",
+          "value": 0.1105
+        },
+        {
+          "source": "rec-16",
+          "target": "rec-05",
+          "value": 0.1389
+        },
+        {
+          "source": "rec-16",
+          "target": "rec-17",
+          "value": 0.1439
+        },
+        {
+          "source": "rec-17",
+          "target": "rec-09",
+          "value": 0.0403
+        },
+        {
+          "source": "rec-17",
+          "target": "rec-05",
+          "value": 0.0682
+        },
+        {
+          "source": "rec-17",
+          "target": "rec-21",
+          "value": 0.1089
+        },
+        {
+          "source": "rec-17",
+          "target": "rec-01",
+          "value": 0.1172
+        },
+        {
+          "source": "rec-17",
+          "target": "rec-16",
+          "value": 0.1439
+        },
+        {
+          "source": "rec-17",
+          "target": "rec-20",
+          "value": 0.1616
+        },
+        {
+          "source": "rec-18",
+          "target": "rec-22",
+          "value": 0.0741
+        },
+        {
+          "source": "rec-18",
+          "target": "rec-06",
+          "value": 0.0946
+        },
+        {
+          "source": "rec-18",
+          "target": "rec-02",
+          "value": 0.1535
+        },
+        {
+          "source": "rec-18",
+          "target": "rec-10",
+          "value": 0.1809
+        },
+        {
+          "source": "rec-18",
+          "target": "rec-14",
+          "value": 0.202
+        },
+        {
+          "source": "rec-18",
+          "target": "rec-19",
+          "value": 0.2442
+        },
+        {
+          "source": "rec-19",
+          "target": "rec-11",
+          "value": 0.0463
+        },
+        {
+          "source": "rec-19",
+          "target": "rec-03",
+          "value": 0.1166
+        },
+        {
+          "source": "rec-19",
+          "target": "rec-15",
+          "value": 0.1198
+        },
+        {
+          "source": "rec-19",
+          "target": "rec-13",
+          "value": 0.1602
+        },
+        {
+          "source": "rec-19",
+          "target": "rec-23",
+          "value": 0.1765
+        },
+        {
+          "source": "rec-19",
+          "target": "rec-07",
+          "value": 0.1941
+        },
+        {
+          "source": "rec-20",
+          "target": "rec-16",
+          "value": 0.0299
+        },
+        {
+          "source": "rec-20",
+          "target": "rec-04",
+          "value": 0.0574
+        },
+        {
+          "source": "rec-20",
+          "target": "rec-00",
+          "value": 0.0637
+        },
+        {
+          "source": "rec-20",
+          "target": "rec-12",
+          "value": 0.0956
+        },
+        {
+          "source": "rec-20",
+          "target": "rec-05",
+          "value": 0.1441
+        },
+        {
+          "source": "rec-20",
+          "target": "rec-17",
+          "value": 0.1616
+        },
+        {
+          "source": "rec-21",
+          "target": "rec-09",
+          "value": 0.0885
+        },
+        {
+          "source": "rec-21",
+          "target": "rec-07",
+          "value": 0.1002
+        },
+        {
+          "source": "rec-21",
+          "target": "rec-01",
+          "value": 0.1051
+        },
+        {
+          "source": "rec-21",
+          "target": "rec-17",
+          "value": 0.1089
+        },
+        {
+          "source": "rec-21",
+          "target": "rec-13",
+          "value": 0.1426
+        },
+        {
+          "source": "rec-21",
+          "target": "rec-05",
+          "value": 0.1535
+        },
+        {
+          "source": "rec-22",
+          "target": "rec-18",
+          "value": 0.0741
+        },
+        {
+          "source": "rec-22",
+          "target": "rec-06",
+          "value": 0.1193
+        },
+        {
+          "source": "rec-22",
+          "target": "rec-02",
+          "value": 0.1524
+        },
+        {
+          "source": "rec-22",
+          "target": "rec-14",
+          "value": 0.1527
+        },
+        {
+          "source": "rec-22",
+          "target": "rec-10",
+          "value": 0.1681
+        },
+        {
+          "source": "rec-22",
+          "target": "rec-19",
+          "value": 0.216
+        },
+        {
+          "source": "rec-23",
+          "target": "rec-03",
+          "value": 0.0805
+        },
+        {
+          "source": "rec-23",
+          "target": "rec-15",
+          "value": 0.0967
+        },
+        {
+          "source": "rec-23",
+          "target": "rec-13",
+          "value": 0.1241
+        },
+        {
+          "source": "rec-23",
+          "target": "rec-11",
+          "value": 0.1345
+        },
+        {
+          "source": "rec-23",
+          "target": "rec-07",
+          "value": 0.14
+        },
+        {
+          "source": "rec-23",
+          "target": "rec-01",
+          "value": 0.1609
+        }
+      ]
+    }
+  ],
+  "coordinates": [
+    {
+      "id": "landmark-3d",
+      "dataset_id": "sensor-condition",
+      "space_id": "sensor-space",
+      "name": "metric-space lift (3D)",
+      "dimension": 3,
+      "record_positions": [
+        {
+          "record_id": "rec-00",
+          "position": [
+            0.6433,
+            0.1902,
+            0
+          ]
+        },
+        {
+          "record_id": "rec-01",
+          "position": [
+            0.7277,
+            0.5737,
+            0.5668
+          ]
+        },
+        {
+          "record_id": "rec-02",
+          "position": [
+            0.2847,
+            1.3723,
+            1.1283
+          ]
+        },
+        {
+          "record_id": "rec-03",
+          "position": [
+            -0.5836,
+            0.8718,
+            1.326
+          ]
+        },
+        {
+          "record_id": "rec-04",
+          "position": [
+            0.3228,
+            0.1759,
+            0.5592
+          ]
+        },
+        {
+          "record_id": "rec-05",
+          "position": [
+            -0.1237,
+            0.5537,
+            0.8891
+          ]
+        },
+        {
+          "record_id": "rec-06",
+          "position": [
+            -0.8541,
+            1.3092,
+            0.8295
+          ]
+        },
+        {
+          "record_id": "rec-07",
+          "position": [
+            -1.5179,
+            0.7078,
+            0.1661
+          ]
+        },
+        {
+          "record_id": "rec-08",
+          "position": [
+            -0.3122,
+            0.1666,
+            0.5407
+          ]
+        },
+        {
+          "record_id": "rec-09",
+          "position": [
+            -0.8284,
+            0.6462,
+            0.3361
+          ]
+        },
+        {
+          "record_id": "rec-10",
+          "position": [
+            -1.2157,
+            1.1868,
+            -0.3448
+          ]
+        },
+        {
+          "record_id": "rec-11",
+          "position": [
+            -0.904,
+            0.713,
+            -1.2332
+          ]
+        },
+        {
+          "record_id": "rec-12",
+          "position": [
+            -0.6132,
+            0.3038,
+            0
+          ]
+        },
+        {
+          "record_id": "rec-13",
+          "position": [
+            -0.724,
+            0.6513,
+            -0.564
+          ]
+        },
+        {
+          "record_id": "rec-14",
+          "position": [
+            -0.3125,
+            1.2642,
+            -1.2382
+          ]
+        },
+        {
+          "record_id": "rec-15",
+          "position": [
+            0.585,
+            0.8944,
+            -1.3292
+          ]
+        },
+        {
+          "record_id": "rec-16",
+          "position": [
+            -0.3243,
+            0.2194,
+            -0.5617
+          ]
+        },
+        {
+          "record_id": "rec-17",
+          "position": [
+            0.1248,
+            0.6216,
+            -0.8969
+          ]
+        },
+        {
+          "record_id": "rec-18",
+          "position": [
+            0.8638,
+            1.2662,
+            -0.8389
+          ]
+        },
+        {
+          "record_id": "rec-19",
+          "position": [
+            1.5314,
+            0.8151,
+            -0.1676
+          ]
+        },
+        {
+          "record_id": "rec-20",
+          "position": [
+            0.3104,
+            0.2031,
+            -0.5376
+          ]
+        },
+        {
+          "record_id": "rec-21",
+          "position": [
+            0.8688,
+            0.6903,
+            -0.3525
+          ]
+        },
+        {
+          "record_id": "rec-22",
+          "position": [
+            1.1334,
+            1.3243,
+            0.3215
+          ]
+        },
+        {
+          "record_id": "rec-23",
+          "position": [
+            0.8846,
+            0.7883,
+            1.2067
+          ]
+        }
+      ]
+    },
+    {
+      "id": "landmark-2d",
+      "dataset_id": "sensor-condition",
+      "space_id": "sensor-space",
+      "name": "flat projection (2D)",
+      "dimension": 2,
+      "record_positions": [
+        {
+          "record_id": "rec-00",
+          "position": [
+            0.6433,
+            0
+          ]
+        },
+        {
+          "record_id": "rec-01",
+          "position": [
+            0.7277,
+            0.5668
+          ]
+        },
+        {
+          "record_id": "rec-02",
+          "position": [
+            0.2847,
+            1.1283
+          ]
+        },
+        {
+          "record_id": "rec-03",
+          "position": [
+            -0.5836,
+            1.326
+          ]
+        },
+        {
+          "record_id": "rec-04",
+          "position": [
+            0.3228,
+            0.5592
+          ]
+        },
+        {
+          "record_id": "rec-05",
+          "position": [
+            -0.1237,
+            0.8891
+          ]
+        },
+        {
+          "record_id": "rec-06",
+          "position": [
+            -0.8541,
+            0.8295
+          ]
+        },
+        {
+          "record_id": "rec-07",
+          "position": [
+            -1.5179,
+            0.1661
+          ]
+        },
+        {
+          "record_id": "rec-08",
+          "position": [
+            -0.3122,
+            0.5407
+          ]
+        },
+        {
+          "record_id": "rec-09",
+          "position": [
+            -0.8284,
+            0.3361
+          ]
+        },
+        {
+          "record_id": "rec-10",
+          "position": [
+            -1.2157,
+            -0.3448
+          ]
+        },
+        {
+          "record_id": "rec-11",
+          "position": [
+            -0.904,
+            -1.2332
+          ]
+        },
+        {
+          "record_id": "rec-12",
+          "position": [
+            -0.6132,
+            0
+          ]
+        },
+        {
+          "record_id": "rec-13",
+          "position": [
+            -0.724,
+            -0.564
+          ]
+        },
+        {
+          "record_id": "rec-14",
+          "position": [
+            -0.3125,
+            -1.2382
+          ]
+        },
+        {
+          "record_id": "rec-15",
+          "position": [
+            0.585,
+            -1.3292
+          ]
+        },
+        {
+          "record_id": "rec-16",
+          "position": [
+            -0.3243,
+            -0.5617
+          ]
+        },
+        {
+          "record_id": "rec-17",
+          "position": [
+            0.1248,
+            -0.8969
+          ]
+        },
+        {
+          "record_id": "rec-18",
+          "position": [
+            0.8638,
+            -0.8389
+          ]
+        },
+        {
+          "record_id": "rec-19",
+          "position": [
+            1.5314,
+            -0.1676
+          ]
+        },
+        {
+          "record_id": "rec-20",
+          "position": [
+            0.3104,
+            -0.5376
+          ]
+        },
+        {
+          "record_id": "rec-21",
+          "position": [
+            0.8688,
+            -0.3525
+          ]
+        },
+        {
+          "record_id": "rec-22",
+          "position": [
+            1.1334,
+            0.3215
+          ]
+        },
+        {
+          "record_id": "rec-23",
+          "position": [
+            0.8846,
+            1.2067
+          ]
+        }
+      ]
+    },
+    {
+      "id": "diffusion-0",
+      "dataset_id": "sensor-condition",
+      "space_id": "sensor-space",
+      "name": "reverse diffusion step 0",
+      "dimension": 3,
+      "record_positions": [
+        {
+          "record_id": "rec-00",
+          "position": [
+            0.3797,
+            0.0346,
+            -0.0085
+          ]
+        },
+        {
+          "record_id": "rec-01",
+          "position": [
+            0.4843,
+            0.7416,
+            0.629
+          ]
+        },
+        {
+          "record_id": "rec-02",
+          "position": [
+            0.3011,
+            1.356,
+            1.2606
+          ]
+        },
+        {
+          "record_id": "rec-03",
+          "position": [
+            -0.5994,
+            0.7977,
+            1.0103
+          ]
+        },
+        {
+          "record_id": "rec-04",
+          "position": [
+            0.215,
+            0,
+            0.8134
+          ]
+        },
+        {
+          "record_id": "rec-05",
+          "position": [
+            -0.2932,
+            0.3577,
+            1.0186
+          ]
+        },
+        {
+          "record_id": "rec-06",
+          "position": [
+            -1.1381,
+            1.3531,
+            1.078
+          ]
+        },
+        {
+          "record_id": "rec-07",
+          "position": [
+            -1.5677,
+            0.7805,
+            0.3621
+          ]
+        },
+        {
+          "record_id": "rec-08",
+          "position": [
+            -0.3647,
+            0.3232,
+            0.3926
+          ]
+        },
+        {
+          "record_id": "rec-09",
+          "position": [
+            -1.0728,
+            0.6392,
+            0.5144
+          ]
+        },
+        {
+          "record_id": "rec-10",
+          "position": [
+            -0.9709,
+            1.3109,
+            -0.2718
+          ]
+        },
+        {
+          "record_id": "rec-11",
+          "position": [
+            -0.6128,
+            0.632,
+            -0.8864
+          ]
+        },
+        {
+          "record_id": "rec-12",
+          "position": [
+            -0.722,
+            0.388,
+            -0.1617
+          ]
+        },
+        {
+          "record_id": "rec-13",
+          "position": [
+            -0.9627,
+            0.7327,
+            -0.6909
+          ]
+        },
+        {
+          "record_id": "rec-14",
+          "position": [
+            -0.2855,
+            1.1629,
+            -0.9929
+          ]
+        },
+        {
+          "record_id": "rec-15",
+          "position": [
+            0.7404,
+            1.0932,
+            -1.3408
+          ]
+        },
+        {
+          "record_id": "rec-16",
+          "position": [
+            -0.1595,
+            0.0459,
+            -0.3082
+          ]
+        },
+        {
+          "record_id": "rec-17",
+          "position": [
+            0.1236,
+            0.6339,
+            -0.7025
+          ]
+        },
+        {
+          "record_id": "rec-18",
+          "position": [
+            0.6219,
+            1.1174,
+            -0.6024
+          ]
+        },
+        {
+          "record_id": "rec-19",
+          "position": [
+            1.3909,
+            0.6354,
+            -0.0578
+          ]
+        },
+        {
+          "record_id": "rec-20",
+          "position": [
+            -0.0077,
+            0.2383,
+            -0.6051
+          ]
+        },
+        {
+          "record_id": "rec-21",
+          "position": [
+            0.9094,
+            0.8121,
+            -0.4291
+          ]
+        },
+        {
+          "record_id": "rec-22",
+          "position": [
+            1.2046,
+            1.2723,
+            0.0865
+          ]
+        },
+        {
+          "record_id": "rec-23",
+          "position": [
+            1.1758,
+            0.8913,
+            1.2342
+          ]
+        }
+      ]
+    },
+    {
+      "id": "diffusion-1",
+      "dataset_id": "sensor-condition",
+      "space_id": "sensor-space",
+      "name": "reverse diffusion step 1",
+      "dimension": 3,
+      "record_positions": [
+        {
+          "record_id": "rec-00",
+          "position": [
+            0.3316,
+            0.057,
+            -0.0074
+          ]
+        },
+        {
+          "record_id": "rec-01",
+          "position": [
+            0.4233,
+            0.7264,
+            0.5479
+          ]
+        },
+        {
+          "record_id": "rec-02",
+          "position": [
+            0.2604,
+            1.3471,
+            1.0961
+          ]
+        },
+        {
+          "record_id": "rec-03",
+          "position": [
+            -0.5227,
+            0.7978,
+            0.8802
+          ]
+        },
+        {
+          "record_id": "rec-04",
+          "position": [
+            0.1881,
+            0.0269,
+            0.7092
+          ]
+        },
+        {
+          "record_id": "rec-05",
+          "position": [
+            -0.2546,
+            0.3917,
+            0.8876
+          ]
+        },
+        {
+          "record_id": "rec-06",
+          "position": [
+            -0.9944,
+            1.3446,
+            0.9369
+          ]
+        },
+        {
+          "record_id": "rec-07",
+          "position": [
+            -1.3669,
+            0.7828,
+            0.315
+          ]
+        },
+        {
+          "record_id": "rec-08",
+          "position": [
+            -0.3174,
+            0.3087,
+            0.3424
+          ]
+        },
+        {
+          "record_id": "rec-09",
+          "position": [
+            -0.9344,
+            0.6371,
+            0.448
+          ]
+        },
+        {
+          "record_id": "rec-10",
+          "position": [
+            -0.8487,
+            1.3079,
+            -0.2401
+          ]
+        },
+        {
+          "record_id": "rec-11",
+          "position": [
+            -0.5344,
+            0.6534,
+            -0.7735
+          ]
+        },
+        {
+          "record_id": "rec-12",
+          "position": [
+            -0.6289,
+            0.3652,
+            -0.141
+          ]
+        },
+        {
+          "record_id": "rec-13",
+          "position": [
+            -0.8384,
+            0.7186,
+            -0.6029
+          ]
+        },
+        {
+          "record_id": "rec-14",
+          "position": [
+            -0.2511,
+            1.1788,
+            -0.8687
+          ]
+        },
+        {
+          "record_id": "rec-15",
+          "position": [
+            0.6454,
+            1.0554,
+            -1.1697
+          ]
+        },
+        {
+          "record_id": "rec-16",
+          "position": [
+            -0.1385,
+            0.0669,
+            -0.2687
+          ]
+        },
+        {
+          "record_id": "rec-17",
+          "position": [
+            0.1087,
+            0.6325,
+            -0.613
+          ]
+        },
+        {
+          "record_id": "rec-18",
+          "position": [
+            0.5401,
+            1.1391,
+            -0.5283
+          ]
+        },
+        {
+          "record_id": "rec-19",
+          "position": [
+            1.2126,
+            0.6563,
+            -0.0511
+          ]
+        },
+        {
+          "record_id": "rec-20",
+          "position": [
+            -0.0062,
+            0.2346,
+            -0.5276
+          ]
+        },
+        {
+          "record_id": "rec-21",
+          "position": [
+            0.7938,
+            0.7878,
+            -0.3746
+          ]
+        },
+        {
+          "record_id": "rec-22",
+          "position": [
+            1.0481,
+            1.2742,
+            0.0724
+          ]
+        },
+        {
+          "record_id": "rec-23",
+          "position": [
+            1.025,
+            0.8794,
+            1.0754
+          ]
+        }
+      ]
+    },
+    {
+      "id": "diffusion-2",
+      "dataset_id": "sensor-condition",
+      "space_id": "sensor-space",
+      "name": "reverse diffusion step 2",
+      "dimension": 3,
+      "record_positions": [
+        {
+          "record_id": "rec-00",
+          "position": [
+            0.2259,
+            0.1064,
+            -0.005
+          ]
+        },
+        {
+          "record_id": "rec-01",
+          "position": [
+            0.2889,
+            0.6929,
+            0.3696
+          ]
+        },
+        {
+          "record_id": "rec-02",
+          "position": [
+            0.1708,
+            1.3278,
+            0.734
+          ]
+        },
+        {
+          "record_id": "rec-03",
+          "position": [
+            -0.3539,
+            0.798,
+            0.5939
+          ]
+        },
+        {
+          "record_id": "rec-04",
+          "position": [
+            0.1287,
+            0.086,
+            0.48
+          ]
+        },
+        {
+          "record_id": "rec-05",
+          "position": [
+            -0.1699,
+            0.4664,
+            0.5995
+          ]
+        },
+        {
+          "record_id": "rec-06",
+          "position": [
+            -0.6783,
+            1.326,
+            0.6263
+          ]
+        },
+        {
+          "record_id": "rec-07",
+          "position": [
+            -0.9253,
+            0.7879,
+            0.2115
+          ]
+        },
+        {
+          "record_id": "rec-08",
+          "position": [
+            -0.2133,
+            0.2767,
+            0.2317
+          ]
+        },
+        {
+          "record_id": "rec-09",
+          "position": [
+            -0.6299,
+            0.6325,
+            0.302
+          ]
+        },
+        {
+          "record_id": "rec-10",
+          "position": [
+            -0.5797,
+            1.3012,
+            -0.1701
+          ]
+        },
+        {
+          "record_id": "rec-11",
+          "position": [
+            -0.3619,
+            0.7002,
+            -0.5251
+          ]
+        },
+        {
+          "record_id": "rec-12",
+          "position": [
+            -0.4241,
+            0.315,
+            -0.0954
+          ]
+        },
+        {
+          "record_id": "rec-13",
+          "position": [
+            -0.5649,
+            0.6876,
+            -0.4091
+          ]
+        },
+        {
+          "record_id": "rec-14",
+          "position": [
+            -0.1753,
+            1.2138,
+            -0.5956
+          ]
+        },
+        {
+          "record_id": "rec-15",
+          "position": [
+            0.4365,
+            0.9723,
+            -0.7932
+          ]
+        },
+        {
+          "record_id": "rec-16",
+          "position": [
+            -0.0923,
+            0.1131,
+            -0.1818
+          ]
+        },
+        {
+          "record_id": "rec-17",
+          "position": [
+            0.076,
+            0.6294,
+            -0.416
+          ]
+        },
+        {
+          "record_id": "rec-18",
+          "position": [
+            0.3601,
+            1.187,
+            -0.3652
+          ]
+        },
+        {
+          "record_id": "rec-19",
+          "position": [
+            0.8203,
+            0.7022,
+            -0.0363
+          ]
+        },
+        {
+          "record_id": "rec-20",
+          "position": [
+            -0.0027,
+            0.2266,
+            -0.357
+          ]
+        },
+        {
+          "record_id": "rec-21",
+          "position": [
+            0.5396,
+            0.7345,
+            -0.2546
+          ]
+        },
+        {
+          "record_id": "rec-22",
+          "position": [
+            0.7039,
+            1.2784,
+            0.0413
+          ]
+        },
+        {
+          "record_id": "rec-23",
+          "position": [
+            0.6934,
+            0.8532,
+            0.7261
+          ]
+        }
+      ]
+    },
+    {
+      "id": "diffusion-3",
+      "dataset_id": "sensor-condition",
+      "space_id": "sensor-space",
+      "name": "reverse diffusion step 3",
+      "dimension": 3,
+      "record_positions": [
+        {
+          "record_id": "rec-00",
+          "position": [
+            0.1201,
+            0.1558,
+            -0.0026
+          ]
+        },
+        {
+          "record_id": "rec-01",
+          "position": [
+            0.1545,
+            0.6594,
+            0.1913
+          ]
+        },
+        {
+          "record_id": "rec-02",
+          "position": [
+            0.0812,
+            1.3084,
+            0.372
+          ]
+        },
+        {
+          "record_id": "rec-03",
+          "position": [
+            -0.1852,
+            0.7982,
+            0.3077
+          ]
+        },
+        {
+          "record_id": "rec-04",
+          "position": [
+            0.0693,
+            0.1452,
+            0.2507
+          ]
+        },
+        {
+          "record_id": "rec-05",
+          "position": [
+            -0.0851,
+            0.5411,
+            0.3114
+          ]
+        },
+        {
+          "record_id": "rec-06",
+          "position": [
+            -0.3623,
+            1.3075,
+            0.3157
+          ]
+        },
+        {
+          "record_id": "rec-07",
+          "position": [
+            -0.4836,
+            0.7929,
+            0.108
+          ]
+        },
+        {
+          "record_id": "rec-08",
+          "position": [
+            -0.1093,
+            0.2448,
+            0.1211
+          ]
+        },
+        {
+          "record_id": "rec-09",
+          "position": [
+            -0.3253,
+            0.6279,
+            0.156
+          ]
+        },
+        {
+          "record_id": "rec-10",
+          "position": [
+            -0.3107,
+            1.2945,
+            -0.1002
+          ]
+        },
+        {
+          "record_id": "rec-11",
+          "position": [
+            -0.1893,
+            0.7471,
+            -0.2767
+          ]
+        },
+        {
+          "record_id": "rec-12",
+          "position": [
+            -0.2194,
+            0.2647,
+            -0.0498
+          ]
+        },
+        {
+          "record_id": "rec-13",
+          "position": [
+            -0.2914,
+            0.6567,
+            -0.2154
+          ]
+        },
+        {
+          "record_id": "rec-14",
+          "position": [
+            -0.0995,
+            1.2489,
+            -0.3224
+          ]
+        },
+        {
+          "record_id": "rec-15",
+          "position": [
+            0.2276,
+            0.8892,
+            -0.4167
+          ]
+        },
+        {
+          "record_id": "rec-16",
+          "position": [
+            -0.046,
+            0.1593,
+            -0.0949
+          ]
+        },
+        {
+          "record_id": "rec-17",
+          "position": [
+            0.0433,
+            0.6262,
+            -0.2189
+          ]
+        },
+        {
+          "record_id": "rec-18",
+          "position": [
+            0.1801,
+            1.2349,
+            -0.2021
+          ]
+        },
+        {
+          "record_id": "rec-19",
+          "position": [
+            0.4281,
+            0.7482,
+            -0.0214
+          ]
+        },
+        {
+          "record_id": "rec-20",
+          "position": [
+            0.0007,
+            0.2186,
+            -0.1864
+          ]
+        },
+        {
+          "record_id": "rec-21",
+          "position": [
+            0.2854,
+            0.6811,
+            -0.1347
+          ]
+        },
+        {
+          "record_id": "rec-22",
+          "position": [
+            0.3596,
+            1.2826,
+            0.0102
+          ]
+        },
+        {
+          "record_id": "rec-23",
+          "position": [
+            0.3618,
+            0.827,
+            0.3767
+          ]
+        }
+      ]
+    },
+    {
+      "id": "diffusion-4",
+      "dataset_id": "sensor-condition",
+      "space_id": "sensor-space",
+      "name": "reverse diffusion step 4",
+      "dimension": 3,
+      "record_positions": [
+        {
+          "record_id": "rec-00",
+          "position": [
+            0.072,
+            0.1783,
+            -0.0015
+          ]
+        },
+        {
+          "record_id": "rec-01",
+          "position": [
+            0.0934,
+            0.6442,
+            0.1103
+          ]
+        },
+        {
+          "record_id": "rec-02",
+          "position": [
+            0.0405,
+            1.2995,
+            0.2074
+          ]
+        },
+        {
+          "record_id": "rec-03",
+          "position": [
+            -0.1085,
+            0.7983,
+            0.1776
+          ]
+        },
+        {
+          "record_id": "rec-04",
+          "position": [
+            0.0424,
+            0.1721,
+            0.1465
+          ]
+        },
+        {
+          "record_id": "rec-05",
+          "position": [
+            -0.0466,
+            0.5751,
+            0.1804
+          ]
+        },
+        {
+          "record_id": "rec-06",
+          "position": [
+            -0.2186,
+            1.299,
+            0.1746
+          ]
+        },
+        {
+          "record_id": "rec-07",
+          "position": [
+            -0.2828,
+            0.7952,
+            0.0609
+          ]
+        },
+        {
+          "record_id": "rec-08",
+          "position": [
+            -0.062,
+            0.2302,
+            0.0708
+          ]
+        },
+        {
+          "record_id": "rec-09",
+          "position": [
+            -0.1869,
+            0.6258,
+            0.0897
+          ]
+        },
+        {
+          "record_id": "rec-10",
+          "position": [
+            -0.1885,
+            1.2914,
+            -0.0684
+          ]
+        },
+        {
+          "record_id": "rec-11",
+          "position": [
+            -0.1109,
+            0.7685,
+            -0.1638
+          ]
+        },
+        {
+          "record_id": "rec-12",
+          "position": [
+            -0.1263,
+            0.2419,
+            -0.029
+          ]
+        },
+        {
+          "record_id": "rec-13",
+          "position": [
+            -0.1671,
+            0.6426,
+            -0.1273
+          ]
+        },
+        {
+          "record_id": "rec-14",
+          "position": [
+            -0.0651,
+            1.2648,
+            -0.1982
+          ]
+        },
+        {
+          "record_id": "rec-15",
+          "position": [
+            0.1327,
+            0.8515,
+            -0.2456
+          ]
+        },
+        {
+          "record_id": "rec-16",
+          "position": [
+            -0.025,
+            0.1803,
+            -0.0554
+          ]
+        },
+        {
+          "record_id": "rec-17",
+          "position": [
+            0.0284,
+            0.6248,
+            -0.1294
+          ]
+        },
+        {
+          "record_id": "rec-18",
+          "position": [
+            0.0982,
+            1.2566,
+            -0.1279
+          ]
+        },
+        {
+          "record_id": "rec-19",
+          "position": [
+            0.2497,
+            0.7691,
+            -0.0147
+          ]
+        },
+        {
+          "record_id": "rec-20",
+          "position": [
+            0.0023,
+            0.215,
+            -0.1088
+          ]
+        },
+        {
+          "record_id": "rec-21",
+          "position": [
+            0.1699,
+            0.6569,
+            -0.0802
+          ]
+        },
+        {
+          "record_id": "rec-22",
+          "position": [
+            0.2031,
+            1.2845,
+            -0.0039
+          ]
+        },
+        {
+          "record_id": "rec-23",
+          "position": [
+            0.211,
+            0.8151,
+            0.2179
+          ]
+        }
+      ]
+    }
+  ],
+  "timelines": [
+    {
+      "id": "condition-morph",
+      "dataset_id": "sensor-condition",
+      "name": "2D projection to 3D metric space",
+      "steps": [
+        {
+          "name": "flat projection",
+          "coordinate_id": "landmark-2d",
+          "property_id": "density",
+          "t": 0
+        },
+        {
+          "name": "metric-space lift",
+          "coordinate_id": "landmark-3d",
+          "property_id": "entropy",
+          "t": 1
+        }
+      ]
+    },
+    {
+      "id": "reverse-diffusion",
+      "dataset_id": "sensor-condition",
+      "name": "reverse diffusion to representatives",
+      "steps": [
+        {
+          "name": "reverse diffusion step 0",
+          "coordinate_id": "diffusion-0",
+          "property_id": "anomaly",
+          "t": 0
+        },
+        {
+          "name": "reverse diffusion step 1",
+          "coordinate_id": "diffusion-1",
+          "property_id": "anomaly",
+          "t": 0.25
+        },
+        {
+          "name": "reverse diffusion step 2",
+          "coordinate_id": "diffusion-2",
+          "property_id": "anomaly",
+          "t": 0.5
+        },
+        {
+          "name": "reverse diffusion step 3",
+          "coordinate_id": "diffusion-3",
+          "property_id": "anomaly",
+          "t": 0.75
+        },
+        {
+          "name": "reverse diffusion step 4",
+          "coordinate_id": "diffusion-4",
+          "property_id": "anomaly",
+          "t": 1
+        }
+      ]
+    }
+  ],
+  "events": [],
+  "views": [
+    {
+      "id": "space-overview",
+      "kind": "metric-space",
+      "name": "Condition metric space",
+      "spaceId": "sensor-space",
+      "coordinateId": "landmark-3d",
+      "propertyId": "anomaly"
+    },
+    {
+      "id": "relation-overview",
+      "kind": "relation-matrix",
+      "name": "Pairwise metric matrix",
+      "relationId": "sensor-metric"
+    }
+  ],
+  "diagnostics": []
+}

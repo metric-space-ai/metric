@@ -1,3 +1,833 @@
+import { loadVisualDocument, normalizeVisualInput, VisualSpace } from "./data/index.js";
+import { createLayerFromDescriptor } from "./layers/index.js";
+import { MetricVisualRuntime } from "./runtime/index.js";
+import { createMiniatureHeroRuntimeOptions } from "./style/miniature/index.js";
+import { createTubeRibbonPathLayerDescriptor } from "./curves/index.js";
+import { RecordPreviewPanel } from "./interaction/index.js";
+import {
+  DenseFieldView,
+  DynamicsView,
+  MappingView,
+  MetricSpaceView,
+  NeighborhoodGraphView,
+  RelationMatrixView,
+  SpacePropertiesView,
+} from "./views/index.js";
+import { VisualLayer } from "./views/VisualLayer.js";
+import { createChannel, createStringChannel } from "./views/view-utils.js";
+
+/**
+ * Create the public METRIC visual surface.
+ *
+ * This is the reusable engine entry point. It owns a MetricVisualRuntime and
+ * exposes semantic commands; hero pages are expected to call these commands
+ * instead of assembling renderers or page-specific layer pipelines.
+ */
+export async function createMetricVisual(options = {}) {
+  const document = await resolveMetricVisualInput(options.evidence ?? options.document ?? options.url ?? options.input, options);
+  const canvas = resolveMetricVisualCanvas(options);
+  const setup = createMiniatureHeroRuntimeOptions({
+    canvas,
+    layerFactory: createLayerFromDescriptor,
+    profileOptions: { id: options.profileId || "metric-visual-profile", ...(options.profileOptions || {}) },
+    controls: { enabled: true, rotateSpeed: 0.0045, ...(options.controls || {}) },
+    hoverFocus: {
+      enabled: true,
+      thresholdPx: 38,
+      clearOnLeave: false,
+      ...(options.hoverFocus || {}),
+    },
+    ...(options.runtime || {}),
+  });
+  const runtime = new MetricVisualRuntime(setup.runtimeOptions);
+  setup.style?.attachRuntime?.(runtime);
+  runtime.setDocument(document, { views: false });
+  const surface = new MetricVisualSurface({ document, canvas, runtime, setup });
+
+  if (options.view) {
+    surface.show(options.view, options);
+  }
+  if (options.start !== false) runtime.start();
+  runtime.renderOnce();
+  return surface;
+}
+
+export async function showMetricSpace(evidence, options = {}) {
+  const visual = await createMetricVisual({ ...options, evidence });
+  return visual.showMetricSpace(options);
+}
+
+export async function showRelationMatrix(evidence, options = {}) {
+  const visual = await createMetricVisual({ ...options, evidence });
+  return visual.showRelationMatrix(options);
+}
+
+export async function showNeighborhoodGraph(evidence, options = {}) {
+  const visual = await createMetricVisual({ ...options, evidence });
+  return visual.showNeighborhoodGraph(options);
+}
+
+export async function showSpaceProperties(evidence, options = {}) {
+  const visual = await createMetricVisual({ ...options, evidence });
+  return visual.showSpaceProperties(options);
+}
+
+export async function showMapping(evidence, options = {}) {
+  const visual = await createMetricVisual({ ...options, evidence });
+  return visual.showMapping(options);
+}
+
+export async function showDynamics(evidence, options = {}) {
+  const visual = await createMetricVisual({ ...options, evidence });
+  return visual.showDynamics(options);
+}
+
+export class MetricVisualSurface {
+  constructor({ document, canvas, runtime, setup }) {
+    this.document = document;
+    this.visualSpace = VisualSpace.fromDocument(document);
+    this.canvas = canvas;
+    this.runtime = runtime;
+    this.setup = setup;
+    this.views = [];
+    this.descriptors = [];
+    this.previewPanel = null;
+    this.previewSubscriptions = [];
+  }
+
+  show(kind, options = {}) {
+    const normalized = String(kind).replace(/_/g, "-");
+    if (normalized === "metric-space") return this.showMetricSpace(options);
+    if (normalized === "relation-matrix") return this.showRelationMatrix(options);
+    if (normalized === "neighborhood-graph") return this.showNeighborhoodGraph(options);
+    if (normalized === "space-properties" || normalized === "properties") return this.showSpaceProperties(options);
+    if (normalized === "mapping") return this.showMapping(options);
+    if (normalized === "dynamics") return this.showDynamics(options);
+    if (normalized === "condition-monitoring") return this.showConditionMonitoring(options);
+    if (normalized === "mixed-records") return this.showMixedRecords(options);
+    if (normalized === "cross-space") return this.showCrossSpace(options);
+    if (normalized === "relation-matrix-neighborhood") return this.showRelationMatrixNeighborhood(options);
+    throw new Error(`Unsupported METRIC visual view: ${kind}`);
+  }
+
+  setViews(views, options = {}) {
+    const descriptors = [];
+    for (const view of toMetricVisualArray(views)) {
+      if (!view) continue;
+      if (typeof view.toLayerDescriptors === "function") {
+        descriptors.push(...view.toLayerDescriptors());
+      } else {
+        descriptors.push(view);
+      }
+    }
+    return this.setLayerDescriptors(descriptors, options);
+  }
+
+  setLayerDescriptors(descriptors, options = {}) {
+    const next = toMetricVisualArray(descriptors).filter(Boolean);
+    this.descriptors = options.append ? this.descriptors.concat(next) : next;
+    this.runtime.setLayerDescriptors(this.descriptors, { source: options.source || "metric-visual-surface" });
+    this.updatePreviewIndex();
+    this.runtime.renderOnce();
+    return this;
+  }
+
+  addLayerDescriptors(descriptors, options = {}) {
+    return this.setLayerDescriptors(descriptors, { ...options, append: true });
+  }
+
+  setMotion(motion = "studio-drift", options = {}) {
+    if (motion === false || motion === "none" || motion == null) {
+      this.setup.style?.detachStyleMotion?.();
+      this.runtime.renderOnce();
+      return this;
+    }
+    this.setup.style?.setStyleMotion?.(motion, { attach: options.attach !== false });
+    if (options.start !== false) this.runtime.start();
+    this.runtime.renderOnce();
+    return this;
+  }
+
+  enableMotion(motion = "studio-drift", options = {}) {
+    return this.setMotion(motion, options);
+  }
+
+  setCamera(options = {}) {
+    if (options === false || options == null) return this;
+    this.runtime.setCameraOptions(options);
+    this.setup.style?.styleMotionController?.resetBase?.();
+    this.runtime.renderOnce();
+    return this;
+  }
+
+  showMetricSpace(options = {}) {
+    const view = MetricSpaceView.fromVisualSpace(this.document, normalizeMetricViewOptions(this.document, options));
+    this.views = [view];
+    const descriptors = view.toLayerDescriptors();
+    if (options.groundField) {
+      descriptors.splice(1, 0, ...propertyFieldDescriptors(this.document, options, view));
+    }
+    this.setLayerDescriptors(descriptors, { source: "showMetricSpace" });
+    return this.configurePreview(options);
+  }
+
+  showRelationMatrix(options = {}) {
+    const view = RelationMatrixView.fromVisualSpace(this.document, normalizeRelationOptions(this.document, options));
+    this.views = [view];
+    this.setViews([view], { source: "showRelationMatrix" });
+    return this.configurePreview(options);
+  }
+
+  showNeighborhoodGraph(options = {}) {
+    const view = NeighborhoodGraphView.fromVisualSpace(this.document, normalizeGraphOptions(this.document, options));
+    this.views = [view];
+    this.setViews([view], { source: "showNeighborhoodGraph" });
+    return this.configurePreview(options);
+  }
+
+  showSpaceProperties(options = {}) {
+    const normalized = normalizePropertyOptions(this.document, options);
+    const view = SpacePropertiesView.fromVisualSpace(this.document, normalized);
+    this.views = [view];
+    const descriptors = view.toLayerDescriptors();
+    descriptors.splice(1, 0, ...propertyFieldDescriptors(this.document, normalized, view.space));
+    this.setLayerDescriptors(descriptors, { source: "showSpaceProperties" });
+    return this.configurePreview(options);
+  }
+
+  showMapping(options = {}) {
+    const view = MappingView.fromVisualSpace(this.document, normalizeMappingOptions(this.document, options));
+    this.views = [view];
+    const descriptors = view.toLayerDescriptors();
+    const residual = residualVectorDescriptor(view, options);
+    if (residual) descriptors.push(residual);
+    this.setLayerDescriptors(descriptors, { source: "showMapping" });
+    return this.configurePreview(options);
+  }
+
+  showDynamics(options = {}) {
+    const view = DynamicsView.fromVisualSpace(this.document, normalizeMetricViewOptions(this.document, options));
+    this.views = [view];
+    const descriptors = view.toLayerDescriptors();
+    if (options.propertyField || options.groundField) {
+      descriptors.unshift(...propertyFieldDescriptors(this.document, {
+        ...options,
+        coordinateId: view.fittedStates?.[view.activeStep]?.coordinateId,
+        propertyId: options.propertyField || options.groundField,
+      }));
+    }
+    this.setLayerDescriptors(descriptors, { source: "showDynamics" });
+    return this.configurePreview(options);
+  }
+
+  showConditionMonitoring(options = {}) {
+    const normalized = normalizeMetricViewOptions(this.document, {
+      coordinateId: options.coordinateId || options.coordinate || "condition-3d",
+      scalarProperty: options.scalarProperty || options.colorBy || "anomaly",
+      labelProperty: options.labelProperty || options.labels || "cluster",
+      pointSize: options.pointSize ?? 1,
+      targetRadius: options.targetRadius ?? 1.54,
+      groundScale: options.groundScale ?? 1.82,
+      groundGeometry: {
+        gridScale: 10,
+        ...(options.groundGeometry || {}),
+      },
+      groundMaterial: {
+        alpha: 0.42,
+        gridAlpha: 0.055,
+        axisAlpha: 0.025,
+        baseColor: [0.83, 0.86, 0.81],
+        gridColor: [0.33, 0.4, 0.38],
+        axisXColor: [0.36, 0.42, 0.41],
+        axisZColor: [0.41, 0.37, 0.32],
+        ...(options.groundMaterial || {}),
+      },
+      groundProjectionAlpha: options.groundProjectionAlpha ?? 0.16,
+      labelFontSize: options.labelFontSize ?? 28,
+      labelLift: options.labelLift ?? 0.46,
+      labelOffsetRadius: options.labelOffsetRadius ?? 0.16,
+      labelMap: {
+        healthy: "normal regime",
+        drift: "drift regime",
+        fault: "fault regime",
+        recovery: "recovery",
+        ...(options.labelMap || {}),
+      },
+      ...options,
+    });
+    const space = MetricSpaceView.fromVisualSpace(this.document, normalized);
+    this.views = [space];
+    const descriptors = [
+      ...space.toLayerDescriptors(),
+      ...propertyFieldDescriptors(this.document, {
+        ...normalized,
+        propertyId: options.groundField || options.propertyField || "density",
+        alpha: options.fieldAlpha ?? 0.2,
+        radius: options.fieldRadius ?? 0.16,
+        material: {
+          contour: 0.1,
+          glow: 0.04,
+          ...(options.fieldMaterial || {}),
+        },
+      }, space),
+    ];
+    const path = recordTrajectoryDescriptor(space, {
+      id: options.pathId || "condition-monitoring:trajectory",
+      pathCount: options.pathCount || 16,
+      width: options.pathWidth ?? 3.4,
+      alpha: options.pathAlpha ?? 0.68,
+      color: options.pathColor || [0.12, 0.36, 0.42, 0.68],
+      order: 32,
+    });
+    if (path) descriptors.push(path);
+    this.setLayerDescriptors(descriptors, { source: "showConditionMonitoring" });
+    if (options.camera !== false) {
+      this.setCamera(options.camera || conditionMonitoringCamera());
+    }
+    this.setMotion(options.motion ?? conditionMonitoringMotion(), { start: options.startMotion !== false });
+    return this.configurePreview({ ...options, preview: options.preview ?? "time-series" });
+  }
+
+  showMixedRecords(options = {}) {
+    const normalized = normalizeMetricViewOptions(this.document, {
+      coordinateId: options.coordinateId || options.coordinate || "layout-3d",
+      colorProperty: options.colorProperty || options.glyphBy || options.recordType || "family",
+      labelProperty: options.labelProperty || options.labels || "family",
+      pointSize: options.pointSize ?? 1.15,
+      ...options,
+    });
+    const space = MetricSpaceView.fromVisualSpace(this.document, normalized);
+    this.views = [space];
+    const descriptors = space.toLayerDescriptors().map((descriptor) => (
+      descriptor.primitive === "InstancedPointLayer"
+        ? {
+          ...descriptor,
+          kind: "typed-glyph-scene",
+          primitive: "InstancedGlyphLayer",
+          metadata: { ...descriptor.metadata, role: "typed-glyphs", glyphBy: normalized.colorProperty || "record_type" },
+        }
+        : descriptor
+    ));
+    const graph = NeighborhoodGraphView.fromVisualSpace(this.document, {
+      coordinateId: normalized.coordinateId,
+      relationId: options.relationId || options.relation || "cross-metric",
+      colorProperty: normalized.colorProperty,
+      nodes: false,
+      topK: options.topK ?? 4,
+    });
+    descriptors.push(...graph.toLayerDescriptors());
+    this.setLayerDescriptors(descriptors, { source: "showMixedRecords" });
+    return this.configurePreview({ ...options, preview: options.preview ?? "record" });
+  }
+
+  showCrossSpace(options = {}) {
+    const left = MetricSpaceView.fromVisualSpace(this.document, normalizeMetricViewOptions(this.document, {
+      coordinateId: options.leftCoordinateId || options.coordinateA || "space-a-3d",
+      scalarProperty: options.scalarProperty || options.dependenceProperty || "local-dependence",
+      ground: false,
+      groundProjection: false,
+      labels: false,
+      targetRadius: 1.05,
+    }));
+    const right = MetricSpaceView.fromVisualSpace(this.document, normalizeMetricViewOptions(this.document, {
+      coordinateId: options.rightCoordinateId || options.coordinateB || "space-b-3d",
+      scalarProperty: options.scalarProperty || options.dependenceProperty || "local-dependence",
+      ground: false,
+      groundProjection: false,
+      labels: false,
+      targetRadius: 1.05,
+    }));
+    offsetPositionMap(left.positions, [-1.18, 0, 0]);
+    offsetPositionMap(right.positions, [1.18, 0, 0]);
+    this.views = [left, right];
+    const descriptors = [
+      sharedGroundDescriptor("cross-space:ground", { y: this.setup.stage?.grounding?.groundY ?? -0.58, width: 5.2, depth: 3.2 }),
+      ...left.toLayerDescriptors(),
+      ...right.toLayerDescriptors(),
+    ];
+    const bridge = pairedRecordBridgeDescriptor(left, right, options);
+    if (bridge) descriptors.push(bridge);
+    this.setLayerDescriptors(descriptors, { source: "showCrossSpace" });
+    return this.configurePreview({ ...options, preview: options.preview ?? "paired records" });
+  }
+
+  showRelationMatrixNeighborhood(options = {}) {
+    const matrix = RelationMatrixView.fromVisualSpace(this.document, normalizeRelationOptions(this.document, {
+      relationId: options.relationId || options.relation || "catalog-metric",
+      rect: options.matrixRect || [0.57, 0.2, 0.39, 0.62],
+      palette: options.palette || "metric",
+      symmetric: options.symmetric ?? true,
+      missingAlpha: 0,
+      materialAlpha: 0.98,
+    }));
+    const graph = NeighborhoodGraphView.fromVisualSpace(this.document, normalizeGraphOptions(this.document, {
+      coordinateId: options.coordinateId || options.coordinate || "catalog-3d",
+      relationId: options.relationId || options.relation || "catalog-metric",
+      colorProperty: options.colorProperty || "group",
+      topK: options.topK ?? 5,
+      size: options.pointSize ?? 1.2,
+    }));
+    this.views = [matrix, graph];
+    this.setLayerDescriptors([
+      ...graph.toLayerDescriptors(),
+      ...matrix.toLayerDescriptors().map((descriptor) => ({ ...descriptor, order: 200 })),
+    ], { source: "showRelationMatrixNeighborhood" });
+    return this.configurePreview({ ...options, preview: options.preview ?? "pair" });
+  }
+
+  configurePreview(options = {}) {
+    if (options.preview === false) {
+      this.disableRecordPreview();
+    } else if (options.preview) {
+      this.enableRecordPreview({ mode: options.preview, ...(options.previewOptions || {}) });
+    }
+    return this;
+  }
+
+  enableRecordPreview(options = {}) {
+    if (!this.previewPanel) {
+      this.previewPanel = new RecordPreviewPanel({
+        root: options.root || document.body,
+        resolver: (input) => buildRecordPreview(this, input),
+        ...(options.panel || {}),
+      });
+    } else if (options.panel?.resolver) {
+      this.previewPanel.setResolver(options.panel.resolver);
+    }
+    if (!this.previewSubscriptions.length) {
+      this.previewSubscriptions.push(this.runtime.on("hoverfocuschange", ({ focusTarget, pointer }) => {
+        if (!focusTarget?.recordId) {
+          this.previewPanel?.hide();
+          return;
+        }
+        const rect = this.canvas.getBoundingClientRect();
+        this.previewPanel?.show({
+          focusTarget,
+          recordId: focusTarget.recordId,
+          x: rect.left + (pointer?.x ?? pointer?.css?.x ?? 0),
+          y: rect.top + (pointer?.y ?? pointer?.css?.y ?? 0),
+        });
+      }));
+      this.previewSubscriptions.push(this.runtime.on("selectionchange", ({ selection }) => {
+        if (!selection?.recordId) return;
+        this.previewPanel?.show({
+          recordId: selection.recordId,
+          focusTarget: { recordId: selection.recordId },
+          x: window.innerWidth * 0.58,
+          y: window.innerHeight * 0.34,
+        });
+      }));
+      this.previewPointerMoveBound ||= ((event) => this.handlePreviewPointerMove(event));
+      this.hideRecordPreviewBound ||= (() => this.previewPanel?.hide());
+      this.canvas.addEventListener("pointermove", this.previewPointerMoveBound);
+      this.canvas.addEventListener("pointerleave", this.hideRecordPreviewBound);
+    }
+    this.previewMode = options.mode || "record";
+    return this;
+  }
+
+  disableRecordPreview() {
+    for (const unsubscribe of this.previewSubscriptions.splice(0)) unsubscribe?.();
+    if (this.previewPointerMoveBound) this.canvas.removeEventListener("pointermove", this.previewPointerMoveBound);
+    if (this.hideRecordPreviewBound) this.canvas.removeEventListener("pointerleave", this.hideRecordPreviewBound);
+    this.previewPanel?.hide();
+    return this;
+  }
+
+  updatePreviewIndex() {
+    this.previewRecords = [];
+    for (const view of this.views || []) {
+      collectPreviewRecords(this.previewRecords, view);
+    }
+    return this;
+  }
+
+  handlePreviewPointerMove(event) {
+    if (!this.previewPanel || !this.previewRecords?.length) return;
+    const hit = this.pickPreviewRecord(event);
+    if (!hit) {
+      this.previewPanel.hide();
+      return;
+    }
+    this.previewPanel.show({
+      recordId: hit.recordId,
+      focusTarget: { recordId: hit.recordId, position: hit.position },
+      x: event.clientX,
+      y: event.clientY,
+    });
+  }
+
+  pickPreviewRecord(event) {
+    const rect = this.canvas.getBoundingClientRect();
+    const pixelRatio = this.runtime.renderer?.size?.pixelRatio || window.devicePixelRatio || 1;
+    const threshold = 34;
+    let best = null;
+    for (const entry of this.previewRecords || []) {
+      const projected = this.runtime.camera?.projectToPixel?.(entry.position);
+      if (!projected || projected.visible === false) continue;
+      const x = rect.left + projected.x / pixelRatio;
+      const y = rect.top + projected.y / pixelRatio;
+      const distance = Math.hypot(event.clientX - x, event.clientY - y);
+      if (distance <= threshold && (!best || distance < best.distance)) {
+        best = { ...entry, distance, screen: [x, y] };
+      }
+    }
+    return best;
+  }
+
+  captureHeroFrame(options = {}) {
+    this.runtime.renderOnce(options.time);
+    return this.canvas;
+  }
+
+  getState() {
+    return {
+      document: this.document,
+      visualSpace: this.visualSpace,
+      views: this.views.slice(),
+      descriptors: this.descriptors.slice(),
+      runtime: this.runtime.getState(),
+    };
+  }
+}
+
+function conditionMonitoringMotion() {
+  return {
+    mode: "studio-drift",
+    loop: true,
+    durationMs: 26000,
+    focus: {
+      enabled: true,
+      yAmplitude: 0.008,
+      radiusAmplitude: 0.014,
+    },
+    camera: {
+      enabled: true,
+      yawAmplitude: 0.018,
+      pitchAmplitude: 0.006,
+      radiusAmplitude: 0.01,
+      respectInteraction: true,
+    },
+    postprocess: {
+      enabled: true,
+      frameAmountAmplitude: 0.008,
+      focusLiftAmplitude: 0.003,
+      floorSheenAmplitude: 0.014,
+      stageGlowAmplitude: 0.012,
+      subjectIsolationAmplitude: 0.01,
+    },
+  };
+}
+
+function conditionMonitoringCamera() {
+  return {
+    fov: 35,
+    target: [-0.35, -0.1, 0],
+    yaw: -0.52,
+    pitch: 0.25,
+    radius: 8.2,
+  };
+}
+
+async function resolveMetricVisualInput(input, options = {}) {
+  if (typeof input === "string") return loadVisualDocument(input, options.data || {});
+  if (input && typeof input === "object") return normalizeVisualInput(input, options.data || {});
+  throw new Error("createMetricVisual() requires evidence, document, url or input.");
+}
+
+function buildRecordPreview(surface, input = {}) {
+  const recordId = input.recordId || input.focusTarget?.recordId;
+  if (!recordId) return null;
+  const record = surface.visualSpace.getRecord(recordId);
+  if (!record) return null;
+  const payload = record.payload || {};
+  const fields = [
+    { label: "id", value: record.id },
+    { label: "type", value: record.record_type },
+    { label: "dataset", value: record.dataset_id },
+  ];
+  const featureFields = payload.features && typeof payload.features === "object"
+    ? Object.entries(payload.features).slice(0, 5).map(([label, value]) => ({ label, value }))
+    : [];
+  const preview = {
+    title: record.label || record.id,
+    subtitle: record.record_type || "record",
+    fields: fields.concat(featureFields),
+    sections: [],
+  };
+  if (Array.isArray(payload.series)) {
+    preview.series = [{ label: "series", values: payload.series, color: "rgba(32, 118, 132, 0.86)" }];
+  } else if (Array.isArray(payload.values) && payload.values.every((value) => Number.isFinite(Number(value)))) {
+    preview.series = [{ label: "values", values: payload.values, color: "rgba(32, 118, 132, 0.86)" }];
+  } else if (payload.values !== undefined) {
+    preview.sections.push({
+      title: "payload",
+      fields: [{ label: "value", value: summarizePreviewValue(payload.values) }],
+    });
+  }
+  return preview;
+}
+
+function collectPreviewRecords(out, view) {
+  if (!view) return out;
+  if (view.recordIds && view.positions) {
+    for (const recordId of view.recordIds) {
+      const position = getPosition(view.positions, recordId);
+      if (position) out.push({ recordId, position });
+    }
+  }
+  if (view.space) collectPreviewRecords(out, view.space);
+  if (view.fittedStates?.length) {
+    const state = view.fittedStates[view.activeStep || 0] || view.fittedStates[0];
+    if (state?.positions) {
+      for (const recordId of view.recordIds || []) {
+        const position = getPosition(state.positions, recordId);
+        if (position) out.push({ recordId, position });
+      }
+    }
+  }
+  return out;
+}
+
+function summarizePreviewValue(value) {
+  if (Array.isArray(value)) return `${value.length} values`;
+  if (value && typeof value === "object") return Object.keys(value).slice(0, 4).join(", ");
+  return value;
+}
+
+function resolveMetricVisualCanvas(options = {}) {
+  if (options.canvas instanceof HTMLCanvasElement) return options.canvas;
+  const target = options.target || document.body;
+  const canvas = document.createElement("canvas");
+  canvas.className = options.canvasClass || "metric-visual-canvas";
+  canvas.setAttribute("aria-label", options.ariaLabel || "METRIC visual");
+  Object.assign(canvas.style, {
+    position: options.canvasPosition || "absolute",
+    inset: "0",
+    width: "100%",
+    height: "100%",
+    display: "block",
+    touchAction: "none",
+  });
+  if (target && target.appendChild) target.appendChild(canvas);
+  return canvas;
+}
+
+function normalizeMetricViewOptions(document, options = {}) {
+  const next = { ...options };
+  if (next.coordinate && !next.coordinateId) next.coordinateId = next.coordinate;
+  if (next.colorBy && !next.colorProperty && !next.scalarProperty) {
+    const property = findVisualItem(document, "properties", next.colorBy);
+    if (property?.value_type === "scalar" || property?.value_type === "rank") next.scalarProperty = property.id;
+    else next.colorProperty = property?.id || next.colorBy;
+  }
+  if (next.labels && next.labels !== true && !next.labelProperty) next.labelProperty = next.labels;
+  if (next.pointSize !== undefined && next.size === undefined) next.size = next.pointSize;
+  return next;
+}
+
+function normalizeRelationOptions(document, options = {}) {
+  const next = { ...options };
+  if (next.relation && !next.relationId) next.relationId = next.relation;
+  if (!next.relationId && document?.relations?.length) next.relationId = document.relations[0].id;
+  return next;
+}
+
+function normalizeGraphOptions(document, options = {}) {
+  return normalizeMetricViewOptions(document, normalizeRelationOptions(document, options));
+}
+
+function normalizePropertyOptions(document, options = {}) {
+  const next = normalizeMetricViewOptions(document, options);
+  if (next.property && !next.propertyId) next.propertyId = next.property;
+  if (next.colorBy && !next.propertyId) next.propertyId = next.scalarProperty || next.colorBy;
+  if (!next.propertyId && next.scalarProperty) next.propertyId = next.scalarProperty;
+  return next;
+}
+
+function normalizeMappingOptions(document, options = {}) {
+  const next = normalizeMetricViewOptions(document, options);
+  if (next.residual && !next.residualProperty) next.residualProperty = next.residual;
+  if (next.residualProperty && !next.scalarProperty) next.scalarProperty = next.residualProperty;
+  if (next.morphDurationMs !== undefined && next.durationMs === undefined) next.durationMs = next.morphDurationMs;
+  return next;
+}
+
+function propertyFieldDescriptors(document, options = {}, fittedSpace = null) {
+  const propertyId = options.propertyId || options.property || options.groundField;
+  if (!propertyId) return [];
+  try {
+    const field = DenseFieldView.fromVisualSpace(document, {
+      ...options,
+      propertyId,
+      coordinateId: options.coordinateId || fittedSpace?.coordinateId,
+      alpha: options.alpha ?? 0.34,
+      radius: options.radius ?? 0.2,
+      material: {
+        alpha: options.alpha ?? 0.34,
+        contour: 0.14,
+        glow: 0.1,
+        depthWrite: false,
+        ...(options.material || {}),
+      },
+    });
+    const descriptors = field.toLayerDescriptors();
+    for (const descriptor of descriptors) {
+      descriptor.order = options.order ?? -2;
+      descriptor.metadata = { ...descriptor.metadata, role: "property-field", propertyId };
+    }
+    return descriptors;
+  } catch {
+    return [];
+  }
+}
+
+function recordTrajectoryDescriptor(space, options = {}) {
+  if (!space?.recordIds?.length || !space.positions) return null;
+  const ids = space.recordIds.slice();
+  const pathCount = Math.max(1, Math.floor(Number(options.pathCount) || 1));
+  const segmentSize = Math.max(2, Math.ceil(ids.length / pathCount));
+  const paths = [];
+  for (let start = 0; start < ids.length; start += segmentSize) {
+    const group = ids.slice(start, start + segmentSize);
+    const points = [];
+    for (const id of group) {
+      const position = getPosition(space.positions, id);
+      if (position) points.push(position);
+    }
+    if (points.length >= 2) {
+      paths.push({
+        id: `${options.id || space.id}:path-${paths.length}`,
+        points,
+        color: options.color || [0.14, 0.36, 0.46, options.alpha ?? 0.78],
+        width: options.width ?? 4,
+        metadata: { evidenceType: "record-order-trajectory", sourceView: space.id },
+      });
+    }
+  }
+  if (!paths.length) return null;
+  const descriptor = createTubeRibbonPathLayerDescriptor({ paths }, {
+    id: options.id || `${space.id}:trajectory`,
+    order: options.order ?? 30,
+    alpha: options.alpha ?? 0.78,
+    defaultWidth: options.width ?? 4,
+    colorMix: 1,
+  });
+  descriptor.metadata = { ...descriptor.metadata, role: "trajectory/path" };
+  return descriptor;
+}
+
+function residualVectorDescriptor(mapping, options = {}) {
+  const space = mapping?.space;
+  if (!space?.targetPositions) return null;
+  const ids = space.recordIds || [];
+  const sourcePosition = new Float32Array(ids.length * 3);
+  const targetPosition = new Float32Array(ids.length * 3);
+  const color = new Float32Array(ids.length * 4);
+  let count = 0;
+  for (const id of ids) {
+    const source = getPosition(space.positions, id);
+    const target = getPosition(space.targetPositions, id);
+    if (!source || !target) continue;
+    sourcePosition.set(source, count * 3);
+    targetPosition.set(target, count * 3);
+    color.set(options.color || [0.8, 0.22, 0.12, 0.42], count * 4);
+    count += 1;
+  }
+  if (!count) return null;
+  return new VisualLayer({
+    id: options.residualVectorId || `${mapping.id}:residual-vectors`,
+    kind: "residual/error-vectors",
+    primitive: "RelationEdgeLayer",
+    order: 36,
+    source: { viewId: mapping.id, viewKind: "mapping", role: "residual/error" },
+    channels: {
+      sourcePosition: createChannel(sourcePosition.subarray(0, count * 3), 3, "source-position"),
+      targetPosition: createChannel(targetPosition.subarray(0, count * 3), 3, "target-position"),
+      color: createChannel(color.subarray(0, count * 4), 4, "rgba"),
+    },
+    geometry: { width: options.width ?? 1 },
+    material: { alpha: options.alpha ?? 0.62, transparent: true, depthWrite: false },
+    metadata: { role: "residual/error", edgeCount: count },
+  }).toDescriptor();
+}
+
+function pairedRecordBridgeDescriptor(left, right, options = {}) {
+  const ids = (left.recordIds || []).filter((id) => getPosition(left.positions, id) && getPosition(right.positions, id));
+  if (!ids.length) return null;
+  const sourcePosition = new Float32Array(ids.length * 3);
+  const targetPosition = new Float32Array(ids.length * 3);
+  const color = new Float32Array(ids.length * 4);
+  for (let index = 0; index < ids.length; index += 1) {
+    sourcePosition.set(getPosition(left.positions, ids[index]), index * 3);
+    targetPosition.set(getPosition(right.positions, ids[index]), index * 3);
+    color.set(options.bridgeColor || [0.28, 0.43, 0.62, 0.18], index * 4);
+  }
+  return new VisualLayer({
+    id: options.bridgeId || "cross-space:dependence-bridge",
+    kind: "paired-space-dependence",
+    primitive: "RelationEdgeLayer",
+    order: 18,
+    source: { viewKind: "paired-space", role: "dependence bridge" },
+    channels: {
+      recordId: createStringChannel(ids, "record-id"),
+      sourcePosition: createChannel(sourcePosition, 3, "source-position"),
+      targetPosition: createChannel(targetPosition, 3, "target-position"),
+      color: createChannel(color, 4, "rgba"),
+    },
+    geometry: { width: options.width ?? 1 },
+    material: { alpha: options.alpha ?? 0.58, transparent: true, depthWrite: false },
+    metadata: { role: "dependence bridge", edgeCount: ids.length, linkedBrushing: true },
+  }).toDescriptor();
+}
+
+function sharedGroundDescriptor(id, options = {}) {
+  return new VisualLayer({
+    id,
+    kind: "ground-plane",
+    primitive: "GroundPlaneLayer",
+    order: -20,
+    source: { role: "shared-stage" },
+    channels: {},
+    geometry: {
+      width: options.width ?? 4.4,
+      depth: options.depth ?? 3.2,
+      y: options.y ?? -0.58,
+      gridScale: options.gridScale ?? 8,
+    },
+    material: {
+      alpha: options.alpha ?? 0.62,
+      gridAlpha: options.gridAlpha ?? 0.28,
+      axisAlpha: options.axisAlpha ?? 0.2,
+    },
+    metadata: { role: "shared-ground" },
+  }).toDescriptor();
+}
+
+function offsetPositionMap(map, offset) {
+  for (const [id, position] of map.entries()) {
+    map.set(id, [
+      (Number(position[0]) || 0) + offset[0],
+      (Number(position[1]) || 0) + offset[1],
+      (Number(position[2]) || 0) + offset[2],
+    ]);
+  }
+}
+
+function getPosition(map, id) {
+  return map?.get?.(id) || map?.get?.(String(id)) || null;
+}
+
+function findVisualItem(document, collection, id) {
+  if (id == null || id === true || id === false) return null;
+  return (document?.[collection] || []).find((item) => String(item.id) === String(id) || String(item.name) === String(id)) || null;
+}
+
+function toMetricVisualArray(value) {
+  if (value == null) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
 /*
  * METRIC Visual
  *

@@ -68,6 +68,7 @@ Python is a binding and adapter layer over the native engine surface.
 - [String Edit Baseline](examples/string-edit-baseline.md)
 - [Histogram Transport Baseline](examples/histogram-transport-baseline.md)
 - [Process Curve External Gallery](examples/process-curve-external-gallery.md)
+- [MNIST Dimension Reduction](examples/mnist-grae10-gallery.md)
 - [Distribution Image Recoding Baseline](examples/distribution-image-recoding-baseline.md)
 - [Mixed Structured Record Baseline](examples/mixed-structured-record-baseline.md)
 - [Mixed Finite Metric Records (Hero)](examples/mixed-finite-records-hero.md)

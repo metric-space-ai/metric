@@ -8,7 +8,7 @@
 # `-DMETRIC_BUILD_EXAMPLES=ON` build pulls in NO third-party library.
 #
 # Enabling a switch means YOU must provide the named tool on your system;
-# METRIC never vendors or fetches it.
+# METRIC never bundles or fetches it.
 # ---------------------------------------------------------------------------
 option(METRIC_EXAMPLES_WITH_JSON
        "Build example programs that require nlohmann/json (external; NOT a METRIC dependency)" OFF)

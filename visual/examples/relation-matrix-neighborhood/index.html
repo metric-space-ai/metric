@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>METRIC Visual — Relation Matrix &amp; Neighborhood</title>
+  <style>
+    :root { color-scheme: light; --ink: #223039; --muted: #54636b; --panel: rgba(245, 248, 244, 0.82); --border: rgba(212, 222, 222, 0.62); }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+    body { background: radial-gradient(circle at 46% 42%, rgba(255, 252, 238, 0.82), rgba(230, 236, 231, 0.96) 62%, #dfe6e1 100%); font: 12px/1.4 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--ink); }
+    main { position: fixed; inset: 0; }
+    canvas#scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+    .caption { position: absolute; left: 26px; top: 24px; max-width: 420px; pointer-events: none; text-shadow: 0 1px 16px rgba(255, 255, 255, 0.6); }
+    .caption h1 { margin: 0 0 7px; font-size: 17px; font-weight: 700; }
+    .caption p { margin: 0; font-size: 12px; line-height: 1.5; color: rgba(52, 66, 74, 0.82); max-width: 50ch; }
+    .matrix-label { position: absolute; right: 30px; top: 24px; color: var(--muted); font-weight: 700; font-size: 11.5px; }
+    .pair { position: absolute; right: 30px; bottom: 24px; width: 250px; padding: 11px 13px; border: 1px solid var(--border); border-radius: 13px; background: var(--panel); backdrop-filter: blur(12px); box-shadow: 0 12px 40px rgba(77, 92, 97, 0.12); opacity: 0; transition: opacity 140ms ease; }
+    .pair[data-visible="true"] { opacity: 0.98; }
+    .pair h2 { margin: 0 0 6px; font-size: 12px; font-weight: 720; }
+    .pair dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 4px 10px; }
+    .pair dt { color: var(--muted); font-size: 11px; } .pair dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; font-size: 11px; }
+    .loading, .error { position: absolute; inset: 0; display: grid; place-items: center; color: #2a3a3a; }
+    .error { color: #7a2222; }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene" aria-label="Metric space with relation matrix and neighborhood"></canvas>
+    <section class="caption" aria-hidden="true">
+      <h1>Relation matrix &amp; neighborhood</h1>
+      <p>The finite metric space is fundamentally pairwise. 144 clustered signals read as a spatial cloud, a dense 144×144 metric matrix and a nearest-neighbor graph — the same relation, three ways. Hover the matrix to read a pair.</p>
+    </section>
+    <div class="matrix-label">dense metric matrix · 144²</div>
+    <aside class="pair" id="pair" data-visible="false">
+      <h2 id="pair-title">pair</h2>
+      <dl><dt>row</dt><dd id="pair-row"></dd><dt>column</dt><dd id="pair-col"></dd><dt>metric</dt><dd id="pair-val"></dd></dl>
+    </aside>
+    <div class="loading" id="loading">Loading relation evidence…</div>
+  </main>
+
+  <script type="module">
+    import { createMetricVisual } from "../../src/index.js";
+
+    const MATRIX_RECT = [0.635, 0.30, 0.33, 0.44];
+    const canvas = document.getElementById("scene");
+    const loading = document.getElementById("loading");
+    const pairEl = document.getElementById("pair");
+    const pairTitle = document.getElementById("pair-title");
+    const pairRow = document.getElementById("pair-row");
+    const pairCol = document.getElementById("pair-col");
+    const pairVal = document.getElementById("pair-val");
+    let matrixData = null;
+
+    function matrixCellAt(cssX, cssY) {
+      if (!matrixData) return null;
+      const rect = canvas.getBoundingClientRect();
+      const fx = (cssX / rect.width - MATRIX_RECT[0]) / MATRIX_RECT[2];
+      const fy = (cssY / rect.height - MATRIX_RECT[1]) / MATRIX_RECT[3];
+      if (fx < 0 || fx > 1 || fy < 0 || fy > 1) return null;
+      const size = matrixData.size;
+      const column = Math.min(size - 1, Math.floor(fx * size));
+      const row = Math.min(size - 1, Math.floor(fy * size));
+      const offset = row * size + column;
+      return { rowId: matrixData.recordIds[row], columnId: matrixData.recordIds[column], value: matrixData.values[offset], present: matrixData.present[offset] === 1 };
+    }
+
+    try {
+      const response = await fetch("./evidence.json");
+      if (!response.ok) throw new Error(`evidence ${response.status}`);
+      const document_ = await response.json();
+
+      const visual = await createMetricVisual({
+        canvas,
+        evidence: document_,
+        profileId: "relation-matrix-neighborhood-profile",
+      });
+      visual.showRelationMatrixNeighborhood({
+        coordinateId: "catalog-3d",
+        relationId: "catalog-metric",
+        matrixRect: MATRIX_RECT,
+        symmetric: true,
+        colorProperty: "group",
+        labels: "group",
+        graph: "neighborhood",
+        pairPreview: true,
+        pointSize: 2.0,
+      });
+
+      const matrixDescriptor = visual.descriptors.find((descriptor) => descriptor.primitive === "RelationMatrixLayer");
+      matrixData = matrixDescriptor.metadata.matrix;
+
+      document.documentElement.dataset.metricRelationHero = "ready";
+      document.documentElement.dataset.metricRecordCount = String(visual.views.find((view) => view.kind === "neighborhood-graph")?.recordIds.length || 0);
+      document.documentElement.dataset.metricMatrixSize = String(matrixData.size);
+      window.metricRelationHero = { visual, runtime: visual.runtime, getState: () => visual.getState() };
+
+      canvas.addEventListener("pointermove", (event) => {
+        const rect = canvas.getBoundingClientRect();
+        const cell = matrixCellAt(event.clientX - rect.left, event.clientY - rect.top);
+        if (cell) {
+          pairTitle.textContent = `${cell.rowId} ↔ ${cell.columnId}`;
+          pairRow.textContent = cell.rowId; pairCol.textContent = cell.columnId;
+          pairVal.textContent = cell.present ? Number(cell.value).toFixed(3) : "no direct pair";
+          pairEl.dataset.visible = "true";
+          document.documentElement.dataset.metricSelectedPair = `${cell.rowId}|${cell.columnId}`;
+        } else { pairEl.dataset.visible = "false"; }
+      });
+      canvas.addEventListener("pointerleave", () => { pairEl.dataset.visible = "false"; });
+
+      loading.remove();
+      addEventListener("resize", () => { const r = canvas.getBoundingClientRect(); visual.runtime.resize(Math.max(1, Math.floor(r.width)), Math.max(1, Math.floor(r.height))); });
+    } catch (error) {
+      console.error(error);
+      loading.className = "loading error";
+      loading.textContent = error instanceof Error ? error.message : String(error);
+    }
+  </script>
+</body>
+</html>

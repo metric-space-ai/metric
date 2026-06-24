@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>METRIC Miniature Look Gallery</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: oklch(93.5% 0.018 155);
+      color: oklch(20% 0.028 205);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+      margin: 0;
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 16% 12%, oklch(98% 0.022 92 / 0.88), transparent 34rem),
+        linear-gradient(135deg, oklch(94% 0.02 152), oklch(89% 0.018 210));
+    }
+
+    main {
+      width: min(1520px, calc(100vw - 28px));
+      margin: 0 auto;
+      padding: 22px 0 28px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .topbar p {
+      max-width: 780px;
+      margin: 7px 0 0;
+      color: oklch(38% 0.025 190);
+      font-size: 13px;
+      line-height: 1.42;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, auto);
+      gap: 10px;
+      align-items: end;
+      font-size: 12px;
+      color: oklch(33% 0.026 205);
+    }
+
+    .summary output {
+      min-width: 88px;
+      padding: 7px 9px;
+      border: 1px solid oklch(78% 0.021 185);
+      background: oklch(96% 0.01 150 / 0.78);
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(360px, 1fr));
+      gap: 14px;
+    }
+
+    .look {
+      display: grid;
+      grid-template-rows: auto minmax(330px, 1fr);
+      height: clamp(390px, 38vw, 540px);
+      border: 1px solid oklch(74% 0.023 190);
+      background: oklch(96% 0.012 150 / 0.76);
+      overflow: hidden;
+    }
+
+    .look header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 12px 10px;
+      border-bottom: 1px solid oklch(80% 0.018 185);
+    }
+
+    .look h2 {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .look output {
+      color: oklch(42% 0.04 170);
+      font-size: 11px;
+      line-height: 1.2;
+      text-align: right;
+      max-width: 36ch;
+    }
+
+    .look canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      touch-action: none;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        width: min(100vw - 18px, 760px);
+        padding-top: 14px;
+      }
+
+      .topbar {
+        display: grid;
+        align-items: start;
+      }
+
+      .summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .gallery {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="topbar" aria-label="Miniature look gallery status">
+      <div>
+        <h1>METRIC miniature look gallery</h1>
+        <p>One exported process-curve descriptor set rendered through the native photographic look contracts.</p>
+      </div>
+      <div class="summary">
+        <output id="summary-looks">looks: ...</output>
+        <output id="summary-ready">ready: ...</output>
+        <output id="summary-layers">layers: ...</output>
+        <output id="summary-motion">motions: ...</output>
+      </div>
+    </section>
+    <section class="gallery" id="gallery" aria-label="Miniature look renders"></section>
+  </main>
+
+  <script type="module">
+    import {
+      MetricVisualRuntime,
+      adaptMetricEvidenceV1,
+      attachMiniatureRigReporter,
+      createLayerFromDescriptor,
+      createMiniatureLookSceneAtlas,
+      createMiniaturePhotographicStyle,
+      createMiniatureStyleMotionAtlas,
+      createProcessCurveMiniatureLayerDescriptors,
+    } from "../../src/index.js";
+
+    const gallery = document.getElementById("gallery");
+    const summaryLooks = document.getElementById("summary-looks");
+    const summaryReady = document.getElementById("summary-ready");
+    const summaryLayers = document.getElementById("summary-layers");
+    const summaryMotion = document.getElementById("summary-motion");
+
+    const response = await fetch("/docs/examples/assets/process-curve-external/evidence.json");
+    if (!response.ok) throw new Error(`evidence ${response.status}`);
+
+    const evidence = await response.json();
+    const visualDocument = adaptMetricEvidenceV1(evidence);
+    const datasetId = "power_demand";
+    const sceneInput = createProcessCurveMiniatureLayerDescriptors(visualDocument, {
+      datasetId,
+      morphLoop: true,
+      pointSize: 1.72,
+      projectionSize: 2.7,
+      trackMode: "tube",
+      trackRadius: 0.012,
+      trackRadialSegments: 8,
+      trackAlpha: 0.9,
+    });
+    const atlas = createMiniatureLookSceneAtlas(sceneInput.descriptors, {
+      contacts: { includeSamples: false },
+      fit: { targetSpan: 2.58 },
+      metadata: {
+        example: "miniature-look-gallery",
+        datasetId,
+      },
+    });
+    const motionAtlas = createMiniatureStyleMotionAtlas();
+
+    summaryLooks.textContent = `looks: ${atlas.summary.entryCount}`;
+    summaryReady.textContent = `ready: ${atlas.summary.readyCount}`;
+    summaryLayers.textContent = `layers: ${atlas.entries[0]?.bundle?.layers?.length || 0}`;
+    summaryMotion.textContent = `motions: ${motionAtlas.summary.entryCount}`;
+
+    const runtimes = [];
+    const styles = [];
+    const panels = [];
+    const rigReporters = [];
+
+    for (const entry of atlas.entries) {
+      const panel = createPanel(entry);
+      gallery.append(panel.root);
+
+      const style = createMiniaturePhotographicStyle({
+        profile: entry.profile,
+        layerFactory: createLayerFromDescriptor,
+      });
+      const setup = style.createRuntimeOptions({
+        canvas: panel.canvas,
+        pixelRatioCap: 1.5,
+        controls: {
+          enabled: true,
+          rotateSpeed: 0.004,
+        },
+        renderer: {
+          preserveDrawingBuffer: true,
+        },
+      });
+      const runtime = new MetricVisualRuntime(setup.runtimeOptions);
+      runtime.setDocument(visualDocument, { views: false });
+      style.attachRuntime(runtime);
+      fitCanvas(panel.canvas, runtime);
+      style.applyBundle(runtime, entry.bundle, { source: `miniature-look-gallery:${entry.look}` });
+      runtime.start();
+      const rigReporter = attachMiniatureRigReporter({
+        runtime,
+        target: panel.root,
+        resolve: () => ({
+          style,
+          runtime,
+          stage: entry.stage,
+          bundle: entry.bundle,
+          descriptors: entry.bundle?.layers || [],
+          styleMotion: style.styleMotionController?.toJSON?.() || entry.styleMotion,
+        }),
+      });
+
+      panel.status.textContent = statusText(entry, runtime);
+      runtimes.push(runtime);
+      styles.push(style);
+      panels.push(panel);
+      rigReporters.push(rigReporter);
+    }
+
+    window.metricMiniatureLookGallery = {
+      atlas,
+      motionAtlas,
+      evidence,
+      visualDocument,
+      sceneInput,
+      runtimes,
+      styles,
+      panels,
+      rigReporters,
+    };
+
+    addEventListener("resize", () => {
+      for (let index = 0; index < runtimes.length; index += 1) {
+        fitCanvas(panels[index].canvas, runtimes[index]);
+      }
+    });
+
+    function createPanel(entry) {
+      const root = document.createElement("article");
+      root.className = "look";
+      root.dataset.look = entry.look;
+      root.dataset.motion = entry.styleMotion?.mode || "none";
+
+      const header = document.createElement("header");
+      const title = document.createElement("h2");
+      title.textContent = entry.look.replaceAll("-", " ");
+      const status = document.createElement("output");
+      status.className = "look-status";
+      status.textContent = "booting";
+      header.append(title, status);
+
+      const canvas = document.createElement("canvas");
+      canvas.setAttribute("aria-label", `METRIC miniature ${entry.look} render`);
+      root.append(header, canvas);
+      return { root, canvas, status };
+    }
+
+    function fitCanvas(canvas, runtime) {
+      const rect = canvas.getBoundingClientRect();
+      runtime.resize(Math.max(1, Math.floor(rect.width)), Math.max(1, Math.floor(rect.height)));
+    }
+
+    function statusText(entry, runtime) {
+      const state = runtime.getState();
+      return `${entry.diagnostics.status} | ${state.layerInstanceCount} layers | ${entry.styleMotion?.mode || "none"}`;
+    }
+  </script>
+</body>
+</html>

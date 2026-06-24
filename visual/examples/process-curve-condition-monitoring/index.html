@@ -182,9 +182,24 @@
     </main>
 
     <script type="module">
-      import { MetricProcessCurveApp, loadMetricEvidence } from "../../src/metric-visual.js?v=miniature-stage-6";
+      import {
+        MetricVisualRuntime,
+        adaptMetricEvidenceV1,
+        createLayerFromDescriptor,
+        createMiniaturePhotographicStyle,
+        createMiniatureStyleProfile,
+        createProcessCurveMiniatureSceneBundle,
+        createProcessCurveMiniatureStage,
+      } from "../../src/index.js";
+      import {
+        MetricHeatmap,
+        MetricQueryInspector,
+        MetricRecordGallery,
+        MetricSelection,
+        loadMetricEvidence,
+      } from "../../src/metric-visual.js?v=panels-1";
 
-      const app = new MetricProcessCurveApp({
+      const elements = {
         scene: document.getElementById("scene"),
         gallery: document.getElementById("gallery"),
         query: document.getElementById("query"),
@@ -193,10 +208,117 @@
         domainSelect: document.getElementById("domain"),
         morphSlider: document.getElementById("morph"),
         morphToggle: document.getElementById("morph-toggle"),
+      };
+
+      const miniatureProfile = createMiniatureStyleProfile({
+        id: "process-curve-condition-monitoring-miniature-profile",
+        stage: createProcessCurveMiniatureStage(),
+      });
+      const style = createMiniaturePhotographicStyle({
+        profile: miniatureProfile,
+        layerFactory: createLayerFromDescriptor,
+      });
+      const runtimeSetup = style.createRuntimeOptions({ canvas: elements.scene });
+      const runtime = new MetricVisualRuntime(runtimeSetup.runtimeOptions);
+      style.attachRuntime(runtime);
+
+      const panelSelection = new MetricSelection();
+      const gallery = new MetricRecordGallery(elements.gallery, panelSelection);
+      const query = new MetricQueryInspector(elements.query, panelSelection);
+      const metricHeatmap = new MetricHeatmap(elements.metricHeatmap, panelSelection, {
+        title: "finite metric-space pair values",
+        space: "metric_space",
+      });
+      const baselineHeatmap = new MetricHeatmap(elements.baselineHeatmap, panelSelection, {
+        title: "padded-vector baseline pair values",
+        space: "padded_vector_baseline",
       });
 
       const evidence = await loadMetricEvidence("../../../docs/examples/assets/process-curve-external/evidence.json");
-      app.load(evidence);
+      const visualDocument = adaptMetricEvidenceV1(evidence);
+      runtime.setDocument(visualDocument, { views: false });
+
+      let currentScene = null;
+      let morphLoop = false;
+
+      const domains = [...new Set(evidence.records.map((record) => record.domain))];
+      elements.domainSelect.replaceChildren(...domains.map((domain) => {
+        const option = document.createElement("option");
+        option.value = domain;
+        option.textContent = domain.replaceAll("_", " ");
+        return option;
+      }));
+
+      elements.domainSelect.addEventListener("change", () => {
+        renderDomain(elements.domainSelect.value);
+      });
+      elements.morphSlider.addEventListener("input", () => {
+        morphLoop = false;
+        updateMorphToggle();
+        setRuntimeMorphProgress(Number(elements.morphSlider.value));
+      });
+      elements.morphToggle.addEventListener("click", () => {
+        morphLoop = !morphLoop;
+        updateMorphToggle();
+        renderDomain(elements.domainSelect.value);
+      });
+
+      updateMorphToggle();
+      renderDomain(domains[0]);
+      runtime.start();
+      window.metricProcessCurve = {
+        runtime,
+        style,
+        profile: style.toProfile({ includeDiagnostics: true }),
+        evidence,
+        visualDocument,
+      };
+
+      function renderDomain(domain) {
+        if (!domain) return;
+        currentScene = createProcessCurveMiniatureSceneBundle(visualDocument, {
+          datasetId: domain,
+          stage: style.stage,
+          morphLoop,
+          morphProgress: morphLoop ? undefined : Number(elements.morphSlider.value),
+          trackMode: "tube",
+          trackRadius: 0.012,
+          trackRadialSegments: 8,
+          trackAlpha: 0.9,
+        });
+        style.applyBundle(runtime, currentScene.bundle, {
+          source: "process-curve-condition-monitoring",
+        });
+
+        const records = evidence.records.filter((record) => record.domain === domain);
+        const metricPairs = evidence.pair_values.filter((entry) => entry.domain === domain && entry.space === "metric_space");
+        const baselinePairs = evidence.pair_values.filter((entry) => entry.domain === domain && entry.space === "padded_vector_baseline");
+        gallery.setRecords(records);
+        metricHeatmap.setData(records, metricPairs);
+        baselineHeatmap.setData(records, baselinePairs);
+        query.setEvidence(evidence, domain);
+        if (window.metricProcessCurve) {
+          window.metricProcessCurve.profile = style.toProfile({ includeDiagnostics: true });
+        }
+      }
+
+      function setRuntimeMorphProgress(progress) {
+        const next = Math.max(0, Math.min(1, Number(progress) || 0));
+        for (const layer of runtime.layers || []) {
+          if (layer.animation?.mode !== "coordinate-morph") continue;
+          layer.animation.loop = false;
+          layer.animation.progress = next;
+          if (layer.descriptor?.animation) {
+            layer.descriptor.animation.loop = false;
+            layer.descriptor.animation.progress = next;
+          }
+        }
+        runtime.requestRender();
+      }
+
+      function updateMorphToggle() {
+        elements.morphToggle.textContent = morphLoop ? "Pause morph" : "Animate morph";
+      }
     </script>
   </body>
 </html>

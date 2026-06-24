@@ -24,6 +24,28 @@ target_compile_definitions(engine_process_curve_external_gallery
         METRIC_PROCESS_CURVE_INTERNAL_BLEEDING_CSV="${CMAKE_CURRENT_SOURCE_DIR}/assets/process_curve_internal_bleeding_gallery.csv"
 )
 
+add_executable(engine_mnist_phate_autoencoder_smoke mnist_phate_autoencoder_smoke.cpp)
+target_link_libraries(engine_mnist_phate_autoencoder_smoke PRIVATE ${METRIC_TARGET_NAME})
+target_compile_definitions(engine_mnist_phate_autoencoder_smoke
+    PRIVATE
+        METRIC_MNIST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../mapping_examples/assets/mnist"
+)
+
+add_executable(engine_mnist_phate_autoencoder_gallery mnist_phate_autoencoder_gallery.cpp)
+target_link_libraries(engine_mnist_phate_autoencoder_gallery PRIVATE ${METRIC_TARGET_NAME})
+target_compile_definitions(engine_mnist_phate_autoencoder_gallery
+    PRIVATE
+        METRIC_MNIST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../mapping_examples/assets/mnist"
+)
+
+add_executable(engine_mnist_grae10_integrity mnist_grae10_integrity.cpp)
+target_link_libraries(engine_mnist_grae10_integrity PRIVATE ${METRIC_TARGET_NAME})
+target_compile_definitions(engine_mnist_grae10_integrity
+    PRIVATE
+        METRIC_MNIST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../mapping_examples/assets/mnist"
+        METRIC_GRAE10_DATA_JSON="${CMAKE_SOURCE_DIR}/visual/examples/grae10-metric-engine/grae10-data.json"
+)
+
 add_executable(engine_vector_space_special_case vector_space_special_case.cpp)
 target_link_libraries(engine_vector_space_special_case PRIVATE ${METRIC_TARGET_NAME})
 
@@ -95,6 +117,9 @@ if (BUILD_TESTING)
     add_test(NAME example_engine_strings_edit_space COMMAND engine_strings_edit_space)
     add_test(NAME example_engine_process_curves_space COMMAND engine_process_curves_space)
     add_test(NAME example_engine_process_curve_external_gallery COMMAND engine_process_curve_external_gallery)
+    add_test(NAME example_engine_mnist_phate_autoencoder_smoke COMMAND engine_mnist_phate_autoencoder_smoke --per-class 6 --epochs 4)
+    add_test(NAME example_engine_mnist_phate_autoencoder_gallery COMMAND engine_mnist_phate_autoencoder_gallery --per-class 3 --epochs 2)
+    add_test(NAME example_engine_mnist_grae10_integrity COMMAND engine_mnist_grae10_integrity)
     add_test(NAME example_engine_vector_space_special_case COMMAND engine_vector_space_special_case)
     add_test(NAME example_engine_histogram_transport_space COMMAND engine_histogram_transport_space)
     add_test(NAME example_engine_distribution_image_recoding COMMAND engine_distribution_image_recoding)
@@ -118,6 +143,7 @@ if (BUILD_TESTING)
         example_engine_strings_edit_space
         example_engine_process_curves_space
         example_engine_process_curve_external_gallery
+        example_engine_mnist_grae10_integrity
         example_engine_histogram_transport_space
         example_engine_distribution_image_recoding
         example_engine_mixed_structured_records
@@ -128,6 +154,17 @@ if (BUILD_TESTING)
         example_engine_finite_metric_dynamics
         example_engine_mixed_finite_records
         PROPERTIES LABELS metric_application_evidence
+    )
+
+    set_tests_properties(
+        example_engine_mnist_phate_autoencoder_smoke
+        example_engine_mnist_phate_autoencoder_gallery
+        PROPERTIES LABELS "metric_phate_pipeline;metric_mnist;metric_smoke"
+    )
+
+    set_tests_properties(
+        example_engine_mnist_grae10_integrity
+        PROPERTIES LABELS "metric_application_evidence;metric_mnist;metric_visual_integrity"
     )
 
     set_tests_properties(

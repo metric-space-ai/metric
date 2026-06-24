@@ -51,7 +51,7 @@ Those folders are not first-page API promises and are not revival release gates.
 
 ## Optional, example-only third-party dependencies
 
-The METRIC C++ core is header-only and dependency-free, and so are the examples that build by default. A handful of historical example programs still rely on external tooling that **METRIC itself does not require**. They are quarantined behind opt-in CMake switches (all default `OFF`), so a plain `-DMETRIC_BUILD_EXAMPLES=ON` build pulls in **no** third-party library. Enabling a switch means *you* must provide the named tool; METRIC never vendors or fetches it.
+The METRIC C++ core is header-only and dependency-free, and so are the examples that build by default. A handful of historical example programs still rely on external tooling that **METRIC itself does not require**. They are quarantined behind opt-in CMake switches (all default `OFF`), so a plain `-DMETRIC_BUILD_EXAMPLES=ON` build pulls in **no** third-party library. Enabling a switch means *you* must provide the named tool; METRIC never bundles or fetches it.
 
 | CMake switch | External tool | Gated examples |
 | --- | --- | --- |

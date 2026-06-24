@@ -15,6 +15,135 @@ renders.
 
 The visual engine is a data and relationship visualization library.
 
+The implementation contract is the METRIC visual runtime itself:
+
+```text
+visual/src/runtime/metric-webgl/
+visual/src/postfx/
+visual/src/style/miniature/
+visual/src/layers/
+```
+
+Renderer, material, camera, picking and postprocess changes must be made in
+those METRIC-owned modules directly.
+
+Executable agent work orders, stop rules and hero visual acceptance criteria
+are defined in:
+
+```text
+docs/visual/metric-visual-engine-implementation-plan.md
+```
+
+## Current Implementation Status
+
+The visual engine is no longer only a one-page proof, but it is also not yet a
+complete production visualization product.
+
+Implemented native slices:
+
+- renderer core, render loop, scene, render targets and WebGL resources
+- camera, focus-line and pointer interaction
+- `metric.evidence.v1` -> `metric.visual.v1` adapter
+- typed channel encoders
+- point, glyph, box, heat, surface, relation-edge, ground-projection and
+  ground-plane layers
+- relation matrix, sparse relation graph and relation diagnostics builders
+- curve/ribbon/tube path builders, `CurveRibbonLayer` and
+  `CurveTubeMeshLayer`
+- miniature photographic style presets, scene-fit helpers and scene bundles
+- reusable `MiniaturePhotographicStyle` owner for stage, runtime options,
+  descriptor styling, scene bundles, focus/postprocess updates and runtime
+  application
+- serializable `MiniatureStyleProfile` contract for moving the same
+  photographic miniature look across examples and future visual documents
+  without copying scene wiring
+- reusable Hero/Capture helpers for full-frame miniature screenshots and
+  project-page visuals: `createMiniatureHeroStage()`,
+  `createMiniatureHeroProfile()`, `createMiniatureHeroStyle()`,
+  `createMiniatureHeroSceneBundle()` and
+  `createMiniatureHeroRuntimeOptions()`
+- reusable style-motion presets for focus breathing, restrained camera drift
+  and turntable motion over camera/focus/postprocess state
+- style-motion controller diagnostics for active domains, runtime attachment,
+  captured base state, before-render hook presence and last applied frame
+  update
+- serializable style-motion atlas for reusable focus, camera and postprocess
+  motion contracts with sampled offsets for documentation and visual
+  regression tooling
+- reusable style-contract diagnostics for camera, lighting, focus,
+  depth-of-field, materials, ground relation, post-FX, isometric staging,
+  animation, post-FX pass sizing and runtime hook coverage
+- `createMiniatureRuntimeOptions()` bridge for camera, controls, focus-line,
+  postprocess and layer-factory setup from one stage contract
+- reusable `ProcessCurveSceneView` builder shared by the native probe and the
+  condition-monitoring example
+- miniature look gallery for rendering the same METRIC descriptor bundle
+  through every reusable photographic reference look:
+  `visual/examples/miniature-look-gallery/index.html`
+- reusable miniature animation presets for focus, morph, attention,
+  uncertainty, surface, timeline and camera-orbit motion
+- stage light rigs lowered into native shader material uniforms
+- sample/glyph sprites, curve ribbons and world-space curve tubes consume the
+  miniature material
+  response instead of remaining flat debug marks
+- point/glyph and mesh layers now expose native photographic material response:
+  sphere shading, gloss, edge shade, saturation, shadow density, roughness,
+  metalness, specular power, soft shadows, base lift and highlight/shadow tint
+- stage focus and stage grounding contracts consumed by runtime/layers
+- reusable `MiniatureCameraDofPass` consumes camera depth, focus distance,
+  aperture and circle-of-confusion parameters; `MiniatureFramePass` consumes the
+  same focus state for the final photographic frame response and reports the
+  optical model as `camera-depth-circle-of-confusion` with raw camera depth,
+  aperture-relative defocus and near/far-plane reconstruction
+- `MiniatureFramePass` applies floor/sky/focus/edge shaping, subject isolation, tabletop matte,
+  floor sheen, stage spotlight, stage shadow and studio-light cues before final
+  grade
+- `MetricPostFxStack` now initializes and resizes every internal pass together,
+  and the miniature style diagnostic flags active post-FX passes whose size
+  does not match the renderer drawing buffer
+- semantic ground fields and colored projection footprints in the browser probe
+- reusable GroundProjection shadow controls for neutral shadow color,
+  semantically tinted edges, core density and global projection density
+- reusable GroundPlane shadow-catcher controls for matte floor color, subdued
+  grid, horizon falloff, tabletop sheen, contact shade and stage shaping
+- directed GroundProjection shadow tails and contact hardness for semantically
+  tinted ground evidence that still reads as photographic contact
+- surface/field shader motion for miniature field views
+- raw camera-depth texture creation, camera DoF and FXAA-like postprocess
+- final post-FX stack for restrained bloom, miniature frame shaping,
+  photographic grade, vignette and optional grain
+- browser-verified native probe at
+  `visual/examples/native-engine-probe/index.html`
+- browser-verified process-curve condition-monitoring example at
+  `visual/examples/process-curve-condition-monitoring/index.html`
+- browser-verified full-frame miniature capture example at
+  `visual/examples/miniature-hero-frame/index.html`
+- browser-verified miniature look gallery at
+  `visual/examples/miniature-look-gallery/index.html`
+
+Known gaps:
+
+- first full-frame capture path exists; no polished multi-algorithm hero
+  application/gallery yet
+- no full visual gallery for every METRIC algorithm family yet
+- relation matrix is integrated but not yet used in the browser probe
+- metric curve-body study-style curve bodies now have a native `CurveTubeMeshLayer`; more
+  algorithm-family views still need to adopt it where world-space continuity is
+  the main evidence
+- runtime style hooks and reusable miniature scene bundles exist; more
+  algorithm-family examples are still needed
+- the style owner is now used by the native probe and process-curve page, but
+  richer hero applications still need algorithm-specific view design
+- style motion exists for the photographic layer, but hero applications still
+  need curated motion direction per algorithm family
+- the profile contract is now active in browser examples, the first material
+  response pass is implemented, and world-space tube paths are available;
+  visual quality still needs stronger floor projection, curated hero
+  composition and visual regression baselines against the photographic
+  reference captures
+- no visual regression test suite yet
+- no performance benchmark matrix for large record counts yet
+
 It must help users inspect:
 
 - records and record collections
@@ -70,7 +199,7 @@ JavaScript must not become a second implementation of METRIC algorithms.
 - No TypeScript requirement.
 - No bundler.
 - No external renderer.
-- No adapter to Babyplots, Babylon, Three.js, D3, Plotly, deck.gl, or other
+- No adapter to the earlier point-cloud renderer, the earlier scene renderer, external renderer, D3, Plotly, deck.gl, or other
   visualization libraries.
 - Plain JavaScript ES modules, Canvas 2D, and raw WebGL.
 - METRIC-owned GLSL shaders are part of the engine, not decoration.
@@ -78,8 +207,8 @@ JavaScript must not become a second implementation of METRIC algorithms.
 - Canvas 2D is allowed for record panels, small charts, labels, and fallback
   surfaces.
 - SVG is only a static documentation fallback, not the main engine.
-- Babyplots may be studied and code may be ported with license obligations, but
-  no Babyplots names, APIs, data contracts, dependencies, or namespace artifacts
+- the earlier point-cloud renderer may be studied and code may be ported with license obligations, but
+  no the earlier point-cloud renderer names, APIs, data contracts, dependencies, or namespace artifacts
   are allowed in the public METRIC visual library.
 
 ## Library Name And Location

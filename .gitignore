@@ -6,6 +6,10 @@ python/pkg/metric/_impl/*.so
 python/pkg/metric/_impl/*.pyd
 .codex/
 .claude/
+.playwright-cli/
+output/playwright/
+runtime/visual-checks/
+visual/output/
 /*_PLAN.md
 .DS_Store
 Testing/

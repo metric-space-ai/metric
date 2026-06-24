@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>METRIC Visual — Cross-Space Dependency Hero</title>
+  <style>
+    :root { color-scheme: light; --ink: #223039; --muted: #54636b; --panel: rgba(245, 248, 244, 0.78); --border: rgba(212, 222, 222, 0.6); }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+    body { background: radial-gradient(circle at 50% 42%, rgba(255, 252, 238, 0.82), rgba(230, 236, 231, 0.96) 62%, #dfe6e1 100%); font: 12px/1.4 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--ink); }
+    main { position: fixed; inset: 0; }
+    canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+    .tag { position: absolute; top: 16px; padding: 4px 11px; border-radius: 999px; background: var(--panel); border: 1px solid var(--border); font-weight: 720; font-size: 11.5px; backdrop-filter: blur(10px); }
+    .tag.a { left: 18px; }
+    .tag.b { right: 18px; }
+    .hud { position: absolute; left: 50%; top: 16px; transform: translateX(-50%); max-width: 470px; text-align: center; padding: 11px 15px; border: 1px solid var(--border); border-radius: 13px; background: var(--panel); box-shadow: 0 12px 40px rgba(77, 92, 97, 0.12); backdrop-filter: blur(12px); z-index: 3; }
+    .hud h1 { margin: 0 0 3px; font-size: 14px; font-weight: 700; }
+    .hud p { margin: 0; color: var(--muted); font-size: 11px; }
+    .hud .stat { color: var(--ink); font-variant-numeric: tabular-nums; }
+    .legend { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; gap: 12px; align-items: center; color: var(--muted); z-index: 3; }
+    .legend .ramp { width: 168px; height: 9px; border-radius: 5px; background: linear-gradient(90deg, #1f3a5c, #1f9388, #f0a047, #d94f3a); }
+    .loading, .error { position: absolute; inset: 0; display: grid; place-items: center; color: #2a3a3a; z-index: 4; }
+    .error { color: #7a2222; }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene" aria-label="Paired metric spaces with dependence bridge"></canvas>
+    <div class="tag a">space A</div>
+    <div class="tag b">space B</div>
+    <section class="hud">
+      <h1>Cross-space dependency</h1>
+      <p>Two metric spaces over the same 1,100 paired observations, correlated as spaces — not forced into one shared coordinate system. Color is local dependence; where the spaces disagree it drops to blue. <span class="stat" id="stat"></span></p>
+    </section>
+    <div class="legend"><span>independent</span><div class="ramp"></div><span>dependent</span></div>
+    <div class="loading" id="loading">Loading paired-space evidence…</div>
+  </main>
+
+  <script type="module">
+    import { createMetricVisual } from "../../src/index.js";
+
+    const canvas = document.getElementById("scene");
+    const loading = document.getElementById("loading");
+    const stat = document.getElementById("stat");
+
+    try {
+      const response = await fetch("./evidence.json");
+      if (!response.ok) throw new Error(`evidence ${response.status}`);
+      const document_ = await response.json();
+
+      const visual = await createMetricVisual({
+        canvas,
+        evidence: document_,
+        profileId: "cross-space-dependency-profile",
+      });
+      visual.showCrossSpace({
+        coordinateA: "space-a-3d",
+        coordinateB: "space-b-3d",
+        dependenceProperty: "local-dependence",
+        linkedBrushing: true,
+        preview: "paired records",
+      });
+
+      const global = document_.provenance?.global_dependence ?? document_.diagnostics?.[0]?.value;
+      stat.textContent = global != null ? `global dependence ${Number(global).toFixed(3)}` : "";
+
+      document.documentElement.dataset.metricCrossSpaceHero = "ready";
+      document.documentElement.dataset.metricRecordCount = String(visual.views[0].recordIds.length);
+      window.metricCrossSpaceHero = { visual, runtime: visual.runtime, getState: () => visual.getState() };
+
+      loading.remove();
+      addEventListener("resize", () => { const r = canvas.getBoundingClientRect(); visual.runtime.resize(Math.max(1, Math.floor(r.width)), Math.max(1, Math.floor(r.height))); });
+    } catch (error) {
+      console.error(error);
+      loading.className = "loading error";
+      loading.textContent = error instanceof Error ? error.message : String(error);
+    }
+  </script>
+</body>
+</html>

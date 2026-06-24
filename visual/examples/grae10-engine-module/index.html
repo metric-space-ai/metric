@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GRAE10 Metric Space</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #243034;
+      --muted: #687579;
+      --panel: rgba(246, 244, 230, 0.72);
+      --panel-border: rgba(48, 63, 63, 0.18);
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #c9d2ca;
+      font: 12px/1.35 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+      main {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 42% 34%, rgba(226, 228, 213, 0.98), rgba(184, 206, 199, 0.92) 43%, rgba(80, 111, 122, 0.88) 100%);
+    }
+
+    canvas {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    canvas:active {
+      cursor: grabbing;
+    }
+
+    .controls {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px;
+      border: 1px solid var(--panel-border);
+      border-radius: 999px;
+      background: var(--panel);
+      box-shadow: 0 16px 48px rgba(55, 65, 60, 0.20);
+      backdrop-filter: blur(12px);
+      opacity: 0.82;
+      transition: opacity 140ms ease, transform 140ms ease;
+    }
+
+    .controls:hover,
+    .controls:focus-within {
+      opacity: 0.98;
+      transform: translateY(-1px);
+    }
+
+    .control {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border: 1px solid rgba(37, 50, 49, 0.18);
+      border-radius: 50%;
+      color: var(--ink);
+      background: rgba(255, 252, 235, 0.72);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.70);
+      cursor: pointer;
+    }
+
+    .control:hover {
+      background: rgba(255, 253, 239, 0.96);
+      border-color: rgba(37, 50, 49, 0.30);
+    }
+
+    .control:focus-visible {
+      outline: 2px solid rgba(34, 95, 111, 0.48);
+      outline-offset: 2px;
+    }
+
+    .control svg {
+      width: 17px;
+      height: 17px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .status {
+      position: fixed;
+      left: 20px;
+      bottom: 20px;
+      z-index: 2;
+      max-width: 360px;
+      padding: 10px 12px;
+      border: 1px solid rgba(49, 64, 65, 0.14);
+      border-radius: 14px;
+      color: var(--ink);
+      background: rgba(246, 244, 230, 0.58);
+      box-shadow: 0 14px 42px rgba(55, 65, 60, 0.16);
+      backdrop-filter: blur(10px);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(6px);
+      transition: opacity 160ms ease, transform 160ms ease;
+    }
+
+    .status[data-visible="true"] {
+      opacity: 0.92;
+      transform: translateY(0);
+    }
+
+    .status strong,
+    .status span {
+      display: block;
+    }
+
+    .status strong {
+      font-size: 13px;
+      font-weight: 720;
+      letter-spacing: 0;
+    }
+
+    .status span {
+      margin-top: 2px;
+      color: var(--muted);
+    }
+
+    .loading,
+    .error {
+      position: fixed;
+      inset: 0;
+      z-index: 4;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      color: #273437;
+      background: #d7dccf;
+      text-align: center;
+    }
+
+    .error {
+      color: #5b1f20;
+      background: #eaded0;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="metric-scene" aria-label="GRAE10 metric-space point cloud"></canvas>
+    <nav class="controls" aria-label="Scene controls">
+      <button class="control" type="button" data-action="zoom-in" aria-label="Zoom in" title="Zoom in">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <button class="control" type="button" data-action="zoom-out" aria-label="Zoom out" title="Zoom out">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>
+      </button>
+      <button class="control" type="button" data-action="toggle-motion" aria-label="Pause motion" title="Pause motion">
+        <svg viewBox="0 0 24 24" aria-hidden="true" data-pause-icon><path d="M8 6v12M16 6v12"/></svg>
+      </button>
+      <button class="control" type="button" data-action="reset-camera" aria-label="Reset camera" title="Reset camera">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.7M20 12a8 8 0 0 1-13.7 5.7M18 4v4h-4M6 20v-4h4"/></svg>
+      </button>
+    </nav>
+    <p class="status" id="status" data-visible="false" aria-hidden="true">
+      <strong>GRAE10 Metric Space</strong>
+      <span>Loading 60,000 records.</span>
+    </p>
+    <p class="loading" id="loading">Loading GRAE10 metric-space coordinates.</p>
+  </main>
+
+  <script type="module">
+    import { mountGrae10MetricEngine } from "../../src/miniature-engine/index.js";
+
+    mountGrae10MetricEngine({
+      canvas: document.getElementById("metric-scene"),
+      loading: document.getElementById("loading"),
+      status: document.getElementById("status"),
+      pauseIcon: document.querySelector("[data-pause-icon]"),
+      controlsRoot: document,
+      dataUrl: "../grae10-metric-engine/grae10-data.json",
+    });
+  </script>
+</body>
+</html>

@@ -284,14 +284,14 @@ interactive visualization experience.
 ### Primary Interactive Renderer
 
 The primary visualization track is a native browser library for large
-Canvas/WebGL/WebGL-shader views. Babyplots is only a technical reference for:
+Canvas/WebGL/WebGL-shader views. the earlier point-cloud renderer is only a technical reference for:
 
 - PHATE/AE derived coordinate spaces
 - 3D point clouds
 - interactive source-space graph exploration
 - brushing a point to inspect the original record and metric neighbors
 
-If Babyplots code is ported as a starting point, it must be fully assimilated
+If the earlier point-cloud renderer code is ported as a starting point, it must be fully assimilated
 into native METRIC visual code and must remain in the JavaScript/site layer,
 never as a C++ dependency. The adapter must consume exported METRIC evidence,
 not compute metric results. It must also provide static fallbacks for GitHub and

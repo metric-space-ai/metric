@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>METRIC Visual — Mixed-Record Hero</title>
+  <style>
+    :root { color-scheme: light; --ink: #223039; --muted: #54636b; --panel: rgba(245, 248, 244, 0.78); --border: rgba(212, 222, 222, 0.6); }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+    body { background: radial-gradient(circle at 48% 42%, rgba(255, 252, 238, 0.82), rgba(230, 236, 231, 0.96) 62%, #dfe6e1 100%); font: 12px/1.4 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--ink); }
+    main { position: fixed; inset: 0; }
+    canvas#scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+    .caption { position: absolute; left: 26px; top: 24px; max-width: 430px; pointer-events: none; text-shadow: 0 1px 16px rgba(255, 255, 255, 0.6); }
+    .caption h1 { margin: 0 0 7px; font-size: 17px; font-weight: 700; }
+    .caption p { margin: 0; font-size: 12px; line-height: 1.5; color: rgba(52, 66, 74, 0.82); max-width: 50ch; }
+    .matrix { position: absolute; right: 22px; top: 22px; padding: 12px 13px; border: 1px solid var(--border); border-radius: 13px; background: var(--panel); backdrop-filter: blur(12px); box-shadow: 0 12px 40px rgba(77, 92, 97, 0.12); }
+    .matrix h2 { margin: 0 0 8px; font-size: 11.5px; font-weight: 720; }
+    .matrix canvas { display: block; }
+    .legend { position: absolute; left: 26px; bottom: 22px; display: flex; flex-wrap: wrap; gap: 13px; color: var(--muted); }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .legend i { width: 11px; height: 11px; border-radius: 3px; }
+    .loading, .error { position: absolute; inset: 0; display: grid; place-items: center; color: #2a3a3a; }
+    .error { color: #7a2222; }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene" aria-label="Mixed-record metric space"></canvas>
+    <section class="caption" aria-hidden="true">
+      <h1>Mixed-record metric space</h1>
+      <p>Over two thousand text, vector, curve, histogram and image records compared in one finite metric space through type-appropriate metrics — colored by record family, not by a hand-built vector embedding.</p>
+    </section>
+    <aside class="matrix">
+      <h2>family ↔ family distance</h2>
+      <canvas id="family-matrix" width="180" height="180"></canvas>
+    </aside>
+    <div class="legend" id="legend"></div>
+    <div class="loading" id="loading">Loading mixed-record evidence…</div>
+  </main>
+
+  <script type="module">
+    import { createMetricVisual } from "../../src/index.js";
+
+    const FIXTURE_URL = "./evidence.json";
+    const FAMILY_COLORS = { text: "#3389c6", vector: "#1aab99", curve: "#f28a2e", histogram: "#765ab8", image: "#e0474f" };
+    const FAMILIES = Object.keys(FAMILY_COLORS);
+
+    const canvas = document.getElementById("scene");
+    const loading = document.getElementById("loading");
+    const legend = document.getElementById("legend");
+    const familyCanvas = document.getElementById("family-matrix");
+    const familyById = new Map();
+
+    function buildLegend() {
+      legend.replaceChildren(...FAMILIES.map((name) => {
+        const span = document.createElement("span");
+        const i = document.createElement("i"); i.style.background = FAMILY_COLORS[name];
+        span.append(i, document.createTextNode(name));
+        return span;
+      }));
+    }
+
+    function drawFamilyMatrix(document_) {
+      const relation = document_.relations[0];
+      const sums = {}, counts = {};
+      for (const a of FAMILIES) { sums[a] = {}; counts[a] = {}; for (const b of FAMILIES) { sums[a][b] = 0; counts[a][b] = 0; } }
+      for (const pair of relation.values) {
+        const a = familyById.get(String(pair.row_id)), b = familyById.get(String(pair.column_id));
+        if (!a || !b) continue;
+        sums[a][b] += pair.value; counts[a][b] += 1;
+      }
+      let max = 0;
+      const means = FAMILIES.map((a) => FAMILIES.map((b) => { const m = counts[a][b] ? sums[a][b] / counts[a][b] : NaN; if (Number.isFinite(m)) max = Math.max(max, m); return m; }));
+      const ctx = familyCanvas.getContext("2d");
+      const size = familyCanvas.width, cell = size / FAMILIES.length;
+      ctx.clearRect(0, 0, size, size);
+      means.forEach((row, r) => row.forEach((m, c) => {
+        const t = Number.isFinite(m) ? Math.min(1, m / (max || 1)) : 0;
+        ctx.fillStyle = Number.isFinite(m) ? `rgb(${Math.round(36 + t * 206)}, ${Math.round(124 - t * 44)}, ${Math.round(140 - t * 86)})` : "rgba(120,130,128,0.1)";
+        ctx.fillRect(c * cell, r * cell, Math.ceil(cell), Math.ceil(cell));
+      }));
+    }
+
+    function fit(runtime) { const r = canvas.getBoundingClientRect(); runtime.resize(Math.max(1, Math.floor(r.width)), Math.max(1, Math.floor(r.height))); }
+
+    try {
+      buildLegend();
+      const response = await fetch(FIXTURE_URL);
+      if (!response.ok) throw new Error(`fixture ${response.status}`);
+      const document_ = await response.json();
+      for (const p of document_.properties) if (p.id === "family") for (const v of p.values) familyById.set(String(v.record_id), v.value);
+
+      const visual = await createMetricVisual({
+        canvas,
+        evidence: document_,
+        profileId: "mixed-record-hero-profile",
+      });
+      visual.showMixedRecords({
+        coordinateId: "layout-3d",
+        glyphBy: "family",
+        labels: "family",
+        relationId: "cross-metric",
+        crossTypeRelations: true,
+        topK: 5,
+        preview: "text image curve table",
+        pointSize: 1.4,
+      });
+
+      drawFamilyMatrix(document_);
+      document.documentElement.dataset.metricMixedHero = "ready";
+      document.documentElement.dataset.metricRecordCount = String(visual.views[0].recordIds.length);
+      window.metricMixedHero = { visual, runtime: visual.runtime, getState: () => visual.getState() };
+
+      loading.remove();
+      addEventListener("resize", () => fit(visual.runtime));
+    } catch (error) {
+      console.error(error);
+      loading.className = "loading error";
+      loading.textContent = error instanceof Error ? error.message : String(error);
+    }
+  </script>
+</body>
+</html>

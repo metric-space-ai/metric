@@ -50,9 +50,9 @@ namespace, include, package lookup, fetch, dependency, repository, or target
 marker.
 
 `scripts/check_metric_numeric_seams.rb` is the no-visible-seam guard for the
-Metric numeric core. It scans source-visible files and fails on upstream/vendor
-numeric paths, stale rewrite artifacts, relative numeric-core includes, quoted
-Metric numeric includes, or old upstream numeric markers inside `metric/numeric`.
+Metric numeric core. It scans source-visible files and fails on external numeric
+paths, stale rewrite artifacts, relative numeric-core includes, quoted Metric
+numeric includes, or old external numeric markers inside `metric/numeric`.
 
 The promoted Metric numeric/graph primitive smoke group is labelled
 `metric_numeric_core`. Run it locally with:
@@ -74,6 +74,18 @@ ctest --test-dir build/core -L metric_phate_pipeline --output-on-failure
 ctest --test-dir build/core -L metric_application_evidence --output-on-failure
 ctest --test-dir build/core -L metric_benchmark_report --output-on-failure
 ```
+
+The visual public-gallery gate protects the project page from synthetic hero
+fixtures and protects the accepted 60k GRAE10 visual reference:
+
+```bash
+node visual/tools/check-grae10-golden.mjs
+node visual/tools/check-public-gallery-evidence.mjs
+```
+
+Passing browser smoke checks alone does not make a hero public. A public hero
+also needs native C++ evidence or a documented reference asset, as tracked in
+[hero-gallery-backlog.md](hero-gallery-backlog.md).
 
 The promoted native distance-matrix and stable-ID gate is labelled
 `metric_distance_matrix_id`:

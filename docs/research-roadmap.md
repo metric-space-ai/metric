@@ -203,5 +203,4 @@ query recovery, metric-space structure, and padded-vector baseline failures.
 The interactive presentation layer is tracked separately in
 [METRIC Visual Library Plan](visual-library-plan.md). That work is a
 JavaScript/WebGL visualization library for linked high-volume views over
-exported METRIC evidence. Babyplots is a technical reference for point-cloud
-performance, morphs, and animation quality, not a dependency or adapter.
+exported METRIC evidence.
