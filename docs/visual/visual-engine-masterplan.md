@@ -123,6 +123,7 @@ Implemented native slices:
 - native `metric.visual.v1` exporter assets for condition monitoring, mixed
   records, cross-space dependency, dynamics/noise, relation matrix and
   mapping/dimensionality under `docs/examples/assets/*/metric.visual.json`
+- header-only C++ writer foundation under `visual/cpp/mtrc_visual.hpp`
 
 Known gaps:
 
@@ -147,6 +148,8 @@ Known gaps:
   reference captures
 - no visual regression test suite yet
 - no performance benchmark matrix for large record counts yet
+- exporter documents validate, but exporter-local JSON writer duplication still
+  needs to be consolidated through `mtrc::visual`
 
 It must help users inspect:
 

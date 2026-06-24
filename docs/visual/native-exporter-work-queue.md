@@ -51,6 +51,28 @@ Integrated native exporter coverage now includes mixed records, cross-space
 dependency, finite metric dynamics, relation matrix, condition monitoring, and
 mapping/dimensionality evidence.
 
+## C++ Writer Core
+
+Native exporter validation proves that a document is schema-valid and indexable.
+It does not prove that the native export surface is production-quality.
+
+The reusable writer core is tracked in:
+
+```text
+visual/cpp/mtrc_visual.hpp
+docs/visual/agent-tasks/cpp-visual-export-core-workstream.md
+```
+
+Current status:
+
+- `visual/cpp/mtrc_visual.hpp` provides the header-only C++17 writer foundation.
+- `visual/tools/check-cpp-export.mjs` validates the standalone C++ helper path.
+- The six native exporters still need a follow-up refactor wave so common
+  JSON/document/file writing flows through `mtrc::visual` instead of
+  exporter-local helpers.
+
+Refactor one exporter per worker. Keep write scopes disjoint.
+
 ## Acceptance For A Native Exporter
 
 An exporter is integration-ready when:

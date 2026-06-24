@@ -9,6 +9,7 @@
 //   /tmp/mtrc_export
 #include <cmath>
 #include <cstdio>
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -33,7 +34,8 @@ int main() {
     double b = std::cos(i * 0.5);
     std::vector<double> feature = {a, b, static_cast<double>(i) / n};
     features.push_back(feature);
-    doc.record(id, ds, "vector", "obs " + std::to_string(i), vector_payload(feature));
+    doc.record(id, ds, "vector", "obs " + std::to_string(i), vector_payload(feature),
+               object({size_field("source_index", static_cast<std::size_t>(i)), bool_field("synthetic", true)}));
   }
 
   // k-nearest edges over the already-computed feature vectors (k = 3).
@@ -55,8 +57,10 @@ int main() {
     }
   }
 
-  doc.metric_relation("metric", ds, "feature metric", ids, edges);
-  doc.space("space", ds, ids, "metric", "finite_metric_space");
+  doc.metric_relation("metric", ds, "feature metric", ids, edges, "sparse_edge_list",
+                      object({bool_field("symmetric", false), size_field("edge_count", edges.size())}));
+  doc.space("space", ds, ids, "metric", "finite_metric_space",
+            object({string_field("basis", "already-computed feature distances")}));
 
   std::vector<Position> positions;
   std::vector<ScalarValue> entropy;
@@ -64,8 +68,19 @@ int main() {
     positions.push_back(Position{ids[i], {features[i][0], features[i][2], features[i][1]}});
     entropy.push_back(ScalarValue{ids[i], 0.4 + 0.5 * std::fabs(features[i][0])});
   }
-  doc.coordinates3("landmark-3d", ds, "space", "metric-space lift", positions);
-  doc.scalar_property("entropy", ds, "local entropy", entropy);
+  doc.coordinates3("landmark-3d", ds, "space", "metric-space lift", positions,
+                   object({string_field("method", "synthetic lift"), size_array_field("axes", {0, 2, 1})}));
+  doc.scalar_property("entropy", ds, "local entropy", entropy,
+                      object({number_field("min_display", 0.0), number_field("max_display", 1.0)}));
+  doc.timeline_json(object({string_field("id", "initial-state"), string_field("dataset_id", ds),
+                            string_field("name", "Initial exported state"),
+                            field("steps", array_of({object({size_field("index", 0),
+                                                             string_field("coordinate_id", "landmark-3d"),
+                                                             string_field("property_id", "entropy"),
+                                                             string_field("relation_id", "metric")})}))}));
+  doc.view_json(object({string_field("id", "metric-space-view"), string_field("kind", "metric-space"),
+                        string_field("spaceId", "space"), string_field("coordinateId", "landmark-3d"),
+                        string_field("propertyId", "entropy")}));
 
   std::printf("%s\n", doc.to_json().c_str());
   return 0;

@@ -33,6 +33,7 @@ set, and one validation path.
 | `record-glyph-field-grammar-workstream.md` | typed record glyphs and property fields | ready to assign |
 | `mapping-dynamics-motion-grammar-workstream.md` | mapping, dynamics, timeline and solver-trace grammar | ready to assign |
 | `visual-regression-performance-workstream.md` | browser regression and performance gates | ready to assign |
+| `cpp-visual-export-core-workstream.md` | reusable C++ `metric.visual.v1` writer core and single-exporter refactor rules | ready to assign |
 
 ## Next Slots
 
@@ -41,6 +42,7 @@ starts from reusable engine capabilities, visual grammars and gallery assets,
 not from synthetic data or one-off pages:
 
 - harden the public command API so examples call semantic commands
+- consolidate native exporter writer code through `visual/cpp/mtrc_visual.hpp`
 - make relation, glyph/field and mapping/dynamics grammars first-class engine
   capabilities
 - run screenshot/performance review against the GRAE10 visual reference and

@@ -872,6 +872,22 @@ Acceptance:
 - exported documents load directly in METRIC Visual
 - examples do not require CMake-specific generated assets to be inspected
 
+Current status:
+
+- `visual/cpp/mtrc_visual.hpp` is the header-only C++17 writer foundation.
+- `visual/tools/check-cpp-export.mjs` compiles and validates the standalone
+  helper example.
+- The six native visual exporters are schema-valid and CTest-integrated.
+- Exporter writer reuse is incomplete: each exporter still needs a
+  single-exporter refactor toward `mtrc::visual` before the native export layer
+  can be called production-ready.
+
+Execution contract:
+
+```text
+docs/visual/agent-tasks/cpp-visual-export-core-workstream.md
+```
+
 ## Execution Order
 
 ### Phase 1: Stabilize The Contract
