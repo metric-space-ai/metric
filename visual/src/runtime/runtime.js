@@ -334,6 +334,7 @@ export class MetricVisualRuntime {
     this.unsubscribeHoverFocus = null;
     this.selection = {
       recordId: null,
+      pair: null,
       record: null,
       source: null,
     };
@@ -637,6 +638,7 @@ export class MetricVisualRuntime {
       : focusTargetForRecord(this, recordId, options);
     this.selection = {
       recordId,
+      pair: null,
       record: this.visualSpace?.getRecord ? this.visualSpace.getRecord(recordId) : null,
       source: options.source || null,
       focusTarget,
@@ -658,6 +660,24 @@ export class MetricVisualRuntime {
     return this;
   }
 
+  selectPair(pair, options = {}) {
+    const normalized = normalizeSelectionPair(pair);
+    this.selection = {
+      recordId: null,
+      pair: normalized,
+      record: null,
+      source: options.source || null,
+      focusTarget: null,
+    };
+    this.applySelectionToLayers();
+    this.emit("selectionchange", {
+      runtime: this,
+      selection: this.selection,
+    });
+    this.requestRender();
+    return this;
+  }
+
   clearSelection(options = {}) {
     if (options.focus !== false && this.focusTarget?.source === "record-selection") {
       this.clearFocusTarget({
@@ -668,6 +688,7 @@ export class MetricVisualRuntime {
     }
     this.selection = {
       recordId: null,
+      pair: null,
       record: null,
       source: options.source || null,
     };
@@ -918,6 +939,7 @@ export class MetricVisualRuntime {
       disposed: this.disposed,
       hasDocument: Boolean(this.document),
       selectedRecordId: this.selection.recordId,
+      selectedPair: this.selection.pair ? clonePlainObject(this.selection.pair) : null,
       focusTarget: this.focusTarget ? clonePlainObject(this.focusTarget) : null,
       hoverFocus: {
         enabled: this.hoverFocusOptions.enabled === true,
@@ -1744,6 +1766,28 @@ function focusTargetForRecord(runtime, recordId, options = {}) {
     coordinateId: match?.state?.id || match?.state?.coordinate_id || null,
     position,
   } : null;
+}
+
+function normalizeSelectionPair(pair) {
+  if (!pair || typeof pair !== "object") {
+    throw new Error("selectPair() requires a pair object.");
+  }
+  const rowId = pair.rowId ?? pair.row_id ?? pair.sourceId ?? pair.source_id;
+  const columnId = pair.columnId ?? pair.column_id ?? pair.targetId ?? pair.target_id;
+  if (rowId == null || columnId == null) {
+    throw new Error("selectPair() requires row/column record ids.");
+  }
+  return {
+    relationId: pair.relationId ?? pair.relation_id ?? null,
+    rowId: String(rowId),
+    columnId: String(columnId),
+    row: Number.isFinite(Number(pair.row)) ? Number(pair.row) : null,
+    column: Number.isFinite(Number(pair.column)) ? Number(pair.column) : null,
+    value: pair.value,
+    present: pair.present !== false,
+    offset: Number.isFinite(Number(pair.offset)) ? Number(pair.offset) : null,
+    size: Number.isFinite(Number(pair.size)) ? Number(pair.size) : null,
+  };
 }
 
 function normalizeCameraFocusTarget(value) {

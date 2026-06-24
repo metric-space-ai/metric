@@ -476,6 +476,14 @@ export class MetricVisualSurface {
         });
       }));
       this.previewSubscriptions.push(this.runtime.on("selectionchange", ({ selection }) => {
+        if (selection?.pair) {
+          this.previewPanel?.show({
+            pair: selection.pair,
+            x: window.innerWidth * 0.58,
+            y: window.innerHeight * 0.34,
+          });
+          return;
+        }
         if (!selection?.recordId) return;
         this.previewPanel?.show({
           recordId: selection.recordId,
@@ -485,8 +493,10 @@ export class MetricVisualSurface {
         });
       }));
       this.previewPointerMoveBound ||= ((event) => this.handlePreviewPointerMove(event));
+      this.previewPointerClickBound ||= ((event) => this.handlePreviewPointerClick(event));
       this.hideRecordPreviewBound ||= (() => this.previewPanel?.hide());
       this.canvas.addEventListener("pointermove", this.previewPointerMoveBound);
+      this.canvas.addEventListener("click", this.previewPointerClickBound);
       this.canvas.addEventListener("pointerleave", this.hideRecordPreviewBound);
     }
     this.previewMode = options.mode || "record";
@@ -496,6 +506,7 @@ export class MetricVisualSurface {
   disableRecordPreview() {
     for (const unsubscribe of this.previewSubscriptions.splice(0)) unsubscribe?.();
     if (this.previewPointerMoveBound) this.canvas.removeEventListener("pointermove", this.previewPointerMoveBound);
+    if (this.previewPointerClickBound) this.canvas.removeEventListener("click", this.previewPointerClickBound);
     if (this.hideRecordPreviewBound) this.canvas.removeEventListener("pointerleave", this.hideRecordPreviewBound);
     this.previewPanel?.hide();
     return this;
@@ -550,6 +561,16 @@ export class MetricVisualSurface {
       x: event.clientX,
       y: event.clientY,
     });
+  }
+
+  handlePreviewPointerClick(event) {
+    if (String(this.previewMode || "").toLowerCase().includes("pair")) {
+      const pairHit = this.pickPreviewPair(event);
+      if (pairHit) {
+        this.runtime.selectPair(pairHit, { source: "metric-visual-pair-preview" });
+        document.documentElement.dataset.metricSelectedPair = `${pairHit.rowId}|${pairHit.columnId}`;
+      }
+    }
   }
 
   pickPreviewPair(event) {

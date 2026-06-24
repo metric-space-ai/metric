@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
-import { createRelationMatrixPicker, pickRelationMatrixCell } from "../src/relational/index.js";
+import { createRelationMatrixPicker, pickRelationMatrixCell, RelationMatrixLayer } from "../src/relational/index.js";
 
 const matrix = {
   kind: "dense-relation-matrix",
@@ -24,6 +24,7 @@ const matrix = {
 const descriptor = {
   primitive: "RelationMatrixLayer",
   geometry: { rect: [0.25, 0.2, 0.5, 0.6] },
+  source: { relationId: "toy-metric" },
   metadata: { matrix },
 };
 
@@ -79,6 +80,37 @@ assert.equal(cell.columnId, "a");
 cell = pickRelationMatrixCell(descriptor, { normalized: true, x: 0.26, y: 0.79 });
 assert.equal(cell.rowId, "c");
 assert.equal(cell.columnId, "a");
+
+const layer = new RelationMatrixLayer(descriptor);
+layer.setSelection({
+  pair: {
+    relationId: "toy-metric",
+    rowId: "b",
+    columnId: "c",
+    row: 1,
+    column: 2,
+    value: 4,
+  },
+});
+assert.deepEqual(layer.selection, {
+  row: 1,
+  column: 2,
+  active: true,
+});
+
+layer.setSelection({ recordId: "a" });
+assert.deepEqual(layer.selection, {
+  row: 0,
+  column: 0,
+  active: true,
+});
+
+layer.setSelection({ pair: { rowId: "missing", columnId: "a" } });
+assert.deepEqual(layer.selection, {
+  row: -1,
+  column: 0,
+  active: false,
+});
 
 assert.throws(
   () => createRelationMatrixPicker({ metadata: { matrix: { kind: "dense-relation-matrix", size: 0 } } }),
