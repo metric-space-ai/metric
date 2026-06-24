@@ -11,6 +11,7 @@
 
 #include <metric/core/concepts.hpp>
 #include <metric/core/errors.hpp>
+#include <metric/core/metric_space.hpp>
 #include <metric/core/neighbor.hpp>
 #include <metric/core/parameters.hpp>
 #include <metric/record/id.hpp>
@@ -68,6 +69,27 @@ auto find_neighbors(const Space &space, const typename Space::record_type &query
 	-> NeighborSet<typename Space::distance_type>
 {
 	return find_neighbors(space, query, requested.value);
+}
+
+template <typename Container, typename Metric,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto find_neighbors(const Container &records, const Metric &metric, const Record &query, std::size_t count)
+	-> NeighborSet<metric_result_t<Metric, Record>>
+{
+	auto space = core::make_space(records, metric);
+	auto result = find_neighbors(space, query, count);
+	result.representation = "records";
+	return result;
+}
+
+template <typename Container, typename Metric,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto find_neighbors(const Container &records, const Metric &metric, const Record &query, ::mtrc::count requested)
+	-> NeighborSet<metric_result_t<Metric, Record>>
+{
+	return find_neighbors(records, metric, query, requested.value);
 }
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
@@ -307,6 +329,26 @@ auto find_neighbors(const Space &space, RecordId query_id, ::mtrc::count request
 	return find_neighbors(space, query_id, requested.value, strategy);
 }
 
+template <typename Container, typename Metric, typename Strategy,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto find_neighbors(const Container &records, const Metric &metric, const Record &query, std::size_t count,
+					Strategy strategy) -> NeighborSet<metric_result_t<Metric, Record>>
+{
+	auto space = core::make_space(records, metric);
+	auto result = find_neighbors(space, query, count, strategy);
+	return result;
+}
+
+template <typename Container, typename Metric, typename Strategy,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto find_neighbors(const Container &records, const Metric &metric, const Record &query, ::mtrc::count requested,
+					Strategy strategy) -> NeighborSet<metric_result_t<Metric, Record>>
+{
+	return find_neighbors(records, metric, query, requested.value, strategy);
+}
+
 template <typename Space, typename Radius, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto range(const Space &space, const typename Space::record_type &query, Radius radius,
 		   stats::search::knn_graph strategy) -> NeighborSet<typename Space::distance_type>
@@ -465,6 +507,29 @@ auto range(const Space &space, const typename Space::record_type &query, Radius 
 	}
 	}
 	return stats::search::range(space, query, radius);
+}
+
+template <typename Container, typename Metric, typename Radius,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto range(const Container &records, const Metric &metric, const Record &query, Radius radius)
+	-> NeighborSet<metric_result_t<Metric, Record>>
+{
+	auto space = core::make_space(records, metric);
+	auto result = stats::search::range(space, query, radius);
+	result.representation = "records";
+	return result;
+}
+
+template <typename Container, typename Metric, typename Radius, typename Strategy,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto range(const Container &records, const Metric &metric, const Record &query, Radius radius, Strategy strategy)
+	-> NeighborSet<metric_result_t<Metric, Record>>
+{
+	auto space = core::make_space(records, metric);
+	auto result = range(space, query, radius, strategy);
+	return result;
 }
 
 template <typename Space, typename Radius, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>

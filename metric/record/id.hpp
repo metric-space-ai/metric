@@ -6,6 +6,7 @@
 #define _METRIC_RECORD_ID_HPP
 
 #include <cstddef>
+#include <functional>
 
 namespace mtrc::record {
 
@@ -36,5 +37,16 @@ using RecordId = record::RecordId;
 namespace mtrc::core {
 using ::mtrc::record::RecordId;
 } // namespace mtrc::core
+
+namespace std {
+
+template <> struct hash<mtrc::record::RecordId> {
+	auto operator()(mtrc::record::RecordId id) const noexcept -> std::size_t
+	{
+		return std::hash<std::size_t>{}(id.index());
+	}
+};
+
+} // namespace std
 
 #endif

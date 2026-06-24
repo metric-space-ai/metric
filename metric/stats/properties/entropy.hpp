@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstddef>
 #include <type_traits>
+#include <utility>
 
 #include <metric/core/concepts.hpp>
 #include <metric/core/result.hpp>
@@ -26,6 +27,13 @@ struct effective_parameters {
 	std::size_t neighbor_count{};
 	std::size_t approximation_order{};
 };
+
+template <typename Record, typename = void> struct VectorLikeRecord : std::false_type {};
+
+template <typename Record>
+struct VectorLikeRecord<Record, std::void_t<decltype(std::declval<const Record &>().size()),
+											decltype(std::declval<const Record &>()[std::declval<std::size_t>()])>>
+	: std::true_type {};
 
 inline auto entropy_effective_parameters(std::size_t record_count, std::size_t k, std::size_t p)
 	-> effective_parameters
@@ -49,18 +57,24 @@ inline auto entropy_effective_parameters(std::size_t record_count, std::size_t k
 	return {k_, p_};
 }
 
-} // namespace entropy_detail
-
-// Entropy is a Level-1 PROPERTY of a finite metric space, not a metric. It estimates
-// the information content / local freedom of the space directly from metric values, so
-// the chosen metric stays part of the diagnostic instead of being hidden behind a
-// vector embedding.
+// Entropy is a Level-1 PROPERTY of a coordinate finite metric space, not a source-metric
+// shortcut. The current kpN estimator uses the space metric for local-neighborhood search,
+// but it also fits local Gaussian volumes from coordinate-like records. In the METRIC
+// pipeline this means: first map/embed the source finite metric space into a coordinate
+// space with an appropriate Euclidean-style metric, then run entropy on that derived
+// space. A true provider-only entropy estimator over arbitrary PairwiseDistances would
+// need a different implementation instead of a wrapper around this one.
 //
 // The estimator (mtrc::Entropy) is a kpN local-Gaussian, Kozachenko-Leonenko-style
 // DIFFERENTIAL entropy estimator (hal-01272527). Assumptions and edge cases callers
 // must know:
 //
-//   * `metric` is the authoritative distance; the default record family uses Chebyshev.
+//   * The input is the embedded/coordinate space; do not call entropy directly on source
+//     records plus their domain metric.
+//   * The derived space metric is the authoritative local-neighborhood distance; the
+//     default record family uses Chebyshev.
+//   * Records must expose size() and operator[](index); arbitrary opaque records and
+//     precomputed distance providers are outside this estimator's contract.
 //   * `k` is the nearest-neighbor count and `p` the local approximation order
 //     (realizations used to fit each local Gaussian). For small spaces both are
 //     silently clamped internally (p -> min(p, n-1) and >= 3, k -> < p and >= 2). The
@@ -81,12 +95,14 @@ inline auto entropy_effective_parameters(std::size_t record_count, std::size_t k
 template <typename Container, typename Metric,
 		  typename Record = typename std::decay<typename Container::value_type>::type,
 		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
-auto entropy(const Container &records, const Metric &metric, std::size_t k = 7, std::size_t p = 70,
-			 bool exponentiated = false) -> EntropyResult<double>
+auto coordinate_entropy(const Container &records, const Metric &metric, std::size_t k, std::size_t p,
+						bool exponentiated, const char *representation) -> EntropyResult<double>
 {
+	static_assert(VectorLikeRecord<Record>::value,
+				  "mtrc::entropy requires an embedded coordinate space whose records expose size() and operator[]");
 	mtrc::Entropy<void, Metric> estimator(metric, k, p, exponentiated);
 
-	auto result = core::make_entropy_result(estimator(records), records.size(), k, p, exponentiated, "records");
+	auto result = core::make_entropy_result(estimator(records), records.size(), k, p, exponentiated, representation);
 
 	// Classify the outcome explicitly (see entropy_status). A finite value -- including a
 	// negative differential entropy -- is valid; the estimator's std::nan("estimation
@@ -97,7 +113,7 @@ auto entropy(const Container &records, const Metric &metric, std::size_t k = 7, 
 		result.effective_neighbor_count = 0;
 		result.effective_approximation_order = 0;
 	} else {
-		const auto effective = entropy_detail::entropy_effective_parameters(record_count, k, p);
+		const auto effective = entropy_effective_parameters(record_count, k, p);
 		result.effective_neighbor_count = effective.neighbor_count;
 		result.effective_approximation_order = effective.approximation_order;
 		if (std::isnan(result.value)) {
@@ -112,12 +128,35 @@ auto entropy(const Container &records, const Metric &metric, std::size_t k = 7, 
 	return result;
 }
 
+} // namespace entropy_detail
+
+template <typename Container, typename Metric,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto entropy(const Container &records, const Metric &metric, std::size_t k = 7, std::size_t p = 70,
+			 bool exponentiated = false) -> EntropyResult<double>
+{
+	auto result = entropy_detail::coordinate_entropy(records, metric, k, p, exponentiated, "records");
+	result.representation = "records";
+	return result;
+}
+
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto entropy(const Space &space, std::size_t k = 7, std::size_t p = 70, bool exponentiated = false)
 	-> EntropyResult<double>
 {
-	auto result = entropy(space.records(), space.metric(), k, p, exponentiated);
+	auto result = entropy_detail::coordinate_entropy(space.records(), space.metric(), k, p, exponentiated,
+													 "metric_space");
 	result.representation = "metric_space";
+	return result;
+}
+
+template <typename Space>
+auto entropy(const core::MappingResult<Space> &mapping, std::size_t k = 7, std::size_t p = 70,
+			 bool exponentiated = false) -> EntropyResult<double>
+{
+	auto result = entropy(mapping.space, k, p, exponentiated);
+	result.representation = mapping.mapping.empty() ? "mapped_metric_space" : mapping.mapping;
 	return result;
 }
 

@@ -9,6 +9,7 @@
 #include <ostream>
 #include <stdexcept>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -28,7 +29,7 @@ template <typename Record, typename Metric> class MetricSpace {
 
 	MetricSpace(std::vector<record_type> records, metric_type metric)
 		: records_(std::move(records)), metric_(std::move(metric)), ids_(make_initial_ids(records_.size())),
-		  next_record_id_(records_.size())
+		  id_positions_(make_position_lookup(records_.size(), ids_)), next_record_id_(records_.size())
 	{
 		static_assert(MetricCallable_v<metric_type, record_type>,
 					  "mtrc::core::MetricSpace requires a metric callable accepting two records");
@@ -37,7 +38,8 @@ template <typename Record, typename Metric> class MetricSpace {
 	MetricSpace(std::vector<record_type> records, metric_type metric, std::vector<RecordId> ids,
 				std::size_t next_record_id, SpaceVersion version = initial_space_version)
 		: records_(std::move(records)), metric_(std::move(metric)), ids_(std::move(ids)),
-		  next_record_id_(validate_identity(records_.size(), ids_, next_record_id)), version_(version)
+		  id_positions_(make_position_lookup(records_.size(), ids_)),
+		  next_record_id_(validate_next_record_id(ids_, next_record_id)), version_(version)
 	{
 		static_assert(MetricCallable_v<metric_type, record_type>,
 					  "mtrc::core::MetricSpace requires a metric callable accepting two records");
@@ -59,12 +61,16 @@ template <typename Record, typename Metric> class MetricSpace {
 
 	auto contains(RecordId id) const -> bool
 	{
-		return contains_record_id(ids_, id);
+		return id_positions_.find(id) != id_positions_.end();
 	}
 
 	auto position_of(RecordId id) const -> std::size_t
 	{
-		return position_of_record_id(ids_, id, "record id is not in the metric space");
+		const auto position = id_positions_.find(id);
+		if (position == id_positions_.end()) {
+			throw std::out_of_range("record id is not in the metric space");
+		}
+		return position->second;
 	}
 
 	auto record(RecordId id) const -> const record_type & { return records_.at(position_of(id)); }
@@ -79,9 +85,26 @@ template <typename Record, typename Metric> class MetricSpace {
 
 	auto insert(record_type record) -> RecordId
 	{
-		const auto id = RecordId::from_index(next_record_id_++);
-		records_.push_back(std::move(record));
-		ids_.push_back(id);
+		const auto id = RecordId::from_index(next_record_id_);
+		const auto position = records_.size();
+		id_positions_.reserve(ids_.size() + 1);
+		const auto inserted = id_positions_.emplace(id, position);
+		if (!inserted.second) {
+			throw std::logic_error("metric space RecordId generator reused an existing RecordId");
+		}
+		bool record_inserted = false;
+		try {
+			records_.push_back(std::move(record));
+			record_inserted = true;
+			ids_.push_back(id);
+		} catch (...) {
+			if (record_inserted) {
+				records_.pop_back();
+			}
+			id_positions_.erase(id);
+			throw;
+		}
+		++next_record_id_;
 		version_ = next_space_version(version_);
 		return id;
 	}
@@ -94,18 +117,22 @@ template <typename Record, typename Metric> class MetricSpace {
 
 	auto erase(RecordId id) -> bool
 	{
-		for (std::size_t position = 0; position < ids_.size(); ++position) {
-			if (ids_[position] == id) {
-				records_.erase(records_.begin() + static_cast<std::ptrdiff_t>(position));
-				ids_.erase(ids_.begin() + static_cast<std::ptrdiff_t>(position));
-				version_ = next_space_version(version_);
-				return true;
-			}
+		const auto found = id_positions_.find(id);
+		if (found == id_positions_.end()) {
+			return false;
 		}
-		return false;
+		const auto position = found->second;
+		records_.erase(records_.begin() + static_cast<std::ptrdiff_t>(position));
+		ids_.erase(ids_.begin() + static_cast<std::ptrdiff_t>(position));
+		id_positions_.erase(found);
+		refresh_positions_from(position);
+		version_ = next_space_version(version_);
+		return true;
 	}
 
   private:
+	using position_lookup_type = std::unordered_map<RecordId, std::size_t>;
+
 	static auto make_initial_ids(std::size_t count) -> std::vector<RecordId>
 	{
 		std::vector<RecordId> ids;
@@ -116,15 +143,26 @@ template <typename Record, typename Metric> class MetricSpace {
 		return ids;
 	}
 
-	static auto validate_identity(std::size_t record_count, const std::vector<RecordId> &ids,
-								  std::size_t next_record_id) -> std::size_t
+	static auto make_position_lookup(std::size_t record_count, const std::vector<RecordId> &ids)
+		-> position_lookup_type
 	{
 		if (ids.size() != record_count) {
 			throw std::invalid_argument("metric space identity needs one RecordId per record");
 		}
-		if (has_duplicate_record_ids(ids)) {
-			throw std::invalid_argument("metric space identity contains duplicate RecordIds");
+
+		position_lookup_type positions;
+		positions.reserve(ids.size());
+		for (std::size_t position = 0; position < ids.size(); ++position) {
+			const auto inserted = positions.emplace(ids[position], position);
+			if (!inserted.second) {
+				throw std::invalid_argument("metric space identity contains duplicate RecordIds");
+			}
 		}
+		return positions;
+	}
+
+	static auto validate_next_record_id(const std::vector<RecordId> &ids, std::size_t next_record_id) -> std::size_t
+	{
 		std::size_t minimum_next_id = 0;
 		for (const auto id : ids) {
 			if (id.index() >= minimum_next_id) {
@@ -137,6 +175,13 @@ template <typename Record, typename Metric> class MetricSpace {
 		return next_record_id;
 	}
 
+	auto refresh_positions_from(std::size_t first_position) -> void
+	{
+		for (std::size_t position = first_position; position < ids_.size(); ++position) {
+			id_positions_.at(ids_[position]) = position;
+		}
+	}
+
 	auto validate_position(std::size_t position) const -> void
 	{
 		if (position >= records_.size()) {
@@ -147,6 +192,7 @@ template <typename Record, typename Metric> class MetricSpace {
 	std::vector<record_type> records_;
 	metric_type metric_;
 	std::vector<RecordId> ids_;
+	position_lookup_type id_positions_;
 	std::size_t next_record_id_{};
 	SpaceVersion version_{initial_space_version};
 };

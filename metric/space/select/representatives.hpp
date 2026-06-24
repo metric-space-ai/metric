@@ -12,6 +12,7 @@
 #include <vector>
 
 #include <metric/core/concepts.hpp>
+#include <metric/core/metric_space.hpp>
 #include <metric/core/result.hpp>
 #include <metric/space/storage/implicit.hpp>
 #include <metric/space/storage/distance_table.hpp>
@@ -75,6 +76,19 @@ auto find_representatives(const Space &space, std::size_t count, space::select::
 	return result;
 }
 
+template <typename Container, typename Metric,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto find_representatives(const Container &records, const Metric &metric, std::size_t count,
+						  space::select::farthest_first strategy = {})
+	-> RepresentativeSet<metric_result_t<Metric, Record>>
+{
+	auto space = core::make_space(records, metric);
+	auto result = find_representatives(space, count, strategy);
+	result.representation = "records";
+	return result;
+}
+
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto find_representatives(const Space &space, std::size_t count, space::select::farthest_first strategy,
 						  space::storage::policy runtime_policy) -> RepresentativeSet<typename Space::distance_type>
@@ -98,6 +112,29 @@ auto find_representatives(const Space &space, std::size_t count, space::storage:
 	-> RepresentativeSet<typename Space::distance_type>
 {
 	return find_representatives(space, count, space::select::farthest_first{}, runtime_policy);
+}
+
+template <typename Container, typename Metric,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto find_representatives(const Container &records, const Metric &metric, std::size_t count,
+						  space::select::farthest_first strategy, space::storage::policy runtime_policy)
+	-> RepresentativeSet<metric_result_t<Metric, Record>>
+{
+	auto space = core::make_space(records, metric);
+	auto result = find_representatives(space, count, strategy, runtime_policy);
+	result.representation = space::storage::representative_representation(runtime_policy);
+	return result;
+}
+
+template <typename Container, typename Metric,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto find_representatives(const Container &records, const Metric &metric, std::size_t count,
+						  space::storage::policy runtime_policy)
+	-> RepresentativeSet<metric_result_t<Metric, Record>>
+{
+	return find_representatives(records, metric, count, space::select::farthest_first{}, runtime_policy);
 }
 
 } // namespace mtrc::space::select

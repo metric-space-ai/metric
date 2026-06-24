@@ -42,6 +42,7 @@ the finite metric-space question is explicit.
 - [Mappings](mappings.md)
 - [Finite Metric Dynamics](dynamics.md)
 - [Execution Policies](runtime.md)
+- [Scale-Safe Performance Plan](scale-performance-plan.md)
 - [Migration](migration.md)
 
 ## Placement Rule

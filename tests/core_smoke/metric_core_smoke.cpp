@@ -1,10 +1,12 @@
 #include <cassert>
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <tuple>
 #include <vector>
 
+#include "metric/core/neighbor.hpp"
 #include "metric/metric/catalog.hpp"
 #include "metric/space/index/operators.hpp"
 #include "metric/space.hpp"
@@ -13,8 +15,45 @@ struct AbsoluteDistance {
 	auto operator()(int lhs, int rhs) const -> int { return lhs > rhs ? lhs - rhs : rhs - lhs; }
 };
 
+namespace {
+
+auto id(std::size_t index) -> mtrc::RecordId { return mtrc::RecordId::from_index(index); }
+
+void nearest_neighbor_selection_keeps_sort_semantics()
+{
+	using Neighbor = mtrc::core::Neighbor<double>;
+
+	const auto empty = mtrc::core::take_nearest_neighbors(
+		std::vector<Neighbor>{{id(2), 2.0}, {id(1), 1.0}, {id(0), 0.5}}, 0);
+	assert(empty.empty());
+
+	const auto one_from_ties = mtrc::core::take_nearest_neighbors(
+		std::vector<Neighbor>{{id(4), 1.0}, {id(1), 1.0}, {id(3), 2.0}}, 1);
+	assert(one_from_ties.size() == 1);
+	assert(one_from_ties[0].id == id(1) && one_from_ties[0].distance == 1.0);
+
+	const auto nearest = mtrc::core::take_nearest_neighbors(
+		std::vector<Neighbor>{{id(8), 4.0}, {id(5), 2.0}, {id(2), 2.0}, {id(1), 1.0}, {id(7), 3.0}}, 3);
+	assert(nearest.size() == 3);
+	assert(nearest[0].id == id(1) && nearest[0].distance == 1.0);
+	assert(nearest[1].id == id(2) && nearest[1].distance == 2.0);
+	assert(nearest[2].id == id(5) && nearest[2].distance == 2.0);
+
+	const auto nan = std::numeric_limits<double>::quiet_NaN();
+	const auto with_nan = mtrc::core::take_nearest_neighbors(
+		std::vector<Neighbor>{{id(4), nan}, {id(1), 2.0}, {id(3), nan}, {id(2), 1.0}}, 3);
+	assert(with_nan.size() == 3);
+	assert(with_nan[0].id == id(2) && with_nan[0].distance == 1.0);
+	assert(with_nan[1].id == id(1) && with_nan[1].distance == 2.0);
+	assert(with_nan[2].id == id(3) && std::isnan(with_nan[2].distance));
+}
+
+} // namespace
+
 int main()
 {
+	nearest_neighbor_selection_keeps_sort_semantics();
+
 	std::vector<std::string> records = {"cat", "cot", "coat", "dog"};
 
 	auto space = mtrc::Space::from_records(records, mtrc::Edit<std::string>{});

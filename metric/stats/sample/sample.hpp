@@ -13,6 +13,7 @@
 #include <vector>
 
 #include <metric/core/concepts.hpp>
+#include <metric/core/metric_space.hpp>
 #include <metric/core/result.hpp>
 #include <metric/record/id.hpp>
 #include <metric/space/storage/implicit.hpp>
@@ -205,6 +206,18 @@ auto farthest_first(const Space &space, std::size_t count, farthest_first_option
 	return result;
 }
 
+template <typename Container, typename Metric,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto farthest_first(const Container &records, const Metric &metric, std::size_t count,
+					farthest_first_options options = {}) -> SampleResult<metric_result_t<Metric, Record>>
+{
+	auto space = core::make_space(records, metric);
+	auto result = farthest_first(space, count, options);
+	result.representation = "records";
+	return result;
+}
+
 template <typename Provider, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
 auto metric_walk(const Provider &provider, std::size_t count, metric_walk_options options = {})
 	-> SampleResult<typename Provider::distance_type>
@@ -250,6 +263,18 @@ auto metric_walk(const Space &space, std::size_t count, metric_walk_options opti
 	return result;
 }
 
+template <typename Container, typename Metric,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto metric_walk(const Container &records, const Metric &metric, std::size_t count,
+				 metric_walk_options options = {}) -> SampleResult<metric_result_t<Metric, Record>>
+{
+	auto space = core::make_space(records, metric);
+	auto result = metric_walk(space, count, options);
+	result.representation = "records";
+	return result;
+}
+
 // regular_sample selects `count` records at evenly spaced positions (the deterministic
 // schedule of regular_sample_positions) and returns the full sampling lineage -- selected
 // RecordIds, their positions, the coverage radius, and the average nearest-sample distance
@@ -279,11 +304,25 @@ auto regular_sample(const Space &space, std::size_t count, std::size_t offset = 
 	return result;
 }
 
+template <typename Container, typename Metric,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto regular_sample(const Container &records, const Metric &metric, std::size_t count, std::size_t offset = 0)
+	-> SampleResult<metric_result_t<Metric, Record>>
+{
+	auto space = core::make_space(records, metric);
+	auto result = regular_sample(space, count, offset);
+	result.representation = "records";
+	return result;
+}
+
 } // namespace mtrc::stats::sample
 
 namespace mtrc {
 // Re-export so regular_sample sits at the same `mtrc::` depth as the other
 // space-level verbs.
+using stats::sample::farthest_first;
+using stats::sample::metric_walk;
 using stats::sample::regular_sample;
 } // namespace mtrc
 

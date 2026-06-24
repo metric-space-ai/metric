@@ -7,9 +7,11 @@
 
 #include <cstddef>
 #include <limits>
+#include <map>
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <metric/core/errors.hpp>
@@ -28,7 +30,45 @@ enum class distance_table_mode {
 struct distance_table_options {
 	distance_table_mode mode{distance_table_mode::eager};
 	std::size_t max_dense_records{};
+	std::size_t max_memory_bytes{};
 };
+
+namespace detail {
+
+inline auto checked_distance_table_size_product(std::size_t lhs, std::size_t rhs, const char *message) -> std::size_t
+{
+	if (rhs != 0 && lhs > std::numeric_limits<std::size_t>::max() / rhs) {
+		throw RepresentationError(message);
+	}
+	return lhs * rhs;
+}
+
+inline auto checked_distance_table_size_sum(std::size_t lhs, std::size_t rhs, const char *message) -> std::size_t
+{
+	if (lhs > std::numeric_limits<std::size_t>::max() - rhs) {
+		throw RepresentationError(message);
+	}
+	return lhs + rhs;
+}
+
+inline auto distance_table_dense_slot_count(std::size_t record_count) -> std::size_t
+{
+	return checked_distance_table_size_product(
+		record_count, record_count, "distance table dense storage exceeds size_t capacity");
+}
+
+} // namespace detail
+
+template <typename Distance> auto estimate_distance_table_memory_bytes(std::size_t record_count) -> std::size_t
+{
+	const auto dense_slots = detail::distance_table_dense_slot_count(record_count);
+	const auto matrix_bytes = detail::checked_distance_table_size_product(
+		dense_slots, sizeof(std::optional<Distance>), "distance table memory estimate exceeds size_t capacity");
+	const auto id_bytes = detail::checked_distance_table_size_product(
+		record_count, sizeof(RecordId), "distance table memory estimate exceeds size_t capacity");
+	return detail::checked_distance_table_size_sum(
+		matrix_bytes, id_bytes, "distance table memory estimate exceeds size_t capacity");
+}
 
 template <typename Distance> struct distance_table_snapshot_cell {
 	RecordId lhs;
@@ -80,6 +120,7 @@ template <typename Distance> struct distance_table_snapshot {
 	std::size_t cached_distances{};
 	std::size_t dense_distance_slots{};
 	std::size_t max_dense_records{};
+	std::size_t max_memory_bytes{};
 	std::string metric_key;
 	std::string cache_key;
 	std::vector<RecordId> source_record_ids;
@@ -135,22 +176,22 @@ template <typename Space> class DistanceTable {
 	using snapshot_type = distance_table_snapshot<distance_type>;
 
 	explicit DistanceTable(const space_type &space, distance_table_mode mode = distance_table_mode::eager)
-		: DistanceTable(space, distance_table_options{mode, 0})
+		: DistanceTable(space, distance_table_options{mode})
 	{
 	}
 
 	explicit DistanceTable(const space_type &space, distance_table_options options)
 		: space_(&space), record_count_(space.size()), version_(space.version()), options_(options),
-		  dense_distance_slots_(dense_slot_count(record_count_)), metric_key_(core::metric_cache_key(space.metric()))
+		  dense_distance_slots_(dense_slot_count(record_count_)),
+		  memory_bytes_estimate_(initial_memory_bytes_estimate(options_.mode, record_count_)),
+		  metric_key_(core::metric_cache_key(space.metric()))
 	{
-		if (options_.max_dense_records > 0 && record_count_ > options_.max_dense_records) {
-			throw RepresentationError("distance table dense storage exceeds max_dense_records");
-		}
+		enforce_budget();
 		ids_ = mtrc::record_ids(space);
 		cache_key_ = representation_cache_key("distance_table", metric_key_, version_, ids_);
 
-		matrix_.resize(dense_distance_slots_);
 		if (options_.mode == distance_table_mode::eager) {
+			matrix_.resize(dense_distance_slots_);
 			for (std::size_t lhs = 0; lhs < record_count_; ++lhs) {
 				for (std::size_t rhs = 0; rhs < record_count_; ++rhs) {
 					matrix_[offset(lhs, rhs)] = space.distance(ids_[lhs], ids_[rhs]);
@@ -168,15 +209,31 @@ template <typename Space> class DistanceTable {
 		}
 		const auto lhs_position = position_of(lhs);
 		const auto rhs_position = position_of(rhs);
-		auto &cached = matrix_[offset(lhs_position, rhs_position)];
-		if (cached.has_value()) {
-			++hits_;
+		if (options_.mode == distance_table_mode::eager) {
+			auto &cached = matrix_[offset(lhs_position, rhs_position)];
+			if (cached.has_value()) {
+				++hits_;
+				return *cached;
+			}
+			++misses_;
+			cached = space_->distance(lhs, rhs);
+			++cached_count_;
 			return *cached;
 		}
+
+		const sparse_cache_key key{lhs_position, rhs_position};
+		const auto cached = sparse_cache_.find(key);
+		if (cached != sparse_cache_.end()) {
+			++hits_;
+			return cached->second;
+		}
+
+		enforce_sparse_cache_budget(sparse_cache_.size() + 1);
 		++misses_;
-		cached = space_->distance(lhs, rhs);
+		const auto distance = space_->distance(lhs, rhs);
+		sparse_cache_.emplace(key, distance);
 		++cached_count_;
-		return *cached;
+		return distance;
 	}
 
 	auto record_count() const -> std::size_t { return record_count_; }
@@ -199,6 +256,8 @@ template <typename Space> class DistanceTable {
 	auto dense_distance_slots() const -> std::size_t { return dense_distance_slots_; }
 	auto mode() const -> distance_table_mode { return options_.mode; }
 	auto max_dense_records() const -> std::size_t { return options_.max_dense_records; }
+	auto max_memory_bytes() const -> std::size_t { return options_.max_memory_bytes; }
+	auto memory_bytes_estimate() const -> std::size_t { return current_memory_bytes_estimate(); }
 	auto metric_key() const -> const std::string & { return metric_key_; }
 	auto cache_key() const -> const std::string & { return cache_key_; }
 	auto source_record_ids() const -> const std::vector<RecordId> & { return ids_; }
@@ -214,14 +273,23 @@ template <typename Space> class DistanceTable {
 		result.cached_distances = cached_count_;
 		result.dense_distance_slots = dense_distance_slots_;
 		result.max_dense_records = options_.max_dense_records;
+		result.max_memory_bytes = options_.max_memory_bytes;
 		result.metric_key = metric_key_;
 		result.cache_key = cache_key_;
 		result.source_record_ids = ids_;
-		result.distances = distance_table_snapshot_cells<distance_type>(
-			ids_, record_count_, cached_count_,
-			[this](std::size_t lhs, std::size_t rhs) -> const std::optional<distance_type> & {
-				return matrix_[offset(lhs, rhs)];
-			});
+		if (options_.mode == distance_table_mode::eager) {
+			result.distances = distance_table_snapshot_cells<distance_type>(
+				ids_, record_count_, cached_count_,
+				[this](std::size_t lhs, std::size_t rhs) -> const std::optional<distance_type> & {
+					return matrix_[offset(lhs, rhs)];
+				});
+		} else {
+			result.distances.reserve(sparse_cache_.size());
+			for (const auto &cached : sparse_cache_) {
+				result.distances.push_back(distance_table_snapshot_cell<distance_type>{
+					ids_[cached.first.first], ids_[cached.first.second], cached.second});
+			}
+		}
 		return result;
 	}
 
@@ -230,8 +298,7 @@ template <typename Space> class DistanceTable {
 		distance_table_stats result;
 		result.hits = hits_;
 		result.misses = misses_;
-		result.fill_ratio =
-			matrix_.empty() ? 1.0 : static_cast<double>(cached_count_) / static_cast<double>(matrix_.size());
+		result.fill_ratio = fill_ratio();
 		result.symmetric_storage = false;
 		return result;
 	}
@@ -250,8 +317,8 @@ template <typename Space> class DistanceTable {
 		result.cached_distances = cached_count_;
 		result.dense_distance_slots = dense_distance_slots_;
 		result.max_dense_records = options_.max_dense_records;
-		result.memory_bytes_estimate =
-			matrix_.size() * sizeof(std::optional<distance_type>) + ids_.size() * sizeof(RecordId);
+		result.max_memory_bytes = options_.max_memory_bytes;
+		result.memory_bytes_estimate = memory_bytes_estimate();
 		result.cache_key = cache_key_;
 		result.metric_key = metric_key_;
 		result.source_record_ids = ids_;
@@ -262,6 +329,9 @@ template <typename Space> class DistanceTable {
 	}
 
   private:
+	using sparse_cache_key = std::pair<std::size_t, std::size_t>;
+	using sparse_cache_type = std::map<sparse_cache_key, distance_type>;
+
 	auto offset(std::size_t lhs_position, std::size_t rhs_position) const -> std::size_t
 	{
 		return lhs_position * record_count_ + rhs_position;
@@ -269,10 +339,82 @@ template <typename Space> class DistanceTable {
 
 	static auto dense_slot_count(std::size_t record_count) -> std::size_t
 	{
-		if (record_count != 0 && record_count > std::numeric_limits<std::size_t>::max() / record_count) {
-			throw RepresentationError("distance table dense storage exceeds size_t capacity");
+		return detail::distance_table_dense_slot_count(record_count);
+	}
+
+	static auto initial_memory_bytes_estimate(distance_table_mode mode, std::size_t record_count) -> std::size_t
+	{
+		if (mode == distance_table_mode::eager) {
+			return estimate_distance_table_memory_bytes<distance_type>(record_count);
 		}
-		return record_count * record_count;
+		return detail::checked_distance_table_size_product(
+			record_count, sizeof(RecordId), "distance table memory estimate exceeds size_t capacity");
+	}
+
+	auto enforce_budget() const -> void
+	{
+		if (options_.mode == distance_table_mode::eager && options_.max_dense_records > 0 &&
+			record_count_ > options_.max_dense_records) {
+			throw RepresentationError(
+				"distance table dense storage exceeds max_dense_records: records=" +
+				std::to_string(record_count_) + " max_dense_records=" + std::to_string(options_.max_dense_records) +
+				"; use live distances, exact scan, or a sparse index for larger spaces");
+		}
+		if (options_.max_memory_bytes > 0 && memory_bytes_estimate_ > options_.max_memory_bytes) {
+			throw RepresentationError(
+				"distance table dense storage exceeds max_memory_bytes: records=" +
+				std::to_string(record_count_) + " estimated_bytes=" + std::to_string(memory_bytes_estimate_) +
+				" max_memory_bytes=" + std::to_string(options_.max_memory_bytes) +
+				"; use live distances, exact scan, or a sparse index for larger spaces");
+		}
+	}
+
+	auto enforce_sparse_cache_budget(std::size_t projected_cached_distances) const -> void
+	{
+		if (options_.max_memory_bytes == 0) {
+			return;
+		}
+		const auto projected_memory_bytes = memory_bytes_estimate_for(matrix_.size(), projected_cached_distances);
+		if (projected_memory_bytes > options_.max_memory_bytes) {
+			throw RepresentationError(
+				"distance table sparse storage exceeds max_memory_bytes: records=" +
+				std::to_string(record_count_) +
+				" cached_distances=" + std::to_string(projected_cached_distances) +
+				" projected_bytes=" + std::to_string(projected_memory_bytes) +
+				" max_memory_bytes=" + std::to_string(options_.max_memory_bytes) +
+				"; use a smaller query batch, exact scan, or an approximate index for larger spaces");
+		}
+	}
+
+	auto fill_ratio() const -> double
+	{
+		if (record_count_ == 0) {
+			return 1.0;
+		}
+		const auto possible_distances = static_cast<double>(record_count_) * static_cast<double>(record_count_);
+		return static_cast<double>(cached_count_) / possible_distances;
+	}
+
+	auto current_memory_bytes_estimate() const -> std::size_t
+	{
+		return memory_bytes_estimate_for(matrix_.size(), sparse_cache_.size());
+	}
+
+	auto memory_bytes_estimate_for(std::size_t dense_slots, std::size_t sparse_cached_distances) const
+		-> std::size_t
+	{
+		const auto dense_bytes = detail::checked_distance_table_size_product(
+			dense_slots, sizeof(std::optional<distance_type>),
+			"distance table memory estimate exceeds size_t capacity");
+		const auto sparse_bytes = detail::checked_distance_table_size_product(
+			sparse_cached_distances, sizeof(typename sparse_cache_type::value_type),
+			"distance table memory estimate exceeds size_t capacity");
+		const auto id_bytes = detail::checked_distance_table_size_product(
+			ids_.size(), sizeof(RecordId), "distance table memory estimate exceeds size_t capacity");
+		return detail::checked_distance_table_size_sum(
+			detail::checked_distance_table_size_sum(
+				dense_bytes, sparse_bytes, "distance table memory estimate exceeds size_t capacity"),
+			id_bytes, "distance table memory estimate exceeds size_t capacity");
 	}
 
 	auto validate_position(std::size_t position) const -> void
@@ -287,10 +429,12 @@ template <typename Space> class DistanceTable {
 	std::size_t version_;
 	distance_table_options options_;
 	std::size_t dense_distance_slots_;
+	std::size_t memory_bytes_estimate_;
 	std::string metric_key_;
 	std::string cache_key_;
 	std::vector<RecordId> ids_;
 	mutable std::vector<std::optional<distance_type>> matrix_;
+	mutable sparse_cache_type sparse_cache_;
 	mutable std::size_t cached_count_{};
 	mutable std::size_t hits_{};
 	mutable std::size_t misses_{};

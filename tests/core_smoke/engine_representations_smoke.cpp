@@ -160,6 +160,9 @@ int main()
 	assert(matrix_diagnostics.distance_evaluations == space.size() * space.size());
 	assert(matrix_diagnostics.dense_distance_slots == space.size() * space.size());
 	assert(matrix_diagnostics.max_dense_records == 0);
+	assert(matrix_diagnostics.max_memory_bytes == 0);
+	assert(matrix_diagnostics.memory_bytes_estimate ==
+		   mtrc::space::storage::estimate_distance_table_memory_bytes<int>(space.size()));
 	assert(matrix_diagnostics.built_for_version == space.version());
 	assert(matrix_diagnostics.metric_key == mtrc::metric_cache_key(space.metric()));
 	assert(!matrix_diagnostics.cache_key.empty());
@@ -180,9 +183,14 @@ int main()
 	mtrc::space::storage::distance_table_options limited_matrix_options;
 	limited_matrix_options.mode = mtrc::space::storage::distance_table_mode::eager;
 	limited_matrix_options.max_dense_records = space.size();
+	limited_matrix_options.max_memory_bytes =
+		mtrc::space::storage::estimate_distance_table_memory_bytes<int>(space.size());
 	auto limited_matrix = mtrc::space::storage::matrix(space, limited_matrix_options);
 	assert(limited_matrix.max_dense_records() == space.size());
+	assert(limited_matrix.max_memory_bytes() == limited_matrix_options.max_memory_bytes);
+	assert(limited_matrix.memory_bytes_estimate() == limited_matrix_options.max_memory_bytes);
 	assert(limited_matrix.diagnostics().max_dense_records == space.size());
+	assert(limited_matrix.diagnostics().max_memory_bytes == limited_matrix_options.max_memory_bytes);
 	assert(limited_matrix.diagnostics().dense_distance_slots == space.size() * space.size());
 	bool rejected_dense_limit = false;
 	limited_matrix_options.max_dense_records = space.size() - 1;
@@ -192,16 +200,56 @@ int main()
 		rejected_dense_limit = true;
 	}
 	assert(rejected_dense_limit);
+	limited_matrix_options.max_dense_records = space.size();
+	limited_matrix_options.max_memory_bytes = limited_matrix.memory_bytes_estimate() - 1;
+	bool rejected_memory_limit = false;
+	try {
+		(void)mtrc::space::storage::matrix(space, limited_matrix_options);
+	} catch (const mtrc::RepresentationError &) {
+		rejected_memory_limit = true;
+	}
+	assert(rejected_memory_limit);
 
-	auto lazy_matrix = mtrc::space::storage::matrix(space, mtrc::space::storage::distance_table_mode::lazy);
-	assert(lazy_matrix.cached_distances() == 0);
-	const auto lazy_initial_diagnostics = lazy_matrix.diagnostics();
-	assert(lazy_initial_diagnostics.materialized == mtrc::space::storage::materialization::lazy);
-	assert(lazy_initial_diagnostics.cached_distances == 0);
-	assert(lazy_initial_diagnostics.dense_distance_slots == space.size() * space.size());
-	assert(lazy_initial_diagnostics.cache_key == lazy_matrix.cache_key());
-	assert(lazy_matrix.distance(id0, id2) == 5);
-	assert(lazy_matrix.cached_distances() == 1);
+		auto lazy_matrix = mtrc::space::storage::matrix(space, mtrc::space::storage::distance_table_mode::lazy);
+		assert(lazy_matrix.cached_distances() == 0);
+		const auto lazy_initial_diagnostics = lazy_matrix.diagnostics();
+		assert(lazy_initial_diagnostics.materialized == mtrc::space::storage::materialization::lazy);
+		assert(lazy_initial_diagnostics.cached_distances == 0);
+		assert(lazy_initial_diagnostics.dense_distance_slots == space.size() * space.size());
+		assert(lazy_initial_diagnostics.memory_bytes_estimate == lazy_matrix.memory_bytes_estimate());
+		assert(lazy_initial_diagnostics.memory_bytes_estimate < matrix_diagnostics.memory_bytes_estimate);
+		assert(lazy_initial_diagnostics.cache_key == lazy_matrix.cache_key());
+		mtrc::space::storage::distance_table_options limited_lazy_options;
+		limited_lazy_options.mode = mtrc::space::storage::distance_table_mode::lazy;
+		limited_lazy_options.max_dense_records = space.size() - 1;
+		auto limited_lazy_matrix = mtrc::space::storage::matrix(space, limited_lazy_options);
+		assert(limited_lazy_matrix.max_dense_records() == space.size() - 1);
+		assert(limited_lazy_matrix.cached_distances() == 0);
+		assert(limited_lazy_matrix.memory_bytes_estimate() < matrix_diagnostics.memory_bytes_estimate);
+		assert(lazy_initial_diagnostics.memory_bytes_estimate > 0);
+		limited_lazy_options.max_memory_bytes = lazy_initial_diagnostics.memory_bytes_estimate - 1;
+		bool rejected_lazy_memory_limit = false;
+		try {
+			(void)mtrc::space::storage::matrix(space, limited_lazy_options);
+		} catch (const mtrc::RepresentationError &) {
+			rejected_lazy_memory_limit = true;
+		}
+		assert(rejected_lazy_memory_limit);
+		mtrc::space::storage::distance_table_options growth_limited_lazy_options;
+		growth_limited_lazy_options.mode = mtrc::space::storage::distance_table_mode::lazy;
+		growth_limited_lazy_options.max_memory_bytes = lazy_initial_diagnostics.memory_bytes_estimate;
+		auto growth_limited_lazy = mtrc::space::storage::matrix(space, growth_limited_lazy_options);
+		bool rejected_lazy_cache_growth = false;
+		try {
+			(void)growth_limited_lazy.distance(id0, id2);
+		} catch (const mtrc::RepresentationError &) {
+			rejected_lazy_cache_growth = true;
+		}
+		assert(rejected_lazy_cache_growth);
+		assert(growth_limited_lazy.cached_distances() == 0);
+		assert(growth_limited_lazy.stats().misses == 0);
+		assert(lazy_matrix.distance(id0, id2) == 5);
+		assert(lazy_matrix.cached_distances() == 1);
 	assert(lazy_matrix.distance(id0, id2) == 5);
 	assert(lazy_matrix.distance(id1, id3) == space.distance(id1, id3));
 	const auto lazy_stats = lazy_matrix.stats();

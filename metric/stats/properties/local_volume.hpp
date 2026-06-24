@@ -15,6 +15,7 @@
 #include <vector>
 
 #include <metric/core/concepts.hpp>
+#include <metric/core/metric_space.hpp>
 #include <metric/space/storage/implicit.hpp>
 
 namespace mtrc::stats::properties {
@@ -154,6 +155,18 @@ auto local_volume(const Space &space, Radius radius) -> LocalVolumeResult<typena
 	return result;
 }
 
+template <typename Container, typename Metric, typename Radius,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto local_volume(const Container &records, const Metric &metric, Radius radius)
+	-> LocalVolumeResult<metric_result_t<Metric, Record>>
+{
+	auto space = core::make_space(records, metric);
+	auto result = local_volume(space, radius);
+	result.representation = "records";
+	return result;
+}
+
 template <typename Provider, typename Radius, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
 auto density(const Provider &provider, Radius radius) -> LocalVolumeResult<typename Provider::distance_type>
 {
@@ -166,6 +179,17 @@ template <typename Space, typename Radius, typename std::enable_if<MetricSpaceLi
 auto density(const Space &space, Radius radius) -> LocalVolumeResult<typename Space::distance_type>
 {
 	auto result = local_volume(space, radius);
+	result.algorithm = "density";
+	return result;
+}
+
+template <typename Container, typename Metric, typename Radius,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto density(const Container &records, const Metric &metric, Radius radius)
+	-> LocalVolumeResult<metric_result_t<Metric, Record>>
+{
+	auto result = local_volume(records, metric, radius);
 	result.algorithm = "density";
 	return result;
 }
@@ -234,6 +258,18 @@ auto local_volume_profile(const Space &space, const std::vector<Radius> &radii)
 	space::storage::LiveDistances<Space> provider(space);
 	auto profile = local_volume_profile(provider, radii);
 	profile.representation = "metric_space";
+	return profile;
+}
+
+template <typename Container, typename Metric, typename Radius,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto local_volume_profile(const Container &records, const Metric &metric, const std::vector<Radius> &radii)
+	-> LocalVolumeProfile<metric_result_t<Metric, Record>>
+{
+	auto space = core::make_space(records, metric);
+	auto profile = local_volume_profile(space, radii);
+	profile.representation = "records";
 	return profile;
 }
 

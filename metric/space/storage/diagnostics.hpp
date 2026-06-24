@@ -53,6 +53,7 @@ struct representation_diagnostics {
 	std::size_t cached_distances{};
 	std::size_t dense_distance_slots{};
 	std::size_t max_dense_records{};
+	std::size_t max_memory_bytes{};
 	std::size_t memory_bytes_estimate{};
 	std::string cache_key;
 	std::string metric_key;

@@ -15,6 +15,7 @@
 #include <vector>
 
 #include <metric/core/concepts.hpp>
+#include <metric/core/metric_space.hpp>
 #include <metric/space/storage/implicit.hpp>
 
 namespace mtrc::stats::properties {
@@ -180,6 +181,18 @@ auto distance_distribution(const Space &space, distance_distribution_options opt
 	space::storage::LiveDistances<Space> provider(space);
 	auto result = distance_distribution(provider, std::move(options));
 	result.representation = "metric_space";
+	return result;
+}
+
+template <typename Container, typename Metric,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto distance_distribution(const Container &records, const Metric &metric, distance_distribution_options options = {})
+	-> DistanceDistribution<metric_result_t<Metric, Record>>
+{
+	auto space = core::make_space(records, metric);
+	auto result = distance_distribution(space, std::move(options));
+	result.representation = "records";
 	return result;
 }
 

@@ -9,6 +9,7 @@
 #include <type_traits>
 
 #include <metric/core/concepts.hpp>
+#include <metric/core/metric_space.hpp>
 #include <metric/core/result.hpp>
 #include <metric/space/storage/distance_matrix.hpp>
 #include <metric/space/storage/implicit.hpp>
@@ -60,6 +61,18 @@ auto describe_structure(const Space &space) -> StructureDescription<typename Spa
 	return result;
 }
 
+template <typename Container, typename Metric,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto describe_structure(const Container &records, const Metric &metric)
+	-> StructureDescription<metric_result_t<Metric, Record>>
+{
+	auto space = core::make_space(records, metric);
+	auto result = describe_structure(space);
+	result.representation = "records";
+	return result;
+}
+
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto describe_structure(const Space &space, space::storage::policy runtime_policy)
 	-> StructureDescription<typename Space::distance_type>
@@ -76,6 +89,16 @@ auto describe_structure(const Space &space, space::storage::policy runtime_polic
 	auto result = describe_structure(space);
 	result.representation = space::storage::describe_representation(runtime_policy);
 	return result;
+}
+
+template <typename Container, typename Metric,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto describe_structure(const Container &records, const Metric &metric, space::storage::policy runtime_policy)
+	-> StructureDescription<metric_result_t<Metric, Record>>
+{
+	auto space = core::make_space(records, metric);
+	return describe_structure(space, runtime_policy);
 }
 
 } // namespace mtrc::stats::properties

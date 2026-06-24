@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cstddef>
 #include <stdexcept>
+#include <unordered_set>
 #include <vector>
 
 #include "metric/engine.hpp"
@@ -26,6 +27,17 @@ template <typename Callable> auto assert_out_of_range(Callable &&call) -> void
 	assert(rejected);
 }
 
+template <typename Callable> auto assert_stale_representation(Callable &&call) -> void
+{
+	bool rejected = false;
+	try {
+		call();
+	} catch (const mtrc::StaleRepresentationError &) {
+		rejected = true;
+	}
+	assert(rejected);
+}
+
 template <typename Matrix, typename Space>
 auto assert_matrix_matches_space_order(const Matrix &matrix, const Space &space) -> void
 {
@@ -42,6 +54,18 @@ auto assert_matrix_matches_space_order(const Matrix &matrix, const Space &space)
 	}
 }
 
+template <typename Space>
+auto assert_space_order(const Space &space, const std::vector<mtrc::RecordId> &expected_ids) -> void
+{
+	assert(space.size() == expected_ids.size());
+	for (std::size_t position = 0; position < expected_ids.size(); ++position) {
+		const auto id = expected_ids[position];
+		assert(space.id(position) == id);
+		assert(space.contains(id));
+		assert(space.position_of(id) == position);
+	}
+}
+
 int main()
 {
 	const std::vector<int> records{0, 2, 5, 9};
@@ -51,11 +75,15 @@ int main()
 	const auto id2 = space.id(2);
 	const auto id3 = space.id(3);
 	const std::vector<mtrc::RecordId> initial_ids{id0, id1, id2, id3};
+	const std::unordered_set<mtrc::RecordId> hashed_ids(initial_ids.begin(), initial_ids.end());
 
 	assert(id0.index() == 0);
 	assert(id1.index() == 1);
 	assert(id2.index() == 2);
 	assert(id3.index() == 3);
+	assert(hashed_ids.count(id2) == 1);
+	assert(hashed_ids.count(mtrc::RecordId::from_index(99)) == 0);
+	assert_space_order(space, initial_ids);
 	assert(space.position_of(id2) == 2);
 	assert(space.record(id3) == 9);
 	assert(space.distance(id0, id2) == 5);
@@ -74,13 +102,48 @@ int main()
 
 	auto lazy = mtrc::space::storage::matrix(space, mtrc::space::storage::distance_table_mode::lazy);
 	assert(lazy.cached_distances() == 0);
+	assert(lazy.dense_distance_slots() == records.size() * records.size());
+	assert(lazy.stats().fill_ratio == 0.0);
+	const auto lazy_initial_diagnostics = lazy.diagnostics();
+	assert(lazy_initial_diagnostics.cached_distances == 0);
+	assert(lazy_initial_diagnostics.dense_distance_slots == records.size() * records.size());
+	assert(lazy_initial_diagnostics.memory_bytes_estimate < eager.diagnostics().memory_bytes_estimate);
+	const auto lazy_initial_snapshot = lazy.snapshot();
+	assert(lazy_initial_snapshot.cached_distances == 0);
+	assert(lazy_initial_snapshot.dense_distance_slots == records.size() * records.size());
+	assert(lazy_initial_snapshot.distances.empty());
 	assert(lazy.distance(id0, id2) == 5);
 	assert(lazy.distance(id2, id0) == 10);
 	assert(lazy.cached_distances() == 2);
 	assert(lazy.distance(id0, id2) == 5);
 	assert(lazy.stats().hits == 1);
 	assert(lazy.stats().misses == 2);
+	assert(lazy.stats().fill_ratio == 2.0 / static_cast<double>(records.size() * records.size()));
 	assert(lazy.source_record_ids() == initial_ids);
+	const auto lazy_directed_snapshot = lazy.snapshot();
+	assert(lazy_directed_snapshot.cached_distances == 2);
+	assert(lazy_directed_snapshot.dense_distance_slots == records.size() * records.size());
+	assert(lazy_directed_snapshot.distances.size() == 2);
+	assert(lazy_directed_snapshot.has_distance(id0, id2));
+	assert(lazy_directed_snapshot.has_distance(id2, id0));
+	assert(lazy_directed_snapshot.distance(id0, id2) == 5);
+	assert(lazy_directed_snapshot.distance(id2, id0) == 10);
+	assert(lazy_directed_snapshot.distance(id0, id2) != lazy_directed_snapshot.distance(id2, id0));
+
+	constexpr std::size_t large_record_count = 4096;
+	std::vector<int> large_records(large_record_count);
+	for (std::size_t index = 0; index < large_records.size(); ++index) {
+		large_records[index] = static_cast<int>(index);
+	}
+	auto large_space = mtrc::make_space(large_records, DirectedDistance{});
+	auto large_lazy = mtrc::space::storage::matrix(large_space, mtrc::space::storage::distance_table_mode::lazy);
+	assert(large_lazy.record_count() == large_record_count);
+	assert(large_lazy.cached_distances() == 0);
+	assert(large_lazy.dense_distance_slots() == large_record_count * large_record_count);
+	assert(large_lazy.diagnostics().dense_distance_slots == large_record_count * large_record_count);
+	assert(large_lazy.memory_bytes_estimate() <
+		   mtrc::space::storage::estimate_distance_table_memory_bytes<int>(large_record_count) / 16);
+	assert(large_lazy.snapshot().distances.empty());
 
 	const auto initial_version = space.version();
 	space.replace(id2, 7);
@@ -88,10 +151,16 @@ int main()
 	assert(space.contains(id2));
 	assert(space.position_of(id2) == 2);
 	assert(space.record(id2) == 7);
+	assert_space_order(space, initial_ids);
 	assert(eager.is_stale());
 	assert(lazy.is_stale());
 	assert(eager.distance(id0, id2) == 5);
 	assert(space.distance(id0, id2) == 7);
+	const auto lazy_cached_before_stale_read = lazy.cached_distances();
+	const auto lazy_misses_before_stale_read = lazy.stats().misses;
+	assert_stale_representation([&lazy, id0, id1]() { (void)lazy.distance(id0, id1); });
+	assert(lazy.cached_distances() == lazy_cached_before_stale_read);
+	assert(lazy.stats().misses == lazy_misses_before_stale_read);
 
 	auto replaced = mtrc::space::storage::matrix(space);
 	assert(replaced.source_record_ids() == initial_ids);
@@ -101,10 +170,12 @@ int main()
 
 	assert(space.erase(id1));
 	assert(!space.contains(id1));
+	assert_space_order(space, std::vector<mtrc::RecordId>{id0, id2, id3});
 	assert(space.position_of(id2) == 1);
 	assert(space.position_of(id3) == 2);
 	const auto inserted_id = space.insert(13);
 	assert(inserted_id.index() == 4);
+	assert_space_order(space, std::vector<mtrc::RecordId>{id0, id2, id3, inserted_id});
 	assert(space.position_of(inserted_id) == 3);
 	assert(space.record(inserted_id) == 13);
 
@@ -123,6 +194,32 @@ int main()
 
 	assert_out_of_range([&space, id1]() { (void)space.position_of(id1); });
 	assert_out_of_range([&eager, inserted_id]() { (void)eager.position_of(inserted_id); });
+
+	const auto replace_after_insert_version = space.version();
+	space.replace(id3, 11);
+	assert(space.version() == replace_after_insert_version + 1);
+	assert_space_order(space, refreshed_ids);
+	assert(space.record(id3) == 11);
+
+	assert(space.erase(id0));
+	assert(!space.contains(id0));
+	assert_space_order(space, std::vector<mtrc::RecordId>{id2, id3, inserted_id});
+	assert(space.position_of(id2) == 0);
+	assert(space.position_of(id3) == 1);
+	assert(space.position_of(inserted_id) == 2);
+
+	const auto late_id = space.insert(17);
+	assert(late_id.index() == 5);
+	assert_space_order(space, std::vector<mtrc::RecordId>{id2, id3, inserted_id, late_id});
+	assert(space.record(late_id) == 17);
+
+	const auto replace_shifted_version = space.version();
+	space.replace(inserted_id, 15);
+	assert(space.version() == replace_shifted_version + 1);
+	assert_space_order(space, std::vector<mtrc::RecordId>{id2, id3, inserted_id, late_id});
+	assert(space.record(inserted_id) == 15);
+	assert(space.distance(id2, inserted_id) == 8);
+	assert(space.distance(inserted_id, id2) == 16);
 
 	return 0;
 }

@@ -13,6 +13,7 @@
 #include <vector>
 
 #include <metric/core/concepts.hpp>
+#include <metric/core/metric_space.hpp>
 #include <metric/core/result.hpp>
 #include <metric/stats/structural_analysis/clustering.hpp>
 #include <metric/space/storage/implicit.hpp>
@@ -84,6 +85,19 @@ auto find_outliers(const Space &space, stats::structural_analysis::dbscan_option
 	return result;
 }
 
+template <typename Container, typename Metric,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto find_outliers(const Container &records, const Metric &metric,
+				   stats::structural_analysis::dbscan_options strategy)
+	-> OutlierResult<metric_result_t<Metric, Record>>
+{
+	auto space = core::make_space(records, metric);
+	auto result = find_outliers(space, strategy);
+	result.representation = "records";
+	return result;
+}
+
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto find_outliers(const Space &space, stats::structural_analysis::dbscan_options strategy, space::storage::policy runtime_policy)
 	-> OutlierResult<typename Space::distance_type>
@@ -102,6 +116,24 @@ auto find_outliers(const Space &space, stats::structural_analysis::dbscan_option
 	return result;
 }
 
+template <typename Container, typename Metric,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto find_outliers(const Container &records, const Metric &metric,
+				   stats::structural_analysis::dbscan_options strategy, space::storage::policy runtime_policy)
+	-> OutlierResult<metric_result_t<Metric, Record>>
+{
+	auto space = core::make_space(records, metric);
+	return find_outliers(space, strategy, runtime_policy);
+}
+
+template <typename Provider, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
+auto find_outliers(const Provider &provider, double radius, std::size_t min_points)
+	-> OutlierResult<typename Provider::distance_type>
+{
+	return find_outliers(provider, stats::structural_analysis::dbscan_options(radius, min_points));
+}
+
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto find_outliers(const Space &space, double radius, std::size_t min_points)
 	-> OutlierResult<typename Space::distance_type>
@@ -109,11 +141,30 @@ auto find_outliers(const Space &space, double radius, std::size_t min_points)
 	return find_outliers(space, stats::structural_analysis::dbscan_options(radius, min_points));
 }
 
+template <typename Container, typename Metric,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto find_outliers(const Container &records, const Metric &metric, double radius, std::size_t min_points)
+	-> OutlierResult<metric_result_t<Metric, Record>>
+{
+	return find_outliers(records, metric, stats::structural_analysis::dbscan_options(radius, min_points));
+}
+
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto find_outliers(const Space &space, double radius, std::size_t min_points, space::storage::policy runtime_policy)
 	-> OutlierResult<typename Space::distance_type>
 {
 	return find_outliers(space, stats::structural_analysis::dbscan_options(radius, min_points), runtime_policy);
+}
+
+template <typename Container, typename Metric,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto find_outliers(const Container &records, const Metric &metric, double radius, std::size_t min_points,
+				   space::storage::policy runtime_policy) -> OutlierResult<metric_result_t<Metric, Record>>
+{
+	return find_outliers(records, metric, stats::structural_analysis::dbscan_options(radius, min_points),
+						 runtime_policy);
 }
 
 // k-NN distance outlier score. Unlike DBSCAN-noise outliers this scores EVERY record by how
@@ -159,10 +210,23 @@ auto nearest_neighbor_outliers(const Space &space, std::size_t k) -> OutlierResu
 	return result;
 }
 
+template <typename Container, typename Metric,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto nearest_neighbor_outliers(const Container &records, const Metric &metric, std::size_t k)
+	-> OutlierResult<metric_result_t<Metric, Record>>
+{
+	auto space = core::make_space(records, metric);
+	auto result = nearest_neighbor_outliers(space, k);
+	result.representation = "records";
+	return result;
+}
+
 } // namespace mtrc::stats::structural_analysis
 
 namespace mtrc {
 using stats::structural_analysis::find_outliers;
+using stats::structural_analysis::nearest_neighbor_outliers;
 } // namespace mtrc
 
 #endif

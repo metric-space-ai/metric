@@ -11,6 +11,7 @@
 #include <utility>
 
 #include <metric/core/concepts.hpp>
+#include <metric/core/metric_space.hpp>
 #include <metric/space/storage/implicit.hpp>
 #include <metric/stats/properties/describe.hpp>
 #include <metric/stats/properties/distribution.hpp>
@@ -120,6 +121,24 @@ auto profile(const Space &space, profile_options options = {}) -> StatsProfile<t
 	}
 	if (result.has_local_volume) {
 		result.local_volume.representation = "metric_space";
+	}
+	return result;
+}
+
+template <typename Container, typename Metric,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto profile(const Container &records, const Metric &metric, profile_options options = {})
+	-> StatsProfile<metric_result_t<Metric, Record>>
+{
+	auto space = core::make_space(records, metric);
+	auto result = profile(space, std::move(options));
+	result.representation = "records";
+	if (result.has_distance_distribution) {
+		result.distance_distribution.representation = "records";
+	}
+	if (result.has_local_volume) {
+		result.local_volume.representation = "records";
 	}
 	return result;
 }

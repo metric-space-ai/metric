@@ -92,14 +92,9 @@ auto neighbor_candidates_within(std::size_t record_count, IdAt id_at, DistanceAt
 												   [](RecordId, std::size_t) { return true; });
 }
 
-// Orders neighbors by distance ascending, breaking ties deterministically by RecordId
-// ascending. The comparator is a true strict weak ordering even when a degenerate metric
-// yields NaN distances: any NaN sorts after every finite/infinite distance, and NaN-vs-NaN
-// ties fall back to RecordId order. This keeps knn/range output deterministic and avoids the
-// std::sort undefined behavior a raw `<` comparator would trigger on NaN.
-template <typename Distance> auto sort_neighbors(std::vector<Neighbor<Distance>> &neighbors) -> void
-{
-	std::sort(neighbors.begin(), neighbors.end(), [](const auto &lhs, const auto &rhs) {
+template <typename Distance> struct NeighborLess {
+	auto operator()(const Neighbor<Distance> &lhs, const Neighbor<Distance> &rhs) const -> bool
+	{
 		const bool lhs_nan = neighbor_distance_is_nan(lhs.distance);
 		const bool rhs_nan = neighbor_distance_is_nan(rhs.distance);
 		if (lhs_nan != rhs_nan) {
@@ -114,17 +109,34 @@ template <typename Distance> auto sort_neighbors(std::vector<Neighbor<Distance>>
 			}
 		}
 		return lhs.id < rhs.id;
-	});
+	}
+};
+
+// Orders neighbors by distance ascending, breaking ties deterministically by RecordId
+// ascending. The comparator is a true strict weak ordering even when a degenerate metric
+// yields NaN distances: any NaN sorts after every finite/infinite distance, and NaN-vs-NaN
+// ties fall back to RecordId order. This keeps knn/range output deterministic and avoids the
+// std::sort undefined behavior a raw `<` comparator would trigger on NaN.
+template <typename Distance> auto sort_neighbors(std::vector<Neighbor<Distance>> &neighbors) -> void
+{
+	std::sort(neighbors.begin(), neighbors.end(), NeighborLess<Distance>{});
 }
 
 template <typename Distance>
 auto take_nearest_neighbors(std::vector<Neighbor<Distance>> neighbors, std::size_t count)
 	-> std::vector<Neighbor<Distance>>
 {
-	sort_neighbors(neighbors);
-	if (neighbors.size() > count) {
-		neighbors.resize(count);
+	if (count == 0) {
+		return {};
 	}
+	if (count >= neighbors.size()) {
+		sort_neighbors(neighbors);
+		return neighbors;
+	}
+
+	std::nth_element(neighbors.begin(), neighbors.begin() + count, neighbors.end(), NeighborLess<Distance>{});
+	neighbors.resize(count);
+	sort_neighbors(neighbors);
 	return neighbors;
 }
 
