@@ -8,13 +8,23 @@ export class RecordPreviewPanel {
       offset = [18, 18],
       maxFields = 8,
       resolver = null,
+      runtime = null,
+      visualSpace = null,
+      document: evidenceDocument = null,
       render = null,
     } = options;
-    this.root = root;
+    this.root = root || document.body || document.documentElement;
     this.className = className;
     this.offset = offset;
     this.maxFields = maxFields;
-    this.resolver = resolver;
+    this.runtime = runtime;
+    this.visualSpace = visualSpace || runtime?.visualSpace || null;
+    this.document = evidenceDocument || runtime?.document || this.visualSpace?.document || null;
+    this.resolver = resolver || (this.visualSpace ? createMetricEvidencePreviewResolver({
+      runtime,
+      visualSpace: this.visualSpace,
+      document: this.document,
+    }) : null);
     this.customRender = typeof render === "function" ? render : null;
     this.element = document.createElement("aside");
     this.element.className = className;
@@ -26,6 +36,61 @@ export class RecordPreviewPanel {
 
   setResolver(resolver) {
     this.resolver = typeof resolver === "function" ? resolver : null;
+    return this;
+  }
+
+  setEvidenceContext(context = {}) {
+    this.runtime = context.runtime || this.runtime || null;
+    this.visualSpace = context.visualSpace || this.runtime?.visualSpace || this.visualSpace || null;
+    this.document = context.document || this.runtime?.document || this.visualSpace?.document || this.document || null;
+    if (!context.resolver && this.visualSpace) {
+      this.resolver = createMetricEvidencePreviewResolver({
+        runtime: this.runtime,
+        visualSpace: this.visualSpace,
+        document: this.document,
+      });
+    }
+    return this;
+  }
+
+  attachToRuntime(runtime, options = {}) {
+    this.detachRuntime?.();
+    this.setEvidenceContext({ runtime, ...options });
+    const offInspection = runtime?.on?.("inspectionchange", ({ detail, result }) => {
+      if (!detail?.hit) {
+        if (options.hideOnMiss !== false) this.hide();
+        return;
+      }
+      const pointer = result?.request?.rawPointer || result?.request?.pointer || {};
+      const pair = detail.pair || null;
+      this.show({
+        recordId: detail.recordId,
+        pair,
+        focusTarget: pair ? { pair } : { recordId: detail.recordId },
+        x: pointer.client?.x ?? pointer.x ?? options.x ?? 0,
+        y: pointer.client?.y ?? pointer.y ?? options.y ?? 0,
+      });
+    });
+    const offSelection = options.selection === false ? null : runtime?.on?.("selectionchange", ({ selection }) => {
+      if (selection?.pair) {
+        this.show({
+          pair: selection.pair,
+          x: options.selectionX ?? viewportAnchorX(0.58),
+          y: options.selectionY ?? viewportAnchorY(0.34),
+        });
+      } else if (selection?.recordId) {
+        this.show({
+          recordId: selection.recordId,
+          x: options.selectionX ?? viewportAnchorX(0.58),
+          y: options.selectionY ?? viewportAnchorY(0.34),
+        });
+      }
+    });
+    this.detachRuntime = () => {
+      offInspection?.();
+      offSelection?.();
+      this.detachRuntime = null;
+    };
     return this;
   }
 
@@ -72,6 +137,7 @@ export class RecordPreviewPanel {
   }
 
   dispose() {
+    this.detachRuntime?.();
     this.element.remove();
   }
 
@@ -83,6 +149,95 @@ export class RecordPreviewPanel {
     }
     return value;
   }
+}
+
+export function createMetricEvidencePreviewResolver(context = {}) {
+  return (input = {}) => buildMetricEvidencePreview(input, context);
+}
+
+export function buildMetricEvidencePreview(input = {}, context = {}) {
+  if (input.pair || input.pairId || input.rowId || input.row_id || input.focusTarget?.pair) {
+    return buildMetricPairPreview(input, context);
+  }
+  return buildMetricRecordPreview(input, context);
+}
+
+export function buildMetricRecordPreview(input = {}, context = {}) {
+  const visualSpace = resolveVisualSpace(context);
+  const recordId = input.recordId || input.focusTarget?.recordId;
+  if (!visualSpace || recordId == null) return null;
+  const record = visualSpace.getRecord?.(recordId);
+  if (!record) return null;
+  const payload = record.payload || {};
+  const fields = [
+    { label: "id", value: record.id },
+    { label: "type", value: record.record_type },
+    { label: "dataset", value: record.dataset_id },
+  ];
+  const featureFields = payload.features && typeof payload.features === "object"
+    ? Object.entries(payload.features).slice(0, 5).map(([label, value]) => ({ label, value }))
+    : [];
+  const preview = {
+    title: record.label || record.id,
+    subtitle: record.record_type || "record",
+    fields: fields.concat(featureFields),
+    sections: [],
+  };
+  if (Array.isArray(payload.series)) {
+    preview.series = [{ label: "series", values: payload.series, color: "rgba(32, 118, 132, 0.86)" }];
+  } else if (Array.isArray(payload.values) && payload.values.every((value) => Number.isFinite(Number(value)))) {
+    preview.series = [{ label: "values", values: payload.values, color: "rgba(32, 118, 132, 0.86)" }];
+  } else if (payload.values !== undefined) {
+    preview.sections.push({
+      title: "payload",
+      fields: [{ label: "value", value: summarizePreviewValue(payload.values) }],
+    });
+  }
+  return preview;
+}
+
+export function buildMetricPairPreview(input = {}, context = {}) {
+  const visualSpace = resolveVisualSpace(context);
+  const document = context.document || context.runtime?.document || visualSpace?.document || {};
+  const pair = input.pair || input.focusTarget?.pair || input;
+  const rowId = pair.rowId ?? pair.row_id ?? pair.sourceId ?? pair.source_id;
+  const columnId = pair.columnId ?? pair.column_id ?? pair.targetId ?? pair.target_id;
+  if (!visualSpace || rowId == null || columnId == null) return null;
+
+  const relationId = pair.relationId ?? pair.relation_id ?? firstRelationId(document);
+  const relation = relationId ? visualSpace.getRelation?.(relationId) : null;
+  const entry = pair.value !== undefined
+    ? pair
+    : relationId
+      ? visualSpace.relationValue?.(relationId, rowId, columnId)
+      : null;
+  const rowRecord = visualSpace.getRecord?.(rowId);
+  const columnRecord = visualSpace.getRecord?.(columnId);
+  const value = entry?.value ?? pair.value;
+  const present = pair.present ?? Boolean(entry);
+  const fields = [
+    { label: "relation", value: relation?.name || relation?.id || relationId || "relation" },
+    { label: "row", value: labelForRecord(rowRecord, rowId) },
+    { label: "column", value: labelForRecord(columnRecord, columnId) },
+    { label: "value", value: present && Number.isFinite(Number(value)) ? Number(value).toFixed(4) : (present ? value : "no direct pair") },
+  ];
+
+  for (const property of document.properties || []) {
+    if (property.target_type !== "pair") continue;
+    const propertyValue = visualSpace.propertyValue?.(property.id, {
+      relation_id: relationId,
+      row_id: rowId,
+      column_id: columnId,
+    });
+    if (propertyValue) fields.push({ label: property.name || property.id, value: propertyValue.value });
+    if (fields.length >= 8) break;
+  }
+
+  return {
+    title: `${rowId} <-> ${columnId}`,
+    subtitle: relation?.relation_type || "pair relation",
+    fields,
+  };
 }
 
 function renderPreview(element, preview, maxFields) {
@@ -278,6 +433,32 @@ function formatNumber(value) {
 
 function stringValue(value) {
   return value == null ? "" : String(value);
+}
+
+function resolveVisualSpace(context = {}) {
+  return context.visualSpace || context.runtime?.visualSpace || null;
+}
+
+function firstRelationId(document = {}) {
+  return Array.isArray(document.relations) && document.relations.length ? document.relations[0].id : null;
+}
+
+function labelForRecord(record, fallback) {
+  return record?.label || record?.id || fallback;
+}
+
+function summarizePreviewValue(value) {
+  if (Array.isArray(value)) return `${value.length} values`;
+  if (value && typeof value === "object") return `${Object.keys(value).length} fields`;
+  return value;
+}
+
+function viewportAnchorX(ratio) {
+  return (Number(globalThis.innerWidth) || 0) * ratio;
+}
+
+function viewportAnchorY(ratio) {
+  return (Number(globalThis.innerHeight) || 0) * ratio;
 }
 
 function clamp(value, min, max) {

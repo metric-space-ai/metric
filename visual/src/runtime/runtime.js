@@ -3,6 +3,16 @@ import { createMiniaturePerspectiveCamera } from "../camera/index.js";
 import { createFocusLineState, createCameraControls } from "../interaction/index.js";
 import { VisualSpace } from "../data/index.js";
 import {
+  PickingPass,
+  PickingRegistry,
+  PickResult,
+  createPickRequest,
+  pickNearestProjectedPoint,
+  pickResultFromNumericId,
+  readPickIdFromFramebuffer,
+} from "../picking/index.js";
+import { createRelationMatrixPicker } from "../relational/index.js";
+import {
   getChannel,
   getChannelArray,
   getChannelCount,
@@ -64,6 +74,22 @@ export const DEFAULT_RUNTIME_OPTIONS = Object.freeze({
     focusWhileDragging: false,
     positionChannels: Object.freeze(["position", "targetPosition", "sourcePosition"]),
     recordChannel: "recordId",
+  }),
+  inspection: Object.freeze({
+    enabled: true,
+    hover: true,
+    click: true,
+    gpu: true,
+    relationMatrix: true,
+    graph: true,
+    cpuFallback: true,
+    thresholdPx: 34,
+    edgeThresholdPx: 7,
+    clearOnMiss: false,
+    selectOnClick: true,
+    maxCandidates: 20000,
+    recordChannel: "recordId",
+    positionChannels: Object.freeze(["position", "targetPosition", "sourcePosition"]),
   }),
   layers: Object.freeze({
     autoLoadFactory: true,
@@ -338,6 +364,13 @@ export class MetricVisualRuntime {
       record: null,
       source: null,
     };
+    this.inspectionOptions = normalizeInspectionOptions(this.options.inspection ?? this.options.picking);
+    this.pickingRegistry = new PickingRegistry();
+    this.pickingPass = null;
+    this.pickingTarget = null;
+    this.pickingIndex = createEmptyPickingIndex();
+    this.inspectionState = createEmptyInspectionState();
+    this.unsubscribeInspection = null;
     this.disposed = false;
 
     const background = normalizeColor(this.options.background, DEFAULT_RUNTIME_OPTIONS.background);
@@ -368,6 +401,7 @@ export class MetricVisualRuntime {
 
     this.controls = this.createControls();
     this.attachHoverFocus();
+    this.attachInspection();
     this.unsubscribeRendererResize = this.renderer.on("resize", ({ size }) => {
       this.handleResize(size);
     });
@@ -641,6 +675,7 @@ export class MetricVisualRuntime {
       pair: null,
       record: this.visualSpace?.getRecord ? this.visualSpace.getRecord(recordId) : null,
       source: options.source || null,
+      pickSource: options.pickSource || options.pickingSource || null,
       focusTarget,
     };
     if (focusTarget) {
@@ -667,6 +702,7 @@ export class MetricVisualRuntime {
       pair: normalized,
       record: null,
       source: options.source || null,
+      pickSource: options.pickSource || options.pickingSource || normalized.pickSource || null,
       focusTarget: null,
     };
     this.applySelectionToLayers();
@@ -691,6 +727,7 @@ export class MetricVisualRuntime {
       pair: null,
       record: null,
       source: options.source || null,
+      pickSource: null,
     };
     this.applySelectionToLayers();
     this.emit("selectionchange", {
@@ -793,6 +830,231 @@ export class MetricVisualRuntime {
         runtime: this,
         options: clonePlainObject(this.hoverFocusOptions),
         detail: { source: detail.source || "setHoverFocusOptions" },
+      });
+    }
+    return this;
+  }
+
+  setInspectionOptions(options = {}, detail = {}) {
+    this.inspectionOptions = normalizeInspectionOptions(options, this.inspectionOptions);
+    this.detachInspection();
+    this.attachInspection();
+    if (detail.emit !== false) {
+      this.emit("inspectionoptionschange", {
+        runtime: this,
+        options: clonePlainObject(this.inspectionOptions),
+        detail: { source: detail.source || "setInspectionOptions" },
+      });
+    }
+    return this;
+  }
+
+  pickAt(input = {}, options = {}) {
+    const request = createRuntimePickRequest(this, input, {
+      ...this.inspectionOptions,
+      ...options,
+    });
+    const pickOptions = { ...this.inspectionOptions, ...options };
+    this.refreshPickingIndex();
+
+    const gpuResult = pickOptions.gpu !== false ? this.pickGpu(request, pickOptions) : null;
+    if (gpuResult?.hit) return gpuResult;
+
+    const matrixResult = pickOptions.relationMatrix !== false ? this.pickRelationMatrix(request, pickOptions) : null;
+    if (matrixResult?.hit) return matrixResult;
+
+    const graphResult = pickOptions.graph !== false ? this.pickRelationGraph(request, pickOptions) : null;
+    if (graphResult?.hit) return graphResult;
+
+    const cpuResult = pickOptions.cpuFallback !== false ? this.pickCpuRecord(request, pickOptions) : null;
+    return cpuResult?.hit ? cpuResult : PickResult.none(request, { source: "none" });
+  }
+
+  inspectAt(input = {}, options = {}) {
+    const result = this.pickAt(input, options);
+    const detail = inspectionDetailFromPickResult(result, options);
+    if (options.select === true || (options.mode === "click" && this.inspectionOptions.selectOnClick !== false)) {
+      if (result?.hit) this.applyPickSelection(result, { source: options.source || "inspection" });
+      else if (options.clearOnMiss ?? this.inspectionOptions.clearOnMiss) this.clearSelection({ source: options.source || "inspection-miss" });
+      this.inspectionState.selection = detail;
+    } else {
+      this.inspectionState.hover = detail;
+    }
+    this.inspectionState.lastResult = detail;
+    this.inspectionState.source = detail?.source || "none";
+    this.emit("inspectionchange", {
+      runtime: this,
+      result,
+      detail,
+      selection: this.selection,
+    });
+    return result;
+  }
+
+  pickGpu(request, options = {}) {
+    if (!this.renderer?.gl || this.pickingIndex.gpuLayerCount <= 0) return null;
+    const size = this.renderer.size || {};
+    const width = Math.max(1, Math.floor(size.drawingBufferWidth || 1));
+    const height = Math.max(1, Math.floor(size.drawingBufferHeight || 1));
+    try {
+      if (!this.pickingTarget || this.pickingTarget.disposed) {
+        this.pickingTarget = this.renderer.createRenderTarget({
+          label: "metric-runtime-picking",
+          width,
+          height,
+          depth: true,
+          minFilter: this.renderer.gl.NEAREST,
+          magFilter: this.renderer.gl.NEAREST,
+        });
+      } else if (this.pickingTarget.width !== width || this.pickingTarget.height !== height) {
+        this.pickingTarget.setSize(width, height);
+      }
+      if (!this.pickingPass) {
+        this.pickingPass = new PickingPass({
+          registry: this.pickingRegistry,
+          target: this.pickingTarget,
+          width,
+          height,
+        });
+      }
+      this.pickingPass
+        .setTarget(this.pickingTarget)
+        .setSize(width, height)
+        .setLayers(this.layers);
+      this.pickingPass.render({
+        ...this.renderer.context,
+        runtime: this,
+        renderer: this.renderer,
+        gl: this.renderer.gl,
+        scene: this.scene,
+        camera: this.camera,
+        size,
+      }, this.layers);
+      const numericId = readPickIdFromFramebuffer(this.renderer.gl, request.x, request.y, {
+        width,
+        height,
+        yOrigin: "top",
+      });
+      this.renderer.gl.bindFramebuffer(this.renderer.gl.FRAMEBUFFER, null);
+      if (!numericId) return null;
+      return pickResultFromNumericId(numericId, this.pickingRegistry, {
+        request,
+        source: "gpu-picking",
+        raw: { numericId },
+      });
+    } catch (error) {
+      this.warn("gpu-picking-failed", "GPU picking failed; runtime will use deterministic fallback picking.", { error });
+      return null;
+    }
+  }
+
+  pickRelationMatrix(request, options = {}) {
+    const point = request.rawPointer || request.pointer || {};
+    const cssX = finiteRuntimeNumber(point.x, request.x / positiveRuntimeNumber(this.renderer?.size?.pixelRatio, 1));
+    const cssY = finiteRuntimeNumber(point.y, request.y / positiveRuntimeNumber(this.renderer?.size?.pixelRatio, 1));
+    for (const entry of this.pickingIndex.relationMatrixPickers) {
+      const cell = entry.picker.cellAtCanvasPoint(cssX, cssY, this.renderer?.size?.width, this.renderer?.size?.height);
+      if (!cell) continue;
+      return new PickResult({
+        hit: true,
+        kind: "edge",
+        id: `${entry.relationId || "relation"}:${cell.rowId}:${cell.columnId}`,
+        edgeId: `${cell.rowId}:${cell.columnId}`,
+        layerId: entry.descriptorId,
+        source: "relation-matrix-picking",
+        request,
+        raw: cell,
+        point: null,
+        pixel: { x: request.x, y: request.y },
+        entry: {
+          numericId: 0,
+          kind: "edge",
+          id: `${entry.relationId || "relation"}:${cell.rowId}:${cell.columnId}`,
+          edgeId: `${cell.rowId}:${cell.columnId}`,
+          layerId: entry.descriptorId,
+          payload: {
+            ...cell,
+            relationId: entry.relationId,
+            descriptorId: entry.descriptorId,
+          },
+        },
+      });
+    }
+    return null;
+  }
+
+  pickRelationGraph(request, options = {}) {
+    const threshold = positiveRuntimeNumber(options.edgeThresholdPx, this.inspectionOptions.edgeThresholdPx, 7)
+      * positiveRuntimeNumber(this.renderer?.size?.pixelRatio, 1);
+    const maxDistanceSquared = threshold * threshold;
+    let best = null;
+    const projectionA = {};
+    const projectionB = {};
+    this.camera?.updateMatrices?.();
+
+    for (const edge of this.pickingIndex.graphEdges) {
+      const a = projectRuntimePosition(this.camera, edge.sourcePosition, projectionA, this.renderer?.size);
+      const b = projectRuntimePosition(this.camera, edge.targetPosition, projectionB, this.renderer?.size);
+      if (!a?.visible || !b?.visible) continue;
+      const distanceSquared = distanceToSegmentSquared(request.x, request.y, a.x, a.y, b.x, b.y);
+      if (distanceSquared <= maxDistanceSquared && (!best || distanceSquared < best.distanceSquared)) {
+        best = {
+          edge,
+          distanceSquared,
+          depth: Math.min(a.depth ?? Infinity, b.depth ?? Infinity),
+        };
+      }
+    }
+    if (!best) return null;
+    const edge = best.edge;
+    return new PickResult({
+      hit: true,
+      kind: "edge",
+      id: edge.edgeId,
+      edgeId: edge.edgeId,
+      layerId: edge.layerId,
+      source: "graph-picking",
+      request,
+      pixel: { x: request.x, y: request.y },
+      distanceSquared: best.distanceSquared,
+      distance: Math.sqrt(best.distanceSquared),
+      depth: best.depth,
+      raw: edge,
+      entry: {
+        numericId: edge.numericId,
+        kind: "edge",
+        id: edge.edgeId,
+        edgeId: edge.edgeId,
+        layerId: edge.layerId,
+        payload: edge,
+      },
+    });
+  }
+
+  pickCpuRecord(request, options = {}) {
+    if (!this.pickingIndex.recordPoints.length) return null;
+    return pickNearestProjectedPoint(request, this.pickingIndex.recordPoints, {
+      camera: this.camera,
+      registry: this.pickingRegistry,
+      radius: positiveRuntimeNumber(options.thresholdPx, this.inspectionOptions.thresholdPx, 34)
+        * positiveRuntimeNumber(this.renderer?.size?.pixelRatio, 1),
+    });
+  }
+
+  applyPickSelection(result, options = {}) {
+    if (!result?.hit) return this;
+    const pair = pairFromPickResult(result);
+    if (pair) {
+      return this.selectPair(pair, {
+        source: options.source || "inspection",
+        pickSource: result.source,
+      });
+    }
+    if (result.recordId != null) {
+      return this.selectRecord(result.recordId, {
+        source: options.source || "inspection",
+        pickSource: result.source,
+        focusTarget: result.point?.position || result.raw?.position || undefined,
       });
     }
     return this;
@@ -939,8 +1201,40 @@ export class MetricVisualRuntime {
       disposed: this.disposed,
       hasDocument: Boolean(this.document),
       selectedRecordId: this.selection.recordId,
+      selectedRecord: this.selection.record ? clonePlainObject(this.selection.record) : null,
       selectedPair: this.selection.pair ? clonePlainObject(this.selection.pair) : null,
+      selectionSource: this.selection.source || null,
+      selectionPickSource: this.selection.pickSource || null,
       focusTarget: this.focusTarget ? clonePlainObject(this.focusTarget) : null,
+      inspection: clonePlainObject({
+        enabled: this.inspectionOptions.enabled === true,
+        source: this.inspectionState.source,
+        hover: this.inspectionState.hover,
+        selection: this.inspectionState.selection,
+        lastResult: this.inspectionState.lastResult,
+        availableSources: this.pickingIndex.availableSources,
+        gpuPicking: {
+          available: this.pickingIndex.gpuLayerCount > 0,
+          layerCount: this.pickingIndex.gpuLayerCount,
+        },
+        relationMatrixPicking: {
+          available: this.pickingIndex.relationMatrixPickers.length > 0,
+          layerCount: this.pickingIndex.relationMatrixPickers.length,
+        },
+        graphPicking: {
+          available: this.pickingIndex.graphEdges.length > 0,
+          edgeCount: this.pickingIndex.graphEdges.length,
+        },
+        cpuFallback: {
+          available: this.pickingIndex.recordPoints.length > 0,
+          candidateCount: this.pickingIndex.recordPoints.length,
+        },
+        runtimeStateKeys: {
+          selectedRecord: "selectedRecord",
+          selectedRecordId: "selectedRecordId",
+          selectedPair: "selectedPair",
+        },
+      }),
       hoverFocus: {
         enabled: this.hoverFocusOptions.enabled === true,
         target: this.hoverFocusState.target ? clonePlainObject(this.hoverFocusState.target) : null,
@@ -969,7 +1263,9 @@ export class MetricVisualRuntime {
       this.controls.dispose();
     }
     this.detachHoverFocus();
+    this.detachInspection();
     this.clearLayerInstances({ dispose: options.disposeLayers !== false });
+    this.disposePickingResources();
     this.events.clear();
     this.renderer.dispose({
       disposeScene: options.disposeScene !== false,
@@ -977,6 +1273,19 @@ export class MetricVisualRuntime {
       loseContext: options.loseContext,
     });
     this.disposed = true;
+    return this;
+  }
+
+  disposePickingResources() {
+    if (this.pickingTarget && typeof this.pickingTarget.dispose === "function") {
+      this.pickingTarget.dispose();
+    }
+    if (this.pickingRegistry && typeof this.pickingRegistry.clear === "function") {
+      this.pickingRegistry.clear();
+    }
+    this.pickingPass = null;
+    this.pickingTarget = null;
+    this.pickingIndex = createEmptyPickingIndex();
     return this;
   }
 
@@ -1206,6 +1515,55 @@ export class MetricVisualRuntime {
     return this;
   }
 
+  attachInspection() {
+    if (this.unsubscribeInspection || this.inspectionOptions.enabled !== true || !this.renderer?.on) return this;
+    const offPointer = this.inspectionOptions.hover === false ? null : this.renderer.on("pointer", ({ pointer, sourceEvent }) => {
+      this.handleInspectionPointer(pointer, sourceEvent, { mode: "hover", select: false, source: "runtime-hover" });
+    });
+    const offUp = this.inspectionOptions.click === false ? null : this.renderer.on("pointerup", ({ pointer, sourceEvent }) => {
+      this.handleInspectionPointer(pointer, sourceEvent, { mode: "click", select: this.inspectionOptions.selectOnClick !== false, source: "runtime-click" });
+    });
+    const offLeave = this.renderer.on("pointerleave", ({ pointer, sourceEvent }) => {
+      this.handleInspectionLeave(pointer, sourceEvent);
+    });
+    this.unsubscribeInspection = () => {
+      offPointer?.();
+      offUp?.();
+      offLeave?.();
+    };
+    return this;
+  }
+
+  detachInspection() {
+    if (this.unsubscribeInspection) {
+      this.unsubscribeInspection();
+      this.unsubscribeInspection = null;
+    }
+    return this;
+  }
+
+  handleInspectionPointer(pointer, sourceEvent, detail = {}) {
+    if (this.inspectionOptions.enabled !== true || !pointer?.inside) return this;
+    if (detail.mode === "click" && sourceEvent?.button != null && sourceEvent.button !== 0) return this;
+    if (this.controls?.dragging && detail.mode !== "click") return this;
+    this.inspectAt(pointer, {
+      ...detail,
+      sourceEvent,
+      rawPointer: pointer,
+    });
+    return this;
+  }
+
+  handleInspectionLeave(pointer, sourceEvent) {
+    if (this.inspectionOptions.clearOnMiss === true) {
+      this.inspectionState.hover = null;
+      this.inspectionState.lastResult = null;
+      this.inspectionState.source = "none";
+      this.emit("inspectionchange", { runtime: this, result: null, detail: null, pointer, sourceEvent });
+    }
+    return this;
+  }
+
   layerDescriptorsFromViews(views) {
     const descriptors = [];
     for (const view of views) {
@@ -1257,6 +1615,7 @@ export class MetricVisualRuntime {
       this.scene.add(layer);
     }
     this.applySelectionToLayers();
+    this.refreshPickingIndex();
     return this;
   }
 
@@ -1269,6 +1628,30 @@ export class MetricVisualRuntime {
         disposeLayer(layer);
       }
     }
+    return this;
+  }
+
+  refreshPickingIndex() {
+    const next = createEmptyPickingIndex();
+    this.pickingRegistry.clear();
+
+    for (const descriptor of this.layerDescriptors || []) {
+      collectDescriptorRecordPickPoints(next, this.pickingRegistry, descriptor, this);
+      collectDescriptorRelationMatrixPickers(next, descriptor, this);
+      collectDescriptorGraphEdges(next, this.pickingRegistry, descriptor);
+    }
+
+    next.gpuLayerCount = (this.layers || []).filter((layer) => (
+      layer
+      && layer.visible !== false
+      && layer.enabled !== false
+      && (typeof layer.renderPicking === "function" || typeof layer.renderPickIds === "function")
+    )).length;
+    if (next.gpuLayerCount > 0) next.availableSources.push("gpu-picking");
+    if (next.relationMatrixPickers.length > 0) next.availableSources.push("relation-matrix-picking");
+    if (next.graphEdges.length > 0) next.availableSources.push("graph-picking");
+    if (next.recordPoints.length > 0) next.availableSources.push("cpu-fallback");
+    this.pickingIndex = next;
     return this;
   }
 
@@ -1354,6 +1737,7 @@ function mergeRuntimeOptions(options) {
     postprocess: normalizePostprocessOptions(options.postprocess ?? DEFAULT_RUNTIME_OPTIONS.postprocess),
     controls: normalizeBooleanOptions(options.controls, DEFAULT_RUNTIME_OPTIONS.controls),
     hoverFocus: normalizeHoverFocusOptions(options.hoverFocus ?? options.controls?.hoverFocus, DEFAULT_RUNTIME_OPTIONS.hoverFocus),
+    inspection: normalizeInspectionOptions(options.inspection ?? options.picking, DEFAULT_RUNTIME_OPTIONS.inspection),
     layers: {
       ...DEFAULT_RUNTIME_OPTIONS.layers,
       ...(options.layers || {}),
@@ -1393,6 +1777,31 @@ function normalizeHoverFocusOptions(value, fallback = DEFAULT_RUNTIME_OPTIONS.ho
     focusWhileDragging: source.focusWhileDragging ?? base.focusWhileDragging ?? false,
     positionChannels: toArray(source.positionChannels || source.positionChannel || base.positionChannels || ["position", "targetPosition", "sourcePosition"]),
     recordChannel: source.recordChannel || base.recordChannel || "recordId",
+  };
+}
+
+function normalizeInspectionOptions(value, fallback = DEFAULT_RUNTIME_OPTIONS.inspection) {
+  const base = fallback || DEFAULT_RUNTIME_OPTIONS.inspection;
+  if (value === false) return { ...base, enabled: false };
+  if (value === true) return { ...base, enabled: true };
+  const source = value && typeof value === "object" ? value : {};
+  return {
+    ...base,
+    ...source,
+    enabled: source.enabled !== false && base.enabled !== false,
+    hover: source.hover !== false && source.hoverPreview !== false && base.hover !== false,
+    click: source.click !== false && source.clickSelect !== false && base.click !== false,
+    gpu: source.gpu !== false && source.gpuPicking !== false && base.gpu !== false,
+    relationMatrix: source.relationMatrix !== false && source.matrix !== false && base.relationMatrix !== false,
+    graph: source.graph !== false && source.graphPicking !== false && base.graph !== false,
+    cpuFallback: source.cpuFallback !== false && source.cpu !== false && base.cpuFallback !== false,
+    thresholdPx: positiveRuntimeNumber(source.thresholdPx, source.radiusPx, base.thresholdPx, 34),
+    edgeThresholdPx: positiveRuntimeNumber(source.edgeThresholdPx, source.edgeRadiusPx, base.edgeThresholdPx, 7),
+    maxCandidates: Math.max(1, Math.floor(numberOr(source.maxCandidates, base.maxCandidates ?? 20000))),
+    clearOnMiss: source.clearOnMiss ?? base.clearOnMiss ?? false,
+    selectOnClick: source.selectOnClick ?? source.clickSelect ?? base.selectOnClick ?? true,
+    recordChannel: source.recordChannel || base.recordChannel || "recordId",
+    positionChannels: toArray(source.positionChannels || source.positionChannel || base.positionChannels || ["position", "targetPosition", "sourcePosition"]),
   };
 }
 
@@ -1895,6 +2304,251 @@ function cameraForwardDistanceToPoint(camera, position) {
   return Number.isFinite(distance) && distance > 0 ? distance : null;
 }
 
+function createEmptyPickingIndex() {
+  return {
+    recordPoints: [],
+    relationMatrixPickers: [],
+    graphEdges: [],
+    gpuLayerCount: 0,
+    availableSources: [],
+  };
+}
+
+function createEmptyInspectionState() {
+  return {
+    source: "none",
+    hover: null,
+    selection: null,
+    lastResult: null,
+  };
+}
+
+function createRuntimePickRequest(runtime, input = {}, options = {}) {
+  const size = runtime.renderer?.size || {};
+  const pixelRatio = positiveRuntimeNumber(size.pixelRatio, 1);
+  const rawPointer = options.rawPointer || options.pointer || input.rawPointer || input.pointer || input;
+  const pixel = rawPointer.pixel || rawPointer.screen || null;
+  const x = finiteRuntimeNumber(
+    options.x,
+    input.x,
+    pixel?.x,
+    rawPointer.x == null ? null : rawPointer.x * pixelRatio,
+    rawPointer.css?.x == null ? null : rawPointer.css.x * pixelRatio,
+    0,
+  );
+  const y = finiteRuntimeNumber(
+    options.y,
+    input.y,
+    pixel?.y,
+    rawPointer.y == null ? null : rawPointer.y * pixelRatio,
+    rawPointer.css?.y == null ? null : rawPointer.css.y * pixelRatio,
+    0,
+  );
+  const request = createPickRequest({
+    ...options,
+    ...input,
+    x,
+    y,
+    radius: positiveRuntimeNumber(options.thresholdPx, input.radius, DEFAULT_RUNTIME_OPTIONS.inspection.thresholdPx),
+    pointer: rawPointer,
+    camera: runtime.camera,
+    viewport: size,
+    registry: runtime.pickingRegistry,
+    layers: runtime.layers,
+    source: options.source || input.source || "runtime-inspection",
+    timestamp: options.timestamp ?? input.timestamp ?? performanceNow(),
+  });
+  request.rawPointer = rawPointer;
+  return request;
+}
+
+function collectDescriptorRecordPickPoints(out, registry, descriptor, runtime) {
+  if (!descriptor || descriptor.visible === false) return out;
+  const channels = descriptor.channels || {};
+  const recordChannel = getChannel(channels, ["recordId", "record_id", "id", "cellId"]);
+  const recordIds = getChannelArray(recordChannel);
+  if (!recordIds?.length) return out;
+  const positionInfo = descriptorFocusPositionInfo(descriptor, DEFAULT_RUNTIME_OPTIONS.inspection.positionChannels);
+  if (!positionInfo) return out;
+  const count = Math.min(recordIds.length, positionInfo.count, runtime.inspectionOptions.maxCandidates);
+  for (let index = 0; index < count; index += 1) {
+    const recordId = recordIds[index];
+    if (recordId == null) continue;
+    const position = positionAt(positionInfo, index);
+    if (!position) continue;
+    const numericId = registry.registerRecord(String(recordId), {
+      layerId: descriptor.id || descriptor.primitive || null,
+      scope: descriptor.id || descriptor.primitive || null,
+      payload: {
+        descriptorId: descriptor.id || null,
+        descriptorKind: descriptor.kind || descriptor.primitive || null,
+        index,
+      },
+    });
+    out.recordPoints.push({
+      id: String(recordId),
+      recordId: String(recordId),
+      layerId: descriptor.id || descriptor.primitive || null,
+      scope: descriptor.id || descriptor.primitive || null,
+      numericId,
+      position,
+    });
+  }
+  return out;
+}
+
+function collectDescriptorRelationMatrixPickers(out, descriptor, runtime) {
+  if (!descriptor || descriptor.visible === false || descriptor.primitive !== "RelationMatrixLayer") return out;
+  try {
+    const picker = createRelationMatrixPicker(descriptor, { canvas: runtime.canvas });
+    out.relationMatrixPickers.push({
+      descriptorId: descriptor.id || null,
+      relationId: descriptor.source?.relationId || descriptor.metadata?.relationId || descriptor.relationId || null,
+      picker,
+    });
+  } catch {
+    // Incomplete layer descriptors are ignored here; layer construction still
+    // reports hard errors through the usual runtime warning path.
+  }
+  return out;
+}
+
+function collectDescriptorGraphEdges(out, registry, descriptor) {
+  if (!descriptor || descriptor.visible === false || descriptor.primitive !== "RelationEdgeLayer") return out;
+  const graph = descriptor.metadata?.graph || descriptor.source?.graph || null;
+  const edges = Array.isArray(graph?.edges) ? graph.edges : [];
+  if (!edges.length) return out;
+  const sourcePositions = channelVec3Array(descriptor.channels, ["sourcePosition", "source"]);
+  const targetPositions = channelVec3Array(descriptor.channels, ["targetPosition", "target"]);
+  const values = getChannelArray(getChannel(descriptor.channels || {}, ["relationValue", "value", "weight"]));
+  const relationId = descriptor.source?.relationId || graph.relationId || graph.edge_relation_id || null;
+  const graphId = descriptor.source?.graphId || graph.id || null;
+  const count = Math.min(edges.length, sourcePositions.count, targetPositions.count);
+
+  for (let index = 0; index < count; index += 1) {
+    const edge = edges[index] || {};
+    const rowId = edge.source ?? edge.rowId ?? edge.row_id ?? edge.source_id ?? edge.a;
+    const columnId = edge.target ?? edge.columnId ?? edge.column_id ?? edge.target_id ?? edge.b;
+    if (rowId == null || columnId == null) continue;
+    const edgeId = edge.id || `${relationId || graphId || descriptor.id || "graph"}:${rowId}:${columnId}:${index}`;
+    const pair = {
+      relationId,
+      graphId,
+      edgeId,
+      rowId: String(rowId),
+      columnId: String(columnId),
+      row: Number.isFinite(Number(edge.sourceIndex)) ? Number(edge.sourceIndex) : null,
+      column: Number.isFinite(Number(edge.targetIndex)) ? Number(edge.targetIndex) : null,
+      value: edge.value ?? values?.[index],
+      present: true,
+      sourcePosition: sourcePositions.at(index),
+      targetPosition: targetPositions.at(index),
+      layerId: descriptor.id || null,
+    };
+    const numericId = registry.registerEdge(edgeId, {
+      layerId: descriptor.id || null,
+      scope: descriptor.id || descriptor.primitive || null,
+      payload: pair,
+    });
+    out.graphEdges.push({ ...pair, numericId });
+  }
+  return out;
+}
+
+function channelVec3Array(channels = {}, names) {
+  const channel = getChannel(channels, names);
+  const data = getChannelArray(channel);
+  const itemSize = getChannelItemSize(channel, 3);
+  const count = getChannelCount(channel, 3);
+  return {
+    count,
+    at(index) {
+      const offset = index * itemSize;
+      return [
+        Number(data?.[offset]) || 0,
+        Number(data?.[offset + 1]) || 0,
+        Number(data?.[offset + 2]) || 0,
+      ];
+    },
+  };
+}
+
+function projectRuntimePosition(camera, position, out = {}, size = {}) {
+  if (!position) return null;
+  if (camera?.projectToPixel) return camera.projectToPixel(position, out);
+  return projectWithViewProjection(
+    out,
+    position,
+    camera?.viewProjectionMatrix,
+    Math.max(1, numberOr(size.drawingBufferWidth, 1)),
+    Math.max(1, numberOr(size.drawingBufferHeight, 1)),
+  );
+}
+
+function distanceToSegmentSquared(px, py, ax, ay, bx, by) {
+  const vx = bx - ax;
+  const vy = by - ay;
+  const wx = px - ax;
+  const wy = py - ay;
+  const lengthSq = vx * vx + vy * vy;
+  if (lengthSq <= 1e-9) {
+    const dx = px - ax;
+    const dy = py - ay;
+    return dx * dx + dy * dy;
+  }
+  const t = clampRuntimeNumber((wx * vx + wy * vy) / lengthSq, 0, 1);
+  const x = ax + vx * t;
+  const y = ay + vy * t;
+  const dx = px - x;
+  const dy = py - y;
+  return dx * dx + dy * dy;
+}
+
+function pairFromPickResult(result) {
+  const payload = result?.entry?.payload || result?.raw || null;
+  if (!payload) return null;
+  const rowId = payload.rowId ?? payload.row_id ?? payload.sourceId ?? payload.source_id;
+  const columnId = payload.columnId ?? payload.column_id ?? payload.targetId ?? payload.target_id;
+  if (rowId == null || columnId == null) return null;
+  return {
+    relationId: payload.relationId ?? payload.relation_id ?? null,
+    graphId: payload.graphId ?? payload.graph_id ?? null,
+    edgeId: payload.edgeId ?? payload.edge_id ?? result.edgeId ?? null,
+    rowId: String(rowId),
+    columnId: String(columnId),
+    row: Number.isFinite(Number(payload.row)) ? Number(payload.row) : null,
+    column: Number.isFinite(Number(payload.column)) ? Number(payload.column) : null,
+    value: payload.value,
+    present: payload.present !== false,
+    offset: Number.isFinite(Number(payload.offset)) ? Number(payload.offset) : null,
+    size: Number.isFinite(Number(payload.size)) ? Number(payload.size) : null,
+    pickSource: result.source || null,
+  };
+}
+
+function inspectionDetailFromPickResult(result, options = {}) {
+  if (!result?.hit) {
+    return {
+      hit: false,
+      source: result?.source || "none",
+      mode: options.mode || null,
+    };
+  }
+  const pair = pairFromPickResult(result);
+  return {
+    hit: true,
+    source: result.source || "unknown",
+    mode: options.mode || null,
+    kind: pair ? "pair" : (result.kind || "record"),
+    recordId: result.recordId ?? null,
+    pair,
+    layerId: result.layerId ?? null,
+    edgeId: result.edgeId ?? null,
+    numericId: result.numericId ?? 0,
+    distance: Number.isFinite(result.distance) ? result.distance : null,
+  };
+}
+
 function clonePlainObject(value) {
   if (Array.isArray(value)) return value.map(clonePlainObject);
   if (!value || typeof value !== "object") return value;
@@ -1903,9 +2557,12 @@ function clonePlainObject(value) {
   return out;
 }
 
-function finiteRuntimeNumber(value) {
-  const number = Number(value);
-  return Number.isFinite(number) ? number : null;
+function finiteRuntimeNumber(...values) {
+  for (const value of values) {
+    const number = Number(value);
+    if (Number.isFinite(number)) return number;
+  }
+  return null;
 }
 
 function numericValueChanged(previous, next, epsilon = 0) {

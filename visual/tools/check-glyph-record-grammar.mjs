@@ -4,7 +4,11 @@ import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { RECORD_GLYPH_FAMILIES, RECORD_GLYPH_TYPES } from "../src/glyphs/index.js";
+import {
+  RECORD_GLYPH_FAMILIES,
+  RECORD_GLYPH_TYPES,
+  createRecordGlyphGrammar,
+} from "../src/glyphs/index.js";
 import { MetricSpaceView } from "../src/views/index.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -27,16 +31,15 @@ const view = MetricSpaceView.fromVisualSpace(document, {
   labelProperty: "family",
   pointSize: 1.4,
 });
-const pointDescriptor = view.toLayerDescriptors().find((descriptor) => descriptor.primitive === "InstancedPointLayer");
-const glyphDescriptor = pointDescriptor
-  ? {
-    ...pointDescriptor,
-    kind: "typed-glyph-scene",
-    primitive: "InstancedGlyphLayer",
-  }
-  : null;
+const descriptors = view.toLayerDescriptors();
+const glyphDescriptor = descriptors.find((descriptor) => descriptor.primitive === "InstancedGlyphLayer");
 
-assert("mixed record view emits a glyph-ready record descriptor", Boolean(glyphDescriptor));
+assert("mixed record view emits a primary typed glyph descriptor", Boolean(glyphDescriptor), {
+  primitives: descriptors.map((descriptor) => descriptor.primitive || descriptor.kind),
+});
+assert("mixed record view does not reduce composed records to a primary point cloud",
+  !descriptors.some((descriptor) => descriptor.primitive === "InstancedPointLayer"),
+  { primitives: descriptors.map((descriptor) => descriptor.primitive || descriptor.kind) });
 assert("glyph descriptor preserves one record id per exported record",
   glyphDescriptor.channels.recordId?.count === document.records.length,
   { count: glyphDescriptor.channels.recordId?.count, records: document.records.length });
@@ -73,6 +76,36 @@ assert("glyph grammar exposes label anchors without HTML overlays",
 assert("typed glyph descriptor remains pickable by record id",
   glyphDescriptor.picking?.mode === "record-id" && glyphDescriptor.picking?.channel === "recordId",
   { picking: glyphDescriptor.picking });
+assert("typed glyph descriptor declares typed record glyphs as primary grammar",
+  glyphDescriptor.metadata?.primaryGrammar === "typed-record-glyphs"
+    && glyphDescriptor.metadata?.role === "typed-glyphs",
+  { metadata: glyphDescriptor.metadata });
+
+const familyGrammar = createRecordGlyphGrammar([
+  { id: "text", record_type: "text_note", payload: { kind: "text", text: "operator note" } },
+  { id: "series", record_type: "sensor_window", payload: { kind: "time_series", series: [0.1, 0.4, 0.2] } },
+  { id: "hist", record_type: "histogram", payload: { kind: "histogram", bins: [1, 3, 2] } },
+  { id: "image", record_type: "image_patch", payload: { kind: "image", pixels: [[0, 1], [1, 0]] } },
+  { id: "vector", record_type: "embedding", payload: { kind: "vector", values: [0.2, 0.8, 0.5] } },
+  { id: "composed", record_type: "mixed_structured_record", payload: { kind: "composed", fields: {
+    note: { kind: "text", text: "fault" },
+    curve: { kind: "time_series", series: [1, 2, 3] },
+    bars: { kind: "histogram", bins: [2, 1, 4] },
+    embedding: { kind: "vector", values: [0.3, 0.6] },
+  } } },
+]);
+for (const family of [
+  RECORD_GLYPH_FAMILIES.text,
+  RECORD_GLYPH_FAMILIES.timeSeries,
+  RECORD_GLYPH_FAMILIES.histogram,
+  RECORD_GLYPH_FAMILIES.image,
+  RECORD_GLYPH_FAMILIES.vector,
+  RECORD_GLYPH_FAMILIES.composed,
+]) {
+  assert(`record glyph grammar supports ${family}`, familyGrammar.families.includes(family), {
+    families: familyGrammar.families,
+  });
+}
 
 console.log(JSON.stringify({
   ok: true,

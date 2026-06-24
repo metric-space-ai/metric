@@ -87,7 +87,9 @@ export class MetricSpaceView extends BaseView {
     this.alpha = Number.isFinite(Number(options.alpha)) ? Number(options.alpha) : 0.95;
     this.shape = options.shape || "sphere";
     this.pointMaterial = { ...CRISP_POINT_MATERIAL, ...(options.pointMaterial || {}) };
-    this.recordGlyphs = options.recordGlyphs !== false;
+    this.recordGlyphs = options.recordGlyphs == null
+      ? shouldUseRecordGlyphGrammar(options.records)
+      : options.recordGlyphs !== false;
     this.recordGlyphGrammar = options.recordGlyphGrammar || null;
     this.glyphLabelLift = Number.isFinite(Number(options.glyphLabelLift)) ? Number(options.glyphLabelLift) : 0.18;
 
@@ -261,6 +263,10 @@ export class MetricSpaceView extends BaseView {
     }
     return {
       ...descriptor,
+      id: `${this.id}:typed-glyphs`,
+      kind: "typed-glyph-scene",
+      primitive: "InstancedGlyphLayer",
+      order: descriptor.order ?? 8,
       channels,
       geometry: {
         ...descriptor.geometry,
@@ -272,9 +278,12 @@ export class MetricSpaceView extends BaseView {
       material: {
         ...descriptor.material,
         glyphGrammar: "typed-record-glyphs",
+        diffuse: "record-payload-marks",
       },
       metadata: {
         ...descriptor.metadata,
+        role: "typed-glyphs",
+        primaryGrammar: "typed-record-glyphs",
         recordGlyphGrammar: {
           schema: grammar.schema,
           families: grammar.families,
@@ -449,6 +458,18 @@ function createGlyphLabelAnchorChannel(positions, ids, lift) {
   return createChannel(anchors, 3, "record-label-anchor", {
     grammar: RECORD_GLYPH_GRAMMAR_SCHEMA,
   });
+}
+
+function shouldUseRecordGlyphGrammar(records = []) {
+  if (!Array.isArray(records) || records.length === 0) return false;
+  const families = new Set();
+  for (const record of records) {
+    const type = String(record?.record_type ?? record?.recordType ?? record?.type ?? "").toLowerCase();
+    const kind = String(record?.payload?.kind ?? record?.payload?.type ?? "").toLowerCase();
+    if (/mixed|composed|structured/.test(type) || /mixed|composed|structured/.test(kind)) return true;
+    if (kind) families.add(kind.replace(/_/g, "-"));
+  }
+  return families.size > 1;
 }
 
 export function defaultCoordinateId(document, space, options = {}) {

@@ -29,9 +29,12 @@ node visual/tools/check-grae10-golden.mjs
 node visual/tools/check-views.mjs
 node visual/tools/check-view-reference-contract.mjs
 node visual/tools/check-relation-matrix-picker.mjs
+node visual/tools/check-runtime-picking-preview.mjs
 node visual/tools/check-hero-grammar-contract.mjs
 node visual/tools/check-single-render-pipeline.mjs
 node visual/tools/check-public-gallery-evidence.mjs
+node visual/tools/check-visual-regression-public-examples.mjs
+node visual/tools/check-visual-performance-large-scenes.mjs
 ctest --test-dir build/core -L 'metric_application_evidence|metric_phate_pipeline|metric_mnist|metric_visual_integrity|metric_benchmark_report' --output-on-failure
 ```
 
@@ -61,13 +64,26 @@ passing when the package is unavailable.
 | GRAE10 protected visual | checked | `visual/examples/grae10-metric-engine/index.html` must match `visual/regression-baselines/grae10-metric-engine.sha256`; `visual/tools/check-grae10-golden.mjs` enforces this. |
 | Shared semantic views | checked headlessly | `visual/tools/check-views.mjs` verifies the current semantic views produce renderable descriptors. |
 | View reference validation | checked headlessly | `visual/tools/check-view-reference-contract.mjs` verifies explicit coordinate, relation and property IDs fail hard instead of falling back to unrelated defaults; it also verifies `MappingView` emits labels from an exported label property. |
-| Relation matrix picking | checked headlessly and in browser | `visual/src/relational/matrix-picking.js` maps pointer positions to exported dense-matrix cells; `visual/tools/check-relation-matrix-picker.mjs` verifies the contract and the relation-matrix page uses that engine helper for pair preview. |
-| Engine pair preview | checked in browser | `MetricVisualSurface` builds relation-matrix pair pickers from `RelationMatrixLayer` descriptors and feeds pair inputs into `RecordPreviewPanel`; the relation-matrix page no longer owns a custom pair panel. Browser smoke verified `pc-054 ↔ pc-057` with value `2.8311` from native evidence. |
-| Relation matrix linked selection | checked headlessly and in browser | `MetricVisualRuntime.selectPair()` stores selected pair identity, `RelationMatrixLayer.setSelection()` highlights the selected row, column and cell, and `RecordPreviewPanel` shows the pair through the shared selection event. `visual/tools/check-relation-matrix-picker.mjs` covers the layer selection contract; browser smoke verified selecting `pc-054|pc-057` updates runtime state, layer selection and the engine preview panel. |
-| Relation native graph grammar | checked headlessly and in browser | `NeighborhoodGraphView` resolves `graphs[].edge_relation_id` and `createRelationGraphEdgeLayerDescriptor()` preserves native `graphs[].edges` as a `native-neighborhood-graph` instead of deriving top-k edges in JavaScript. Browser smoke verified `process-curve-knn` stays tied to `process-curve-aligned-metric` with 650 native edges while selecting `pc-054|pc-057`. |
+| Runtime inspection and picking | checked headlessly and in browser | `MetricVisualRuntime.pickAt()` and `inspectAt()` now use one engine path for GPU picking when layer hooks exist, relation-matrix picking, graph-edge picking and deterministic projected-record fallback. `visual/tools/check-runtime-picking-preview.mjs` verifies record selection, pair selection, runtime state and preview resolution; `visual/tools/check-visual-regression-public-examples.mjs` verifies public examples stay renderable and interactive. |
+| Relation matrix picking | checked headlessly and in browser | `visual/src/relational/matrix-picking.js` maps pointer positions to exported dense-matrix cells; `visual/tools/check-relation-matrix-picker.mjs` verifies relation id/name, pair key, native pair evidence and layer selection. Public regression verifies relation-matrix interaction updates selected pair state from native evidence. |
+| Engine pair preview | checked headlessly and in browser | Matrix cells preserve native pair evidence and optional pair properties for the engine picker. `RecordPreviewPanel` can attach to runtime inspection and resolve record or pair previews from `metric.visual.v1` evidence instead of page-local DOM logic. |
+| Relation matrix linked selection | checked headlessly and in browser | `MetricVisualRuntime.selectPair()` stores selected pair identity and pick source, `RelationMatrixLayer.setSelection()` highlights the selected row, column and cell, and the runtime state exposes selected pair data for shared preview/selection UI. |
+| Relation native graph grammar | checked headlessly and in browser | `NeighborhoodGraphView` resolves `graphs[].edge_relation_id` and `createRelationGraphEdgeLayerDescriptor()` preserves native `graphs[].edges` as a `native-neighborhood-graph` instead of deriving top-k edges in JavaScript. Graph descriptors expose the same native relation selection model as the matrix picker. |
 | Grammar contract | checked headlessly | `visual/tools/check-hero-grammar-contract.mjs` rejects collapsing unrelated hero concepts into one point-cloud-only grammar. |
 | Single runtime path | checked headlessly | `visual/tools/check-single-render-pipeline.mjs` protects the one-runtime pipeline rule. |
 | Public gallery evidence gate | checked headlessly | `visual/tools/check-public-gallery-evidence.mjs` blocks synthetic hero fixtures from the public site and protects the GRAE10 reference hash. |
+| Public visual regression gate | checked in browser | `visual/tools/check-visual-regression-public-examples.mjs` verifies the protected GRAE10 60k reference plus six native preview examples load, render nonblank canvases, use native evidence and keep their declared grammar/status. |
+| Large-scene performance gate | checked in browser | `visual/tools/check-visual-performance-large-scenes.mjs` verifies 1k, 10k and 60k point-cloud workloads with a real browser WebGL backend. `visual/tools/perf-matrix.mjs` separately records the headless software-renderer floor. |
+
+### Runtime Picking/Preview Workstream Note - 2026-06-24
+
+The relation grammar contract preserves native pair evidence on matrix cells,
+returns stable relation/row/column pair identities from the matrix picker, and
+marks graph descriptors with the same native relation selection model. Runtime
+inspection now wires those pair identities through shared picking, selection and
+preview state. GPU picking is runtime-ready, but current stock layers still need
+`renderPicking()` / `renderPickIds()` implementations before public views can
+report GPU picking as an active source.
 
 ## Public Gallery Status
 

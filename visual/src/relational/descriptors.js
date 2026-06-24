@@ -81,6 +81,13 @@ export function createRelationGraphEdgeLayerDescriptor(source, options = {}) {
       relationVisualization: "neighborhood-graph",
       graph,
       diagnostics: graph.diagnostics,
+      selectionModel: {
+        relationId: graph.relationId || options.relationId || source?.id || null,
+        graphId: graph.id || options.graphId || options.graph?.id || null,
+        pairSource: graph.native === true ? "native-graph-evidence" : "relation-pair-evidence",
+        recordIds: graph.recordIds,
+        respondsTo: ["record", "pair"],
+      },
     },
   };
 }

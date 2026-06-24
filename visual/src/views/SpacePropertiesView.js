@@ -226,7 +226,8 @@ function normalizeScalar(value, domain) {
 function propertyFieldSemantic(propertyId, propertyName) {
   const text = `${propertyId || ""} ${propertyName || ""}`.toLowerCase();
   if (/density/.test(text)) return "density";
-  if (/anomaly|outlier|noise|fault/.test(text)) return "anomaly";
+  if (/outlier/.test(text)) return "outlier";
+  if (/anomaly|noise|fault/.test(text)) return "anomaly";
   if (/entropy|uncertainty/.test(text)) return "entropy";
   if (/residual|error/.test(text)) return "residual";
   return "scalar";

@@ -40,6 +40,8 @@ const picker = createRelationMatrixPicker(descriptor);
 assert.deepEqual(picker.describe(), {
   size: 3,
   recordCount: 3,
+  relationId: "toy-metric",
+  relationName: null,
   rect: [0.25, 0.2, 0.5, 0.6],
 });
 
@@ -51,6 +53,10 @@ assert.equal(cell.row, 0);
 assert.equal(cell.column, 0);
 assert.equal(cell.rowId, "a");
 assert.equal(cell.columnId, "a");
+assert.equal(cell.sourceId, "a");
+assert.equal(cell.targetId, "a");
+assert.equal(cell.relationId, "toy-metric");
+assert.equal(cell.pairKey, "toy-metric\u0000a\u0000a");
 assert.equal(cell.value, 0);
 assert.equal(cell.present, true);
 
@@ -137,6 +143,9 @@ assert.equal(nativeTexture.matrix.blockRanges.length, 5);
 assert.equal(nativeTexture.matrix.missingValueCount, 0);
 assert.equal(nativeTexture.matrix.diagnostics.matrixDimensions.width, 130);
 assert.equal(nativeTexture.matrix.diagnostics.metricLawDiagnostic.triangle, true);
+assert.equal(nativeTexture.matrix.pairEvidence.get(1).rowId, "pc-000");
+assert.equal(nativeTexture.matrix.pairEvidence.get(1).columnId, "pc-001");
+assert.equal(nativeTexture.matrix.pairEvidence.get(1).pair?.value, 2.34478);
 
 const nativeLayer = new RelationMatrixLayer({ metadata: { matrix: nativeTexture.matrix } });
 nativeLayer.updateBlockBoundaries(nativeTexture);
@@ -155,5 +164,9 @@ assert.equal(graphDescriptor.metadata.graph.mode, "native");
 assert.equal(graphDescriptor.metadata.graph.relationId, nativeRelation.id);
 assert.equal(graphDescriptor.metadata.graph.edgeCount, nativeGraph.edges.length);
 assert.equal(graphDescriptor.source.nativeGraph, true);
+assert.equal(graphDescriptor.metadata.selectionModel.relationId, nativeRelation.id);
+assert.equal(graphDescriptor.metadata.selectionModel.graphId, nativeGraph.id);
+assert.equal(graphDescriptor.metadata.selectionModel.pairSource, "native-graph-evidence");
+assert.deepEqual(graphDescriptor.metadata.selectionModel.respondsTo, ["record", "pair"]);
 
 console.log("Relation matrix picker contract passed.");

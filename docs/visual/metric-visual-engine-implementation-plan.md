@@ -60,21 +60,30 @@ This plan is authoritative only with the following current-state constraints:
   files remain synthetic renderer fixtures only.
 - Synthetic fixtures may be used to develop renderer layers, but they are not
   application evidence and must not be published as real heroes.
-- The next production step is reusable visual-command/gallery integration of
-  the checked native exports, not more hand-written hero HTML and not more
-  synthetic fixture scenes.
+- Runtime inspection now routes record picking, relation-matrix picking,
+  graph-edge picking, linked selection and record/pair preview through
+  reusable engine modules. Stock layers still need GPU picking hooks before
+  GPU picking is active in the public views.
+- The next production step is to harden each native public preview into an
+  accepted hero through larger evidence where required, grammar-specific
+  performance budgets and screenshot review, not more hand-written hero HTML
+  and not more synthetic fixture scenes.
 - Browser load success means only `loads` or `renders`; it never means
   `hero-ready`.
 
-The current public gallery is therefore limited to:
+The current accepted public heroes are therefore limited to:
 
 - MNIST dimension reduction: protected 60k GRAE10 reference plus native
   integrity check.
 - UCR process curves: real dataset plus native C++ export assets.
 
-All other heroes stay planned until their native exported evidence is consumed
-through a distinct reusable visual grammar and passes
-`visual/tools/check-public-gallery-evidence.mjs` plus browser screenshot review.
+The other planned hero families are currently public previews, not accepted
+heroes. They load native `docs/examples/assets/*/metric.visual.json` evidence
+through distinct reusable visual grammars and pass
+`visual/tools/check-public-gallery-evidence.mjs` plus the browser public
+regression gate, but still need screenshot acceptance and stronger public
+evidence where the current native fixture is too small to prove application
+value.
 
 ## Goal
 

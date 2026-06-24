@@ -90,6 +90,7 @@ export class HeatFieldLayer extends BaseLayer {
     this.program.setUniform("uRadial", radial);
     this.program.setUniform("uContour", numberOption(material.contour, geometry.contour, 0.18));
     this.program.setUniform("uGlow", numberOption(material.glow, geometry.glow, 0.14));
+    this.program.setUniform("uRampMode", rampMode(material.ramp || geometry.ramp || this.metadata?.propertySemantic));
     this.program.setUniform("uSelectionColor", color3(material.selectionColor, [1.0, 0.76, 0.22]));
 
     bindAttribute(gl, this.program, this.capabilities, "aPosition", this.buffers.position, 3);
@@ -201,6 +202,16 @@ function color3(value, fallback) {
   return fallback;
 }
 
+function rampMode(value) {
+  const text = String(value || "").toLowerCase();
+  if (/density/.test(text)) return 1;
+  if (/outlier/.test(text)) return 2;
+  if (/anomaly|fault|noise/.test(text)) return 3;
+  if (/entropy|uncertainty/.test(text)) return 4;
+  if (/residual|error/.test(text)) return 5;
+  return 0;
+}
+
 function clamp01(value) {
   return Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0));
 }
@@ -239,11 +250,47 @@ uniform float uRadial;
 uniform float uTime;
 uniform float uContour;
 uniform float uGlow;
+uniform float uRampMode;
 uniform vec3 uSelectionColor;
 
 varying vec4 vColor;
 varying float vScalar;
 varying float vFocus;
+
+vec3 scalarRamp(float scalar, float mode) {
+  float t = clamp(scalar, 0.0, 1.0);
+  if (mode < 0.5) {
+    return vColor.rgb;
+  }
+  if (mode < 1.5) {
+    vec3 low = vec3(0.13, 0.24, 0.34);
+    vec3 mid = vec3(0.12, 0.55, 0.50);
+    vec3 high = vec3(0.78, 0.88, 0.62);
+    return t < 0.55 ? mix(low, mid, t / 0.55) : mix(mid, high, (t - 0.55) / 0.45);
+  }
+  if (mode < 2.5) {
+    vec3 low = vec3(0.18, 0.20, 0.24);
+    vec3 mid = vec3(0.84, 0.46, 0.20);
+    vec3 high = vec3(0.88, 0.13, 0.18);
+    return t < 0.62 ? mix(low, mid, t / 0.62) : mix(mid, high, (t - 0.62) / 0.38);
+  }
+  if (mode < 3.5) {
+    vec3 low = vec3(0.10, 0.25, 0.34);
+    vec3 mid = vec3(0.90, 0.58, 0.23);
+    vec3 high = vec3(0.78, 0.10, 0.16);
+    return t < 0.58 ? mix(low, mid, t / 0.58) : mix(mid, high, (t - 0.58) / 0.42);
+  }
+  if (mode < 4.5) {
+    vec3 low = vec3(0.18, 0.24, 0.44);
+    vec3 mid = vec3(0.47, 0.42, 0.68);
+    vec3 high = vec3(0.92, 0.72, 0.30);
+    return t < 0.52 ? mix(low, mid, t / 0.52) : mix(mid, high, (t - 0.52) / 0.48);
+  }
+  vec3 low = vec3(0.12, 0.26, 0.42);
+  vec3 mid = vec3(0.78, 0.80, 0.72);
+  vec3 high = vec3(0.80, 0.24, 0.20);
+  return t < 0.5 ? mix(low, mid, t * 2.0) : mix(mid, high, (t - 0.5) * 2.0);
+}
 
 void main() {
   vec2 centered = gl_PointCoord * 2.0 - 1.0;
@@ -256,7 +303,7 @@ void main() {
   float scalar = clamp(vScalar, 0.0, 1.0);
   float contour = 0.5 + 0.5 * sin((radius * 8.0 - scalar * 5.0 + uTime * 0.65) * 3.14159265359);
   float scalarLift = scalar * 0.08 + contour * uContour * (1.0 - radius) * 0.12;
-  vec3 color = min(vColor.rgb + scalarLift + vec3(uGlow * scalar * (1.0 - radius)), vec3(1.0));
+  vec3 color = min(scalarRamp(scalar, uRampMode) + scalarLift + vec3(uGlow * scalar * (1.0 - radius)), vec3(1.0));
   color = mix(color, uSelectionColor, clamp(vFocus * 0.42, 0.0, 1.0));
   float fieldAlpha = alpha * (0.82 + scalar * 0.18 + contour * uContour * 0.08);
   fieldAlpha = min(1.0, fieldAlpha + vFocus * 0.24);

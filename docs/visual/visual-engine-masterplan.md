@@ -127,6 +127,11 @@ Implemented native slices:
   records, cross-space dependency, dynamics/noise, relation matrix and
   mapping/dimensionality under `docs/examples/assets/*/metric.visual.json`
 - header-only C++ writer foundation under `visual/cpp/mtrc_visual.hpp`
+- runtime inspection with shared picking and preview state for records,
+  relation-matrix cells, graph edges and deterministic projected-record
+  fallback
+- reusable record/pair preview panel resolution from `metric.visual.v1`
+  evidence
 - browser-backed public regression gate for the accepted GRAE10 reference and
   native preview examples:
   `visual/tools/check-visual-regression-public-examples.mjs`
@@ -152,10 +157,13 @@ Known gaps:
 - the profile contract is now active in browser examples, the first material
   response pass is implemented, and world-space tube paths are available;
   visual quality still needs stronger floor projection, curated hero
-  composition and visual regression baselines against the photographic
+  composition and stricter screenshot baselines against accepted photographic
   reference captures
-- no visual regression test suite yet
-- no performance benchmark matrix for large record counts yet
+- runtime GPU picking is wired, but stock layers still need `renderPicking()` /
+  `renderPickIds()` implementations before current public views can use GPU
+  picking as their active source
+- performance gates exist for large point-cloud workloads; matrix, graph,
+  field, glyph, dynamics and mapping grammars still need their own budget rows
 
 It must help users inspect:
 

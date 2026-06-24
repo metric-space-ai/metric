@@ -7,6 +7,7 @@
  */
 export function createRelationMatrixPicker(input, options = {}) {
   const matrix = resolveMatrix(input);
+  const context = resolvePairContext(input, options);
   let rect = normalizeRect(options.rect || input?.geometry?.rect || [0, 0, 1, 1]);
   let canvas = options.canvas || null;
 
@@ -26,12 +27,12 @@ export function createRelationMatrixPicker(input, options = {}) {
       return this;
     },
     cellAtNormalizedPoint(x, y) {
-      return cellAtNormalizedPoint(matrix, rect, x, y);
+      return cellAtNormalizedPoint(matrix, rect, x, y, context);
     },
     cellAtCanvasPoint(x, y, width, height) {
       const bounds = resolveCanvasBounds(canvas, width, height);
       if (!bounds) return null;
-      return cellAtNormalizedPoint(matrix, rect, Number(x) / bounds.width, Number(y) / bounds.height);
+      return cellAtNormalizedPoint(matrix, rect, Number(x) / bounds.width, Number(y) / bounds.height, context);
     },
     cellAtClientPoint(clientX, clientY, targetCanvas = canvas) {
       const bounds = resolveClientBounds(targetCanvas);
@@ -41,12 +42,15 @@ export function createRelationMatrixPicker(input, options = {}) {
         rect,
         (Number(clientX) - bounds.left) / bounds.width,
         (Number(clientY) - bounds.top) / bounds.height,
+        context,
       );
     },
     describe() {
       return {
         size: matrix.size,
         recordCount: matrix.recordIds.length,
+        relationId: context.relationId,
+        relationName: context.relationName,
         rect: rect.slice(),
       };
     },
@@ -60,7 +64,7 @@ export function pickRelationMatrixCell(input, point, options = {}) {
   return picker.cellAtCanvasPoint(point?.x, point?.y, point?.width, point?.height);
 }
 
-function cellAtNormalizedPoint(matrix, rect, x, y) {
+function cellAtNormalizedPoint(matrix, rect, x, y, context = {}) {
   const nx = Number(x);
   const ny = Number(y);
   if (!Number.isFinite(nx) || !Number.isFinite(ny)) return null;
@@ -74,16 +78,43 @@ function cellAtNormalizedPoint(matrix, rect, x, y) {
   const row = Math.min(size - 1, Math.max(0, Math.floor(fy * size)));
   const offset = row * size + column;
   const present = matrix.present ? matrix.present[offset] === 1 : Number.isFinite(matrix.values?.[offset]);
+  const evidence = matrix.pairEvidence?.get?.(offset) || null;
+  const relationId = evidence?.relationId || context.relationId || null;
+  const rowId = matrix.recordIds[row];
+  const columnId = matrix.recordIds[column];
 
   return {
+    relationId,
+    relationName: context.relationName,
     row,
     column,
-    rowId: matrix.recordIds[row],
-    columnId: matrix.recordIds[column],
+    rowId,
+    columnId,
+    sourceId: rowId,
+    targetId: columnId,
     value: matrix.values?.[offset],
     present,
     offset,
     size,
+    pairKey: `${relationId || "relation"}\u0000${rowId}\u0000${columnId}`,
+    properties: evidence?.properties || null,
+    nativePair: evidence?.pair || null,
+    mirrored: evidence?.mirrored === true,
+  };
+}
+
+function resolvePairContext(input, options) {
+  return {
+    relationId: options.relationId
+      ?? input?.source?.relationId
+      ?? input?.metadata?.relationId
+      ?? input?.relationId
+      ?? null,
+    relationName: options.relationName
+      ?? input?.source?.relationName
+      ?? input?.metadata?.relationName
+      ?? input?.relationName
+      ?? null,
   };
 }
 

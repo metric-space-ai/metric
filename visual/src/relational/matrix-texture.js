@@ -36,6 +36,7 @@ export function buildDenseRelationMatrix(source, options = {}) {
   const diagonalValue = options.diagonalValue ?? 0;
   const values = new Float32Array(size * size);
   const present = new Uint8Array(size * size);
+  const pairEvidence = new Map();
   const symmetric = options.symmetric === true ? "mirror" : options.symmetric || "directed";
 
   for (let index = 0; index < values.length; index += 1) values[index] = missingValue;
@@ -67,6 +68,15 @@ export function buildDenseRelationMatrix(source, options = {}) {
     if (present[offset]) duplicatePairCount += 1;
     values[offset] = value;
     present[offset] = 1;
+    pairEvidence.set(offset, describePairEvidence(pair, {
+      rowId: sourceId,
+      columnId: targetId,
+      row: sourceIndex,
+      column: targetIndex,
+      offset,
+      value,
+      mirrored: false,
+    }));
     acceptedPairCount += 1;
 
     if (symmetric === "mirror" && sourceIndex !== targetIndex) {
@@ -74,6 +84,15 @@ export function buildDenseRelationMatrix(source, options = {}) {
       if (present[reverseOffset]) duplicatePairCount += 1;
       values[reverseOffset] = value;
       present[reverseOffset] = 1;
+      pairEvidence.set(reverseOffset, describePairEvidence(pair, {
+        rowId: targetId,
+        columnId: sourceId,
+        row: targetIndex,
+        column: sourceIndex,
+        offset: reverseOffset,
+        value,
+        mirrored: true,
+      }));
     }
   }
 
@@ -106,6 +125,7 @@ export function buildDenseRelationMatrix(source, options = {}) {
     sourceRecordIds,
     values,
     present,
+    pairEvidence,
     missingValue,
     diagonalValue,
     symmetric,
@@ -191,6 +211,32 @@ export function buildRelationMatrixTextureData(source, options = {}) {
     palette,
     diagnostics: matrix.diagnostics,
   };
+}
+
+function describePairEvidence(pair, cell) {
+  const properties = pairProperties(pair);
+  return {
+    id: pair?.id ?? pair?.pair_id ?? pair?.pairId ?? null,
+    relationId: pair?.relation_id ?? pair?.relationId ?? null,
+    rowId: cell.rowId,
+    columnId: cell.columnId,
+    sourceId: cell.rowId,
+    targetId: cell.columnId,
+    row: cell.row,
+    column: cell.column,
+    offset: cell.offset,
+    value: cell.value,
+    mirrored: cell.mirrored,
+    properties,
+    pair,
+  };
+}
+
+function pairProperties(pair) {
+  if (!pair || typeof pair !== "object" || Array.isArray(pair)) return null;
+  const explicit = pair.properties ?? pair.pair_properties ?? pair.pairProperties;
+  if (explicit && typeof explicit === "object" && !Array.isArray(explicit)) return { ...explicit };
+  return null;
 }
 
 export function summarizeFiniteMatrix(values, present) {
