@@ -25,18 +25,19 @@ set, and one validation path.
 | `dynamics-exporter.md` | native dynamics visual exporter | integrated |
 | `relation-matrix-exporter.md` | native relation-matrix visual exporter | integrated |
 | `visual-api-hardening.md` | public JS API and checks | integrated |
-| `condition-monitoring-exporter.md` | native condition-monitoring visual exporter | ready to assign |
-| `mapping-dimensionality-exporter.md` | native mapping/dimensionality visual exporter | ready to assign |
+| `condition-monitoring-exporter.md` | native condition-monitoring visual exporter | integrated |
+| `mapping-dimensionality-exporter.md` | native mapping/dimensionality visual exporter | integrated |
 | `exporter-quality-audit.md` | read-only/patch-light audit of native exporters | ready to assign |
 
 ## Next Slots
 
-The remaining native evidence exporters are split into separate worker tasks
-before any public gallery work:
+The current native evidence exporter wave is integrated. The next parallel wave
+should start from visual grammars and gallery assets, not from synthetic data:
 
-- condition monitoring exporter
-- mapping/dimensionality exporter
-- exporter quality audit over all native visual exporters
+- build `metric.visual.v1` assets from the integrated exporters
+- design one distinct visual grammar per hero
+- run screenshot review against the GRAE10 visual reference
+- keep public gallery promotion behind `check-public-gallery-evidence.mjs`
 
 ## Shared Validation Commands
 

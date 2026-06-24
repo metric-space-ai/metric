@@ -1,0 +1,847 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Native metric.visual.v1 exporter for the condition-monitoring engine example.
+//
+// All condition-monitoring evidence is computed here in C++: TWED distances,
+// nearest-reference scores, DBSCAN outliers, metric-law diagnostics, and
+// trajectory evidence. JavaScript is used only by the acceptance validator.
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+#include <metric/engine.hpp>
+#include <metric/metric/catalog.hpp>
+
+namespace {
+
+using Curve = std::vector<double>;
+
+enum class Regime { Normal, Drift, Fault, Signature };
+
+struct Catalog {
+	std::vector<Curve> curves;
+	std::vector<Regime> families;
+};
+
+struct Observation {
+	Curve curve;
+	Regime truth{};
+	std::string phase;
+	double condition_index{};
+};
+
+struct MetricLawDiagnostics {
+	double diagonal_max_abs{};
+	double symmetry_max_abs{};
+	double triangle_max_violation{};
+	double minimum_nonzero_distance{std::numeric_limits<double>::infinity()};
+	double maximum_distance{};
+	double average_distance{};
+	std::size_t pair_count{};
+	std::size_t triangle_triplets{};
+	bool finite{true};
+};
+
+struct ObservationEvidence {
+	std::string id;
+	double nearest_healthy_distance{};
+	double nearest_catalog_distance{};
+	double severity{};
+	double local_density{};
+	bool dbscan_noise{};
+	Regime nearest_catalog_regime{};
+	std::string diagnosis_state;
+};
+
+auto hash_unit(std::uint64_t seed) -> double
+{
+	std::uint64_t z = seed + 0x9E3779B97F4A7C15ULL;
+	z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ULL;
+	z = (z ^ (z >> 27)) * 0x94D049BB133111EBULL;
+	z = z ^ (z >> 31);
+	return static_cast<double>(z >> 11) / 9007199254740992.0 * 2.0 - 1.0;
+}
+
+auto jitter(std::uint64_t stream, int position, double scale) -> double
+{
+	return scale * hash_unit(stream * 1000003ULL + static_cast<std::uint64_t>(position + 1));
+}
+
+auto quote(const std::string &value) -> std::string
+{
+	std::ostringstream out;
+	out << '"';
+	for (const unsigned char ch : value) {
+		switch (ch) {
+		case '"':
+			out << "\\\"";
+			break;
+		case '\\':
+			out << "\\\\";
+			break;
+		case '\n':
+			out << "\\n";
+			break;
+		case '\r':
+			out << "\\r";
+			break;
+		case '\t':
+			out << "\\t";
+			break;
+		default:
+			if (ch < 0x20) {
+				out << "\\u" << std::hex << std::setw(4) << std::setfill('0') << static_cast<int>(ch)
+					<< std::dec << std::setfill(' ');
+			} else {
+				out << static_cast<char>(ch);
+			}
+		}
+	}
+	out << '"';
+	return out.str();
+}
+
+auto number(double value) -> std::string
+{
+	if (!std::isfinite(value)) {
+		return "0";
+	}
+	std::ostringstream out;
+	out << std::setprecision(12) << value;
+	return out.str();
+}
+
+auto bool_json(bool value) -> const char * { return value ? "true" : "false"; }
+
+auto regime_name(Regime regime) -> std::string
+{
+	switch (regime) {
+	case Regime::Normal:
+		return "normal";
+	case Regime::Drift:
+		return "drift";
+	case Regime::Fault:
+		return "fault";
+	case Regime::Signature:
+		return "signature";
+	}
+	return "unknown";
+}
+
+auto trapezoid(int rise_start, int ramp, int plateau, int tail, double amplitude, double baseline,
+			   std::uint64_t seed) -> Curve
+{
+	Curve curve;
+	int pos = 0;
+	for (int i = 0; i < rise_start; ++i, ++pos) {
+		curve.push_back(baseline + jitter(seed, pos, 0.02));
+	}
+	for (int i = 1; i <= ramp; ++i, ++pos) {
+		curve.push_back(baseline + amplitude * static_cast<double>(i) / ramp + jitter(seed, pos, 0.02));
+	}
+	for (int i = 0; i < plateau; ++i, ++pos) {
+		curve.push_back(baseline + amplitude + jitter(seed, pos, 0.03));
+	}
+	for (int i = ramp - 1; i >= 1; --i, ++pos) {
+		curve.push_back(baseline + amplitude * static_cast<double>(i) / ramp + jitter(seed, pos, 0.02));
+	}
+	for (int i = 0; i < tail; ++i, ++pos) {
+		curve.push_back(baseline + jitter(seed, pos, 0.02));
+	}
+	return curve;
+}
+
+auto healthy_cycle(int rise_start, int ramp, int plateau, int tail, std::uint64_t seed) -> Curve
+{
+	return trapezoid(rise_start, ramp, plateau, tail, 1.0, 0.0, seed);
+}
+
+auto drift_cycle(int step, std::uint64_t seed) -> Curve
+{
+	const double creep = 0.16 * static_cast<double>(step);
+	const double amplitude = 1.0 + 0.14 * static_cast<double>(step);
+	return trapezoid(3, 3, 3, 3, amplitude, creep, seed);
+}
+
+auto fault_cycle(std::uint64_t seed) -> Curve
+{
+	Curve curve;
+	int pos = 0;
+	for (int i = 0; i < 2; ++i, ++pos) {
+		curve.push_back(jitter(seed, pos, 0.02));
+	}
+	const double peaks[] = {1.8, 3.6, 2.0, 3.2, 1.5};
+	for (double value : peaks) {
+		curve.push_back(value + jitter(seed, pos++, 0.04));
+	}
+	for (int i = 0; i < 3; ++i, ++pos) {
+		curve.push_back(jitter(seed, pos, 0.02));
+	}
+	return curve;
+}
+
+auto signature_cycle(int rise_start, int notch_offset, std::uint64_t seed) -> Curve
+{
+	const int ramp = 3;
+	const int plateau = 6;
+	Curve curve = trapezoid(rise_start, ramp, plateau, 3, 1.0, 0.0, seed);
+	const int notch_start = rise_start + ramp + notch_offset;
+	for (int i = 0; i < 3; ++i) {
+		const int index = notch_start + i;
+		if (index >= 0 && index < static_cast<int>(curve.size())) {
+			curve[index] = jitter(seed, 500 + index, 0.03);
+		}
+	}
+	return curve;
+}
+
+auto process_metric() -> mtrc::TWED<double> { return mtrc::TWED<double>(/*penalty=*/0.5, /*elastic=*/0.001); }
+
+auto build_reference_catalog() -> Catalog
+{
+	Catalog catalog;
+	auto add = [&](Curve curve, Regime regime) {
+		catalog.curves.push_back(std::move(curve));
+		catalog.families.push_back(regime);
+	};
+
+	add(healthy_cycle(2, 3, 3, 3, 11), Regime::Normal);
+	add(healthy_cycle(3, 3, 2, 3, 12), Regime::Normal);
+	add(healthy_cycle(1, 4, 3, 2, 13), Regime::Normal);
+	add(healthy_cycle(4, 3, 2, 2, 14), Regime::Normal);
+	add(healthy_cycle(2, 4, 2, 2, 15), Regime::Normal);
+	add(healthy_cycle(3, 2, 4, 3, 16), Regime::Normal);
+	add(drift_cycle(4, 21), Regime::Drift);
+	add(drift_cycle(5, 22), Regime::Drift);
+	add(drift_cycle(6, 23), Regime::Drift);
+	add(fault_cycle(31), Regime::Fault);
+	add(fault_cycle(32), Regime::Fault);
+	add(signature_cycle(2, 0, 41), Regime::Signature);
+	add(signature_cycle(2, 3, 42), Regime::Signature);
+	add(signature_cycle(3, 1, 43), Regime::Signature);
+	return catalog;
+}
+
+auto build_observations() -> std::vector<Observation>
+{
+	std::vector<Observation> observations;
+	auto add = [&](Curve curve, Regime truth, std::string phase, double condition_index) {
+		observations.push_back({std::move(curve), truth, std::move(phase), condition_index});
+	};
+
+	for (int i = 0; i < 5; ++i) {
+		add(healthy_cycle(2 + (i % 3), 3, 3, 3, 7000 + i), Regime::Normal, "stable-reference",
+			0.05 + jitter(9000 + i, 0, 0.01));
+	}
+	for (int step = 1; step <= 6; ++step) {
+		add(drift_cycle(step, 7100 + step), Regime::Drift, "slow-drift",
+			0.12 + 0.14 * static_cast<double>(step));
+	}
+	add(fault_cycle(7200), Regime::Fault, "abrupt-change", 0.95);
+	add(healthy_cycle(1, 4, 3, 2, 7300), Regime::Normal, "recovery", 0.08);
+	add(signature_cycle(2, 0, 7400), Regime::Signature, "recurring-signature", 0.50);
+	add(signature_cycle(6, 1, 7401), Regime::Signature, "recurring-signature", 0.52);
+	return observations;
+}
+
+template <typename Space>
+auto healthy_radius(const Space &space, const std::vector<Regime> &families) -> double
+{
+	double radius = 0.0;
+	for (std::size_t i = 0; i < space.size(); ++i) {
+		if (families[i] != Regime::Normal) {
+			continue;
+		}
+		double best = std::numeric_limits<double>::infinity();
+		for (std::size_t j = 0; j < space.size(); ++j) {
+			if (i == j || families[j] != Regime::Normal) {
+				continue;
+			}
+			best = std::min(best, space.metric()(space[space.id(i)], space[space.id(j)]));
+		}
+		if (std::isfinite(best)) {
+			radius = std::max(radius, best);
+		}
+	}
+	return radius;
+}
+
+template <typename Space>
+auto distance_to_healthy(const Space &space, const std::vector<Regime> &families, const Curve &query) -> double
+{
+	double best = std::numeric_limits<double>::infinity();
+	for (std::size_t i = 0; i < space.size(); ++i) {
+		if (families[i] != Regime::Normal) {
+			continue;
+		}
+		best = std::min(best, space.metric()(query, space[space.id(i)]));
+	}
+	return best;
+}
+
+template <typename Space>
+auto classify(const Space &space, const std::vector<Regime> &families, const Curve &query)
+	-> std::pair<Regime, double>
+{
+	const auto neighbors = mtrc::find_neighbors(space, query, 1);
+	if (neighbors.empty()) {
+		throw std::runtime_error("nearest-neighbor classification returned no neighbors");
+	}
+	return {families[neighbors[0].id.index()], neighbors[0].distance};
+}
+
+auto record_id(std::size_t index) -> std::string
+{
+	std::ostringstream out;
+	out << "window-" << std::setw(2) << std::setfill('0') << index;
+	return out.str();
+}
+
+auto make_record_ids(std::size_t count) -> std::vector<std::string>
+{
+	std::vector<std::string> ids;
+	ids.reserve(count);
+	for (std::size_t index = 0; index < count; ++index) {
+		ids.push_back(record_id(index));
+	}
+	return ids;
+}
+
+auto write_string_array(std::ostream &out, const std::vector<std::string> &values) -> void
+{
+	out << '[';
+	for (std::size_t index = 0; index < values.size(); ++index) {
+		if (index != 0) {
+			out << ',';
+		}
+		out << quote(values[index]);
+	}
+	out << ']';
+}
+
+auto write_number_array(std::ostream &out, const std::vector<double> &values) -> void
+{
+	out << '[';
+	for (std::size_t index = 0; index < values.size(); ++index) {
+		if (index != 0) {
+			out << ',';
+		}
+		out << number(values[index]);
+	}
+	out << ']';
+}
+
+auto metric_law_diagnostics(const std::vector<std::vector<double>> &matrix) -> MetricLawDiagnostics
+{
+	const std::size_t count = matrix.size();
+	MetricLawDiagnostics diagnostics;
+
+	for (std::size_t row = 0; row < count; ++row) {
+		const double diagonal = matrix[row][row];
+		diagnostics.diagonal_max_abs = std::max(diagnostics.diagonal_max_abs, std::abs(diagonal));
+		diagnostics.finite = diagnostics.finite && std::isfinite(diagonal);
+		for (std::size_t column = 0; column < count; ++column) {
+			const double lhs = matrix[row][column];
+			const double rhs = matrix[column][row];
+			diagnostics.symmetry_max_abs = std::max(diagnostics.symmetry_max_abs, std::abs(lhs - rhs));
+			diagnostics.finite = diagnostics.finite && std::isfinite(lhs);
+		}
+	}
+
+	for (std::size_t row = 0; row < count; ++row) {
+		for (std::size_t column = row + 1; column < count; ++column) {
+			const double distance = matrix[row][column];
+			diagnostics.maximum_distance = std::max(diagnostics.maximum_distance, distance);
+			diagnostics.average_distance += distance;
+			if (distance > 0.0) {
+				diagnostics.minimum_nonzero_distance = std::min(diagnostics.minimum_nonzero_distance, distance);
+			}
+			++diagnostics.pair_count;
+		}
+	}
+	if (diagnostics.pair_count != 0) {
+		diagnostics.average_distance /= static_cast<double>(diagnostics.pair_count);
+	}
+	if (!std::isfinite(diagnostics.minimum_nonzero_distance)) {
+		diagnostics.minimum_nonzero_distance = 0.0;
+	}
+
+	for (std::size_t i = 0; i < count; ++i) {
+		for (std::size_t j = 0; j < count; ++j) {
+			for (std::size_t k = 0; k < count; ++k) {
+				const double violation = matrix[i][k] - (matrix[i][j] + matrix[j][k]);
+				diagnostics.triangle_max_violation = std::max(diagnostics.triangle_max_violation, violation);
+				++diagnostics.triangle_triplets;
+			}
+		}
+	}
+
+	return diagnostics;
+}
+
+auto select_landmarks(const std::vector<std::vector<double>> &matrix) -> std::array<std::size_t, 3>
+{
+	const std::size_t count = matrix.size();
+	std::array<std::size_t, 3> landmarks{0, 0, 0};
+	if (count == 0) {
+		return landmarks;
+	}
+
+	double best = -1.0;
+	for (std::size_t index = 0; index < count; ++index) {
+		if (matrix[landmarks[0]][index] > best) {
+			best = matrix[landmarks[0]][index];
+			landmarks[1] = index;
+		}
+	}
+
+	best = -1.0;
+	for (std::size_t index = 0; index < count; ++index) {
+		const double nearest_landmark = std::min(matrix[index][landmarks[0]], matrix[index][landmarks[1]]);
+		if (nearest_landmark > best) {
+			best = nearest_landmark;
+			landmarks[2] = index;
+		}
+	}
+	return landmarks;
+}
+
+auto landmark_coordinates(const std::vector<std::vector<double>> &matrix) -> std::vector<std::array<double, 3>>
+{
+	const std::size_t count = matrix.size();
+	const auto landmarks = select_landmarks(matrix);
+	std::vector<std::array<double, 3>> coordinates(count);
+
+	for (std::size_t row = 0; row < count; ++row) {
+		for (std::size_t axis = 0; axis < landmarks.size(); ++axis) {
+			coordinates[row][axis] = matrix[row][landmarks[axis]];
+		}
+	}
+
+	for (std::size_t axis = 0; axis < landmarks.size(); ++axis) {
+		double mean = 0.0;
+		for (const auto &position : coordinates) {
+			mean += position[axis];
+		}
+		mean /= static_cast<double>(std::max<std::size_t>(count, 1));
+		double max_abs = 0.0;
+		for (auto &position : coordinates) {
+			position[axis] -= mean;
+			max_abs = std::max(max_abs, std::abs(position[axis]));
+		}
+		if (max_abs > 0.0) {
+			for (auto &position : coordinates) {
+				position[axis] /= max_abs;
+			}
+		}
+	}
+
+	return coordinates;
+}
+
+auto local_density(const std::vector<std::vector<double>> &matrix, std::size_t row) -> double
+{
+	std::vector<double> distances;
+	distances.reserve(matrix.size());
+	for (std::size_t column = 0; column < matrix.size(); ++column) {
+		if (row != column) {
+			distances.push_back(matrix[row][column]);
+		}
+	}
+	std::sort(distances.begin(), distances.end());
+	const std::size_t k = std::min<std::size_t>(3, distances.size());
+	double mean = 0.0;
+	for (std::size_t index = 0; index < k; ++index) {
+		mean += distances[index];
+	}
+	if (k != 0) {
+		mean /= static_cast<double>(k);
+	}
+	return 1.0 / (1.0 + mean);
+}
+
+auto diagnosis_state(double score, double warn_threshold, double alarm_threshold) -> std::string
+{
+	if (score <= warn_threshold) {
+		return "normal-band";
+	}
+	if (score <= alarm_threshold) {
+		return "drift-warning";
+	}
+	return "alarm-band";
+}
+
+auto write_scalar_property(std::ostream &out, const std::string &id, const std::string &dataset_id,
+						   const std::string &name, const std::vector<std::string> &record_ids,
+						   const std::vector<double> &values) -> void
+{
+	out << "{\"id\":" << quote(id) << ",\"dataset_id\":" << quote(dataset_id) << ",\"name\":" << quote(name)
+		<< ",\"target_type\":\"record\",\"value_type\":\"scalar\",\"values\":[";
+	for (std::size_t index = 0; index < values.size(); ++index) {
+		if (index != 0) {
+			out << ',';
+		}
+		out << "{\"record_id\":" << quote(record_ids[index]) << ",\"value\":" << number(values[index]) << '}';
+	}
+	out << "]}";
+}
+
+auto write_categorical_property(std::ostream &out, const std::string &id, const std::string &dataset_id,
+								const std::string &name, const std::vector<std::string> &record_ids,
+								const std::vector<std::string> &values) -> void
+{
+	out << "{\"id\":" << quote(id) << ",\"dataset_id\":" << quote(dataset_id) << ",\"name\":" << quote(name)
+		<< ",\"target_type\":\"record\",\"value_type\":\"categorical\",\"values\":[";
+	for (std::size_t index = 0; index < values.size(); ++index) {
+		if (index != 0) {
+			out << ',';
+		}
+		out << "{\"record_id\":" << quote(record_ids[index]) << ",\"value\":" << quote(values[index]) << '}';
+	}
+	out << "]}";
+}
+
+auto write_document(std::ostream &out, const std::vector<Observation> &observations,
+					const std::vector<ObservationEvidence> &evidence,
+					const std::vector<std::string> &record_ids, const std::vector<std::vector<double>> &matrix,
+					const std::vector<std::array<double, 3>> &metric_positions, double healthy_radius_value,
+					double warn_threshold, double alarm_threshold, double healthy_average_distance,
+					double healthy_maximum_distance, double healthy_intrinsic_dimension,
+					std::size_t healthy_record_count, std::size_t healthy_noise_count,
+					const MetricLawDiagnostics &law) -> void
+{
+	const std::string dataset_id = "condition-monitoring";
+	const std::string metric_relation_id = "condition-monitoring-twed";
+	const std::string transition_relation_id = "condition-monitoring-transition";
+	const std::string space_id = "condition-monitoring-space";
+
+	out << "{\"schema\":\"metric.visual.v1\",";
+	out << "\"provenance\":{\"writer\":\"examples/engine/condition_monitoring_visual_export.cpp\","
+		<< "\"runtime\":\"native-c++\",\"source_example\":\"examples/engine/condition_monitoring.cpp\"},";
+	out << "\"datasets\":[{\"id\":" << quote(dataset_id)
+		<< ",\"title\":\"Condition monitoring process windows\","
+		<< "\"description\":\"Native C++ finite-metric evidence for process-window condition monitoring.\","
+		<< "\"source\":\"METRIC engine condition_monitoring.cpp native exporter\","
+		<< "\"license\":\"MPL-2.0\"}],";
+
+	out << "\"records\":[";
+	for (std::size_t index = 0; index < observations.size(); ++index) {
+		if (index != 0) {
+			out << ',';
+		}
+		out << "{\"id\":" << quote(record_ids[index]) << ",\"dataset_id\":" << quote(dataset_id)
+			<< ",\"record_type\":\"process_window\",\"label\":\"process window " << std::setw(2)
+			<< std::setfill('0') << index << std::setfill(' ') << "\",\"payload\":{"
+			<< "\"kind\":\"time_series\",\"series\":";
+		write_number_array(out, observations[index].curve);
+		out << ",\"sample_rate_hz\":1,\"truth\":" << quote(regime_name(observations[index].truth))
+			<< ",\"run_phase\":" << quote(observations[index].phase) << "}}";
+	}
+	out << "],";
+
+	out << "\"relations\":[";
+	out << "{\"id\":" << quote(metric_relation_id) << ",\"dataset_id\":" << quote(dataset_id)
+		<< ",\"name\":\"TWED process-window metric\",\"relation_type\":\"metric\","
+		<< "\"value_type\":\"scalar\",\"record_ids\":";
+	write_string_array(out, record_ids);
+	out << ",\"storage\":\"sparse_edge_list\",\"metadata\":{\"law_check\":{"
+		<< "\"diagonal_max_abs\":" << number(law.diagonal_max_abs)
+		<< ",\"symmetry_max_abs\":" << number(law.symmetry_max_abs)
+		<< ",\"triangle_max_violation\":" << number(law.triangle_max_violation)
+		<< ",\"finite\":" << bool_json(law.finite) << "}},\"values\":[";
+	for (std::size_t row = 0; row < matrix.size(); ++row) {
+		for (std::size_t column = 0; column < matrix.size(); ++column) {
+			if (row != 0 || column != 0) {
+				out << ',';
+			}
+			out << "{\"row_id\":" << quote(record_ids[row]) << ",\"column_id\":" << quote(record_ids[column])
+				<< ",\"value\":" << number(matrix[row][column]) << '}';
+		}
+	}
+	out << "]}";
+	out << ",{\"id\":" << quote(transition_relation_id) << ",\"dataset_id\":" << quote(dataset_id)
+		<< ",\"name\":\"process-window trajectory\",\"relation_type\":\"transition\","
+		<< "\"value_type\":\"scalar\",\"record_ids\":";
+	write_string_array(out, record_ids);
+	out << ",\"storage\":\"sparse_edge_list\",\"values\":[";
+	for (std::size_t index = 1; index < record_ids.size(); ++index) {
+		if (index != 1) {
+			out << ',';
+		}
+		out << "{\"row_id\":" << quote(record_ids[index - 1]) << ",\"column_id\":" << quote(record_ids[index])
+			<< ",\"value\":1}";
+	}
+	out << "]}],";
+
+	out << "\"spaces\":[{\"id\":" << quote(space_id) << ",\"dataset_id\":" << quote(dataset_id)
+		<< ",\"record_ids\":";
+	write_string_array(out, record_ids);
+	out << ",\"primary_relation_id\":" << quote(metric_relation_id)
+		<< ",\"space_type\":\"finite_metric_space\",\"metadata\":{\"metric\":\"TWED\","
+		<< "\"healthy_radius\":" << number(healthy_radius_value) << ",\"warn_threshold\":"
+		<< number(warn_threshold) << ",\"alarm_threshold\":" << number(alarm_threshold) << "}}],";
+
+	std::vector<double> nearest_healthy;
+	std::vector<double> nearest_catalog;
+	std::vector<double> severity;
+	std::vector<double> density;
+	std::vector<double> condition_index;
+	std::vector<double> noise_flag;
+	std::vector<std::string> truth;
+	std::vector<std::string> phase;
+	std::vector<std::string> nearest_regime;
+	std::vector<std::string> diagnosis;
+	for (std::size_t index = 0; index < observations.size(); ++index) {
+		nearest_healthy.push_back(evidence[index].nearest_healthy_distance);
+		nearest_catalog.push_back(evidence[index].nearest_catalog_distance);
+		severity.push_back(evidence[index].severity);
+		density.push_back(evidence[index].local_density);
+		condition_index.push_back(observations[index].condition_index);
+		noise_flag.push_back(evidence[index].dbscan_noise ? 1.0 : 0.0);
+		truth.push_back(regime_name(observations[index].truth));
+		phase.push_back(observations[index].phase);
+		nearest_regime.push_back(regime_name(evidence[index].nearest_catalog_regime));
+		diagnosis.push_back(evidence[index].diagnosis_state);
+	}
+
+	out << "\"properties\":[";
+	write_scalar_property(out, "nearest-healthy-distance", dataset_id, "TWED distance to healthy reference",
+						  record_ids, nearest_healthy);
+	out << ',';
+	write_scalar_property(out, "condition-severity", dataset_id, "condition severity index", record_ids,
+						  condition_index);
+	out << ',';
+	write_scalar_property(out, "metric-anomaly-severity", dataset_id, "metric anomaly severity", record_ids,
+						  severity);
+	out << ',';
+	write_scalar_property(out, "local-density", dataset_id, "local metric density", record_ids, density);
+	out << ',';
+	write_scalar_property(out, "dbscan-noise-flag", dataset_id, "DBSCAN noise flag", record_ids, noise_flag);
+	out << ',';
+	write_scalar_property(out, "nearest-catalog-distance", dataset_id, "nearest catalog distance", record_ids,
+						  nearest_catalog);
+	out << ',';
+	write_categorical_property(out, "truth-regime", dataset_id, "truth regime", record_ids, truth);
+	out << ',';
+	write_categorical_property(out, "run-phase", dataset_id, "run phase", record_ids, phase);
+	out << ',';
+	write_categorical_property(out, "nearest-catalog-regime", dataset_id, "nearest catalog regime", record_ids,
+							   nearest_regime);
+	out << ',';
+	write_categorical_property(out, "diagnosis-state", dataset_id, "diagnosis state", record_ids, diagnosis);
+	out << "],";
+
+	out << "\"graphs\":[{\"id\":\"process-window-trajectory\",\"dataset_id\":" << quote(dataset_id)
+		<< ",\"node_record_ids\":";
+	write_string_array(out, record_ids);
+	out << ",\"edge_relation_id\":" << quote(transition_relation_id)
+		<< ",\"graph_type\":\"transition\",\"edges\":[";
+	for (std::size_t index = 1; index < record_ids.size(); ++index) {
+		if (index != 1) {
+			out << ',';
+		}
+		out << "{\"source_id\":" << quote(record_ids[index - 1]) << ",\"target_id\":"
+			<< quote(record_ids[index]) << ",\"weight\":1}";
+	}
+	out << "]}],";
+
+	out << "\"coordinates\":[";
+	out << "{\"id\":\"landmark-3d\",\"dataset_id\":" << quote(dataset_id) << ",\"space_id\":" << quote(space_id)
+		<< ",\"name\":\"TWED landmark distances\",\"dimension\":3,\"record_positions\":[";
+	for (std::size_t index = 0; index < metric_positions.size(); ++index) {
+		if (index != 0) {
+			out << ',';
+		}
+		out << "{\"record_id\":" << quote(record_ids[index]) << ",\"position\":["
+			<< number(metric_positions[index][0]) << ',' << number(metric_positions[index][1]) << ','
+			<< number(metric_positions[index][2]) << "]}";
+	}
+	out << "]}";
+	out << ",{\"id\":\"process-state-trajectory-3d\",\"dataset_id\":" << quote(dataset_id)
+		<< ",\"space_id\":" << quote(space_id)
+		<< ",\"name\":\"process state trajectory\",\"dimension\":3,\"record_positions\":[";
+	const double denom = static_cast<double>(std::max<std::size_t>(record_ids.size() - 1, 1));
+	for (std::size_t index = 0; index < record_ids.size(); ++index) {
+		if (index != 0) {
+			out << ',';
+		}
+		const double x = 2.0 * static_cast<double>(index) / denom - 1.0;
+		const double y = 2.0 * evidence[index].severity - 1.0;
+		const double z = observations[index].truth == Regime::Fault		  ? 0.9
+						 : observations[index].truth == Regime::Signature ? 0.35
+						 : observations[index].truth == Regime::Drift	  ? -0.15
+																		  : -0.7;
+		out << "{\"record_id\":" << quote(record_ids[index]) << ",\"position\":[" << number(x) << ','
+			<< number(y) << ',' << number(z) << "]}";
+	}
+	out << "]}],";
+
+	out << "\"timelines\":[],\"events\":[],";
+	out << "\"views\":[{\"kind\":\"metric-space\",\"spaceId\":\"condition-monitoring-space\","
+		<< "\"coordinateId\":\"process-state-trajectory-3d\",\"propertyId\":\"metric-anomaly-severity\"}],";
+	out << "\"diagnostics\":[";
+	out << "{\"id\":\"native-reference-checks\",\"dataset_id\":" << quote(dataset_id)
+		<< ",\"diagnostic_type\":\"condition_monitoring_reference\",\"payload\":{"
+		<< "\"healthy_record_count\":" << healthy_record_count << ",\"healthy_average_distance\":"
+		<< number(healthy_average_distance) << ",\"healthy_maximum_distance\":"
+		<< number(healthy_maximum_distance) << ",\"healthy_intrinsic_dimension\":"
+		<< number(healthy_intrinsic_dimension) << ",\"healthy_radius\":" << number(healthy_radius_value)
+		<< ",\"warn_threshold\":" << number(warn_threshold) << ",\"alarm_threshold\":"
+		<< number(alarm_threshold) << ",\"healthy_dbscan_noise_count\":" << healthy_noise_count << "}}";
+	out << ",{\"id\":\"metric-law-check\",\"dataset_id\":" << quote(dataset_id)
+		<< ",\"diagnostic_type\":\"metric_law_check\",\"payload\":{"
+		<< "\"diagonal_max_abs\":" << number(law.diagonal_max_abs)
+		<< ",\"symmetry_max_abs\":" << number(law.symmetry_max_abs)
+		<< ",\"triangle_max_violation\":" << number(law.triangle_max_violation)
+		<< ",\"minimum_nonzero_distance\":" << number(law.minimum_nonzero_distance)
+		<< ",\"maximum_distance\":" << number(law.maximum_distance)
+		<< ",\"average_distance\":" << number(law.average_distance) << ",\"pair_count\":"
+		<< law.pair_count << ",\"triangle_triplets\":" << law.triangle_triplets
+		<< ",\"finite\":" << bool_json(law.finite) << "}}";
+	out << "]}";
+}
+
+auto build_document() -> std::string
+{
+	const Catalog catalog = build_reference_catalog();
+	auto process_space = mtrc::make_space(catalog.curves, process_metric());
+
+	std::vector<Curve> healthy_only;
+	for (std::size_t index = 0; index < catalog.curves.size(); ++index) {
+		if (catalog.families[index] == Regime::Normal) {
+			healthy_only.push_back(catalog.curves[index]);
+		}
+	}
+	auto healthy_space = mtrc::make_space(healthy_only, process_metric());
+	const auto structure = mtrc::describe_structure(healthy_space);
+	const double radius = healthy_radius(process_space, catalog.families);
+	const double warn_threshold = 2.0 * radius;
+	const double alarm_threshold = 4.0 * radius;
+	const auto healthy_outliers = mtrc::find_outliers(healthy_space, warn_threshold, 2);
+
+	if (structure.record_count != healthy_only.size() || !structure.has_nonzero_distances || radius <= 0.0 ||
+		healthy_outliers.noise_count != 0) {
+		throw std::runtime_error("native condition-monitoring reference checks failed");
+	}
+
+	const std::vector<Observation> observations = build_observations();
+	std::vector<Curve> curves;
+	curves.reserve(observations.size());
+	for (const auto &observation : observations) {
+		curves.push_back(observation.curve);
+	}
+	auto monitored_space = mtrc::make_space(curves, process_metric());
+	const auto monitored_outliers = mtrc::find_outliers(monitored_space, warn_threshold, 2);
+
+	std::vector<std::vector<double>> matrix(curves.size(), std::vector<double>(curves.size(), 0.0));
+	const auto metric = process_metric();
+	for (std::size_t row = 0; row < curves.size(); ++row) {
+		for (std::size_t column = 0; column < curves.size(); ++column) {
+			matrix[row][column] = metric(curves[row], curves[column]);
+		}
+	}
+
+	std::vector<ObservationEvidence> evidence;
+	evidence.reserve(observations.size());
+	for (std::size_t index = 0; index < observations.size(); ++index) {
+		const auto [nearest_regime, nearest_distance] = classify(process_space, catalog.families, observations[index].curve);
+		const double healthy_distance = distance_to_healthy(process_space, catalog.families, observations[index].curve);
+		const double severity = std::min(1.0, healthy_distance / alarm_threshold);
+		evidence.push_back({record_id(index), healthy_distance, nearest_distance, severity, local_density(matrix, index),
+							false, nearest_regime,
+							diagnosis_state(healthy_distance, warn_threshold, alarm_threshold)});
+	}
+	for (const auto &outlier : monitored_outliers) {
+		const std::size_t index = outlier.id.index();
+		if (index < evidence.size()) {
+			evidence[index].dbscan_noise = true;
+		}
+	}
+
+	bool drift_monotone = true;
+	double previous_drift = -std::numeric_limits<double>::infinity();
+	bool fault_flagged = false;
+	for (std::size_t index = 0; index < observations.size(); ++index) {
+		if (observations[index].truth == Regime::Drift) {
+			drift_monotone = drift_monotone && evidence[index].nearest_healthy_distance > previous_drift;
+			previous_drift = evidence[index].nearest_healthy_distance;
+		}
+		if (observations[index].truth == Regime::Fault) {
+			fault_flagged = evidence[index].dbscan_noise &&
+							evidence[index].nearest_healthy_distance > alarm_threshold &&
+							evidence[index].nearest_catalog_regime == Regime::Fault;
+		}
+	}
+	if (!drift_monotone || !fault_flagged) {
+		throw std::runtime_error("native condition-monitoring scenario checks failed");
+	}
+
+	const auto law = metric_law_diagnostics(matrix);
+	const auto metric_positions = landmark_coordinates(matrix);
+	const auto record_ids = make_record_ids(observations.size());
+
+	std::ostringstream out;
+	write_document(out, observations, evidence, record_ids, matrix, metric_positions, radius, warn_threshold,
+				   alarm_threshold, structure.average_distance, structure.maximum_distance,
+				   structure.intrinsic_dimension, structure.record_count, healthy_outliers.noise_count, law);
+	out << '\n';
+	return out.str();
+}
+
+auto write_export_file(const std::filesystem::path &dir, const std::string &document) -> void
+{
+	std::filesystem::create_directories(dir);
+	const auto path = dir / "metric.visual.json";
+	std::ofstream file(path);
+	if (!file) {
+		throw std::runtime_error("failed to open export file: " + path.string());
+	}
+	file << document;
+}
+
+} // namespace
+
+int main(int argc, char **argv)
+{
+	try {
+		std::filesystem::path export_dir;
+		bool has_export_dir = false;
+		for (int index = 1; index < argc; ++index) {
+			const std::string arg = argv[index];
+			if (arg == "--export-dir") {
+				if (index + 1 >= argc) {
+					throw std::runtime_error("--export-dir requires a directory argument");
+				}
+				export_dir = argv[++index];
+				has_export_dir = true;
+			} else {
+				throw std::runtime_error("unknown argument: " + arg);
+			}
+		}
+
+		const std::string document = build_document();
+		if (has_export_dir) {
+			write_export_file(export_dir, document);
+		} else {
+			std::cout << document;
+		}
+		return 0;
+	} catch (const std::exception &error) {
+		std::cerr << "condition_monitoring_visual_export: " << error.what() << '\n';
+		return 1;
+	}
+}

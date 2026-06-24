@@ -85,6 +85,10 @@ target_link_libraries(engine_phate_pipeline_builder PRIVATE ${METRIC_TARGET_NAME
 add_executable(engine_metric_space_mapping_pipeline metric_space_mapping_pipeline.cpp)
 target_link_libraries(engine_metric_space_mapping_pipeline PRIVATE ${METRIC_TARGET_NAME})
 
+add_executable(engine_mapping_dimensionality_visual_export mapping_dimensionality_visual_export.cpp)
+target_link_libraries(engine_mapping_dimensionality_visual_export PRIVATE ${METRIC_TARGET_NAME})
+target_include_directories(engine_mapping_dimensionality_visual_export PRIVATE ${CMAKE_SOURCE_DIR}/visual/cpp)
+
 add_executable(engine_benchmark_report benchmark_report.cpp)
 target_link_libraries(engine_benchmark_report PRIVATE ${METRIC_TARGET_NAME})
 
@@ -99,6 +103,9 @@ target_link_libraries(engine_condition_monitoring PRIVATE ${METRIC_TARGET_NAME})
 if (METRIC_BUILD_CORE_ENTROPY)
     target_compile_definitions(engine_condition_monitoring PRIVATE METRIC_HERO_WITH_ENTROPY)
 endif ()
+
+add_executable(engine_condition_monitoring_visual_export condition_monitoring_visual_export.cpp)
+target_link_libraries(engine_condition_monitoring_visual_export PRIVATE ${METRIC_TARGET_NAME})
 
 add_executable(engine_finite_metric_dynamics finite_metric_dynamics.cpp)
 target_link_libraries(engine_finite_metric_dynamics PRIVATE ${METRIC_TARGET_NAME})
@@ -151,6 +158,10 @@ if (BUILD_TESTING)
     add_test(NAME example_engine_benchmark_report COMMAND engine_benchmark_report)
     add_test(NAME example_engine_hero_application_benchmarks COMMAND engine_hero_application_benchmarks)
     add_test(NAME example_engine_condition_monitoring COMMAND engine_condition_monitoring)
+    add_test(NAME example_engine_condition_monitoring_visual_export
+        COMMAND engine_condition_monitoring_visual_export
+            --export-dir ${CMAKE_CURRENT_BINARY_DIR}/visual_exports/condition_monitoring
+    )
     add_test(NAME example_engine_finite_metric_dynamics COMMAND engine_finite_metric_dynamics)
     add_test(NAME example_engine_mixed_finite_records COMMAND engine_mixed_finite_records)
     add_test(NAME example_engine_mixed_finite_records_visual_export
@@ -169,8 +180,17 @@ if (BUILD_TESTING)
         COMMAND engine_relation_matrix_visual_export
             --export-dir ${CMAKE_CURRENT_BINARY_DIR}/visual_exports/relation_matrix
     )
+    add_test(NAME example_engine_mapping_dimensionality_visual_export
+        COMMAND engine_mapping_dimensionality_visual_export
+            --export-dir ${CMAKE_CURRENT_BINARY_DIR}/visual_exports/mapping_dimensionality
+    )
 
     if (METRIC_NODE_EXECUTABLE)
+        add_test(NAME example_engine_condition_monitoring_visual_validate
+            COMMAND ${METRIC_NODE_EXECUTABLE}
+                ${CMAKE_SOURCE_DIR}/visual/tools/check-visual-document.mjs
+                ${CMAKE_CURRENT_BINARY_DIR}/visual_exports/condition_monitoring/metric.visual.json
+        )
         add_test(NAME example_engine_mixed_finite_records_visual_validate
             COMMAND ${METRIC_NODE_EXECUTABLE}
                 ${CMAKE_SOURCE_DIR}/visual/tools/check-visual-document.mjs
@@ -191,7 +211,16 @@ if (BUILD_TESTING)
                 ${CMAKE_SOURCE_DIR}/visual/tools/check-visual-document.mjs
                 ${CMAKE_CURRENT_BINARY_DIR}/visual_exports/relation_matrix/metric.visual.json
         )
+        add_test(NAME example_engine_mapping_dimensionality_visual_validate
+            COMMAND ${METRIC_NODE_EXECUTABLE}
+                ${CMAKE_SOURCE_DIR}/visual/tools/check-visual-document.mjs
+                ${CMAKE_CURRENT_BINARY_DIR}/visual_exports/mapping_dimensionality/metric.visual.json
+        )
 
+        set_tests_properties(
+            example_engine_condition_monitoring_visual_validate
+            PROPERTIES DEPENDS example_engine_condition_monitoring_visual_export
+        )
         set_tests_properties(
             example_engine_mixed_finite_records_visual_validate
             PROPERTIES DEPENDS example_engine_mixed_finite_records_visual_export
@@ -208,6 +237,10 @@ if (BUILD_TESTING)
             example_engine_relation_matrix_visual_validate
             PROPERTIES DEPENDS example_engine_relation_matrix_visual_export
         )
+        set_tests_properties(
+            example_engine_mapping_dimensionality_visual_validate
+            PROPERTIES DEPENDS example_engine_mapping_dimensionality_visual_export
+        )
     endif ()
 
     set_tests_properties(
@@ -222,21 +255,25 @@ if (BUILD_TESTING)
         example_engine_cross_space_dependency
         example_engine_modify_space_components
         example_engine_condition_monitoring
+        example_engine_condition_monitoring_visual_export
         example_engine_finite_metric_dynamics
         example_engine_mixed_finite_records
         example_engine_mixed_finite_records_visual_export
         example_engine_cross_space_dependency_visual_export
         example_engine_finite_metric_dynamics_visual_export
         example_engine_relation_matrix_visual_export
+        example_engine_mapping_dimensionality_visual_export
         PROPERTIES LABELS metric_application_evidence
     )
 
     if (METRIC_NODE_EXECUTABLE)
         set_tests_properties(
+            example_engine_condition_monitoring_visual_validate
             example_engine_mixed_finite_records_visual_validate
             example_engine_cross_space_dependency_visual_validate
             example_engine_finite_metric_dynamics_visual_validate
             example_engine_relation_matrix_visual_validate
+            example_engine_mapping_dimensionality_visual_validate
             PROPERTIES LABELS "metric_application_evidence;metric_visual_export"
         )
     endif ()
