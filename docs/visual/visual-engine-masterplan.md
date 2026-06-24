@@ -148,8 +148,6 @@ Known gaps:
   reference captures
 - no visual regression test suite yet
 - no performance benchmark matrix for large record counts yet
-- exporter documents validate, but exporter-local JSON writer duplication still
-  needs to be consolidated through `mtrc::visual`
 
 It must help users inspect:
 

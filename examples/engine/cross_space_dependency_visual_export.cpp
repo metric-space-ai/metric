@@ -14,7 +14,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
-#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -25,8 +24,11 @@
 #include <vector>
 
 #include "cross_space_dependency.hpp"
+#include "../../visual/cpp/mtrc_visual.hpp"
 
 namespace {
+
+namespace visual = mtrc::visual;
 
 constexpr std::size_t kRecords = 48;
 constexpr std::size_t kPermutations = 199;
@@ -52,52 +54,6 @@ struct PairContribution {
 	double value{};
 };
 
-auto quote(const std::string &value) -> std::string
-{
-	std::ostringstream out;
-	out << '"';
-	for (const unsigned char ch : value) {
-		switch (ch) {
-		case '"':
-			out << "\\\"";
-			break;
-		case '\\':
-			out << "\\\\";
-			break;
-		case '\n':
-			out << "\\n";
-			break;
-		case '\r':
-			out << "\\r";
-			break;
-		case '\t':
-			out << "\\t";
-			break;
-		default:
-			if (ch < 0x20) {
-				out << "\\u" << std::hex << std::setw(4) << std::setfill('0') << static_cast<int>(ch)
-					<< std::dec << std::setfill(' ');
-			} else {
-				out << static_cast<char>(ch);
-			}
-		}
-	}
-	out << '"';
-	return out.str();
-}
-
-auto number(double value) -> std::string
-{
-	if (!std::isfinite(value)) {
-		return "0";
-	}
-	std::ostringstream out;
-	out << std::setprecision(12) << value;
-	return out.str();
-}
-
-auto bool_json(bool value) -> const char * { return value ? "true" : "false"; }
-
 auto record_id(std::size_t index) -> std::string
 {
 	std::ostringstream out;
@@ -113,30 +69,6 @@ auto make_record_ids(std::size_t count) -> std::vector<std::string>
 		ids.push_back(record_id(index));
 	}
 	return ids;
-}
-
-auto write_string_array(std::ostream &out, const std::vector<std::string> &values) -> void
-{
-	out << '[';
-	for (std::size_t index = 0; index < values.size(); ++index) {
-		if (index != 0) {
-			out << ',';
-		}
-		out << quote(values[index]);
-	}
-	out << ']';
-}
-
-auto write_number_array(std::ostream &out, const std::vector<double> &values) -> void
-{
-	out << '[';
-	for (std::size_t index = 0; index < values.size(); ++index) {
-		if (index != 0) {
-			out << ',';
-		}
-		out << number(values[index]);
-	}
-	out << ']';
 }
 
 auto matrix_value(const mtrc::DistanceMatrix<double> &matrix, std::size_t row, std::size_t column) -> double
@@ -375,226 +307,196 @@ auto local_density(const mtrc::DistanceMatrix<double> &matrix) -> std::vector<do
 	return density;
 }
 
-auto write_metric_law_metadata(std::ostream &out, const MetricLawDiagnostics &diagnostics) -> void
+auto relation_json(const std::string &id, const std::string &name, const std::string &metric_name,
+				   const std::string &dataset_id, const std::vector<std::string> &ids,
+				   const mtrc::DistanceMatrix<double> &matrix, const MetricLawDiagnostics &diagnostics) -> std::string
 {
-	out << "\"law_check\":{";
-	out << "\"diagonal\":\"checked_exhaustive\",";
-	out << "\"symmetry\":\"checked_exhaustive\",";
-	out << "\"triangle\":\"checked_exhaustive\",";
-	out << "\"finite\":" << bool_json(diagnostics.finite) << ',';
-	out << "\"diagonal_max_abs\":" << number(diagnostics.diagonal_max_abs) << ',';
-	out << "\"symmetry_max_abs\":" << number(diagnostics.symmetry_max_abs) << ',';
-	out << "\"triangle_max_violation\":" << number(diagnostics.triangle_max_violation) << ',';
-	out << "\"triangle_triplets\":" << diagnostics.triangle_triplets;
-	out << "},";
-	out << "\"pair_count\":" << diagnostics.pair_count << ',';
-	out << "\"minimum_nonzero_distance\":" << number(diagnostics.minimum_nonzero_distance) << ',';
-	out << "\"maximum_distance\":" << number(diagnostics.maximum_distance) << ',';
-	out << "\"average_distance\":" << number(diagnostics.average_distance);
-}
-
-auto write_relation(std::ostream &out, const std::string &id, const std::string &name, const std::string &metric_name,
-					const std::string &dataset_id, const std::vector<std::string> &ids,
-					const mtrc::DistanceMatrix<double> &matrix, const MetricLawDiagnostics &diagnostics) -> void
-{
-	out << "{\"id\":" << quote(id);
-	out << ",\"dataset_id\":" << quote(dataset_id);
-	out << ",\"name\":" << quote(name);
-	out << ",\"relation_type\":\"metric\",\"value_type\":\"scalar\",\"record_ids\":";
-	write_string_array(out, ids);
-	out << ",\"storage\":\"dense_matrix\",\"values\":[";
+	std::vector<std::string> rows;
+	rows.reserve(matrix.rows());
 	for (std::size_t row = 0; row < matrix.rows(); ++row) {
-		if (row != 0) {
-			out << ',';
-		}
-		out << '[';
+		std::vector<double> values;
+		values.reserve(matrix.columns());
 		for (std::size_t column = 0; column < matrix.columns(); ++column) {
-			if (column != 0) {
-				out << ',';
-			}
-			out << number(matrix_value(matrix, row, column));
+			values.push_back(matrix_value(matrix, row, column));
 		}
-		out << ']';
+		rows.push_back(visual::number_array(values));
 	}
-	out << "],\"metadata\":{";
-	out << "\"metric\":" << quote(metric_name) << ',';
-	out << "\"computed_by\":\"METRIC native C++ DistanceTable/provider_symmetric_distance_matrix\",";
-	write_metric_law_metadata(out, diagnostics);
-	out << "}}";
+
+	const std::string metadata =
+		visual::object({visual::string_field("metric", metric_name),
+						visual::string_field("computed_by",
+											 "METRIC native C++ DistanceTable/provider_symmetric_distance_matrix"),
+						visual::field("law_check",
+									  visual::object({visual::string_field("diagonal", "checked_exhaustive"),
+													  visual::string_field("symmetry", "checked_exhaustive"),
+													  visual::string_field("triangle", "checked_exhaustive"),
+													  visual::bool_field("finite", diagnostics.finite),
+													  visual::number_field("diagonal_max_abs",
+																		   diagnostics.diagonal_max_abs),
+													  visual::number_field("symmetry_max_abs",
+																		   diagnostics.symmetry_max_abs),
+													  visual::number_field("triangle_max_violation",
+																		   diagnostics.triangle_max_violation),
+													  visual::size_field("triangle_triplets",
+																		 diagnostics.triangle_triplets)})),
+						visual::size_field("pair_count", diagnostics.pair_count),
+						visual::number_field("minimum_nonzero_distance", diagnostics.minimum_nonzero_distance),
+						visual::number_field("maximum_distance", diagnostics.maximum_distance),
+						visual::number_field("average_distance", diagnostics.average_distance)});
+
+	return visual::object({visual::string_field("id", id),
+						   visual::string_field("dataset_id", dataset_id),
+						   visual::string_field("name", name),
+						   visual::string_field("relation_type", "metric"),
+						   visual::string_field("value_type", "scalar"),
+						   visual::string_array_field("record_ids", ids),
+						   visual::string_field("storage", "dense_matrix"),
+						   visual::field("values", visual::array_of(rows)),
+						   visual::field("metadata", metadata)});
 }
 
-auto write_records(std::ostream &out, const std::string &dataset_id, const cross_space::Dataset &dataset,
-				   const std::vector<std::string> &ids) -> void
+auto record_json(const std::string &dataset_id, const cross_space::Dataset &dataset,
+				 const std::vector<std::string> &ids) -> std::vector<std::string>
 {
-	out << '[';
+	std::vector<std::string> records;
+	records.reserve(dataset.size());
 	for (std::size_t index = 0; index < dataset.size(); ++index) {
-		if (index != 0) {
-			out << ',';
-		}
-		out << "{\"id\":" << quote(ids[index]);
-		out << ",\"dataset_id\":" << quote(dataset_id);
-		out << ",\"record_type\":\"paired_cross_space_observation\"";
-		out << ",\"label\":" << quote("paired observation " + std::to_string(index));
-		out << ",\"payload\":{";
-		out << "\"kind\":\"composed\",";
-		out << "\"components\":{";
-		out << "\"event_log\":{\"kind\":\"string\",\"text\":" << quote(dataset.logs[index]) << "},";
-		out << "\"process_curve\":{\"kind\":\"time_series\",\"series\":";
-		write_number_array(out, dataset.curves[index]);
-		out << "}";
-		out << "},";
-		out << "\"metadata\":{";
-		out << "\"pair_index\":" << index << ',';
-		out << "\"generator_latent_severity\":" << number(dataset.latent[index]) << ',';
-		out << "\"left_space\":\"event_logs/edit_distance\",";
-		out << "\"right_space\":\"process_curves/twed\"";
-		out << "}}}";
+		const std::string payload =
+			visual::object({visual::string_field("kind", "composed"),
+							visual::field("components",
+										  visual::object({visual::field("event_log", visual::string_payload(dataset.logs[index])),
+														  visual::field("process_curve",
+																		visual::series_payload(dataset.curves[index]))})),
+							visual::field("metadata",
+										  visual::object({visual::size_field("pair_index", index),
+														  visual::number_field("generator_latent_severity",
+																			   dataset.latent[index]),
+														  visual::string_field("left_space",
+																			   "event_logs/edit_distance"),
+														  visual::string_field("right_space",
+																			   "process_curves/twed")}))});
+		records.push_back(visual::object({visual::string_field("id", ids[index]),
+										   visual::string_field("dataset_id", dataset_id),
+										   visual::string_field("record_type", "paired_cross_space_observation"),
+										   visual::string_field("label",
+																"paired observation " + std::to_string(index)),
+										   visual::field("payload", payload)}));
 	}
-	out << ']';
+	return records;
 }
 
-auto write_space(std::ostream &out, const std::string &id, const std::string &name, const std::string &dataset_id,
-				 const std::vector<std::string> &ids, const std::string &relation_id, const std::string &paired_with,
-				 const std::string &metric_family) -> void
+auto space_metadata_json(const std::string &name, const std::string &paired_with,
+						 const std::string &metric_family) -> std::string
 {
-	out << "{\"id\":" << quote(id);
-	out << ",\"dataset_id\":" << quote(dataset_id);
-	out << ",\"record_ids\":";
-	write_string_array(out, ids);
-	out << ",\"primary_relation_id\":" << quote(relation_id);
-	out << ",\"space_type\":\"finite_metric_space\"";
-	out << ",\"metadata\":{";
-	out << "\"name\":" << quote(name) << ',';
-	out << "\"paired_with\":" << quote(paired_with) << ',';
-	out << "\"metric_family\":" << quote(metric_family) << ',';
-	out << "\"pairing\":\"position_aligned_records\"";
-	out << "}}";
+	return visual::object({visual::string_field("name", name),
+						   visual::string_field("paired_with", paired_with),
+						   visual::string_field("metric_family", metric_family),
+						   visual::string_field("pairing", "position_aligned_records")});
 }
 
-auto write_scalar_property(std::ostream &out, const std::string &id, const std::string &dataset_id,
-						   const std::string &name, const std::vector<std::string> &record_ids,
-						   const std::vector<double> &values) -> void
+auto scalar_values(const std::vector<std::string> &record_ids, const std::vector<double> &values)
+	-> std::vector<visual::ScalarValue>
 {
-	out << "{\"id\":" << quote(id);
-	out << ",\"dataset_id\":" << quote(dataset_id);
-	out << ",\"target_type\":\"record\",\"value_type\":\"scalar\"";
-	out << ",\"name\":" << quote(name);
-	out << ",\"values\":[";
+	std::vector<visual::ScalarValue> scalars;
+	scalars.reserve(record_ids.size());
 	for (std::size_t index = 0; index < record_ids.size(); ++index) {
-		if (index != 0) {
-			out << ',';
-		}
-		out << "{\"record_id\":" << quote(record_ids[index]) << ",\"value\":" << number(values[index]) << "}";
+		scalars.push_back(visual::ScalarValue{record_ids[index], values[index]});
 	}
-	out << "]}";
+	return scalars;
 }
 
-auto write_pair_property(std::ostream &out, const std::string &dataset_id, const std::vector<std::string> &record_ids,
-						 const std::vector<PairContribution> &pairs) -> void
+auto pair_property_json(const std::string &dataset_id, const std::vector<std::string> &record_ids,
+						const std::vector<PairContribution> &pairs) -> std::string
 {
-	out << "{\"id\":\"pair-distance-profile-contribution\"";
-	out << ",\"dataset_id\":" << quote(dataset_id);
-	out << ",\"target_type\":\"pair\",\"value_type\":\"scalar\"";
-	out << ",\"name\":\"pair distance-profile z-product contribution\"";
-	out << ",\"values\":[";
-	for (std::size_t index = 0; index < pairs.size(); ++index) {
-		if (index != 0) {
-			out << ',';
-		}
-		const auto &pair = pairs[index];
-		out << "{\"row_id\":" << quote(record_ids[pair.row]);
-		out << ",\"column_id\":" << quote(record_ids[pair.column]);
-		out << ",\"value\":" << number(pair.value) << "}";
+	std::vector<std::string> values;
+	values.reserve(pairs.size());
+	for (const auto &pair : pairs) {
+		values.push_back(visual::object({visual::string_field("row_id", record_ids[pair.row]),
+										 visual::string_field("column_id", record_ids[pair.column]),
+										 visual::number_field("value", pair.value)}));
 	}
-	out << "]}";
+	return visual::object({visual::string_field("id", "pair-distance-profile-contribution"),
+						   visual::string_field("dataset_id", dataset_id),
+						   visual::string_field("target_type", "pair"),
+						   visual::string_field("value_type", "scalar"),
+						   visual::string_field("name", "pair distance-profile z-product contribution"),
+						   visual::field("values", visual::array_of(values))});
 }
 
-auto write_coordinates(std::ostream &out, const std::string &id, const std::string &dataset_id,
-					   const std::string &space_id, const std::string &name, const std::vector<std::string> &record_ids,
-					   const std::vector<std::array<double, 3>> &coordinates,
-					   const std::array<std::size_t, 3> &landmarks) -> void
+auto positions3(const std::vector<std::string> &record_ids, const std::vector<std::array<double, 3>> &coordinates)
+	-> std::vector<visual::Position>
 {
-	out << "{\"id\":" << quote(id);
-	out << ",\"dataset_id\":" << quote(dataset_id);
-	out << ",\"space_id\":" << quote(space_id);
-	out << ",\"name\":" << quote(name);
-	out << ",\"dimension\":3";
-	out << ",\"record_positions\":[";
+	std::vector<visual::Position> positions;
+	positions.reserve(record_ids.size());
 	for (std::size_t index = 0; index < record_ids.size(); ++index) {
-		if (index != 0) {
-			out << ',';
-		}
-		out << "{\"record_id\":" << quote(record_ids[index]);
-		out << ",\"position\":[";
-		out << number(coordinates[index][0]) << ',' << number(coordinates[index][1]) << ','
-			<< number(coordinates[index][2]);
-		out << "]}";
+		positions.push_back(
+			visual::Position{record_ids[index],
+							 {coordinates[index][0], coordinates[index][1], coordinates[index][2]}});
 	}
-	out << "],\"metadata\":{";
-	out << "\"method\":\"native_cpp_landmark_distance_coordinates\",";
-	out << "\"landmark_record_ids\":[";
-	for (std::size_t axis = 0; axis < landmarks.size(); ++axis) {
-		if (axis != 0) {
-			out << ',';
-		}
-		out << quote(record_ids[landmarks[axis]]);
-	}
-	out << "]}}";
+	return positions;
 }
 
-auto write_report_object(std::ostream &out, const cross_space::DependenceReport &report) -> void
+auto coordinate_metadata_json(const std::vector<std::string> &record_ids,
+							  const std::array<std::size_t, 3> &landmarks) -> std::string
 {
-	out << "{";
-	out << "\"statistic\":" << number(report.statistic) << ',';
-	out << "\"null_mean\":" << number(report.null_mean) << ',';
-	out << "\"null_sd\":" << number(report.null_sd) << ',';
-	out << "\"standardized\":" << number(report.standardized) << ',';
-	out << "\"p_value\":" << number(report.p_value) << ',';
-	out << "\"permutations\":" << report.permutations << ',';
-	out << "\"record_count\":" << report.record_count << ',';
-	out << "\"decision\":" << quote(report.p_value <= kAlpha ? "dependent" : "independent");
-	out << "}";
+	std::vector<std::string> landmark_ids;
+	landmark_ids.reserve(landmarks.size());
+	for (const std::size_t landmark : landmarks) {
+		landmark_ids.push_back(record_ids[landmark]);
+	}
+	return visual::object({visual::string_field("method", "native_cpp_landmark_distance_coordinates"),
+						   visual::string_array_field("landmark_record_ids", landmark_ids)});
 }
 
-auto write_diagnostics(std::ostream &out, const cross_space::DependenceReport &coupled,
-					   const cross_space::DependenceReport &decoupled,
-					   const cross_space::DependenceReport &permuted,
-					   const cross_space::BaselineReport &coupled_baseline, double compare_value,
-					   const std::string &dataset_id) -> void
+auto report_json(const cross_space::DependenceReport &report) -> std::string
 {
-	out << '[';
-	out << "{\"id\":\"cross-space-mgc-coupled\",";
-	out << "\"kind\":\"cross_space_dependence\",";
-	out << "\"dataset_id\":" << quote(dataset_id) << ',';
-	out << "\"space_ids\":[\"event-log-space\",\"process-curve-space\"],";
-	out << "\"relation_ids\":[\"event-log-edit-distance\",\"process-curve-twed-distance\"],";
-	out << "\"algorithm\":\"mtrc::compare(..., mgc_options) plus native seeded permutation_test\",";
-	out << "\"compare_statistic\":" << number(compare_value) << ',';
-	out << "\"alpha\":" << number(kAlpha) << ',';
-	out << "\"report\":";
-	write_report_object(out, coupled);
-	out << "},";
-	out << "{\"id\":\"cross-space-native-controls\",";
-	out << "\"kind\":\"cross_space_dependency_controls\",";
-	out << "\"dataset_id\":" << quote(dataset_id) << ',';
-	out << "\"decoupled_report\":";
-	write_report_object(out, decoupled);
-	out << ",\"permuted_pairing_report\":";
-	write_report_object(out, permuted);
-	out << ",\"baseline_scalar_pearson_r\":" << number(coupled_baseline.pearson_r);
-	out << ",\"baseline_scalar_pearson_p_value\":" << number(coupled_baseline.pearson_p_value);
-	out << ",\"baseline_forced_vector_mgc\":" << number(coupled_baseline.vectorized_mgc);
-	out << ",\"baseline_permutations\":" << coupled_baseline.permutations;
-	out << ",\"verdict\":\"metric_detects_dependence_baseline_misses_it\"";
-	out << "},";
-	out << "{\"id\":\"native-export-foundation\",";
-	out << "\"kind\":\"integration_status\",";
-	out << "\"dataset_id\":" << quote(dataset_id) << ',';
-	out << "\"status\":\"native_cpp_metric_visual_export_foundation\",";
-	out << "\"public_hero_ready\":false,";
-	out << "\"note\":\"Schema-valid native evidence export only; CMake, automated tests, and hero/gallery integration remain separate work.\"";
-	out << "}";
-	out << ']';
+	return visual::object({visual::number_field("statistic", report.statistic),
+						   visual::number_field("null_mean", report.null_mean),
+						   visual::number_field("null_sd", report.null_sd),
+						   visual::number_field("standardized", report.standardized),
+						   visual::number_field("p_value", report.p_value),
+						   visual::size_field("permutations", report.permutations),
+						   visual::size_field("record_count", report.record_count),
+						   visual::string_field("decision", report.p_value <= kAlpha ? "dependent" : "independent")});
+}
+
+auto diagnostics_json(const cross_space::DependenceReport &coupled, const cross_space::DependenceReport &decoupled,
+					  const cross_space::DependenceReport &permuted,
+					  const cross_space::BaselineReport &coupled_baseline, double compare_value,
+					  const std::string &dataset_id) -> std::vector<std::string>
+{
+	return {visual::object({visual::string_field("id", "cross-space-mgc-coupled"),
+							visual::string_field("kind", "cross_space_dependence"),
+							visual::string_field("dataset_id", dataset_id),
+							visual::field("space_ids",
+										  visual::string_array({"event-log-space", "process-curve-space"})),
+							visual::field("relation_ids",
+										  visual::string_array({"event-log-edit-distance",
+																"process-curve-twed-distance"})),
+							visual::string_field("algorithm",
+												 "mtrc::compare(..., mgc_options) plus native seeded permutation_test"),
+							visual::number_field("compare_statistic", compare_value),
+							visual::number_field("alpha", kAlpha),
+							visual::field("report", report_json(coupled))}),
+			visual::object({visual::string_field("id", "cross-space-native-controls"),
+							visual::string_field("kind", "cross_space_dependency_controls"),
+							visual::string_field("dataset_id", dataset_id),
+							visual::field("decoupled_report", report_json(decoupled)),
+							visual::field("permuted_pairing_report", report_json(permuted)),
+							visual::number_field("baseline_scalar_pearson_r", coupled_baseline.pearson_r),
+							visual::number_field("baseline_scalar_pearson_p_value",
+												 coupled_baseline.pearson_p_value),
+							visual::number_field("baseline_forced_vector_mgc", coupled_baseline.vectorized_mgc),
+							visual::size_field("baseline_permutations", coupled_baseline.permutations),
+							visual::string_field("verdict", "metric_detects_dependence_baseline_misses_it")}),
+			visual::object({visual::string_field("id", "native-export-foundation"),
+							visual::string_field("kind", "integration_status"),
+							visual::string_field("dataset_id", dataset_id),
+							visual::string_field("status", "native_cpp_metric_visual_export_foundation"),
+							visual::bool_field("public_hero_ready", false),
+							visual::string_field("note",
+												 "Schema-valid native evidence export only; CMake, automated tests, "
+												 "and hero/gallery integration remain separate work.")})};
 }
 
 auto build_visual_document() -> std::string
@@ -627,97 +529,86 @@ auto build_visual_document() -> std::string
 	const auto left_density = local_density(matrices.left);
 	const auto right_density = local_density(matrices.right);
 
-	std::ostringstream out;
-	out << "{\"schema\":\"metric.visual.v1\",";
-	out << "\"provenance\":{";
-	out << "\"writer\":\"examples/engine/cross_space_dependency_visual_export.cpp\",";
-	out << "\"writer_language\":\"C++\",";
-	out << "\"computation\":\"native METRIC C++\",";
-	out << "\"native_export\":true,";
-	out << "\"synthetic_js\":false,";
-	out << "\"source_example\":\"examples/engine/cross_space_dependency.hpp\",";
-	out << "\"seed\":" << kSeed << ',';
-	out << "\"record_count\":" << kRecords << ',';
-	out << "\"permutations\":" << kPermutations << ',';
-	out << "\"status\":\"native_export_foundation\"";
-	out << "},";
-
-	out << "\"datasets\":[{\"id\":" << quote(dataset_id);
-	out << ",\"title\":\"Cross-Space Dependency\",";
-	out << "\"description\":\"Native C++ evidence for paired event-log strings under edit distance and process curves under TWED; dependence is computed with MGC over two finite metric spaces.\",";
-	out << "\"source\":\"METRIC examples/engine/cross_space_dependency.hpp deterministic native generator\",";
-	out << "\"license\":\"MPL-2.0\"";
-	out << "}],";
-
-	out << "\"records\":";
-	write_records(out, dataset_id, coupled, ids);
-	out << ',';
-
-	out << "\"relations\":[";
-	write_relation(out, "event-log-edit-distance", "event log edit distance", "mtrc::Edit<char>", dataset_id, ids,
-				   matrices.left, left_law);
-	out << ',';
-	write_relation(out, "process-curve-twed-distance", "process curve TWED distance", "mtrc::TWED<double>", dataset_id,
-				   ids, matrices.right, right_law);
-	out << "],";
-
-	out << "\"spaces\":[";
-	write_space(out, "event-log-space", "Event logs / edit distance", dataset_id, ids, "event-log-edit-distance",
-				"process-curve-space", "edit_distance_over_event_tokens");
-	out << ',';
-	write_space(out, "process-curve-space", "Process curves / TWED", dataset_id, ids, "process-curve-twed-distance",
-				"event-log-space", "time_warp_edit_distance");
-	out << "],";
-
-	out << "\"properties\":[";
-	write_scalar_property(out, "generator-latent-severity", dataset_id, "generator latent severity (diagnostic)", ids,
-						  coupled.latent);
-	out << ',';
-	write_scalar_property(out, "local-distance-profile-alignment", dataset_id,
-						  "local distance-profile alignment", ids, local_alignment);
-	out << ',';
-	write_scalar_property(out, "local-dependence-contribution", dataset_id,
-						  "local dependence contribution", ids, local_pair_contribution);
-	out << ',';
-	write_scalar_property(out, "event-log-local-density", dataset_id, "event-log local density", ids, left_density);
-	out << ',';
-	write_scalar_property(out, "process-curve-local-density", dataset_id, "process-curve local density", ids,
-						  right_density);
-	out << ',';
-	write_pair_property(out, dataset_id, ids, pair_values);
-	out << "],";
-
-	out << "\"graphs\":[],";
-	out << "\"coordinates\":[";
-	write_coordinates(out, "event-log-landmark-3d", dataset_id, "event-log-space",
-					  "event log landmark distance coordinates", ids, left_coordinates, left_landmarks);
-	out << ',';
-	write_coordinates(out, "process-curve-landmark-3d", dataset_id, "process-curve-space",
-					  "process curve landmark distance coordinates", ids, right_coordinates, right_landmarks);
-	out << "],";
-	out << "\"timelines\":[],";
-	out << "\"events\":[],";
-	out << "\"views\":[";
-	out << "{\"id\":\"event-log-space-view\",\"kind\":\"metric-space\",\"name\":\"Event log space\",";
-	out << "\"spaceId\":\"event-log-space\",\"coordinateId\":\"event-log-landmark-3d\",";
-	out << "\"propertyId\":\"local-distance-profile-alignment\"},";
-	out << "{\"id\":\"process-curve-space-view\",\"kind\":\"metric-space\",\"name\":\"Process curve space\",";
-	out << "\"spaceId\":\"process-curve-space\",\"coordinateId\":\"process-curve-landmark-3d\",";
-	out << "\"propertyId\":\"local-distance-profile-alignment\"},";
-	out << "{\"id\":\"cross-space-paired-view\",\"kind\":\"paired-space\",\"name\":\"Cross-space dependence\",";
-	out << "\"leftSpaceId\":\"event-log-space\",\"rightSpaceId\":\"process-curve-space\",";
-	out << "\"leftCoordinateId\":\"event-log-landmark-3d\",\"rightCoordinateId\":\"process-curve-landmark-3d\",";
-	out << "\"propertyId\":\"local-dependence-contribution\",\"diagnosticId\":\"cross-space-mgc-coupled\"},";
-	out << "{\"id\":\"event-log-relation-matrix\",\"kind\":\"relation-matrix\",\"name\":\"Event log edit distances\",";
-	out << "\"relationId\":\"event-log-edit-distance\"},";
-	out << "{\"id\":\"process-curve-relation-matrix\",\"kind\":\"relation-matrix\",\"name\":\"Process curve TWED distances\",";
-	out << "\"relationId\":\"process-curve-twed-distance\"}";
-	out << "],";
-	out << "\"diagnostics\":";
-	write_diagnostics(out, coupled_report, decoupled_report, permuted_report, coupled_baseline, compare_value, dataset_id);
-	out << "}";
-
-	return out.str();
+	visual::Document document;
+	document.provenance_json(
+		visual::object({visual::string_field("writer", "examples/engine/cross_space_dependency_visual_export.cpp"),
+						visual::string_field("writer_language", "C++"),
+						visual::string_field("computation", "native METRIC C++"),
+						visual::bool_field("native_export", true),
+						visual::bool_field("synthetic_js", false),
+						visual::string_field("source_example", "examples/engine/cross_space_dependency.hpp"),
+						visual::size_field("seed", kSeed),
+						visual::size_field("record_count", kRecords),
+						visual::size_field("permutations", kPermutations),
+						visual::string_field("status", "native_export_foundation")}));
+	document.dataset(dataset_id, "Cross-Space Dependency",
+					 "Native C++ evidence for paired event-log strings under edit distance and process curves under "
+					 "TWED; dependence is computed with MGC over two finite metric spaces.",
+					 "METRIC examples/engine/cross_space_dependency.hpp deterministic native generator", "MPL-2.0");
+	for (const auto &record : record_json(dataset_id, coupled, ids)) {
+		document.record_json(record);
+	}
+	document.relation_json(relation_json("event-log-edit-distance", "event log edit distance", "mtrc::Edit<char>",
+										 dataset_id, ids, matrices.left, left_law));
+	document.relation_json(relation_json("process-curve-twed-distance", "process curve TWED distance",
+										 "mtrc::TWED<double>", dataset_id, ids, matrices.right, right_law));
+	document.space("event-log-space", dataset_id, ids, "event-log-edit-distance", "finite_metric_space",
+				   space_metadata_json("Event logs / edit distance", "process-curve-space",
+									   "edit_distance_over_event_tokens"));
+	document.space("process-curve-space", dataset_id, ids, "process-curve-twed-distance", "finite_metric_space",
+				   space_metadata_json("Process curves / TWED", "event-log-space", "time_warp_edit_distance"));
+	document.scalar_property("generator-latent-severity", dataset_id, "generator latent severity (diagnostic)",
+							 scalar_values(ids, coupled.latent));
+	document.scalar_property("local-distance-profile-alignment", dataset_id, "local distance-profile alignment",
+							 scalar_values(ids, local_alignment));
+	document.scalar_property("local-dependence-contribution", dataset_id, "local dependence contribution",
+							 scalar_values(ids, local_pair_contribution));
+	document.scalar_property("event-log-local-density", dataset_id, "event-log local density",
+							 scalar_values(ids, left_density));
+	document.scalar_property("process-curve-local-density", dataset_id, "process-curve local density",
+							 scalar_values(ids, right_density));
+	document.property_json(pair_property_json(dataset_id, ids, pair_values));
+	document.coordinates3("event-log-landmark-3d", dataset_id, "event-log-space",
+						  "event log landmark distance coordinates", positions3(ids, left_coordinates),
+						  coordinate_metadata_json(ids, left_landmarks));
+	document.coordinates3("process-curve-landmark-3d", dataset_id, "process-curve-space",
+						  "process curve landmark distance coordinates", positions3(ids, right_coordinates),
+						  coordinate_metadata_json(ids, right_landmarks));
+	document.view_json(visual::object({visual::string_field("id", "event-log-space-view"),
+									   visual::string_field("kind", "metric-space"),
+									   visual::string_field("name", "Event log space"),
+									   visual::string_field("spaceId", "event-log-space"),
+									   visual::string_field("coordinateId", "event-log-landmark-3d"),
+									   visual::string_field("propertyId", "local-distance-profile-alignment")}));
+	document.view_json(visual::object({visual::string_field("id", "process-curve-space-view"),
+									   visual::string_field("kind", "metric-space"),
+									   visual::string_field("name", "Process curve space"),
+									   visual::string_field("spaceId", "process-curve-space"),
+									   visual::string_field("coordinateId", "process-curve-landmark-3d"),
+									   visual::string_field("propertyId", "local-distance-profile-alignment")}));
+	document.view_json(visual::object({visual::string_field("id", "cross-space-paired-view"),
+									   visual::string_field("kind", "paired-space"),
+									   visual::string_field("name", "Cross-space dependence"),
+									   visual::string_field("leftSpaceId", "event-log-space"),
+									   visual::string_field("rightSpaceId", "process-curve-space"),
+									   visual::string_field("leftCoordinateId", "event-log-landmark-3d"),
+									   visual::string_field("rightCoordinateId", "process-curve-landmark-3d"),
+									   visual::string_field("propertyId", "local-dependence-contribution"),
+									   visual::string_field("diagnosticId", "cross-space-mgc-coupled")}));
+	document.view_json(visual::object({visual::string_field("id", "event-log-relation-matrix"),
+									   visual::string_field("kind", "relation-matrix"),
+									   visual::string_field("name", "Event log edit distances"),
+									   visual::string_field("relationId", "event-log-edit-distance")}));
+	document.view_json(visual::object({visual::string_field("id", "process-curve-relation-matrix"),
+									   visual::string_field("kind", "relation-matrix"),
+									   visual::string_field("name", "Process curve TWED distances"),
+									   visual::string_field("relationId", "process-curve-twed-distance")}));
+	for (const auto &diagnostic :
+		 diagnostics_json(coupled_report, decoupled_report, permuted_report, coupled_baseline, compare_value,
+						  dataset_id)) {
+		document.diagnostic_json(diagnostic);
+	}
+	return document.to_json();
 }
 
 auto usage(const char *program) -> void
@@ -754,14 +645,11 @@ int main(int argc, char **argv)
 			return 0;
 		}
 
-		const std::filesystem::path directory(export_dir);
-		std::filesystem::create_directories(directory);
-		const std::filesystem::path output_path = directory / "metric.visual.json";
-		std::ofstream file(output_path);
-		if (!file) {
-			throw std::runtime_error("failed to open export output: " + output_path.string());
+		const std::filesystem::path output_dir(export_dir);
+		const std::filesystem::path output_path = output_dir / "metric.visual.json";
+		if (!visual::write_metric_visual_file(output_dir, json + "\n")) {
+			throw std::runtime_error("failed to write export output: " + output_path.string());
 		}
-		file << json << '\n';
 		return 0;
 	} catch (const std::exception &error) {
 		std::cerr << "cross_space_dependency_visual_export: " << error.what() << '\n';

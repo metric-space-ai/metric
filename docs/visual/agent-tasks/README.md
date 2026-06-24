@@ -33,7 +33,7 @@ set, and one validation path.
 | `record-glyph-field-grammar-workstream.md` | typed record glyphs and property fields | ready to assign |
 | `mapping-dynamics-motion-grammar-workstream.md` | mapping, dynamics, timeline and solver-trace grammar | ready to assign |
 | `visual-regression-performance-workstream.md` | browser regression and performance gates | ready to assign |
-| `cpp-visual-export-core-workstream.md` | reusable C++ `metric.visual.v1` writer core and single-exporter refactor rules | ready to assign |
+| `cpp-visual-export-core-workstream.md` | reusable C++ `metric.visual.v1` writer core and single-exporter refactor rules | integrated |
 
 ## Next Slots
 

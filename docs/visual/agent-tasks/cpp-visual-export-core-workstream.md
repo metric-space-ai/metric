@@ -35,30 +35,33 @@ helper. It provides:
 - `Document` builder for datasets, records, relations, spaces, properties,
   coordinates, graphs and diagnostics
 - raw `view_json(...)` and `timeline_json(...)` append points
+- raw append points for every top-level visual document section
 - metadata slots for core document entries
-- `write_file(...)` convenience helpers
+- `write_file(...)` and `write_metric_visual_file(...)` convenience helpers
 
 `visual/tools/check-cpp-export.mjs` compiles `visual/cpp/export_example.cpp`,
 runs it, parses the emitted JSON, validates it as `metric.visual.v1`, and
 builds a `VisualSpace`.
 
-## Open Exporter Refactor Slots
+## Exporter Refactor Status
 
-The six native exporter binaries are integrated and validate, but their writer
-logic is not yet uniformly based on `mtrc::visual::Document`.
-
-Refactor in disjoint single-exporter slots:
+The six native exporter binaries are integrated, validate, and now share the
+`mtrc::visual` writer foundation for common JSON/document/file writing.
 
 | Slot | Source | Current state |
 | --- | --- | --- |
-| Condition monitoring | `examples/engine/condition_monitoring_visual_export.cpp` | Own quote/number/object/array/root/file writers |
-| Mixed records | `examples/engine/mixed_finite_records_visual_export.cpp` | Own complete JSON writer |
-| Cross-space dependency | `examples/engine/cross_space_dependency_visual_export.cpp` | Own stream writer despite visual-helper comment |
-| Finite dynamics | `examples/engine/finite_metric_dynamics_visual_export.cpp` | Uses primitives, not `Document`; owns timelines/root/file output |
-| Mapping/dimensionality | `examples/engine/mapping_dimensionality_visual_export.cpp` | Uses primitives, not `Document`; owns relations/properties/root |
-| Relation matrix | `examples/engine/relation_matrix_visual_export.cpp` | Uses primitives, not `Document`; owns matrix/graph/root output |
+| Condition monitoring | `examples/engine/condition_monitoring_visual_export.cpp` | migrated |
+| Mixed records | `examples/engine/mixed_finite_records_visual_export.cpp` | migrated |
+| Cross-space dependency | `examples/engine/cross_space_dependency_visual_export.cpp` | migrated |
+| Finite dynamics | `examples/engine/finite_metric_dynamics_visual_export.cpp` | migrated |
+| Mapping/dimensionality | `examples/engine/mapping_dimensionality_visual_export.cpp` | migrated |
+| Relation matrix | `examples/engine/relation_matrix_visual_export.cpp` | migrated |
 
-## Refactor Rules
+Domain-specific evidence may still be composed explicitly through
+`visual::object(...)` and raw append methods. That is intentional when a generic
+helper would hide algorithm-specific semantics.
+
+## Rules For Future Exporters
 
 - Preserve exported evidence semantics. Do not simplify records, relations,
   metadata, diagnostics, timelines or views to fit the helper.

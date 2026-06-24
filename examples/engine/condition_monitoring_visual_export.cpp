@@ -14,7 +14,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
-#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -26,7 +25,11 @@
 #include <metric/engine.hpp>
 #include <metric/metric/catalog.hpp>
 
+#include "../../visual/cpp/mtrc_visual.hpp"
+
 namespace {
+
+namespace visual = mtrc::visual;
 
 using Curve = std::vector<double>;
 
@@ -80,52 +83,6 @@ auto jitter(std::uint64_t stream, int position, double scale) -> double
 {
 	return scale * hash_unit(stream * 1000003ULL + static_cast<std::uint64_t>(position + 1));
 }
-
-auto quote(const std::string &value) -> std::string
-{
-	std::ostringstream out;
-	out << '"';
-	for (const unsigned char ch : value) {
-		switch (ch) {
-		case '"':
-			out << "\\\"";
-			break;
-		case '\\':
-			out << "\\\\";
-			break;
-		case '\n':
-			out << "\\n";
-			break;
-		case '\r':
-			out << "\\r";
-			break;
-		case '\t':
-			out << "\\t";
-			break;
-		default:
-			if (ch < 0x20) {
-				out << "\\u" << std::hex << std::setw(4) << std::setfill('0') << static_cast<int>(ch)
-					<< std::dec << std::setfill(' ');
-			} else {
-				out << static_cast<char>(ch);
-			}
-		}
-	}
-	out << '"';
-	return out.str();
-}
-
-auto number(double value) -> std::string
-{
-	if (!std::isfinite(value)) {
-		return "0";
-	}
-	std::ostringstream out;
-	out << std::setprecision(12) << value;
-	return out.str();
-}
-
-auto bool_json(bool value) -> const char * { return value ? "true" : "false"; }
 
 auto regime_name(Regime regime) -> std::string
 {
@@ -321,30 +278,6 @@ auto make_record_ids(std::size_t count) -> std::vector<std::string>
 	return ids;
 }
 
-auto write_string_array(std::ostream &out, const std::vector<std::string> &values) -> void
-{
-	out << '[';
-	for (std::size_t index = 0; index < values.size(); ++index) {
-		if (index != 0) {
-			out << ',';
-		}
-		out << quote(values[index]);
-	}
-	out << ']';
-}
-
-auto write_number_array(std::ostream &out, const std::vector<double> &values) -> void
-{
-	out << '[';
-	for (std::size_t index = 0; index < values.size(); ++index) {
-		if (index != 0) {
-			out << ',';
-		}
-		out << number(values[index]);
-	}
-	out << ']';
-}
-
 auto metric_law_diagnostics(const std::vector<std::vector<double>> &matrix) -> MetricLawDiagnostics
 {
 	const std::size_t count = matrix.size();
@@ -485,115 +418,103 @@ auto diagnosis_state(double score, double warn_threshold, double alarm_threshold
 	return "alarm-band";
 }
 
-auto write_scalar_property(std::ostream &out, const std::string &id, const std::string &dataset_id,
-						   const std::string &name, const std::vector<std::string> &record_ids,
-						   const std::vector<double> &values) -> void
+auto scalar_values(const std::vector<std::string> &record_ids, const std::vector<double> &values)
+	-> std::vector<visual::ScalarValue>
 {
-	out << "{\"id\":" << quote(id) << ",\"dataset_id\":" << quote(dataset_id) << ",\"name\":" << quote(name)
-		<< ",\"target_type\":\"record\",\"value_type\":\"scalar\",\"values\":[";
+	std::vector<visual::ScalarValue> entries;
+	entries.reserve(values.size());
 	for (std::size_t index = 0; index < values.size(); ++index) {
-		if (index != 0) {
-			out << ',';
-		}
-		out << "{\"record_id\":" << quote(record_ids[index]) << ",\"value\":" << number(values[index]) << '}';
+		entries.push_back({record_ids[index], values[index]});
 	}
-	out << "]}";
+	return entries;
 }
 
-auto write_categorical_property(std::ostream &out, const std::string &id, const std::string &dataset_id,
-								const std::string &name, const std::vector<std::string> &record_ids,
-								const std::vector<std::string> &values) -> void
+auto categorical_values(const std::vector<std::string> &record_ids, const std::vector<std::string> &values)
+	-> std::vector<visual::CategoricalValue>
 {
-	out << "{\"id\":" << quote(id) << ",\"dataset_id\":" << quote(dataset_id) << ",\"name\":" << quote(name)
-		<< ",\"target_type\":\"record\",\"value_type\":\"categorical\",\"values\":[";
+	std::vector<visual::CategoricalValue> entries;
+	entries.reserve(values.size());
 	for (std::size_t index = 0; index < values.size(); ++index) {
-		if (index != 0) {
-			out << ',';
-		}
-		out << "{\"record_id\":" << quote(record_ids[index]) << ",\"value\":" << quote(values[index]) << '}';
+		entries.push_back({record_ids[index], values[index]});
 	}
-	out << "]}";
+	return entries;
 }
 
-auto write_document(std::ostream &out, const std::vector<Observation> &observations,
-					const std::vector<ObservationEvidence> &evidence,
-					const std::vector<std::string> &record_ids, const std::vector<std::vector<double>> &matrix,
-					const std::vector<std::array<double, 3>> &metric_positions, double healthy_radius_value,
-					double warn_threshold, double alarm_threshold, double healthy_average_distance,
-					double healthy_maximum_distance, double healthy_intrinsic_dimension,
-					std::size_t healthy_record_count, std::size_t healthy_noise_count,
-					const MetricLawDiagnostics &law) -> void
+auto law_check_metadata(const MetricLawDiagnostics &law) -> std::string
+{
+	return visual::object({visual::field("law_check",
+						   visual::object({visual::number_field("diagonal_max_abs", law.diagonal_max_abs),
+										   visual::number_field("symmetry_max_abs", law.symmetry_max_abs),
+										   visual::number_field("triangle_max_violation", law.triangle_max_violation),
+										   visual::bool_field("finite", law.finite)}))});
+}
+
+auto build_condition_monitoring_document(const std::vector<Observation> &observations,
+										 const std::vector<ObservationEvidence> &evidence,
+										 const std::vector<std::string> &record_ids,
+										 const std::vector<std::vector<double>> &matrix,
+										 const std::vector<std::array<double, 3>> &metric_positions,
+										 double healthy_radius_value, double warn_threshold, double alarm_threshold,
+										 double healthy_average_distance, double healthy_maximum_distance,
+										 double healthy_intrinsic_dimension, std::size_t healthy_record_count,
+										 std::size_t healthy_noise_count, const MetricLawDiagnostics &law)
+	-> visual::Document
 {
 	const std::string dataset_id = "condition-monitoring";
 	const std::string metric_relation_id = "condition-monitoring-twed";
 	const std::string transition_relation_id = "condition-monitoring-transition";
 	const std::string space_id = "condition-monitoring-space";
 
-	out << "{\"schema\":\"metric.visual.v1\",";
-	out << "\"provenance\":{\"writer\":\"examples/engine/condition_monitoring_visual_export.cpp\","
-		<< "\"runtime\":\"native-c++\",\"source_example\":\"examples/engine/condition_monitoring.cpp\"},";
-	out << "\"datasets\":[{\"id\":" << quote(dataset_id)
-		<< ",\"title\":\"Condition monitoring process windows\","
-		<< "\"description\":\"Native C++ finite-metric evidence for process-window condition monitoring.\","
-		<< "\"source\":\"METRIC engine condition_monitoring.cpp native exporter\","
-		<< "\"license\":\"MPL-2.0\"}],";
+	visual::Document doc;
+	doc.provenance_json(visual::object({visual::string_field("writer", "examples/engine/condition_monitoring_visual_export.cpp"),
+										visual::string_field("runtime", "native-c++"),
+										visual::string_field("source_example", "examples/engine/condition_monitoring.cpp")}))
+		.dataset(dataset_id, "Condition monitoring process windows",
+				 "Native C++ finite-metric evidence for process-window condition monitoring.",
+				 "METRIC engine condition_monitoring.cpp native exporter", "MPL-2.0");
 
-	out << "\"records\":[";
 	for (std::size_t index = 0; index < observations.size(); ++index) {
-		if (index != 0) {
-			out << ',';
-		}
-		out << "{\"id\":" << quote(record_ids[index]) << ",\"dataset_id\":" << quote(dataset_id)
-			<< ",\"record_type\":\"process_window\",\"label\":\"process window " << std::setw(2)
-			<< std::setfill('0') << index << std::setfill(' ') << "\",\"payload\":{"
-			<< "\"kind\":\"time_series\",\"series\":";
-		write_number_array(out, observations[index].curve);
-		out << ",\"sample_rate_hz\":1,\"truth\":" << quote(regime_name(observations[index].truth))
-			<< ",\"run_phase\":" << quote(observations[index].phase) << "}}";
+		std::ostringstream label;
+		label << "process window " << std::setw(2) << std::setfill('0') << index;
+		doc.record(record_ids[index], dataset_id, "process_window", label.str(),
+				   visual::object({visual::string_field("kind", "time_series"),
+								   visual::number_array_field("series", observations[index].curve),
+								   visual::number_field("sample_rate_hz", 1.0),
+								   visual::string_field("truth", regime_name(observations[index].truth)),
+								   visual::string_field("run_phase", observations[index].phase)}));
 	}
-	out << "],";
 
-	out << "\"relations\":[";
-	out << "{\"id\":" << quote(metric_relation_id) << ",\"dataset_id\":" << quote(dataset_id)
-		<< ",\"name\":\"TWED process-window metric\",\"relation_type\":\"metric\","
-		<< "\"value_type\":\"scalar\",\"record_ids\":";
-	write_string_array(out, record_ids);
-	out << ",\"storage\":\"sparse_edge_list\",\"metadata\":{\"law_check\":{"
-		<< "\"diagonal_max_abs\":" << number(law.diagonal_max_abs)
-		<< ",\"symmetry_max_abs\":" << number(law.symmetry_max_abs)
-		<< ",\"triangle_max_violation\":" << number(law.triangle_max_violation)
-		<< ",\"finite\":" << bool_json(law.finite) << "}},\"values\":[";
+	std::vector<visual::Edge> metric_edges;
+	metric_edges.reserve(matrix.size() * matrix.size());
 	for (std::size_t row = 0; row < matrix.size(); ++row) {
 		for (std::size_t column = 0; column < matrix.size(); ++column) {
-			if (row != 0 || column != 0) {
-				out << ',';
-			}
-			out << "{\"row_id\":" << quote(record_ids[row]) << ",\"column_id\":" << quote(record_ids[column])
-				<< ",\"value\":" << number(matrix[row][column]) << '}';
+			metric_edges.push_back({record_ids[row], record_ids[column], matrix[row][column]});
 		}
 	}
-	out << "]}";
-	out << ",{\"id\":" << quote(transition_relation_id) << ",\"dataset_id\":" << quote(dataset_id)
-		<< ",\"name\":\"process-window trajectory\",\"relation_type\":\"transition\","
-		<< "\"value_type\":\"scalar\",\"record_ids\":";
-	write_string_array(out, record_ids);
-	out << ",\"storage\":\"sparse_edge_list\",\"values\":[";
-	for (std::size_t index = 1; index < record_ids.size(); ++index) {
-		if (index != 1) {
-			out << ',';
-		}
-		out << "{\"row_id\":" << quote(record_ids[index - 1]) << ",\"column_id\":" << quote(record_ids[index])
-			<< ",\"value\":1}";
-	}
-	out << "]}],";
+	doc.metric_relation(metric_relation_id, dataset_id, "TWED process-window metric", record_ids, metric_edges,
+						"sparse_edge_list", law_check_metadata(law));
 
-	out << "\"spaces\":[{\"id\":" << quote(space_id) << ",\"dataset_id\":" << quote(dataset_id)
-		<< ",\"record_ids\":";
-	write_string_array(out, record_ids);
-	out << ",\"primary_relation_id\":" << quote(metric_relation_id)
-		<< ",\"space_type\":\"finite_metric_space\",\"metadata\":{\"metric\":\"TWED\","
-		<< "\"healthy_radius\":" << number(healthy_radius_value) << ",\"warn_threshold\":"
-		<< number(warn_threshold) << ",\"alarm_threshold\":" << number(alarm_threshold) << "}}],";
+	std::vector<std::string> transition_values;
+	transition_values.reserve(record_ids.size() > 0 ? record_ids.size() - 1 : 0);
+	for (std::size_t index = 1; index < record_ids.size(); ++index) {
+		transition_values.push_back(visual::object({visual::string_field("row_id", record_ids[index - 1]),
+													visual::string_field("column_id", record_ids[index]),
+													visual::number_field("value", 1.0)}));
+	}
+	doc.relation_json(visual::object({visual::string_field("id", transition_relation_id),
+									  visual::string_field("dataset_id", dataset_id),
+									  visual::string_field("name", "process-window trajectory"),
+									  visual::string_field("relation_type", "transition"),
+									  visual::string_field("value_type", "scalar"),
+									  visual::string_array_field("record_ids", record_ids),
+									  visual::string_field("storage", "sparse_edge_list"),
+									  visual::field("values", visual::array_of(transition_values))}));
+
+	doc.space(space_id, dataset_id, record_ids, metric_relation_id, "finite_metric_space",
+			  visual::object({visual::string_field("metric", "TWED"),
+							  visual::number_field("healthy_radius", healthy_radius_value),
+							  visual::number_field("warn_threshold", warn_threshold),
+							  visual::number_field("alarm_threshold", alarm_threshold)}));
 
 	std::vector<double> nearest_healthy;
 	std::vector<double> nearest_catalog;
@@ -618,101 +539,77 @@ auto write_document(std::ostream &out, const std::vector<Observation> &observati
 		diagnosis.push_back(evidence[index].diagnosis_state);
 	}
 
-	out << "\"properties\":[";
-	write_scalar_property(out, "nearest-healthy-distance", dataset_id, "TWED distance to healthy reference",
-						  record_ids, nearest_healthy);
-	out << ',';
-	write_scalar_property(out, "condition-severity", dataset_id, "condition severity index", record_ids,
-						  condition_index);
-	out << ',';
-	write_scalar_property(out, "metric-anomaly-severity", dataset_id, "metric anomaly severity", record_ids,
-						  severity);
-	out << ',';
-	write_scalar_property(out, "local-density", dataset_id, "local metric density", record_ids, density);
-	out << ',';
-	write_scalar_property(out, "dbscan-noise-flag", dataset_id, "DBSCAN noise flag", record_ids, noise_flag);
-	out << ',';
-	write_scalar_property(out, "nearest-catalog-distance", dataset_id, "nearest catalog distance", record_ids,
-						  nearest_catalog);
-	out << ',';
-	write_categorical_property(out, "truth-regime", dataset_id, "truth regime", record_ids, truth);
-	out << ',';
-	write_categorical_property(out, "run-phase", dataset_id, "run phase", record_ids, phase);
-	out << ',';
-	write_categorical_property(out, "nearest-catalog-regime", dataset_id, "nearest catalog regime", record_ids,
-							   nearest_regime);
-	out << ',';
-	write_categorical_property(out, "diagnosis-state", dataset_id, "diagnosis state", record_ids, diagnosis);
-	out << "],";
+	doc.scalar_property("nearest-healthy-distance", dataset_id, "TWED distance to healthy reference",
+						scalar_values(record_ids, nearest_healthy))
+		.scalar_property("condition-severity", dataset_id, "condition severity index",
+						 scalar_values(record_ids, condition_index))
+		.scalar_property("metric-anomaly-severity", dataset_id, "metric anomaly severity", scalar_values(record_ids, severity))
+		.scalar_property("local-density", dataset_id, "local metric density", scalar_values(record_ids, density))
+		.scalar_property("dbscan-noise-flag", dataset_id, "DBSCAN noise flag", scalar_values(record_ids, noise_flag))
+		.scalar_property("nearest-catalog-distance", dataset_id, "nearest catalog distance",
+						 scalar_values(record_ids, nearest_catalog))
+		.categorical_property("truth-regime", dataset_id, "truth regime", categorical_values(record_ids, truth))
+		.categorical_property("run-phase", dataset_id, "run phase", categorical_values(record_ids, phase))
+		.categorical_property("nearest-catalog-regime", dataset_id, "nearest catalog regime",
+							  categorical_values(record_ids, nearest_regime))
+		.categorical_property("diagnosis-state", dataset_id, "diagnosis state", categorical_values(record_ids, diagnosis));
 
-	out << "\"graphs\":[{\"id\":\"process-window-trajectory\",\"dataset_id\":" << quote(dataset_id)
-		<< ",\"node_record_ids\":";
-	write_string_array(out, record_ids);
-	out << ",\"edge_relation_id\":" << quote(transition_relation_id)
-		<< ",\"graph_type\":\"transition\",\"edges\":[";
+	std::vector<visual::GraphEdge> graph_edges;
+	graph_edges.reserve(record_ids.size() > 0 ? record_ids.size() - 1 : 0);
 	for (std::size_t index = 1; index < record_ids.size(); ++index) {
-		if (index != 1) {
-			out << ',';
-		}
-		out << "{\"source_id\":" << quote(record_ids[index - 1]) << ",\"target_id\":"
-			<< quote(record_ids[index]) << ",\"weight\":1}";
+		graph_edges.push_back({record_ids[index - 1], record_ids[index], 1.0});
 	}
-	out << "]}],";
+	doc.graph("process-window-trajectory", dataset_id, record_ids, transition_relation_id, "transition", graph_edges);
 
-	out << "\"coordinates\":[";
-	out << "{\"id\":\"landmark-3d\",\"dataset_id\":" << quote(dataset_id) << ",\"space_id\":" << quote(space_id)
-		<< ",\"name\":\"TWED landmark distances\",\"dimension\":3,\"record_positions\":[";
+	std::vector<visual::Position> landmark_positions;
+	landmark_positions.reserve(metric_positions.size());
 	for (std::size_t index = 0; index < metric_positions.size(); ++index) {
-		if (index != 0) {
-			out << ',';
-		}
-		out << "{\"record_id\":" << quote(record_ids[index]) << ",\"position\":["
-			<< number(metric_positions[index][0]) << ',' << number(metric_positions[index][1]) << ','
-			<< number(metric_positions[index][2]) << "]}";
+		landmark_positions.push_back(
+			{record_ids[index], {metric_positions[index][0], metric_positions[index][1], metric_positions[index][2]}});
 	}
-	out << "]}";
-	out << ",{\"id\":\"process-state-trajectory-3d\",\"dataset_id\":" << quote(dataset_id)
-		<< ",\"space_id\":" << quote(space_id)
-		<< ",\"name\":\"process state trajectory\",\"dimension\":3,\"record_positions\":[";
+	doc.coordinates3("landmark-3d", dataset_id, space_id, "TWED landmark distances", landmark_positions);
+
+	std::vector<visual::Position> trajectory_positions;
+	trajectory_positions.reserve(record_ids.size());
 	const double denom = static_cast<double>(std::max<std::size_t>(record_ids.size() - 1, 1));
 	for (std::size_t index = 0; index < record_ids.size(); ++index) {
-		if (index != 0) {
-			out << ',';
-		}
 		const double x = 2.0 * static_cast<double>(index) / denom - 1.0;
 		const double y = 2.0 * evidence[index].severity - 1.0;
 		const double z = observations[index].truth == Regime::Fault		  ? 0.9
 						 : observations[index].truth == Regime::Signature ? 0.35
 						 : observations[index].truth == Regime::Drift	  ? -0.15
 																		  : -0.7;
-		out << "{\"record_id\":" << quote(record_ids[index]) << ",\"position\":[" << number(x) << ','
-			<< number(y) << ',' << number(z) << "]}";
+		trajectory_positions.push_back({record_ids[index], {x, y, z}});
 	}
-	out << "]}],";
+	doc.coordinates3("process-state-trajectory-3d", dataset_id, space_id, "process state trajectory",
+					 trajectory_positions);
 
-	out << "\"timelines\":[],\"events\":[],";
-	out << "\"views\":[{\"kind\":\"metric-space\",\"spaceId\":\"condition-monitoring-space\","
-		<< "\"coordinateId\":\"process-state-trajectory-3d\",\"propertyId\":\"metric-anomaly-severity\"}],";
-	out << "\"diagnostics\":[";
-	out << "{\"id\":\"native-reference-checks\",\"dataset_id\":" << quote(dataset_id)
-		<< ",\"diagnostic_type\":\"condition_monitoring_reference\",\"payload\":{"
-		<< "\"healthy_record_count\":" << healthy_record_count << ",\"healthy_average_distance\":"
-		<< number(healthy_average_distance) << ",\"healthy_maximum_distance\":"
-		<< number(healthy_maximum_distance) << ",\"healthy_intrinsic_dimension\":"
-		<< number(healthy_intrinsic_dimension) << ",\"healthy_radius\":" << number(healthy_radius_value)
-		<< ",\"warn_threshold\":" << number(warn_threshold) << ",\"alarm_threshold\":"
-		<< number(alarm_threshold) << ",\"healthy_dbscan_noise_count\":" << healthy_noise_count << "}}";
-	out << ",{\"id\":\"metric-law-check\",\"dataset_id\":" << quote(dataset_id)
-		<< ",\"diagnostic_type\":\"metric_law_check\",\"payload\":{"
-		<< "\"diagonal_max_abs\":" << number(law.diagonal_max_abs)
-		<< ",\"symmetry_max_abs\":" << number(law.symmetry_max_abs)
-		<< ",\"triangle_max_violation\":" << number(law.triangle_max_violation)
-		<< ",\"minimum_nonzero_distance\":" << number(law.minimum_nonzero_distance)
-		<< ",\"maximum_distance\":" << number(law.maximum_distance)
-		<< ",\"average_distance\":" << number(law.average_distance) << ",\"pair_count\":"
-		<< law.pair_count << ",\"triangle_triplets\":" << law.triangle_triplets
-		<< ",\"finite\":" << bool_json(law.finite) << "}}";
-	out << "]}";
+	doc.view_json(visual::object({visual::string_field("kind", "metric-space"),
+								  visual::string_field("spaceId", "condition-monitoring-space"),
+								  visual::string_field("coordinateId", "process-state-trajectory-3d"),
+								  visual::string_field("propertyId", "metric-anomaly-severity")}));
+
+	doc.diagnostic("native-reference-checks", dataset_id, "condition_monitoring_reference",
+				   visual::object({visual::size_field("healthy_record_count", healthy_record_count),
+								   visual::number_field("healthy_average_distance", healthy_average_distance),
+								   visual::number_field("healthy_maximum_distance", healthy_maximum_distance),
+								   visual::number_field("healthy_intrinsic_dimension", healthy_intrinsic_dimension),
+								   visual::number_field("healthy_radius", healthy_radius_value),
+								   visual::number_field("warn_threshold", warn_threshold),
+								   visual::number_field("alarm_threshold", alarm_threshold),
+								   visual::size_field("healthy_dbscan_noise_count", healthy_noise_count)}))
+		.diagnostic("metric-law-check", dataset_id, "metric_law_check",
+					visual::object({visual::number_field("diagonal_max_abs", law.diagonal_max_abs),
+									visual::number_field("symmetry_max_abs", law.symmetry_max_abs),
+									visual::number_field("triangle_max_violation", law.triangle_max_violation),
+									visual::number_field("minimum_nonzero_distance", law.minimum_nonzero_distance),
+									visual::number_field("maximum_distance", law.maximum_distance),
+									visual::number_field("average_distance", law.average_distance),
+									visual::size_field("pair_count", law.pair_count),
+									visual::size_field("triangle_triplets", law.triangle_triplets),
+									visual::bool_field("finite", law.finite)}));
+
+	return doc;
 }
 
 auto build_document() -> std::string
@@ -794,23 +691,11 @@ auto build_document() -> std::string
 	const auto metric_positions = landmark_coordinates(matrix);
 	const auto record_ids = make_record_ids(observations.size());
 
-	std::ostringstream out;
-	write_document(out, observations, evidence, record_ids, matrix, metric_positions, radius, warn_threshold,
-				   alarm_threshold, structure.average_distance, structure.maximum_distance,
-				   structure.intrinsic_dimension, structure.record_count, healthy_outliers.noise_count, law);
-	out << '\n';
-	return out.str();
-}
-
-auto write_export_file(const std::filesystem::path &dir, const std::string &document) -> void
-{
-	std::filesystem::create_directories(dir);
-	const auto path = dir / "metric.visual.json";
-	std::ofstream file(path);
-	if (!file) {
-		throw std::runtime_error("failed to open export file: " + path.string());
-	}
-	file << document;
+	auto doc = build_condition_monitoring_document(observations, evidence, record_ids, matrix, metric_positions, radius,
+												   warn_threshold, alarm_threshold, structure.average_distance,
+												   structure.maximum_distance, structure.intrinsic_dimension,
+												   structure.record_count, healthy_outliers.noise_count, law);
+	return doc.to_json() + '\n';
 }
 
 } // namespace
@@ -835,7 +720,9 @@ int main(int argc, char **argv)
 
 		const std::string document = build_document();
 		if (has_export_dir) {
-			write_export_file(export_dir, document);
+			if (!visual::write_metric_visual_file(export_dir, document)) {
+				throw std::runtime_error("failed to write export file: " + (export_dir / "metric.visual.json").string());
+			}
 		} else {
 			std::cout << document;
 		}

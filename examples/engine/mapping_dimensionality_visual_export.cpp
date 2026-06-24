@@ -13,7 +13,6 @@
 #include <cmath>
 #include <cstddef>
 #include <filesystem>
-#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -119,22 +118,17 @@ struct MetricLawDiagnostics {
 
 auto json_object(const std::vector<std::pair<std::string, std::string>> &fields) -> std::string
 {
-	std::string out = "{";
-	for (std::size_t index = 0; index < fields.size(); ++index) {
-		if (index != 0) {
-			out += ",";
-		}
-		out += visual::quote(fields[index].first);
-		out += ":";
-		out += fields[index].second;
+	std::vector<visual::Field> visual_fields;
+	visual_fields.reserve(fields.size());
+	for (const auto &field : fields) {
+		visual_fields.push_back(visual::field(field.first, field.second));
 	}
-	out += "}";
-	return out;
+	return visual::object(visual_fields);
 }
 
-auto json_bool(bool value) -> const char * { return value ? "true" : "false"; }
+auto json_bool(bool value) -> std::string { return visual::boolean(value); }
 
-auto json_size(std::size_t value) -> std::string { return std::to_string(value); }
+auto json_size(std::size_t value) -> std::string { return visual::size(value); }
 
 auto json_number_array(const std::vector<double> &values) -> std::string
 {
@@ -849,32 +843,44 @@ auto build_visual_document() -> std::string
 								 {"name", visual::quote("Aligned process-curve distance matrix")},
 								 {"relationId", visual::quote(kSourceRelationId)}}));
 
-	std::ostringstream out;
-	out << "{\n";
-	out << "  \"schema\": \"metric.visual.v1\",\n";
-	out << "  \"provenance\": "
-		<< json_object({{"generator", visual::quote("examples/engine/mapping_dimensionality_visual_export.cpp")},
-						{"runtime", visual::quote("native C++")},
-						{"native_export", "true"},
-						{"algorithm_source", visual::quote("native PHATE autoencoder mapping pipeline")},
-						{"source_examples", visual::string_array({"examples/engine/process_curve_phate_gallery.cpp",
-																  "examples/engine/metric_space_mapping_pipeline.cpp",
-																  "examples/engine/phate_pipeline_builder.cpp"})},
-						{"synthetic_js", "false"}})
-		<< ",\n";
-	out << "  \"datasets\": " << visual::array_of(datasets) << ",\n";
-	out << "  \"records\": " << visual::array_of(record_entries) << ",\n";
-	out << "  \"relations\": " << visual::array_of(relations) << ",\n";
-	out << "  \"spaces\": " << visual::array_of(spaces) << ",\n";
-	out << "  \"properties\": " << visual::array_of(properties) << ",\n";
-	out << "  \"graphs\": " << visual::array_of(graphs) << ",\n";
-	out << "  \"coordinates\": " << visual::array_of(coordinates) << ",\n";
-	out << "  \"timelines\": [],\n";
-	out << "  \"events\": [],\n";
-	out << "  \"views\": " << visual::array_of(views) << ",\n";
-	out << "  \"diagnostics\": " << visual::array_of(diagnostics) << "\n";
-	out << "}\n";
-	return out.str();
+	visual::Document document;
+	document.provenance_json(json_object(
+		{{"generator", visual::quote("examples/engine/mapping_dimensionality_visual_export.cpp")},
+		 {"runtime", visual::quote("native C++")},
+		 {"native_export", "true"},
+		 {"algorithm_source", visual::quote("native PHATE autoencoder mapping pipeline")},
+		 {"source_examples", visual::string_array({"examples/engine/process_curve_phate_gallery.cpp",
+												   "examples/engine/metric_space_mapping_pipeline.cpp",
+												   "examples/engine/phate_pipeline_builder.cpp"})},
+		 {"synthetic_js", "false"}}));
+	for (const auto &dataset : datasets) {
+		document.dataset_json(dataset);
+	}
+	for (const auto &record : record_entries) {
+		document.record_json(record);
+	}
+	for (const auto &relation : relations) {
+		document.relation_json(relation);
+	}
+	for (const auto &space : spaces) {
+		document.space_json(space);
+	}
+	for (const auto &property : properties) {
+		document.property_json(property);
+	}
+	for (const auto &graph : graphs) {
+		document.graph_json(graph);
+	}
+	for (const auto &coordinate : coordinates) {
+		document.coordinates_json(coordinate);
+	}
+	for (const auto &view : views) {
+		document.view_json(view);
+	}
+	for (const auto &diagnostic : diagnostics) {
+		document.diagnostic_json(diagnostic);
+	}
+	return document.to_json();
 }
 
 auto usage(const char *program) -> std::string
@@ -909,18 +915,12 @@ int main(int argc, char **argv)
 
 		const auto json = build_visual_document();
 		if (export_dir.empty()) {
-			std::cout << json;
+			std::cout << json << "\n";
 			return 0;
 		}
 
-		std::filesystem::create_directories(export_dir);
 		const auto output_path = export_dir / "metric.visual.json";
-		std::ofstream out(output_path);
-		if (!out) {
-			throw std::runtime_error("failed to open output file: " + output_path.string());
-		}
-		out << json;
-		if (!out) {
+		if (!visual::write_metric_visual_file(export_dir, json + "\n")) {
 			throw std::runtime_error("failed to write output file: " + output_path.string());
 		}
 		std::cerr << "wrote " << output_path << "\n";

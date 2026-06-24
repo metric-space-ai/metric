@@ -4,16 +4,14 @@
 
 // Native metric.visual.v1 exporter for the Mixed Finite Metric Records example.
 //
-// This file is intentionally self-contained: it does not add a CMake target and
-// it does not extend the shared visual writer. The evidence below is computed in
-// C++ from the existing mixed-record fixture and METRIC operators.
+// The evidence below is computed in C++ from the existing mixed-record fixture
+// and METRIC operators, then serialized through the shared visual writer.
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
 #include <filesystem>
-#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -27,10 +25,13 @@
 
 #include <metric/engine.hpp>
 
+#include "../../visual/cpp/mtrc_visual.hpp"
 #include "mixed_finite_records.hpp"
 #include "mixed_finite_records_fixture.hpp"
 
 namespace {
+
+namespace visual = mtrc::visual;
 
 using hero::FlatEuclidean;
 using hero::MixedRecord;
@@ -55,91 +56,9 @@ auto make_fleet_metric(const std::vector<MixedRecord> &records) -> MixedRecordMe
 	return MixedRecordMetric(hero::kSpectrumBins, hero::fit_vitals_metric(records), kWeights);
 }
 
-auto json_string(const std::string &text) -> std::string
+auto record_value(const std::string &record_id_value, const std::string &value_json) -> std::string
 {
-	std::string out = "\"";
-	for (const auto ch : text) {
-		switch (ch) {
-		case '"':
-			out += "\\\"";
-			break;
-		case '\\':
-			out += "\\\\";
-			break;
-		case '\b':
-			out += "\\b";
-			break;
-		case '\f':
-			out += "\\f";
-			break;
-		case '\n':
-			out += "\\n";
-			break;
-		case '\r':
-			out += "\\r";
-			break;
-		case '\t':
-			out += "\\t";
-			break;
-		default:
-			if (static_cast<unsigned char>(ch) < 0x20) {
-				std::ostringstream escaped;
-				escaped << "\\u" << std::hex << std::setw(4) << std::setfill('0')
-						<< static_cast<int>(static_cast<unsigned char>(ch));
-				out += escaped.str();
-			} else {
-				out += ch;
-			}
-			break;
-		}
-	}
-	out += "\"";
-	return out;
-}
-
-auto json_number(double value) -> std::string
-{
-	if (!std::isfinite(value)) {
-		return "0";
-	}
-	std::ostringstream out;
-	out << std::setprecision(10) << value;
-	return out.str();
-}
-
-auto json_bool(bool value) -> const char * { return value ? "true" : "false"; }
-
-auto json_array(const std::vector<std::string> &entries) -> std::string
-{
-	std::string out = "[";
-	for (std::size_t i = 0; i < entries.size(); ++i) {
-		if (i != 0) {
-			out += ",";
-		}
-		out += entries[i];
-	}
-	out += "]";
-	return out;
-}
-
-auto json_string_array(const std::vector<std::string> &values) -> std::string
-{
-	std::vector<std::string> entries;
-	entries.reserve(values.size());
-	for (const auto &value : values) {
-		entries.push_back(json_string(value));
-	}
-	return json_array(entries);
-}
-
-auto json_number_array(const std::vector<double> &values) -> std::string
-{
-	std::vector<std::string> entries;
-	entries.reserve(values.size());
-	for (const auto value : values) {
-		entries.push_back(json_number(value));
-	}
-	return json_array(entries);
+	return visual::object({visual::string_field("record_id", record_id_value), visual::field("value", value_json)});
 }
 
 auto record_id(std::size_t index) -> std::string
@@ -200,22 +119,25 @@ auto record_payload(const MixedRecord &record, const std::string &family, double
 		spectrum_edges.push_back(static_cast<double>(i));
 	}
 
-	std::ostringstream out;
-	out << "{\"kind\":\"composed\"";
-	out << ",\"fields\":{";
-	out << "\"code\":{\"kind\":\"string\",\"text\":" << json_string(record.code) << "}";
-	out << ",\"spectrum\":{\"kind\":\"histogram\",\"bins\":" << json_number_array(record.spectrum)
-		<< ",\"edges\":" << json_number_array(spectrum_edges) << "}";
-	out << ",\"curve\":{\"kind\":\"time_series\",\"sample_rate_hz\":1,\"series\":" << json_number_array(record.curve)
-		<< "}";
-	out << ",\"vitals\":{\"kind\":\"vector\",\"values\":" << json_number_array(record.vitals)
-		<< ",\"names\":" << json_string_array({"severity_small", "family_large", "mixed_mid_a", "mixed_mid_b"})
-		<< "}";
-	out << "}";
-	out << ",\"features\":{\"family\":" << json_string(family) << ",\"severity\":" << json_number(severity)
-		<< ",\"channels\":" << json_string_array(channel_names()) << "}";
-	out << "}";
-	return out.str();
+	return visual::object({
+		visual::string_field("kind", "composed"),
+		visual::field("fields",
+					  visual::object({
+						  visual::field("code", visual::string_payload(record.code)),
+						  visual::field("spectrum", visual::object({visual::string_field("kind", "histogram"),
+																	 visual::number_array_field("bins", record.spectrum),
+																	 visual::number_array_field("edges", spectrum_edges)})),
+						  visual::field("curve", visual::series_payload(record.curve, 1.0)),
+						  visual::field("vitals", visual::object({visual::string_field("kind", "vector"),
+																   visual::number_array_field("values", record.vitals),
+																   visual::string_array_field(
+																	   "names", {"severity_small", "family_large",
+																				 "mixed_mid_a", "mixed_mid_b"})})),
+					  })),
+		visual::field("features", visual::object({visual::string_field("family", family),
+												  visual::number_field("severity", severity),
+												  visual::string_array_field("channels", channel_names())})),
+	});
 }
 
 auto categorical_record_property(const std::string &id, const std::string &name,
@@ -225,12 +147,12 @@ auto categorical_record_property(const std::string &id, const std::string &name,
 	std::vector<std::string> entries;
 	entries.reserve(record_ids.size());
 	for (std::size_t i = 0; i < record_ids.size(); ++i) {
-		entries.push_back("{\"record_id\":" + json_string(record_ids[i]) + ",\"value\":" + json_string(values[i]) +
-						  "}");
+		entries.push_back(record_value(record_ids[i], visual::quote(values[i])));
 	}
-	return "{\"id\":" + json_string(id) + ",\"dataset_id\":" + json_string(kDatasetId) +
-		   ",\"target_type\":\"record\",\"value_type\":\"categorical\",\"name\":" + json_string(name) +
-		   ",\"values\":" + json_array(entries) + "}";
+	return visual::object({visual::string_field("id", id), visual::string_field("dataset_id", kDatasetId),
+						   visual::string_field("target_type", "record"),
+						   visual::string_field("value_type", "categorical"), visual::string_field("name", name),
+						   visual::field("values", visual::array_of(entries))});
 }
 
 auto scalar_record_property(const std::string &id, const std::string &name, const std::vector<std::string> &record_ids,
@@ -239,12 +161,12 @@ auto scalar_record_property(const std::string &id, const std::string &name, cons
 	std::vector<std::string> entries;
 	entries.reserve(record_ids.size());
 	for (std::size_t i = 0; i < record_ids.size(); ++i) {
-		entries.push_back("{\"record_id\":" + json_string(record_ids[i]) + ",\"value\":" + json_number(values[i]) +
-						  "}");
+		entries.push_back(record_value(record_ids[i], visual::num(values[i])));
 	}
-	return "{\"id\":" + json_string(id) + ",\"dataset_id\":" + json_string(kDatasetId) +
-		   ",\"target_type\":\"record\",\"value_type\":\"scalar\",\"name\":" + json_string(name) +
-		   ",\"values\":" + json_array(entries) + "}";
+	return visual::object({visual::string_field("id", id), visual::string_field("dataset_id", kDatasetId),
+						   visual::string_field("target_type", "record"),
+						   visual::string_field("value_type", "scalar"), visual::string_field("name", name),
+						   visual::field("values", visual::array_of(entries))});
 }
 
 auto boolean_record_property(const std::string &id, const std::string &name,
@@ -253,12 +175,12 @@ auto boolean_record_property(const std::string &id, const std::string &name,
 	std::vector<std::string> entries;
 	entries.reserve(record_ids.size());
 	for (std::size_t i = 0; i < record_ids.size(); ++i) {
-		entries.push_back("{\"record_id\":" + json_string(record_ids[i]) + ",\"value\":" + json_bool(values[i]) +
-						  "}");
+		entries.push_back(record_value(record_ids[i], visual::boolean(values[i])));
 	}
-	return "{\"id\":" + json_string(id) + ",\"dataset_id\":" + json_string(kDatasetId) +
-		   ",\"target_type\":\"record\",\"value_type\":\"boolean\",\"name\":" + json_string(name) +
-		   ",\"values\":" + json_array(entries) + "}";
+	return visual::object({visual::string_field("id", id), visual::string_field("dataset_id", kDatasetId),
+						   visual::string_field("target_type", "record"),
+						   visual::string_field("value_type", "boolean"), visual::string_field("name", name),
+						   visual::field("values", visual::array_of(entries))});
 }
 
 auto vector_record_property(const std::string &id, const std::string &name, const std::vector<std::string> &record_ids,
@@ -267,12 +189,12 @@ auto vector_record_property(const std::string &id, const std::string &name, cons
 	std::vector<std::string> entries;
 	entries.reserve(record_ids.size());
 	for (std::size_t i = 0; i < record_ids.size(); ++i) {
-		entries.push_back("{\"record_id\":" + json_string(record_ids[i]) + ",\"value\":" +
-						  json_number_array(values[i]) + "}");
+		entries.push_back(record_value(record_ids[i], visual::number_array(values[i])));
 	}
-	return "{\"id\":" + json_string(id) + ",\"dataset_id\":" + json_string(kDatasetId) +
-		   ",\"target_type\":\"record\",\"value_type\":\"vector\",\"name\":" + json_string(name) +
-		   ",\"values\":" + json_array(entries) + "}";
+	return visual::object({visual::string_field("id", id), visual::string_field("dataset_id", kDatasetId),
+						   visual::string_field("target_type", "record"),
+						   visual::string_field("value_type", "vector"), visual::string_field("name", name),
+						   visual::field("values", visual::array_of(entries))});
 }
 
 struct LawDiagnostics {
@@ -443,12 +365,12 @@ auto coordinates_json(const std::string &id, const std::string &name, const std:
 	std::vector<std::string> entries;
 	entries.reserve(record_ids.size());
 	for (std::size_t i = 0; i < record_ids.size(); ++i) {
-		entries.push_back("{\"record_id\":" + json_string(record_ids[i]) + ",\"position\":" +
-						  json_number_array(positions[i]) + "}");
+		entries.push_back(visual::object({visual::string_field("record_id", record_ids[i]),
+										   visual::number_array_field("position", positions[i])}));
 	}
-	return "{\"id\":" + json_string(id) + ",\"dataset_id\":" + json_string(kDatasetId) +
-		   ",\"space_id\":" + json_string(kSpaceId) + ",\"name\":" + json_string(name) +
-		   ",\"dimension\":3,\"record_positions\":" + json_array(entries) + "}";
+	return visual::object({visual::string_field("id", id), visual::string_field("dataset_id", kDatasetId),
+						   visual::string_field("space_id", kSpaceId), visual::string_field("name", name),
+						   visual::size_field("dimension", 3), visual::field("record_positions", visual::array_of(entries))});
 }
 
 auto nearest_indices(const std::vector<std::vector<double>> &distances) -> std::vector<std::size_t>
@@ -483,9 +405,9 @@ auto top_k_edges(const std::vector<std::string> &record_ids, const std::vector<s
 		}
 		std::sort(neighbors.begin(), neighbors.end());
 		for (std::size_t n = 0; n < std::min(k, neighbors.size()); ++n) {
-			edges.push_back("{\"source\":" + json_string(record_ids[i]) + ",\"target\":" +
-							json_string(record_ids[neighbors[n].second]) + ",\"value\":" +
-							json_number(neighbors[n].first) + "}");
+			edges.push_back(visual::object({visual::string_field("source", record_ids[i]),
+											visual::string_field("target", record_ids[neighbors[n].second]),
+											visual::number_field("value", neighbors[n].first)}));
 		}
 	}
 	return edges;
@@ -507,17 +429,18 @@ auto probe_diagnostic_json(const std::vector<ProbeDiagnostic> &probes) -> std::s
 	std::vector<std::string> entries;
 	entries.reserve(probes.size());
 	for (const auto &probe : probes) {
-		std::ostringstream out;
-		out << "{\"channel\":" << json_string(probe.channel) << ",\"target_label\":"
-			<< json_string(probe.target_label) << ",\"metric_label\":" << json_string(probe.metric_label)
-			<< ",\"flat_label\":" << json_string(probe.flat_label)
-			<< ",\"metric_distance_to_target\":" << json_number(probe.target_distance)
-			<< ",\"metric_distance_to_decoy\":" << json_number(probe.decoy_distance)
-			<< ",\"metric_ok\":" << json_bool(probe.metric_ok) << ",\"flat_wrong\":"
-			<< json_bool(probe.flat_wrong) << "}";
-		entries.push_back(out.str());
+		entries.push_back(visual::object({
+			visual::string_field("channel", probe.channel),
+			visual::string_field("target_label", probe.target_label),
+			visual::string_field("metric_label", probe.metric_label),
+			visual::string_field("flat_label", probe.flat_label),
+			visual::number_field("metric_distance_to_target", probe.target_distance),
+			visual::number_field("metric_distance_to_decoy", probe.decoy_distance),
+			visual::bool_field("metric_ok", probe.metric_ok),
+			visual::bool_field("flat_wrong", probe.flat_wrong),
+		}));
 	}
-	return json_array(entries);
+	return visual::array_of(entries);
 }
 
 auto build_visual_document() -> std::string
@@ -656,70 +579,90 @@ auto build_visual_document() -> std::string
 							  anomaly_flagged && mgc_ok;
 
 	std::vector<std::string> dataset_entries;
-	dataset_entries.push_back("{\"id\":" + json_string(kDatasetId) +
-							  ",\"title\":\"Mixed Finite Metric Records\",\"description\":\"Native C++ export "
-							  "of the mixed finite records fixture using a composite admitted METRIC metric.\","
-							  "\"source\":\"examples/engine/mixed_finite_records_fixture.hpp\","
-							  "\"license\":\"MPL-2.0\"}");
+	dataset_entries.push_back(visual::object({
+		visual::string_field("id", kDatasetId),
+		visual::string_field("title", "Mixed Finite Metric Records"),
+		visual::string_field("description",
+							 "Native C++ export of the mixed finite records fixture using a composite admitted METRIC metric."),
+		visual::string_field("source", "examples/engine/mixed_finite_records_fixture.hpp"),
+		visual::string_field("license", "MPL-2.0"),
+	}));
 
 	std::vector<std::string> record_entries;
 	record_entries.reserve(record_count);
 	for (std::size_t i = 0; i < record_count; ++i) {
 		const auto label = fleet[i].family + " severity " + std::to_string(static_cast<int>(fleet[i].severity));
-		record_entries.push_back("{\"id\":" + json_string(record_ids[i]) + ",\"dataset_id\":" +
-								 json_string(kDatasetId) +
-								 ",\"record_type\":\"mixed_structured_record\",\"label\":" + json_string(label) +
-								 ",\"payload\":" + record_payload(records[i], fleet[i].family, fleet[i].severity) +
-								 "}");
+		record_entries.push_back(visual::object({
+			visual::string_field("id", record_ids[i]),
+			visual::string_field("dataset_id", kDatasetId),
+			visual::string_field("record_type", "mixed_structured_record"),
+			visual::string_field("label", label),
+			visual::field("payload", record_payload(records[i], fleet[i].family, fleet[i].severity)),
+		}));
 	}
 
 	std::vector<std::string> metric_values;
 	metric_values.reserve(record_count * record_count);
 	for (std::size_t i = 0; i < record_count; ++i) {
 		for (std::size_t j = 0; j < record_count; ++j) {
-			metric_values.push_back("{\"row_id\":" + json_string(record_ids[i]) + ",\"column_id\":" +
-									json_string(record_ids[j]) + ",\"value\":" + json_number(distances[i][j]) + "}");
+			metric_values.push_back(visual::object({visual::string_field("row_id", record_ids[i]),
+													visual::string_field("column_id", record_ids[j]),
+													visual::number_field("value", distances[i][j])}));
 		}
 	}
 
-	std::ostringstream relation_metadata;
-	relation_metadata << "{\"symmetric\":true,\"complete\":true";
-	relation_metadata << ",\"metric_law\":" << json_string(mtrc::metric_law_name(mtrc::metric_traits<MixedRecordMetric>::law));
-	relation_metadata << ",\"metric_key\":" << json_string(mtrc::metric_cache_key(metric));
-	relation_metadata << ",\"weights\":{\"code\":" << json_number(kWeights.code)
-					  << ",\"spectrum\":" << json_number(kWeights.spectrum)
-					  << ",\"curve\":" << json_number(kWeights.curve)
-					  << ",\"vitals\":" << json_number(kWeights.vitals) << "}";
-	relation_metadata << ",\"component_metrics\":{\"code\":\"mtrc::Edit<char>\","
-						 "\"spectrum\":\"mtrc::Wasserstein<double>::on_line\","
-						 "\"curve\":\"mtrc::TWED<double>\","
-						 "\"vitals\":\"mtrc::Euclidean_standardized<double>\"}";
-	relation_metadata << ",\"law_check\":{\"checked\":\"full finite fleet matrix\""
-					  << ",\"non_negative\":" << json_bool(law.min_distance >= -kEps)
-					  << ",\"identity\":" << json_bool(law.max_identity_error <= kEps)
-					  << ",\"symmetry\":" << json_bool(law.max_symmetry_error <= kEps)
-					  << ",\"triangle\":" << json_bool(law.triangle_violations == 0)
-					  << ",\"min_distance\":" << json_number(law.min_distance)
-					  << ",\"max_identity_error\":" << json_number(law.max_identity_error)
-					  << ",\"max_symmetry_error\":" << json_number(law.max_symmetry_error)
-					  << ",\"max_triangle_violation\":" << json_number(law.max_triangle_violation)
-					  << ",\"triangle_violations\":" << law.triangle_violations << "}}";
+	const auto relation_metadata = visual::object({
+		visual::bool_field("symmetric", true),
+		visual::bool_field("complete", true),
+		visual::string_field("metric_law", mtrc::metric_law_name(mtrc::metric_traits<MixedRecordMetric>::law)),
+		visual::string_field("metric_key", mtrc::metric_cache_key(metric)),
+		visual::field("weights", visual::object({visual::number_field("code", kWeights.code),
+												  visual::number_field("spectrum", kWeights.spectrum),
+												  visual::number_field("curve", kWeights.curve),
+												  visual::number_field("vitals", kWeights.vitals)})),
+		visual::field("component_metrics",
+					  visual::object({visual::string_field("code", "mtrc::Edit<char>"),
+									  visual::string_field("spectrum", "mtrc::Wasserstein<double>::on_line"),
+									  visual::string_field("curve", "mtrc::TWED<double>"),
+									  visual::string_field("vitals", "mtrc::Euclidean_standardized<double>")})),
+		visual::field("law_check", visual::object({visual::string_field("checked", "full finite fleet matrix"),
+												   visual::bool_field("non_negative", law.min_distance >= -kEps),
+												   visual::bool_field("identity", law.max_identity_error <= kEps),
+												   visual::bool_field("symmetry", law.max_symmetry_error <= kEps),
+												   visual::bool_field("triangle", law.triangle_violations == 0),
+												   visual::number_field("min_distance", law.min_distance),
+												   visual::number_field("max_identity_error", law.max_identity_error),
+												   visual::number_field("max_symmetry_error", law.max_symmetry_error),
+												   visual::number_field("max_triangle_violation",
+																		law.max_triangle_violation),
+												   visual::size_field("triangle_violations", law.triangle_violations)})),
+	});
 
 	std::vector<std::string> relation_entries;
-	relation_entries.push_back("{\"id\":" + json_string(kMetricRelationId) + ",\"dataset_id\":" +
-							   json_string(kDatasetId) +
-							   ",\"name\":\"composite mixed-record metric\",\"relation_type\":\"metric\","
-							   "\"value_type\":\"scalar\",\"record_ids\":" +
-							   json_string_array(record_ids) + ",\"storage\":\"sparse_edge_list\",\"values\":" +
-							   json_array(metric_values) + ",\"metadata\":" + relation_metadata.str() + "}");
+	relation_entries.push_back(visual::object({
+		visual::string_field("id", kMetricRelationId),
+		visual::string_field("dataset_id", kDatasetId),
+		visual::string_field("name", "composite mixed-record metric"),
+		visual::string_field("relation_type", "metric"),
+		visual::string_field("value_type", "scalar"),
+		visual::string_array_field("record_ids", record_ids),
+		visual::string_field("storage", "sparse_edge_list"),
+		visual::field("values", visual::array_of(metric_values)),
+		visual::field("metadata", relation_metadata),
+	}));
 
 	std::vector<std::string> space_entries;
-	space_entries.push_back("{\"id\":" + json_string(kSpaceId) + ",\"dataset_id\":" + json_string(kDatasetId) +
-							",\"record_ids\":" + json_string_array(record_ids) + ",\"primary_relation_id\":" +
-							json_string(kMetricRelationId) +
-							",\"space_type\":\"finite_metric_space\",\"metadata\":{\"record_count\":" +
-							std::to_string(record_count) + ",\"metric_law\":\"metric\","
-							"\"native_export_foundation\":true,\"public_hero_ready\":false}}");
+	space_entries.push_back(visual::object({
+		visual::string_field("id", kSpaceId),
+		visual::string_field("dataset_id", kDatasetId),
+		visual::string_array_field("record_ids", record_ids),
+		visual::string_field("primary_relation_id", kMetricRelationId),
+		visual::string_field("space_type", "finite_metric_space"),
+		visual::field("metadata", visual::object({visual::size_field("record_count", record_count),
+												   visual::string_field("metric_law", "metric"),
+												   visual::bool_field("native_export_foundation", true),
+												   visual::bool_field("public_hero_ready", false)})),
+	}));
 
 	std::vector<std::string> type_values(record_count, "mixed_structured_record");
 	std::vector<std::string> property_entries;
@@ -739,11 +682,16 @@ auto build_visual_document() -> std::string
 
 	const auto knn_edges = top_k_edges(record_ids, distances, 3);
 	std::vector<std::string> graph_entries;
-	graph_entries.push_back("{\"id\":\"mixed-finite-records-knn\",\"dataset_id\":" + json_string(kDatasetId) +
-							",\"node_record_ids\":" + json_string_array(record_ids) + ",\"edge_relation_id\":" +
-							json_string(kMetricRelationId) +
-							",\"graph_type\":\"k-nearest\",\"edges\":" + json_array(knn_edges) +
-							",\"metadata\":{\"neighbors\":3,\"edge_source\":\"native composite metric\"}}");
+	graph_entries.push_back(visual::object({
+		visual::string_field("id", "mixed-finite-records-knn"),
+		visual::string_field("dataset_id", kDatasetId),
+		visual::string_array_field("node_record_ids", record_ids),
+		visual::string_field("edge_relation_id", kMetricRelationId),
+		visual::string_field("graph_type", "k-nearest"),
+		visual::field("edges", visual::array_of(knn_edges)),
+		visual::field("metadata", visual::object({visual::size_field("neighbors", 3),
+												   visual::string_field("edge_source", "native composite metric")})),
+	}));
 
 	std::vector<std::string> coordinate_entries;
 	coordinate_entries.push_back(coordinates_json(kMdsCoordinateId, "classical MDS from composite metric",
@@ -752,93 +700,142 @@ auto build_visual_document() -> std::string
 												  record_ids, semantic_positions(fleet)));
 
 	std::vector<std::string> view_entries;
-	view_entries.push_back("{\"id\":\"mixed-finite-records-space-view\",\"kind\":\"metric-space\","
-						   "\"name\":\"Mixed finite records metric space\",\"spaceId\":" +
-						   json_string(kSpaceId) + ",\"coordinateId\":" + json_string(kMdsCoordinateId) +
-						   ",\"propertyId\":\"family\"}");
-	view_entries.push_back("{\"id\":\"mixed-finite-records-relation-view\",\"kind\":\"relation-matrix\","
-						   "\"name\":\"Composite metric matrix\",\"relationId\":" +
-						   json_string(kMetricRelationId) + "}");
+	view_entries.push_back(visual::object({visual::string_field("id", "mixed-finite-records-space-view"),
+											visual::string_field("kind", "metric-space"),
+											visual::string_field("name", "Mixed finite records metric space"),
+											visual::string_field("spaceId", kSpaceId),
+											visual::string_field("coordinateId", kMdsCoordinateId),
+											visual::string_field("propertyId", "family")}));
+	view_entries.push_back(visual::object({visual::string_field("id", "mixed-finite-records-relation-view"),
+											visual::string_field("kind", "relation-matrix"),
+											visual::string_field("name", "Composite metric matrix"),
+											visual::string_field("relationId", kMetricRelationId)}));
 
 	std::vector<std::string> diagnostic_entries;
-	diagnostic_entries.push_back("{\"id\":\"export-status\",\"kind\":\"native_export_foundation\",\"ok\":true,"
-								 "\"generator\":\"examples/engine/mixed_finite_records_visual_export.cpp\","
-								 "\"synthetic_js\":false,\"public_hero_ready\":false,"
-								 "\"note\":\"Native C++ metric.visual.v1 export foundation; not a public hero readiness claim.\"}");
-	diagnostic_entries.push_back("{\"id\":\"metric-law-check\",\"kind\":\"law_check\",\"ok\":" +
-								 std::string(json_bool(metric_law_ok)) + ",\"relation_id\":" +
-								 json_string(kMetricRelationId) + ",\"checks\":" + relation_metadata.str() + "}");
-	diagnostic_entries.push_back("{\"id\":\"cover-tree-admission\",\"kind\":\"metric_admission\",\"ok\":true,"
-								 "\"representation\":\"cover_tree_index\",\"records\":" +
-								 std::to_string(cover_tree.record_count()) + "}");
-	diagnostic_entries.push_back("{\"id\":\"search-parity\",\"kind\":\"nearest_neighbor_check\",\"ok\":" +
-								 std::string(json_bool(search_parity_ok)) + ",\"query_record_id\":" +
-								 json_string(record_ids[query_index]) + ",\"brute_representation\":" +
-								 json_string(brute.representation) + ",\"cover_tree_representation\":" +
-								 json_string(tree.representation) + ",\"brute_nearest\":" +
-								 json_string(record_ids[brute[0].id.index()]) + ",\"cover_tree_nearest\":" +
-								 json_string(record_ids[tree[0].id.index()]) + "}");
-	diagnostic_entries.push_back("{\"id\":\"channel-probes\",\"kind\":\"baseline_probe_summary\",\"ok\":" +
-								 std::string(json_bool(probes_ok)) + ",\"probe_count\":" +
-								 std::to_string(catalog.probes.size()) + ",\"composite_correct\":" +
-								 std::to_string(probe_metric_correct) + ",\"flat_wrong\":" +
-								 std::to_string(probe_flat_wrong) + ",\"probes\":" +
-								 probe_diagnostic_json(probe_details) + "}");
-	diagnostic_entries.push_back("{\"id\":\"representatives\",\"kind\":\"farthest_first_representatives\",\"ok\":" +
-								 std::string(json_bool(reps.size() == hero::kFamilyCount)) + ",\"strategy\":" +
-								 json_string(reps.strategy) + ",\"coverage_radius\":" +
-								 json_number(reps.coverage_radius) + ",\"average_nearest_distance\":" +
-								 json_number(reps.average_nearest_distance) + ",\"record_ids\":" +
-								 json_string_array(representative_ids) + "}");
-	diagnostic_entries.push_back("{\"id\":\"family-clustering\",\"kind\":\"k_medoids_family_purity\",\"ok\":" +
-								 std::string(json_bool(metric_family_purity == 1.0 &&
-													   metric_family_purity >= flat_family_purity)) +
-								 ",\"algorithm\":" + json_string(family_groups.algorithm) +
-								 ",\"cluster_count\":" + std::to_string(family_groups.cluster_count) +
-								 ",\"composite_family_purity\":" + json_number(metric_family_purity) +
-								 ",\"standardized_flat_family_purity\":" + json_number(flat_family_purity) + "}");
-	diagnostic_entries.push_back("{\"id\":\"anomaly-outlier\",\"kind\":\"dbscan_outlier_check\",\"ok\":" +
-								 std::string(json_bool(anomaly_flagged)) + ",\"radius\":9,\"min_points\":2,"
-								 "\"flagged_count\":" +
-								 std::to_string(outliers.size()) + ",\"injected_anomaly_index\":" +
-								 std::to_string(anomaly_index) + ",\"flagged_indices\":" +
-								 json_string_array(outlier_indices) + "}");
-	diagnostic_entries.push_back("{\"id\":\"severity-mgc\",\"kind\":\"cross_space_mgc\",\"ok\":" +
-								 std::string(json_bool(mgc_ok)) + ",\"algorithm\":" +
-								 json_string(mgc_metric.algorithm) + ",\"composite\":" +
-								 json_number(mgc_metric.value) + ",\"standardized_flat\":" +
-								 json_number(mgc_flat.value) + ",\"raw_flat\":" +
-								 json_number(mgc_raw_flat.value) + ",\"composite_advantage\":" +
-								 json_number(mgc_metric.value - mgc_flat.value) + "}");
-	diagnostic_entries.push_back("{\"id\":\"existing-check-summary\",\"kind\":\"mixed_finite_records_checks\","
-								 "\"ok\":" + std::string(json_bool(invariant_ok)) +
-								 ",\"checks\":{\"metric_law\":true,\"search_parity\":" +
-								 json_bool(search_parity_ok) + ",\"channel_probes\":" + json_bool(probes_ok) +
-								 ",\"representatives\":" + json_bool(reps.size() == hero::kFamilyCount) +
-								 ",\"family_purity\":" + json_bool(metric_family_purity == 1.0) +
-								 ",\"anomaly_flagged\":" + json_bool(anomaly_flagged) +
-								 ",\"mgc_advantage\":" + json_bool(mgc_ok) + "}}");
+	diagnostic_entries.push_back(visual::object({
+		visual::string_field("id", "export-status"),
+		visual::string_field("kind", "native_export_foundation"),
+		visual::bool_field("ok", true),
+		visual::string_field("generator", "examples/engine/mixed_finite_records_visual_export.cpp"),
+		visual::bool_field("synthetic_js", false),
+		visual::bool_field("public_hero_ready", false),
+		visual::string_field("note",
+							 "Native C++ metric.visual.v1 export foundation; not a public hero readiness claim."),
+	}));
+	diagnostic_entries.push_back(visual::object({visual::string_field("id", "metric-law-check"),
+												 visual::string_field("kind", "law_check"),
+												 visual::bool_field("ok", metric_law_ok),
+												 visual::string_field("relation_id", kMetricRelationId),
+												 visual::field("checks", relation_metadata)}));
+	diagnostic_entries.push_back(visual::object({visual::string_field("id", "cover-tree-admission"),
+												 visual::string_field("kind", "metric_admission"),
+												 visual::bool_field("ok", true),
+												 visual::string_field("representation", "cover_tree_index"),
+												 visual::size_field("records", cover_tree.record_count())}));
+	diagnostic_entries.push_back(visual::object({
+		visual::string_field("id", "search-parity"),
+		visual::string_field("kind", "nearest_neighbor_check"),
+		visual::bool_field("ok", search_parity_ok),
+		visual::string_field("query_record_id", record_ids[query_index]),
+		visual::string_field("brute_representation", brute.representation),
+		visual::string_field("cover_tree_representation", tree.representation),
+		visual::string_field("brute_nearest", record_ids[brute[0].id.index()]),
+		visual::string_field("cover_tree_nearest", record_ids[tree[0].id.index()]),
+	}));
+	diagnostic_entries.push_back(visual::object({visual::string_field("id", "channel-probes"),
+												 visual::string_field("kind", "baseline_probe_summary"),
+												 visual::bool_field("ok", probes_ok),
+												 visual::size_field("probe_count", catalog.probes.size()),
+												 visual::size_field("composite_correct", probe_metric_correct),
+												 visual::size_field("flat_wrong", probe_flat_wrong),
+												 visual::field("probes", probe_diagnostic_json(probe_details))}));
+	diagnostic_entries.push_back(visual::object({
+		visual::string_field("id", "representatives"),
+		visual::string_field("kind", "farthest_first_representatives"),
+		visual::bool_field("ok", reps.size() == hero::kFamilyCount),
+		visual::string_field("strategy", reps.strategy),
+		visual::number_field("coverage_radius", reps.coverage_radius),
+		visual::number_field("average_nearest_distance", reps.average_nearest_distance),
+		visual::string_array_field("record_ids", representative_ids),
+	}));
+	diagnostic_entries.push_back(visual::object({
+		visual::string_field("id", "family-clustering"),
+		visual::string_field("kind", "k_medoids_family_purity"),
+		visual::bool_field("ok", metric_family_purity == 1.0 && metric_family_purity >= flat_family_purity),
+		visual::string_field("algorithm", family_groups.algorithm),
+		visual::size_field("cluster_count", family_groups.cluster_count),
+		visual::number_field("composite_family_purity", metric_family_purity),
+		visual::number_field("standardized_flat_family_purity", flat_family_purity),
+	}));
+	diagnostic_entries.push_back(visual::object({visual::string_field("id", "anomaly-outlier"),
+												 visual::string_field("kind", "dbscan_outlier_check"),
+												 visual::bool_field("ok", anomaly_flagged),
+												 visual::integer_field("radius", 9),
+												 visual::integer_field("min_points", 2),
+												 visual::size_field("flagged_count", outliers.size()),
+												 visual::size_field("injected_anomaly_index", anomaly_index),
+												 visual::string_array_field("flagged_indices", outlier_indices)}));
+	diagnostic_entries.push_back(visual::object({
+		visual::string_field("id", "severity-mgc"),
+		visual::string_field("kind", "cross_space_mgc"),
+		visual::bool_field("ok", mgc_ok),
+		visual::string_field("algorithm", mgc_metric.algorithm),
+		visual::number_field("composite", mgc_metric.value),
+		visual::number_field("standardized_flat", mgc_flat.value),
+		visual::number_field("raw_flat", mgc_raw_flat.value),
+		visual::number_field("composite_advantage", mgc_metric.value - mgc_flat.value),
+	}));
+	diagnostic_entries.push_back(visual::object({
+		visual::string_field("id", "existing-check-summary"),
+		visual::string_field("kind", "mixed_finite_records_checks"),
+		visual::bool_field("ok", invariant_ok),
+		visual::field("checks", visual::object({visual::bool_field("metric_law", true),
+												 visual::bool_field("search_parity", search_parity_ok),
+												 visual::bool_field("channel_probes", probes_ok),
+												 visual::bool_field("representatives", reps.size() == hero::kFamilyCount),
+												 visual::bool_field("family_purity", metric_family_purity == 1.0),
+												 visual::bool_field("anomaly_flagged", anomaly_flagged),
+												 visual::bool_field("mgc_advantage", mgc_ok)})),
+	}));
 
-	std::ostringstream out;
-	out << "{\n";
-	out << "  \"schema\": \"metric.visual.v1\",\n";
-	out << "  \"provenance\": {\"generator\":\"examples/engine/mixed_finite_records_visual_export.cpp\","
-		   "\"runtime\":\"native C++\",\"source\":\"examples/engine/mixed_finite_records_fixture.hpp\","
-		   "\"native_export\":true,\"synthetic_js\":false,\"public_hero_ready\":false,"
-		   "\"status\":\"native_export_foundation\"},\n";
-	out << "  \"datasets\": " << json_array(dataset_entries) << ",\n";
-	out << "  \"records\": " << json_array(record_entries) << ",\n";
-	out << "  \"relations\": " << json_array(relation_entries) << ",\n";
-	out << "  \"spaces\": " << json_array(space_entries) << ",\n";
-	out << "  \"properties\": " << json_array(property_entries) << ",\n";
-	out << "  \"graphs\": " << json_array(graph_entries) << ",\n";
-	out << "  \"coordinates\": " << json_array(coordinate_entries) << ",\n";
-	out << "  \"timelines\": [],\n";
-	out << "  \"events\": [],\n";
-	out << "  \"views\": " << json_array(view_entries) << ",\n";
-	out << "  \"diagnostics\": " << json_array(diagnostic_entries) << "\n";
-	out << "}\n";
-	return out.str();
+	visual::Document doc;
+	doc.provenance_json(visual::object({
+		visual::string_field("generator", "examples/engine/mixed_finite_records_visual_export.cpp"),
+		visual::string_field("runtime", "native C++"),
+		visual::string_field("source", "examples/engine/mixed_finite_records_fixture.hpp"),
+		visual::bool_field("native_export", true),
+		visual::bool_field("synthetic_js", false),
+		visual::bool_field("public_hero_ready", false),
+		visual::string_field("status", "native_export_foundation"),
+	}));
+	for (const auto &entry : dataset_entries) {
+		doc.dataset_json(entry);
+	}
+	for (const auto &entry : record_entries) {
+		doc.record_json(entry);
+	}
+	for (const auto &entry : relation_entries) {
+		doc.relation_json(entry);
+	}
+	for (const auto &entry : space_entries) {
+		doc.space_json(entry);
+	}
+	for (const auto &entry : property_entries) {
+		doc.property_json(entry);
+	}
+	for (const auto &entry : graph_entries) {
+		doc.graph_json(entry);
+	}
+	for (const auto &entry : coordinate_entries) {
+		doc.coordinates_json(entry);
+	}
+	for (const auto &entry : view_entries) {
+		doc.view_json(entry);
+	}
+	for (const auto &entry : diagnostic_entries) {
+		doc.diagnostic_json(entry);
+	}
+	return doc.to_json() + "\n";
 }
 
 auto usage(const char *program) -> std::string
@@ -877,14 +874,8 @@ int main(int argc, char **argv)
 			return 0;
 		}
 
-		std::filesystem::create_directories(export_dir);
 		const auto output_path = export_dir / "metric.visual.json";
-		std::ofstream out(output_path);
-		if (!out) {
-			throw std::runtime_error("failed to open output file: " + output_path.string());
-		}
-		out << json;
-		if (!out) {
+		if (!visual::write_metric_visual_file(export_dir, json)) {
 			throw std::runtime_error("failed to write output file: " + output_path.string());
 		}
 		std::cerr << "wrote " << output_path << "\n";
