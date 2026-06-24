@@ -103,8 +103,21 @@ endif ()
 add_executable(engine_finite_metric_dynamics finite_metric_dynamics.cpp)
 target_link_libraries(engine_finite_metric_dynamics PRIVATE ${METRIC_TARGET_NAME})
 
+add_executable(engine_finite_metric_dynamics_visual_export finite_metric_dynamics_visual_export.cpp)
+target_link_libraries(engine_finite_metric_dynamics_visual_export PRIVATE ${METRIC_TARGET_NAME})
+
 add_executable(engine_mixed_finite_records mixed_finite_records.cpp)
 target_link_libraries(engine_mixed_finite_records PRIVATE ${METRIC_TARGET_NAME})
+
+add_executable(engine_mixed_finite_records_visual_export mixed_finite_records_visual_export.cpp)
+target_link_libraries(engine_mixed_finite_records_visual_export PRIVATE ${METRIC_TARGET_NAME})
+
+add_executable(engine_cross_space_dependency_visual_export cross_space_dependency_visual_export.cpp)
+target_link_libraries(engine_cross_space_dependency_visual_export PRIVATE ${METRIC_TARGET_NAME})
+
+add_executable(engine_relation_matrix_visual_export relation_matrix_visual_export.cpp)
+target_link_libraries(engine_relation_matrix_visual_export PRIVATE ${METRIC_TARGET_NAME})
+target_include_directories(engine_relation_matrix_visual_export PRIVATE ${CMAKE_SOURCE_DIR}/visual/cpp)
 
 if (LAPACK_FOUND)
     get_property(_metric_engine_example_targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
@@ -114,6 +127,8 @@ if (LAPACK_FOUND)
 endif ()
 
 if (BUILD_TESTING)
+    find_program(METRIC_NODE_EXECUTABLE node)
+
     add_test(NAME example_engine_strings_edit_space COMMAND engine_strings_edit_space)
     add_test(NAME example_engine_process_curves_space COMMAND engine_process_curves_space)
     add_test(NAME example_engine_process_curve_external_gallery COMMAND engine_process_curve_external_gallery)
@@ -138,6 +153,62 @@ if (BUILD_TESTING)
     add_test(NAME example_engine_condition_monitoring COMMAND engine_condition_monitoring)
     add_test(NAME example_engine_finite_metric_dynamics COMMAND engine_finite_metric_dynamics)
     add_test(NAME example_engine_mixed_finite_records COMMAND engine_mixed_finite_records)
+    add_test(NAME example_engine_mixed_finite_records_visual_export
+        COMMAND engine_mixed_finite_records_visual_export
+            --export-dir ${CMAKE_CURRENT_BINARY_DIR}/visual_exports/mixed_finite_records
+    )
+    add_test(NAME example_engine_cross_space_dependency_visual_export
+        COMMAND engine_cross_space_dependency_visual_export
+            --export-dir ${CMAKE_CURRENT_BINARY_DIR}/visual_exports/cross_space_dependency
+    )
+    add_test(NAME example_engine_finite_metric_dynamics_visual_export
+        COMMAND engine_finite_metric_dynamics_visual_export
+            --export-dir ${CMAKE_CURRENT_BINARY_DIR}/visual_exports/finite_metric_dynamics
+    )
+    add_test(NAME example_engine_relation_matrix_visual_export
+        COMMAND engine_relation_matrix_visual_export
+            --export-dir ${CMAKE_CURRENT_BINARY_DIR}/visual_exports/relation_matrix
+    )
+
+    if (METRIC_NODE_EXECUTABLE)
+        add_test(NAME example_engine_mixed_finite_records_visual_validate
+            COMMAND ${METRIC_NODE_EXECUTABLE}
+                ${CMAKE_SOURCE_DIR}/visual/tools/check-visual-document.mjs
+                ${CMAKE_CURRENT_BINARY_DIR}/visual_exports/mixed_finite_records/metric.visual.json
+        )
+        add_test(NAME example_engine_cross_space_dependency_visual_validate
+            COMMAND ${METRIC_NODE_EXECUTABLE}
+                ${CMAKE_SOURCE_DIR}/visual/tools/check-visual-document.mjs
+                ${CMAKE_CURRENT_BINARY_DIR}/visual_exports/cross_space_dependency/metric.visual.json
+        )
+        add_test(NAME example_engine_finite_metric_dynamics_visual_validate
+            COMMAND ${METRIC_NODE_EXECUTABLE}
+                ${CMAKE_SOURCE_DIR}/visual/tools/check-visual-document.mjs
+                ${CMAKE_CURRENT_BINARY_DIR}/visual_exports/finite_metric_dynamics/metric.visual.json
+        )
+        add_test(NAME example_engine_relation_matrix_visual_validate
+            COMMAND ${METRIC_NODE_EXECUTABLE}
+                ${CMAKE_SOURCE_DIR}/visual/tools/check-visual-document.mjs
+                ${CMAKE_CURRENT_BINARY_DIR}/visual_exports/relation_matrix/metric.visual.json
+        )
+
+        set_tests_properties(
+            example_engine_mixed_finite_records_visual_validate
+            PROPERTIES DEPENDS example_engine_mixed_finite_records_visual_export
+        )
+        set_tests_properties(
+            example_engine_cross_space_dependency_visual_validate
+            PROPERTIES DEPENDS example_engine_cross_space_dependency_visual_export
+        )
+        set_tests_properties(
+            example_engine_finite_metric_dynamics_visual_validate
+            PROPERTIES DEPENDS example_engine_finite_metric_dynamics_visual_export
+        )
+        set_tests_properties(
+            example_engine_relation_matrix_visual_validate
+            PROPERTIES DEPENDS example_engine_relation_matrix_visual_export
+        )
+    endif ()
 
     set_tests_properties(
         example_engine_strings_edit_space
@@ -153,8 +224,22 @@ if (BUILD_TESTING)
         example_engine_condition_monitoring
         example_engine_finite_metric_dynamics
         example_engine_mixed_finite_records
+        example_engine_mixed_finite_records_visual_export
+        example_engine_cross_space_dependency_visual_export
+        example_engine_finite_metric_dynamics_visual_export
+        example_engine_relation_matrix_visual_export
         PROPERTIES LABELS metric_application_evidence
     )
+
+    if (METRIC_NODE_EXECUTABLE)
+        set_tests_properties(
+            example_engine_mixed_finite_records_visual_validate
+            example_engine_cross_space_dependency_visual_validate
+            example_engine_finite_metric_dynamics_visual_validate
+            example_engine_relation_matrix_visual_validate
+            PROPERTIES LABELS "metric_application_evidence;metric_visual_export"
+        )
+    endif ()
 
     set_tests_properties(
         example_engine_mnist_phate_autoencoder_smoke

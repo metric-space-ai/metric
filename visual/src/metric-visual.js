@@ -16,6 +16,10 @@ import {
 import { VisualLayer } from "./views/VisualLayer.js";
 import { createChannel, createStringChannel } from "./views/view-utils.js";
 
+const METRIC_VISUAL_API_DIAGNOSTICS_SCHEMA = "metric.visual.public_api_diagnostics.v1";
+const METRIC_VISUAL_COMMAND_DIAGNOSTICS_SCHEMA = "metric.visual.public_command_diagnostics.v1";
+const METRIC_VISUAL_DOCUMENT_DIAGNOSTICS_SCHEMA = "metric.visual.public_document_diagnostics.v1";
+
 /**
  * Create the public METRIC visual surface.
  *
@@ -42,7 +46,7 @@ export async function createMetricVisual(options = {}) {
   const runtime = new MetricVisualRuntime(setup.runtimeOptions);
   setup.style?.attachRuntime?.(runtime);
   runtime.setDocument(document, { views: false });
-  const surface = new MetricVisualSurface({ document, canvas, runtime, setup });
+  const surface = new MetricVisualSurface({ document, canvas, runtime, setup, options });
 
   if (options.view) {
     surface.show(options.view, options);
@@ -82,8 +86,21 @@ export async function showDynamics(evidence, options = {}) {
   return visual.showDynamics(options);
 }
 
+export function createMetricVisualDocumentDiagnostics(document, options = {}) {
+  const context = describeMetricVisualContext(options);
+  const warnings = createMetricVisualDocumentWarnings(document, context);
+  return {
+    schema: METRIC_VISUAL_DOCUMENT_DIAGNOSTICS_SCHEMA,
+    loadedSchema: document?.schema || null,
+    recordCount: countVisualRecords(document),
+    synthetic: document?.provenance?.synthetic === true,
+    context,
+    warnings,
+  };
+}
+
 export class MetricVisualSurface {
-  constructor({ document, canvas, runtime, setup }) {
+  constructor({ document, canvas, runtime, setup, options = {} }) {
     this.document = document;
     this.visualSpace = VisualSpace.fromDocument(document);
     this.canvas = canvas;
@@ -93,6 +110,11 @@ export class MetricVisualSurface {
     this.descriptors = [];
     this.previewPanel = null;
     this.previewSubscriptions = [];
+    this.documentDiagnostics = createMetricVisualDocumentDiagnostics(document, options);
+    this.commandDiagnostics = [];
+    this.lastCommandDiagnostics = null;
+    this.diagnostics = null;
+    this.recordCommandDiagnostics({ command: "createMetricVisual", viewKind: null });
   }
 
   show(kind, options = {}) {
@@ -129,6 +151,11 @@ export class MetricVisualSurface {
     this.runtime.setLayerDescriptors(this.descriptors, { source: options.source || "metric-visual-surface" });
     this.updatePreviewIndex();
     this.runtime.renderOnce();
+    this.recordCommandDiagnostics({
+      command: options.source || "setLayerDescriptors",
+      viewKind: options.viewKind,
+      append: options.append === true,
+    });
     return this;
   }
 
@@ -167,21 +194,21 @@ export class MetricVisualSurface {
     if (options.groundField) {
       descriptors.splice(1, 0, ...propertyFieldDescriptors(this.document, options, view));
     }
-    this.setLayerDescriptors(descriptors, { source: "showMetricSpace" });
+    this.setLayerDescriptors(descriptors, { source: "showMetricSpace", viewKind: "metric-space" });
     return this.configurePreview(options);
   }
 
   showRelationMatrix(options = {}) {
     const view = RelationMatrixView.fromVisualSpace(this.document, normalizeRelationOptions(this.document, options));
     this.views = [view];
-    this.setViews([view], { source: "showRelationMatrix" });
+    this.setViews([view], { source: "showRelationMatrix", viewKind: "relation-matrix" });
     return this.configurePreview(options);
   }
 
   showNeighborhoodGraph(options = {}) {
     const view = NeighborhoodGraphView.fromVisualSpace(this.document, normalizeGraphOptions(this.document, options));
     this.views = [view];
-    this.setViews([view], { source: "showNeighborhoodGraph" });
+    this.setViews([view], { source: "showNeighborhoodGraph", viewKind: "neighborhood-graph" });
     return this.configurePreview(options);
   }
 
@@ -191,7 +218,7 @@ export class MetricVisualSurface {
     this.views = [view];
     const descriptors = view.toLayerDescriptors();
     descriptors.splice(1, 0, ...propertyFieldDescriptors(this.document, normalized, view.space));
-    this.setLayerDescriptors(descriptors, { source: "showSpaceProperties" });
+    this.setLayerDescriptors(descriptors, { source: "showSpaceProperties", viewKind: "space-properties" });
     return this.configurePreview(options);
   }
 
@@ -201,7 +228,7 @@ export class MetricVisualSurface {
     const descriptors = view.toLayerDescriptors();
     const residual = residualVectorDescriptor(view, options);
     if (residual) descriptors.push(residual);
-    this.setLayerDescriptors(descriptors, { source: "showMapping" });
+    this.setLayerDescriptors(descriptors, { source: "showMapping", viewKind: "mapping" });
     return this.configurePreview(options);
   }
 
@@ -216,7 +243,7 @@ export class MetricVisualSurface {
         propertyId: options.propertyField || options.groundField,
       }));
     }
-    this.setLayerDescriptors(descriptors, { source: "showDynamics" });
+    this.setLayerDescriptors(descriptors, { source: "showDynamics", viewKind: "dynamics" });
     return this.configurePreview(options);
   }
 
@@ -280,7 +307,7 @@ export class MetricVisualSurface {
       order: 32,
     });
     if (path) descriptors.push(path);
-    this.setLayerDescriptors(descriptors, { source: "showConditionMonitoring" });
+    this.setLayerDescriptors(descriptors, { source: "showConditionMonitoring", viewKind: "condition-monitoring" });
     if (options.camera !== false) {
       this.setCamera(options.camera || conditionMonitoringCamera());
     }
@@ -316,7 +343,7 @@ export class MetricVisualSurface {
       topK: options.topK ?? 4,
     });
     descriptors.push(...graph.toLayerDescriptors());
-    this.setLayerDescriptors(descriptors, { source: "showMixedRecords" });
+    this.setLayerDescriptors(descriptors, { source: "showMixedRecords", viewKind: "mixed-records" });
     return this.configurePreview({ ...options, preview: options.preview ?? "record" });
   }
 
@@ -347,7 +374,7 @@ export class MetricVisualSurface {
     ];
     const bridge = pairedRecordBridgeDescriptor(left, right, options);
     if (bridge) descriptors.push(bridge);
-    this.setLayerDescriptors(descriptors, { source: "showCrossSpace" });
+    this.setLayerDescriptors(descriptors, { source: "showCrossSpace", viewKind: "cross-space" });
     return this.configurePreview({ ...options, preview: options.preview ?? "paired records" });
   }
 
@@ -371,8 +398,46 @@ export class MetricVisualSurface {
     this.setLayerDescriptors([
       ...graph.toLayerDescriptors(),
       ...matrix.toLayerDescriptors().map((descriptor) => ({ ...descriptor, order: 200 })),
-    ], { source: "showRelationMatrixNeighborhood" });
+    ], { source: "showRelationMatrixNeighborhood", viewKind: "relation-matrix-neighborhood" });
     return this.configurePreview({ ...options, preview: options.preview ?? "pair" });
+  }
+
+  recordCommandDiagnostics(options = {}) {
+    const runtimeState = safeRuntimeState(this.runtime);
+    const entry = {
+      schema: METRIC_VISUAL_COMMAND_DIAGNOSTICS_SCHEMA,
+      command: options.command || "metric-visual-command",
+      loadedSchema: this.documentDiagnostics.loadedSchema,
+      recordCount: this.documentDiagnostics.recordCount,
+      selectedViewKind: options.viewKind ?? inferMetricVisualViewKind(this.views),
+      layerDescriptorCount: this.descriptors.length,
+      runtimeLayerCount: runtimeState.layerInstanceCount ?? countRuntimeLayers(this.runtime),
+      runtimeLayerState: runtimeState.layerState ? { ...runtimeState.layerState } : null,
+    };
+    if (options.append === true) entry.append = true;
+    this.lastCommandDiagnostics = entry;
+    this.commandDiagnostics.push(entry);
+    this.diagnostics = this.createDiagnosticsSnapshot(entry);
+    return entry;
+  }
+
+  createDiagnosticsSnapshot(current = this.lastCommandDiagnostics) {
+    const runtimeState = safeRuntimeState(this.runtime);
+    return {
+      schema: METRIC_VISUAL_API_DIAGNOSTICS_SCHEMA,
+      loadedSchema: this.documentDiagnostics.loadedSchema,
+      recordCount: this.documentDiagnostics.recordCount,
+      selectedViewKind: current?.selectedViewKind ?? inferMetricVisualViewKind(this.views),
+      layerDescriptorCount: current?.layerDescriptorCount ?? this.descriptors.length,
+      runtimeLayerCount: current?.runtimeLayerCount ?? runtimeState.layerInstanceCount ?? countRuntimeLayers(this.runtime),
+      warnings: cloneDiagnosticEntries(this.documentDiagnostics.warnings),
+      commands: cloneDiagnosticEntries(this.commandDiagnostics),
+    };
+  }
+
+  getDiagnostics() {
+    this.diagnostics = this.createDiagnosticsSnapshot();
+    return cloneMetricVisualDiagnostics(this.diagnostics);
   }
 
   configurePreview(options = {}) {
@@ -487,8 +552,91 @@ export class MetricVisualSurface {
       views: this.views.slice(),
       descriptors: this.descriptors.slice(),
       runtime: this.runtime.getState(),
+      diagnostics: this.getDiagnostics(),
     };
   }
+}
+
+function describeMetricVisualContext(options = {}) {
+  const labels = [];
+  for (const key of ["context", "contextKind", "surfaceContext", "pageContext", "evidenceContext"]) {
+    if (typeof options[key] === "string") labels.push(options[key]);
+  }
+  if (typeof options.gallery === "string") labels.push(options.gallery);
+  if (typeof options.public === "string") labels.push(options.public);
+  if (typeof options.publicGallery === "string") labels.push(options.publicGallery);
+  const dataset = options.target?.dataset || options.root?.dataset || null;
+  if (dataset) {
+    for (const key of ["context", "visualContext", "metricVisualContext", "gallery", "publicGallery"]) {
+      if (typeof dataset[key] === "string") labels.push(dataset[key]);
+    }
+  }
+
+  const explicitPublicGallery = options.publicGallery === true
+    || datasetBoolean(dataset?.publicGallery)
+    || datasetBoolean(dataset?.metricPublicGallery);
+  const pairedPublicGallery = options.public === true && options.gallery === true;
+  const label = labels.join(" ");
+  const publicGalleryLike = explicitPublicGallery
+    || pairedPublicGallery
+    || /\b(public[-_\s]*(gallery|hero|site)|gallery[-_\s]*public|docs[-_\s]*site|project[-_\s]*site)\b/i.test(label);
+
+  return {
+    publicGalleryLike,
+    label: label || (explicitPublicGallery || pairedPublicGallery ? "public-gallery" : null),
+  };
+}
+
+function createMetricVisualDocumentWarnings(document, context = {}) {
+  if (document?.provenance?.synthetic !== true || !context.publicGalleryLike) return [];
+  return [{
+    code: "synthetic_evidence_in_public_gallery_context",
+    severity: "warning",
+    message: "Synthetic METRIC visual evidence was loaded in a public-gallery-like context. Public gallery pages should use native exported evidence.",
+    loadedSchema: document?.schema || null,
+    recordCount: countVisualRecords(document),
+    context: context.label || "public-gallery",
+    generator: document?.provenance?.generator || null,
+  }];
+}
+
+function inferMetricVisualViewKind(views) {
+  const kinds = toMetricVisualArray(views).map((view) => view?.kind).filter(Boolean);
+  if (kinds.length === 0) return null;
+  const unique = Array.from(new Set(kinds));
+  return unique.length === 1 ? unique[0] : unique.join("+");
+}
+
+function countVisualRecords(document) {
+  return Array.isArray(document?.records) ? document.records.length : null;
+}
+
+function countRuntimeLayers(runtime) {
+  return Array.isArray(runtime?.layers) ? runtime.layers.length : null;
+}
+
+function safeRuntimeState(runtime) {
+  try {
+    return runtime?.getState?.() || {};
+  } catch {
+    return {};
+  }
+}
+
+function datasetBoolean(value) {
+  return value === true || value === "true" || value === "1" || value === "";
+}
+
+function cloneMetricVisualDiagnostics(diagnostics) {
+  return {
+    ...diagnostics,
+    warnings: cloneDiagnosticEntries(diagnostics?.warnings),
+    commands: cloneDiagnosticEntries(diagnostics?.commands),
+  };
+}
+
+function cloneDiagnosticEntries(entries) {
+  return Array.isArray(entries) ? entries.map((entry) => ({ ...entry })) : [];
 }
 
 function conditionMonitoringMotion() {

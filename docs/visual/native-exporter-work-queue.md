@@ -26,12 +26,26 @@ ctest --test-dir build/core -L 'metric_application_evidence|metric_phate_pipelin
 
 | Slot | Owner writes | Status | Integration target |
 | --- | --- | --- | --- |
-| Mixed records exporter | `examples/engine/mixed_finite_records_visual_export.cpp` | in progress | `docs/examples/assets/mixed-records/metric.visual.json` |
-| Cross-space exporter | `examples/engine/cross_space_dependency_visual_export.cpp` | in progress | `docs/examples/assets/cross-space-dependency/metric.visual.json` |
-| Dynamics exporter | `examples/engine/finite_metric_dynamics_visual_export.cpp` | in progress | `docs/examples/assets/dynamics-noise/metric.visual.json` |
-| Relation matrix exporter | not assigned | planned | `docs/examples/assets/relation-matrix/metric.visual.json` |
-| Condition monitoring exporter | not assigned | planned | `docs/examples/assets/condition-monitoring/metric.visual.json` |
-| Mapping/dimensionality exporter | not assigned | planned | `docs/examples/assets/mapping-dimensionality/metric.visual.json` |
+| Mixed records exporter | `examples/engine/mixed_finite_records_visual_export.cpp` | integrated in CMake/CTest | `docs/examples/assets/mixed-records/metric.visual.json` |
+| Cross-space exporter | `examples/engine/cross_space_dependency_visual_export.cpp` | integrated in CMake/CTest | `docs/examples/assets/cross-space-dependency/metric.visual.json` |
+| Dynamics exporter | `examples/engine/finite_metric_dynamics_visual_export.cpp` | integrated in CMake/CTest | `docs/examples/assets/dynamics-noise/metric.visual.json` |
+| Relation matrix exporter | `examples/engine/relation_matrix_visual_export.cpp` | integrated in CMake/CTest | `docs/examples/assets/relation-matrix/metric.visual.json` |
+| Condition monitoring exporter | `examples/engine/condition_monitoring_visual_export.cpp` | ready to assign | `docs/examples/assets/condition-monitoring/metric.visual.json` |
+| Mapping/dimensionality exporter | `examples/engine/mapping_dimensionality_visual_export.cpp` | ready to assign | `docs/examples/assets/mapping-dimensionality/metric.visual.json` |
+
+## Integrated Exporter Tests
+
+The current branch adds native exporter binaries and validation tests:
+
+```bash
+ctest --test-dir build/core -R 'visual_(export|validate)' --output-on-failure
+```
+
+The test pair for each exporter first writes `metric.visual.json` from the C++
+binary and then validates that document through
+`visual/tools/check-visual-document.mjs`. Passing this gate means the exporter is
+native, schema-valid, and indexable. It does not mean the corresponding public
+hero visualization is finished.
 
 ## Acceptance For A Native Exporter
 

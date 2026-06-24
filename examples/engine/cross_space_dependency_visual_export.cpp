@@ -4,9 +4,9 @@
 
 // Native metric.visual.v1 exporter for the Cross-Space Dependency example.
 //
-// This is intentionally self-contained: the existing visual helper is useful for
-// the minimum finite-space shape, but this exporter needs richer provenance,
-// relation metadata, diagnostics, and pair/local contribution properties.
+// This is intentionally self-contained: the visual helper covers common export
+// shapes, but this exporter still needs richer provenance, relation metadata,
+// view hints, and pair/local contribution properties in one isolated source.
 
 #include <algorithm>
 #include <array>
