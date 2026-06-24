@@ -13,7 +13,6 @@
 #include <cmath>
 #include <cstddef>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <limits>
 #include <numeric>
@@ -73,25 +72,6 @@ struct Neighbor {
 	std::size_t index{};
 	double distance{};
 };
-
-auto json_object(const std::vector<std::pair<std::string, std::string>> &fields) -> std::string
-{
-	std::string out = "{";
-	for (std::size_t i = 0; i < fields.size(); ++i) {
-		if (i != 0) {
-			out += ",";
-		}
-		out += visual::quote(fields[i].first);
-		out += ":";
-		out += fields[i].second;
-	}
-	out += "}";
-	return out;
-}
-
-auto json_bool(bool value) -> std::string { return value ? "true" : "false"; }
-
-auto json_size(std::size_t value) -> std::string { return std::to_string(value); }
 
 auto record_id(std::size_t index) -> std::string
 {
@@ -311,12 +291,25 @@ auto block_ranges_json() -> std::string
 	ranges.reserve(families.size());
 	for (std::size_t family_index = 0; family_index < families.size(); ++family_index) {
 		const std::size_t start = family_index * kVariantsPerFamily;
-		ranges.push_back(json_object({{"family", visual::quote(families[family_index].id)},
-									  {"block_label", visual::quote(families[family_index].label)},
-									  {"start", json_size(start)},
-									  {"end_exclusive", json_size(start + kVariantsPerFamily)}}));
+		ranges.push_back(visual::object({visual::string_field("family", families[family_index].id),
+										 visual::string_field("block_label", families[family_index].label),
+										 visual::size_field("start", start),
+										 visual::size_field("end_exclusive", start + kVariantsPerFamily)}));
 	}
 	return visual::array_of(ranges);
+}
+
+auto record_payload_json(const Record &record) -> std::string
+{
+	return visual::object({
+		visual::string_field("kind", "time_series"),
+		visual::number_array_field("series", record.curve),
+		visual::number_field("sample_rate_hz", 1.0),
+		visual::string_field("family", record.family_id),
+		visual::string_field("family_label", record.family_label),
+		visual::size_field("variant_index", record.variant_index),
+		visual::string_field("native_metric_source", "examples/engine/process_curves_space.cpp:AlignedCurveDistance"),
+	});
 }
 
 auto records_json(const std::vector<Record> &records) -> std::string
@@ -324,34 +317,35 @@ auto records_json(const std::vector<Record> &records) -> std::string
 	std::vector<std::string> entries;
 	entries.reserve(records.size());
 	for (const auto &record : records) {
-		const std::string payload = json_object({
-			{"kind", visual::quote("time_series")},
-			{"series", visual::number_array(record.curve)},
-			{"sample_rate_hz", "1"},
-			{"family", visual::quote(record.family_id)},
-			{"family_label", visual::quote(record.family_label)},
-			{"variant_index", json_size(record.variant_index)},
-			{"native_metric_source", visual::quote("examples/engine/process_curves_space.cpp:AlignedCurveDistance")},
-		});
-		entries.push_back(json_object({{"id", visual::quote(record.id)},
-									   {"dataset_id", visual::quote(kDatasetId)},
-									   {"record_type", visual::quote("process_curve")},
-									   {"label", visual::quote(record.label)},
-									   {"payload", payload}}));
+		entries.push_back(visual::object({visual::string_field("id", record.id),
+										  visual::string_field("dataset_id", kDatasetId),
+										  visual::string_field("record_type", "process_curve"),
+										  visual::string_field("label", record.label),
+										  visual::field("payload", record_payload_json(record))}));
 	}
 	return visual::array_of(entries);
+}
+
+auto relation_edges(const std::vector<Record> &records, const Matrix &distances) -> std::vector<visual::Edge>
+{
+	std::vector<visual::Edge> edges;
+	edges.reserve((records.size() * (records.size() - 1)) / 2);
+	for (std::size_t row = 0; row < records.size(); ++row) {
+		for (std::size_t column = row + 1; column < records.size(); ++column) {
+			edges.push_back({records[row].id, records[column].id, distances[row][column]});
+		}
+	}
+	return edges;
 }
 
 auto relation_values_json(const std::vector<Record> &records, const Matrix &distances) -> std::string
 {
 	std::vector<std::string> values;
 	values.reserve((records.size() * (records.size() - 1)) / 2);
-	for (std::size_t row = 0; row < records.size(); ++row) {
-		for (std::size_t column = row + 1; column < records.size(); ++column) {
-			values.push_back(json_object({{"row_id", visual::quote(records[row].id)},
-										  {"column_id", visual::quote(records[column].id)},
-										  {"value", visual::num(distances[row][column])}}));
-		}
+	for (const auto &edge : relation_edges(records, distances)) {
+		values.push_back(visual::object({visual::string_field("row_id", edge.row_id),
+										 visual::string_field("column_id", edge.column_id),
+										 visual::number_field("value", edge.value)}));
 	}
 	return visual::array_of(values);
 }
@@ -361,43 +355,57 @@ auto metric_law_json(const MetricLawDiagnostics &law) -> std::string
 	const bool diagonal_ok = law.diagonal_max_abs <= 1e-10;
 	const bool symmetry_ok = law.symmetry_max_abs <= 1e-10;
 	const bool triangle_ok = law.triangle_max_violation <= 1e-9;
-	return json_object({{"checked", visual::quote("full finite native C++ distance matrix")},
-						{"operator", visual::quote("AlignedCurveDistance")},
-						{"finite", json_bool(law.finite)},
-						{"diagonal_zero", json_bool(diagonal_ok)},
-						{"symmetric", json_bool(symmetry_ok)},
-						{"triangle", json_bool(triangle_ok)},
-						{"diagonal_max_abs", visual::num(law.diagonal_max_abs)},
-						{"symmetry_max_abs", visual::num(law.symmetry_max_abs)},
-						{"triangle_max_violation", visual::num(law.triangle_max_violation)},
-						{"min_nonzero_distance", visual::num(law.min_nonzero_distance)},
-						{"max_distance", visual::num(law.max_distance)},
-						{"mean_distance", visual::num(law.mean_distance)},
-						{"pair_count", json_size(law.pair_count)},
-						{"triangle_triplets", json_size(law.triangle_triplets)}});
+	return visual::object({visual::string_field("checked", "full finite native C++ distance matrix"),
+						   visual::string_field("operator", "AlignedCurveDistance"),
+						   visual::bool_field("finite", law.finite),
+						   visual::bool_field("diagonal_zero", diagonal_ok),
+						   visual::bool_field("symmetric", symmetry_ok),
+						   visual::bool_field("triangle", triangle_ok),
+						   visual::number_field("diagonal_max_abs", law.diagonal_max_abs),
+						   visual::number_field("symmetry_max_abs", law.symmetry_max_abs),
+						   visual::number_field("triangle_max_violation", law.triangle_max_violation),
+						   visual::number_field("min_nonzero_distance", law.min_nonzero_distance),
+						   visual::number_field("max_distance", law.max_distance),
+						   visual::number_field("mean_distance", law.mean_distance),
+						   visual::size_field("pair_count", law.pair_count),
+						   visual::size_field("triangle_triplets", law.triangle_triplets)});
+}
+
+auto relation_metadata_json(const MetricLawDiagnostics &law) -> std::string
+{
+	return visual::object({
+		visual::bool_field("symmetric", true),
+		visual::bool_field("complete_upper_triangle", true),
+		visual::string_field("record_order", "contiguous categorical family blocks"),
+		visual::string_field("storage_note", "upper-triangle pair entries for symmetric dense matrix rendering"),
+		visual::field("block_ranges", block_ranges_json()),
+		visual::field("law_check", metric_law_json(law)),
+	});
 }
 
 auto relation_json(const std::vector<Record> &records, const Matrix &distances, const MetricLawDiagnostics &law)
 	-> std::string
 {
-	const auto ids = record_ids(records);
-	const std::string metadata = json_object({
-		{"symmetric", "true"},
-		{"complete_upper_triangle", "true"},
-		{"record_order", visual::quote("contiguous categorical family blocks")},
-		{"storage_note", visual::quote("upper-triangle pair entries for symmetric dense matrix rendering")},
-		{"block_ranges", block_ranges_json()},
-		{"law_check", metric_law_json(law)},
-	});
-	return json_object({{"id", visual::quote(kRelationId)},
-						{"dataset_id", visual::quote(kDatasetId)},
-						{"name", visual::quote("aligned process-curve metric")},
-						{"relation_type", visual::quote("metric")},
-						{"value_type", visual::quote("scalar")},
-						{"record_ids", visual::string_array(ids)},
-						{"storage", visual::quote("symmetric_dense_matrix")},
-						{"values", relation_values_json(records, distances)},
-						{"metadata", metadata}});
+	return visual::object({visual::string_field("id", kRelationId),
+						   visual::string_field("dataset_id", kDatasetId),
+						   visual::string_field("name", "aligned process-curve metric"),
+						   visual::string_field("relation_type", "metric"),
+						   visual::string_field("value_type", "scalar"),
+						   visual::string_array_field("record_ids", record_ids(records)),
+						   visual::string_field("storage", "symmetric_dense_matrix"),
+						   visual::field("values", relation_values_json(records, distances)),
+						   visual::field("metadata", relation_metadata_json(law))});
+}
+
+auto categorical_values(const std::vector<Record> &records, const std::vector<std::string> &values)
+	-> std::vector<visual::CategoricalValue>
+{
+	std::vector<visual::CategoricalValue> entries;
+	entries.reserve(records.size());
+	for (std::size_t i = 0; i < records.size(); ++i) {
+		entries.push_back({records[i].id, values[i]});
+	}
+	return entries;
 }
 
 auto categorical_property_json(const std::string &id, const std::string &name, const std::vector<Record> &records,
@@ -405,36 +413,45 @@ auto categorical_property_json(const std::string &id, const std::string &name, c
 	-> std::string
 {
 	std::vector<std::string> entries;
+	for (const auto &value : categorical_values(records, values)) {
+		entries.push_back(visual::object({visual::string_field("record_id", value.record_id),
+										  visual::string_field("value", value.value)}));
+	}
+	return visual::object({visual::string_field("id", id),
+						   visual::string_field("dataset_id", kDatasetId),
+						   visual::string_field("name", name),
+						   visual::string_field("target_type", "record"),
+						   visual::string_field("value_type", "categorical"),
+						   visual::field("values", visual::array_of(entries)),
+						   visual::field("metadata", metadata)});
+}
+
+auto scalar_values(const std::vector<Record> &records, const std::vector<double> &values)
+	-> std::vector<visual::ScalarValue>
+{
+	std::vector<visual::ScalarValue> entries;
 	entries.reserve(records.size());
 	for (std::size_t i = 0; i < records.size(); ++i) {
-		entries.push_back(json_object({{"record_id", visual::quote(records[i].id)},
-									   {"value", visual::quote(values[i])}}));
+		entries.push_back({records[i].id, values[i]});
 	}
-	return json_object({{"id", visual::quote(id)},
-						{"dataset_id", visual::quote(kDatasetId)},
-						{"name", visual::quote(name)},
-						{"target_type", visual::quote("record")},
-						{"value_type", visual::quote("categorical")},
-						{"values", visual::array_of(entries)},
-						{"metadata", metadata}});
+	return entries;
 }
 
 auto scalar_property_json(const std::string &id, const std::string &name, const std::vector<Record> &records,
 						  const std::vector<double> &values, const std::string &metadata = "{}") -> std::string
 {
 	std::vector<std::string> entries;
-	entries.reserve(records.size());
-	for (std::size_t i = 0; i < records.size(); ++i) {
-		entries.push_back(json_object({{"record_id", visual::quote(records[i].id)},
-									   {"value", visual::num(values[i])}}));
+	for (const auto &value : scalar_values(records, values)) {
+		entries.push_back(visual::object({visual::string_field("record_id", value.record_id),
+										  visual::number_field("value", value.value)}));
 	}
-	return json_object({{"id", visual::quote(id)},
-						{"dataset_id", visual::quote(kDatasetId)},
-						{"name", visual::quote(name)},
-						{"target_type", visual::quote("record")},
-						{"value_type", visual::quote("scalar")},
-						{"values", visual::array_of(entries)},
-						{"metadata", metadata}});
+	return visual::object({visual::string_field("id", id),
+						   visual::string_field("dataset_id", kDatasetId),
+						   visual::string_field("name", name),
+						   visual::string_field("target_type", "record"),
+						   visual::string_field("value_type", "scalar"),
+						   visual::field("values", visual::array_of(entries)),
+						   visual::field("metadata", metadata)});
 }
 
 auto properties_json(const std::vector<Record> &records) -> std::string
@@ -473,16 +490,15 @@ auto properties_json(const std::vector<Record> &records) -> std::string
 	std::vector<std::string> properties;
 	properties.push_back(categorical_property_json(
 		"process-family", "process family", records, family_values,
-		json_object({{"source", visual::quote("process curve native fixture family")}})));
+		visual::object({visual::string_field("source", "process curve native fixture family")})));
 	properties.push_back(categorical_property_json(
 		"matrix-block-order", "matrix block / order", records, block_order_values,
-		json_object({{"purpose", visual::quote("categorical matrix block labels in exported record order")},
-					 {"block_ranges", block_ranges_json()}})));
+		visual::object({visual::string_field("purpose", "categorical matrix block labels in exported record order"),
+						visual::field("block_ranges", block_ranges_json())})));
 	properties.push_back(scalar_property_json(
 		"matrix-order-index", "matrix order index", records, order_values,
-		json_object({{"purpose", visual::quote("row and column order used by the relation matrix")}})));
-	properties.push_back(scalar_property_json("within-block-order", "within-block order", records,
-											  within_block_values));
+		visual::object({visual::string_field("purpose", "row and column order used by the relation matrix")})));
+	properties.push_back(scalar_property_json("within-block-order", "within-block order", records, within_block_values));
 	properties.push_back(scalar_property_json("curve-mean", "curve mean", records, mean_values));
 	properties.push_back(scalar_property_json("curve-peak", "curve peak", records, peak_values));
 	properties.push_back(scalar_property_json("curve-total-variation", "curve total variation", records,
@@ -512,37 +528,46 @@ auto nearest_neighbors(const Matrix &distances, std::size_t row, std::size_t k) 
 	return candidates;
 }
 
-auto graph_json(const std::vector<Record> &records, const Matrix &distances) -> std::string
+auto graph_edges(const std::vector<Record> &records, const Matrix &distances) -> std::vector<visual::GraphEdge>
 {
-	const auto ids = record_ids(records);
-	std::vector<std::string> edges;
+	std::vector<visual::GraphEdge> edges;
 	edges.reserve(records.size() * kNearestNeighbors);
 	for (std::size_t row = 0; row < records.size(); ++row) {
 		for (const auto &neighbor : nearest_neighbors(distances, row, kNearestNeighbors)) {
-			edges.push_back(json_object({{"source", visual::quote(records[row].id)},
-										 {"target", visual::quote(records[neighbor.index].id)},
-										 {"value", visual::num(neighbor.distance)},
-										 {"weight", visual::num(neighbor.distance)}}));
+			edges.push_back({records[row].id, records[neighbor.index].id, neighbor.distance});
 		}
 	}
-	const std::string graph = json_object({
-		{"id", visual::quote(kGraphId)},
-		{"dataset_id", visual::quote(kDatasetId)},
-		{"node_record_ids", visual::string_array(ids)},
-		{"edge_relation_id", visual::quote(kRelationId)},
-		{"graph_type", visual::quote("k-nearest graph")},
-		{"edges", visual::array_of(edges)},
-		{"metadata", json_object({{"neighbors_per_record", json_size(kNearestNeighbors)},
-								   {"directed", "true"},
-								   {"edge_source", visual::quote("native aligned process-curve metric")}})},
-	});
-	return visual::array_of({graph});
+	return edges;
 }
 
-auto coordinates_json(const std::vector<Record> &records) -> std::string
+auto graph_json(const std::vector<Record> &records, const Matrix &distances) -> std::string
+{
+	std::vector<std::string> edges;
+	edges.reserve(records.size() * kNearestNeighbors);
+	for (const auto &edge : graph_edges(records, distances)) {
+		edges.push_back(visual::object({visual::string_field("source", edge.source_id),
+										visual::string_field("target", edge.target_id),
+										visual::number_field("value", edge.weight),
+										visual::number_field("weight", edge.weight)}));
+	}
+	return visual::array_of({visual::object({
+		visual::string_field("id", kGraphId),
+		visual::string_field("dataset_id", kDatasetId),
+		visual::string_array_field("node_record_ids", record_ids(records)),
+		visual::string_field("edge_relation_id", kRelationId),
+		visual::string_field("graph_type", "k-nearest graph"),
+		visual::field("edges", visual::array_of(edges)),
+		visual::field("metadata", visual::object({visual::size_field("neighbors_per_record", kNearestNeighbors),
+												  visual::bool_field("directed", true),
+												  visual::string_field("edge_source",
+																	   "native aligned process-curve metric")})),
+	})});
+}
+
+auto coordinates(const std::vector<Record> &records) -> std::vector<visual::Position>
 {
 	const std::size_t family_count = family_templates().size();
-	std::vector<std::string> positions;
+	std::vector<visual::Position> positions;
 	positions.reserve(records.size());
 	for (const auto &record : records) {
 		const double family_unit = family_count <= 1 ? 0.0
@@ -559,60 +584,75 @@ auto coordinates_json(const std::vector<Record> &records) -> std::string
 			0.55 * static_cast<double>(record.family_index),
 			radius * std::sin(angle) + 0.12 * curve_mean(record.curve),
 		};
-		positions.push_back(json_object({{"record_id", visual::quote(record.id)},
-										 {"position", visual::number_array(position)}}));
+		positions.push_back({record.id, position});
 	}
+	return positions;
+}
 
-	const std::string coordinate = json_object({
-		{"id", visual::quote(kCoordinateId)},
-		{"dataset_id", visual::quote(kDatasetId)},
-		{"space_id", visual::quote(kSpaceId)},
-		{"name", visual::quote("deterministic block visualization layout")},
-		{"dimension", "3"},
-		{"record_positions", visual::array_of(positions)},
-		{"metadata", json_object({{"layout_source", visual::quote("deterministic C++ family/order layout")},
-								   {"visualization_layout", "true"},
-								   {"metric_embedding", "false"},
-								   {"note", visual::quote("Coordinates are for graph and block inspection only; metric values come from the exported relation.")}})},
+auto coordinates_json(const std::vector<Record> &records) -> std::string
+{
+	std::vector<std::string> positions;
+	for (const auto &position : coordinates(records)) {
+		positions.push_back(visual::object({visual::string_field("record_id", position.record_id),
+											visual::number_array_field("position", position.position)}));
+	}
+	return visual::array_of({visual::object({
+		visual::string_field("id", kCoordinateId),
+		visual::string_field("dataset_id", kDatasetId),
+		visual::string_field("space_id", kSpaceId),
+		visual::string_field("name", "deterministic block visualization layout"),
+		visual::size_field("dimension", 3),
+		visual::field("record_positions", visual::array_of(positions)),
+		visual::field("metadata",
+					  visual::object({
+						  visual::string_field("layout_source", "deterministic C++ family/order layout"),
+						  visual::bool_field("visualization_layout", true),
+						  visual::bool_field("metric_embedding", false),
+						  visual::string_field(
+							  "note",
+							  "Coordinates are for graph and block inspection only; metric values come from the exported relation."),
+					  })),
+	})});
+}
+
+auto diagnostic_payload_json(const std::vector<Record> &records, const MetricLawDiagnostics &law) -> std::string
+{
+	return visual::object({
+		visual::size_field("record_count", records.size()),
+		visual::size_field("family_count", family_templates().size()),
+		visual::size_field("variants_per_family", kVariantsPerFamily),
+		visual::size_field("relation_pair_count", law.pair_count),
+		visual::size_field("knn_edge_count", records.size() * kNearestNeighbors),
+		visual::string_field("native_source", "examples/engine/process_curves_space.cpp"),
+		visual::string_field("metric_operator", "AlignedCurveDistance"),
+		visual::field("metric_law", metric_law_json(law)),
+		visual::string_field("record_order", "records are emitted contiguously by process family block"),
 	});
-	return visual::array_of({coordinate});
 }
 
 auto diagnostics_json(const std::vector<Record> &records, const MetricLawDiagnostics &law) -> std::string
 {
-	const std::string payload = json_object({
-		{"record_count", json_size(records.size())},
-		{"family_count", json_size(family_templates().size())},
-		{"variants_per_family", json_size(kVariantsPerFamily)},
-		{"relation_pair_count", json_size(law.pair_count)},
-		{"knn_edge_count", json_size(records.size() * kNearestNeighbors)},
-		{"native_source", visual::quote("examples/engine/process_curves_space.cpp")},
-		{"metric_operator", visual::quote("AlignedCurveDistance")},
-		{"metric_law", metric_law_json(law)},
-		{"record_order", visual::quote("records are emitted contiguously by process family block")},
-	});
-	const std::string diagnostic = json_object({{"id", visual::quote("relation-matrix-native-summary")},
-											   {"dataset_id", visual::quote(kDatasetId)},
-											   {"diagnostic_type", visual::quote("native-export-summary")},
-											   {"payload", payload}});
-	return visual::array_of({diagnostic});
+	return visual::array_of({visual::object({visual::string_field("id", "relation-matrix-native-summary"),
+											 visual::string_field("dataset_id", kDatasetId),
+											 visual::string_field("diagnostic_type", "native-export-summary"),
+											 visual::field("payload", diagnostic_payload_json(records, law))})});
 }
 
 auto views_json() -> std::string
 {
 	return visual::array_of({
-		json_object({{"id", visual::quote("process-curve-relation-matrix-view")},
-					 {"kind", visual::quote("relation-matrix")},
-					 {"name", visual::quote("Aligned process-curve distance matrix")},
-					 {"relationId", visual::quote(kRelationId)}}),
-		json_object({{"id", visual::quote("process-curve-neighborhood-view")},
-					 {"kind", visual::quote("neighborhood-graph")},
-					 {"name", visual::quote("Process-curve k-nearest graph")},
-					 {"spaceId", visual::quote(kSpaceId)},
-					 {"relationId", visual::quote(kRelationId)},
-					 {"graphId", visual::quote(kGraphId)},
-					 {"coordinateId", visual::quote(kCoordinateId)},
-					 {"colorPropertyId", visual::quote("matrix-block-order")}}),
+		visual::object({visual::string_field("id", "process-curve-relation-matrix-view"),
+						visual::string_field("kind", "relation-matrix"),
+						visual::string_field("name", "Aligned process-curve distance matrix"),
+						visual::string_field("relationId", kRelationId)}),
+		visual::object({visual::string_field("id", "process-curve-neighborhood-view"),
+						visual::string_field("kind", "neighborhood-graph"),
+						visual::string_field("name", "Process-curve k-nearest graph"),
+						visual::string_field("spaceId", kSpaceId),
+						visual::string_field("relationId", kRelationId),
+						visual::string_field("graphId", kGraphId),
+						visual::string_field("coordinateId", kCoordinateId),
+						visual::string_field("colorPropertyId", "matrix-block-order")}),
 	});
 }
 
@@ -623,38 +663,47 @@ auto build_visual_document() -> std::string
 	const auto law = diagnose_metric_law(distances);
 	const auto ids = record_ids(records);
 
-	return json_object({
-		{"schema", visual::quote("metric.visual.v1")},
-		{"provenance", json_object({{"writer", visual::quote("examples/engine/relation_matrix_visual_export.cpp")},
-									{"writer_language", visual::quote("C++17")},
-									{"computation", visual::quote("native C++")},
-									{"native_export", "true"},
-									{"synthetic", "false"},
-									{"source_example", visual::quote("examples/engine/process_curves_space.cpp")},
-									{"status", visual::quote("relation_matrix_export_foundation")}})},
-		{"datasets", visual::array_of({json_object({{"id", visual::quote(kDatasetId)},
-													 {"title", visual::quote("Process Curve Relation Matrix")},
-													 {"description", visual::quote("Native C++ process-curve gallery ordered by family block for relation matrix and nearest-neighbor graph rendering.")},
-													 {"source", visual::quote("examples/engine/process_curves_space.cpp deterministic native fixture expansion")},
-													 {"license", visual::quote("MPL-2.0")}})})},
-		{"records", records_json(records)},
-		{"relations", visual::array_of({relation_json(records, distances, law)})},
-		{"spaces", visual::array_of({json_object({{"id", visual::quote(kSpaceId)},
-												   {"dataset_id", visual::quote(kDatasetId)},
-												   {"record_ids", visual::string_array(ids)},
-												   {"primary_relation_id", visual::quote(kRelationId)},
-												   {"space_type", visual::quote("finite_metric_space")},
-												   {"metadata", json_object({{"record_count", json_size(records.size())},
-																			 {"metric_operator", visual::quote("AlignedCurveDistance")},
-																			 {"record_order", visual::quote("family block order")},
-																			 {"block_ranges", block_ranges_json()}})}})})},
-		{"properties", properties_json(records)},
-		{"graphs", graph_json(records, distances)},
-		{"coordinates", coordinates_json(records)},
-		{"timelines", "[]"},
-		{"events", "[]"},
-		{"views", views_json()},
-		{"diagnostics", diagnostics_json(records, law)},
+	return visual::object({
+		visual::string_field("schema", "metric.visual.v1"),
+		visual::field("provenance", visual::object({visual::string_field("writer", "examples/engine/relation_matrix_visual_export.cpp"),
+													visual::string_field("writer_language", "C++17"),
+													visual::string_field("computation", "native C++"),
+													visual::bool_field("native_export", true),
+													visual::bool_field("synthetic", false),
+													visual::string_field("source_example", "examples/engine/process_curves_space.cpp"),
+													visual::string_field("status", "relation_matrix_export_foundation")})),
+		visual::field("datasets", visual::array_of({visual::object({
+									  visual::string_field("id", kDatasetId),
+									  visual::string_field("title", "Process Curve Relation Matrix"),
+									  visual::string_field(
+										  "description",
+										  "Native C++ process-curve gallery ordered by family block for relation matrix and nearest-neighbor graph rendering."),
+									  visual::string_field(
+										  "source",
+										  "examples/engine/process_curves_space.cpp deterministic native fixture expansion"),
+									  visual::string_field("license", "MPL-2.0"),
+								  })})),
+		visual::field("records", records_json(records)),
+		visual::field("relations", visual::array_of({relation_json(records, distances, law)})),
+		visual::field("spaces", visual::array_of({visual::object({
+									  visual::string_field("id", kSpaceId),
+									  visual::string_field("dataset_id", kDatasetId),
+									  visual::string_array_field("record_ids", ids),
+									  visual::string_field("primary_relation_id", kRelationId),
+									  visual::string_field("space_type", "finite_metric_space"),
+									  visual::field("metadata",
+													visual::object({visual::size_field("record_count", records.size()),
+																	visual::string_field("metric_operator", "AlignedCurveDistance"),
+																	visual::string_field("record_order", "family block order"),
+																	visual::field("block_ranges", block_ranges_json())})),
+								  })})),
+		visual::field("properties", properties_json(records)),
+		visual::field("graphs", graph_json(records, distances)),
+		visual::field("coordinates", coordinates_json(records)),
+		visual::field("timelines", "[]"),
+		visual::field("events", "[]"),
+		visual::field("views", views_json()),
+		visual::field("diagnostics", diagnostics_json(records, law)),
 	});
 }
 
@@ -688,20 +737,17 @@ int main(int argc, char **argv)
 			}
 		}
 
-		const std::string json = build_visual_document();
+		const std::string document = build_visual_document();
 		if (export_dir.empty()) {
-			std::cout << json << '\n';
+			std::cout << document << '\n';
 			return 0;
 		}
 
 		const std::filesystem::path directory(export_dir);
-		std::filesystem::create_directories(directory);
 		const std::filesystem::path output_path = directory / "metric.visual.json";
-		std::ofstream out(output_path);
-		if (!out) {
-			throw std::runtime_error("failed to open export output: " + output_path.string());
+		if (!visual::write_metric_visual_file(directory, document + "\n")) {
+			throw std::runtime_error("failed to write export output: " + output_path.string());
 		}
-		out << json << '\n';
 		return 0;
 	} catch (const std::exception &error) {
 		std::cerr << "relation_matrix_visual_export: " << error.what() << '\n';

@@ -15,7 +15,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <limits>
 #include <sstream>
@@ -38,22 +37,17 @@ using Matrix = std::vector<std::vector<double>>;
 
 auto json_object(const std::vector<std::pair<std::string, std::string>> &fields) -> std::string
 {
-	std::string out = "{";
-	for (std::size_t i = 0; i < fields.size(); ++i) {
-		if (i != 0) {
-			out += ",";
-		}
-		out += visual::quote(fields[i].first);
-		out += ":";
-		out += fields[i].second;
+	std::vector<visual::Field> visual_fields;
+	visual_fields.reserve(fields.size());
+	for (const auto &field : fields) {
+		visual_fields.push_back(visual::field(field.first, field.second));
 	}
-	out += "}";
-	return out;
+	return visual::object(visual_fields);
 }
 
-auto json_bool(bool value) -> std::string { return value ? "true" : "false"; }
+auto json_bool(bool value) -> std::string { return visual::boolean(value); }
 
-auto json_size(std::size_t value) -> std::string { return std::to_string(value); }
+auto json_size(std::size_t value) -> std::string { return visual::size(value); }
 
 auto node_id(std::size_t i) -> std::string
 {
@@ -177,12 +171,7 @@ auto dense_matrix_json(const Matrix &matrix) -> std::string
 
 auto integer_array_json(const std::vector<std::size_t> &values) -> std::string
 {
-	std::vector<std::string> items;
-	items.reserve(values.size());
-	for (const auto value : values) {
-		items.push_back(std::to_string(value));
-	}
-	return visual::array_of(items);
+	return visual::size_array(values);
 }
 
 auto scalar_record_property(const std::string &id, const std::string &dataset_id, const std::string &name,
@@ -918,19 +907,42 @@ auto build_visual_document() -> std::string
 		 {"native_check_count", json_size(diagnostics.size())},
 		 {"schema_note", visual::quote("Native export foundation; no public hero readiness claimed.")}});
 
-	return json_object({{"schema", visual::quote("metric.visual.v1")},
-						{"provenance", provenance},
-						{"datasets", visual::array_of(datasets)},
-						{"records", visual::array_of(records_json)},
-						{"relations", visual::array_of(relations)},
-						{"spaces", visual::array_of(spaces)},
-						{"properties", visual::array_of(properties)},
-						{"graphs", visual::array_of(graphs)},
-						{"coordinates", visual::array_of(coordinates)},
-						{"timelines", visual::array_of(timelines)},
-						{"events", visual::array_of(events)},
-						{"views", visual::array_of(views)},
-						{"diagnostics", visual::array_of(diagnostics)}});
+	visual::Document document;
+	document.provenance_json(provenance);
+	for (const auto &dataset : datasets) {
+		document.dataset_json(dataset);
+	}
+	for (const auto &record : records_json) {
+		document.record_json(record);
+	}
+	for (const auto &relation : relations) {
+		document.relation_json(relation);
+	}
+	for (const auto &space : spaces) {
+		document.space_json(space);
+	}
+	for (const auto &property : properties) {
+		document.property_json(property);
+	}
+	for (const auto &graph : graphs) {
+		document.graph_json(graph);
+	}
+	for (const auto &coordinate : coordinates) {
+		document.coordinates_json(coordinate);
+	}
+	for (const auto &timeline : timelines) {
+		document.timeline_json(timeline);
+	}
+	for (const auto &event : events) {
+		document.event_json(event);
+	}
+	for (const auto &view : views) {
+		document.view_json(view);
+	}
+	for (const auto &diagnostic : diagnostics) {
+		document.diagnostic_json(diagnostic);
+	}
+	return document.to_json();
 }
 
 auto usage(const char *program) -> std::string
@@ -972,21 +984,8 @@ int main(int argc, char **argv)
 	}
 
 	const std::filesystem::path output_dir(export_dir);
-	std::error_code ec;
-	std::filesystem::create_directories(output_dir, ec);
-	if (ec) {
-		std::cerr << "Failed to create export directory " << output_dir << ": " << ec.message() << "\n";
-		return 1;
-	}
-
 	const auto output_path = output_dir / "metric.visual.json";
-	std::ofstream out(output_path);
-	if (!out) {
-		std::cerr << "Failed to open " << output_path << " for writing\n";
-		return 1;
-	}
-	out << document << "\n";
-	if (!out) {
+	if (!visual::write_metric_visual_file(output_dir, document + "\n")) {
 		std::cerr << "Failed to write " << output_path << "\n";
 		return 1;
 	}

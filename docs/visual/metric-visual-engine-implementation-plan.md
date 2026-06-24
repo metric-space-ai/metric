@@ -878,9 +878,11 @@ Current status:
 - `visual/tools/check-cpp-export.mjs` compiles and validates the standalone
   helper example.
 - The six native visual exporters are schema-valid and CTest-integrated.
-- Exporter writer reuse is incomplete: each exporter still needs a
-  single-exporter refactor toward `mtrc::visual` before the native export layer
-  can be called production-ready.
+- Exporter writer reuse is incomplete. Finite dynamics and relation matrix now
+  use the shared `mtrc::visual` writer path for common JSON/root/file writing.
+  Condition monitoring, mixed records, cross-space dependency and
+  mapping/dimensionality still need single-exporter refactors before the native
+  export layer can be called production-ready.
 
 Execution contract:
 

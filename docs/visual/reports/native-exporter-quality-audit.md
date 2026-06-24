@@ -73,7 +73,8 @@ Follow-up required before the exporter layer can be called production-ready:
 - Consolidate exporter-local JSON/document/file writer code through
   `visual/cpp/mtrc_visual.hpp`. The helper foundation now exists, but the six
   integrated exporters still use a mix of local writers and partial helper
-  calls.
+  calls. Two exporter slices have been migrated so far: finite dynamics and
+  relation matrix.
 - Normalize provenance field names across exporters before public asset
   generation. Current exporters consistently avoid `provenance.synthetic:true`,
   but some use additional fields such as `synthetic_js:false`.
@@ -91,9 +92,9 @@ The exporter wave is evidence-valid, but writer reuse is incomplete:
 | `condition_monitoring_visual_export.cpp` | Own quote/number/array/object/root/file writers |
 | `mixed_finite_records_visual_export.cpp` | Own complete JSON writer |
 | `cross_space_dependency_visual_export.cpp` | Own stream writer despite the visual-helper comment |
-| `finite_metric_dynamics_visual_export.cpp` | Uses helper primitives, but owns root/timeline/view/file output |
+| `finite_metric_dynamics_visual_export.cpp` | Migrated: common object/size/bool/array/root/event/file writing flows through `mtrc::visual`; exporter keeps domain-specific raw evidence composition |
 | `mapping_dimensionality_visual_export.cpp` | Uses helper primitives, but owns object/relation/property/root output |
-| `relation_matrix_visual_export.cpp` | Uses helper primitives, but owns matrix/graph/root output |
+| `relation_matrix_visual_export.cpp` | Migrated: local quote/number/object/file stack removed; common writing flows through `mtrc::visual`; graph keeps raw source/target/value semantics |
 
 The executable follow-up contract is:
 

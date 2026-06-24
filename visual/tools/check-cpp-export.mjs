@@ -84,9 +84,19 @@ function main() {
     recordCount,
     coordinateCount: document.coordinates.length,
     relationCount: document.relations.length,
+    timelineCount: document.timelines.length,
+    eventCount: document.events.length,
+    viewCount: document.views.length,
+    rawAppendCoverage: {
+      timelines: document.timelines.length === 1,
+      events: document.events.length === 1,
+      views: document.views.length === 1,
+    },
     relationValueLookup: relationValue,
   }, null, 2));
-  if (!ok) process.exitCode = 1;
+  if (!ok || document.timelines.length !== 1 || document.events.length !== 1 || document.views.length !== 1) {
+    process.exitCode = 1;
+  }
 }
 
 main();

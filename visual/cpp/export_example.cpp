@@ -78,6 +78,9 @@ int main() {
                                                              string_field("coordinate_id", "landmark-3d"),
                                                              string_field("property_id", "entropy"),
                                                              string_field("relation_id", "metric")})}))}));
+  doc.event_json(object({string_field("id", "export-complete"), string_field("dataset_id", ds),
+                         string_field("event_type", "export_check"),
+                         field("payload", object({size_field("records", ids.size()), bool_field("native_cpp", true)}))}));
   doc.view_json(object({string_field("id", "metric-space-view"), string_field("kind", "metric-space"),
                         string_field("spaceId", "space"), string_field("coordinateId", "landmark-3d"),
                         string_field("propertyId", "entropy")}));

@@ -67,7 +67,10 @@ Current status:
 
 - `visual/cpp/mtrc_visual.hpp` provides the header-only C++17 writer foundation.
 - `visual/tools/check-cpp-export.mjs` validates the standalone C++ helper path.
-- The six native exporters still need a follow-up refactor wave so common
+- `finite_metric_dynamics_visual_export.cpp` and
+  `relation_matrix_visual_export.cpp` now route common JSON/root/file writing
+  through `mtrc::visual`.
+- The remaining native exporters still need a follow-up refactor wave so common
   JSON/document/file writing flows through `mtrc::visual` instead of
   exporter-local helpers.
 

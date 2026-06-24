@@ -25,6 +25,7 @@
 #include <locale>
 #include <sstream>
 #include <string>
+#include <system_error>
 #include <vector>
 
 namespace mtrc {
@@ -175,6 +176,13 @@ inline bool write_file(const std::filesystem::path& path, const std::string& con
   return static_cast<bool>(out);
 }
 
+inline bool write_metric_visual_file(const std::filesystem::path& export_dir, const std::string& contents) {
+  std::error_code ec;
+  std::filesystem::create_directories(export_dir, ec);
+  if (ec) return false;
+  return write_file(export_dir / "metric.visual.json", contents);
+}
+
 // Build a JSON object payload for a record. Callers may compose their own.
 inline std::string vector_payload(const std::vector<double>& values) {
   return object({string_field("kind", "vector"), number_array_field("values", values)});
@@ -219,11 +227,21 @@ struct GraphEdge {
 
 class Document {
  public:
+  Document& provenance_json(const std::string& provenance_json) {
+    provenance_ = metadata_or_empty(provenance_json);
+    return *this;
+  }
+
   Document& dataset(const std::string& id, const std::string& title, const std::string& description,
                     const std::string& source, const std::string& license) {
     datasets_.push_back(object({string_field("id", id), string_field("title", title),
                                 string_field("description", description), string_field("source", source),
                                 string_field("license", license)}));
+    return *this;
+  }
+
+  Document& dataset_json(const std::string& dataset_json) {
+    datasets_.push_back(dataset_json);
     return *this;
   }
 
@@ -233,6 +251,11 @@ class Document {
     records_.push_back(object({string_field("id", id), string_field("dataset_id", dataset_id),
                                string_field("record_type", record_type), string_field("label", label),
                                field("payload", payload_json), field("metadata", metadata_or_empty(metadata_json))}));
+    return *this;
+  }
+
+  Document& record_json(const std::string& record_json) {
+    records_.push_back(record_json);
     return *this;
   }
 
@@ -254,6 +277,11 @@ class Document {
     return *this;
   }
 
+  Document& relation_json(const std::string& relation_json) {
+    relations_.push_back(relation_json);
+    return *this;
+  }
+
   Document& space(const std::string& id, const std::string& dataset_id, const std::vector<std::string>& record_ids,
                   const std::string& primary_relation_id, const std::string& space_type,
                   const std::string& metadata_json = "{}") {
@@ -262,6 +290,11 @@ class Document {
                               string_field("primary_relation_id", primary_relation_id),
                               string_field("space_type", space_type),
                               field("metadata", metadata_or_empty(metadata_json))}));
+    return *this;
+  }
+
+  Document& space_json(const std::string& space_json) {
+    spaces_.push_back(space_json);
     return *this;
   }
 
@@ -276,6 +309,11 @@ class Document {
                                   string_field("name", name), string_field("target_type", "record"),
                                   string_field("value_type", "scalar"), field("values", array_of(entries)),
                                   field("metadata", metadata_or_empty(metadata_json))}));
+    return *this;
+  }
+
+  Document& property_json(const std::string& property_json) {
+    properties_.push_back(property_json);
     return *this;
   }
 
@@ -315,6 +353,11 @@ class Document {
     return coordinates(id, dataset_id, space_id, name, 3, positions, metadata_json);
   }
 
+  Document& coordinates_json(const std::string& coordinates_json) {
+    coordinates_.push_back(coordinates_json);
+    return *this;
+  }
+
   Document& graph(const std::string& id, const std::string& dataset_id, const std::vector<std::string>& node_record_ids,
                   const std::string& edge_relation_id, const std::string& graph_type,
                   const std::vector<GraphEdge>& edges, const std::string& metadata_json = "{}") {
@@ -332,10 +375,20 @@ class Document {
     return *this;
   }
 
+  Document& graph_json(const std::string& graph_json) {
+    graphs_.push_back(graph_json);
+    return *this;
+  }
+
   Document& diagnostic(const std::string& id, const std::string& dataset_id, const std::string& kind,
                        const std::string& payload_json) {
     diagnostics_.push_back(object({string_field("id", id), string_field("dataset_id", dataset_id),
                                    string_field("diagnostic_type", kind), field("payload", payload_json)}));
+    return *this;
+  }
+
+  Document& diagnostic_json(const std::string& diagnostic_json) {
+    diagnostics_.push_back(diagnostic_json);
     return *this;
   }
 
@@ -346,6 +399,11 @@ class Document {
 
   Document& timeline_json(const std::string& timeline_json) {
     timelines_.push_back(timeline_json);
+    return *this;
+  }
+
+  Document& event_json(const std::string& event_json) {
+    events_.push_back(event_json);
     return *this;
   }
 
@@ -361,8 +419,12 @@ class Document {
     return write_file(std::filesystem::path(path));
   }
 
+  bool write_metric_visual_file(const std::filesystem::path& export_dir) const {
+    return mtrc::visual::write_metric_visual_file(export_dir, to_json());
+  }
+
   std::string to_json() const {
-    std::string out = "{\"schema\":\"metric.visual.v1\",\"provenance\":{\"writer\":\"mtrc::visual\"}";
+    std::string out = "{\"schema\":\"metric.visual.v1\",\"provenance\":" + provenance_;
     out += ",\"datasets\":" + array_of(datasets_);
     out += ",\"records\":" + array_of(records_);
     out += ",\"relations\":" + array_of(relations_);
@@ -371,7 +433,7 @@ class Document {
     out += ",\"graphs\":" + array_of(graphs_);
     out += ",\"coordinates\":" + array_of(coordinates_);
     out += ",\"timelines\":" + array_of(timelines_);
-    out += ",\"events\":[]";
+    out += ",\"events\":" + array_of(events_);
     out += ",\"views\":" + array_of(views_);
     out += ",\"diagnostics\":" + array_of(diagnostics_);
     out += "}";
@@ -379,8 +441,9 @@ class Document {
   }
 
  private:
+  std::string provenance_{object({string_field("writer", "mtrc::visual")})};
   std::vector<std::string> datasets_, records_, relations_, spaces_, properties_, graphs_, coordinates_, timelines_,
-      views_, diagnostics_;
+      events_, views_, diagnostics_;
 };
 
 }  // namespace visual
