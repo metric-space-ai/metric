@@ -66,6 +66,12 @@ function includesExampleReference(text, name) {
     || text.includes(`../../visual/examples/${name}/`);
 }
 
+async function exampleLoadsLocalSyntheticEvidence(name) {
+  const index = await maybeRead(resolve(EXAMPLES, name, "index.html"));
+  return /fetch\(\s*["']\.\/evidence\.json["']\s*\)/.test(index)
+    || /const\s+FIXTURE_URL\s*=\s*["']\.\/evidence\.json["']/.test(index);
+}
+
 async function main() {
   const issues = [];
   const site = await maybeRead(SITE);
@@ -85,7 +91,12 @@ async function main() {
   }
 
   const synthetic = await syntheticExamples();
-  const publicSynthetic = synthetic.filter((name) => includesExampleReference(site, name));
+  const publicSynthetic = [];
+  for (const name of synthetic) {
+    if (includesExampleReference(site, name) && await exampleLoadsLocalSyntheticEvidence(name)) {
+      publicSynthetic.push(name);
+    }
+  }
   for (const name of publicSynthetic) {
     issues.push({
       code: "synthetic_example_on_public_site",

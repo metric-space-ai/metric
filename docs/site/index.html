@@ -7,6 +7,7 @@
       name="description"
       content="METRIC is a native C++ framework for computing with finite metric spaces over records such as images, curves, strings, histograms, graphs, and mixed observations."
     />
+    <link rel="icon" href="data:," />
     <title>METRIC | Finite metric-space computing</title>
     <style>
       :root {
@@ -328,6 +329,55 @@
         text-decoration: none;
       }
 
+      .portfolio-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .portfolio-item {
+        overflow: hidden;
+        border: 1px solid color-mix(in oklch, var(--ink), transparent 84%);
+        background: color-mix(in oklch, var(--panel), transparent 4%);
+      }
+
+      .portfolio-frame {
+        aspect-ratio: 16 / 10;
+        min-height: 280px;
+        overflow: hidden;
+        background: oklch(0.88 0.020 130);
+      }
+
+      .portfolio-frame iframe {
+        height: 100%;
+        min-height: 100%;
+        border: 0;
+      }
+
+      .portfolio-copy {
+        display: grid;
+        gap: 12px;
+        padding: 18px;
+      }
+
+      .portfolio-copy h3 {
+        margin: 0;
+        font-size: clamp(22px, 2.4vw, 34px);
+        line-height: 1;
+      }
+
+      .portfolio-copy p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .portfolio-copy pre {
+        padding: 14px;
+        font-size: 11px;
+      }
+
       .concept-grid,
       .planned-grid {
         display: grid;
@@ -373,6 +423,7 @@
         .section-head,
         .example,
         .example:nth-child(even),
+        .portfolio-grid,
         .concept-grid,
         .planned-grid {
           grid-template-columns: 1fr;
@@ -465,8 +516,8 @@
               <h2>Examples</h2>
             </div>
             <p>
-              Finite metric spaces over images and process curves, shown with the
-              code path that produces the evidence.
+              Live views backed by native METRIC evidence. The browser renders;
+              C++ computes the records, relations, properties and coordinates.
             </p>
           </div>
 
@@ -499,6 +550,122 @@
                 </div>
               </div>
             </article>
+
+            <div class="portfolio-grid" aria-label="Native visual portfolio">
+              <article class="portfolio-item">
+                <div class="portfolio-frame">
+                  <iframe
+                    title="Condition-monitoring native visual"
+                    src="../../visual/examples/condition-monitoring-hero/index.html"
+                    loading="lazy"></iframe>
+                </div>
+                <div class="portfolio-copy">
+                  <h3>Condition monitoring</h3>
+                  <p>TWED process-state evidence with anomaly severity, local density and diagnosis labels.</p>
+                  <pre><code>engine_condition_monitoring_visual_export \
+  --export-dir docs/examples/assets/condition-monitoring</code></pre>
+                  <div class="links">
+                    <a href="../../visual/examples/condition-monitoring-hero/index.html">open visual</a>
+                    <a href="../../examples/engine/condition_monitoring_visual_export.cpp">C++ source</a>
+                  </div>
+                </div>
+              </article>
+
+              <article class="portfolio-item">
+                <div class="portfolio-frame">
+                  <iframe
+                    title="Mixed-record native visual"
+                    src="../../visual/examples/mixed-record-hero/index.html"
+                    loading="lazy"></iframe>
+                </div>
+                <div class="portfolio-copy">
+                  <h3>Mixed records</h3>
+                  <p>Composed records compared by a native composite metric, rendered as typed glyphs and neighbor edges.</p>
+                  <pre><code>engine_mixed_finite_records_visual_export \
+  --export-dir docs/examples/assets/mixed-records</code></pre>
+                  <div class="links">
+                    <a href="../../visual/examples/mixed-record-hero/index.html">open visual</a>
+                    <a href="../../examples/engine/mixed_finite_records_visual_export.cpp">C++ source</a>
+                  </div>
+                </div>
+              </article>
+
+              <article class="portfolio-item">
+                <div class="portfolio-frame">
+                  <iframe
+                    title="Cross-space dependence native visual"
+                    src="../../visual/examples/cross-space-dependency-hero/index.html"
+                    loading="lazy"></iframe>
+                </div>
+                <div class="portfolio-copy">
+                  <h3>Cross-space dependence</h3>
+                  <p>Two paired finite spaces with exported local dependence contribution and bridge evidence.</p>
+                  <pre><code>engine_cross_space_dependency_visual_export \
+  --export-dir docs/examples/assets/cross-space-dependency</code></pre>
+                  <div class="links">
+                    <a href="../../visual/examples/cross-space-dependency-hero/index.html">open visual</a>
+                    <a href="../../examples/engine/cross_space_dependency_visual_export.cpp">C++ source</a>
+                  </div>
+                </div>
+              </article>
+
+              <article class="portfolio-item">
+                <div class="portfolio-frame">
+                  <iframe
+                    title="Relation matrix native visual"
+                    src="../../visual/examples/relation-matrix-neighborhood/index.html"
+                    loading="lazy"></iframe>
+                </div>
+                <div class="portfolio-copy">
+                  <h3>Relation matrix</h3>
+                  <p>A native pair-value relation shown as a dense matrix and a linked neighborhood graph.</p>
+                  <pre><code>engine_relation_matrix_visual_export \
+  --export-dir docs/examples/assets/relation-matrix</code></pre>
+                  <div class="links">
+                    <a href="../../visual/examples/relation-matrix-neighborhood/index.html">open visual</a>
+                    <a href="../../examples/engine/relation_matrix_visual_export.cpp">C++ source</a>
+                  </div>
+                </div>
+              </article>
+
+              <article class="portfolio-item">
+                <div class="portfolio-frame">
+                  <iframe
+                    title="Dynamics native visual"
+                    src="../../visual/examples/dynamics-noise-hero/index.html"
+                    loading="lazy"></iframe>
+                </div>
+                <div class="portfolio-copy">
+                  <h3>Dynamics</h3>
+                  <p>Forward diffusion and reverse reconstruction over exported metric-space coordinate states.</p>
+                  <pre><code>engine_finite_metric_dynamics_visual_export \
+  --export-dir docs/examples/assets/dynamics-noise</code></pre>
+                  <div class="links">
+                    <a href="../../visual/examples/dynamics-noise-hero/index.html">open visual</a>
+                    <a href="../../examples/engine/finite_metric_dynamics_visual_export.cpp">C++ source</a>
+                  </div>
+                </div>
+              </article>
+
+              <article class="portfolio-item">
+                <div class="portfolio-frame">
+                  <iframe
+                    title="Mapping and dimensionality native visual"
+                    src="../../visual/examples/mapping-dimensionality-hero/index.html"
+                    loading="lazy"></iframe>
+                </div>
+                <div class="portfolio-copy">
+                  <h3>Mapping</h3>
+                  <p>Source, PHATE target and native autoencoder coordinates with exported local distortion.</p>
+                  <pre><code>engine_mapping_dimensionality_visual_export \
+  --export-dir docs/examples/assets/mapping-dimensionality</code></pre>
+                  <div class="links">
+                    <a href="../../visual/examples/mapping-dimensionality-hero/index.html">open visual</a>
+                    <a href="../../examples/engine/mapping_dimensionality_visual_export.cpp">C++ source</a>
+                  </div>
+                </div>
+              </article>
+            </div>
           </div>
         </div>
       </section>
@@ -537,21 +704,22 @@
         <div class="wrap">
           <div class="section-head">
             <div>
-              <p class="eyebrow">Next heroes</p>
-              <h2>Not published until the evidence is real.</h2>
+              <p class="eyebrow">Next</p>
+              <h2>What still has to become production-grade.</h2>
             </div>
             <p>
-              The next examples will use the same rule: real data, native C++
-              evidence, and a visual built from that evidence.
+              The native evidence path is in place. The next step is visual
+              curation, screenshot review, larger real datasets, and public API
+              hardening.
             </p>
           </div>
           <div class="planned-grid">
-            <div class="planned"><small>planned</small><strong>Mixed records</strong><p>Composed metrics over heterogeneous records with field-aware visual structure.</p></div>
-            <div class="planned"><small>planned</small><strong>Cross-space dependence</strong><p>Two finite spaces over paired observations, rendered with the dependency evidence between them.</p></div>
-            <div class="planned"><small>planned</small><strong>Condition monitoring</strong><p>Entropy, neighborhoods, and anomalies over real process runs with time-aware visuals.</p></div>
-            <div class="planned"><small>planned</small><strong>Relation matrix</strong><p>Block-ordered pair-value maps linked to neighborhood and representative selection.</p></div>
-            <div class="planned"><small>planned</small><strong>Dynamics</strong><p>Metric-space trajectories, perturbations, diffusion, and reverse movement from exported evidence.</p></div>
-            <div class="planned"><small>planned</small><strong>Metric discovery</strong><p>Admitted true metrics, rejected non-metrics, and domain-specific selection guidance.</p></div>
+            <div class="planned"><small>open</small><strong>Visual review</strong><p>Every native view still needs screenshot acceptance against its own visual grammar.</p></div>
+            <div class="planned"><small>open</small><strong>Large evidence</strong><p>Small native fixtures prove the pipeline; larger public datasets must follow.</p></div>
+            <div class="planned"><small>open</small><strong>Metric discovery</strong><p>Admitted true metrics, rejected non-metrics, and domain-specific selection guidance.</p></div>
+            <div class="planned"><small>open</small><strong>API hardening</strong><p>Keep shrinking the visual command surface until useful scenes require only a few calls.</p></div>
+            <div class="planned"><small>open</small><strong>Regression suite</strong><p>Golden screenshots and performance gates for the miniature render style.</p></div>
+            <div class="planned"><small>open</small><strong>Bindings</strong><p>Language bindings adapt user data to the native C++ implementation instead of reimplementing algorithms.</p></div>
           </div>
           <div class="hero-actions">
             <a class="button" href="../../docs/hero-gallery-backlog.md">Open backlog</a>
