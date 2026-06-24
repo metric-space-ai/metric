@@ -34,6 +34,7 @@ set, and one validation path.
 | `mapping-dynamics-motion-grammar-workstream.md` | mapping, dynamics, timeline and solver-trace grammar | ready to assign |
 | `visual-regression-performance-workstream.md` | browser regression and performance gates | ready to assign |
 | `cpp-visual-export-core-workstream.md` | reusable C++ `metric.visual.v1` writer core and single-exporter refactor rules | integrated |
+| `gpu-picking-preview-workstream.md` | GPU/CPU picking, record preview and pair preview contracts | ready to assign |
 
 ## Next Slots
 
@@ -45,6 +46,8 @@ not from synthetic data or one-off pages:
 - consolidate native exporter writer code through `visual/cpp/mtrc_visual.hpp`
 - make relation, glyph/field and mapping/dynamics grammars first-class engine
   capabilities
+- make GPU/CPU picking, selected-record preview and selected-pair preview
+  reusable engine capabilities
 - run screenshot/performance review against the GRAE10 visual reference and
   each grammar brief
 - keep public gallery promotion behind `check-public-gallery-evidence.mjs`
@@ -56,6 +59,9 @@ node visual/tools/check-public-gallery-evidence.mjs
 node visual/tools/check-grae10-golden.mjs
 node visual/tools/check-views.mjs
 node visual/tools/check-cpp-export.mjs
+node visual/tools/check-visual-regression-public-examples.mjs
+node visual/tools/check-visual-performance-large-scenes.mjs
 node visual/tools/check-visual-document.mjs <exported metric.visual.json>
+ctest --test-dir build/core -R 'visual_(export|validate)' --output-on-failure
 ctest --test-dir build/core -L 'metric_application_evidence|metric_phate_pipeline|metric_mnist|metric_visual_integrity|metric_benchmark_report' --output-on-failure
 ```
