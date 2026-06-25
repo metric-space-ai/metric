@@ -35,6 +35,7 @@ ctest --test-dir build/core -L 'metric_application_evidence|metric_phate_pipelin
 | Relation matrix exporter | `examples/engine/relation_matrix_visual_export.cpp` | integrated in CMake/CTest | `docs/examples/assets/relation-matrix/metric.visual.json` |
 | Condition monitoring exporter | `examples/engine/condition_monitoring_visual_export.cpp` | integrated in CMake/CTest | `docs/examples/assets/condition-monitoring/metric.visual.json` |
 | Mapping/dimensionality exporter | `examples/engine/mapping_dimensionality_visual_export.cpp` | integrated in CMake/CTest | `docs/examples/assets/mapping-dimensionality/metric.visual.json` |
+| Process-curve external exporter | `examples/engine/process_curve_external_visual_export.cpp` | assigned | `docs/examples/assets/process-curve-external/metric.visual.json` |
 
 ## Integrated Exporter Tests
 
@@ -53,6 +54,11 @@ hero visualization is finished.
 Integrated native exporter coverage now includes mixed records, cross-space
 dependency, finite metric dynamics, relation matrix, condition monitoring, and
 mapping/dimensionality evidence.
+
+The next exporter slot targets the existing UCR process-curve gallery evidence
+under `examples/engine/assets/` and `docs/examples/assets/process-curve-external/`.
+It is the next real public hero candidate because the records, query outcomes
+and baseline comparison already exist outside the browser renderer.
 
 ## C++ Writer Core
 

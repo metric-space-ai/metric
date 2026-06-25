@@ -2126,9 +2126,10 @@ Not visually accepted yet:
   readability acceptance remain open.
 - Record and pair preview now share the runtime inspection path and resolve
   payload families, record properties, linked memberships, relation-independent
-  pair properties and symmetric native pair values. Remaining preview work is
-  layout/presentation quality for large composed payloads, not page-local
-  preview paths.
+  pair properties and symmetric native pair values. Basic bounded presentation
+  is integrated for text, time-series, histograms, compact image arrays,
+  composed records and generic properties. Remaining preview work is richer
+  media/table renderers, not page-local preview paths.
 - `RelationMatrixLayer` has a first WebGL readability pass: block ranges render
   as subtle same-block bands plus explicit boundaries, dense cells use
   pixel-footprint smoothing, and selection differentiates row, column and cell.
@@ -2145,18 +2146,23 @@ Not visually accepted yet:
 
 Next mandatory engine work:
 
-1. Promote the native preview exports into polished hero-specific visual
-   grammars only after screenshot review.
-2. Improve preview panel layout and linked multi-view presentation for large
-   composed record payloads. Do not add another page-local preview path.
-3. Extend layer-specific matrix picking to a GPU/tiled strategy only where the
+1. Build the existing UCR/process-curve evidence into a native
+   `metric.visual.v1` Visual Engine export and page. This is the next real hero
+   candidate because the data and query outcomes already exist outside the
+   browser renderer.
+2. Add an explicit hero-acceptance manifest so screenshot review can distinguish
+   accepted heroes from native preview pages without auto-promoting smoke-test
+   success.
+3. Promote native preview exports into polished hero-specific visual grammars
+   only after screenshot review.
+4. Extend layer-specific matrix picking to a GPU/tiled strategy only where the
    semantic matrix picker is not sufficient at larger scales.
-4. Continue `RelationMatrixLayer` readability toward hero acceptance:
+5. Continue `RelationMatrixLayer` readability toward hero acceptance:
    streamed/tiled large-matrix rendering if needed, screenshot review,
    row/column focus under dense matrices and no moire-like artifacts.
-5. Add mesh-backed relation/bridge edges only if screenshot review proves
+6. Add mesh-backed relation/bridge edges only if screenshot review proves
    color/alpha emphasis is not enough under browser line-width limits.
-6. Re-run browser screenshots and only then decide which hero is allowed to
+7. Re-run browser screenshots and only then decide which hero is allowed to
    become the first visual quality bar.
 
 ## Implementation Checkpoint: Relation Edge Emphasis
@@ -2310,3 +2316,48 @@ Corrected status:
 - `MixedRecordView`, `CrossSpaceView` and `DynamicsView` now have clearer
   semantic contracts, but their public pages remain preview-only until
   screenshot review accepts the visual result.
+
+## Implementation Checkpoint: Preview Presentation, Matrix Diagnostics And Gate Rerun
+
+Status date: 2026-06-25
+
+Implemented:
+
+- Record/pair preview presentation now covers exported text, time-series,
+  histogram/distribution, compact image-array, composed-record and generic
+  property payloads with bounded field counts, bounded text and compact visual
+  summaries.
+- Preview diagnostics expose renderer choice, truncation, summarization and
+  unavailable payload states as engine data. They are not rendered as
+  user-facing debug badges in the hover panel.
+- Relation-matrix descriptors and runtime layers expose
+  `metric.visual.relation_matrix_readability_diagnostics.v1` with matrix
+  dimensions, block/tile counts, tile-summary source, missing-value count and
+  selected row/column/cell state.
+- The task registry marks preview presentation, relation-matrix readability and
+  visual acceptance gates as integrated after local rerun.
+
+Verified:
+
+- `node visual/tools/check-record-preview-payloads.mjs`
+- `node visual/tools/check-record-preview-presentation.mjs`
+- `node visual/tools/check-runtime-picking-preview.mjs`
+- `node visual/tools/check-relation-matrix-readability.mjs`
+- `node visual/tools/check-relation-matrix-picker.mjs`
+- `node visual/tools/check-visual-command-api.mjs`
+- `node visual/tools/check-views.mjs`
+- `node visual/tools/check-single-render-pipeline.mjs`
+- `node visual/tools/check-public-gallery-evidence.mjs`
+- `node visual/tools/check-grae10-golden.mjs`
+- `node visual/tools/check-visual-performance-large-scenes.mjs`
+- `node visual/tools/check-visual-regression-public-examples.mjs`
+- `node visual/tools/check-hero-screenshot-review.mjs`
+
+Corrected status:
+
+- GRAE10 remains the only accepted public hero.
+- Condition monitoring, mixed records, cross-space dependency,
+  relation-matrix/neighborhood, dynamics and mapping remain native
+  `public-preview-only` examples pending screenshot acceptance.
+- The next public hero candidate is the existing real UCR/process-curve
+  evidence, which still needs a native `metric.visual.v1` Visual Engine export.

@@ -136,6 +136,10 @@ Implemented native slices:
 - richer record/pair preview payload resolution for exported payload families,
   record properties, linked coordinate/view memberships, relation-independent
   pair properties and symmetric native pair values
+- bounded record/pair preview presentation for text, time-series,
+  histogram/distribution, compact image-array, composed-record and generic
+  property payloads; renderer diagnostics remain machine-readable and are not
+  exposed as user-facing debug badges
 - reusable `MixedRecordView` semantic grammar for heterogeneous records,
   typed glyph descriptors and cross-type relation-edge evidence without
   page-local render helpers
@@ -151,11 +155,18 @@ Implemented native slices:
 - reusable relation-matrix readability metadata for block/tile/LOD contracts,
   weighted dense-cell smoothing, logical tile boundaries and row/column/cell
   selection focus
+- relation-matrix readability diagnostics for matrix dimensions, block count,
+  tile count/source, missing-value count, selected row/column/cell state and
+  graph relation identity
 - stricter `metric.visual.v1` validation for dense relation shapes, relation
   value endpoints, coordinate-position dimensions and pair-property endpoints
 - browser-backed public regression gate for the accepted GRAE10 reference and
   native preview examples:
   `visual/tools/check-visual-regression-public-examples.mjs`
+- explicit screenshot-review gate that keeps GRAE10 as the only accepted hero
+  and classifies all other native public examples as review-pending previews
+  until a separate acceptance decision exists:
+  `visual/tools/check-hero-screenshot-review.mjs`
 - large-scene performance gate for 1k, 10k and 60k point-cloud workloads plus
   current public preview grammar rows for field, glyph, relation-matrix/graph,
   dynamics, mapping and cross-space scenes:
@@ -165,6 +176,9 @@ Known gaps:
 
 - first full-frame capture path exists; no polished multi-algorithm hero
   application/gallery yet
+- the next real public hero candidate is the existing UCR/process-curve
+  evidence; it still needs a native `metric.visual.v1` export and reusable
+  Visual Engine view before it can enter screenshot review
 - no full visual gallery for every METRIC algorithm family yet
 - relation matrix has native exported evidence and a reusable WebGL readability
   pass with block bands, tile/LOD metadata, block boundaries, row/column/cell
