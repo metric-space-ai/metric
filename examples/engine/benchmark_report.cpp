@@ -714,7 +714,7 @@ auto run_histogram_transport_baseline() -> ReportRows
 	return rows;
 }
 
-auto run_process_curve_phate_gallery_snapshot() -> ReportRows
+auto run_process_curve_diffusion_coordinate_gallery_snapshot() -> ReportRows
 {
 	const auto records = process_gallery_records();
 	const auto queries = process_gallery_queries();
@@ -750,12 +750,12 @@ auto run_process_curve_phate_gallery_snapshot() -> ReportRows
 
 	ReportRows rows;
 	rows.representation_costs.push_back(mtrc::benchmarks::representation_cost_row(
-		"process curve PHATE gallery", matrix.diagnostics(), "aligned-curve PHATE target distance cache"));
+		"process curve diffusion-coordinate gallery", matrix.diagnostics(), "aligned-curve diffusion-coordinate target distance cache"));
 	rows.representation_costs.push_back(mtrc::benchmarks::representation_cost_row(
-		"process curve PHATE gallery", graph.diagnostics(), "k=4 sparse neighbor index for gallery inspection"));
+		"process curve diffusion-coordinate gallery", graph.diagnostics(), "k=4 sparse neighbor index for gallery inspection"));
 
 	mtrc::benchmarks::WorkflowEvidenceRow quality;
-	quality.benchmark = "process curve PHATE gallery";
+	quality.benchmark = "process curve diffusion-coordinate gallery";
 	quality.query_count = queries.size();
 	quality.metric_matches = metric_matches;
 	quality.vector_mismatches = vector_mismatches;
@@ -763,7 +763,7 @@ auto run_process_curve_phate_gallery_snapshot() -> ReportRows
 	quality.reports_latent_matches = true;
 	quality.average_metric_margin = average_margin;
 	quality.reports_average_metric_margin = true;
-	quality.diagnostics = "native PHATE-AE OOS: avg rank 1.33333; max rank 3; avg penalty 0.166667; max penalty 1";
+	quality.diagnostics = "native parametric diffusion coordinate OOS: avg rank 1.33333; max rank 3; avg penalty 0.166667; max penalty 1";
 	rows.workflow_evidence.push_back(quality);
 	return rows;
 }
@@ -1033,7 +1033,7 @@ auto run_condition_monitoring_baseline() -> ReportRows
 	mtrc::space::storage::DistanceTable<decltype(gallery_space)> matrix(gallery_space);
 	const auto metric_outliers =
 		mtrc::find_outliers(gallery_space, mtrc::stats::structural_analysis::dbscan_options(metric_radius, 2));
-	assert(metric_outliers.noise_count == fault_count);
+	assert(metric_outliers.unassigned_count == fault_count);
 
 	const double average_margin = margin_sum / static_cast<double>(windows.size());
 
@@ -1191,8 +1191,8 @@ auto performance_rows() -> std::vector<mtrc::benchmarks::PerformanceRow>
 											   "process distance matrix reused across operators"));
 	}
 
-	// Metric mapping hero (process-curve PHATE gallery).
-	rows.push_back(measure_amortized_reuse("process curve PHATE gallery", "shared gallery operators",
+	// Metric mapping hero (process-curve diffusion-coordinate gallery).
+	rows.push_back(measure_amortized_reuse("process curve diffusion-coordinate gallery", "shared gallery operators",
 										   process_gallery_records(), AlignedCurveDistance{},
 										   "aligned-curve distance reused across operators"));
 
@@ -1316,7 +1316,7 @@ int main()
 	report.set_run_metadata(benchmark_run_metadata());
 	append_rows(report, run_string_edit_baseline());
 	append_rows(report, run_histogram_transport_baseline());
-	append_rows(report, run_process_curve_phate_gallery_snapshot());
+	append_rows(report, run_process_curve_diffusion_coordinate_gallery_snapshot());
 	append_rows(report, run_mixed_structured_record_baseline());
 	append_rows(report, run_distribution_image_recoding_baseline());
 	append_rows(report, run_cross_space_mgc_baseline());
@@ -1343,12 +1343,12 @@ int main()
 	assert(markdown.find("## Run Metadata") != std::string::npos);
 	assert(markdown.find("string edit baseline") != std::string::npos);
 	assert(markdown.find("histogram transport baseline") != std::string::npos);
-	assert(markdown.find("process curve PHATE gallery") != std::string::npos);
+	assert(markdown.find("process curve diffusion-coordinate gallery") != std::string::npos);
 	assert(markdown.find("mixed structured record baseline") != std::string::npos);
 	assert(markdown.find("distribution image recoding baseline") != std::string::npos);
 	assert(markdown.find("cross-space MGC dependency baseline") != std::string::npos);
 	assert(markdown.find("condition monitoring TWED baseline") != std::string::npos);
-	assert(markdown.find("native PHATE-AE OOS") != std::string::npos);
+	assert(markdown.find("native parametric diffusion coordinate OOS") != std::string::npos);
 	assert(markdown.find("raw-vector pairing correct=3/12") != std::string::npos);
 	assert(markdown.find("## Performance Evidence") != std::string::npos);
 

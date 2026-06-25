@@ -577,7 +577,6 @@ double EntropySimple<RecType, Metric>::operator()( // non-kpN version, DEPRECATE
 
 	double d = data[0].size();
 
-	// add_noise(data);
 
 	double entropyEstimate = 0;
 	double log_sum = 0;

@@ -9,23 +9,10 @@ except ModuleNotFoundError as exc:
         ) from exc
     raise
 
-# Full legacy builds still expose standard vector metrics through a separate
+# Some native builds expose standard vector metrics through a separate
 # extension. Default builds export them directly from metric._impl.distance.
 if "Euclidean" not in globals():
     try:
         from metric._impl.standards import *
     except ModuleNotFoundError:
         pass
-
-
-def _install_compatibility_aliases(namespace):
-    aliases = {
-        "Minkowski": "P_norm",
-        "ThresholdedEuclidean": "Euclidean_thresholded",
-    }
-    for alias, historical_name in aliases.items():
-        if alias not in namespace and historical_name in namespace:
-            namespace[alias] = namespace[historical_name]
-
-
-_install_compatibility_aliases(globals())

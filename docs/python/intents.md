@@ -4,8 +4,9 @@ The Python facade is organized around user intent. Start with records and a
 metric, then ask what you want to know about the finite metric space.
 
 > **Availability.** The default core wheel runs construction, `distance`,
-> `pairwise`, representation views, exact neighbors, groups, outliers, denoise,
-> representatives, reduce/compress, structure diagnostics, and aligned
+> `pairwise`, representation views, exact neighbors, groups, outliers,
+> density filtering, representatives, reduce/compress, distribution-preserving
+> thinning, uniform-density thinning, structure diagnostics, and aligned
 > distance-profile `compare`/`correlate` (equal-length, `align="position"`)
 > through native bindings. `embed` still raises `StrategyUnavailableError` until
 > its binding is promoted, and non-aligned (`align="ids"`) comparison stays
@@ -42,7 +43,7 @@ print(groups.medoids)
 ```
 
 `count` selects deterministic k-medoids grouping. `radius` selects a DBSCAN
-style density grouping with explicit noise records.
+style density grouping with explicit unassigned records.
 
 ## Embed
 
@@ -59,7 +60,7 @@ print(embedding.diagnostics.to_dict())
 
 Embedding creates a derived coordinate view for visualization and diagnostics.
 It does not change the source records and does not make vectors the primary
-model.
+object.
 
 ## Map
 
@@ -90,7 +91,7 @@ mapped = Space(records, metric=row_distance).map(
 ```
 
 The promoted mapping path is deterministic `transform=...` plus a target metric.
-No-argument mapping, fitted `target=...` mapping, and strategy-driven mapping
+No-argument mapping, derived `target=...` mapping, and strategy-driven mapping
 raise explicit METRIC errors until those contracts are promoted.
 
 ## Outliers
@@ -107,23 +108,65 @@ print(outliers.outliers[0].score)
 ```
 
 The strategy-free default ranks records by nearest-neighbor distance. Pass a
-promoted DBSCAN strategy in expert code for density-noise behavior.
+promoted DBSCAN strategy in expert code when density-unassigned records are the
+desired singularity signal.
 
-## Denoise
+## Density Filter
 
 ```python
 from metric import Space
 from metric.metrics import Edit
 
 space = Space(["cat", "cot", "coat", "doggggg"], metric=Edit())
-clean = space.denoise(count=1)
+clean = space.density_filter(count=1)
 
 print(clean.source_record_ids)
 print(len(clean.space))
 ```
 
-Denoising returns a derived space and keeps source-record lineage. It does not
-mutate the source space.
+Density filtering returns a derived space and keeps source-record lineage. It
+does not mutate the source space and does not apply inverse metric dynamics.
+
+## Compress, Thin, And Equalize
+
+```python
+from metric import Space
+from metric.metrics import Edit
+from metric.strategies import PreserveDistribution, UniformDensity
+
+space = Space(["cat", "cot", "coat", "dog", "dogs"], metric=Edit())
+
+summary = space.compress(count=2)
+panel = space.thin(3, strategy=PreserveDistribution())
+net = space.thin(strategy=UniformDensity(radius=1))
+equalized = space.equalize(radius=1)
+```
+
+Compression selects source representatives, assigns every source record to a
+representative, and reports representative multiplicities and normalized
+weights. Thinning keeps a subset without pretending to reconstruct removed
+records. `PreserveDistribution` keeps empirical density representative by
+regular source-order sampling, while `UniformDensity` builds a maximal metric
+radius net and intentionally flattens sampling density. `equalize(...)` uses the
+same metric-only radius-net construction but names the density-normalization
+intent explicitly.
+
+Choose the modification route by the finite-space objective:
+
+| Objective | Use | Result contract |
+|---|---|---|
+| Preserve source density | `space.thin(count, strategy=PreserveDistribution(...))` | Retained source records are a regular empirical sample; removed records are not collapsed. |
+| Flatten source density | `space.thin(strategy=UniformDensity(radius=...))` or `space.equalize(radius=...)` | Retained records form a metric radius net; diagnostics report coverage, nearest-neighbor drift, and local-volume drift. |
+| Minimize maximum assignment error | `space.compress(count, strategy=Coverage(...))`, `KCenter(...)`, or `RadiusCoverage(...)` | Every source record is assigned to a representative; multiplicities and weights make the result a metric-measure summary. |
+| Minimize average assignment error | `space.compress(strategy=KMedoids(groups=...))` | Representatives are source medoids, so arbitrary record types stay valid. |
+| Preserve neighbor behavior | Use promoted neighbor diagnostics, then research-only `metric.experimental.knn_recall_sketch(...)` for candidate sketches. | This is a diagnostic objective until promoted; it compares source kNN behavior with a subset or graph. |
+| Preserve distance distribution or graph structure | Use research-only `distance_distribution_sketch(...)`, `distance_distribution_drift(...)`, or `metric_graph_spanner(...)`. | These are experimental finite-metric observables and are intentionally not re-exported from `metric.__all__`. |
+
+See
+[`python/examples/engine/metric_space_modification_objectives.py`](../../python/examples/engine/metric_space_modification_objectives.py)
+for a runnable objective-by-objective example, and
+[Customer Focus Groups As A Finite Metric Space](../examples/customer-focus-groups-metric-space.md)
+for the mixed customer-record/persona workflow.
 
 ## Compare
 

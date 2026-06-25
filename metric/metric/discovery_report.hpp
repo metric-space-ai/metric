@@ -105,10 +105,10 @@ inline auto metric_catalog_entries() -> std::vector<metric_catalog_entry>
 		"Mahalanobis", "aligned finite real vectors", "symmetric positive definite precision matrix",
 		"SPD-normalized coordinate displacement"));
 	entries.push_back(make_metric_catalog_entry<::mtrc::Euclidean_standardized<double>>(
-		"Euclidean_standardized", "aligned finite real vectors", "positive fitted scale in every coordinate",
+		"Euclidean_standardized", "aligned finite real vectors", "positive calibrated scale in every coordinate",
 		"L2 displacement after positive scale normalization"));
 	entries.push_back(make_metric_catalog_entry<::mtrc::Manhattan_standardized<double>>(
-		"Manhattan_standardized", "aligned finite real vectors", "positive fitted scale in every coordinate",
+		"Manhattan_standardized", "aligned finite real vectors", "positive calibrated scale in every coordinate",
 		"L1 displacement after positive scale normalization"));
 	entries.push_back(make_metric_catalog_entry<::mtrc::Angular<double>>(
 		"Angular", "unit finite vectors / directions", "non-empty unit vectors, no zero vector",

@@ -38,8 +38,8 @@
 > Note on the metric-mapping row: `Vector-comparison mismatches 0/16` means the naive
 > vector 1-NN baseline matched the metric-space neighbour on all 16 queries, i.e. on
 > this fixture the headline 1-NN column shows **no** metric advantage — and the hero
-> deliberately does **not** assert that PHATE beats classical MDS on neighbour recall.
-> The asserted advantage is structural: the fitted map is **invertible** and supports
+> deliberately does **not** assert that parametric diffusion coordinates beats classical MDS on neighbour recall.
+> The asserted advantage is structural: the derived mapping artifact is **invertible** and supports
 > an **out-of-sample transform** (a parametric finite-metric-space map), which the
 > non-parametric MDS baseline does not provide. Read this row as evidence of the
 > parametric/invertible capability, not of a nearest-neighbour win.
@@ -51,4 +51,4 @@
 | mixed records | neighbour/relation/summary over composed gallery | 8 | 3 | 192 | 64 | 0 | 3 | yes | composed domain metric vs flat Euclidean projection |
 | condition monitoring | neighbour/outlier/structure over cycle gallery | 14 | 3 | 588 | 196 | 0 | 3 | yes | TWED elastic metric vs Euclidean window vector |
 | cross-space dependency | process geometry shared by MGC + readouts | 12 | 3 | 432 | 144 | 0 | 3 | yes | MGC dependence vs raw nearest-value pairing |
-| metric mapping | source geometry shared by diffusion target + readouts | 16 | 3 | 768 | 256 | 0 | 3 | yes | PHATE diffusion-geometry targets driven by the source metric |
+| metric mapping | source geometry shared by diffusion target + readouts | 16 | 3 | 768 | 256 | 0 | 3 | yes | diffusion-coordinate-geometry targets driven by the source metric |

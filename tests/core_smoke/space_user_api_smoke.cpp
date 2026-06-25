@@ -16,10 +16,22 @@
 #include "metric/space/distances.hpp"
 #include "metric/space/query.hpp"
 #include "metric/space/records.hpp"
+#include "metric/space/storage/knn_graph_index.hpp"
+#include "metric/space/streaming.hpp"
 #include "metric/stats/search/nearest.hpp"
 
 struct AbsoluteDistance {
 	auto operator()(int lhs, int rhs) const -> int { return lhs > rhs ? lhs - rhs : rhs - lhs; }
+};
+
+struct CountingAbsoluteDistance {
+	int *calls{};
+
+	auto operator()(int lhs, int rhs) const -> int
+	{
+		++(*calls);
+		return lhs > rhs ? lhs - rhs : rhs - lhs;
+	}
 };
 
 namespace mtrc::core {
@@ -138,6 +150,127 @@ static auto test_records_mutation_and_stable_ids() -> void
 	assert(space.record(id2) == 21); // unchanged by the rejected duplicate-target replace
 }
 
+static auto test_streaming_append_batch() -> void
+{
+	int metric_calls = 0;
+	auto space = mtrc::make_space(std::vector<int>{0, 10, 20}, CountingAbsoluteDistance{&metric_calls});
+	const auto id0 = space.id(0);
+	const auto id1 = space.id(1);
+	const auto id2 = space.id(2);
+
+	assert(space.erase(id1));
+	const auto version_before = space.version();
+
+	std::vector<mtrc::space::ingest_progress> progress;
+	const auto report = mtrc::space::append_batch(
+		space, std::vector<int>{30, 40},
+		[&](const mtrc::space::ingest_progress &item) { progress.push_back(item); },
+		[](const mtrc::space::ingest_progress &) { return false; });
+
+	assert(report.requested == 2 && report.appended == 2 && report.complete());
+	assert(report.old_size == 2 && report.new_size == 4);
+	assert(report.version_before == version_before);
+	assert(report.version_after == version_before + 2);
+	assert(report.distance_evaluations == 0);
+	assert(!report.materialized_dense_all_pairs);
+	assert(metric_calls == 0);
+
+	const auto id3 = report.appended_ids[0];
+	const auto id4 = report.appended_ids[1];
+	assert(id3 == mtrc::RecordId::from_index(3));
+	assert(id4 == mtrc::RecordId::from_index(4));
+	assert(space.record(id0) == 0 && space.record(id2) == 20);
+	assert(space.record(id3) == 30 && space.record(id4) == 40);
+	assert(!space.contains(id1)); // erased id was not reused by streaming append
+
+	assert(progress.size() == 2);
+	assert(progress[0].accepted == 1 && !progress[0].cancelled);
+	assert(progress[1].accepted == 2 && progress[1].complete());
+	assert(progress[1].version_current == report.version_after);
+	assert(progress[1].last_id == id4);
+
+	progress.clear();
+	const auto cancelled = mtrc::space::append_batch(
+		space, std::vector<int>{50, 60, 70},
+		[&](const mtrc::space::ingest_progress &item) { progress.push_back(item); },
+		[](const mtrc::space::ingest_progress &item) { return item.accepted == 2; });
+
+	assert(cancelled.requested == 3 && cancelled.appended == 2);
+	assert(cancelled.cancelled && !cancelled.complete());
+	assert(cancelled.distance_evaluations == 0);
+	assert(!cancelled.materialized_dense_all_pairs);
+	assert(metric_calls == 0);
+	assert(cancelled.appended_ids[0] == mtrc::RecordId::from_index(5));
+	assert(cancelled.appended_ids[1] == mtrc::RecordId::from_index(6));
+	assert(!space.contains(mtrc::RecordId::from_index(7)));
+	assert(space.next_record_id() == 7);
+	assert(cancelled.version_after == cancelled.version_before + 2);
+	assert(!progress.empty() && progress.back().cancelled && progress.back().accepted == 2);
+}
+
+static auto test_knn_graph_refresh_after_streaming_append_is_bounded() -> void
+{
+	int metric_calls = 0;
+	std::vector<int> values;
+	values.reserve(50);
+	for (int value = 0; value < 500; value += 10) {
+		values.push_back(value);
+	}
+	auto space = mtrc::make_space(values, CountingAbsoluteDistance{&metric_calls});
+	auto index = mtrc::space::storage::knn_graph(space, 2);
+	const auto initial_size = space.size();
+	assert(index.record_count() == initial_size);
+	assert(index.build_distance_evaluations() == initial_size * (initial_size - 1));
+	assert(metric_calls == static_cast<int>(index.build_distance_evaluations()));
+
+	metric_calls = 0;
+	const auto id0 = space.id(0);
+	const auto append = mtrc::space::append_batch(space, std::vector<int>{1, 2, 498});
+	assert(append.appended == 3);
+	assert(append.distance_evaluations == 0);
+	assert(metric_calls == 0);
+	assert(index.is_stale());
+
+	const auto refresh = mtrc::space::refresh_after_append(index, append);
+	const auto expected_old_row_updates = initial_size * append.appended;
+	const auto expected_new_rows = append.appended * (space.size() - 1);
+	assert(refresh.refreshed);
+	assert(!refresh.rebuild_required);
+	assert(refresh.exact_rows_updated);
+	assert(refresh.appended == append.appended);
+	assert(refresh.old_row_update_distance_evaluations == expected_old_row_updates);
+	assert(refresh.appended_row_distance_evaluations == expected_new_rows);
+	assert(refresh.distance_evaluations == expected_old_row_updates + expected_new_rows);
+	assert(metric_calls == static_cast<int>(refresh.distance_evaluations));
+	assert(!index.is_stale());
+	assert(index.record_count() == space.size());
+	assert(index.version() == space.version());
+	assert(index.maintenance_distance_evaluations() == refresh.distance_evaluations);
+	assert(index.total_distance_evaluations() == index.build_distance_evaluations() + refresh.distance_evaluations);
+
+	const auto &updated_old_row = index.neighbors(id0);
+	assert(updated_old_row.size() == 2);
+	assert(updated_old_row[0].id == append.appended_ids[0]);
+	assert(updated_old_row[0].distance == 1);
+	assert(updated_old_row[1].id == append.appended_ids[1]);
+	assert(updated_old_row[1].distance == 2);
+
+	const auto &new_row = index.neighbors(append.appended_ids[0]);
+	assert(new_row.size() == 2);
+	assert(new_row[0].id == id0);
+	assert(new_row[0].distance == 1);
+	assert(new_row[1].id == append.appended_ids[1]);
+	assert(new_row[1].distance == 1);
+
+	metric_calls = 0;
+	space.replace(id0, -100);
+	const auto refused = index.refresh_after_append();
+	assert(!refused.refreshed);
+	assert(refused.rebuild_required);
+	assert(refused.reason.find("rebuild required") != std::string::npos);
+	assert(metric_calls == 0);
+}
+
 static auto test_distances_access() -> void
 {
 	auto space = mtrc::make_space(std::vector<int>{0, 10, 20, 30}, AbsoluteDistance{});
@@ -188,6 +321,16 @@ static auto test_distances_access() -> void
 	int table_for_each_sum = 0;
 	distances::for_each_pair(table, [&](mtrc::RecordId, mtrc::RecordId, int distance) { table_for_each_sum += distance; });
 	assert(table_pair_sum == pair_sum && table_for_each_sum == pair_sum);
+
+	// Explicit pair collection is guarded before reserve() and before metric calls.
+	assert(throws([&] { (void)distances::pairs(space, distances::pair_collection_options{5}); }));
+	const auto unbounded_pairs = distances::pairs(space, distances::pair_collection_options{0});
+	assert(unbounded_pairs.size() == pairs.size());
+	int guarded_calls = 0;
+	auto large_records = std::vector<int>(1500);
+	auto large_space = mtrc::make_space(large_records, CountingAbsoluteDistance{&guarded_calls});
+	assert(throws([&] { (void)distances::pairs(large_space); }));
+	assert(guarded_calls == 0);
 
 	// status(): live is non-materialized + fresh; eager table is materialized + fresh.
 	const auto live_status = distances::status(space);
@@ -288,6 +431,8 @@ int main()
 {
 	test_builder();
 	test_records_mutation_and_stable_ids();
+	test_streaming_append_batch();
+	test_knn_graph_refresh_after_streaming_append_is_bounded();
 	test_distances_access();
 	test_query_helpers_parity();
 	return 0;

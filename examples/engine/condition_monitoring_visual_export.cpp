@@ -33,7 +33,7 @@ namespace visual = mtrc::visual;
 
 using Curve = std::vector<double>;
 
-enum class Regime { Normal, Drift, Fault, Signature };
+enum class Regime { Normal, Drift, Fault, Recovery, Signature };
 
 struct Catalog {
 	std::vector<Curve> curves;
@@ -65,7 +65,7 @@ struct ObservationEvidence {
 	double nearest_catalog_distance{};
 	double severity{};
 	double local_density{};
-	bool dbscan_noise{};
+	bool dbscan_density_outlier{};
 	Regime nearest_catalog_regime{};
 	std::string diagnosis_state;
 };
@@ -93,6 +93,8 @@ auto regime_name(Regime regime) -> std::string
 		return "drift";
 	case Regime::Fault:
 		return "fault";
+	case Regime::Recovery:
+		return "recovery";
 	case Regime::Signature:
 		return "signature";
 	}
@@ -127,7 +129,7 @@ auto healthy_cycle(int rise_start, int ramp, int plateau, int tail, std::uint64_
 	return trapezoid(rise_start, ramp, plateau, tail, 1.0, 0.0, seed);
 }
 
-auto drift_cycle(int step, std::uint64_t seed) -> Curve
+auto drift_cycle(double step, std::uint64_t seed) -> Curve
 {
 	const double creep = 0.16 * static_cast<double>(step);
 	const double amplitude = 1.0 + 0.14 * static_cast<double>(step);
@@ -193,25 +195,73 @@ auto build_reference_catalog() -> Catalog
 	return catalog;
 }
 
+auto healthy_cycle_variant(std::size_t variant, std::uint64_t seed) -> Curve
+{
+	switch (variant % 6) {
+	case 0:
+		return healthy_cycle(2, 3, 3, 3, seed);
+	case 1:
+		return healthy_cycle(3, 3, 2, 3, seed);
+	case 2:
+		return healthy_cycle(1, 4, 3, 2, seed);
+	case 3:
+		return healthy_cycle(4, 3, 2, 2, seed);
+	case 4:
+		return healthy_cycle(2, 4, 2, 2, seed);
+	default:
+		return healthy_cycle(3, 2, 4, 3, seed);
+	}
+}
+
+auto clamp01(double value) -> double
+{
+	return std::max(0.0, std::min(1.0, value));
+}
+
 auto build_observations() -> std::vector<Observation>
 {
 	std::vector<Observation> observations;
 	auto add = [&](Curve curve, Regime truth, std::string phase, double condition_index) {
-		observations.push_back({std::move(curve), truth, std::move(phase), condition_index});
+		observations.push_back({std::move(curve), truth, std::move(phase), clamp01(condition_index)});
 	};
 
-	for (int i = 0; i < 5; ++i) {
-		add(healthy_cycle(2 + (i % 3), 3, 3, 3, 7000 + i), Regime::Normal, "stable-reference",
-			0.05 + jitter(9000 + i, 0, 0.01));
+	constexpr std::size_t stable_count = 128;
+	constexpr std::size_t drift_count = 180;
+	constexpr std::size_t fault_count = 4;
+	constexpr std::size_t recovery_count = 112;
+	constexpr std::size_t signature_count = 104;
+
+	for (std::size_t index = 0; index < stable_count; ++index) {
+		add(healthy_cycle_variant(index, 7000 + index), Regime::Normal, "stable-reference",
+			0.05 + jitter(9000 + index, 0, 0.012));
 	}
-	for (int step = 1; step <= 6; ++step) {
-		add(drift_cycle(step, 7100 + step), Regime::Drift, "slow-drift",
-			0.12 + 0.14 * static_cast<double>(step));
+
+	for (std::size_t index = 0; index < drift_count; ++index) {
+		const double fraction = static_cast<double>(index) / static_cast<double>(drift_count - 1);
+		const double step = 0.2 + 6.6 * fraction;
+		add(drift_cycle(step, 7100 + index), Regime::Drift, "slow-drift", 0.12 + 0.82 * fraction);
 	}
-	add(fault_cycle(7200), Regime::Fault, "abrupt-change", 0.95);
-	add(healthy_cycle(1, 4, 3, 2, 7300), Regime::Normal, "recovery", 0.08);
-	add(signature_cycle(2, 0, 7400), Regime::Signature, "recurring-signature", 0.50);
-	add(signature_cycle(6, 1, 7401), Regime::Signature, "recurring-signature", 0.52);
+
+	for (std::size_t index = 0; index < fault_count; ++index) {
+		add(fault_cycle(7200 + index), Regime::Fault, "abrupt-change",
+			0.94 + jitter(9300 + index, 0, 0.015));
+	}
+
+	for (std::size_t index = 0; index < recovery_count; ++index) {
+		const double fraction = static_cast<double>(index) / static_cast<double>(recovery_count - 1);
+		const double step = 5.8 * (1.0 - fraction);
+		add(drift_cycle(step, 7300 + index), Regime::Recovery, "recovery", 0.10 + 0.78 * (1.0 - fraction));
+	}
+
+	for (std::size_t index = 0; index < signature_count; ++index) {
+		const int rise_start = 2 + static_cast<int>(index % 5);
+		const int notch_offset = static_cast<int>((index / 5) % 4);
+		const double recurrence_wave =
+			0.5 + 0.5 * std::sin(static_cast<double>(index) * 6.2831853071795864769 / 26.0);
+		add(signature_cycle(rise_start, notch_offset, 7400 + index), Regime::Signature, "recurring-signature",
+			0.46 + 0.12 * recurrence_wave + jitter(9400 + index, 0, 0.015));
+	}
+
 	return observations;
 }
 
@@ -264,7 +314,7 @@ auto classify(const Space &space, const std::vector<Regime> &families, const Cur
 auto record_id(std::size_t index) -> std::string
 {
 	std::ostringstream out;
-	out << "window-" << std::setw(2) << std::setfill('0') << index;
+	out << "window-" << std::setw(4) << std::setfill('0') << index;
 	return out.str();
 }
 
@@ -396,7 +446,7 @@ auto local_density(const std::vector<std::vector<double>> &matrix, std::size_t r
 		}
 	}
 	std::sort(distances.begin(), distances.end());
-	const std::size_t k = std::min<std::size_t>(3, distances.size());
+	const std::size_t k = std::min<std::size_t>(8, distances.size());
 	double mean = 0.0;
 	for (std::size_t index = 0; index < k; ++index) {
 		mean += distances[index];
@@ -457,7 +507,7 @@ auto build_condition_monitoring_document(const std::vector<Observation> &observa
 										 double healthy_radius_value, double warn_threshold, double alarm_threshold,
 										 double healthy_average_distance, double healthy_maximum_distance,
 										 double healthy_intrinsic_dimension, std::size_t healthy_record_count,
-										 std::size_t healthy_noise_count, const MetricLawDiagnostics &law)
+										 std::size_t healthy_unassigned_count, const MetricLawDiagnostics &law)
 	-> visual::Document
 {
 	const std::string dataset_id = "condition-monitoring";
@@ -477,7 +527,7 @@ auto build_condition_monitoring_document(const std::vector<Observation> &observa
 
 	for (std::size_t index = 0; index < observations.size(); ++index) {
 		std::ostringstream label;
-		label << "process window " << std::setw(2) << std::setfill('0') << index;
+		label << "process window " << std::setw(4) << std::setfill('0') << index;
 		doc.record(record_ids[index], dataset_id, "process_window", label.str(),
 				   visual::object({visual::string_field("kind", "time_series"),
 								   visual::number_array_field("series", observations[index].curve),
@@ -523,7 +573,7 @@ auto build_condition_monitoring_document(const std::vector<Observation> &observa
 	std::vector<double> severity;
 	std::vector<double> density;
 	std::vector<double> condition_index;
-	std::vector<double> noise_flag;
+	std::vector<double> density_outlier_flag;
 	std::vector<std::string> truth;
 	std::vector<std::string> phase;
 	std::vector<std::string> nearest_regime;
@@ -534,7 +584,7 @@ auto build_condition_monitoring_document(const std::vector<Observation> &observa
 		severity.push_back(evidence[index].severity);
 		density.push_back(evidence[index].local_density);
 		condition_index.push_back(observations[index].condition_index);
-		noise_flag.push_back(evidence[index].dbscan_noise ? 1.0 : 0.0);
+		density_outlier_flag.push_back(evidence[index].dbscan_density_outlier ? 1.0 : 0.0);
 		truth.push_back(regime_name(observations[index].truth));
 		phase.push_back(observations[index].phase);
 		nearest_regime.push_back(regime_name(evidence[index].nearest_catalog_regime));
@@ -547,7 +597,8 @@ auto build_condition_monitoring_document(const std::vector<Observation> &observa
 						 scalar_values(record_ids, condition_index))
 		.scalar_property("metric-anomaly-severity", dataset_id, "metric anomaly severity", scalar_values(record_ids, severity))
 		.scalar_property("local-density", dataset_id, "local metric density", scalar_values(record_ids, density))
-		.scalar_property("dbscan-noise-flag", dataset_id, "DBSCAN noise flag", scalar_values(record_ids, noise_flag))
+		.scalar_property("dbscan-density-outlier-flag", dataset_id, "DBSCAN density-unassigned record flag",
+						 scalar_values(record_ids, density_outlier_flag))
 		.scalar_property("nearest-catalog-distance", dataset_id, "nearest catalog distance",
 						 scalar_values(record_ids, nearest_catalog))
 		.categorical_property("truth-regime", dataset_id, "truth regime", categorical_values(record_ids, truth))
@@ -579,12 +630,51 @@ auto build_condition_monitoring_document(const std::vector<Observation> &observa
 		const double y = 2.0 * evidence[index].severity - 1.0;
 		const double z = observations[index].truth == Regime::Fault		  ? 0.9
 						 : observations[index].truth == Regime::Signature ? 0.35
+						 : observations[index].truth == Regime::Recovery  ? -0.45
 						 : observations[index].truth == Regime::Drift	  ? -0.15
 																		  : -0.7;
 		trajectory_positions.push_back({record_ids[index], {x, y, z}});
 	}
 	doc.coordinates3("process-state-trajectory-3d", dataset_id, space_id, "process state trajectory",
 					 trajectory_positions);
+
+	std::vector<std::string> timeline_steps;
+	timeline_steps.reserve(record_ids.size());
+	for (std::size_t index = 0; index < record_ids.size(); ++index) {
+		timeline_steps.push_back(visual::object({
+			visual::string_field("id", "condition-step-" + record_ids[index]),
+			visual::size_field("index", index),
+			visual::number_field("t", static_cast<double>(index) / denom),
+			visual::string_field("name", observations[index].phase + " " + record_ids[index]),
+			visual::string_field("record_id", record_ids[index]),
+			visual::string_field("coordinate_id", "process-state-trajectory-3d"),
+			visual::string_field("property_id", "metric-anomaly-severity"),
+			visual::string_field("relation_id", transition_relation_id),
+			visual::string_field("graph_id", "process-window-trajectory"),
+			visual::string_field("truth", regime_name(observations[index].truth)),
+			visual::string_field("run_phase", observations[index].phase),
+			visual::string_field("diagnosis_state", evidence[index].diagnosis_state),
+			visual::number_field("nearest_healthy_distance", evidence[index].nearest_healthy_distance),
+			visual::number_field("metric_anomaly_severity", evidence[index].severity),
+			visual::number_field("local_density", evidence[index].local_density),
+		}));
+	}
+	doc.timeline_json(visual::object({
+		visual::string_field("id", "condition-evolution"),
+		visual::string_field("dataset_id", dataset_id),
+		visual::string_field("name", "healthy to drift to fault to recovery to recurring signature"),
+		visual::string_field("space_id", space_id),
+		visual::string_field("timeline_type", "condition_evolution"),
+		visual::field("steps", visual::array_of(timeline_steps)),
+		visual::field("metadata",
+					  visual::object({visual::size_field("record_count", record_ids.size()),
+									  visual::string_array_field("phase_order",
+																 {"stable-reference", "slow-drift", "abrupt-change",
+																  "recovery", "recurring-signature"}),
+									  visual::string_field("coordinate_id", "process-state-trajectory-3d"),
+									  visual::string_field("property_id", "metric-anomaly-severity"),
+									  visual::string_field("graph_id", "process-window-trajectory")})),
+	}));
 
 	doc.view_json(visual::object({visual::string_field("kind", "metric-space"),
 								  visual::string_field("spaceId", "condition-monitoring-space"),
@@ -599,7 +689,7 @@ auto build_condition_monitoring_document(const std::vector<Observation> &observa
 								   visual::number_field("healthy_radius", healthy_radius_value),
 								   visual::number_field("warn_threshold", warn_threshold),
 								   visual::number_field("alarm_threshold", alarm_threshold),
-								   visual::size_field("healthy_dbscan_noise_count", healthy_noise_count)}))
+								   visual::size_field("healthy_dbscan_density_outlier_count", healthy_unassigned_count)}))
 		.diagnostic("metric-law-check", dataset_id, "metric_law_check",
 					visual::object({visual::number_field("diagonal_max_abs", law.diagonal_max_abs),
 									visual::number_field("symmetry_max_abs", law.symmetry_max_abs),
@@ -633,7 +723,7 @@ auto build_document() -> std::string
 	const auto healthy_outliers = mtrc::find_outliers(healthy_space, warn_threshold, 2);
 
 	if (structure.record_count != healthy_only.size() || !structure.has_nonzero_distances || radius <= 0.0 ||
-		healthy_outliers.noise_count != 0) {
+		healthy_outliers.unassigned_count != 0) {
 		throw std::runtime_error("native condition-monitoring reference checks failed");
 	}
 
@@ -644,7 +734,7 @@ auto build_document() -> std::string
 		curves.push_back(observation.curve);
 	}
 	auto monitored_space = mtrc::make_space(curves, process_metric());
-	const auto monitored_outliers = mtrc::find_outliers(monitored_space, warn_threshold, 2);
+	const auto monitored_outliers = mtrc::find_outliers(monitored_space, warn_threshold, 6);
 
 	std::vector<std::vector<double>> matrix(curves.size(), std::vector<double>(curves.size(), 0.0));
 	const auto metric = process_metric();
@@ -667,25 +757,35 @@ auto build_document() -> std::string
 	for (const auto &outlier : monitored_outliers) {
 		const std::size_t index = outlier.id.index();
 		if (index < evidence.size()) {
-			evidence[index].dbscan_noise = true;
+			evidence[index].dbscan_density_outlier = true;
 		}
 	}
 
-	bool drift_monotone = true;
-	double previous_drift = -std::numeric_limits<double>::infinity();
+	std::vector<double> drift_scores;
+	std::vector<double> recovery_scores;
 	bool fault_flagged = false;
 	for (std::size_t index = 0; index < observations.size(); ++index) {
 		if (observations[index].truth == Regime::Drift) {
-			drift_monotone = drift_monotone && evidence[index].nearest_healthy_distance > previous_drift;
-			previous_drift = evidence[index].nearest_healthy_distance;
+			drift_scores.push_back(evidence[index].nearest_healthy_distance);
+		}
+		if (observations[index].truth == Regime::Recovery) {
+			recovery_scores.push_back(evidence[index].nearest_healthy_distance);
 		}
 		if (observations[index].truth == Regime::Fault) {
-			fault_flagged = evidence[index].dbscan_noise &&
-							evidence[index].nearest_healthy_distance > alarm_threshold &&
-							evidence[index].nearest_catalog_regime == Regime::Fault;
+			fault_flagged = fault_flagged ||
+							(evidence[index].dbscan_density_outlier &&
+							 evidence[index].nearest_healthy_distance > alarm_threshold &&
+							 evidence[index].nearest_catalog_regime == Regime::Fault);
 		}
 	}
-	if (!drift_monotone || !fault_flagged) {
+	const bool drift_progression =
+		drift_scores.size() >= 3 && drift_scores.front() <= warn_threshold &&
+		drift_scores[drift_scores.size() / 2] > drift_scores.front() && drift_scores.back() > alarm_threshold;
+	const bool recovery_progression =
+		recovery_scores.size() >= 3 && recovery_scores.front() > alarm_threshold &&
+		recovery_scores[recovery_scores.size() / 2] < recovery_scores.front() &&
+		recovery_scores.back() <= warn_threshold;
+	if (!drift_progression || !recovery_progression || !fault_flagged) {
 		throw std::runtime_error("native condition-monitoring scenario checks failed");
 	}
 
@@ -696,7 +796,7 @@ auto build_document() -> std::string
 	auto doc = build_condition_monitoring_document(observations, evidence, record_ids, matrix, metric_positions, radius,
 												   warn_threshold, alarm_threshold, structure.average_distance,
 												   structure.maximum_distance, structure.intrinsic_dimension,
-												   structure.record_count, healthy_outliers.noise_count, law);
+												   structure.record_count, healthy_outliers.unassigned_count, law);
 	return doc.to_json() + '\n';
 }
 

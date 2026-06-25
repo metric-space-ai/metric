@@ -48,10 +48,18 @@ export class RelationMatrixView extends BaseView {
     this.valueKey = options.valueKey || ["value", "distance", "weight", "score"];
     this.readabilityCellPixels = finiteOption(options.readabilityCellPixels ?? options.smoothingCellPixels, 4.25);
     this.smoothingStrength = finiteOption(options.smoothingStrength ?? options.valueSmoothing, 0.72);
-    this.selectionAlpha = finiteOption(options.selectionAlpha, 0.38);
-    this.selectionCellAlpha = finiteOption(options.selectionCellAlpha, 0.72);
-    this.selectionOutlineAlpha = finiteOption(options.selectionOutlineAlpha, 0.92);
-    this.blockBandAlpha = finiteOption(options.blockBandAlpha, 0.055);
+    this.selectionAlpha = finiteOption(options.selectionAlpha, 0.44);
+    this.selectionCellAlpha = finiteOption(options.selectionCellAlpha, 0.82);
+    this.selectionOutlineAlpha = finiteOption(options.selectionOutlineAlpha, 0.96);
+    this.selectionOutlinePixels = finiteOption(options.selectionOutlinePixels, 1.65);
+    this.focusBackdropAlpha = finiteOption(options.focusBackdropAlpha, 0.3);
+    this.focusBlockAlpha = finiteOption(options.focusBlockAlpha, 0.085);
+    this.blockBandAlpha = finiteOption(options.blockBandAlpha, 0.075);
+    this.blockLineAlpha = finiteOption(options.blockLineAlpha, 0.42);
+    this.blockLineWidthCells = finiteOption(options.blockLineWidthCells, 0.82);
+    this.tileBoundaryAlpha = finiteOption(options.tileBoundaryAlpha, 0.12);
+    this.tileBoundaryWidthCells = finiteOption(options.tileBoundaryWidthCells, 0.36);
+    this.outerBorderAlpha = finiteOption(options.outerBorderAlpha, 0.58);
   }
 
   static fromVisualSpace(document, options = {}) {
@@ -104,19 +112,44 @@ export class RelationMatrixView extends BaseView {
       selectionAlpha: this.selectionAlpha,
       selectionCellAlpha: this.selectionCellAlpha,
       selectionOutlineAlpha: this.selectionOutlineAlpha,
+      selectionOutlinePixels: this.selectionOutlinePixels,
+      focusBackdropAlpha: this.focusBackdropAlpha,
+      focusBlockAlpha: this.focusBlockAlpha,
       blockBandAlpha: this.blockBandAlpha,
+      blockLineAlpha: this.blockLineAlpha,
+      blockLineWidthCells: this.blockLineWidthCells,
+      tileBoundaryAlpha: this.tileBoundaryAlpha,
+      tileBoundaryWidthCells: this.tileBoundaryWidthCells,
+      outerBorderAlpha: this.outerBorderAlpha,
     };
   }
 
   toLayerDescriptors() {
     const descriptor = createRelationMatrixLayerDescriptor(this.relationSource(), this.matrixOptions());
     descriptor.source = { ...descriptor.source, viewId: this.id, viewKind: this.kind, relationId: this.relationId };
-    descriptor.material = { ...descriptor.material, alpha: this.materialAlpha };
+    descriptor.material = {
+      ...descriptor.material,
+      alpha: this.materialAlpha,
+      focusBackdropAlpha: this.focusBackdropAlpha,
+      focusBlockAlpha: this.focusBlockAlpha,
+    };
     descriptor.metadata = {
       ...descriptor.metadata,
       relationType: this.relationType,
       relationId: this.relationId,
       relationName: this.relation?.name || null,
+      focusModel: {
+        source: "relation-matrix-view",
+        selectedFeatures: ["row", "column", "cell"],
+        backdrop: "dim-unfocused-cells",
+        blockContext: "selected-row-column-block-bands",
+        linkedGraph: "selection-presentation-graph-edge-emphasis",
+        pairPreview: "runtime-selected-pair-preview",
+      },
+    };
+    descriptor.metadata.selectionModel = {
+      ...(descriptor.metadata.selectionModel || {}),
+      focusPresentation: descriptor.metadata.focusModel,
     };
     return [descriptor];
   }

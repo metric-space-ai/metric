@@ -1,6 +1,6 @@
 // Conv2d backpropagation and SGD smoke test.
 //
-// This pins the native DNN solver contract used by metric-space fitted maps:
+// This pins the native DNN solver contract used by metric-space derived maps:
 // each observation is one row, parameter derivatives are averaged over
 // observations, and upstream activation gradients remain unnormalized for
 // earlier layers in the chain.

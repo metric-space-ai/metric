@@ -19,11 +19,11 @@
 namespace mtrc::stats::structural_analysis {
 
 // Cluster validity diagnostics that are well-defined for ANY finite metric space (they use
-// only pairwise metric values, never coordinates). For each clustered (non-noise) record we
+// only pairwise metric values, never coordinates). For each clustered (non-unassigned) record we
 // compute the silhouette: a(i) = mean distance to the other members of its own cluster,
 // b(i) = the smallest mean distance to any other cluster, s(i) = (b - a) / max(a, b) in
 // [-1, 1] (Rousseeuw 1987). A singleton cluster, or a clustering with a single cluster,
-// contributes s(i) = 0 by convention. Noise records are excluded from the evaluation.
+// contributes s(i) = 0 by convention. Unassigned records are excluded from the evaluation.
 //
 // This is a read-only investigation of an existing clustering of an existing space; it
 // neither mutates the space nor produces a new one.
@@ -35,10 +35,10 @@ template <typename Distance> struct ClusterDiagnostics {
 	double mean_nearest_cluster_distance{};
 	std::size_t cluster_count{};
 	std::size_t evaluated_record_count{};
-	std::size_t noise_count{};
+	std::size_t unassigned_count{};
 	std::vector<std::size_t> cluster_sizes;
 	std::vector<double> per_cluster_mean_intra_distance;
-	std::vector<RecordId> evaluated_ids;     // one entry per evaluated (non-noise) record
+	std::vector<RecordId> evaluated_ids;     // one entry per evaluated (non-unassigned) record
 	std::vector<double> silhouettes;         // parallel to evaluated_ids
 	bool exact{true};
 	std::string algorithm{"cluster_diagnostics"};
@@ -55,21 +55,21 @@ auto cluster_diagnostics(const Provider &provider, const ClusteringResult<Distan
 										  "cluster_diagnostics record_count does not match the provider",
 										  "cluster_diagnostics assignments size does not match record_count");
 
-	const auto noise_label = ClusteringResult<Distance>::noise_label;
+	const auto unassigned_label = ClusteringResult<Distance>::unassigned_label;
 	const auto cluster_count = clustering.cluster_count;
 
 	ClusterDiagnostics<Distance> diagnostics;
 	diagnostics.cluster_count = cluster_count;
-	diagnostics.noise_count = clustering.noise_count;
+	diagnostics.unassigned_count = clustering.unassigned_count;
 	diagnostics.representation = clustering.representation;
 	diagnostics.cluster_sizes.assign(cluster_count, 0);
 	diagnostics.per_cluster_mean_intra_distance.assign(cluster_count, 0.0);
 
-	// Bucket positions by cluster label (noise excluded).
+	// Bucket positions by cluster label (unassigned records excluded).
 	std::vector<std::vector<std::size_t>> positions_by_cluster(cluster_count);
 	for (std::size_t position = 0; position < clustering.assignments.size(); ++position) {
 		const auto label = clustering.assignments[position];
-		if (label == noise_label || label >= cluster_count) {
+		if (label == unassigned_label || label >= cluster_count) {
 			continue;
 		}
 		positions_by_cluster[label].push_back(position);

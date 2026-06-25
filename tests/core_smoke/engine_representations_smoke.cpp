@@ -4,6 +4,8 @@
 #include <vector>
 
 #include "metric/engine.hpp"
+#include "metric/space/cache.hpp"
+#include "metric/space/storage/triangular_distance_table.hpp"
 
 struct AbsoluteDistance {
 	auto operator()(int lhs, int rhs) const -> int { return lhs > rhs ? lhs - rhs : rhs - lhs; }
@@ -12,6 +14,24 @@ struct AbsoluteDistance {
 struct ScaledAbsoluteDistance {
 	int scale{1};
 	auto operator()(int lhs, int rhs) const -> int { return scale * (lhs > rhs ? lhs - rhs : rhs - lhs); }
+};
+
+struct CountingAbsoluteDistance {
+	int *calls{};
+
+	auto operator()(int lhs, int rhs) const -> int
+	{
+		++(*calls);
+		return lhs > rhs ? lhs - rhs : rhs - lhs;
+	}
+};
+
+struct DirectedDistance {
+	auto operator()(int lhs, int rhs) const -> int { return lhs <= rhs ? rhs - lhs : 100 + lhs - rhs; }
+};
+
+struct ZeroPseudoMetric {
+	auto operator()(int, int) const -> int { return 0; }
 };
 
 struct DirectedProvider {
@@ -49,6 +69,83 @@ struct DirectedProvider {
 	auto is_stale() const -> bool { return false; }
 };
 
+struct PositionCountingProvider {
+	using distance_type = int;
+
+	std::vector<mtrc::RecordId> ids{mtrc::RecordId::from_index(10), mtrc::RecordId::from_index(20),
+									  mtrc::RecordId::from_index(30)};
+	int *id_distance_calls{};
+	int *position_distance_calls{};
+
+	auto distance(mtrc::RecordId lhs, mtrc::RecordId rhs) const -> distance_type
+	{
+		++(*id_distance_calls);
+		return distance_for_positions(position_of(lhs), position_of(rhs));
+	}
+
+	auto distance_at_position(std::size_t lhs_position, std::size_t rhs_position) const -> distance_type
+	{
+		++(*position_distance_calls);
+		return distance_for_positions(lhs_position, rhs_position);
+	}
+
+	auto record_count() const -> std::size_t { return ids.size(); }
+	auto id(std::size_t position) const -> mtrc::RecordId { return ids.at(position); }
+	auto position_of(mtrc::RecordId id) const -> std::size_t
+	{
+		for (std::size_t index = 0; index < ids.size(); ++index) {
+			if (ids[index] == id) {
+				return index;
+			}
+		}
+		throw std::out_of_range("unknown position-counting provider id");
+	}
+	auto contains(mtrc::RecordId id) const -> bool
+	{
+		for (const auto candidate : ids) {
+			if (candidate == id) {
+				return true;
+			}
+		}
+		return false;
+	}
+	auto version() const -> std::size_t { return 11; }
+	auto is_stale() const -> bool { return false; }
+
+	static auto distance_for_positions(std::size_t lhs_position, std::size_t rhs_position) -> distance_type
+	{
+		return lhs_position > rhs_position
+				   ? static_cast<distance_type>(lhs_position - rhs_position)
+				   : static_cast<distance_type>(rhs_position - lhs_position);
+	}
+};
+
+struct LargeCountingProvider {
+	using distance_type = int;
+
+	std::size_t count{};
+	int *distance_calls{};
+
+	auto distance(mtrc::RecordId lhs, mtrc::RecordId rhs) const -> distance_type
+	{
+		++(*distance_calls);
+		return static_cast<distance_type>(rhs.index() - lhs.index());
+	}
+
+	auto distance_at_position(std::size_t lhs_position, std::size_t rhs_position) const -> distance_type
+	{
+		++(*distance_calls);
+		return static_cast<distance_type>(rhs_position - lhs_position);
+	}
+
+	auto record_count() const -> std::size_t { return count; }
+	auto id(std::size_t position) const -> mtrc::RecordId { return mtrc::RecordId::from_index(position); }
+	auto position_of(mtrc::RecordId id) const -> std::size_t { return id.index(); }
+	auto contains(mtrc::RecordId id) const -> bool { return id.index() < count; }
+	auto version() const -> std::size_t { return 13; }
+	auto is_stale() const -> bool { return false; }
+};
+
 namespace mtrc::core {
 template <> struct metric_traits<AbsoluteDistance> {
 	static constexpr auto law = metric_law::metric;
@@ -65,6 +162,24 @@ template <> struct metric_traits<ScaledAbsoluteDistance> {
 	{
 		return "scaled_absolute:scale=" + std::to_string(metric.scale);
 	}
+};
+
+template <> struct metric_traits<CountingAbsoluteDistance> {
+	static constexpr auto law = metric_law::metric;
+	static constexpr auto records = record_kind::custom;
+	static constexpr bool thread_safe = true;
+};
+
+template <> struct metric_traits<DirectedDistance> {
+	static constexpr auto law = metric_law::distance;
+	static constexpr auto records = record_kind::custom;
+	static constexpr bool thread_safe = true;
+};
+
+template <> struct metric_traits<ZeroPseudoMetric> {
+	static constexpr auto law = metric_law::pseudo_metric;
+	static constexpr auto records = record_kind::custom;
+	static constexpr bool thread_safe = true;
 };
 } // namespace mtrc::core
 
@@ -147,6 +262,56 @@ int main()
 	assert(directed_distances(1, 0) == 10);
 	assert(directed_distances(2, 1) == 21);
 
+	int dense_id_distance_calls = 0;
+	int dense_position_distance_calls = 0;
+	const PositionCountingProvider dense_counting_provider{
+		{mtrc::RecordId::from_index(10), mtrc::RecordId::from_index(20), mtrc::RecordId::from_index(30)},
+		&dense_id_distance_calls, &dense_position_distance_calls};
+	const auto dense_counted_distances =
+		mtrc::space::storage::provider_dense_distance_matrix(dense_counting_provider);
+	assert(dense_counted_distances(0, 2) == 2);
+	assert(dense_counted_distances(2, 0) == 2);
+	assert(dense_id_distance_calls == 0);
+	assert(dense_position_distance_calls == 9);
+
+	int symmetric_id_distance_calls = 0;
+	int symmetric_position_distance_calls = 0;
+	const PositionCountingProvider symmetric_counting_provider{
+		{mtrc::RecordId::from_index(10), mtrc::RecordId::from_index(20), mtrc::RecordId::from_index(30)},
+		&symmetric_id_distance_calls, &symmetric_position_distance_calls};
+	const auto symmetric_counted_distances =
+		mtrc::space::storage::provider_symmetric_distance_matrix(symmetric_counting_provider);
+	assert(symmetric_counted_distances(0, 2) == 2);
+	assert(symmetric_counted_distances(2, 0) == 2);
+	assert(symmetric_id_distance_calls == 0);
+	assert(symmetric_position_distance_calls == 3);
+
+	int guarded_dense_distance_calls = 0;
+	const LargeCountingProvider large_dense_provider{
+		mtrc::space::storage::default_dense_distance_matrix_max_records + 1, &guarded_dense_distance_calls};
+	bool rejected_large_dense_matrix = false;
+	try {
+		(void)mtrc::space::storage::provider_dense_distance_matrix(large_dense_provider);
+	} catch (const mtrc::RepresentationError &) {
+		rejected_large_dense_matrix = true;
+	}
+	assert(rejected_large_dense_matrix);
+	assert(guarded_dense_distance_calls == 0);
+
+	bool rejected_custom_symmetric_budget = false;
+	try {
+		(void)mtrc::space::storage::provider_symmetric_distance_matrix(
+			symmetric_counting_provider, mtrc::space::storage::dense_distance_matrix_options{8});
+	} catch (const mtrc::RepresentationError &) {
+		rejected_custom_symmetric_budget = true;
+	}
+	assert(rejected_custom_symmetric_budget);
+	assert(symmetric_position_distance_calls == 3);
+	const auto unbounded_symmetric_distances = mtrc::space::storage::provider_symmetric_distance_matrix(
+		symmetric_counting_provider, mtrc::space::storage::dense_distance_matrix_options{0});
+	assert(unbounded_symmetric_distances(0, 2) == 2);
+	assert(symmetric_position_distance_calls == 6);
+
 	auto matrix = mtrc::space::storage::matrix(space);
 	static_assert(mtrc::PairwiseDistances_v<decltype(matrix)>);
 	assert(matrix.record_count() == space.size());
@@ -173,6 +338,64 @@ int main()
 	assert(matrix.stats().hits == 2);
 	assert(matrix.dense_distance_slots() == space.size() * space.size());
 	assert(matrix.source_record_ids() == initial_ids);
+
+	int symmetric_metric_calls = 0;
+	auto counted_space =
+		mtrc::make_space(std::vector<int>{0, 2, 5, 9}, CountingAbsoluteDistance{&symmetric_metric_calls});
+	const auto counted_id0 = counted_space.id(0);
+	const auto counted_id1 = counted_space.id(1);
+	const auto counted_id2 = counted_space.id(2);
+	const auto counted_id3 = counted_space.id(3);
+	auto symmetric_table = mtrc::space::storage::symmetric_distance_table(counted_space);
+	static_assert(mtrc::PairwiseDistances_v<decltype(symmetric_table)>);
+	assert(symmetric_table.record_count() == counted_space.size());
+	assert(symmetric_table.off_diagonal_slots() == counted_space.size() * (counted_space.size() - 1) / 2);
+	assert(symmetric_table.dense_distance_slots() == symmetric_table.off_diagonal_slots());
+	assert(symmetric_table.cached_distances() == symmetric_table.off_diagonal_slots());
+	assert(symmetric_metric_calls == static_cast<int>(symmetric_table.off_diagonal_slots()));
+	assert(symmetric_table.distance(counted_id0, counted_id0) == 0);
+	assert(symmetric_table.distance_at_position(3, 3) == 0);
+	assert(symmetric_metric_calls == static_cast<int>(symmetric_table.off_diagonal_slots()));
+	assert(symmetric_table.distance(counted_id0, counted_id3) == 9);
+	assert(symmetric_table.distance(counted_id3, counted_id0) == 9);
+	assert(symmetric_table.distance_at_position(1, 3) == 7);
+	assert(symmetric_table.distance_at_position(3, 1) == 7);
+	assert(symmetric_table.contains(counted_id2));
+	assert(symmetric_table.position_of(counted_id3) == 3);
+	assert(symmetric_table.memory_bytes_estimate() ==
+		   mtrc::space::storage::estimate_triangular_distance_table_memory_bytes<int>(counted_space.size()));
+	assert(mtrc::space::storage::triangular_distance_slot_count(counted_space.size()) ==
+		   symmetric_table.off_diagonal_slots());
+	const auto symmetric_diagnostics = symmetric_table.diagnostics();
+	assert(symmetric_diagnostics.kind == mtrc::space::storage::representation_kind::distance_table);
+	assert(symmetric_diagnostics.exact == mtrc::space::storage::exactness::exact);
+	assert(symmetric_diagnostics.materialized == mtrc::space::storage::materialization::materialized);
+	assert(symmetric_diagnostics.updates == mtrc::space::storage::update_mode::snapshot);
+	assert(symmetric_diagnostics.cached_distances == symmetric_table.off_diagonal_slots());
+	assert(symmetric_diagnostics.distance_evaluations == symmetric_table.off_diagonal_slots());
+	assert(symmetric_diagnostics.dense_distance_slots == symmetric_table.off_diagonal_slots());
+	assert(symmetric_diagnostics.source_record_ids == symmetric_table.source_record_ids());
+	assert(!symmetric_diagnostics.stale);
+	assert(symmetric_table.cache_key().find("symmetric_distance_table") != std::string::npos);
+	counted_space.insert(12);
+	assert(symmetric_table.is_stale());
+	assert(symmetric_table.diagnostics().stale);
+	assert(!symmetric_table.diagnostics().warnings.empty());
+
+	auto pseudo_space = mtrc::make_space(std::vector<int>{1, 1, 2}, ZeroPseudoMetric{});
+	auto pseudo_symmetric_table = mtrc::space::storage::symmetric_distance_table(pseudo_space);
+	assert(pseudo_symmetric_table.record_count() == pseudo_space.size());
+	assert(pseudo_symmetric_table.distance(pseudo_space.id(0), pseudo_space.id(2)) == 0);
+
+	auto directed_space = mtrc::make_space(std::vector<int>{0, 2, 5}, DirectedDistance{});
+	bool rejected_directed_symmetric_table = false;
+	try {
+		(void)mtrc::space::storage::symmetric_distance_table(directed_space);
+	} catch (const mtrc::RepresentationError &) {
+		rejected_directed_symmetric_table = true;
+	}
+	assert(rejected_directed_symmetric_table);
+
 	auto strategy_matrix = mtrc::space::storage::make(space, mtrc::stats::search::distance_table{});
 	static_assert(mtrc::PairwiseDistances_v<decltype(strategy_matrix)>);
 	assert(strategy_matrix.distance(id0, id2) == matrix.distance(id0, id2));
@@ -192,6 +415,10 @@ int main()
 	assert(limited_matrix.diagnostics().max_dense_records == space.size());
 	assert(limited_matrix.diagnostics().max_memory_bytes == limited_matrix_options.max_memory_bytes);
 	assert(limited_matrix.diagnostics().dense_distance_slots == space.size() * space.size());
+	auto rebuilt_limited_matrix = mtrc::space::cache::rebuild(limited_matrix, space);
+	assert(rebuilt_limited_matrix.max_dense_records() == limited_matrix_options.max_dense_records);
+	assert(rebuilt_limited_matrix.max_memory_bytes() == limited_matrix_options.max_memory_bytes);
+	assert(rebuilt_limited_matrix.diagnostics().max_memory_bytes == limited_matrix_options.max_memory_bytes);
 	bool rejected_dense_limit = false;
 	limited_matrix_options.max_dense_records = space.size() - 1;
 	try {

@@ -4,7 +4,6 @@
 #include "concepts.hpp"
 #include "correlation.hpp"
 #include "metric/all.hpp"
-#include "mapping.hpp"
 #include "space/index/operators.hpp"
 #include "space.hpp"
 #include "transform.hpp"

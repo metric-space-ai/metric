@@ -37,8 +37,13 @@
 // for common streamable records while allowing custom record codecs for application-specific types.
 namespace mtrc::space::persistence {
 
+inline constexpr std::size_t default_max_materialized_pair_distances =
+	distances::default_max_collected_pair_values;
+
 struct artifact_options {
 	bool include_pair_distances{true};
+	std::size_t max_materialized_pair_distances{default_max_materialized_pair_distances};
+	bool allow_unbounded_pair_distances{false};
 	std::string metric_key;
 };
 
@@ -162,6 +167,32 @@ struct next_record_id_reader<Space, std::void_t<decltype(std::declval<const Spac
 template <typename Space> auto next_record_id(const Space &space) -> std::size_t
 {
 	return next_record_id_reader<Space>::get(space);
+}
+
+inline auto unordered_pair_count(std::size_t count) -> std::size_t
+{
+	if (count < 2) {
+		return 0;
+	}
+	const auto lhs = count % 2 == 0 ? count / 2 : count;
+	const auto rhs = count % 2 == 0 ? count - 1 : (count - 1) / 2;
+	if (lhs != 0 && rhs > std::numeric_limits<std::size_t>::max() / lhs) {
+		throw MetricInputError("space artifact pair distance count overflows size_t");
+	}
+	return lhs * rhs;
+}
+
+inline auto checked_pair_distance_count(std::size_t record_count, const artifact_options &options) -> std::size_t
+{
+	const auto pair_count = unordered_pair_count(record_count);
+	if (!options.allow_unbounded_pair_distances &&
+		pair_count > options.max_materialized_pair_distances) {
+		throw MetricInputError("space artifact pair distance export exceeds max_materialized_pair_distances: pairs=" +
+							   std::to_string(pair_count) + " max=" +
+							   std::to_string(options.max_materialized_pair_distances) +
+							   "; set include_pair_distances=false or allow_unbounded_pair_distances=true");
+	}
+	return pair_count;
 }
 
 template <typename Value> auto value_to_payload(const Value &value) -> std::string
@@ -294,10 +325,12 @@ auto export_space(const Space &space, artifact_options options = {})
 	}
 
 	if (options.include_pair_distances) {
-		for (const auto &pair : distances::pairs(space)) {
-			artifact.distances.push_back(
-				distance_entry<typename Space::distance_type>{pair.lhs, pair.rhs, pair.distance});
-		}
+		const auto pair_count = detail::checked_pair_distance_count(space.size(), options);
+		artifact.distances.reserve(pair_count);
+		distances::for_each_pair(space, [&artifact](RecordId lhs, RecordId rhs,
+													typename Space::distance_type distance) {
+			artifact.distances.push_back(distance_entry<typename Space::distance_type>{lhs, rhs, distance});
+		});
 	}
 
 	return artifact;

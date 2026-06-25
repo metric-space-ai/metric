@@ -11,8 +11,8 @@ The revived core package exposes the project concepts explicitly:
 - `metric.Space`: minimal intent-first finite metric space facade
 - `metric.spaces`: finite metric-space helpers such as `FiniteMetricSpace`
 - `metric.operators`: pairwise-distance, nearest-neighbor, range-neighbor, exact graph-result, graph-connectivity-diagnostics, graph-degree-diagnostics, graph-stretch-diagnostics, graph-symmetrization, graph-out-degree-pruning, exact graph-edge, representative-selection, medoid, separated-representative, and radius-coverage helpers
-- `metric.mappings`: beta compatibility bridge for installed mapping bindings
-- `metric.transforms`: beta compatibility bridge for installed transform bindings
+- `metric.mappings`: beta native mapping-artifact adapter surface
+- `metric.transforms`: beta transform adapter surface
 
 The same objects are also available as convenience imports from `metric` for short examples.
 
@@ -59,7 +59,7 @@ conda create --name my_env -y python=3.12
 conda activate my_env
 ```
 
-OpenBLAS is optional for the revived core wheel. For legacy full bindings or broader linear-algebra paths, install it from conda-forge:
+OpenBLAS is optional for the core wheel and broader linear-algebra paths:
 
 ```bash
 conda config --add channels conda-forge
@@ -75,11 +75,7 @@ At least 2GB of RAM is required
 python -m pip wheel . --no-deps -w dist
 ```
 
-By default this builds the revived core bindings. At this stage the default wheel exposes the `Edit` distance binding, space bindings, transform bindings, and the pure Python package surface. The legacy standard-distance, utils, mapping, and correlation bindings still require restoration and can be attempted with:
-
-```shell
-CMAKE_COMMON_VARIABLES="-DMETRIC_PYTHON_BUILD_FULL=ON" python -m pip wheel . --no-deps -w dist
-```
+This builds the core bindings and the pure Python package surface.
 
 To force the portable core-wheel mode used by CI:
 
@@ -105,13 +101,13 @@ print("distance(cat, cot) =", space(0, 1))
 print("nearest:", space.neighbors("cut", 2))
 ```
 
-The core-wheel example is also available at `examples/metric_space/string_edit_space.py`. Full correlation, mapping, and standard-distance examples remain part of the broader restoration path until their bindings are promoted into the default wheel.
+The core-wheel example is also available at `examples/metric_space/string_edit_space.py`.
 
 Small tutorial notebooks live under `notebooks/`. They are paired with
 `notebooks/smoke_notebooks.py`, which executes their code cells in CI after the
 wheel is installed.
 
-`metric.mappings` and `metric.transforms` are importable beta namespaces. They expose `available()` and `legacy_module()` so callers can inspect whether a wheel includes the broader legacy bindings without making those bindings part of the core-wheel contract.
+`metric.mappings` and `metric.transforms` are importable beta namespaces. Mapping artifacts stay native-owned; Python exposes metadata and guarded adapter calls only.
 
 ## NumPy records
 

@@ -33,8 +33,8 @@ Generated report:
 |---|---|---:|---:|---:|---:|---:|---|---|---|
 | string edit baseline | distance_table | 12 | 144 | 144 | 144 | 1248 | exact | materialized | edit-distance all-pairs cache |
 | histogram transport baseline | distance_table | 8 | 64 | 64 | 64 | 1088 | exact | materialized | cumulative-transport all-pairs cache |
-| process curve PHATE gallery | distance_table | 15 | 225 | 225 | 225 | 3720 | exact | materialized | aligned-curve PHATE target distance cache |
-| process curve PHATE gallery | knn_graph_index | 15 | 210 | 60 | 0 | 2160 | approximate | materialized | k=4 sparse neighbor index for gallery inspection |
+| process curve diffusion-coordinate gallery | distance_table | 15 | 225 | 225 | 225 | 3720 | exact | materialized | aligned-curve diffusion-coordinate target distance cache |
+| process curve diffusion-coordinate gallery | knn_graph_index | 15 | 210 | 60 | 0 | 2160 | approximate | materialized | k=4 sparse neighbor index for gallery inspection |
 | mixed structured record baseline | distance_table | 8 | 64 | 64 | 64 | 1088 | exact | materialized | composed mixed-record all-pairs cache |
 | distribution image recoding baseline | distance_table | 8 | 64 | 64 | 64 | 1088 | exact | materialized | grid-transport all-pairs cache |
 | distribution image recoding baseline | graph_topology | 8 | 0 | 2 | 0 | 112 | approximate | topology | threshold graph over transport geometry |
@@ -48,7 +48,7 @@ Generated report:
 |---|---:|---:|---:|---:|---:|---|
 | string edit baseline | 4 | 4/4 | 4/4 | - | 2 | edit-distance-vs-anagram-vector |
 | histogram transport baseline | 4 | 4/4 | 4/4 | - | 3.25 | transport-vs-coordinate-vector |
-| process curve PHATE gallery | 6 | 6/6 | 6/6 | 6/6 | 2.16667 | native PHATE-AE OOS: avg rank 1.33333; max rank 3; avg penalty 0.166667; max penalty 1 |
+| process curve diffusion-coordinate gallery | 6 | 6/6 | 6/6 | 6/6 | 2.16667 | native parametric diffusion coordinate OOS: avg rank 1.33333; max rank 3; avg penalty 0.166667; max penalty 1 |
 | mixed structured record baseline | 4 | 4/4 | 4/4 | - | 0.358734 | composed-domain-metric-vs-numeric-vector |
 | distribution image recoding baseline | 4 | 4/4 | 4/4 | - | 0.416667 | transport-recoding-vs-flat-pixel-vector |
 | cross-space MGC dependency baseline | 12 | 12/12 | 9/12 | - | - | MGC dependency score=1; raw-vector pairing correct=3/12 |
@@ -61,7 +61,7 @@ Generated report:
 | mixed structured record baseline | shared gallery operators | 8 | 4 | 224 | 64 | 0 | 3.5 | yes | composite domain metric reused across operators |
 | condition monitoring TWED baseline | shared gallery operators | 11 | 4 | 440 | 121 | 0 | 3.63636 | yes | true TWED metric reused across operators |
 | cross-space MGC dependency baseline | shared process-space operators | 12 | 4 | 528 | 144 | 0 | 3.66667 | yes | process distance matrix reused across operators |
-| process curve PHATE gallery | shared gallery operators | 15 | 4 | 840 | 225 | 0 | 3.73333 | yes | aligned-curve distance reused across operators |
+| process curve diffusion-coordinate gallery | shared gallery operators | 15 | 4 | 840 | 225 | 0 | 3.73333 | yes | aligned-curve distance reused across operators |
 ```
 
 Validation scope:
@@ -80,8 +80,8 @@ Validation scope:
   under the baseline
 - the cross-space MGC row asserts native metric-space dependency detection while
   raw value pairing misses 9 of 12 records
-- the PHATE-AE latent and OOS diagnostic values are the report snapshot for the
-  separately asserted `engine_process_curve_phate_gallery` C++ smoke fixture
+- the parametric diffusion coordinate latent and OOS diagnostic values are the report snapshot for the
+  separately asserted `engine_process_curve_diffusion_coordinate_gallery` C++ smoke fixture
 - the **Performance Evidence** rows are measured with a shared-counter metric
   wrapper: a naive pipeline re-evaluates the domain metric for each of four
   distance-consuming operator passes over a hero gallery, while a materialized

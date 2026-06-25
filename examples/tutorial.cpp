@@ -23,7 +23,7 @@ static void strings_example()
 	std::cout << mtrc::find_neighbors(space, std::string("metricks"), 2) << "\n";
 }
 
-// A vector space with construction-time validation, then a couple of properties.
+// A coordinate vector space with construction-time validation, then coordinate-safe properties.
 static void vectors_example()
 {
 	std::vector<std::vector<double>> records = {{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}, {1.0, 1.0}};
@@ -36,7 +36,7 @@ static void vectors_example()
 					 .build();
 
 	std::cout << "intrinsic dimension: " << mtrc::intrinsic_dimension(space) << "\n";
-	auto e = mtrc::entropy(space);
+	auto e = mtrc::stats::properties::entropy(space);
 	if (e.succeeded()) {
 		std::cout << e << "\n";
 	}

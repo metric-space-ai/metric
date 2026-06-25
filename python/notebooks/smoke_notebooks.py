@@ -16,7 +16,7 @@ REQUIRED_NOTEBOOKS = (
     "00_strings_as_metric_space.ipynb",
     "01_dataframe_records_custom_metric.ipynb",
     "02_neighbors_groups_outliers.ipynb",
-    "03_embed_map_denoise.ipynb",
+    "03_embed_map_density_filter.ipynb",
     "04_compare_aligned_spaces.ipynb",
     "05_strategy_overrides.ipynb",
 )

@@ -15,6 +15,16 @@ struct AbsoluteDistance {
 	auto operator()(int lhs, int rhs) const -> int { return lhs > rhs ? lhs - rhs : rhs - lhs; }
 };
 
+struct CountingAbsoluteDistance {
+	int *calls{};
+
+	auto operator()(int lhs, int rhs) const -> int
+	{
+		++(*calls);
+		return lhs > rhs ? lhs - rhs : rhs - lhs;
+	}
+};
+
 namespace {
 
 auto id(std::size_t index) -> mtrc::RecordId { return mtrc::RecordId::from_index(index); }
@@ -72,6 +82,32 @@ int main()
 	const auto operator_distances = mtrc::space::index::pairwise_distance_matrix(records, mtrc::Edit<std::string>{});
 	assert(operator_distances.size() == records.size());
 	assert(operator_distances[0][1] == 1);
+
+	int guarded_metric_calls = 0;
+	std::vector<int> large_records(1001);
+	bool rejected_large_pairwise_matrix = false;
+	try {
+		(void)mtrc::space::index::pairwise_distance_matrix(large_records,
+														   CountingAbsoluteDistance{&guarded_metric_calls});
+	} catch (const mtrc::RepresentationError &) {
+		rejected_large_pairwise_matrix = true;
+	}
+	assert(rejected_large_pairwise_matrix);
+	assert(guarded_metric_calls == 0);
+
+	auto small_int_space = mtrc::Space::from_records(std::vector<int>{0, 1, 2},
+													 CountingAbsoluteDistance{&guarded_metric_calls});
+	const auto calls_after_construction = guarded_metric_calls;
+	bool rejected_small_custom_budget = false;
+	try {
+		(void)small_int_space.pairwise_distances(mtrc::pairwise_matrix_options{8});
+	} catch (const mtrc::RepresentationError &) {
+		rejected_small_custom_budget = true;
+	}
+	assert(rejected_small_custom_budget);
+	assert(guarded_metric_calls == calls_after_construction);
+	const auto unbounded_matrix = small_int_space.pairwise_distances(mtrc::pairwise_matrix_options{0});
+	assert(unbounded_matrix.size() == 3 && unbounded_matrix[0][2] == 2);
 
 	const auto nearest = space.neighbors(std::string("cut"), 2);
 	assert(nearest.size() == 2);
@@ -167,6 +203,35 @@ int main()
 		{0, 1, 1}, {0, 2, 2}, {1, 0, 1}, {1, 2, 1}, {2, 1, 1}, {2, 3, 1}, {3, 2, 1}, {3, 4, 1}, {4, 3, 1}, {4, 2, 2},
 	};
 	assert(exact_knn_edges == expected_knn_edges);
+
+	int graph_guard_metric_calls = 0;
+	std::vector<int> large_graph_records(1001);
+	bool rejected_large_knn_graph = false;
+	try {
+		(void)mtrc::space::index::exact_knn_graph_edges(large_graph_records,
+														 CountingAbsoluteDistance{&graph_guard_metric_calls}, 1);
+	} catch (const mtrc::RepresentationError &) {
+		rejected_large_knn_graph = true;
+	}
+	assert(rejected_large_knn_graph);
+	assert(graph_guard_metric_calls == 0);
+
+	bool rejected_small_knn_graph_budget = false;
+	try {
+		(void)mtrc::space::index::exact_knn_graph_edges(
+			line, CountingAbsoluteDistance{&graph_guard_metric_calls}, 1, mtrc::space::index::exact_graph_options{4});
+	} catch (const mtrc::RepresentationError &) {
+		rejected_small_knn_graph_budget = true;
+	}
+	assert(rejected_small_knn_graph_budget);
+	assert(graph_guard_metric_calls == 0);
+
+	const auto calls_before_unbounded_knn = graph_guard_metric_calls;
+	const auto unbounded_counting_knn = mtrc::space::index::exact_knn_graph_edges(
+		line, CountingAbsoluteDistance{&graph_guard_metric_calls}, 1, mtrc::space::index::exact_graph_options{0});
+	assert(unbounded_counting_knn.size() == line.size());
+	assert(graph_guard_metric_calls > calls_before_unbounded_knn);
+	const auto calls_after_unbounded_knn = graph_guard_metric_calls;
 
 	const auto knn_graph = mtrc::space::index::exact_knn_graph(line, AbsoluteDistance{}, 2);
 	assert(knn_graph.edges == expected_knn_edges);
@@ -277,6 +342,36 @@ int main()
 	assert(std::abs(undirected_stretch.max_stretch - 1.0) < 1e-12);
 	assert(std::abs(undirected_stretch.average_stretch - 1.0) < 1e-12);
 	assert(undirected_stretch.stretch_policy == "undirected_shortest_path");
+
+	bool rejected_stretch_metric_budget = false;
+	try {
+		(void)mtrc::space::index::graph_stretch_diagnostics(
+			line, CountingAbsoluteDistance{&graph_guard_metric_calls}, union_graph,
+			mtrc::space::index::graph_stretch_options{4, 0, 0});
+	} catch (const mtrc::RepresentationError &) {
+		rejected_stretch_metric_budget = true;
+	}
+	assert(rejected_stretch_metric_budget);
+	assert(graph_guard_metric_calls == calls_after_unbounded_knn);
+
+	bool rejected_stretch_matrix_budget = false;
+	try {
+		(void)mtrc::space::index::graph_stretch_diagnostics(
+			line, CountingAbsoluteDistance{&graph_guard_metric_calls}, union_graph,
+			mtrc::space::index::graph_stretch_options{0, 4, 0});
+	} catch (const mtrc::RepresentationError &) {
+		rejected_stretch_matrix_budget = true;
+	}
+	assert(rejected_stretch_matrix_budget);
+	assert(graph_guard_metric_calls == calls_after_unbounded_knn);
+
+	const auto calls_before_unbounded_stretch = graph_guard_metric_calls;
+	const auto unbounded_counting_stretch = mtrc::space::index::graph_stretch_diagnostics(
+		line, CountingAbsoluteDistance{&graph_guard_metric_calls}, union_graph,
+		mtrc::space::index::graph_stretch_options{0, 0, 0});
+	assert(unbounded_counting_stretch.pair_count == 10);
+	assert(graph_guard_metric_calls > calls_before_unbounded_stretch);
+	const auto calls_after_unbounded_stretch = graph_guard_metric_calls;
 
 	bool rejected_undirected_pruning = false;
 	try {
@@ -390,6 +485,34 @@ int main()
 	};
 	assert(exact_radius_edges == expected_radius_edges);
 
+	bool rejected_large_radius_graph = false;
+	try {
+		(void)mtrc::space::index::exact_radius_graph_edges(large_graph_records,
+														   CountingAbsoluteDistance{&graph_guard_metric_calls}, 1);
+	} catch (const mtrc::RepresentationError &) {
+		rejected_large_radius_graph = true;
+	}
+	assert(rejected_large_radius_graph);
+	assert(graph_guard_metric_calls == calls_after_unbounded_stretch);
+
+	bool rejected_small_radius_graph_budget = false;
+	try {
+		(void)mtrc::space::index::exact_radius_graph_edges(
+			line, CountingAbsoluteDistance{&graph_guard_metric_calls}, 1,
+			mtrc::space::index::exact_graph_options{4});
+	} catch (const mtrc::RepresentationError &) {
+		rejected_small_radius_graph_budget = true;
+	}
+	assert(rejected_small_radius_graph_budget);
+	assert(graph_guard_metric_calls == calls_after_unbounded_stretch);
+
+	const auto calls_before_unbounded_radius = graph_guard_metric_calls;
+	const auto unbounded_counting_radius = mtrc::space::index::exact_radius_graph_edges(
+		line, CountingAbsoluteDistance{&graph_guard_metric_calls}, 1, mtrc::space::index::exact_graph_options{0});
+	assert(unbounded_counting_radius == expected_radius_edges);
+	assert(graph_guard_metric_calls > calls_before_unbounded_radius);
+	const auto calls_after_unbounded_radius = graph_guard_metric_calls;
+
 	const auto radius_graph = mtrc::space::index::exact_radius_graph(line, AbsoluteDistance{}, 1);
 	assert(radius_graph.edges == expected_radius_edges);
 	assert(radius_graph.metadata.strategy == "exact_radius");
@@ -420,6 +543,20 @@ int main()
 	assert(std::abs(directed_stretch.max_stretch - 1.0) < 1e-12);
 	assert(std::abs(directed_stretch.average_stretch - 1.0) < 1e-12);
 	assert(directed_stretch.stretch_policy == "directed_shortest_path");
+
+	mtrc::space::index::GraphConstructionResult<int> large_stretch_graph;
+	large_stretch_graph.metadata.record_count = large_graph_records.size();
+	large_stretch_graph.metadata.edge_count = 0;
+	large_stretch_graph.metadata.directed = true;
+	bool rejected_large_stretch_graph = false;
+	try {
+		(void)mtrc::space::index::graph_stretch_diagnostics(
+			large_graph_records, CountingAbsoluteDistance{&graph_guard_metric_calls}, large_stretch_graph);
+	} catch (const mtrc::RepresentationError &) {
+		rejected_large_stretch_graph = true;
+	}
+	assert(rejected_large_stretch_graph);
+	assert(graph_guard_metric_calls == calls_after_unbounded_radius);
 
 	const std::vector<int> separated_line = {0, 1, 10};
 	const auto disconnected_graph = mtrc::space::index::exact_radius_graph(separated_line, AbsoluteDistance{}, 1);

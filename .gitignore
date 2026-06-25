@@ -8,6 +8,7 @@ python/pkg/metric/_impl/*.pyd
 .claude/
 .playwright-cli/
 output/playwright/
+output/visual/
 runtime/visual-checks/
 visual/output/
 /*_PLAN.md

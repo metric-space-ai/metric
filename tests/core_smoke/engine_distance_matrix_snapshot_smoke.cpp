@@ -2,6 +2,8 @@
 #include <cstddef>
 #include <optional>
 #include <stdexcept>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "metric/engine.hpp"
@@ -25,6 +27,11 @@ template <> struct metric_traits<DirectedDistanceSnapshot> {
 	static auto cache_key(const DirectedDistanceSnapshot &) -> std::string { return "directed-distance-snapshot:v1"; }
 };
 } // namespace mtrc::core
+
+using IntDistanceSnapshot = mtrc::space::storage::distance_table_snapshot<int>;
+static_assert(std::is_aggregate<IntDistanceSnapshot>::value);
+static_assert(std::is_copy_constructible<IntDistanceSnapshot>::value);
+static_assert(std::is_move_constructible<IntDistanceSnapshot>::value);
 
 template <typename Callable> auto assert_out_of_range(Callable &&call) -> void
 {
@@ -97,6 +104,15 @@ int main()
 		(void)mtrc::space::storage::distance_table_snapshot_cell_distance_or_throw(
 			helper_cells, id1, id0, "missing helper cell");
 	});
+	mtrc::space::storage::distance_table_snapshot<int> manual_snapshot;
+	manual_snapshot.source_record_ids = helper_ids;
+	manual_snapshot.record_count = helper_ids.size();
+	manual_snapshot.cached_distances = helper_cells.size();
+	manual_snapshot.distances = helper_cells;
+	assert(manual_snapshot.contains(id1));
+	assert(manual_snapshot.position_of(id1) == 1);
+	assert(manual_snapshot.has_distance(id1, id1));
+	assert(manual_snapshot.distance(id1, id1) == 2);
 	const auto empty_helper_cells = mtrc::space::storage::distance_table_snapshot_cells<int>(
 		helper_ids, 2, 0,
 		[&helper_cache](std::size_t, std::size_t) -> const std::optional<int> & {
@@ -165,6 +181,14 @@ int main()
 	assert(lazy_snapshot.distance(id0, id2) == 7);
 	assert(lazy_snapshot.distance(id2, id0) == 14);
 	assert_out_of_range([&lazy_snapshot, id0, inserted_id]() { (void)lazy_snapshot.distance(id0, inserted_id); });
+	auto copied_lazy_snapshot = lazy_snapshot;
+	assert(copied_lazy_snapshot.contains(inserted_id));
+	assert(copied_lazy_snapshot.position_of(inserted_id) == 3);
+	assert(copied_lazy_snapshot.distance(id0, id2) == 7);
+	auto moved_lazy_snapshot = std::move(copied_lazy_snapshot);
+	assert(moved_lazy_snapshot.contains(id2));
+	assert(moved_lazy_snapshot.position_of(id2) == 2);
+	assert(moved_lazy_snapshot.distance(id2, id0) == 14);
 
 	return 0;
 }

@@ -1,3 +1,12 @@
+"""Native entropy estimator adapter.
+
+This module is not the promoted Python finite-space pipeline API. The C++
+framework-level entropy path is a coordinate-space operator reached after an
+explicit map/embed step. ``Entropy`` here is a thin adapter over
+``metric._impl.entropy`` for full native builds and should be read
+as a low-level estimator surface over coordinate-like records.
+"""
+
 from metric.exceptions import OptionalDependencyError
 
 try:

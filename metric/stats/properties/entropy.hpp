@@ -28,13 +28,6 @@ struct effective_parameters {
 	std::size_t approximation_order{};
 };
 
-template <typename Record, typename = void> struct VectorLikeRecord : std::false_type {};
-
-template <typename Record>
-struct VectorLikeRecord<Record, std::void_t<decltype(std::declval<const Record &>().size()),
-											decltype(std::declval<const Record &>()[std::declval<std::size_t>()])>>
-	: std::true_type {};
-
 inline auto entropy_effective_parameters(std::size_t record_count, std::size_t k, std::size_t p)
 	-> effective_parameters
 {
@@ -98,7 +91,7 @@ template <typename Container, typename Metric,
 auto coordinate_entropy(const Container &records, const Metric &metric, std::size_t k, std::size_t p,
 						bool exponentiated, const char *representation) -> EntropyResult<double>
 {
-	static_assert(VectorLikeRecord<Record>::value,
+	static_assert(CoordinateRecordLike_v<Record>,
 				  "mtrc::entropy requires an embedded coordinate space whose records expose size() and operator[]");
 	mtrc::Entropy<void, Metric> estimator(metric, k, p, exponentiated);
 
@@ -130,7 +123,7 @@ auto coordinate_entropy(const Container &records, const Metric &metric, std::siz
 
 } // namespace entropy_detail
 
-template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+template <typename Space, typename std::enable_if<CoordinateSpaceLike_v<Space>, int>::type = 0>
 auto entropy(const Space &space, std::size_t k = 7, std::size_t p = 70, bool exponentiated = false)
 	-> EntropyResult<double>
 {
@@ -144,8 +137,11 @@ template <typename Space>
 auto entropy(const core::MappingResult<Space> &mapping, std::size_t k = 7, std::size_t p = 70,
 			 bool exponentiated = false) -> EntropyResult<double>
 {
+	core::require_mapping_result_contract(mapping, "entropy(mapping)");
+	static_assert(CoordinateSpaceLike_v<Space>,
+				  "mtrc::entropy requires a MappingResult whose target space is an embedded coordinate space");
 	auto result = entropy(mapping.space, k, p, exponentiated);
-	result.representation = mapping.mapping.empty() ? "mapped_metric_space" : mapping.mapping;
+	result.representation = mapping.representation.empty() ? "mapped_metric_space" : mapping.representation;
 	return result;
 }
 

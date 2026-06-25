@@ -101,24 +101,24 @@ template <class InputDataType, class Scalar> class FlatVectorCodec {
   public:
 	using matrix_type = mtrc::numeric::DynamicMatrix<Scalar>;
 
-	explicit FlatVectorCodec(std::size_t feature_count, InputDataType norm_value = InputDataType{})
-		: feature_count_(feature_count), norm_value_(norm_value)
+	explicit FlatVectorCodec(std::size_t coordinate_count, InputDataType norm_value = InputDataType{})
+		: coordinate_count_(coordinate_count), norm_value_(norm_value)
 	{
-		if (feature_count_ == 0) {
-			throw std::invalid_argument("FlatVectorCodec feature count must be positive");
+		if (coordinate_count_ == 0) {
+			throw std::invalid_argument("FlatVectorCodec coordinate count must be positive");
 		}
 	}
 
-	auto feature_count() const -> std::size_t { return feature_count_; }
+	auto coordinate_count() const -> std::size_t { return coordinate_count_; }
 	auto norm_value() const -> InputDataType { return norm_value_; }
 	auto to_json() const -> mtrc::core::Metadata
 	{
-		return {{"type", "FlatVectorCodec"}, {"feature_count", feature_count_}, {"norm_value", norm_value_}};
+		return {{"type", "FlatVectorCodec"}, {"coordinate_count", coordinate_count_}, {"norm_value", norm_value_}};
 	}
 
 	auto encode_flat(const std::vector<InputDataType> &input) const -> matrix_type
 	{
-		auto encoded = mtrc::numeric::flat_values_to_matrix<Scalar>(input, feature_count_);
+		auto encoded = mtrc::numeric::flat_values_to_matrix<Scalar>(input, coordinate_count_);
 		if (norm_value_ != InputDataType{}) {
 			encoded /= Scalar(norm_value_);
 		}
@@ -128,8 +128,8 @@ template <class InputDataType, class Scalar> class FlatVectorCodec {
 
 	auto decode_flat(const matrix_type &matrix, bool denormalize = true) const -> std::vector<InputDataType>
 	{
-		if (matrix.columns() != feature_count_) {
-			throw std::invalid_argument("Decoded matrix feature count does not match codec");
+		if (matrix.columns() != coordinate_count_) {
+			throw std::invalid_argument("Decoded matrix coordinate count does not match codec");
 		}
 
 		matrix_type decoded(matrix);
@@ -141,7 +141,7 @@ template <class InputDataType, class Scalar> class FlatVectorCodec {
 	}
 
   private:
-	std::size_t feature_count_{0};
+	std::size_t coordinate_count_{0};
 	InputDataType norm_value_{};
 };
 
@@ -149,57 +149,57 @@ template <class Record, class Scalar> class VectorRecordCodec {
   public:
 	using matrix_type = mtrc::numeric::DynamicMatrix<Scalar>;
 
-	explicit VectorRecordCodec(std::size_t feature_count) : feature_count_(feature_count)
+	explicit VectorRecordCodec(std::size_t coordinate_count) : coordinate_count_(coordinate_count)
 	{
-		if (feature_count_ == 0) {
-			throw std::invalid_argument("VectorRecordCodec feature count must be positive");
+		if (coordinate_count_ == 0) {
+			throw std::invalid_argument("VectorRecordCodec coordinate count must be positive");
 		}
 	}
 
-	auto feature_count() const -> std::size_t { return feature_count_; }
+	auto coordinate_count() const -> std::size_t { return coordinate_count_; }
 	auto inverse_supported() const -> bool { return true; }
 	auto to_json() const -> mtrc::core::Metadata
 	{
-		return {{"type", "VectorRecordCodec"}, {"feature_count", feature_count_}, {"inverse_supported", true}};
+		return {{"type", "VectorRecordCodec"}, {"coordinate_count", coordinate_count_}, {"inverse_supported", true}};
 	}
 
 	auto encode_batch(const std::vector<Record> &records) const -> matrix_type
 	{
-		return mtrc::numeric::row_vectors_to_matrix<Scalar>(records, feature_count_);
+		return mtrc::numeric::row_vectors_to_matrix<Scalar>(records, coordinate_count_);
 	}
 
 	auto decode_batch(const matrix_type &matrix) const -> std::vector<Record>
 	{
-		if (matrix.columns() != feature_count_) {
-			throw std::invalid_argument("VectorRecordCodec decoded feature count does not match codec");
+		if (matrix.columns() != coordinate_count_) {
+			throw std::invalid_argument("VectorRecordCodec decoded coordinate count does not match codec");
 		}
 
 		return mtrc::numeric::matrix_to_row_vectors_as<Record>(matrix);
 	}
 
   private:
-	std::size_t feature_count_{0};
+	std::size_t coordinate_count_{0};
 };
 
-template <class Record, class Scalar, class Encoder> class FeatureRecordCodec {
+template <class Record, class Scalar, class Encoder> class RecordCoordinateCodec {
   public:
 	using matrix_type = mtrc::numeric::DynamicMatrix<Scalar>;
 
-	FeatureRecordCodec(std::size_t feature_count, Encoder encoder, std::string codec_name = "feature_record_codec")
-		: feature_count_(feature_count), encoder_(std::move(encoder)), codec_name_(std::move(codec_name))
+	RecordCoordinateCodec(std::size_t coordinate_count, Encoder encoder, std::string codec_name = "record_coordinate_codec")
+		: coordinate_count_(coordinate_count), encoder_(std::move(encoder)), codec_name_(std::move(codec_name))
 	{
-		if (feature_count_ == 0) {
-			throw std::invalid_argument("FeatureRecordCodec feature count must be positive");
+		if (coordinate_count_ == 0) {
+			throw std::invalid_argument("RecordCoordinateCodec coordinate count must be positive");
 		}
 	}
 
-	auto feature_count() const -> std::size_t { return feature_count_; }
+	auto coordinate_count() const -> std::size_t { return coordinate_count_; }
 	auto inverse_supported() const -> bool { return false; }
 	auto to_json() const -> mtrc::core::Metadata
 	{
-		return {{"type", "FeatureRecordCodec"},
+		return {{"type", "RecordCoordinateCodec"},
 				{"name", codec_name_},
-				{"feature_count", feature_count_},
+				{"coordinate_count", coordinate_count_},
 				{"inverse_supported", false}};
 	}
 
@@ -210,32 +210,32 @@ template <class Record, class Scalar, class Encoder> class FeatureRecordCodec {
 		std::vector<encoded_row_type> rows;
 		rows.reserve(records.size());
 		for (const auto &record : records) {
-			auto features = encoder_(record);
-			if (features.size() != feature_count_) {
-				throw std::invalid_argument("FeatureRecordCodec encoded feature count does not match codec");
+			auto coordinates = encoder_(record);
+			if (coordinates.size() != coordinate_count_) {
+				throw std::invalid_argument("RecordCoordinateCodec encoded coordinate count does not match codec");
 			}
-			rows.push_back(std::move(features));
+			rows.push_back(std::move(coordinates));
 		}
-		return mtrc::numeric::row_vectors_to_matrix<Scalar>(rows, feature_count_);
+		return mtrc::numeric::row_vectors_to_matrix<Scalar>(rows, coordinate_count_);
 	}
 
 	auto decode_batch(const matrix_type &) const -> std::vector<Record>
 	{
-		throw std::invalid_argument("FeatureRecordCodec does not support inverse decode");
+		throw std::invalid_argument("RecordCoordinateCodec does not support inverse decode");
 	}
 
   private:
-	std::size_t feature_count_{0};
+	std::size_t coordinate_count_{0};
 	Encoder encoder_;
 	std::string codec_name_;
 };
 
 template <class Record, class Scalar, class Encoder>
-auto make_feature_record_codec(std::size_t feature_count, Encoder encoder,
-							   std::string codec_name = "feature_record_codec")
-	-> FeatureRecordCodec<Record, Scalar, Encoder>
+auto make_record_coordinate_codec(std::size_t coordinate_count, Encoder encoder,
+							   std::string codec_name = "record_coordinate_codec")
+	-> RecordCoordinateCodec<Record, Scalar, Encoder>
 {
-	return FeatureRecordCodec<Record, Scalar, Encoder>(feature_count, std::move(encoder), std::move(codec_name));
+	return RecordCoordinateCodec<Record, Scalar, Encoder>(coordinate_count, std::move(encoder), std::move(codec_name));
 }
 
 } // namespace mtrc::solve::parametric::dnn

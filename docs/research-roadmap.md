@@ -175,7 +175,7 @@ Benchmark rules:
 
 The revival should not:
 
-- promote neural-network or autoencoder modules as stable APIs before deterministic fixtures exist
+- promote concrete solver modules as stable APIs before deterministic fixtures exist
 - add new algorithm families without documentation and release-gate tests
 - imply METRIC is a general vector database
 - convert all records to embeddings by default

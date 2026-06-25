@@ -13,7 +13,7 @@
 //    1. Mixed Records        -- composed domain metric vs flat numeric Euclidean
 //    2. Condition Monitoring -- TWED finite metric space vs Euclidean window vector
 //    3. Cross-Space Dependency -- MGC dependence between two metric spaces vs raw pairing
-//    4. Metric Mapping       -- PHATE diffusion-geometry targets driven by the metric
+//    4. Metric Mapping       -- diffusion-coordinate-geometry targets driven by the metric
 //
 //  Two kinds of evidence are emitted, kept strictly separate:
 //
@@ -741,7 +741,7 @@ template <typename Space> auto mean_offdiagonal_distance(const Space &space) -> 
 	return count == 0 ? 0.0 : total / static_cast<double>(count);
 }
 
-auto coordinate_checksum(const mtrc::modify::map::PhateGeometryTargets<double> &targets) -> double
+auto coordinate_checksum(const mtrc::modify::map::DiffusionCoordinateTargets<double> &targets) -> double
 {
 	double checksum = 0.0;
 	for (const auto &[id, coordinates] : targets.coordinates) {
@@ -759,13 +759,13 @@ auto run(BenchmarkReport &report) -> void
 	const auto records = arc_records(n);
 	auto space = mtrc::make_space(records, mtrc::Euclidean<double>());
 
-	mtrc::modify::map::PhateGeometrySpec<double> geometry;
+	mtrc::modify::map::DiffusionCoordinateSpec<double> geometry;
 	geometry.dimensions = 1;
 	geometry.diffusion_steps = 3;
 	geometry.kernel_scale = mean_offdiagonal_distance(space);
 	geometry.max_dense_records = records.size();
 
-	const auto targets = mtrc::modify::map::phate_geometry_targets<decltype(space), double>(
+	const auto targets = mtrc::modify::map::diffusion_coordinate_targets<decltype(space), double>(
 		space, geometry, "distance_table_pairwise_distances", "exponential_affinity_kernel",
 		"lazy_row_normalized_diffusion_operator");
 
@@ -777,7 +777,7 @@ auto run(BenchmarkReport &report) -> void
 	assert(targets.method == "diffusion_potential_anchor_coordinates");
 
 	// Reproducibility: recomputing the diffusion geometry yields byte-identical targets.
-	const auto targets_again = mtrc::modify::map::phate_geometry_targets<decltype(space), double>(
+	const auto targets_again = mtrc::modify::map::diffusion_coordinate_targets<decltype(space), double>(
 		space, geometry, "distance_table_pairwise_distances", "exponential_affinity_kernel",
 		"lazy_row_normalized_diffusion_operator");
 	const double checksum = coordinate_checksum(targets);
@@ -789,7 +789,7 @@ auto run(BenchmarkReport &report) -> void
 	//     downstream read-outs; materialize once vs recompute. ---
 	auto reduction = measure_work_reduction("metric mapping", "source geometry shared by diffusion target + readouts",
 											records, mtrc::Euclidean<double>(), 3,
-											"PHATE diffusion-geometry targets driven by the source metric");
+											"diffusion-coordinate-geometry targets driven by the source metric");
 	report.add_representation_cost(
 		mtrc::benchmarks::representation_cost_row("metric mapping", reduction.diagnostics, "arc source-space all-pairs cache"));
 	report.add_performance_row(reduction.row);
@@ -808,7 +808,7 @@ auto run(BenchmarkReport &report) -> void
 	//     Euclidean dense matrix the mapping is built on. ---
 	const int reps = full_mode() ? 400 : 10;
 	const double targets_ns = median_ns(reps, [&]() {
-		const auto rebuilt = mtrc::modify::map::phate_geometry_targets<decltype(space), double>(
+		const auto rebuilt = mtrc::modify::map::diffusion_coordinate_targets<decltype(space), double>(
 			space, geometry, "distance_table_pairwise_distances", "exponential_affinity_kernel",
 			"lazy_row_normalized_diffusion_operator");
 		return static_cast<double>(rebuilt.dense_distance_evaluations);

@@ -40,4 +40,8 @@ of the space.
 
 ## Operators and Mappings
 
-Once the metric space is defined, operators compute on it: nearest neighbors, grouping, embedding, mapping, reduction, denoising, outlier detection, entropy, correlation, sparse graph construction, and diagnostics. Mappings transform records or whole spaces into other metric spaces while keeping metric assumptions visible.
+Once the metric space is defined, operators compute on it: nearest neighbors,
+grouping, derived coordinate spaces, metric-space mappings, reduction, inverse
+dynamics, singular-record scoring, entropy, dependence, sparse graph
+construction, and diagnostics. Mappings transform records or whole spaces into
+other metric spaces while keeping metric assumptions visible.

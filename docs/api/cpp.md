@@ -192,7 +192,7 @@ for (const auto& entry : report.entries) {
 
 By default the report lists discoverable true metrics only. Set
 `discovery_options::include_quarantine` or `include_rejected` when an application
-wants to explain why a shipped compatibility distance is not routed as a metric
+wants to explain why a quarantined distance is not routed as a metric
 and which alternative should be used.
 
 ## Namespace Map
@@ -207,7 +207,7 @@ The source tree follows the Level-1 METRIC vocabulary:
 | `mtrc::stats` | `metric/stats/...` | questions about an existing finite metric space |
 | `mtrc::modify` | `metric/modify/...` | derived or modified finite metric spaces |
 | `mtrc::solve` | `metric/solve/...` | native C++ solvers used by metric-space computations |
-| `mtrc::numeric` | `metric/numeric/...` | low-level numeric contracts; METRIC's native numerical core with historical source provenance documented centrally; no external numeric dependency/public boundary |
+| `mtrc::numeric` | `metric/numeric/...` | low-level numeric contracts; METRIC's native numerical core with historical source provenance documented centrally; no external numeric dependency boundary |
 
 ## Records And Spaces
 
@@ -263,7 +263,10 @@ not serialized as code.
 ```cpp
 std::stringstream artifact;
 
-mtrc::space::persistence::save(artifact, space);
+auto save_options = mtrc::space::persistence::artifact_options{};
+save_options.max_materialized_pair_distances = 10000; // explicit budget for saved pair values
+
+mtrc::space::persistence::save(artifact, space, save_options);
 auto loaded = mtrc::space::persistence::load<std::string>(artifact, mtrc::Edit<char>{});
 
 assert(loaded.space.id(0) == space.id(0));
@@ -273,6 +276,11 @@ assert(loaded.space.version() == space.version());
 The default `record_text_codec<T>` supports streamable records and preserves
 `std::string` payloads verbatim. Applications with structured records can pass
 a codec with `encode(record) -> std::string` and `decode(payload) -> Record`.
+Materialized pair values are included by default only under
+`artifact_options::max_materialized_pair_distances`. Set
+`include_pair_distances=false` for record/id/version-only artifacts, or set
+`allow_unbounded_pair_distances=true` only when a full all-pairs snapshot is an
+intentional, capacity-planned export.
 `verify_distances` checks that saved materialized pair values still agree with
 the supplied metric, so an artifact cannot silently load against the wrong
 metric implementation.
@@ -285,8 +293,10 @@ stale lineage instead of writing a misleading artifact.
 
 ```cpp
 auto sub = mtrc::space::select_subspace(space, {space.id(0), space.id(2)});
+auto sub_save_options = mtrc::space::persistence::artifact_options{};
+sub_save_options.max_materialized_pair_distances = 10000;
 
-mtrc::space::persistence::save(artifact, sub);
+mtrc::space::persistence::save(artifact, sub, sub_save_options);
 auto loaded_sub = mtrc::space::persistence::load_subspace<std::string>(
     artifact, mtrc::Edit<char>{});
 
@@ -303,12 +313,12 @@ metrics admitted under documented domain constraints.
 Current catalog groups include:
 
 - vector metrics: Euclidean, Manhattan, Chebyshev, P-norm, Ruzicka-style metrics
-- structured metrics: Edit, strict `Wasserstein` transport (with permissive `EMD` kept only as `metric_law::distance` compatibility), TWED
+- structured metrics: Edit, strict `Wasserstein` transport (with permissive `EMD` kept only as a non-admitted `metric_law::distance` route), TWED
 - distribution metrics: Cramer-von Mises, Kolmogorov-Smirnov, Random EMD (quarantined; not an admitted metric)
 - space-related metrics: Riemannian distance helpers
 
 Questionable or non-metric functions are not part of normal metric discovery.
-Temporary compatibility code lives under `metric/metric/quarantine/...` until
+Temporary quarantine code lives under `metric/metric/quarantine/...` until
 it is admitted with proof and tests or removed from the metric surface.
 
 Custom C++ metrics are callables accepted by `mtrc::make_space`. Algorithms
@@ -323,13 +333,18 @@ mutates the source space, and never creates a derived space (those are
 `mtrc::space` and `mtrc::modify`). The five Level-2 components are user
 workflows over one (or, for `correlate`, two paired) finite metric spaces.
 Vector records are one convenient special case, not the conceptual basis: every
-stats workflow is computed from metric values, not coordinates.
+distance-only stats workflow is computed from metric values, not coordinates.
+Coordinate-space estimators are explicit pipeline consumers: first map or embed
+the source space, then run the coordinate operator on the derived space. Those
+operators also require an admitted coordinate-neighborhood metric family through
+`CoordinateMetricLike`; numeric/indexable records plus an arbitrary
+`metric_law::metric` are not enough.
 
 | Namespace | Examples |
 | --- | --- |
 | `mtrc::stats::search` | nearest-neighbor, range, and batch queries (`knn`, `range`, `knn_batch`, `range_batch`, `find_neighbors`) |
 | `mtrc::stats::sample` | deterministic sampling and metric-space walks (`regular_sample`, `farthest_first`, `metric_walk`) |
-| `mtrc::stats::properties` | `profile`, distance-value distribution, entropy, intrinsic dimension, local-volume, structure summaries |
+| `mtrc::stats::properties` | `profile`, distance-value distribution, coordinate-space entropy, intrinsic dimension, local-volume, structure summaries |
 | `mtrc::stats::correlate` | dependence/correlation between paired spaces and its significance; MGC is one implementation |
 | `mtrc::stats::structural_analysis` | groups, clusters, outliers, representatives, and cluster validity diagnostics |
 
@@ -340,11 +355,15 @@ distance-distribution and local-volume sections are computed only when requested
 through `profile_options`, so `profile` has no hidden expensive behavior. The
 `distance_distribution` diagnostic reports quantiles and a histogram over the
 pairwise metric values and rejects non-finite values (a NaN has no defined
-order). Entropy is a property of one space: a differential-entropy estimate whose
+order). Entropy is the coordinate-space exception in this group: the current kpN
+estimator requires an embedded coordinate space or mapping result with an
+admitted coordinate-neighborhood metric because it uses metric neighborhoods
+plus local Gaussian coordinate volumes. Its
 `EntropyResult` carries an explicit `status` (`valid` -- including a valid
 negative value -- `too_few_records`, `degenerate`, or `estimator_failure`) and
-the effective (clamped) neighbor count and approximation order. Intrinsic dimension is a finite-space
-growth diagnostic, not a manifold-dimension guarantee.
+the effective (clamped) neighbor count and approximation order. Intrinsic
+dimension is a finite-space growth diagnostic, not a manifold-dimension
+guarantee.
 
 Search can run directly over the space, in batches, or through an execution
 representation; every result carries exactness and representation metadata and
@@ -365,18 +384,122 @@ queries where the representation can answer the request exactly:
 `cover_tree`, `knn_graph`, and `mtrc::space::storage::policy`. A kNN graph range
 query by `RecordId` is accepted only when the graph contains every possible
 neighbor; otherwise it throws instead of returning an incomplete radius result.
+`mtrc::space::storage::using_knn_graph(...)` is preflighted as an index build:
+`estimate_cost` charges the full directed `n * (n - 1)` build work plus query
+work before constructing `KnnGraphIndex`, so low `max_distance_evaluations`
+budgets refuse before metric calls.
+For large metric search where an exact scan or dense table is not acceptable,
+`mtrc::space::storage::using_landmark_index(candidate_limit,
+mtrc::space::storage::approximate())` builds an explicit non-exact
+Landmark/Pivot provider, reports `landmark_index`, stores only `O(n * p)`
+landmark distances, and refines a bounded candidate set with the exact metric.
+Search diagnostics report whether bounded recall calibration ran. When it runs,
+`approximation_quality` includes the holdout query count, bounded
+reference-candidate evaluation count, matched/reference counts, and recall
+estimate with `standard_error` and `confidence_radius_95`; otherwise `reason`
+says why calibration was skipped, for example an empty request or
+`max_distance_evaluations` guard.
+For admitted metric or pseudo-metric spaces, multi-query approximate planning
+and `space::execution_context(space, mtrc::space::storage::approximate())`
+can select the same Landmark/Pivot provider automatically for repeated search.
+Automatic Landmark planning derives conservative landmark/candidate defaults
+from `n`, `query_count`, and evaluation budget, compares the Landmark estimate
+against sampled search, and leaves explicit `using_landmark_index(...)`
+candidate limits unchanged.
+For exact workflows that must avoid resident dense all-pairs storage, a
+budgeted distance-table policy can opt into blocked execution and explicit
+disk spill:
+
+```cpp
+mtrc::space::storage::resource_budget budget;
+budget.max_memory_bytes = 64 * 1024 * 1024;
+budget.allow_chunking = true;
+budget.allow_out_of_core_spill = true;
+auto policy = mtrc::space::storage::with_resource_budget(
+    mtrc::space::storage::using_distance_table(), budget);
+auto table = mtrc::space::storage::make_blocked_distance_table(space, policy);
+```
+
+The default blocked provider is memory-only. With `allow_out_of_core_spill`,
+evicted LRU blocks are persisted and later reloaded without re-running the
+metric; results remain exact, while the planner still refuses unsafe dense
+materialization unless the caller opts into bounded block execution.
+`estimate_cost` and `diagnostics_for_space` report the out-of-core plan before
+execution, including `spill_enabled`, `spill_block_count`,
+`planned_spill_blocks`, `max_resident_blocks`, resident/spill byte estimates,
+and whether explicit spill policy was required.
+For materialized search/range that may trade exactness for bounded work, enable
+both chunking and approximate fallback. The planner reports `chunked_space_view`,
+the result is marked `exact=false`, and the operator runs bounded chunk
+refinement instead of constructing a dense table. `RecordId` queries refine
+representative-selected chunk pairs; free query objects rank chunk
+representatives and refine only selected chunks:
+
+```cpp
+mtrc::space::storage::resource_budget search_budget;
+search_budget.max_dense_records = 1024;
+search_budget.allow_chunking = true;
+search_budget.allow_approximate = true;
+auto search_policy = mtrc::space::storage::with_resource_budget(
+    mtrc::space::storage::using_distance_table(), search_budget);
+auto plan = mtrc::space::storage::estimate_cost(space, "neighbors", search_policy);
+auto neighbors = mtrc::find_neighbors(space, space.id(0), 10, search_policy);
+```
+
+Exact-only policies that allow chunking continue to use the blocked exact
+provider; the planner does not silently return approximate results for an exact
+contract.
+Batch search is a thin adapter over the single-query path: source spaces support
+record-value and `RecordId` batches, records+metric convenience inputs report
+`"records"` representation, pairwise providers support `RecordId` batches, and
+mapping results support source-`RecordId` batches while preserving mapped-space
+provenance and per-neighbor source lineage. A `MappingResult` is a lineage
+artifact, not a mapping-artifact handle: raw source-record out-of-sample mapped
+search is intentionally not a public overload.
 
 `mtrc::stats::correlate` tests dependence between two paired finite metric
 spaces. MGC is a dependence statistic in `[-1, 1]`, **not a metric or distance**.
-`mgc_significance` turns the point statistic into an upper-tail p-value via a
-seeded permutation test (an explicit, reproducible result with statistic,
-p-value, permutation count, and seed); spaces can be aligned by position or, with
-`mgc_by_record_id`, by shared record identity with explicit dropped-pair
-reporting. `mtrc::stats::structural_analysis` adds `cluster_diagnostics`
+The C++ public surface accepts spaces, pairwise providers, and records+metric
+convenience inputs for the aligned-by-position MGC statistic through
+`mgc(...)`, `compare(...)`, and `correlate(...)`. `mgc_significance` turns the
+point statistic into an upper-tail p-value via a seeded permutation test (an
+explicit, reproducible result with statistic, p-value, permutation count, and
+seed) over the same space/provider/records+metric domains. Large default
+`compare(space, space)` / `correlate(space, space)` calls preflight dense MGC
+work and use the bounded sampled estimate route when the exact matrix would
+exceed the default dense budget. `mgc_significance(space, space)` requires dense
+exact pairwise distances for its permutation p-value and therefore refuses
+oversized `MetricSpace` inputs before metric calls; pass an explicit provider or
+lower the record count when exact significance is intended. Spaces can also be
+aligned by shared record identity with `mgc_by_record_id`, which reports
+explicit dropped-pair counts. `mtrc::stats::structural_analysis` adds `cluster_diagnostics`
 (silhouette and intra/inter-cluster distances, well-defined for any metric space)
 and `nearest_neighbor_outliers` (a k-NN distance isolation score) alongside the
 existing DBSCAN, k-medoids, affinity-propagation, outlier, and representative
 implementations.
+
+`mtrc::space::distances::pairs(...)` materializes unordered pair values and has a
+default pair-count guard before allocation or metric evaluation. Use
+`for_each_pair(...)` for streaming large pair traversals, or pass
+`pair_collection_options{0}` only for an intentional unbounded in-memory
+collection.
+The explicit dense-matrix helpers `FiniteSpace::pairwise_distances(...)` and
+`mtrc::space::index::pairwise_distance_matrix(...)` similarly guard their
+materialized `n x n` matrix output with `pairwise_matrix_options`; pass
+`pairwise_matrix_options{0}` only when an unbounded dense matrix is intentional.
+Exact graph helpers are also budgeted before metric evaluation:
+`exact_knn_graph(...)`, `exact_knn_graph_edges(...)`,
+`exact_radius_graph(...)`, and `exact_radius_graph_edges(...)` guard exhaustive
+directed `n * (n - 1)` metric work with `exact_graph_options`. Pass
+`exact_graph_options{0}` only for intentional unbounded exact construction.
+`graph_stretch_diagnostics(...)` uses `graph_stretch_options` to guard the
+direct metric-pair comparisons, dense shortest-path matrix cells, and
+all-pairs shortest-path closure estimate before allocating or invoking the
+metric; `graph_stretch_options{0, 0, 0}` is the explicit unbounded opt-in.
+The lower-level storage conversion helpers
+`provider_dense_distance_matrix(...)`, `provider_symmetric_distance_matrix(...)`,
+and `metric_space_dense_distance_matrix(...)` use
+`dense_distance_matrix_options` for the same reason.
 
 ## Space Storage And Indexes
 
@@ -402,16 +525,44 @@ cached old values and freshly computed new-version values cannot be mixed.
 
 Current homes include:
 
-- `mtrc::modify::map`: coordinate maps, PCFA, fitted native maps, autoencoder
-  mappings, KOC/SOM-style adapters
+- `mtrc::modify::map`: coordinate maps, PCFA, derived native maps, and
+  parametric coordinate maps
 - `mtrc::modify::reduce`: representative-space and reduction work
-- `mtrc::modify::resample`: denoise/resampling work
-- `mtrc::modify::compose`: inspectable workflows such as the native PHATE-AE
+- `mtrc::modify::resample`: density-filter/resampling work
+- `mtrc::modify::compose`: inspectable workflows such as the native parametric diffusion coordinate
   demonstrator
 
-PHATE, autoencoders, and DNNs are not a separate ML framework inside METRIC.
-They are implementations used to build fitted maps or demonstrator workflows
-from an existing finite metric space.
+`CompressionResult` reports source lineage, source-to-representative
+assignments, nearest-representative distances, representative multiplicities,
+and normalized representative weights. The retained records remain source
+records, so promoted compression is a weighted finite metric-measure summary,
+not a vector-centroid reduction. Count-based compression accepts
+`space::select::coverage` and `space::select::k_center` as explicit aliases for
+the promoted coverage objective, while `space::select::radius_coverage{radius}`
+chooses the representative count from a metric radius. `k_medoids_options`
+selects source medoids for average-assignment compression.
+
+`modify::resample::thin(space, count, preserve_distribution{...})` and the
+`distribution_sample` alias perform deterministic distribution-preserving
+thinning by regular source-order sampling. They return `MappingResult` lineage
+over retained source records and preserve the source metric on the subset.
+`thin(space, uniform_density{radius})` and `uniform_density_sample` perform the
+metric-only uniform-density route as a maximal radius net: retained records are
+source records, radius-separated, and radius-cover the original finite space,
+so empirical density is intentionally flattened. The result diagnostics report
+the requested radius, coverage radius, average assignment distance, before/after
+average nearest-neighbor distance, local-density drift, and before/after local
+volume count and density at the requested radius.
+`equalize(space, uniform_density{radius})` exposes the same metric-only
+construction as the density-normalization intent and returns a
+`MappingResult` with `mapping="equalize"`.
+
+parametric diffusion coordinates and native coordinate solvers are not a separate algorithm collection inside METRIC.
+They are implementations used to build derived maps or demonstrator workflows
+from an existing finite metric space. diffusion-coordinate target/diffusion helpers now carry
+a conservative `max_dense_records` default and refuse before building dense
+distance, transition, or probability matrices when that default would be
+exceeded; set the limit explicitly only when dense work is intended.
 
 MGC and entropy use the same rule from the stats side: entropy describes one
 finite metric space, while MGC measures dependence between two aligned finite
@@ -422,7 +573,7 @@ metric spaces. Neither API creates a new record metric.
 `mtrc::solve` owns native C++ solvers used by higher-level metric-space
 operations. Current homes include:
 
-- `mtrc::solve::parametric::dnn` for native fitted-function solvers
+- `mtrc::solve::parametric::dnn` for native calibrated-function solvers
 - `mtrc::solve::laplacian` for graph/Laplacian solver code
 
 `mtrc::numeric` remains domain-neutral: scalar, vector, matrix, sparse,
@@ -449,12 +600,12 @@ the full per-area map and stability classification.
 
 `<metric/engine.hpp>` exports METRIC engine errors such as
 `mtrc::InvalidRuntimePolicyError`, `mtrc::RepresentationError`, and
-`mtrc::PipelineValidationError`. They remain compatible with standard C++
+`mtrc::PipelineValidationError`. They use standard C++
 exception handling while preserving METRIC-specific failure causes.
 
-## Compatibility Boundary
+## Quarantine Boundary
 
-Some older compatibility names remain while examples and bindings are migrated.
+Some older adapter names remain while examples and bindings are migrated.
 Current documentation uses the `mtrc` namespace and the Level-1 source layout
 above. Non-metric functions are not documented as metrics, and algorithmic work
 belongs in native C++ rather than Python or another binding layer.

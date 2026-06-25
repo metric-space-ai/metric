@@ -35,7 +35,7 @@ report.add_representation_cost(mtrc::benchmarks::representation_cost_row(
     "eager all-pairs materialization"));
 
 mtrc::benchmarks::WorkflowEvidenceRow workflow;
-workflow.benchmark = "process curve PHATE gallery";
+workflow.benchmark = "process curve diffusion-coordinate gallery";
 workflow.query_count = 6;
 workflow.metric_matches = 6;
 workflow.vector_mismatches = 6;
@@ -68,10 +68,10 @@ indicative wall-clock timing is emitted out-of-band when
 The first promoted generator is
 `build/core/examples/engine/engine_benchmark_report`; its checked-in artifact is
 [Engine Benchmark Report](engine-benchmark-report.md). It currently consolidates
-native string, histogram, process-curve PHATE gallery, mixed-record,
+native string, histogram, process-curve diffusion-coordinate gallery, mixed-record,
 distribution/image recoding, cross-space MGC, and condition-monitoring
 application workflow evidence, plus work-reduction performance evidence for the
-mixed-record, condition-monitoring, cross-space, and PHATE gallery heroes. The
+mixed-record, condition-monitoring, cross-space, and diffusion-coordinate gallery heroes. The
 manual `benchmark.yml` workflow runs the same generator with
 `METRIC_BENCHMARK_REPORT_*` environment variables so archived artifacts carry
 runner/build/commit metadata.

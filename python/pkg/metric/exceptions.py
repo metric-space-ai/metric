@@ -54,15 +54,13 @@ class OptionalDependencyError(MetricError, ImportError):
 
     It is also an :class:`ImportError` because it is raised exclusively for
     unavailable optional imports/native bindings (e.g. the correlation adapter
-    boundary or a missing ``numpy``). This lets import-aware compatibility
-    discovery (``metric.compat``) treat an unavailable optional binding the
-    same way it treats any other unimportable legacy module, while keeping the
-    public ``MetricError`` hierarchy intact.
+    boundary or a missing ``numpy``), while keeping the public ``MetricError``
+    hierarchy intact.
     """
 
 
-class NotFittedError(MetricError):
-    """Raised when a model is used before fitting."""
+class NotDerivedError(MetricError):
+    """Raised when a derived artifact is used before it has been derived."""
 
 
 class UnsupportedOperationError(MetricError):
@@ -77,7 +75,7 @@ __all__ = [
     "MetricError",
     "MetricInputError",
     "MissingMetricError",
-    "NotFittedError",
+    "NotDerivedError",
     "OptionalDependencyError",
     "RepresentationError",
     "StaleRepresentationError",

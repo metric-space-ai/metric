@@ -3,7 +3,10 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include <cassert>
+#include <cstddef>
+#include <memory>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <vector>
 
@@ -12,6 +15,17 @@
 struct AbsoluteDistance {
 	auto operator()(int lhs, int rhs) const -> int
 	{
+		const auto difference = lhs - rhs;
+		return difference < 0 ? -difference : difference;
+	}
+};
+
+struct CountingMetric {
+	std::shared_ptr<std::size_t> calls;
+
+	auto operator()(int lhs, int rhs) const -> int
+	{
+		++*calls;
 		const auto difference = lhs - rhs;
 		return difference < 0 ? -difference : difference;
 	}
@@ -26,7 +40,7 @@ int main()
 		"manual_strategy", "manual_representation", false);
 	assert(manual.record_count == space.size());
 	assert(manual.cluster_count == 2);
-	assert(manual.noise_count == 2);
+	assert(manual.unassigned_count == 2);
 	assert(manual.size() == 2);
 	assert(manual[0].id == space.id(4));
 	assert(manual[0].score == 19);
@@ -40,7 +54,7 @@ int main()
 	assert(empty_manual.empty());
 	assert(empty_manual.record_count == space.size());
 	assert(empty_manual.cluster_count == 2);
-	assert(empty_manual.noise_count == 0);
+	assert(empty_manual.unassigned_count == 0);
 	assert(empty_manual.exact);
 	assert(empty_manual.strategy == "empty_strategy");
 	assert(empty_manual.representation == "empty_representation");
@@ -50,11 +64,11 @@ int main()
 	static_assert(std::is_same<typename Result::score_type, int>::value);
 
 	assert(outliers.operator_name == "find_outliers");
-	assert(outliers.strategy == "dbscan_noise");
+	assert(outliers.strategy == "dbscan_density_outlier");
 	assert(outliers.representation == "metric_space");
 	assert(outliers.record_count == space.size());
 	assert(outliers.cluster_count == 2);
-	assert(outliers.noise_count == 1);
+	assert(outliers.unassigned_count == 1);
 	assert(outliers.size() == 1);
 	assert(outliers[0].id == space.id(4));
 	assert(outliers[0].score == 19);
@@ -77,23 +91,106 @@ int main()
 
 	const auto dense = mtrc::find_outliers(space, mtrc::stats::structural_analysis::dbscan_options(100.0, 2));
 	assert(dense.empty());
-	assert(dense.noise_count == 0);
+	assert(dense.unassigned_count == 0);
 	auto sparse = mtrc::make_space(std::vector<int>{0, 10}, AbsoluteDistance{});
-	const auto all_noise = mtrc::find_outliers(sparse, mtrc::stats::structural_analysis::dbscan_options(1.0, 2));
-	assert(all_noise.size() == 2);
-	assert(all_noise.noise_count == 2);
-	assert(all_noise[0].id == sparse.id(0));
-	assert(all_noise[0].score == 10);
-	assert(all_noise[1].id == sparse.id(1));
-	assert(all_noise[1].score == 10);
+	const auto unassigned_outliers = mtrc::find_outliers(sparse, mtrc::stats::structural_analysis::dbscan_options(1.0, 2));
+	assert(unassigned_outliers.size() == 2);
+	assert(unassigned_outliers.unassigned_count == 2);
+	assert(unassigned_outliers[0].id == sparse.id(0));
+	assert(unassigned_outliers[0].score == 10);
+	assert(unassigned_outliers[1].id == sparse.id(1));
+	assert(unassigned_outliers[1].score == 10);
 
-	bool rejected_approximate_runtime = false;
-	try {
-		(void)mtrc::find_outliers(space, mtrc::stats::structural_analysis::dbscan_options(2.0, 2), mtrc::space::storage::approximate());
-	} catch (const std::invalid_argument &) {
-		rejected_approximate_runtime = true;
+	const auto approximate_outliers =
+		mtrc::find_outliers(space, mtrc::stats::structural_analysis::dbscan_options(2.0, 2),
+							mtrc::space::storage::approximate());
+	assert(!approximate_outliers.exact);
+	assert(approximate_outliers.strategy == "sampled_dbscan_density_outlier");
+	assert(approximate_outliers.representation == "sampled_metric_space");
+	assert(approximate_outliers.record_count == space.size());
+
+	std::vector<int> large_records;
+	large_records.reserve(4100);
+	for (int value = 0; value < 4100; ++value) {
+		large_records.push_back(value);
 	}
-	assert(rejected_approximate_runtime);
+	auto large_space = mtrc::make_space(large_records, AbsoluteDistance{});
+	const auto default_large_outliers =
+		mtrc::find_outliers(large_space, mtrc::stats::structural_analysis::dbscan_options(0.0, 2));
+	assert(!default_large_outliers.exact);
+	assert(default_large_outliers.strategy == "sampled_dbscan_density_outlier");
+	assert(default_large_outliers.representation == "sampled_metric_space");
+	assert(default_large_outliers.record_count == large_space.size());
+
+	auto small_nearest_calls = std::make_shared<std::size_t>(0);
+	auto small_nearest_space =
+		mtrc::make_space(std::vector<int>{0, 1, 2, 100}, CountingMetric{small_nearest_calls});
+	const auto small_nearest_outliers = mtrc::nearest_neighbor_outliers(small_nearest_space, 1);
+	assert(small_nearest_outliers.exact);
+	assert(small_nearest_outliers.strategy == "nearest_neighbor_distance");
+	assert(small_nearest_outliers.representation == "metric_space");
+	assert(small_nearest_outliers.size() == small_nearest_space.size());
+	assert(small_nearest_outliers[0].id == small_nearest_space.id(3));
+	assert(small_nearest_outliers[0].score == 98);
+	assert(*small_nearest_calls == small_nearest_space.size() * (small_nearest_space.size() - 1));
+
+	auto large_nearest_calls = std::make_shared<std::size_t>(0);
+	auto large_nearest_space = mtrc::make_space(large_records, CountingMetric{large_nearest_calls});
+	const auto sampled_nearest_outliers = mtrc::nearest_neighbor_outliers(large_nearest_space, 1);
+	const auto exact_nearest_scan_calls = large_nearest_space.size() * (large_nearest_space.size() - 1);
+	assert(!sampled_nearest_outliers.exact);
+	assert(sampled_nearest_outliers.strategy == "sampled_nearest_neighbor_distance");
+	assert(sampled_nearest_outliers.representation == "sampled_metric_space");
+	assert(sampled_nearest_outliers.record_count == large_nearest_space.size());
+	assert(sampled_nearest_outliers.size() == large_nearest_space.size());
+	assert(sampled_nearest_outliers.approximation_quality.diagnostic == "outlier_approximation");
+	assert(sampled_nearest_outliers.approximation_quality.candidate_policy == "regular_sample");
+	assert(sampled_nearest_outliers.approximation_quality.candidate_count == 512);
+	assert(sampled_nearest_outliers.approximation_quality.candidate_universe == large_nearest_space.size() - 1);
+	assert(sampled_nearest_outliers.approximation_quality.sample_count == 512);
+	assert(sampled_nearest_outliers.approximation_quality.sample_universe == large_nearest_space.size());
+	assert(sampled_nearest_outliers.approximation_quality.requested_count == 1);
+	assert(sampled_nearest_outliers.approximation_quality.sample_fraction > 0.0);
+	assert(sampled_nearest_outliers.approximation_quality.sample_fraction < 0.13);
+	assert(*large_nearest_calls <= large_nearest_space.size() * 1024);
+	assert(*large_nearest_calls < exact_nearest_scan_calls / 2);
+	assert(sampled_nearest_outliers.approximation_quality.distance_evaluations == *large_nearest_calls);
+
+	auto provider_nearest_calls = std::make_shared<std::size_t>(0);
+	auto provider_nearest_space =
+		mtrc::make_space(std::vector<int>{0, 1, 2, 100, 101}, CountingMetric{provider_nearest_calls});
+	mtrc::space::storage::LiveDistances<decltype(provider_nearest_space)> provider(provider_nearest_space);
+	const auto provider_nearest_outliers = mtrc::nearest_neighbor_outliers(provider, 1);
+	assert(provider_nearest_outliers.exact);
+	assert(provider_nearest_outliers.strategy == "nearest_neighbor_distance");
+	assert(provider_nearest_outliers.representation == "pairwise_distances");
+	assert(*provider_nearest_calls == provider_nearest_space.size() * (provider_nearest_space.size() - 1));
+
+	auto exact_policy_calls = std::make_shared<std::size_t>(0);
+	auto exact_policy_space =
+		mtrc::make_space(std::vector<int>{0, 1, 2, 100, 101}, CountingMetric{exact_policy_calls});
+	const auto exact_policy_outliers =
+		mtrc::nearest_neighbor_outliers(exact_policy_space, 1, mtrc::space::storage::exact());
+	assert(exact_policy_outliers.exact);
+	assert(exact_policy_outliers.strategy == "nearest_neighbor_distance");
+	assert(exact_policy_outliers.representation == "metric_space");
+	assert(*exact_policy_calls == exact_policy_space.size() * (exact_policy_space.size() - 1));
+
+	auto refused_policy_calls = std::make_shared<std::size_t>(0);
+	auto refused_policy_space = mtrc::make_space(large_records, CountingMetric{refused_policy_calls});
+	const auto refused_policy = mtrc::space::storage::with_distance_evaluation_budget(
+		mtrc::space::storage::exact(), refused_policy_space.size() - 1);
+	bool rejected_exact_policy_budget = false;
+	try {
+		(void)mtrc::nearest_neighbor_outliers(refused_policy_space, 1, refused_policy);
+	} catch (const mtrc::RepresentationError &error) {
+		rejected_exact_policy_budget = true;
+		const std::string message = error.what();
+		assert(message.find("max_distance_evaluations") != std::string::npos);
+		assert(message.find("fallback") != std::string::npos);
+	}
+	assert(rejected_exact_policy_budget);
+	assert(*refused_policy_calls == 0);
 
 	bool rejected_empty_space = false;
 	try {

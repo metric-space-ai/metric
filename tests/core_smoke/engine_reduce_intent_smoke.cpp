@@ -1,7 +1,6 @@
 #include <cassert>
 #include <cmath>
 #include <stdexcept>
-#include <string>
 #include <vector>
 
 #include "metric/metric/catalog.hpp"
@@ -10,18 +9,6 @@
 namespace {
 
 auto close(double lhs, double rhs) -> bool { return std::fabs(lhs - rhs) < 1e-9; }
-
-template <typename Space, typename Strategy>
-auto rejects_unpromoted_strategy(const Space &space, Strategy strategy, const std::string &name) -> bool
-{
-	try {
-		(void)mtrc::reduce(space, strategy);
-	} catch (const std::invalid_argument &error) {
-		const std::string message = error.what();
-		return message.find(name) != std::string::npos && message.find("not promoted") != std::string::npos;
-	}
-	return false;
-}
 
 } // namespace
 
@@ -79,43 +66,6 @@ int main()
 		rejected_approximate_runtime = true;
 	}
 	assert(rejected_approximate_runtime);
-
-	const auto som_strategy = mtrc::modify::map::som_options(2, 2);
-	assert(som_strategy.width == 2);
-	assert(som_strategy.height == 2);
-	assert(rejects_unpromoted_strategy(space, som_strategy, "SOM"));
-
-	const auto koc_strategy = mtrc::modify::map::koc_options(2);
-	assert(koc_strategy.clusters == 2);
-	assert(rejects_unpromoted_strategy(space, koc_strategy, "KOC"));
-
-	const auto dspcc_strategy = mtrc::modify::map::dspcc_options(2);
-	assert(dspcc_strategy.components == 2);
-	assert(rejects_unpromoted_strategy(space, dspcc_strategy, "DSPCC"));
-
-	bool rejected_invalid_som = false;
-	try {
-		(void)mtrc::modify::map::som_options(0, 2);
-	} catch (const std::invalid_argument &) {
-		rejected_invalid_som = true;
-	}
-	assert(rejected_invalid_som);
-
-	bool rejected_invalid_koc = false;
-	try {
-		(void)mtrc::modify::map::koc_options(0);
-	} catch (const std::invalid_argument &) {
-		rejected_invalid_koc = true;
-	}
-	assert(rejected_invalid_koc);
-
-	bool rejected_invalid_dspcc = false;
-	try {
-		(void)mtrc::modify::map::dspcc_options(0);
-	} catch (const std::invalid_argument &) {
-		rejected_invalid_dspcc = true;
-	}
-	assert(rejected_invalid_dspcc);
 
 	return 0;
 }

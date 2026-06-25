@@ -23,7 +23,7 @@ The framework then answers questions about `(X, d)`:
   preserve the source metric?
 
 Execution forms such as distance tables, graphs, trees, local coordinate views,
-or fitted maps are derived from the source space. They do not replace it. An
+or mapping artifacts are derived from the source space. They do not replace it. An
 algorithm that requires coordinates, such as the current kpN entropy estimator,
 belongs after an explicit mapping/embedding step in that pipeline.
 

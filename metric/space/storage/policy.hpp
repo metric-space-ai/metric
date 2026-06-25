@@ -5,8 +5,11 @@
 #ifndef _METRIC_RUNTIME_POLICY_HPP
 #define _METRIC_RUNTIME_POLICY_HPP
 
+#include <chrono>
 #include <cstddef>
 #include <string>
+
+#include <metric/core/errors.hpp>
 
 namespace mtrc::space::storage {
 
@@ -36,6 +39,21 @@ enum class representation {
 	distance_table,
 	cover_tree,
 	knn_graph,
+	landmark_index,
+};
+
+inline constexpr std::size_t default_landmark_index_landmarks = 16;
+inline constexpr std::size_t default_landmark_index_candidates = 4096;
+
+struct resource_budget {
+	std::size_t max_memory_bytes{};
+	std::size_t max_distance_evaluations{};
+	std::size_t max_dense_records{};
+	bool allow_approximate{false};
+	bool allow_chunking{false};
+	bool allow_out_of_core_spill{false};
+	std::size_t max_runtime_ms{};
+	std::size_t max_spill_bytes{};
 };
 
 class policy {
@@ -43,9 +61,17 @@ class policy {
 	constexpr policy(accuracy accuracy_mode = accuracy::exact,
 					 materialization_policy materialization_mode = materialization_policy::lazy,
 					 execution execution_mode = execution::serial,
-					 representation representation_mode = representation::automatic, std::size_t graph_neighbors = 0)
+					 representation representation_mode = representation::automatic, std::size_t graph_neighbors = 0,
+					 std::size_t max_dense_records = 0, std::size_t max_memory_bytes = 0,
+					 std::size_t max_distance_evaluations = 0, bool allow_approximate = false,
+					 bool allow_chunking = false, bool allow_out_of_core_spill = false,
+					 std::size_t max_runtime_ms = 0, std::size_t max_spill_bytes = 0)
 		: accuracy_(accuracy_mode), materialization_(materialization_mode), execution_(execution_mode),
-		  representation_(representation_mode), graph_neighbors_(graph_neighbors)
+		  representation_(representation_mode), graph_neighbors_(graph_neighbors),
+		  max_dense_records_(max_dense_records), max_memory_bytes_(max_memory_bytes),
+		  max_distance_evaluations_(max_distance_evaluations), allow_approximate_(allow_approximate),
+		  allow_chunking_(allow_chunking), allow_out_of_core_spill_(allow_out_of_core_spill),
+		  max_runtime_ms_(max_runtime_ms), max_spill_bytes_(max_spill_bytes)
 	{
 	}
 
@@ -54,6 +80,14 @@ class policy {
 	constexpr auto execution_mode() const noexcept -> execution { return execution_; }
 	constexpr auto representation_mode() const noexcept -> representation { return representation_; }
 	constexpr auto graph_neighbors() const noexcept -> std::size_t { return graph_neighbors_; }
+	constexpr auto max_dense_records() const noexcept -> std::size_t { return max_dense_records_; }
+	constexpr auto max_memory_bytes() const noexcept -> std::size_t { return max_memory_bytes_; }
+	constexpr auto max_distance_evaluations() const noexcept -> std::size_t { return max_distance_evaluations_; }
+	constexpr auto allows_approximate_fallback() const noexcept -> bool { return allow_approximate_; }
+	constexpr auto allows_chunking_fallback() const noexcept -> bool { return allow_chunking_; }
+	constexpr auto allows_out_of_core_spill() const noexcept -> bool { return allow_out_of_core_spill_; }
+	constexpr auto max_runtime_ms() const noexcept -> std::size_t { return max_runtime_ms_; }
+	constexpr auto max_spill_bytes() const noexcept -> std::size_t { return max_spill_bytes_; }
 
 	constexpr auto is_exact() const noexcept -> bool { return accuracy_ == accuracy::exact; }
 	constexpr auto is_approximate() const noexcept -> bool { return accuracy_ == accuracy::approximate; }
@@ -78,6 +112,8 @@ class policy {
 			return "cover_tree_index";
 		case representation::knn_graph:
 			return "knn_graph_index";
+		case representation::landmark_index:
+			return "landmark_index";
 		case representation::automatic:
 			return materialization_ == materialization_policy::materialized ? "distance_table" : "implicit";
 		}
@@ -96,7 +132,7 @@ class policy {
 	constexpr auto representation_requires_materialization() const noexcept -> bool
 	{
 		return representation_ == representation::distance_table || representation_ == representation::cover_tree ||
-			   representation_ == representation::knn_graph;
+			   representation_ == representation::knn_graph || representation_ == representation::landmark_index;
 	}
 
 	accuracy accuracy_;
@@ -104,6 +140,14 @@ class policy {
 	execution execution_;
 	representation representation_;
 	std::size_t graph_neighbors_;
+	std::size_t max_dense_records_;
+	std::size_t max_memory_bytes_;
+	std::size_t max_distance_evaluations_;
+	bool allow_approximate_;
+	bool allow_chunking_;
+	bool allow_out_of_core_spill_;
+	std::size_t max_runtime_ms_;
+	std::size_t max_spill_bytes_;
 };
 
 constexpr auto exact() -> policy { return policy(accuracy::exact, materialization_policy::lazy, execution::serial); }
@@ -116,50 +160,201 @@ constexpr auto approximate() -> policy
 constexpr auto lazy(policy base = exact()) -> policy
 {
 	return policy(base.accuracy_mode(), materialization_policy::lazy, base.execution_mode(), base.representation_mode(),
-				  base.graph_neighbors());
+				  base.graph_neighbors(), base.max_dense_records(), base.max_memory_bytes(),
+				  base.max_distance_evaluations(), base.allows_approximate_fallback(),
+				  base.allows_chunking_fallback(), base.allows_out_of_core_spill(), base.max_runtime_ms(),
+				  base.max_spill_bytes());
 }
 
 constexpr auto materialized(policy base = exact()) -> policy
 {
 	return policy(base.accuracy_mode(), materialization_policy::materialized, base.execution_mode(),
-				  base.representation_mode(), base.graph_neighbors());
+				  base.representation_mode(), base.graph_neighbors(), base.max_dense_records(), base.max_memory_bytes(),
+				  base.max_distance_evaluations(), base.allows_approximate_fallback(),
+				  base.allows_chunking_fallback(), base.allows_out_of_core_spill(), base.max_runtime_ms(),
+				  base.max_spill_bytes());
 }
 
 constexpr auto serial(policy base = exact()) -> policy
 {
 	return policy(base.accuracy_mode(), base.materialization_mode(), execution::serial, base.representation_mode(),
-				  base.graph_neighbors());
+				  base.graph_neighbors(), base.max_dense_records(), base.max_memory_bytes(),
+				  base.max_distance_evaluations(), base.allows_approximate_fallback(),
+				  base.allows_chunking_fallback(), base.allows_out_of_core_spill(), base.max_runtime_ms(),
+				  base.max_spill_bytes());
 }
 
 constexpr auto parallel(policy base = exact()) -> policy
 {
 	return policy(base.accuracy_mode(), base.materialization_mode(), execution::parallel, base.representation_mode(),
-				  base.graph_neighbors());
+				  base.graph_neighbors(), base.max_dense_records(), base.max_memory_bytes(),
+				  base.max_distance_evaluations(), base.allows_approximate_fallback(),
+				  base.allows_chunking_fallback(), base.allows_out_of_core_spill(), base.max_runtime_ms(),
+				  base.max_spill_bytes());
 }
 
 constexpr auto using_implicit(policy base = exact()) -> policy
 {
 	return policy(base.accuracy_mode(), materialization_policy::lazy, base.execution_mode(), representation::implicit,
-				  base.graph_neighbors());
+				  base.graph_neighbors(), base.max_dense_records(), base.max_memory_bytes(),
+				  base.max_distance_evaluations(), base.allows_approximate_fallback(),
+				  base.allows_chunking_fallback(), base.allows_out_of_core_spill(), base.max_runtime_ms(),
+				  base.max_spill_bytes());
 }
 
 constexpr auto using_distance_table(policy base = exact()) -> policy
 {
 	return policy(base.accuracy_mode(), materialization_policy::materialized, base.execution_mode(),
-				  representation::distance_table, base.graph_neighbors());
+				  representation::distance_table, base.graph_neighbors(), base.max_dense_records(),
+				  base.max_memory_bytes(), base.max_distance_evaluations(), base.allows_approximate_fallback(),
+				  base.allows_chunking_fallback(), base.allows_out_of_core_spill(), base.max_runtime_ms(),
+				  base.max_spill_bytes());
 }
 
 constexpr auto using_cover_tree(policy base = exact()) -> policy
 {
 	return policy(base.accuracy_mode(), materialization_policy::materialized, base.execution_mode(),
-				  representation::cover_tree, base.graph_neighbors());
+				  representation::cover_tree, base.graph_neighbors(), base.max_dense_records(), base.max_memory_bytes(),
+				  base.max_distance_evaluations(), base.allows_approximate_fallback(),
+				  base.allows_chunking_fallback(), base.allows_out_of_core_spill(), base.max_runtime_ms(),
+				  base.max_spill_bytes());
 }
 
 constexpr auto using_knn_graph(std::size_t graph_neighbors = 0, policy base = exact()) -> policy
 {
 	return policy(base.accuracy_mode(), materialization_policy::materialized, base.execution_mode(), representation::knn_graph,
-				  graph_neighbors);
+				  graph_neighbors, base.max_dense_records(), base.max_memory_bytes(), base.max_distance_evaluations(),
+				  base.allows_approximate_fallback(), base.allows_chunking_fallback(),
+				  base.allows_out_of_core_spill(), base.max_runtime_ms(), base.max_spill_bytes());
 }
+
+constexpr auto using_landmark_index(std::size_t candidate_count = 0, policy base = approximate()) -> policy
+{
+	return policy(base.accuracy_mode(), materialization_policy::materialized, base.execution_mode(),
+				  representation::landmark_index, candidate_count, base.max_dense_records(),
+				  base.max_memory_bytes(), base.max_distance_evaluations(), base.allows_approximate_fallback(),
+				  base.allows_chunking_fallback(), base.allows_out_of_core_spill(), base.max_runtime_ms(),
+				  base.max_spill_bytes());
+}
+
+constexpr auto with_distance_table_budget(policy base, std::size_t max_dense_records = 0,
+										  std::size_t max_memory_bytes = 0) -> policy
+{
+	return policy(base.accuracy_mode(), base.materialization_mode(), base.execution_mode(), base.representation_mode(),
+				  base.graph_neighbors(), max_dense_records, max_memory_bytes, base.max_distance_evaluations(),
+				  base.allows_approximate_fallback(), base.allows_chunking_fallback(),
+				  base.allows_out_of_core_spill(), base.max_runtime_ms(), base.max_spill_bytes());
+}
+
+constexpr auto with_distance_evaluation_budget(policy base, std::size_t max_distance_evaluations = 0) -> policy
+{
+	return policy(base.accuracy_mode(), base.materialization_mode(), base.execution_mode(), base.representation_mode(),
+				  base.graph_neighbors(), base.max_dense_records(), base.max_memory_bytes(), max_distance_evaluations,
+				  base.allows_approximate_fallback(), base.allows_chunking_fallback(),
+				  base.allows_out_of_core_spill(), base.max_runtime_ms(), base.max_spill_bytes());
+}
+
+constexpr auto with_resource_budget(policy base, resource_budget budget) -> policy
+{
+	return policy(base.accuracy_mode(), base.materialization_mode(), base.execution_mode(), base.representation_mode(),
+				  base.graph_neighbors(), budget.max_dense_records, budget.max_memory_bytes,
+				  budget.max_distance_evaluations, budget.allow_approximate, budget.allow_chunking,
+				  budget.allow_out_of_core_spill, budget.max_runtime_ms, budget.max_spill_bytes);
+}
+
+constexpr auto with_runtime_budget(policy base, std::size_t max_runtime_ms = 0) -> policy
+{
+	return policy(base.accuracy_mode(), base.materialization_mode(), base.execution_mode(), base.representation_mode(),
+				  base.graph_neighbors(), base.max_dense_records(), base.max_memory_bytes(),
+				  base.max_distance_evaluations(), base.allows_approximate_fallback(),
+				  base.allows_chunking_fallback(), base.allows_out_of_core_spill(), max_runtime_ms,
+				  base.max_spill_bytes());
+}
+
+constexpr auto with_spill_byte_budget(policy base, std::size_t max_spill_bytes = 0) -> policy
+{
+	return policy(base.accuracy_mode(), base.materialization_mode(), base.execution_mode(), base.representation_mode(),
+				  base.graph_neighbors(), base.max_dense_records(), base.max_memory_bytes(),
+				  base.max_distance_evaluations(), base.allows_approximate_fallback(),
+				  base.allows_chunking_fallback(), base.allows_out_of_core_spill(), base.max_runtime_ms(),
+				  max_spill_bytes);
+}
+
+constexpr auto allow_approximate_fallback(policy base, bool enabled = true) -> policy
+{
+	return policy(base.accuracy_mode(), base.materialization_mode(), base.execution_mode(), base.representation_mode(),
+				  base.graph_neighbors(), base.max_dense_records(), base.max_memory_bytes(),
+				  base.max_distance_evaluations(), enabled, base.allows_chunking_fallback(),
+				  base.allows_out_of_core_spill(), base.max_runtime_ms(), base.max_spill_bytes());
+}
+
+constexpr auto allow_chunking_fallback(policy base, bool enabled = true) -> policy
+{
+	return policy(base.accuracy_mode(), base.materialization_mode(), base.execution_mode(), base.representation_mode(),
+				  base.graph_neighbors(), base.max_dense_records(), base.max_memory_bytes(),
+				  base.max_distance_evaluations(), base.allows_approximate_fallback(), enabled,
+				  base.allows_out_of_core_spill(), base.max_runtime_ms(), base.max_spill_bytes());
+}
+
+constexpr auto allow_out_of_core_spill(policy base, bool enabled = true) -> policy
+{
+	return policy(base.accuracy_mode(), base.materialization_mode(), base.execution_mode(), base.representation_mode(),
+				  base.graph_neighbors(), base.max_dense_records(), base.max_memory_bytes(),
+				  base.max_distance_evaluations(), base.allows_approximate_fallback(),
+				  base.allows_chunking_fallback(), enabled, base.max_runtime_ms(), base.max_spill_bytes());
+}
+
+constexpr auto budget_from_policy(policy runtime_policy) -> resource_budget
+{
+	return resource_budget{runtime_policy.max_memory_bytes(), runtime_policy.max_distance_evaluations(),
+						   runtime_policy.max_dense_records(), runtime_policy.allows_approximate_fallback(),
+						   runtime_policy.allows_chunking_fallback(), runtime_policy.allows_out_of_core_spill(),
+						   runtime_policy.max_runtime_ms(), runtime_policy.max_spill_bytes()};
+}
+
+class runtime_guard {
+  public:
+	using clock = std::chrono::steady_clock;
+
+	runtime_guard() = default;
+
+	explicit runtime_guard(std::size_t max_runtime_ms)
+		: max_runtime_ms_(max_runtime_ms),
+		  deadline_(max_runtime_ms == 0 ? clock::time_point{} :
+									   clock::now() + std::chrono::milliseconds(max_runtime_ms))
+	{
+	}
+
+	explicit runtime_guard(policy runtime_policy)
+		: runtime_guard(runtime_policy.max_runtime_ms())
+	{
+	}
+
+	explicit runtime_guard(resource_budget budget)
+		: runtime_guard(budget.max_runtime_ms)
+	{
+	}
+
+	auto active() const noexcept -> bool { return max_runtime_ms_ != 0; }
+	auto max_runtime_ms() const noexcept -> std::size_t { return max_runtime_ms_; }
+
+	auto throw_if_cancelled(const char *operation = "execution") const -> void
+	{
+		if (!active()) {
+			return;
+		}
+		if (clock::now() >= deadline_) {
+			throw RepresentationError(
+				std::string("execution cancelled after exceeding max_runtime_ms: operation=") +
+				(operation == nullptr ? "execution" : operation) +
+				" max_runtime_ms=" + std::to_string(max_runtime_ms_));
+		}
+	}
+
+  private:
+	std::size_t max_runtime_ms_{};
+	clock::time_point deadline_{};
+};
 
 } // namespace mtrc::space::storage
 

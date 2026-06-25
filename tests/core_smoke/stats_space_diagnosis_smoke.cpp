@@ -69,6 +69,15 @@ int main()
 	assert(!compact.has_neighbor_check);
 	assert(!compact.has_outlier_scores);
 
+	mtrc::stats::diagnose_options bounded_outliers;
+	bounded_outliers.max_exact_outlier_records = 2;
+	const auto bounded_report = mtrc::diagnose_space(space, bounded_outliers);
+	assert(!bounded_report.exact);
+	assert(bounded_report.has_neighbor_check);
+	assert(!bounded_report.has_outlier_scores);
+	assert(bounded_report.notes.size() == 1);
+	assert(bounded_report.notes[0].find("outlier score section skipped") != std::string::npos);
+
 	const auto empty_space = mtrc::space::build(std::vector<record_type>{}, metric_type{});
 	const auto empty_report = mtrc::stats::diagnose_space(empty_space);
 	assert(empty_report.profile.is_empty);
@@ -90,6 +99,10 @@ int main()
 	mtrc::stats::diagnose_options bad_outlier;
 	bad_outlier.outlier_neighbor_count = 0;
 	assert(throws<std::invalid_argument>([&] { (void)mtrc::stats::diagnose_space(space, bad_outlier); }));
+
+	mtrc::stats::diagnose_options bad_outlier_budget;
+	bad_outlier_budget.max_exact_outlier_records = 0;
+	assert(throws<std::invalid_argument>([&] { (void)mtrc::stats::diagnose_space(space, bad_outlier_budget); }));
 
 	return 0;
 }

@@ -3,11 +3,11 @@
 // Covers, for the aligned finite-real-vector domain:
 //   * trait promotion to metric_law::metric / record_kind::aligned_vector for
 //     mtrc::Euclidean_standardized<V> and mtrc::Manhattan_standardized<V>,
-//   * hand-checkable distance fixtures (explicit scale and fitted scale),
+//   * hand-checkable distance fixtures (explicit scale and calibrated scale),
 //   * metric contracts (non-negativity, symmetry, identity of indiscernibles,
 //     triangle inequality) over a small finite domain and a deterministic
 //     randomized search,
-//   * the positive-scale gate (every sigma finite and > 0) on the fitting
+//   * the positive-scale gate (every sigma finite and > 0) on the calibrating
 //     constructor, the explicit (mean, sigma) constructor, and every evaluation,
 //   * invalid-input rejection (unaligned, dimension mismatch, non-finite),
 //   * cache-key behavior (keyed on sigma, independent of the cancelling mean).
@@ -162,17 +162,17 @@ int main()
 		assert(close(m_scaled(Vec{0.0, 0.0}, Vec{2.0, 3.0}), 4.0)); // |2/2| + |3/1|
 	}
 
-	// 2b. Hand-checkable fixtures from a fitted scale.
+	// 2b. Hand-checkable fixtures from a calibrated scale.
 	{
 		// A = {{0,0},{2,4}} -> mean = {1,2}, sigma = {1,2}.
-		const std::vector<Vec> training{{0.0, 0.0}, {2.0, 4.0}};
-		const Euclidean_standardized<double> fitted(training);
-		assert(close(fitted.mean[0], 1.0) && close(fitted.mean[1], 2.0));
-		assert(close(fitted.sigma[0], 1.0) && close(fitted.sigma[1], 2.0));
-		assert(close(fitted(Vec{0.0, 0.0}, Vec{2.0, 4.0}), std::sqrt(8.0))); // sqrt(2^2 + 2^2)
+		const std::vector<Vec> calibration_records{{0.0, 0.0}, {2.0, 4.0}};
+		const Euclidean_standardized<double> calibrated(calibration_records);
+		assert(close(calibrated.mean[0], 1.0) && close(calibrated.mean[1], 2.0));
+		assert(close(calibrated.sigma[0], 1.0) && close(calibrated.sigma[1], 2.0));
+		assert(close(calibrated(Vec{0.0, 0.0}, Vec{2.0, 4.0}), std::sqrt(8.0))); // sqrt(2^2 + 2^2)
 
-		const Manhattan_standardized<double> m_fitted(training);
-		assert(close(m_fitted(Vec{0.0, 0.0}, Vec{2.0, 4.0}), 4.0)); // |2/1| + |4/2|
+		const Manhattan_standardized<double> m_calibrated(calibration_records);
+		assert(close(m_calibrated(Vec{0.0, 0.0}, Vec{2.0, 4.0}), 4.0)); // |2/1| + |4/2|
 	}
 
 	// 3. Metric contracts over a small finite domain for several scale configs.
@@ -203,14 +203,14 @@ int main()
 	rejects_invalid([] { Euclidean_standardized<double>(Vec{0.0, 0.0}, Vec{1.0, kInf}); }, "positive");
 	rejects_invalid([] { Euclidean_standardized<double>(Vec{0.0, 0.0}, Vec{1.0, kNan}); }, "positive");
 	rejects_invalid([] { Euclidean_standardized<double>(Vec{0.0}, Vec{1.0, 2.0}); }, "equal dimension");
-	rejects_invalid([] { Euclidean_standardized<double>(Vec{}, Vec{}); }, "fitted positive scale");
+	rejects_invalid([] { Euclidean_standardized<double>(Vec{}, Vec{}); }, "calibrated positive scale");
 	rejects_invalid([] { Manhattan_standardized<double>(Vec{0.0, 0.0}, Vec{0.0, 1.0}); }, "positive");
-	rejects_invalid([] { Manhattan_standardized<double>(Vec{kInf}, Vec{1.0}); }, "finite fitted mean");
+	rejects_invalid([] { Manhattan_standardized<double>(Vec{kInf}, Vec{1.0}); }, "finite calibrated mean");
 
-	// 6. Positive-scale gate and aligned-data checks on the fitting constructor.
-	rejects_invalid([] { Euclidean_standardized<double>(std::vector<Vec>{}); }, "non-empty training data");
+	// 6. Positive-scale gate and aligned-data checks on the calibrating constructor.
+	rejects_invalid([] { Euclidean_standardized<double>(std::vector<Vec>{}); }, "non-empty calibration records");
 	rejects_invalid([] { Euclidean_standardized<double>(std::vector<Vec>{{0.0, 1.0}, {1.0}}); }, "aligned");
-	// A single record and a constant feature both produce a zero scale -> rejected.
+	// A single record and a constant coordinate both produce a zero scale -> rejected.
 	rejects_invalid([] { Euclidean_standardized<double>(std::vector<Vec>{{1.0, 2.0}}); }, "positive");
 	rejects_invalid([] { Euclidean_standardized<double>(std::vector<Vec>{{1.0, 5.0}, {3.0, 5.0}}); }, "positive");
 	rejects_invalid([] { Manhattan_standardized<double>(std::vector<Vec>{{1.0, 2.0}}); }, "positive");
@@ -222,7 +222,7 @@ int main()
 		rejects_invalid([&] { (void)mutated(Vec{0.0, 0.0}, Vec{1.0, 1.0}); }, "positive");
 
 		const Euclidean_standardized<double> probe(Vec{0.0, 0.0}, Vec{1.0, 1.0});
-		rejects_invalid([&] { (void)probe(Vec{0.0}, Vec{0.0}); }, "does not match fitted dimension");
+		rejects_invalid([&] { (void)probe(Vec{0.0}, Vec{0.0}); }, "does not match calibrated dimension");
 		rejects_invalid([&] { (void)probe(Vec{0.0, 1.0}, Vec{0.0}); }, "equal size");
 		rejects_invalid([&] { (void)probe(Vec{kNan, 1.0}, Vec{0.0, 1.0}); }, "finite vector entries");
 		rejects_invalid([&] { (void)probe(Vec{0.0, 1.0}, Vec{kInf, 1.0}); }, "finite vector entries");

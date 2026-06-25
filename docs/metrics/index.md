@@ -39,7 +39,7 @@ The native C++ baseline currently promotes these true metrics:
 - `mtrc::P_norm<V>` for finite `p >= 1`
 - `mtrc::WeightedMinkowski<V>` for finite `p >= 1` and finite positive weights
 - `mtrc::Mahalanobis<V>` for finite aligned vectors and an SPD precision matrix
-- `mtrc::Euclidean_standardized<V>` and `mtrc::Manhattan_standardized<V>` with positive fitted scale
+- `mtrc::Euclidean_standardized<V>` and `mtrc::Manhattan_standardized<V>` with positive calibrated scale
 - `mtrc::Angular<V>` and `mtrc::Chordal<V>` for finite unit-normalized vectors
 - `mtrc::DiscreteMetric<V>`, `mtrc::Hamming`, `mtrc::Jaccard`, `mtrc::BinaryJaccard`
 - `mtrc::Ruzicka<V>` and `mtrc::Tanimoto<V>` for the admitted nonnegative weighted-Jaccard/Ruzicka computation
@@ -61,7 +61,7 @@ The native C++ baseline currently promotes these true metrics:
 | `P_norm` / Minkowski | Aligned numeric vectors | Lp coordinate displacement. | True metric for finite `p >= 1`; sub-metric exponents are rejected. | `mtrc::P_norm<std::vector<double>>(3.0)`. | `stable` |
 | Weighted Minkowski | Aligned numeric vectors with positive feature weights | Weighted Lp displacement. | True metric for finite positive weights and finite `p >= 1`. | Reliability-weighted sensor vector comparison. | `stable` |
 | Mahalanobis SPD | Aligned numeric vectors with SPD precision matrix | Covariance-normalized displacement. | True metric when the precision matrix is finite symmetric positive definite. | Distance after a validated inverse covariance fit. | `stable` |
-| Standardized Euclidean / Manhattan | Aligned numeric vectors with fitted positive scale | Coordinate displacement after scale normalization. | True metric when every fitted `sigma` is finite and `> 0`. | Compare features after per-feature scale fitting. | `stable` |
+| Standardized Euclidean / Manhattan | Aligned numeric vectors with calibrated positive scale | Coordinate displacement after scale normalization. | True metric when every calibrated `sigma` is finite and `> 0`. | Compare features after per-feature scale calibrating. | `stable` |
 | Angular | Unit finite vectors | Angle between normalized directions. | True metric on the unit sphere; zero and non-unit vectors are rejected. | Direction-only comparison of normalized embeddings. | `stable` |
 | Chordal | Unit finite vectors | Euclidean chord distance on the unit sphere. | True metric under the same unit-vector gate as Angular. | Unit-vector direction distance with Euclidean chord geometry. | `stable` |
 | Discrete metric | Equality-comparable records | Zero for equal records, positive constant otherwise. | True metric with positive mismatch cost. | State-label mismatch distance. | `stable` |
@@ -94,7 +94,6 @@ The native C++ baseline currently promotes these true metrics:
 | `mtrc::CramervonMises<Sample,D>` | Sampled distributions through Akima-interpolated empirical CDF | Root-L2 CDF approximation. | Shipped Akima-CDF computation is non-metric; exact empirical root-CDF metric is separate. | Use `mtrc::EmpiricalCramer<V>`. | `quarantine` |
 | `mtrc::KolmogorovSmirnov<Sample,D>` | Sampled distributions through Akima-interpolated empirical CDF | Finite-grid CDF gap. | Shipped computation is non-metric; exact empirical sup-CDF metric is separate. | Use `mtrc::EmpiricalKolmogorovSmirnov<V>`. | `quarantine` |
 | Raw SSIM / `1 - SSIM` | Images or image windows | Perceptual similarity complement. | Not an admitted true metric. | Use admitted image features, Wasserstein image distributions, or a future proven SSIM-inspired metric. | `quarantine` |
-| `mtrc::Kohonen<D,Sample,...>` | Learned SOM or graph approximation | Model-dependent learned score. | A fitted score has no metric law by default. | Treat as a mapping/model artifact, not a record metric. | `quarantine` |
 | `mtrc::Sorensen<V>` and raw Dice/Sorensen complements | Counts, sets, or nonnegative vectors | Similarity complement. | Common forms violate triangle inequality. | Use Jaccard, Ruzicka, Tanimoto-Ruzicka, Hamming, or Total Variation where domains match. | `quarantine` |
 | `mtrc::Hassanat<V>` | Numeric vectors under branchy signed formula | Heuristic numeric dissimilarity. | No admitted domain and metric-law record. | Use an admitted vector or probability metric. | `quarantine` |
 | DTW / LCSS defaults | Time series or sequences | Elastic alignment or subsequence matching. | Common defaults can collapse identity and lack triangle law. | Use TWED, ERP, Frechet, or Edit when domains match. | `quarantine` |

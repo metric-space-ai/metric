@@ -8,6 +8,10 @@
 #include <metric/correlation/entropy.hpp>
 #include <metric/metric/catalog.hpp>
 
+// This example exercises the low-level kpN entropy estimator directly for regression
+// coverage. Framework-level entropy should be reached through an explicit coordinate
+// mapping/embedding step and `mtrc::stats::properties::entropy(mapped_result)`.
+
 namespace {
 
 void assert_close(const double actual, const double expected) { assert(std::abs(actual - expected) < 1e-7); }

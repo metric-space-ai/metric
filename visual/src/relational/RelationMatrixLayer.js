@@ -44,6 +44,7 @@ export class RelationMatrixLayer extends BaseLayer {
       columnActive: false,
       active: false,
     };
+    this.selectionDetails = null;
   }
 
   ensureResources() {
@@ -118,6 +119,10 @@ export class RelationMatrixLayer extends BaseLayer {
     this.program.setUniform("uSelectionRowColor", material.selectionRowColor || material.selectionColor || [1.0, 0.86, 0.42, 1]);
     this.program.setUniform("uSelectionColumnColor", material.selectionColumnColor || [0.42, 0.66, 1.0, 1]);
     this.program.setUniform("uSelectionCellColor", material.selectionCellColor || material.selectionColor || [1.0, 0.92, 0.56, 1]);
+    this.program.setUniform("uFocusBackdropColor", material.focusBackdropColor || material.background || [0.02, 0.025, 0.03, 1]);
+    this.program.setUniform("uFocusBackdropAlpha", numberOption(material.focusBackdropAlpha, 0.3));
+    this.program.setUniform("uFocusBlockColor", material.focusBlockColor || material.blockBandColor || [1.0, 0.95, 0.72, 1]);
+    this.program.setUniform("uFocusBlockAlpha", numberOption(material.focusBlockAlpha, 0.085));
     this.program.setUniform("uBlockRangeCount", this.blockRangeCount);
     this.program.setUniform("uBlockRanges", this.blockRanges);
     this.program.setUniform("uBlockBandColor", material.blockBandColor || [1.0, 0.95, 0.72, 1]);
@@ -147,17 +152,28 @@ export class RelationMatrixLayer extends BaseLayer {
   }
 
   setSelection(selection = {}) {
-    const pair = selection.pair || null;
+    const input = selection || {};
+    const pair = input.pair || null;
     const rowId = pair?.rowId ?? pair?.row_id ?? pair?.sourceId ?? pair?.source_id
-      ?? selection.rowId ?? selection.row_id ?? selection.sourceId ?? selection.source_id ?? selection.recordId;
+      ?? input.rowId ?? input.row_id ?? input.sourceId ?? input.source_id ?? input.recordId;
     const columnId = pair?.columnId ?? pair?.column_id ?? pair?.targetId ?? pair?.target_id
-      ?? selection.columnId ?? selection.column_id ?? selection.targetId ?? selection.target_id ?? selection.recordId;
+      ?? input.columnId ?? input.column_id ?? input.targetId ?? input.target_id ?? input.recordId;
     const matrix = this.texturePayload?.matrix || this.descriptor?.metadata?.matrix;
-    const row = findMatrixIndex(matrix, rowId, pair?.row ?? selection.row);
-    const column = findMatrixIndex(matrix, columnId, pair?.column ?? selection.column);
+    const row = findMatrixIndex(matrix, rowId, pair?.row ?? input.row);
+    const column = findMatrixIndex(matrix, columnId, pair?.column ?? input.column);
     const rowActive = row >= 0;
     const columnActive = column >= 0;
     const active = rowActive && columnActive;
+    this.selectionDetails = createSelectionDetails(input, {
+      matrix,
+      row,
+      column,
+      rowActive,
+      columnActive,
+      active,
+      relationId: this.source?.relationId || this.metadata?.relationId || matrix?.relationId || null,
+      relationName: this.source?.relationName || this.metadata?.relationName || matrix?.relationName || null,
+    });
     if (
       this.selection.row === row
       && this.selection.column === column
@@ -240,6 +256,8 @@ export class RelationMatrixLayer extends BaseLayer {
       svgFallback: false,
       selection: { ...this.selection },
       selected: diagnostics.selected,
+      selectedPair: diagnostics.selectedPair,
+      linkedGraph: diagnostics.linkedGraph,
       readability: profile,
       diagnostics,
       tileSummary: this.tileSummaryPayload ? {
@@ -254,7 +272,7 @@ export class RelationMatrixLayer extends BaseLayer {
   getDiagnostics() {
     const profile = this.readabilityProfile || this.descriptor?.metadata?.readability || null;
     const matrix = this.texturePayload?.matrix || this.descriptor?.metadata?.matrix || null;
-    return createRelationMatrixDiagnostics({
+    const diagnostics = createRelationMatrixDiagnostics({
       matrix,
       readability: profile,
       selection: this.selection,
@@ -262,6 +280,12 @@ export class RelationMatrixLayer extends BaseLayer {
       relationId: this.source?.relationId || this.metadata?.relationId || matrix?.relationId || null,
       relationName: this.source?.relationName || this.metadata?.relationName || matrix?.relationName || null,
     });
+    return {
+      ...diagnostics,
+      selectedFocus: this.selectionDetails,
+      selectedPair: this.selectionDetails?.kind === "pair" ? this.selectionDetails : null,
+      linkedGraph: this.selectionDetails?.linkedGraph || null,
+    };
   }
 }
 
@@ -359,12 +383,107 @@ function resolveReadabilityProfile(payload, descriptor = {}) {
     || createRelationMatrixReadabilityProfile(payload?.matrix, descriptor.metadata?.matrixOptions || {});
 }
 
+function createSelectionDetails(selection = {}, context = {}) {
+  const matrix = context.matrix || {};
+  const pair = selection.pair || null;
+  const rowId = stringOrNull(
+    pair?.rowId ?? pair?.row_id ?? pair?.sourceId ?? pair?.source_id
+    ?? selection.rowId ?? selection.row_id ?? selection.sourceId ?? selection.source_id
+    ?? matrix.recordIds?.[context.row],
+  );
+  const columnId = stringOrNull(
+    pair?.columnId ?? pair?.column_id ?? pair?.targetId ?? pair?.target_id
+    ?? selection.columnId ?? selection.column_id ?? selection.targetId ?? selection.target_id
+    ?? matrix.recordIds?.[context.column],
+  );
+  const relationId = stringOrNull(
+    pair?.relationId ?? pair?.relation_id ?? selection.relationId ?? selection.relation_id
+    ?? context.relationId ?? matrix.relationId,
+  );
+  const relationName = stringOrNull(
+    pair?.relationName ?? pair?.relation_name ?? selection.relationName ?? selection.relation_name
+    ?? context.relationName ?? matrix.relationName,
+  );
+  const dimensions = {
+    width: integerOrNull(matrix.width ?? matrix.size ?? matrix.recordIds?.length),
+    height: integerOrNull(matrix.height ?? matrix.size ?? matrix.recordIds?.length),
+    size: integerOrNull(matrix.size ?? matrix.recordIds?.length),
+  };
+  const offset = context.row >= 0 && context.column >= 0 && dimensions.width > 0
+    ? context.row * dimensions.width + context.column
+    : -1;
+  const value = offset >= 0 ? Number(matrix.values?.[offset]) : Number(pair?.value);
+  const present = offset >= 0
+    ? matrix.present
+      ? matrix.present[offset] === 1
+      : Number.isFinite(value)
+    : Boolean(pair?.present);
+  const linkedGraph = linkedGraphDetails(selection.presentation, { rowId, columnId, relationId });
+  const kind = pair ? "pair" : context.rowActive && context.columnActive ? "record-diagonal" : context.rowActive ? "row" : context.columnActive ? "column" : "none";
+
+  if (kind === "none") return null;
+  return {
+    kind,
+    relationId,
+    relationName,
+    rowId,
+    columnId,
+    row: context.rowActive ? context.row : null,
+    column: context.columnActive ? context.column : null,
+    rowActive: context.rowActive === true,
+    columnActive: context.columnActive === true,
+    cellActive: context.active === true,
+    value: Number.isFinite(value) ? value : null,
+    present,
+    pairKey: stringOrNull(pair?.pairKey ?? pair?.pair_key) || (relationId && rowId && columnId ? `${relationId}\u0000${rowId}\u0000${columnId}` : null),
+    nativePairPresent: Boolean(pair?.nativePair || pair?.native_pair || pair?.pair),
+    linkedGraph,
+  };
+}
+
+function linkedGraphDetails(presentation, selected = {}) {
+  const graphEdges = Array.isArray(presentation?.graphEdges) ? presentation.graphEdges : [];
+  const matching = graphEdges.filter((edge) => graphEdgeMatches(edge, selected));
+  return {
+    present: matching.length > 0,
+    graphEdgeCount: matching.length,
+    edgeIds: matching.map((edge) => stringOrNull(edge.edgeId ?? edge.edge_id)).filter(Boolean),
+    graphIds: uniqueStrings(matching.map((edge) => stringOrNull(edge.graphId ?? edge.graph_id)).filter(Boolean)),
+  };
+}
+
+function graphEdgeMatches(edge, selected = {}) {
+  if (!edge) return false;
+  const relationId = stringOrNull(edge.relationId ?? edge.relation_id);
+  if (selected.relationId && relationId && selected.relationId !== relationId) return false;
+  const row = stringOrNull(edge.rowId ?? edge.row_id ?? edge.sourceId ?? edge.source_id);
+  const column = stringOrNull(edge.columnId ?? edge.column_id ?? edge.targetId ?? edge.target_id);
+  if (!selected.rowId || !selected.columnId || !row || !column) return false;
+  return (selected.rowId === row && selected.columnId === column)
+    || (selected.rowId === column && selected.columnId === row);
+}
+
 function findMatrixIndex(matrix, id, fallbackIndex) {
   const index = matrix?.recordIds?.findIndex?.((recordId) => String(recordId) === String(id)) ?? -1;
   if (index >= 0) return index;
   const numeric = Number(fallbackIndex);
   const size = Number(matrix?.size ?? matrix?.recordIds?.length ?? 0);
   return Number.isInteger(numeric) && numeric >= 0 && numeric < size ? numeric : -1;
+}
+
+function stringOrNull(value) {
+  if (value === undefined || value === null) return null;
+  const text = String(value);
+  return text.length ? text : null;
+}
+
+function integerOrNull(value) {
+  const number = Number(value);
+  return Number.isInteger(number) ? number : null;
+}
+
+function uniqueStrings(values) {
+  return Array.from(new Set(values.filter((value) => typeof value === "string" && value.length > 0)));
 }
 
 function numberOption(...values) {
@@ -439,6 +558,10 @@ uniform vec4 uSelectionColor;
 uniform vec4 uSelectionRowColor;
 uniform vec4 uSelectionColumnColor;
 uniform vec4 uSelectionCellColor;
+uniform vec4 uFocusBackdropColor;
+uniform float uFocusBackdropAlpha;
+uniform vec4 uFocusBlockColor;
+uniform float uFocusBlockAlpha;
 uniform float uSelectionAlpha;
 uniform float uSelectionRowAlpha;
 uniform float uSelectionColumnAlpha;
@@ -507,18 +630,26 @@ void main() {
   float columnHit = step(0.5, 1.0 - abs(visibleCell.x - uSelectedCell.x)) * columnSelected;
   float lineHit = clamp(max(rowHit, columnHit), 0.0, 1.0);
   float cellHit = clamp(rowHit * columnHit, 0.0, 1.0);
+  float selectionActive = clamp(max(rowSelected, columnSelected), 0.0, 1.0);
+  float focusBackdropHit = selectionActive * (1.0 - lineHit);
   float rowOnlyHit = rowHit * (1.0 - cellHit);
   float columnOnlyHit = columnHit * (1.0 - cellHit);
   float outlineWidthCells = clamp(uSelectionOutlinePixels / minCellPixels, 0.08, 0.48);
   float edgeDistance = min(min(cellLocal.x, 1.0 - cellLocal.x), min(cellLocal.y, 1.0 - cellLocal.y));
   float selectedCellOutline = cellHit * (1.0 - smoothstep(0.0, outlineWidthCells, edgeDistance));
   float sameBlockHit = 0.0;
+  float selectedBlockHit = 0.0;
+  float selectedRowUnit = (uSelectedCell.y + 0.5) / max(uTextureSize.y, 1.0);
+  float selectedColumnUnit = (uSelectedCell.x + 0.5) / max(uTextureSize.x, 1.0);
   for (int index = 0; index < 16; index++) {
     if (index < uBlockRangeCount) {
       vec2 range = uBlockRanges[index];
       float insideX = step(range.x, safeUv.x) * step(safeUv.x, range.y);
       float insideY = step(range.x, safeUv.y) * step(safeUv.y, range.y);
       sameBlockHit = max(sameBlockHit, insideX * insideY);
+      float selectedRowInRange = step(range.x, selectedRowUnit) * step(selectedRowUnit, range.y) * rowSelected;
+      float selectedColumnInRange = step(range.x, selectedColumnUnit) * step(selectedColumnUnit, range.y) * columnSelected;
+      selectedBlockHit = max(selectedBlockHit, max(insideY * selectedRowInRange, insideX * selectedColumnInRange));
     }
   }
   float boundaryHit = 0.0;
@@ -543,7 +674,9 @@ void main() {
   float borderWidth = max(0.0008, 1.25 / max(1.0, min(uMatrixPixelSize.x, uMatrixPixelSize.y)));
   float borderDistance = min(min(safeUv.x, 1.0 - safeUv.x), min(safeUv.y, 1.0 - safeUv.y));
   float borderHit = 1.0 - smoothstep(0.0, borderWidth, borderDistance);
+  color = mix(color, uFocusBackdropColor.rgb, focusBackdropHit * uFocusBackdropAlpha);
   color = mix(color, uBlockBandColor.rgb, sameBlockHit * uBlockBandAlpha);
+  color = mix(color, uFocusBlockColor.rgb, selectedBlockHit * uFocusBlockAlpha);
   color = mix(color, uTileBoundaryColor.rgb, tileBoundaryHit * uTileBoundaryAlpha);
   color = mix(color, uBlockLineColor.rgb, boundaryHit * uBlockLineAlpha);
   color = mix(color, uSelectionRowColor.rgb, rowOnlyHit * uSelectionRowAlpha);
@@ -553,6 +686,7 @@ void main() {
   color = mix(color, uSelectionCellColor.rgb, selectedCellOutline * uSelectionOutlineAlpha);
   color = mix(color, uBlockLineColor.rgb, borderHit * uOuterBorderAlpha);
   alpha = max(alpha, tileBoundaryHit * uTileBoundaryColor.a * uTileBoundaryAlpha * uAlpha);
+  alpha = max(alpha, selectedBlockHit * uFocusBlockColor.a * uFocusBlockAlpha * uAlpha);
   alpha = max(alpha, boundaryHit * uBlockLineColor.a * uBlockLineAlpha * uAlpha);
   alpha = max(alpha, borderHit * uBlockLineColor.a * uOuterBorderAlpha * uAlpha);
   alpha = max(alpha, (lineHit * 0.44 + cellHit * 0.36 + selectedCellOutline * 0.72) * uAlpha);

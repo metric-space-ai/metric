@@ -6,19 +6,60 @@
 
 Native C++ framework for finite metric spaces.
 
-METRIC is built for data that is meaningful before it is forced into vectors:
-strings, process curves, histograms, image distributions, graphs, event
-sequences, and mixed industrial records. Choose a true metric for two records,
-and METRIC makes the whole finite collection computable.
+METRIC is the framework for working with finite metric spaces: finite record
+collections whose structure is defined by one authoritative metric. It is built
+for experimentation, data analysis, research workflows, and production systems
+where records have structure before they are encoded as vectors.
+
+Strings, process curves, histograms, image distributions, graphs, event
+sequences, vectors, and mixed industrial records can all be source records.
+Choose a true metric for two records, and METRIC makes the whole finite
+collection computable.
 
 ```text
 records + metric -> finite metric space
 finite metric space -> search, entropy, correlation, sampling, transformation
 ```
 
+The project deliberately uses metric-space language as its public vocabulary:
+records, metrics, finite spaces, relations, measures, neighborhoods, lineage,
+derived spaces, dynamics, and evidence. Classical machine-learning terms are
+used only when they name an implementation detail, comparison baseline, or
+external reference.
+
+## Data Analysis With METRIC
+
+Use METRIC when analysis depends on how records compare, not only on the
+columns they expose. A record can be a customer history, machine cycle, text
+event stream, histogram, image distribution, graph, vector row, or mixed
+industrial object. The metric is the analysis decision: it defines what it
+means for two records to be near, separated, redundant, representative, or
+structurally related.
+
+Common analysis jobs:
+
+- Find similar cases under a domain metric: process windows, documents,
+  customers, image distributions, graphs, event sequences, or mixed records.
+- Build representative sets from real records for review panels, monitoring
+  anchors, prototypes, baselines, and reduced datasets.
+- Review anomalies and boundary cases by inspecting sparse neighborhoods,
+  nearest-neighbor gaps, local density, and extreme distance profiles.
+- Compare cohorts, sites, time periods, experiments, or system states through
+  their distances, neighborhoods, representatives, and density structure.
+- Connect modalities such as event logs and sensor curves, text and behavior,
+  histograms and structured records, without requiring both sides to share one
+  coordinate table first.
+- Create coordinate views, maps, and visual evidence when they clarify the
+  finite space, while keeping source records, metric identity, and lineage
+  explicit.
+
+The workflow is: define the records, choose or admit the metric, build the
+finite metric space, then run search, diagnostics, comparison, modification,
+mapping, and evidence export over that object.
+
 ## TL;DR
 
-METRIC starts from a deliberately small model.
+METRIC starts from a deliberately small premise.
 
 1. There are observations.
 2. Observations are different and distinguishable.
@@ -37,6 +78,7 @@ The interpretation is downstream. The computable object is the finite metric
 space: a finite record set plus one authoritative metric.
 
 The C++ namespace is `mtrc`. The project and package name remain METRIC.
+Finite metric-space computing is the brand language for the project.
 
 ## Why METRIC
 
@@ -56,8 +98,8 @@ or non-metric pairwise functions out of the normal metric surface.
 
 Once two records can be compared, the finite record set becomes a finite metric
 space. METRIC can then compute neighborhoods, representatives, entropy,
-correlation between paired spaces, outliers, modified spaces, and derived maps
-without requiring one global embedding model first.
+correlation between paired spaces, singular-record scores, modified spaces, and
+derived maps without requiring one global coordinate representation first.
 
 ## Core Idea
 
@@ -75,18 +117,34 @@ The metric comes first. The interpretation comes after.
 
 Vector spaces are included as a special case: records are coordinate records and
 the metric is induced by a coordinate metric such as Euclidean, Manhattan, or
-Chebyshev. Embeddings are useful derived spaces, not a required input format.
+Chebyshev. Coordinate views are useful derived spaces, not a required input
+format.
+
+## Relationship To Classical ML
+
+Coordinate-first workflows remain useful: they are fast and effective when the
+relevant structure is already captured by numeric features. METRIC treats that
+as an important special case, not as the foundation.
+
+METRIC starts with a finite record set and the metric that defines its geometry.
+From there it can derive coordinate tables, coordinate views, vector baselines,
+and learning workflows when they are justified by the metric-space object.
 
 ## What You Can Compute
 
+METRIC is organized around operations that make sense once a finite record set
+has one authoritative metric. The exact set of promoted functions changes by
+release, but the project surface is meant to cover these finite-space tasks:
+
 - nearest-neighbor search and range queries
 - representative selection and finite-space reduction
-- clustering and outlier detection
+- density groups, components, and singular-record diagnostics
 - entropy and intrinsic-structure diagnostics
 - correlation and dependence between paired metric spaces
 - sampling and metric-space walks over finite geometry
 - graph, table, tree, and indexed representations of the same source space
 - modified and derived metric spaces, including coordinate spaces when useful
+- native evidence export and visual inspection of finite-space structure
 
 ## Documentation Hierarchy
 
@@ -95,15 +153,15 @@ algorithms.
 
 | Level | What belongs here | Examples |
 | --- | --- | --- |
-| Level 1: finite metric-space model | Records, metrics, spaces, entropy, correlation, sampling, and transformation as questions about a finite set `(X, d)`. | "What is the record?", "What is the metric?", "What property or derived space is being computed?" |
+| Level 1: finite metric-space object | Records, metrics, spaces, entropy, correlation, sampling, and transformation as questions about a finite set `(X, d)`. | "What is the record?", "What is the metric?", "What property or derived space is being computed?" |
 | Level 2: framework components | C++ namespaces and components that own those questions. | `mtrc::record`, `mtrc::metric`, `mtrc::space`, `mtrc::stats::properties`, `mtrc::stats::correlate`, `mtrc::stats::sample`, `mtrc::modify::map`, `mtrc::modify::compose`, `mtrc::solve`. |
-| Level 3: concrete implementations | Algorithms, estimators, papers, and compatibility adapters inside a Level-2 component. | TWED, Wasserstein/EMD, MGC, PHATE, autoencoders, native DNN solvers, PCFA, SOM/KOC, DBSCAN, MDS. |
+| Level 3: concrete implementations | Algorithms, estimators, papers, and solver components inside a Level-2 component. | TWED, Wasserstein/EMD, MGC, diffusion coordinates, parametric coordinate solver components, PCFA, DBSCAN density grouping, MDS. |
 
-PHATE, AE, DNN, MGC, and entropy are described through this hierarchy:
-entropy is a property of an existing finite metric space; MGC is a dependence
-test between aligned metric spaces; PHATE and autoencoder workflows construct
-derived coordinate spaces; the native DNN code is a solver used by fitted
-metric-space mappings.
+Names such as diffusion coordinates, coordinate solver, MGC, and entropy are described through this
+hierarchy, not used as the organizing principle. Entropy is a property of an
+existing finite metric space; MGC is a dependence test between aligned metric
+spaces; diffusion-coordinate workflows construct derived coordinate spaces; the
+native parametric solver code is used by derived metric-space mappings.
 
 ## Metrics
 
@@ -172,12 +230,12 @@ Docs:
 
 ### Metric-Aware Maps
 
-When coordinates are useful, METRIC treats them as derived spaces. PHATE-style
-geometry and autoencoder mappings are used as ways to produce coordinate views
+When coordinates are useful, METRIC treats them as derived spaces. Diffusion-coordinate
+geometry and parametric coordinate maps are used as ways to produce coordinate views
 from an existing metric space, while the source metric remains explicit.
 
 Docs:
-[PHATE-AE pipeline](docs/examples/phate-ae-pipeline-workflow.md).
+[parametric diffusion coordinates pipeline](docs/examples/parametric-diffusion-coordinate-pipeline-workflow.md).
 
 ## C++ Quickstart
 
@@ -251,7 +309,7 @@ This is a finite metric space over mixed records: symbolic event codes,
 distribution-like sensor mass, and discrete machine state remain typed fields.
 The application supplies one metric over record pairs; METRIC handles the finite
 space, pair values, query, diagnostics, and representative reduction. No
-embedding model is required before the records become numerically usable.
+coordinate artifact is required before METRIC can compute with the records.
 
 For practical applications the recommended C++ entry point is
 `<metric/workflow.hpp>`. It aggregates the stable Level-1 workflow surfaces:
@@ -282,7 +340,7 @@ scores.
 
 Copyable C++ application templates live under
 [`examples/templates`](examples/templates). They cover the practical first
-steps after the TL;DR model:
+steps after the TL;DR workflow:
 
 - time-series condition monitoring with TWED
 - histogram and image-like distribution comparison with strict Wasserstein
@@ -354,15 +412,10 @@ target_link_libraries(program PRIVATE metric::metric)
 
 ## Python Binding
 
-Python is an adapter layer over the native implementation. The current core wheel
-runs space construction and inspection (`distance`, `pairwise`, and the
-`to_matrix`/`to_tree`/`to_graph` representation views), exact neighbor search
-(`neighbors`, `nearest`, `within_radius`), representative selection, reduction,
-compression, structural description, intrinsic-dimension diagnostics, and the
-metric constructors. Higher intent methods such as `embed` and
-`compare`/`correlate` still raise `StrategyUnavailableError` until their native
-bindings are promoted in the default wheel. Use the C++ surface for those
-analyses today.
+Python is an adapter layer over the native implementation, not a second METRIC
+engine. Its job is to adapt Python records and callables to finite metric
+spaces, expose native result objects, preserve lineage and provenance, and make
+build-specific availability explicit.
 
 ```shell
 python -m pip install ./python
@@ -380,21 +433,41 @@ print([neighbor.record for neighbor in space.neighbors("read", count=2).neighbor
 print(space.describe().to_dict()["intrinsic_dimension"])
 ```
 
-`metric.available()` reports what the installed wheel actually supports. It
-returns a plain `dict` of `bool` flags, each computed by inspecting the native
-bindings and adapter state at call time:
+`metric.available()` reports what the installed wheel supports. Use it, together
+with the Python API documentation, for the exact support matrix of a given build:
 
 ```python
 import metric
 
 flags = metric.available()
-print(flags["neighbors"])   # True if exact neighbor search is promoted here
-print(flags["embed"])       # False until embedding has a native binding
+print(flags["neighbors"])
+print(flags["embed"])
 ```
 
-A `True` value means the path is reachable in this build; a `False` value
-means it is not promoted (or its optional dependency is absent) here. A missing
-dependency is reported as `False` rather than raising.
+The README describes the project model. Build-specific support and promotion
+status live in the API and stability documents.
+
+## Project Status And Scope
+
+This README describes METRIC as a project: the object model, public vocabulary,
+and intended computational surface. The exact promoted release surface is tracked
+separately in:
+
+- [Supported Surface](docs/supported-surface.md)
+- [Stability Labels](docs/stability.md)
+- [Production Readiness Roadmap](docs/engine/production-readiness-roadmap.md)
+- [Changelog](CHANGELOG.md)
+
+New capabilities should enter the public surface only after they have a finite
+metric-space interpretation, native C++ implementation, deterministic tests or
+examples, result metadata, and documentation.
+
+METRIC is meant to support both open-ended work and shipped systems: exploratory
+experiments, data-analysis notebooks, research prototypes, reproducible evidence
+pipelines, and product code that needs metric-space search, diagnostics,
+modification, or visualization. The visual pipeline is part of that framework:
+C++ exports finite-space evidence, and METRIC-owned browser components inspect
+that evidence without becoming a second algorithm implementation.
 
 ## Documentation
 

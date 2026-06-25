@@ -666,7 +666,7 @@ template <typename Scalar> class Network {
 	}
 
 	///
-	/// Use the fitted model to make predictions
+		/// Use the calibrated network parameters to make predictions.
 	///
 	/// \param x The predictors. Each row is an observation.
 	///

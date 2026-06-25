@@ -75,11 +75,18 @@ on the space directly (always fresh) or on a provider from `mtrc::space::storage
 namespace distances = mtrc::space::distances;
 auto d   = distances::value(space, id_a, id_b);   // one pair
 auto row = distances::row(space, id_a);           // distances from one record
-auto all = distances::pairs(space);               // every unordered pair {i, j}, i < j
+auto all = distances::pairs(space);               // guarded in-memory pair collection
+distances::for_each_pair(space, visitor);         // streaming traversal for large spaces
 
 auto table = distances::materialize(space);       // eager DistanceTable provider
 distances::checked_value(table, id_a, id_b);      // throws if the provider is stale
 ```
+
+`pairs(...)` is intentionally a collection API, so it has a default in-memory
+pair-count budget and refuses oversized spaces before reserving memory or
+calling the metric. Use `for_each_pair(...)` for streaming work, or pass
+`pair_collection_options{0}` only when an unbounded in-memory collection is
+intentional.
 
 ### Queries
 

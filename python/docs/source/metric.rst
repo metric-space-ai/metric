@@ -15,9 +15,6 @@ Subpackages
    metric._impl
    metric.correlation
    metric.distance
-   metric.mapping
-   metric.space
-   metric.transform
    metric.utils
 
 Submodules

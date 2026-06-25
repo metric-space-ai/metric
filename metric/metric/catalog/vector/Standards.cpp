@@ -95,7 +95,7 @@ auto Euclidean_soft_clipped<V>::operator()(const Container &a, const Container &
 template <typename V> void Euclidean_standardized<V>::validate_scales() const
 {
 	if (sigma.empty()) {
-		throw std::invalid_argument("Euclidean_standardized requires a fitted positive scale (sigma)");
+		throw std::invalid_argument("Euclidean_standardized requires a calibrated positive scale (sigma)");
 	}
 	if (mean.size() != sigma.size()) {
 		throw std::invalid_argument("Euclidean_standardized requires mean and sigma of equal dimension");
@@ -103,12 +103,12 @@ template <typename V> void Euclidean_standardized<V>::validate_scales() const
 	for (const auto s : sigma) {
 		if (!std::isfinite(s) || s <= value_type(0)) {
 			throw std::invalid_argument(
-				"Euclidean_standardized requires every fitted scale sigma to be finite and positive");
+				"Euclidean_standardized requires every calibrated scale sigma to be finite and positive");
 		}
 	}
 	for (const auto m : mean) {
 		if (!std::isfinite(m)) {
-			throw std::invalid_argument("Euclidean_standardized requires a finite fitted mean");
+			throw std::invalid_argument("Euclidean_standardized requires a finite calibrated mean");
 		}
 	}
 }
@@ -123,7 +123,7 @@ Euclidean_standardized<V>::Euclidean_standardized(const Container &A)
 
 	for (const auto &record : A) {
 		if (record.size() != dimension) {
-			throw std::invalid_argument("Euclidean_standardized requires aligned training records");
+			throw std::invalid_argument("Euclidean_standardized requires aligned calibration records");
 		}
 		for (size_t i = 0; i < dimension; ++i) {
 			mean[i] += record[i];
@@ -142,8 +142,8 @@ Euclidean_standardized<V>::Euclidean_standardized(const Container &A)
 		sigma[i] = std::sqrt(sigma[i] / value_type(A.size()));
 	}
 
-	// A zero or non-finite fitted scale (e.g. a constant feature or a single
-	// training record) is not an admitted true metric, so reject it at the fit.
+	// A zero or non-finite calibrated scale (e.g. a constant coordinate or a
+	// single calibration record) is not an admitted true metric, so reject it.
 	validate_scales();
 }
 
@@ -154,7 +154,7 @@ auto Euclidean_standardized<V>::operator()(const Container &a, const Container &
 	detail::require_aligned_vector_inputs(a, b, "Euclidean_standardized");
 	validate_scales();
 	if (a.size() != sigma.size()) {
-		throw std::invalid_argument("Euclidean_standardized input dimension does not match fitted dimension");
+		throw std::invalid_argument("Euclidean_standardized input dimension does not match calibrated dimension");
 	}
 	distance_type sum = 0;
 	for (size_t i = 0; i < a.size(); ++i) {
@@ -173,7 +173,7 @@ auto Euclidean_standardized<V>::operator()(const Container &a, const Container &
 template <typename V> void Manhattan_standardized<V>::validate_scales() const
 {
 	if (sigma.empty()) {
-		throw std::invalid_argument("Manhattan_standardized requires a fitted positive scale (sigma)");
+		throw std::invalid_argument("Manhattan_standardized requires a calibrated positive scale (sigma)");
 	}
 	if (mean.size() != sigma.size()) {
 		throw std::invalid_argument("Manhattan_standardized requires mean and sigma of equal dimension");
@@ -181,12 +181,12 @@ template <typename V> void Manhattan_standardized<V>::validate_scales() const
 	for (const auto s : sigma) {
 		if (!std::isfinite(s) || s <= value_type(0)) {
 			throw std::invalid_argument(
-				"Manhattan_standardized requires every fitted scale sigma to be finite and positive");
+				"Manhattan_standardized requires every calibrated scale sigma to be finite and positive");
 		}
 	}
 	for (const auto m : mean) {
 		if (!std::isfinite(m)) {
-			throw std::invalid_argument("Manhattan_standardized requires a finite fitted mean");
+			throw std::invalid_argument("Manhattan_standardized requires a finite calibrated mean");
 		}
 	}
 }
@@ -201,7 +201,7 @@ Manhattan_standardized<V>::Manhattan_standardized(const Container &A)
 
 	for (const auto &record : A) {
 		if (record.size() != dimension) {
-			throw std::invalid_argument("Manhattan_standardized requires aligned training records");
+			throw std::invalid_argument("Manhattan_standardized requires aligned calibration records");
 		}
 		for (size_t i = 0; i < dimension; ++i) {
 			mean[i] += record[i];
@@ -220,7 +220,7 @@ Manhattan_standardized<V>::Manhattan_standardized(const Container &A)
 		sigma[i] = std::sqrt(sigma[i] / value_type(A.size()));
 	}
 
-	// Reject a zero or non-finite fitted scale before any metric use.
+	// Reject a zero or non-finite calibrated scale before any metric use.
 	validate_scales();
 }
 
@@ -231,7 +231,7 @@ auto Manhattan_standardized<V>::operator()(const Container &a, const Container &
 	detail::require_aligned_vector_inputs(a, b, "Manhattan_standardized");
 	validate_scales();
 	if (a.size() != sigma.size()) {
-		throw std::invalid_argument("Manhattan_standardized input dimension does not match fitted dimension");
+		throw std::invalid_argument("Manhattan_standardized input dimension does not match calibrated dimension");
 	}
 	distance_type sum = 0;
 	for (size_t i = 0; i < a.size(); ++i) {

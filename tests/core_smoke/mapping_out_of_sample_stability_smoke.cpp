@@ -33,8 +33,8 @@ int main()
 	auto query = mtrc::make_space(query_records, absolute_distance);
 
 	const IdentityModel identity_model;
-	static_assert(mtrc::MappingModel_v<IdentityModel, decltype(source)>);
-	static_assert(mtrc::MappingModel_v<IdentityModel, decltype(query)>);
+	static_assert(mtrc::DerivedSpaceTransform_v<IdentityModel, decltype(source)>);
+	static_assert(mtrc::DerivedSpaceTransform_v<IdentityModel, decltype(query)>);
 
 	const auto identity = mtrc::modify::map::out_of_sample_neighbor_stability(identity_model, source, query, 1);
 	assert(identity.diagnostic == "out_of_sample_neighbor_stability");

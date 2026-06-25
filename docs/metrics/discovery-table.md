@@ -21,7 +21,7 @@ with concrete counterexamples.
 | Status | Meaning | `metric_traits` law | Discoverable for metric-only algorithms? |
 | --- | --- | --- | --- |
 | **admitted** | True metric on its natural record domain; no parameter or per-fit precondition can break the law (only structural alignment is required). | `metric_law::metric` | Yes |
-| **restricted metric** | True metric, but only under an enforced parameter/domain gate (e.g. `p >= 1`, nonnegative inputs, a metric ground cost, a positive fitted scale). The gate is validated on construction and on every evaluation. | `metric_law::metric` | Yes |
+| **restricted metric** | True metric, but only under an enforced parameter/domain gate (e.g. `p >= 1`, nonnegative inputs, a metric ground cost, a positive calibrated scale). The gate is validated on construction and on every evaluation. | `metric_law::metric` | Yes |
 | **quarantine** | Not a true metric as shipped, but a metric variant exists in the same literature family (or the class has a legitimate non-metric home). Kept for a compatibility window pending admission/relocation; never deleted by family name alone. | `metric_law::distance` | No |
 | **rejected** | The specific computation is not a metric, and the family's metric variant is a separate already-present class, so this computation is scheduled for removal. | `metric_law::distance` | No |
 
@@ -47,8 +47,8 @@ The "recoding principle" column states that cost model for each metric.
 | `P_norm<V>` | Aligned numeric vectors (Lp, `p>=1`) | restricted metric | metric |
 | `WeightedMinkowski<V>` | Aligned vectors, positive weights, `p>=1` | restricted metric | metric |
 | `Mahalanobis<V>` | Aligned vectors, SPD matrix | restricted metric | metric |
-| `Euclidean_standardized<V>` | Aligned vectors, fitted positive scale | restricted metric | metric |
-| `Manhattan_standardized<V>` | Aligned vectors, fitted positive scale | restricted metric | metric |
+| `Euclidean_standardized<V>` | Aligned vectors, calibrated positive scale | restricted metric | metric |
+| `Manhattan_standardized<V>` | Aligned vectors, calibrated positive scale | restricted metric | metric |
 | `Angular<V>` | Nonzero / unit vectors (directions) | restricted metric | metric |
 | `Chordal<V>` | Nonzero / unit vectors (directions) | restricted metric | metric |
 | `Ruzicka<V>` | Nonnegative aligned vectors (weighted sets) | restricted metric | metric |
@@ -78,7 +78,6 @@ The "recoding principle" column states that cost model for each metric.
 | `CramervonMises<Sample,D>` | Samples (Akima root-CDF) | quarantine | distance |
 | `KolmogorovSmirnov<Sample,D>` | Samples (Akima sup-CDF) | quarantine | distance |
 | `SSIM<D,V>` | Images / windows | quarantine | distance |
-| `Kohonen<D,Sample,…>` | Learned SOM-graph distance | quarantine | distance |
 | `CosineInverted<V>` | Vectors (`|1 − cos|`) | rejected | distance |
 | `Sorensen<V>` | Vectors (Bray–Curtis) | rejected | distance |
 
@@ -140,7 +139,7 @@ References · Example**. `n` = record dimension/length; `|A|`,`|B|` = set sizes.
 - **Example:** `mtrc::Mahalanobis<double>({{2,0.5},{0.5,1}})(a, b)`.
 
 #### `Euclidean_standardized<V>` / `Manhattan_standardized<V>` — *restricted metric*
-- **Domain:** aligned finite real vectors; **gate:** every fitted scale `σᵢ` finite and `> 0` (enforced on fit, on `(mean, sigma)` construction, and on every evaluation).
+- **Domain:** aligned finite real vectors; **gate:** every calibrated scale `σᵢ` finite and `> 0` (enforced on fit, on `(mean, sigma)` construction, and on every evaluation).
 - **Guarantees:** all four laws — an injective per-coordinate linear reparametrization of L2 / L1. The centering `mean` cancels. A zero/constant feature or a single-record fit (zero scale) is rejected.
 - **Complexity:** `O(n)` per evaluation; `O(m·n)` to fit on `m` records.
 - **Recoding principle:** coordinate displacement after positive per-axis rescaling `‖(a−b)/σ‖`.
@@ -306,7 +305,6 @@ algorithms. Each row has a salvage path in
 | `CramervonMises<Sample,D>` | Correct **root**-L2-CDF *form*, but the same Akima CDF breaks triangle and returns NaN on ties. | Admitted replacement: **`EmpiricalCramer`** (tie-safe fixed support). |
 | `KolmogorovSmirnov<Sample,D>` | Sup over a finite grid of the same Akima CDF: returns values `>1`, violates triangle, false-zero on ties. | Admitted replacement: **`EmpiricalKolmogorovSmirnov`**. |
 | `SSIM<D,V>` | Raw SSIM-based aggregate; raw SSIM and `1−SSIM` are not metrics. | Admit a theorem-matched SSIM-derived metric (e.g. `√(1−SSIM)` under normalized conditions, Brunet/Vrscay/Wang 2012). |
-| `Kohonen<D,Sample,…>` | `min(m(a,b), m(a,w_Ba)+S(Ba,Bb)+m(w_Bb,b))` with `S` = Dijkstra all-pairs on the SOM graph and **exact** base-metric edges. With a metric base `m`, `S(i,j) >= m(w_i,w_j)` so the detour `>= m(a,b)` and the `min` collapses to `m` — it **is** a true metric (verified on 200k random graphs). Quarantine is defensible only because it is a stateful *trained-model artifact* that adds no metric structure of its own and breaks if templated with a non-metric base (e.g. squared-Euclidean creates a shortcut). The "BMU/residual lift breaks identity/triangle" rationale is false. | Relocate to the mapping/embedding workflow; not a catalog metric (it merely inherits the base metric). |
 
 ## Rejected — non-metric, metric variant is a separate class
 

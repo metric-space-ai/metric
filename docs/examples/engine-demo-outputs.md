@@ -102,91 +102,91 @@ process external internal_bleeding dense evaluations = 576
 process external dense evaluations = 1152
 ```
 
-## Process Curve PHATE Map
+## Process Curve parametric diffusion coordinates Map
 
 Command:
 
 ```bash
-build/core/examples/engine/engine_process_curve_phate_map
+build/core/examples/engine/engine_process_curve_diffusion_coordinate_map
 ```
 
 Expected output:
 
 ```text
-process PHATE records = 10
-process PHATE queries = 4
-process PHATE source metric = aligned_curve_distance
-process PHATE feature codec = process_curve_feature_codec
-process PHATE pipeline components = 11
-process PHATE pipeline codec = feature_record_codec
-process PHATE distance provider = distance_table_pairwise_distances
-process PHATE affinity kernel = exponential_affinity_kernel
-process PHATE diffusion operator = lazy_row_normalized_diffusion_operator
-process PHATE geometry target evaluations = 100
-process PHATE metric nearest family = late_ramp
-process PHATE vector baseline family = flat
-process PHATE latent nearest family = late_ramp
-process PHATE metric correct = 4/4
-process PHATE vector misses = 4/4
-process PHATE latent correct = 4/4
-process PHATE query = query_delayed_ramp:metric=late_ramp,vector=flat,latent=late_ramp
-process PHATE query = query_delayed_ramp_long:metric=late_ramp,vector=flat,latent=late_ramp
-process PHATE query = query_delayed_ramp_short:metric=late_ramp,vector=normal,latent=late_ramp
-process PHATE query = query_delayed_ramp_deep_delay:metric=late_ramp,vector=flat,latent=late_ramp
-process PHATE bottleneck loss = 0.6213 -> 0.160793
-process PHATE out-of-sample support = parametric_space_transform
-process PHATE out-of-sample anchor recall = 0.5
-process PHATE mapped-anchor source rank = 1.75
-process PHATE max mapped-anchor source rank = 3
-process PHATE original-metric distance penalty = 0.25
-process PHATE max original-metric distance penalty = 1
-process PHATE inverse support = none_feature_codec
-process PHATE deterministic seed = 29
+process diffusion coordinate records = 10
+process diffusion coordinate queries = 4
+process diffusion coordinate source metric = aligned_curve_distance
+process diffusion coordinate record-coordinate codec = process_curve_coordinate_codec
+process diffusion-coordinate pipeline components = 11
+process diffusion-coordinate pipeline codec = record_coordinate_codec
+process diffusion coordinate distance provider = distance_table_pairwise_distances
+process diffusion coordinate affinity kernel = exponential_affinity_kernel
+process diffusion-coordinate operator = lazy_row_normalized_diffusion_operator
+process diffusion-coordinate target target evaluations = 100
+process diffusion coordinate metric nearest family = late_ramp
+process diffusion coordinate vector baseline family = flat
+process diffusion coordinate latent nearest family = late_ramp
+process diffusion coordinate metric correct = 4/4
+process diffusion coordinate vector misses = 4/4
+process diffusion coordinate latent correct = 4/4
+process diffusion coordinate query = query_delayed_ramp:metric=late_ramp,vector=flat,latent=late_ramp
+process diffusion coordinate query = query_delayed_ramp_long:metric=late_ramp,vector=flat,latent=late_ramp
+process diffusion coordinate query = query_delayed_ramp_short:metric=late_ramp,vector=normal,latent=late_ramp
+process diffusion coordinate query = query_delayed_ramp_deep_delay:metric=late_ramp,vector=flat,latent=late_ramp
+process diffusion coordinate target error = 0.6213 -> 0.160793
+process diffusion coordinate out-of-sample support = parametric_space_transform
+process diffusion coordinate out-of-sample anchor recall = 0.5
+process parametric diffusion coordinate mapped-anchor source rank = 1.75
+process diffusion coordinate max mapped-anchor source rank = 3
+process diffusion coordinate original-metric distance penalty = 0.25
+process diffusion coordinate max original-metric distance penalty = 1
+process diffusion coordinate inverse support = none_record_coordinate_codec
+process diffusion coordinate deterministic seed = 29
 ```
 
-## Process Curve PHATE Gallery
+## Process Curve parametric diffusion coordinates Gallery
 
 Command:
 
 ```bash
-build/core/examples/engine/engine_process_curve_phate_gallery
+build/core/examples/engine/engine_process_curve_diffusion_coordinate_gallery
 ```
 
 Expected output:
 
 ```text
-process PHATE gallery records = 15
-process PHATE gallery queries = 6
-process PHATE gallery source metric = aligned_curve_distance
-process PHATE gallery feature codec = process_curve_gallery_feature_codec
-process PHATE gallery pipeline components = 11
-process PHATE gallery distance provider = distance_table_pairwise_distances
-process PHATE gallery affinity kernel = exponential_affinity_kernel
-process PHATE gallery diffusion operator = lazy_row_normalized_diffusion_operator
-process PHATE gallery target evaluations = 225
-process PHATE gallery metric nearest family = late_ramp
-process PHATE gallery vector baseline family = flat
-process PHATE gallery latent nearest family = late_ramp
-process PHATE gallery metric correct = 6/6
-process PHATE gallery vector misses = 6/6
-process PHATE gallery latent correct = 6/6
-process PHATE gallery average metric margin = 2.16667
-process PHATE gallery query = gallery_delay_A:metric=late_ramp,vector=flat,latent=late_ramp
-process PHATE gallery query = gallery_delay_B:metric=late_ramp,vector=flat,latent=late_ramp
-process PHATE gallery query = gallery_delay_C:metric=late_ramp,vector=normal,latent=late_ramp
-process PHATE gallery query = gallery_delay_D:metric=late_ramp,vector=normal,latent=late_ramp
-process PHATE gallery query = gallery_delay_E:metric=late_ramp,vector=flat,latent=late_ramp
-process PHATE gallery query = gallery_delay_F:metric=late_ramp,vector=flat,latent=late_ramp
-process PHATE gallery neighbor preservation = 0.4
-process PHATE gallery OOS anchor recall = 0.833333
-process PHATE gallery first-anchor match rate = 0.833333
-process PHATE gallery mapped-anchor source rank = 1.33333
-process PHATE gallery max mapped-anchor source rank = 3
-process PHATE gallery original-metric distance penalty = 0.166667
-process PHATE gallery max original-metric distance penalty = 1
-process PHATE gallery bottleneck loss = 0.46694 -> 0.0860003
-process PHATE gallery inverse support = none_feature_codec
-process PHATE gallery deterministic seed = 41
+process diffusion-coordinate gallery records = 15
+process diffusion-coordinate gallery queries = 6
+process diffusion-coordinate gallery source metric = aligned_curve_distance
+process diffusion-coordinate gallery record-coordinate codec = process_curve_gallery_coordinate_codec
+process diffusion-coordinate gallery pipeline components = 11
+process diffusion-coordinate gallery distance provider = distance_table_pairwise_distances
+process diffusion-coordinate gallery affinity kernel = exponential_affinity_kernel
+process diffusion-coordinate gallery diffusion operator = lazy_row_normalized_diffusion_operator
+process diffusion-coordinate gallery target evaluations = 225
+process diffusion-coordinate gallery metric nearest family = late_ramp
+process diffusion-coordinate gallery vector baseline family = flat
+process diffusion-coordinate gallery latent nearest family = late_ramp
+process diffusion-coordinate gallery metric correct = 6/6
+process diffusion-coordinate gallery vector misses = 6/6
+process diffusion-coordinate gallery latent correct = 6/6
+process diffusion-coordinate gallery average metric margin = 2.16667
+process diffusion-coordinate gallery query = gallery_delay_A:metric=late_ramp,vector=flat,latent=late_ramp
+process diffusion-coordinate gallery query = gallery_delay_B:metric=late_ramp,vector=flat,latent=late_ramp
+process diffusion-coordinate gallery query = gallery_delay_C:metric=late_ramp,vector=normal,latent=late_ramp
+process diffusion-coordinate gallery query = gallery_delay_D:metric=late_ramp,vector=normal,latent=late_ramp
+process diffusion-coordinate gallery query = gallery_delay_E:metric=late_ramp,vector=flat,latent=late_ramp
+process diffusion-coordinate gallery query = gallery_delay_F:metric=late_ramp,vector=flat,latent=late_ramp
+process diffusion-coordinate gallery neighbor preservation = 0.4
+process diffusion-coordinate gallery OOS anchor recall = 0.833333
+process diffusion-coordinate gallery first-anchor match rate = 0.833333
+process diffusion-coordinate gallery mapped-anchor source rank = 1.33333
+process diffusion-coordinate gallery max mapped-anchor source rank = 3
+process diffusion-coordinate gallery original-metric distance penalty = 0.166667
+process diffusion-coordinate gallery max original-metric distance penalty = 1
+process diffusion-coordinate gallery target error = 0.46694 -> 0.0860003
+process diffusion-coordinate gallery inverse support = none_record_coordinate_codec
+process diffusion-coordinate gallery deterministic seed = 41
 ```
 
 ## Vector Space As A Special Case
@@ -360,7 +360,7 @@ cross-space verdict = metric_detects_dependence_baseline_misses_it
 Command:
 
 ```bash
-build/core/examples/engine/engine_phate_autoencoder_map
+build/core/examples/engine/engine_parametric_diffusion_coordinate_map
 ```
 
 Expected output:
@@ -372,9 +372,9 @@ source fixture size = 5
 source codec = vector_record_codec
 source nearest neighbors = 2 via distance_table
 source groups = 2 via distance_table
-source dbscan noise = 0 via distance_table
+source dbscan density-unassigned = 0 via distance_table
 runtime policy = exact_materialized_serial via knn_graph_index
-pipeline = native_phate_autoencoder_pipeline
+pipeline = parametric_diffusion_coordinate_pipeline
 pipeline components = 11
 pipeline codec = vector_record_codec
 pipeline distance provider = distance_table_pairwise_distances
@@ -384,12 +384,12 @@ diffusion steps = 2
 diffusion dense evaluations = 25
 diffusion kernel scale = 1
 diffusion graph recall = 1
-training epochs = 160
-mapping = native_phate_autoencoder
-strategy = native_dnn_phate_ae
-PHATE-AE bottleneck loss: 0.248425 -> 0.160057
-PHATE-AE neighbor preservation = 0.8
-PHATE-AE reconstruction MSE: 2.04967
+calibration steps = 160
+mapping = parametric_diffusion_coordinates
+strategy = native_metric_diffusion_coordinate_solver
+parametric diffusion coordinate target error: 0.248425 -> 0.160057
+parametric diffusion coordinate neighbor preservation = 0.8
+parametric diffusion coordinate reconstruction MSE: 2.04967
 vector baseline out-of-sample support = nearest_anchor_only
 vector baseline inverse support = no_decoder
 vector baseline first anchor = 0
@@ -402,25 +402,25 @@ out-of-sample mapped-anchor rank = 1
 deterministic seed = 23
 ```
 
-## PHATE Pipeline Builder
+## parametric diffusion coordinates Pipeline Builder
 
 Command:
 
 ```bash
-build/core/examples/engine/engine_phate_pipeline_builder
+build/core/examples/engine/engine_parametric_diffusion_coordinate_pipeline_builder
 ```
 
 Expected output:
 
 ```text
-phate pipeline builder plan = native_phate_autoencoder_pipeline
-phate pipeline builder components = 11
-phate pipeline builder replacement points = 10
-phate pipeline default executable = yes
-phate pipeline distance-table executable = yes
-phate pipeline metadata replacement executable = no
-phate pipeline builder codec = vector_record_codec
-phate pipeline builder distance provider = distance_table_pairwise_distances
-phate pipeline builder affinity kernel = exponential_affinity_kernel
-phate pipeline builder diffusion operator = lazy_row_normalized_diffusion_operator
+diffusion coordinate pipeline builder plan = parametric_diffusion_coordinate_pipeline
+diffusion coordinate pipeline builder components = 11
+diffusion coordinate pipeline builder replacement points = 10
+diffusion coordinate pipeline default executable = yes
+diffusion coordinate pipeline distance-table executable = yes
+diffusion coordinate pipeline metadata replacement executable = no
+diffusion coordinate pipeline builder codec = vector_record_codec
+diffusion coordinate pipeline builder distance provider = distance_table_pairwise_distances
+diffusion coordinate pipeline builder affinity kernel = exponential_affinity_kernel
+diffusion coordinate pipeline builder diffusion operator = lazy_row_normalized_diffusion_operator
 ```

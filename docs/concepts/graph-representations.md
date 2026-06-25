@@ -26,7 +26,7 @@ Without this metadata, a graph is an expert representation, not a promoted resul
 
 An exact k-nearest-neighbor graph has one outgoing neighbor set per source record. For each record, the selected neighbors are the `k` nearest other records under the metric, after applying a documented tie-breaking rule.
 
-`exact_knn_graph` and `exact_knn_graph_edges` use exhaustive pairwise distances, exclude self-loops, preserve source-record order, and resolve equal distances by target record order. The result metadata records strategy `exact_knn`, the record count, edge count, exact/directed policy, `k`, metric-distance payloads, no weighting, no sparsification, no symmetrization, no normalization, and the tie-breaking rule.
+`exact_knn_graph` and `exact_knn_graph_edges` use exhaustive pairwise distances, exclude self-loops, preserve source-record order, and resolve equal distances by target record order. They preflight the directed `n * (n - 1)` metric work with `exact_graph_options` and refuse over-budget construction before metric calls; pass `exact_graph_options{0}` only when unbounded exact construction is intentional. The result metadata records strategy `exact_knn`, the record count, edge count, exact/directed policy, `k`, metric-distance payloads, no weighting, no sparsification, no symmetrization, no normalization, and the tie-breaking rule.
 
 Exactness must be supported by exhaustive pairwise distances, a proved exact algorithm, or deterministic tests that compare against dense pairwise distances on small fixtures.
 
@@ -38,13 +38,13 @@ An approximate k-nearest-neighbor graph is built from a heuristic, randomized se
 
 Approximate graphs must not be documented as exact unless their edge sets are verified against the dense pairwise result for the relevant fixture. They should report construction parameters, deterministic seeds when present, and recall or consistency diagnostics when those diagnostics are available.
 
-`mtrc::KNNGraph` is a compatibility and expert API for approximate kNN graph construction. New promoted examples should state when they are using it as an approximate graph representation.
+`mtrc::KNNGraph` is an expert API for approximate kNN graph construction. New promoted examples should state when they are using it as an approximate graph representation.
 
 ## Radius Graph
 
 A radius graph connects records whose metric distance is within a threshold.
 
-`exact_radius_graph` and `exact_radius_graph_edges` use exhaustive pairwise distances, exclude self-loops, preserve source-record order, and emit every directed edge whose distance is within `radius`. The result metadata records strategy `exact_radius`, the record count, edge count, exact/directed policy, `radius`, metric-distance payloads, no weighting, no sparsification, no symmetrization, no normalization, and the source/target scan rule.
+`exact_radius_graph` and `exact_radius_graph_edges` use exhaustive pairwise distances, exclude self-loops, preserve source-record order, and emit every directed edge whose distance is within `radius`. They share the same `exact_graph_options` preflight as exact kNN graph construction and scan pairs directly instead of materializing a full pair-index list. The result metadata records strategy `exact_radius`, the record count, edge count, exact/directed policy, `radius`, metric-distance payloads, no weighting, no sparsification, no symmetrization, no normalization, and the source/target scan rule.
 
 An exact directed radius graph has edge `i -> j` when `distance(i, j) <= radius`, subject to a documented self-loop policy. An exact undirected radius graph uses the same threshold but stores one undirected relationship for each qualifying pair.
 
@@ -78,7 +78,7 @@ Component labels are assigned by scanning source record IDs in order. A record w
 
 Graph stretch diagnostics compare shortest paths through an existing graph with direct metric distances in the source finite metric space. They help detect whether a sparse graph preserves pairwise distances for the evaluated records, but they do not prove approximate-neighbor recall or quality outside the supplied record set.
 
-`graph_stretch_diagnostics` accepts source records, the metric callable, and a graph construction result. It returns record count, edge count, direction policy, evaluated pair count, reachable pair count, unreachable pair count, zero-metric pair count, max stretch, average stretch over reachable pairs, and a named stretch policy.
+`graph_stretch_diagnostics` accepts source records, the metric callable, and a graph construction result. It returns record count, edge count, direction policy, evaluated pair count, reachable pair count, unreachable pair count, zero-metric pair count, max stretch, average stretch over reachable pairs, and a named stretch policy. It preflights direct metric comparisons, dense shortest-path matrix cells, and the all-pairs closure estimate with `graph_stretch_options`; pass `graph_stretch_options{0, 0, 0}` only when unbounded diagnostics are intentional.
 
 For directed graph results, shortest paths follow stored edge direction and the stretch policy is `directed_shortest_path`. For undirected graph results, each stored edge is evaluated as a bidirectional endpoint relationship and the stretch policy is `undirected_shortest_path`.
 
@@ -132,4 +132,4 @@ Graph construction moves from expert representation to promoted operator only wh
 - examples that name direction, weighting, symmetrization, and normalization policies
 - release-gate tests in the C++ or Python core path
 
-Until those requirements are met, graph APIs remain available as explicit representations and compatibility surfaces rather than first-page graph-construction promises.
+Until those requirements are met, graph APIs remain available as explicit representations and expert surfaces rather than first-page graph-construction promises.

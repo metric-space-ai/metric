@@ -278,7 +278,7 @@ int main()
 	empty_curve.curve = {};
 	CHECK(throws_invalid_argument([&] { (void)metric(unit, empty_curve); })); // TWED rejects empty sequence
 
-	// The trait cache key carries the full metric identity (including the fitted
+	// The trait cache key carries the full metric identity (including the calibrated
 	// vitals scale), so composites that differ only in sigma do NOT collide.
 	const MixedRecordMetric sigma_a(hero::kSpectrumBins,
 									mtrc::Euclidean_standardized<double>({0, 0, 0, 0}, {2, 500, 1, 1}),
@@ -303,7 +303,7 @@ int main()
 	// -----------------------------------------------------------------------
 	const auto fleet = hero::make_fleet();
 	const auto records = hero::fleet_records(fleet);
-	const MixedRecordMetric fleet_metric(hero::kSpectrumBins, hero::fit_vitals_metric(records),
+	const MixedRecordMetric fleet_metric(hero::kSpectrumBins, hero::derive_vitals_metric(records),
 										 MixedRecordMetric::Weights{0.6, 1.0, 0.5, 1.0});
 	auto fleet_space = mtrc::make_space(records, fleet_metric);
 
@@ -316,7 +316,7 @@ int main()
 	// Each per-channel probe: composite picks the structurally correct target,
 	// the naive flatten-and-L2 baseline picks the decoy it cannot tell apart.
 	const auto catalog = hero::make_demo_catalog();
-	const MixedRecordMetric catalog_metric(hero::kSpectrumBins, hero::fit_vitals_metric(catalog.records),
+	const MixedRecordMetric catalog_metric(hero::kSpectrumBins, hero::derive_vitals_metric(catalog.records),
 										   MixedRecordMetric::Weights{0.6, 1.0, 0.5, 1.0});
 	auto catalog_space = mtrc::make_space(catalog.records, catalog_metric);
 	auto flat_catalog_space = mtrc::make_space(hero::flat_projection(catalog.records), FlatEuclidean{});
@@ -333,7 +333,7 @@ int main()
 	// strictly better than the FAIR (per-column standardized) flat baseline.
 	const auto outcomes = hero::fleet_outcomes(fleet);
 	auto outcome_space = mtrc::make_space(outcomes, mtrc::Euclidean<double>{});
-	const auto scaler = hero::fit_flat_standardizer(hero::flat_projection(records));
+	const auto scaler = hero::derive_flat_standardizer(hero::flat_projection(records));
 	auto flat_fleet_space = mtrc::make_space(hero::standardized_flat_projection(records, scaler), FlatEuclidean{});
 	const auto mgc_metric = mtrc::compare(fleet_space, outcome_space, mtrc::stats::correlate::mgc_options{});
 	const auto mgc_flat = mtrc::compare(flat_fleet_space, outcome_space, mtrc::stats::correlate::mgc_options{});
@@ -343,7 +343,7 @@ int main()
 	// The novel fault is isolated as the only DBSCAN outlier.
 	auto with_anomaly = records;
 	with_anomaly.push_back(hero::make_anomaly());
-	const MixedRecordMetric anomaly_metric(hero::kSpectrumBins, hero::fit_vitals_metric(with_anomaly),
+	const MixedRecordMetric anomaly_metric(hero::kSpectrumBins, hero::derive_vitals_metric(with_anomaly),
 										   MixedRecordMetric::Weights{0.6, 1.0, 0.5, 1.0});
 	auto anomaly_space = mtrc::make_space(with_anomaly, anomaly_metric);
 	const auto policy = mtrc::space::storage::materialized(mtrc::space::storage::exact());

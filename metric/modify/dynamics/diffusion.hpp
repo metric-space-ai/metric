@@ -20,9 +20,11 @@
 
 namespace mtrc::modify::dynamics {
 
+inline constexpr std::size_t default_diffusion_max_dense_records = 4096;
+
 template <typename Scalar> struct DiffusionOptions {
 	std::size_t diffusion_steps{1};
-	std::size_t max_dense_records{0};
+	std::size_t max_dense_records{default_diffusion_max_dense_records};
 	Scalar kernel_scale{0};
 	Scalar epsilon{Scalar(1.0e-12)};
 	std::string pairwise_distances{"exact_space_distances"};
@@ -149,6 +151,9 @@ auto diffusion_process(const Space &space, DiffusionOptions<Scalar> options = {}
 	if (space.empty()) {
 		throw std::invalid_argument("diffusion process requires a non-empty finite space");
 	}
+	if (options.max_dense_records > 0 && space.size() > options.max_dense_records) {
+		throw std::invalid_argument("diffusion dense construction exceeds max_dense_records");
+	}
 	const auto distances = space::storage::metric_space_dense_distance_matrix<Scalar>(space);
 	return diffusion_process_from_distances<Scalar>(distances, std::move(options));
 }
@@ -167,7 +172,7 @@ auto diffusion_potential_anchor_coordinates(const DiffusionProcess<Scalar> &proc
 	// One anchor record per requested coordinate. NOTE: when `dimensions` exceeds
 	// record_count, every extra coordinate is clamped to the last anchor column, so
 	// the result has REPEATED (collinear) columns and is rank-deficient. This is
-	// intentional and pinned by native_phate_geometry_targets_smoke (repeated_anchor
+	// intentional and pinned by native_diffusion_coordinate_targets_smoke (repeated_anchor
 	// spec); callers should keep the embedding dimension <= record_count - 1 for a
 	// full-rank target.
 	std::vector<std::size_t> anchor_columns;

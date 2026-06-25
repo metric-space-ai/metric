@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="METRIC is a native C++ framework for computing with finite metric spaces over records such as images, curves, strings, histograms, graphs, and mixed observations."
+      content="METRIC is the native C++ framework for finite metric spaces: experimentation, data analysis, research, products, and visual evidence over records and metrics."
     />
     <link rel="icon" href="data:," />
-    <title>METRIC | Finite metric-space computing</title>
+    <title>METRIC | Finite Metric Spaces</title>
     <style>
       :root {
         color-scheme: light;
@@ -470,9 +470,10 @@
       <div class="wrap">
         <div class="brand">METRIC</div>
         <nav aria-label="Primary navigation">
+          <a href="#analysis">Analysis</a>
           <a href="#gallery">Gallery</a>
           <a href="#concept">Concept</a>
-          <a href="#next">Next</a>
+          <a href="#next">Direction</a>
           <a href="docs.html">Docs</a>
           <a class="button primary" href="https://github.com/metric-space-ai/metric">GitHub</a>
         </nav>
@@ -483,16 +484,16 @@
       <section class="hero" aria-label="METRIC hero">
         <div class="wrap hero-grid">
           <div>
-            <p class="eyebrow">Finite metric-space computing</p>
+            <p class="eyebrow">Finite Metric Spaces</p>
             <h1>METRIC</h1>
             <p class="lead">
-              Compute with records directly. A metric turns pairs of images, curves,
-              strings, histograms, graphs, vectors, or mixed records into a finite
-              metric space the engine can inspect, map, query, and compare.
+              The framework for finite metric spaces. Use records and metrics
+              directly to experiment, analyze data, build research evidence, and
+              ship products with native data geometry preserved.
             </p>
             <div class="hero-actions">
-              <a class="button primary" href="#gallery">Explore examples</a>
-              <a class="button" href="../../visual/examples/grae10-metric-engine/index.html">Open 60k view</a>
+              <a class="button primary" href="#analysis">See analysis workflow</a>
+              <a class="button" href="#gallery">Explore evidence</a>
             </div>
             <div class="hero-links">
               <a href="../../examples/engine/mnist_grae10_integrity.cpp">C++ evidence path</a>
@@ -508,6 +509,48 @@
         </div>
       </section>
 
+      <section id="analysis" class="section">
+        <div class="wrap">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Data analysis</p>
+              <h2>Analyze by similarity, structure, and change.</h2>
+            </div>
+            <p>
+              Start with the records as they are: curves, text, distributions,
+              graphs, vectors, mixed rows, or domain objects. Define the metric,
+              then analyze the finite space it creates.
+            </p>
+          </div>
+          <div class="concept-grid">
+            <div class="concept">
+              <strong>Find similar cases</strong>
+              <p>Search process windows, documents, customers, images, graphs, event sequences or mixed records with the metric that matches the domain.</p>
+            </div>
+            <div class="concept">
+              <strong>Select real representatives</strong>
+              <p>Choose real exemplar records, coverage sets, samples and reduced spaces from source data for review, monitoring and smaller datasets.</p>
+            </div>
+            <div class="concept">
+              <strong>Review anomalies</strong>
+              <p>Inspect records with sparse neighborhoods, nearest-neighbor gaps, unusual local density or extreme distance profiles.</p>
+            </div>
+            <div class="concept">
+              <strong>Compare cohorts</strong>
+              <p>Compare sites, time periods, experiments or system states through distances, neighborhoods, representatives and density structure.</p>
+            </div>
+            <div class="concept">
+              <strong>Connect modalities</strong>
+              <p>Relate event logs to sensor curves, text to behavior, or distributions to structured records without requiring one shared coordinate table first.</p>
+            </div>
+            <div class="concept">
+              <strong>Build evidence</strong>
+              <p>Export finite-space evidence and inspect records, pair relations, neighborhoods, trajectories and derived views in the visual pipeline.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="gallery" class="section">
         <div class="wrap">
           <div class="section-head">
@@ -516,9 +559,9 @@
               <h2>Examples</h2>
             </div>
             <p>
-              Native preview views backed by METRIC evidence exports. The
-              browser renders; C++ computes the records, relations, properties
-              and coordinates.
+              Concrete finite-space analyses and visual evidence. The native
+              engine computes records, relations, properties, dynamics and
+              derived spaces; the browser inspects exported evidence.
             </p>
           </div>
 
@@ -542,8 +585,6 @@
                   <div><b>result</b><span>16/16 metric-space matches, 16/16 padded-vector misses</span></div>
                   <div><b>export</b><span>CSV tables, heatmaps, query winners, and SVG figures</span></div>
                 </div>
-                <pre><code>build/core/examples/engine/engine_process_curve_external_gallery \
-  --export-dir docs/examples/assets/process-curve-external</code></pre>
                 <div class="links">
                   <a href="../../docs/examples/process-curve-external-gallery.md">evidence</a>
                   <a href="../../examples/engine/process_curve_external_gallery.cpp">C++ source</a>
@@ -562,9 +603,7 @@
                 </div>
                 <div class="portfolio-copy">
                   <h3>Condition monitoring</h3>
-                  <p>Native generated process-state fixture with TWED distances, anomaly severity, local density and diagnosis labels.</p>
-                  <pre><code>engine_condition_monitoring_visual_export \
-  --export-dir docs/examples/assets/condition-monitoring</code></pre>
+                  <p>Analyze process windows as time-series records, then inspect operating-state neighborhoods, anomaly severity, local density and diagnosis labels.</p>
                   <div class="links">
                     <a href="../../visual/examples/condition-monitoring-hero/index.html">open visual</a>
                     <a href="../../examples/engine/condition_monitoring_visual_export.cpp">C++ source</a>
@@ -581,9 +620,7 @@
                 </div>
                 <div class="portfolio-copy">
                   <h3>Mixed records</h3>
-                  <p>Native composed-record fixture compared by a composite metric, rendered as typed glyphs and neighbor edges.</p>
-                  <pre><code>engine_mixed_finite_records_visual_export \
-  --export-dir docs/examples/assets/mixed-records</code></pre>
+                  <p>Analyze rows with categories, text, distributions, state and numeric fields through one composed metric, then inspect typed records and neighbor relations.</p>
                   <div class="links">
                     <a href="../../visual/examples/mixed-record-hero/index.html">open visual</a>
                     <a href="../../examples/engine/mixed_finite_records_visual_export.cpp">C++ source</a>
@@ -600,9 +637,7 @@
                 </div>
                 <div class="portfolio-copy">
                   <h3>Cross-space dependence</h3>
-                  <p>Generated paired finite spaces with exported local dependence contribution and bridge evidence.</p>
-                  <pre><code>engine_cross_space_dependency_visual_export \
-  --export-dir docs/examples/assets/cross-space-dependency</code></pre>
+                  <p>Compare event strings and process curves as paired metric spaces, with local dependence contribution and bridge evidence.</p>
                   <div class="links">
                     <a href="../../visual/examples/cross-space-dependency-hero/index.html">open visual</a>
                     <a href="../../examples/engine/cross_space_dependency_visual_export.cpp">C++ source</a>
@@ -619,9 +654,7 @@
                 </div>
                 <div class="portfolio-copy">
                   <h3>Relation matrix</h3>
-                  <p>A native generated pair-value relation shown as a dense matrix and a linked neighborhood graph.</p>
-                  <pre><code>engine_relation_matrix_visual_export \
-  --export-dir docs/examples/assets/relation-matrix</code></pre>
+                  <p>Inspect the pair relation itself as a matrix and a linked neighborhood graph, keeping record and pair identity visible.</p>
                   <div class="links">
                     <a href="../../visual/examples/relation-matrix-neighborhood/index.html">open visual</a>
                     <a href="../../examples/engine/relation_matrix_visual_export.cpp">C++ source</a>
@@ -638,9 +671,7 @@
                 </div>
                 <div class="portfolio-copy">
                   <h3>Dynamics</h3>
-                  <p>Generated finite-dynamics fixture with forward diffusion and reverse reconstruction coordinate states.</p>
-                  <pre><code>engine_finite_metric_dynamics_visual_export \
-  --export-dir docs/examples/assets/dynamics-noise</code></pre>
+                  <p>Study how measures move across a finite space through forward diffusion and reverse reconstruction states.</p>
                   <div class="links">
                     <a href="../../visual/examples/dynamics-noise-hero/index.html">open visual</a>
                     <a href="../../examples/engine/finite_metric_dynamics_visual_export.cpp">C++ source</a>
@@ -657,9 +688,7 @@
                 </div>
                 <div class="portfolio-copy">
                   <h3>Mapping</h3>
-                  <p>Native mapping fixture with source, PHATE target and autoencoder coordinates plus exported local distortion.</p>
-                  <pre><code>engine_mapping_dimensionality_visual_export \
-  --export-dir docs/examples/assets/mapping-dimensionality</code></pre>
+                  <p>Derive coordinate views from the source metric space and inspect local distortion instead of treating coordinates as the starting point.</p>
                   <div class="links">
                     <a href="../../visual/examples/mapping-dimensionality-hero/index.html">open visual</a>
                     <a href="../../examples/engine/mapping_dimensionality_visual_export.cpp">C++ source</a>
@@ -679,7 +708,7 @@
               <h2>A finite metric space starts with records.</h2>
             </div>
             <p>
-              METRIC does not require one universal embedding model. It requires a
+              METRIC does not require one universal coordinate artifact. It requires a
               metric for record pairs. Once pair values exist, the framework can
               build and operate the finite space.
             </p>
@@ -697,6 +726,10 @@
               <strong>Space</strong>
               <p>The record set plus the metric becomes a computable finite space for search, entropy, correlation, mapping, and monitoring.</p>
             </div>
+            <div class="concept">
+              <strong>Coordinate methods</strong>
+              <p>Coordinate tables and vector-style analysis are special cases of finite metric spaces.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -705,24 +738,25 @@
         <div class="wrap">
           <div class="section-head">
             <div>
-              <p class="eyebrow">Next</p>
-              <h2>What still has to become production-grade.</h2>
+              <p class="eyebrow">Direction</p>
+              <h2>The project contract.</h2>
             </div>
             <p>
-              The native evidence path is in place. The next step is visual
-              acceptance, larger public datasets, and public API hardening.
+              METRIC is built around finite metric spaces. Public features
+              should preserve the source metric, report lineage, expose cost
+              and exactness, and keep implementation authority in native C++.
             </p>
           </div>
           <div class="planned-grid">
-            <div class="planned"><small>open</small><strong>Visual acceptance</strong><p>Every native preview still needs accepted rendered frames for its own visual grammar.</p></div>
-            <div class="planned"><small>open</small><strong>Large evidence</strong><p>Small native fixtures prove the pipeline; larger public datasets must follow.</p></div>
-            <div class="planned"><small>open</small><strong>Metric discovery</strong><p>Admitted true metrics, rejected non-metrics, and domain-specific selection guidance.</p></div>
-            <div class="planned"><small>open</small><strong>API hardening</strong><p>Useful scenes must remain reachable through a small set of stable visual commands.</p></div>
-            <div class="planned"><small>open</small><strong>Regression suite</strong><p>Stable rendered frames and performance gates protect the miniature render style.</p></div>
-            <div class="planned"><small>open</small><strong>Bindings</strong><p>Language bindings adapt user data to the native C++ implementation instead of reimplementing algorithms.</p></div>
+            <div class="planned"><small>contract</small><strong>Metric first</strong><p>Records keep their native form. A documented true metric defines the finite-space geometry before any coordinate view is introduced.</p></div>
+            <div class="planned"><small>contract</small><strong>Native evidence</strong><p>C++ owns metric values, derived states, diagnostics, solver outputs, and export artifacts. Presentation layers inspect evidence.</p></div>
+            <div class="planned"><small>contract</small><strong>Lineage</strong><p>Represented, reduced, mapped, and modified spaces must carry source identities, provenance, metric status, and validity notes.</p></div>
+            <div class="planned"><small>contract</small><strong>Scale aware</strong><p>Execution should expose distance-evaluation cost, memory pressure, exactness, approximation, and refusal reasons before expensive work.</p></div>
+            <div class="planned"><small>contract</small><strong>Derived spaces</strong><p>Coordinate views, diffusion coordinates, dynamics, and quotient spaces are explicit products of a source metric space, not hidden preprocessing.</p></div>
+            <div class="planned"><small>contract</small><strong>Bindings</strong><p>Language bindings adapt user data to the native engine surface and report availability instead of reimplementing METRIC algorithms.</p></div>
           </div>
           <div class="hero-actions">
-            <a class="button" href="../../docs/hero-gallery-backlog.md">Open backlog</a>
+            <a class="button" href="../../docs/engine/metric-space-modification-plan.md">Read roadmap</a>
             <a class="button" href="../../docs/visual/metric-visual-engine-implementation-plan.md">Visual engine plan</a>
           </div>
         </div>

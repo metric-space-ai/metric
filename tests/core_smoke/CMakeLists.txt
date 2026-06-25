@@ -41,6 +41,9 @@ endif ()
 add_executable(metric_contracts_smoke metric_contracts_smoke.cpp)
 target_link_libraries(metric_contracts_smoke PRIVATE ${METRIC_TARGET_NAME})
 
+add_executable(metric_pipeline_contracts_smoke metric_pipeline_contracts_smoke.cpp)
+target_link_libraries(metric_pipeline_contracts_smoke PRIVATE ${METRIC_TARGET_NAME})
+
 add_executable(metric_mixed_records_smoke metric_mixed_records_smoke.cpp)
 target_link_libraries(metric_mixed_records_smoke PRIVATE ${METRIC_TARGET_NAME})
 
@@ -71,14 +74,14 @@ target_link_libraries(space_consistency_smoke PRIVATE ${METRIC_TARGET_NAME})
 add_executable(engine_core_smoke engine_core_smoke.cpp)
 target_link_libraries(engine_core_smoke PRIVATE ${METRIC_TARGET_NAME})
 
-add_executable(engine_compat_smoke engine_compat_smoke.cpp)
-target_link_libraries(engine_compat_smoke PRIVATE ${METRIC_TARGET_NAME})
-
 add_executable(engine_representations_smoke engine_representations_smoke.cpp)
 target_link_libraries(engine_representations_smoke PRIVATE ${METRIC_TARGET_NAME})
 
 add_executable(engine_distance_matrix_id_smoke engine_distance_matrix_id_smoke.cpp)
 target_link_libraries(engine_distance_matrix_id_smoke PRIVATE ${METRIC_TARGET_NAME})
+
+add_executable(engine_blocked_distance_table_smoke engine_blocked_distance_table_smoke.cpp)
+target_link_libraries(engine_blocked_distance_table_smoke PRIVATE ${METRIC_TARGET_NAME})
 
 add_executable(engine_distance_matrix_snapshot_smoke engine_distance_matrix_snapshot_smoke.cpp)
 target_link_libraries(engine_distance_matrix_snapshot_smoke PRIVATE ${METRIC_TARGET_NAME})
@@ -88,6 +91,9 @@ target_link_libraries(engine_representation_parity_smoke PRIVATE ${METRIC_TARGET
 
 add_executable(engine_nearest_operators_smoke engine_nearest_operators_smoke.cpp)
 target_link_libraries(engine_nearest_operators_smoke PRIVATE ${METRIC_TARGET_NAME})
+
+add_executable(search_pipeline_interoperability_smoke search_pipeline_interoperability_smoke.cpp)
+target_link_libraries(search_pipeline_interoperability_smoke PRIVATE ${METRIC_TARGET_NAME})
 
 add_executable(engine_neighbor_oracle_smoke engine_neighbor_oracle_smoke.cpp)
 target_link_libraries(engine_neighbor_oracle_smoke PRIVATE ${METRIC_TARGET_NAME})
@@ -113,20 +119,29 @@ target_link_libraries(stats_production_readiness_smoke PRIVATE ${METRIC_TARGET_N
 add_executable(engine_intent_strategy_smoke engine_intent_strategy_smoke.cpp)
 target_link_libraries(engine_intent_strategy_smoke PRIVATE ${METRIC_TARGET_NAME})
 
-add_executable(engine_mapping_model_smoke engine_mapping_model_smoke.cpp)
-target_link_libraries(engine_mapping_model_smoke PRIVATE ${METRIC_TARGET_NAME})
+add_executable(engine_mapping_artifact_smoke engine_mapping_artifact_smoke.cpp)
+target_link_libraries(engine_mapping_artifact_smoke PRIVATE ${METRIC_TARGET_NAME})
 
 add_executable(engine_map_intent_smoke engine_map_intent_smoke.cpp)
 target_link_libraries(engine_map_intent_smoke PRIVATE ${METRIC_TARGET_NAME})
 
-add_executable(engine_koc_mapping_smoke engine_koc_mapping_smoke.cpp)
-target_link_libraries(engine_koc_mapping_smoke PRIVATE ${METRIC_TARGET_NAME})
+add_executable(engine_density_filter_intent_smoke engine_density_filter_intent_smoke.cpp)
+target_link_libraries(engine_density_filter_intent_smoke PRIVATE ${METRIC_TARGET_NAME})
 
-add_executable(engine_denoise_intent_smoke engine_denoise_intent_smoke.cpp)
-target_link_libraries(engine_denoise_intent_smoke PRIVATE ${METRIC_TARGET_NAME})
+add_executable(redif_metric_dynamics_smoke redif_metric_dynamics_smoke.cpp)
+target_link_libraries(redif_metric_dynamics_smoke PRIVATE ${METRIC_TARGET_NAME})
+
+add_executable(redif_canonical_spaces_smoke redif_canonical_spaces_smoke.cpp)
+target_link_libraries(redif_canonical_spaces_smoke PRIVATE ${METRIC_TARGET_NAME})
+
+add_executable(redif_path_outlier_smoke redif_path_outlier_smoke.cpp)
+target_link_libraries(redif_path_outlier_smoke PRIVATE ${METRIC_TARGET_NAME})
 
 add_executable(modify_level2_components_smoke modify_level2_components_smoke.cpp)
 target_link_libraries(modify_level2_components_smoke PRIVATE ${METRIC_TARGET_NAME})
+
+add_executable(modify_thin_smoke modify_thin_smoke.cpp)
+target_link_libraries(modify_thin_smoke PRIVATE ${METRIC_TARGET_NAME})
 
 add_executable(modify_represent_smoke modify_represent_smoke.cpp)
 target_link_libraries(modify_represent_smoke PRIVATE ${METRIC_TARGET_NAME})
@@ -159,6 +174,15 @@ target_link_libraries(engine_outliers_intent_smoke PRIVATE ${METRIC_TARGET_NAME}
 
 add_executable(engine_runtime_policy_smoke engine_runtime_policy_smoke.cpp)
 target_link_libraries(engine_runtime_policy_smoke PRIVATE ${METRIC_TARGET_NAME})
+
+add_executable(engine_execution_context_smoke engine_execution_context_smoke.cpp)
+target_link_libraries(engine_execution_context_smoke PRIVATE ${METRIC_TARGET_NAME})
+
+add_executable(engine_chunked_space_smoke engine_chunked_space_smoke.cpp)
+target_link_libraries(engine_chunked_space_smoke PRIVATE ${METRIC_TARGET_NAME})
+
+add_executable(engine_landmark_index_smoke engine_landmark_index_smoke.cpp)
+target_link_libraries(engine_landmark_index_smoke PRIVATE ${METRIC_TARGET_NAME})
 
 add_executable(engine_representation_swap_smoke engine_representation_swap_smoke.cpp)
 target_link_libraries(engine_representation_swap_smoke PRIVATE ${METRIC_TARGET_NAME})
@@ -298,11 +322,8 @@ target_link_libraries(native_dnn_conv2d_parameters_smoke PRIVATE ${METRIC_TARGET
 add_executable(native_dnn_conv2d_backprop_smoke native_dnn_conv2d_backprop_smoke.cpp)
 target_link_libraries(native_dnn_conv2d_backprop_smoke PRIVATE ${METRIC_TARGET_NAME})
 
-add_executable(native_dnn_autoencoder_mapping_smoke native_dnn_autoencoder_mapping_smoke.cpp)
-target_link_libraries(native_dnn_autoencoder_mapping_smoke PRIVATE ${METRIC_TARGET_NAME})
-
-add_executable(native_phate_geometry_targets_smoke native_phate_geometry_targets_smoke.cpp)
-target_link_libraries(native_phate_geometry_targets_smoke PRIVATE ${METRIC_TARGET_NAME})
+add_executable(native_diffusion_coordinate_targets_smoke native_diffusion_coordinate_targets_smoke.cpp)
+target_link_libraries(native_diffusion_coordinate_targets_smoke PRIVATE ${METRIC_TARGET_NAME})
 
 add_executable(mapping_neighbor_preservation_smoke mapping_neighbor_preservation_smoke.cpp)
 target_link_libraries(mapping_neighbor_preservation_smoke PRIVATE ${METRIC_TARGET_NAME})
@@ -310,14 +331,14 @@ target_link_libraries(mapping_neighbor_preservation_smoke PRIVATE ${METRIC_TARGE
 add_executable(mapping_out_of_sample_stability_smoke mapping_out_of_sample_stability_smoke.cpp)
 target_link_libraries(mapping_out_of_sample_stability_smoke PRIVATE ${METRIC_TARGET_NAME})
 
-add_executable(native_dnn_phate_autoencoder_smoke native_dnn_phate_autoencoder_smoke.cpp)
-target_link_libraries(native_dnn_phate_autoencoder_smoke PRIVATE ${METRIC_TARGET_NAME})
+add_executable(parametric_diffusion_coordinate_pipeline_smoke parametric_diffusion_coordinate_pipeline_smoke.cpp)
+target_link_libraries(parametric_diffusion_coordinate_pipeline_smoke PRIVATE ${METRIC_TARGET_NAME})
 
-add_executable(native_phate_feature_codec_smoke native_phate_feature_codec_smoke.cpp)
-target_link_libraries(native_phate_feature_codec_smoke PRIVATE ${METRIC_TARGET_NAME})
+add_executable(encoded_parametric_diffusion_coordinate_smoke encoded_parametric_diffusion_coordinate_smoke.cpp)
+target_link_libraries(encoded_parametric_diffusion_coordinate_smoke PRIVATE ${METRIC_TARGET_NAME})
 
-add_executable(native_phate_autoencoder_artifact_smoke native_phate_autoencoder_artifact_smoke.cpp)
-target_link_libraries(native_phate_autoencoder_artifact_smoke PRIVATE ${METRIC_TARGET_NAME})
+add_executable(parametric_diffusion_coordinate_artifact_smoke parametric_diffusion_coordinate_artifact_smoke.cpp)
+target_link_libraries(parametric_diffusion_coordinate_artifact_smoke PRIVATE ${METRIC_TARGET_NAME})
 
 add_executable(metric_space_mapping_pipeline_smoke metric_space_mapping_pipeline_smoke.cpp)
 target_link_libraries(metric_space_mapping_pipeline_smoke PRIVATE ${METRIC_TARGET_NAME})
@@ -366,6 +387,7 @@ if (METRIC_BUILD_CORE_ENTROPY)
     add_test(NAME engine_embed_intent_smoke COMMAND engine_embed_intent_smoke)
 endif ()
 add_test(NAME metric_contracts_smoke COMMAND metric_contracts_smoke)
+add_test(NAME metric_pipeline_contracts_smoke COMMAND metric_pipeline_contracts_smoke)
 add_test(NAME metric_mixed_records_smoke COMMAND metric_mixed_records_smoke)
 add_test(NAME metric_twed_smoke COMMAND metric_twed_smoke)
 add_test(NAME metric_wasserstein_smoke COMMAND metric_wasserstein_smoke)
@@ -376,12 +398,13 @@ add_test(NAME metric_discovery_smoke COMMAND metric_discovery_smoke)
 add_test(NAME metric_discovery_report_smoke COMMAND metric_discovery_report_smoke)
 add_test(NAME space_consistency_smoke COMMAND space_consistency_smoke)
 add_test(NAME engine_core_smoke COMMAND engine_core_smoke)
-add_test(NAME engine_compat_smoke COMMAND engine_compat_smoke)
 add_test(NAME engine_representations_smoke COMMAND engine_representations_smoke)
 add_test(NAME engine_distance_matrix_id_smoke COMMAND engine_distance_matrix_id_smoke)
+add_test(NAME engine_blocked_distance_table_smoke COMMAND engine_blocked_distance_table_smoke)
 add_test(NAME engine_distance_matrix_snapshot_smoke COMMAND engine_distance_matrix_snapshot_smoke)
 add_test(NAME engine_representation_parity_smoke COMMAND engine_representation_parity_smoke)
 add_test(NAME engine_nearest_operators_smoke COMMAND engine_nearest_operators_smoke)
+add_test(NAME search_pipeline_interoperability_smoke COMMAND search_pipeline_interoperability_smoke)
 add_test(NAME engine_neighbor_oracle_smoke COMMAND engine_neighbor_oracle_smoke)
 add_test(NAME storage_search_edge_parity_smoke COMMAND storage_search_edge_parity_smoke)
 add_test(NAME engine_sparsify_operator_smoke COMMAND engine_sparsify_operator_smoke)
@@ -390,11 +413,14 @@ add_test(NAME engine_dbscan_operator_smoke COMMAND engine_dbscan_operator_smoke)
 add_test(NAME structural_analysis_clustering_fixtures_smoke COMMAND structural_analysis_clustering_fixtures_smoke)
 add_test(NAME stats_production_readiness_smoke COMMAND stats_production_readiness_smoke)
 add_test(NAME engine_intent_strategy_smoke COMMAND engine_intent_strategy_smoke)
-add_test(NAME engine_mapping_model_smoke COMMAND engine_mapping_model_smoke)
+add_test(NAME engine_mapping_artifact_smoke COMMAND engine_mapping_artifact_smoke)
 add_test(NAME engine_map_intent_smoke COMMAND engine_map_intent_smoke)
-add_test(NAME engine_koc_mapping_smoke COMMAND engine_koc_mapping_smoke)
-add_test(NAME engine_denoise_intent_smoke COMMAND engine_denoise_intent_smoke)
+add_test(NAME engine_density_filter_intent_smoke COMMAND engine_density_filter_intent_smoke)
+add_test(NAME redif_metric_dynamics_smoke COMMAND redif_metric_dynamics_smoke)
+add_test(NAME redif_canonical_spaces_smoke COMMAND redif_canonical_spaces_smoke)
+add_test(NAME redif_path_outlier_smoke COMMAND redif_path_outlier_smoke)
 add_test(NAME modify_level2_components_smoke COMMAND modify_level2_components_smoke)
+add_test(NAME modify_thin_smoke COMMAND modify_thin_smoke)
 add_test(NAME modify_represent_smoke COMMAND modify_represent_smoke)
 add_test(NAME modify_expand_synthesis_smoke COMMAND modify_expand_synthesis_smoke)
 add_test(NAME modify_metric_status_smoke COMMAND modify_metric_status_smoke)
@@ -405,6 +431,9 @@ add_test(NAME engine_representatives_intent_smoke COMMAND engine_representatives
 add_test(NAME engine_compress_intent_smoke COMMAND engine_compress_intent_smoke)
 add_test(NAME engine_outliers_intent_smoke COMMAND engine_outliers_intent_smoke)
 add_test(NAME engine_runtime_policy_smoke COMMAND engine_runtime_policy_smoke)
+add_test(NAME engine_execution_context_smoke COMMAND engine_execution_context_smoke)
+add_test(NAME engine_chunked_space_smoke COMMAND engine_chunked_space_smoke)
+add_test(NAME engine_landmark_index_smoke COMMAND engine_landmark_index_smoke)
 add_test(NAME engine_representation_swap_smoke COMMAND engine_representation_swap_smoke)
 add_test(NAME benchmark_report_smoke COMMAND benchmark_report_smoke)
 add_test(NAME metric_numeric_custom_matrix_smoke COMMAND metric_numeric_custom_matrix_smoke)
@@ -512,19 +541,19 @@ add_test(NAME native_dnn_loss_gradient_check_smoke COMMAND native_dnn_loss_gradi
 add_test(NAME native_dnn_shape_guard_smoke COMMAND native_dnn_shape_guard_smoke)
 add_test(NAME native_dnn_conv2d_parameters_smoke COMMAND native_dnn_conv2d_parameters_smoke)
 add_test(NAME native_dnn_conv2d_backprop_smoke COMMAND native_dnn_conv2d_backprop_smoke)
-add_test(NAME native_dnn_autoencoder_mapping_smoke COMMAND native_dnn_autoencoder_mapping_smoke)
-add_test(NAME native_phate_geometry_targets_smoke COMMAND native_phate_geometry_targets_smoke)
+add_test(NAME native_diffusion_coordinate_targets_smoke COMMAND native_diffusion_coordinate_targets_smoke)
 add_test(NAME mapping_neighbor_preservation_smoke COMMAND mapping_neighbor_preservation_smoke)
 add_test(NAME mapping_out_of_sample_stability_smoke COMMAND mapping_out_of_sample_stability_smoke)
-add_test(NAME native_dnn_phate_autoencoder_smoke COMMAND native_dnn_phate_autoencoder_smoke)
-add_test(NAME native_phate_feature_codec_smoke COMMAND native_phate_feature_codec_smoke)
-add_test(NAME native_phate_autoencoder_artifact_smoke COMMAND native_phate_autoencoder_artifact_smoke)
+add_test(NAME parametric_diffusion_coordinate_pipeline_smoke COMMAND parametric_diffusion_coordinate_pipeline_smoke)
+add_test(NAME encoded_parametric_diffusion_coordinate_smoke COMMAND encoded_parametric_diffusion_coordinate_smoke)
+add_test(NAME parametric_diffusion_coordinate_artifact_smoke COMMAND parametric_diffusion_coordinate_artifact_smoke)
 add_test(NAME native_dnn_autoencoder_artifact_smoke COMMAND native_dnn_autoencoder_artifact_smoke)
 add_test(NAME metric_space_mapping_pipeline_smoke COMMAND metric_space_mapping_pipeline_smoke)
 
 set_tests_properties(
     modify_level2_components_smoke
-    PROPERTIES LABELS metric_modify_components
+    modify_thin_smoke
+    PROPERTIES LABELS metric_modify_components TIMEOUT 10
 )
 
 set_tests_properties(
@@ -554,12 +583,12 @@ set_tests_properties(
 
 set_tests_properties(
     pipeline_plan_smoke
-    native_phate_geometry_targets_smoke
-    native_dnn_phate_autoencoder_smoke
-    native_phate_feature_codec_smoke
-    native_phate_autoencoder_artifact_smoke
+    native_diffusion_coordinate_targets_smoke
+    parametric_diffusion_coordinate_pipeline_smoke
+    encoded_parametric_diffusion_coordinate_smoke
+    parametric_diffusion_coordinate_artifact_smoke
     metric_space_mapping_pipeline_smoke
-    PROPERTIES LABELS metric_phate_pipeline
+    PROPERTIES LABELS metric_diffusion_coordinate_pipeline
 )
 
 set_tests_properties(
@@ -588,10 +617,10 @@ add_test(NAME stats_search_range_parity_smoke COMMAND stats_search_range_parity_
 add_test(NAME stats_correlate_dependence_fixtures_smoke COMMAND stats_correlate_dependence_fixtures_smoke)
 add_test(NAME stats_structural_determinism_smoke COMMAND stats_structural_determinism_smoke)
 
-# Level-1 space production-readiness fixtures (legacy Matrix/Tree/KNNGraph correctness regressions,
+# Level-1 space production-readiness fixtures (Matrix/Tree/KNNGraph correctness regressions,
 # lineage-preserving split/merge/select of finite metric spaces).
-add_executable(space_legacy_reps_smoke space_legacy_reps_smoke.cpp)
-target_link_libraries(space_legacy_reps_smoke PRIVATE ${METRIC_TARGET_NAME})
+add_executable(space_representation_regressions_smoke space_representation_regressions_smoke.cpp)
+target_link_libraries(space_representation_regressions_smoke PRIVATE ${METRIC_TARGET_NAME})
 
 add_executable(space_partition_lineage_smoke space_partition_lineage_smoke.cpp)
 target_link_libraries(space_partition_lineage_smoke PRIVATE ${METRIC_TARGET_NAME})
@@ -609,6 +638,9 @@ target_link_libraries(space_user_api_smoke PRIVATE ${METRIC_TARGET_NAME})
 add_executable(space_cache_recovery_smoke space_cache_recovery_smoke.cpp)
 target_link_libraries(space_cache_recovery_smoke PRIVATE ${METRIC_TARGET_NAME})
 
+add_executable(space_sample_plan_smoke space_sample_plan_smoke.cpp)
+target_link_libraries(space_sample_plan_smoke PRIVATE ${METRIC_TARGET_NAME})
+
 add_executable(space_lineage_workflow_smoke space_lineage_workflow_smoke.cpp)
 target_link_libraries(space_lineage_workflow_smoke PRIVATE ${METRIC_TARGET_NAME})
 
@@ -616,22 +648,24 @@ add_executable(space_persistence_smoke space_persistence_smoke.cpp)
 target_link_libraries(space_persistence_smoke PRIVATE ${METRIC_TARGET_NAME})
 
 if (LAPACK_FOUND)
-    target_link_libraries(space_legacy_reps_smoke PRIVATE ${LAPACK_LIBRARIES})
+    target_link_libraries(space_representation_regressions_smoke PRIVATE ${LAPACK_LIBRARIES})
     target_link_libraries(space_partition_lineage_smoke PRIVATE ${LAPACK_LIBRARIES})
     target_link_libraries(space_search_parity_smoke PRIVATE ${LAPACK_LIBRARIES})
     target_link_libraries(user_workflow_api_smoke PRIVATE ${LAPACK_LIBRARIES})
     target_link_libraries(space_user_api_smoke PRIVATE ${LAPACK_LIBRARIES})
     target_link_libraries(space_cache_recovery_smoke PRIVATE ${LAPACK_LIBRARIES})
+    target_link_libraries(space_sample_plan_smoke PRIVATE ${LAPACK_LIBRARIES})
     target_link_libraries(space_lineage_workflow_smoke PRIVATE ${LAPACK_LIBRARIES})
     target_link_libraries(space_persistence_smoke PRIVATE ${LAPACK_LIBRARIES})
 endif ()
 
-add_test(NAME space_legacy_reps_smoke COMMAND space_legacy_reps_smoke)
+add_test(NAME space_representation_regressions_smoke COMMAND space_representation_regressions_smoke)
 add_test(NAME space_partition_lineage_smoke COMMAND space_partition_lineage_smoke)
 add_test(NAME space_search_parity_smoke COMMAND space_search_parity_smoke)
 add_test(NAME user_workflow_api_smoke COMMAND user_workflow_api_smoke)
 add_test(NAME space_user_api_smoke COMMAND space_user_api_smoke)
 add_test(NAME space_cache_recovery_smoke COMMAND space_cache_recovery_smoke)
+add_test(NAME space_sample_plan_smoke COMMAND space_sample_plan_smoke)
 add_test(NAME space_lineage_workflow_smoke COMMAND space_lineage_workflow_smoke)
 add_test(NAME space_persistence_smoke COMMAND space_persistence_smoke)
 

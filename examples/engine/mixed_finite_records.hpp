@@ -17,7 +17,7 @@
 //   * code     -> mtrc::Edit<char>              (Levenshtein, record_kind::sequence)
 //   * spectrum -> mtrc::Wasserstein<double>     (1-Wasserstein / EMD on a line, structured)
 //   * curve    -> mtrc::TWED<double>            (Time-Warp Edit Distance, sequence)
-//   * vitals   -> mtrc::Euclidean_standardized  (fitted positive scale, aligned_vector)
+//   * vitals   -> mtrc::Euclidean_standardized  (calibrated positive scale, aligned_vector)
 //
 // The composite distance is a conic (non-negative-weighted) sum of those four
 // true metrics over the product space:
@@ -110,7 +110,7 @@ class MixedRecordMetric {
 		double vitals{1.0};
 	};
 
-	// `vitals_metric` is a *fitted* standardized Euclidean metric (positive scale)
+	// `vitals_metric` is a *calibrated* standardized Euclidean metric (positive scale)
 	// so it is already an admitted true metric; the composite just rescales it.
 	MixedRecordMetric(std::size_t bins, mtrc::Euclidean_standardized<double> vitals_metric, Weights weights,
 					  mtrc::TWED<double> curve_metric = mtrc::TWED<double>{0.0, 1.0})
@@ -139,8 +139,8 @@ class MixedRecordMetric {
 	auto bins() const -> std::size_t { return bins_; }
 
 	// Exposed so the trait cache_key can fold in the full identity of the
-	// parameterized field metrics (the fitted vitals scale and the TWED params);
-	// two composites with the same weights but a different fitted scale are
+	// parameterized field metrics (the calibrated vitals scale and the TWED params);
+	// two composites with the same weights but a different calibrated scale are
 	// different metrics and must not collide to one cache key.
 	auto vitals_metric() const -> const mtrc::Euclidean_standardized<double> & { return vitals_; }
 	auto curve_metric() const -> const mtrc::TWED<double> & { return curve_; }
@@ -253,7 +253,7 @@ struct FlatEuclidean {
 	}
 };
 
-// Per-column z-scoring fitted over a set of flat vectors. This is the *fair*
+// Per-column z-scoring calibrated over a set of flat vectors. This is the *fair*
 // non-METRIC baseline: it gives the flat Euclidean the same per-coordinate
 // standardization the composite already applies to its vitals field, so any
 // remaining gap is due to genuine field structure (transport, elastic alignment,
@@ -273,7 +273,7 @@ struct FlatStandardizer {
 	}
 };
 
-inline auto fit_flat_standardizer(const std::vector<std::vector<double>> &flats) -> FlatStandardizer
+inline auto derive_flat_standardizer(const std::vector<std::vector<double>> &flats) -> FlatStandardizer
 {
 	FlatStandardizer scaler;
 	if (flats.empty()) {
@@ -349,10 +349,10 @@ inline auto peak_spectrum(std::size_t peak, double sharpness = 1.0) -> std::vect
 }
 
 // ---------------------------------------------------------------------------
-// Fitted vitals metric
+// Calibrated vitals metric
 // ---------------------------------------------------------------------------
 
-inline auto fit_vitals_metric(const std::vector<MixedRecord> &records) -> mtrc::Euclidean_standardized<double>
+inline auto derive_vitals_metric(const std::vector<MixedRecord> &records) -> mtrc::Euclidean_standardized<double>
 {
 	std::vector<std::vector<double>> vitals;
 	vitals.reserve(records.size());
@@ -378,7 +378,7 @@ template <> struct metric_traits<::hero::MixedRecordMetric> {
 	static auto cache_key(const ::hero::MixedRecordMetric &metric) -> std::string
 	{
 		const auto &w = metric.weights();
-		// Fold in the full identity of every field metric, including the fitted
+		// Fold in the full identity of every field metric, including the calibrated
 		// vitals scale (sigma) and the TWED parameters, so distinct composites
 		// never alias to one persisted/diagnostic representation key.
 		return std::string("hero::MixedRecordMetric:bins=") + std::to_string(metric.bins()) +

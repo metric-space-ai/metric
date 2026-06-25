@@ -64,6 +64,7 @@ struct profile_options {
 	distance_distribution_options distribution{};
 	bool include_local_volume{false};
 	double local_volume_radius{0.0};
+	local_volume_options local_volume{};
 };
 
 namespace profile_detail {
@@ -79,6 +80,8 @@ auto fill_core_profile(StatsProfile<Distance> &profile, const StructureDescripti
 	profile.maximum_distance = structure.maximum_distance;
 	profile.average_distance = structure.average_distance;
 	profile.intrinsic_dimension = structure.intrinsic_dimension;
+	profile.exact = structure.exact;
+	profile.algorithm = structure.exact ? "profile" : "profile_with_sampled_intrinsic_dimension";
 	profile.has_nonzero_distances = structure.has_nonzero_distances;
 	profile.has_zero_distance_pairs = structure.zero_distance_pair_count > 0;
 	profile.is_empty = structure.record_count == 0;
@@ -103,7 +106,7 @@ auto profile(const Provider &provider, profile_options options = {}) -> StatsPro
 		result.has_distance_distribution = true;
 	}
 	if (options.include_local_volume) {
-		result.local_volume = local_volume(provider, options.local_volume_radius);
+		result.local_volume = local_volume(provider, options.local_volume_radius, options.local_volume);
 		result.has_local_volume = true;
 	}
 

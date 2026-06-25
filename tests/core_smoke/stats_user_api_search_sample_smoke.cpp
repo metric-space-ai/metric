@@ -12,8 +12,11 @@
 #include <vector>
 
 #include "metric/core/metric_space.hpp"
+#include "metric/core/result.hpp"
+#include "metric/space/storage/implicit.hpp"
 #include "metric/stats/sample/sample.hpp"
 #include "metric/stats/search/nearest.hpp"
+#include "metric/stats/search/neighbors.hpp"
 
 namespace {
 
@@ -74,6 +77,26 @@ void knn_batch_matches_single_queries()
 	assert(neighbor_sets_equal(value_batch[0], search::knn(space, 0, 2)));
 	assert(neighbor_sets_equal(value_batch[1], search::knn(space, 8, 2)));
 
+	const std::vector<int> records = {0, 4, 8, 12};
+	const auto records_batch = search::knn_batch(records, AbsoluteDistance{}, queries, 2);
+	assert(records_batch.size() == 2);
+	assert(neighbor_sets_equal(records_batch[0], search::find_neighbors(records, AbsoluteDistance{}, 0, 2)));
+	assert(neighbor_sets_equal(records_batch[1], search::find_neighbors(records, AbsoluteDistance{}, 8, 2)));
+	assert(records_batch[0].representation == "records");
+	assert(records_batch[0].provenance.route == "source_metric");
+	assert(records_batch[0].provenance.route_kind == mtrc::search_route_kind::source_metric);
+	assert(records_batch[0].provenance.domain_kind == mtrc::result_domain_kind::records);
+
+	const mtrc::space::storage::LiveDistances<decltype(space)> provider(space);
+	const auto provider_batch = search::knn_batch(provider, ids, 1);
+	assert(provider_batch.size() == 2);
+	assert(neighbor_sets_equal(provider_batch[0], search::knn(provider, space.id(0), 1)));
+	assert(neighbor_sets_equal(provider_batch[1], search::knn(provider, space.id(1), 1)));
+	assert(provider_batch[0].representation == "pairwise_distances");
+	assert(provider_batch[0].provenance.route == "pairwise_provider");
+	assert(provider_batch[0].provenance.route_kind == mtrc::search_route_kind::pairwise_provider);
+	assert(provider_batch[0].provenance.domain_kind == mtrc::result_domain_kind::pairwise_provider);
+
 	// An empty query list yields an empty result list, not a crash.
 	const auto empty_batch = search::knn_batch(space, std::vector<mtrc::RecordId>{}, 3);
 	assert(empty_batch.empty());
@@ -90,8 +113,36 @@ void range_batch_matches_single_queries()
 	assert(neighbor_sets_equal(id_batch[0], search::range(space, space.id(1), 4)));
 	assert(neighbor_sets_equal(id_batch[1], search::range(space, space.id(2), 4)));
 
+	const std::vector<int> queries = {0, 12};
+	const auto value_batch = search::range_batch(space, queries, 4);
+	assert(value_batch.size() == 2);
+	assert(neighbor_sets_equal(value_batch[0], search::range(space, 0, 4)));
+	assert(neighbor_sets_equal(value_batch[1], search::range(space, 12, 4)));
+
+	const std::vector<int> records = {0, 4, 8, 12};
+	const auto records_batch = search::range_batch(records, AbsoluteDistance{}, queries, 4);
+	assert(records_batch.size() == 2);
+	assert(neighbor_sets_equal(records_batch[0], search::range(records, AbsoluteDistance{}, 0, 4)));
+	assert(neighbor_sets_equal(records_batch[1], search::range(records, AbsoluteDistance{}, 12, 4)));
+	assert(records_batch[0].representation == "records");
+	assert(records_batch[0].provenance.route == "source_metric");
+	assert(records_batch[0].provenance.route_kind == mtrc::search_route_kind::source_metric);
+	assert(records_batch[0].provenance.domain_kind == mtrc::result_domain_kind::records);
+
+	const mtrc::space::storage::LiveDistances<decltype(space)> provider(space);
+	const auto provider_batch = search::range_batch(provider, ids, 4);
+	assert(provider_batch.size() == 2);
+	assert(neighbor_sets_equal(provider_batch[0], search::range(provider, space.id(1), 4)));
+	assert(neighbor_sets_equal(provider_batch[1], search::range(provider, space.id(2), 4)));
+	assert(provider_batch[0].representation == "pairwise_distances");
+	assert(provider_batch[0].provenance.route == "pairwise_provider");
+	assert(provider_batch[0].provenance.route_kind == mtrc::search_route_kind::pairwise_provider);
+	assert(provider_batch[0].provenance.domain_kind == mtrc::result_domain_kind::pairwise_provider);
+
 	// Invalid radius is rejected up front for the whole batch.
 	assert(throws_invalid_argument([&] { (void)search::range_batch(space, ids, -1); }));
+	assert(throws_invalid_argument([&] { (void)search::range_batch(provider, std::vector<mtrc::RecordId>{}, -1); }));
+	assert(throws_invalid_argument([&] { (void)search::range_batch(records, AbsoluteDistance{}, std::vector<int>{}, -1); }));
 }
 
 void regular_sample_carries_lineage()

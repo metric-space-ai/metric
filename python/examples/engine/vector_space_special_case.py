@@ -6,7 +6,7 @@ runtime-policy view. Search, clustering, outlier detection, graph construction,
 and classical-MDS embedding are native algorithms reached through bindings.
 Space-level exact neighbor search, clustering, and outliers are promoted here;
 graph construction and MDS remain unavailable until their bindings are promoted.
-(Native vector mappings such as PHATE-AE are exercised by the core test suite,
+(Native vector mappings such as parametric diffusion coordinates are exercised by the core test suite,
 which pins the native binding contract.)
 """
 

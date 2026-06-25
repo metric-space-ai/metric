@@ -185,6 +185,13 @@ assert.deepEqual(layer.getDiagnostics().selected, {
   state: "cell",
   matrixDimensions: { width: 130, height: 130, size: 130 },
 });
+assert.equal(layer.getDiagnostics().selectedPair.kind, "pair");
+assert.equal(layer.getDiagnostics().selectedPair.rowId, "pc-000");
+assert.equal(layer.getDiagnostics().selectedPair.columnId, "pc-001");
+assert.equal(layer.getDiagnostics().selectedPair.pairKey, `${nativeRelation.id}\u0000pc-000\u0000pc-001`);
+assert.equal(layer.getDiagnostics().selectedPair.nativePairPresent, true);
+assert.equal(layer.getDiagnostics().selectedPair.linkedGraph.present, false);
+assert.equal(layer.describeReadability().selectedPair.rowId, "pc-000");
 
 layer.setSelection({ rowId: "pc-004" });
 assert.deepEqual(layer.selection, {
@@ -247,6 +254,10 @@ assert(MATRIX_FRAGMENT_SHADER.includes("uTileSize"), "shader exposes logical til
 assert(MATRIX_FRAGMENT_SHADER.includes("uTileSummaryTexture"), "shader exposes tile-summary texture uniform");
 assert(MATRIX_FRAGMENT_SHADER.includes("uTileSummaryGridSize"), "shader exposes tile-summary grid uniform");
 assert(MATRIX_FRAGMENT_SHADER.includes("tileSummaryMix"), "shader mixes tile-summary LOD at collapsed cell footprints");
+assert(MATRIX_FRAGMENT_SHADER.includes("uFocusBackdropAlpha"), "shader exposes selected-focus backdrop dimming uniform");
+assert(MATRIX_FRAGMENT_SHADER.includes("focusBackdropHit"), "shader dims non-focused matrix texture noise during selection");
+assert(MATRIX_FRAGMENT_SHADER.includes("uFocusBlockAlpha"), "shader exposes selected-block context uniform");
+assert(MATRIX_FRAGMENT_SHADER.includes("selectedBlockHit"), "shader highlights selected row/column block context");
 assert(MATRIX_FRAGMENT_SHADER.includes("uSelectionRowColor"), "shader separates row selection color");
 assert(MATRIX_FRAGMENT_SHADER.includes("uSelectionColumnColor"), "shader separates column selection color");
 assert(MATRIX_FRAGMENT_SHADER.includes("uSelectionCellColor"), "shader separates cell selection color");

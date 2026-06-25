@@ -72,7 +72,7 @@ configurations that do not satisfy the admitted conditions.
 | Minkowski | `p >= 1` | `p < 1` is quarantined or rejected for metric-only use. |
 | Weighted Minkowski | Positive weights and `p >= 1` | Zero weights are pseudometric; negative weights are rejected. |
 | Mahalanobis | Symmetric positive definite matrix | Positive semidefinite is pseudometric; indefinite is rejected. |
-| Standardized vector metrics | Every fitted scale or sigma is positive | Zero scale is pseudometric or invalid; division by zero is rejected. |
+| Standardized vector metrics | Every calibrated scale or sigma is positive | Zero scale is pseudometric or invalid; division by zero is rejected. |
 | Hamming | Equal-length aligned records | Variable alignment requires another metric such as edit distance. |
 | Edit distance | Symmetric non-negative edit costs with admitted substitution/deletion/insertion constraints | Asymmetric or negative costs are quarantined or rejected. |
 | TWED (time warp edit) | Finite non-empty real sequences with `penalty >= 0` and finite `elastic > 0` | `elastic <= 0` collapses timestamp identity (pseudometric or worse) and is rejected; negative or non-finite `penalty`/`elastic`, empty inputs, and non-finite values are rejected. |
@@ -93,15 +93,15 @@ Native promotion is tied to these implementation facts:
   read-only exponent behavior, cache-key coverage, and metric-law tests.
 - Standardized Euclidean and Manhattan: done. `mtrc::Euclidean_standardized<V>`
   and `mtrc::Manhattan_standardized<V>` are admitted as `metric_law::metric`
-  under a positive-scale gate: the fitting constructor, the explicit
+  under a positive-scale gate: the calibrating constructor, the explicit
   `(mean, sigma)` constructor, and every evaluation reject a zero or non-finite
-  fitted scale (so constant features and single-record fits are rejected). The
+  calibrated scale (so constant features and single-record fits are rejected). The
   centering mean cancels out of the distance, the cache key serializes `sigma`,
   and metric-contract/property tests live in
   `tests/core_smoke/metric_standardized_smoke.cpp`.
 - Current `Cosine`: rename or document as angular distance, then add zero-vector
   and normalization policy.
-- `CosineInverted`, `Sorensen`, raw `SSIM`, and fitted `Kohonen`: keep out of
+- `CosineInverted`, `Sorensen`, and raw `SSIM`: keep out of
   metric-only paths unless a separate metric variant is admitted.
 - `EMD`/`Wasserstein`: done. The strict route `mtrc::Wasserstein<V>` enforces a
   metric ground cost (square, zero diagonal, positive off-diagonal, symmetric,

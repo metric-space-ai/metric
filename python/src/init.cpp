@@ -67,7 +67,7 @@ namespace py = pybind11;
 }*/
 
 void export_numeric_matrices(py::module &m);
-void export_native_phate_autoencoder(py::module &m);
+void export_parametric_diffusion_coordinates(py::module &m);
 void export_metric_space_mapping_pipeline(py::module &m);
 void export_record_io(py::module &m);
 void export_exact_scan(py::module &m);
@@ -81,6 +81,6 @@ PYBIND11_MODULE(metric, m)
 	export_numeric_matrices(m);
 	export_record_io(m);
 	export_exact_scan(m);
-	export_native_phate_autoencoder(m);
+	export_parametric_diffusion_coordinates(m);
 	export_metric_space_mapping_pipeline(m);
 }

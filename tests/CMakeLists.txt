@@ -5,8 +5,6 @@ set(test_bin_dir ${CMAKE_CURRENT_BINARY_DIR})
 
 add_subdirectory(correlation_tests)
 # add_subdirectory(dnn_tests)
-add_subdirectory(ensembles_tests)
-add_subdirectory(mapping_tests)
 add_subdirectory(space_tests)
 add_subdirectory(sparsification_tests)
 add_subdirectory(transform_test)

@@ -33,7 +33,7 @@ user data, but it must not implement metric math or solvers independently.
 
 ## Experimental Surface
 
-Research workflows, mappings, native fitted models, and hero applications can
+Research workflows, mappings, native mapping artifacts, and hero applications can
 exist in-tree before they are production-grade. Promotion requires:
 
 - documented finite metric-space interpretation

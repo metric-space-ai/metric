@@ -236,7 +236,7 @@ int main()
 	assert(groups.representation == "distance_table");
 
 	const auto outliers = mtrc::find_outliers(space, mtrc::stats::structural_analysis::dbscan_options(8.0, 2), materialized_policy);
-	assert(outliers.strategy == "dbscan_noise");
+	assert(outliers.strategy == "dbscan_density_outlier");
 	assert(outliers.representation == "distance_table");
 	assert(outliers.size() == 1);
 	assert(names[outliers[0].id.index()] == "spike-stop");

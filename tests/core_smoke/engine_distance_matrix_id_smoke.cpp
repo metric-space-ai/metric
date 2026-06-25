@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <stdexcept>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "metric/engine.hpp"
@@ -50,6 +51,7 @@ auto assert_matrix_matches_space_order(const Matrix &matrix, const Space &space)
 		for (std::size_t rhs = 0; rhs < space.size(); ++rhs) {
 			const auto rhs_id = space.id(rhs);
 			assert(matrix.distance(lhs_id, rhs_id) == space.distance(lhs_id, rhs_id));
+			assert(matrix.distance_at_position(lhs, rhs) == space.distance(lhs_id, rhs_id));
 		}
 	}
 }
@@ -88,6 +90,11 @@ int main()
 	assert(space.record(id3) == 9);
 	assert(space.distance(id0, id2) == 5);
 	assert(space.distance(id2, id0) == 10);
+
+	const auto live = mtrc::space::storage::implicit(space);
+	assert(live.distance_at_position(0, 2) == 5);
+	assert(live.distance_at_position(2, 0) == 10);
+	assert(live.record_at_position(2) == 5);
 
 	auto eager = mtrc::space::storage::matrix(space);
 	assert_matrix_matches_space_order(eager, space);
@@ -130,12 +137,16 @@ int main()
 	assert(lazy_directed_snapshot.distance(id2, id0) == 10);
 	assert(lazy_directed_snapshot.distance(id0, id2) != lazy_directed_snapshot.distance(id2, id0));
 
-	constexpr std::size_t large_record_count = 4096;
+	constexpr std::size_t large_record_count = 16384;
 	std::vector<int> large_records(large_record_count);
 	for (std::size_t index = 0; index < large_records.size(); ++index) {
 		large_records[index] = static_cast<int>(index);
 	}
 	auto large_space = mtrc::make_space(large_records, DirectedDistance{});
+	const auto large_first_id = large_space.id(0);
+	const auto large_middle_id = large_space.id(large_record_count / 2);
+	const auto large_last_id = large_space.id(large_record_count - 1);
+	const auto expected_middle_to_last = static_cast<int>((large_record_count - 1) - (large_record_count / 2));
 	auto large_lazy = mtrc::space::storage::matrix(large_space, mtrc::space::storage::distance_table_mode::lazy);
 	assert(large_lazy.record_count() == large_record_count);
 	assert(large_lazy.cached_distances() == 0);
@@ -143,7 +154,36 @@ int main()
 	assert(large_lazy.diagnostics().dense_distance_slots == large_record_count * large_record_count);
 	assert(large_lazy.memory_bytes_estimate() <
 		   mtrc::space::storage::estimate_distance_table_memory_bytes<int>(large_record_count) / 16);
-	assert(large_lazy.snapshot().distances.empty());
+	assert(large_lazy.contains(large_last_id));
+	assert(large_lazy.position_of(large_middle_id) == large_record_count / 2);
+	assert(large_lazy.distance(large_first_id, large_last_id) == static_cast<int>(large_record_count - 1));
+	assert(large_lazy.distance(large_last_id, large_first_id) == static_cast<int>(2 * (large_record_count - 1)));
+	assert(large_lazy.distance(large_middle_id, large_last_id) == expected_middle_to_last);
+	const auto large_lazy_snapshot = large_lazy.snapshot();
+	assert(large_lazy_snapshot.record_count == large_record_count);
+	assert(large_lazy_snapshot.cached_distances == 3);
+	assert(large_lazy_snapshot.dense_distance_slots == large_record_count * large_record_count);
+	assert(large_lazy_snapshot.distances.size() == 3);
+	assert(large_lazy_snapshot.contains(large_last_id));
+	assert(large_lazy_snapshot.position_of(large_middle_id) == large_record_count / 2);
+	assert(large_lazy_snapshot.has_distance(large_first_id, large_last_id));
+	assert(large_lazy_snapshot.has_distance(large_last_id, large_first_id));
+	assert(large_lazy_snapshot.has_distance(large_middle_id, large_last_id));
+	assert(!large_lazy_snapshot.has_distance(large_last_id, large_middle_id));
+	assert(large_lazy_snapshot.distance(large_first_id, large_last_id) == static_cast<int>(large_record_count - 1));
+	assert(large_lazy_snapshot.distance(large_last_id, large_first_id) ==
+		   static_cast<int>(2 * (large_record_count - 1)));
+	assert_out_of_range([&large_lazy_snapshot, large_last_id, large_middle_id]() {
+		(void)large_lazy_snapshot.distance(large_last_id, large_middle_id);
+	});
+	auto copied_large_lazy_snapshot = large_lazy_snapshot;
+	assert(copied_large_lazy_snapshot.contains(large_last_id));
+	assert(copied_large_lazy_snapshot.position_of(large_middle_id) == large_record_count / 2);
+	assert(copied_large_lazy_snapshot.distance(large_middle_id, large_last_id) == expected_middle_to_last);
+	auto moved_large_lazy_snapshot = std::move(copied_large_lazy_snapshot);
+	assert(moved_large_lazy_snapshot.contains(large_first_id));
+	assert(moved_large_lazy_snapshot.distance(large_last_id, large_first_id) ==
+		   static_cast<int>(2 * (large_record_count - 1)));
 
 	const auto initial_version = space.version();
 	space.replace(id2, 7);

@@ -23,7 +23,7 @@ The metric determines the geometry. No embedding step is required before nearest
 auto nearest = space.neighbors(std::string("read"), 2);
 ```
 
-The raw callable can also be used directly with the compatibility representation name:
+The raw callable can also be used directly with the explicit matrix representation name:
 
 ```cpp
 mtrc::Matrix<std::string, PaddedHamming> matrix(records);

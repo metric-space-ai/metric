@@ -121,7 +121,7 @@ fleet nearest-neighbour distance: min=3.3032 median=3.3032 max(excl anomaly)=3.3
 anomaly nearest-neighbour distance = 39.1314
 
 --- outliers / structure (DBSCAN) ---
-strategy = dbscan_noise, representation = distance_table, flagged = 1 of 21
+strategy = dbscan_density_outlier, representation = distance_table, flagged = 1 of 21
     outlier index 20 (injected anomaly)
 
 --- cross-space MGC vs latent severity ---

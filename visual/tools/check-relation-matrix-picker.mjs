@@ -206,6 +206,33 @@ assert.deepEqual(selectedPair.pairIdentity, {
 });
 assert(selectedPair.nativePair, "selected pair is runtime-preview ready and keeps native pair evidence");
 
+const graphEdge = nativeGraph.edges[0];
+const graphRow = nativeRelation.record_ids.indexOf(graphEdge.source);
+const graphColumn = nativeRelation.record_ids.indexOf(graphEdge.target);
+const graphPair = nativePicker.cellAtNormalizedPoint((graphColumn + 0.5) / 130, (graphRow + 0.5) / 130);
+assert.equal(graphPair.rowId, graphEdge.source);
+assert.equal(graphPair.columnId, graphEdge.target);
+const graphLinkedLayer = new RelationMatrixLayer({ metadata: { matrix: nativeTexture.matrix } });
+graphLinkedLayer.setSelection({
+  pair: graphPair,
+  presentation: {
+    graphEdges: [{
+      edgeId: "process-curve-knn:0",
+      graphId: nativeGraph.id,
+      relationId: nativeRelation.id,
+      rowId: graphEdge.source,
+      columnId: graphEdge.target,
+    }],
+  },
+});
+assert.equal(graphLinkedLayer.getDiagnostics().selectedPair.kind, "pair");
+assert.equal(graphLinkedLayer.getDiagnostics().selectedPair.rowId, graphEdge.source);
+assert.equal(graphLinkedLayer.getDiagnostics().selectedPair.columnId, graphEdge.target);
+assert.equal(graphLinkedLayer.getDiagnostics().selectedPair.nativePairPresent, true);
+assert.equal(graphLinkedLayer.getDiagnostics().selectedPair.linkedGraph.present, true);
+assert.equal(graphLinkedLayer.getDiagnostics().selectedPair.linkedGraph.graphEdgeCount, 1);
+assert.deepEqual(graphLinkedLayer.getDiagnostics().linkedGraph.edgeIds, ["process-curve-knn:0"]);
+
 const nativeLayer = new RelationMatrixLayer({ metadata: { matrix: nativeTexture.matrix } });
 nativeLayer.updateBlockBoundaries(nativeTexture);
 assert.equal(nativeLayer.blockBoundaryCount, 4);
@@ -266,6 +293,21 @@ assert.equal(matrixViewDescriptor.source.texture.scaler.kind, "quantile");
 assert.equal(matrixViewDescriptor.source.relationId, nativeRelation.id);
 assert.equal(matrixViewDescriptor.metadata.relationId, nativeRelation.id);
 assert.equal(matrixViewDescriptor.material.smoothingStrength, 0.72);
+assert.equal(matrixViewDescriptor.material.selectionAlpha, 0.44);
+assert.equal(matrixViewDescriptor.material.selectionCellAlpha, 0.82);
+assert.equal(matrixViewDescriptor.material.selectionOutlineAlpha, 0.96);
+assert.equal(matrixViewDescriptor.material.selectionOutlinePixels, 1.65);
+assert.equal(matrixViewDescriptor.material.focusBackdropAlpha, 0.3);
+assert.equal(matrixViewDescriptor.material.focusBlockAlpha, 0.085);
+assert.equal(matrixViewDescriptor.material.blockBandAlpha, 0.075);
+assert.equal(matrixViewDescriptor.material.blockLineAlpha, 0.42);
+assert.equal(matrixViewDescriptor.material.blockLineWidthCells, 0.82);
+assert.equal(matrixViewDescriptor.material.tileBoundaryAlpha, 0.12);
+assert.equal(matrixViewDescriptor.material.tileBoundaryWidthCells, 0.36);
+assert.equal(matrixViewDescriptor.material.outerBorderAlpha, 0.58);
+assert.equal(matrixViewDescriptor.metadata.focusModel.backdrop, "dim-unfocused-cells");
+assert.equal(matrixViewDescriptor.metadata.focusModel.linkedGraph, "selection-presentation-graph-edge-emphasis");
+assert.equal(matrixViewDescriptor.metadata.selectionModel.focusPresentation.pairPreview, "runtime-selected-pair-preview");
 
 const graphDescriptor = createRelationGraphEdgeLayerDescriptor(nativeRelation, {
   graph: nativeGraph,

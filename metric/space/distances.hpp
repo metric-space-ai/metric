@@ -6,7 +6,9 @@
 #define _METRIC_SPACE_DISTANCES_HPP
 
 #include <cstddef>
+#include <limits>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -46,6 +48,14 @@ template <typename Distance> struct pair_value {
 	RecordId lhs;
 	RecordId rhs;
 	Distance distance{};
+};
+
+inline constexpr std::size_t default_max_collected_pair_values = 1'000'000;
+
+struct pair_collection_options {
+	// Maximum number of unordered pair values that pairs(...) may materialize in memory.
+	// Set to 0 only when the caller intentionally opts into an unbounded collection.
+	std::size_t max_pair_values{default_max_collected_pair_values};
 };
 
 // Compact status of a pairwise-value source: is it materialized, is it exact, and has it gone stale?
@@ -204,16 +214,42 @@ auto for_each_pair(const Space &space, Visitor visitor) -> void
 	for_each_pair(storage::LiveDistances<Space>(space), std::move(visitor));
 }
 
+inline auto unordered_pair_count(std::size_t count) -> std::size_t
+{
+	if (count < 2) {
+		return 0;
+	}
+	const auto lhs = count % 2 == 0 ? count / 2 : count;
+	const auto rhs = count % 2 == 0 ? count - 1 : (count - 1) / 2;
+	if (lhs > std::numeric_limits<std::size_t>::max() / rhs) {
+		throw RepresentationError("space::distances::pairs cannot represent C(record_count, 2) in std::size_t");
+	}
+	return lhs * rhs;
+}
+
+inline auto require_pair_collection_budget(std::size_t record_count, pair_collection_options options) -> std::size_t
+{
+	const auto pair_count = unordered_pair_count(record_count);
+	if (options.max_pair_values == 0 || pair_count <= options.max_pair_values) {
+		return pair_count;
+	}
+	throw RepresentationError(
+		std::string("space::distances::pairs refused to collect all unordered pairs before metric calls: records=") +
+		std::to_string(record_count) + ", pair_count=" + std::to_string(pair_count) +
+		", max_pair_values=" + std::to_string(options.max_pair_values) +
+		". Use space::distances::for_each_pair for streaming iteration or pass pair_collection_options{0} "
+		"to explicitly opt into an unbounded in-memory collection.");
+}
+
 // Collect every unordered pair {i, j}, i < j, with its distance.
 template <typename Provider, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
-auto pairs(const Provider &provider) -> std::vector<pair_value<typename Provider::distance_type>>
+auto pairs(const Provider &provider, pair_collection_options options = {})
+	-> std::vector<pair_value<typename Provider::distance_type>>
 {
 	using distance_type = typename Provider::distance_type;
 	std::vector<pair_value<distance_type>> collected;
 	const auto count = provider.record_count();
-	// C(count, 2), computed so the count*(count-1) product cannot overflow before the divide by 2.
-	const auto pair_count = count < 2 ? std::size_t{0}
-									  : (count % 2 == 0 ? (count / 2) * (count - 1) : count * ((count - 1) / 2));
+	const auto pair_count = require_pair_collection_budget(count, options);
 	collected.reserve(pair_count);
 	for_each_pair(provider, [&collected](RecordId lhs, RecordId rhs, distance_type distance) {
 		collected.push_back(pair_value<distance_type>{lhs, rhs, distance});
@@ -222,9 +258,9 @@ auto pairs(const Provider &provider) -> std::vector<pair_value<typename Provider
 }
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
-auto pairs(const Space &space) -> std::vector<pair_value<typename Space::distance_type>>
+auto pairs(const Space &space, pair_collection_options options = {}) -> std::vector<pair_value<typename Space::distance_type>>
 {
-	return pairs(storage::LiveDistances<Space>(space));
+	return pairs(storage::LiveDistances<Space>(space), options);
 }
 
 // ---------------------------------------------------------------------------------------------

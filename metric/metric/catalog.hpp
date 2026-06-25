@@ -27,6 +27,6 @@
 // header-only public core (<metric/metric.hpp>). Consumers that want AIRM
 // include <metric/metric/catalog/space/Riemannian.hpp> explicitly and link
 // LAPACK; metric/metric/discovery.hpp then registers its admission status
-// (the same opt-in pattern used for the physically-quarantined SSIM/Kohonen).
+// (the same opt-in pattern used for physically-quarantined metrics).
 
 #endif

@@ -16,15 +16,15 @@ finite metric-space advantage visible without relying on claim-only tables.
   executable or a checked-in static asset with documented source.
 - Vector baselines must be named as baselines, not as strawman insults.
 - MGC is a dependence test between spaces, not a metric.
-- PHATE and autoencoder workflows are derived-space workflows over an existing
-  finite metric space, not a standalone ML toolbox.
+- parametric diffusion coordinates and solver-backed coordinate workflows are derived-space workflows over an existing
+  finite metric space, not a standalone application toolbox.
 
 ## First Hero Package: Process-Curve Condition Monitoring
 
 ### User Story
 
 An engineer has process windows from machines or industrial systems. The windows
-are not naturally fixed feature vectors because timing shifts and local
+are not naturally fixed coordinate vectors because timing shifts and local
 stretching matter. METRIC should show that a finite metric space over process
 curves can recover the right operating condition where a padded point-vector
 comparison fails.
@@ -286,7 +286,7 @@ interactive visualization experience.
 The primary visualization track is a native browser library for large
 Canvas/WebGL/WebGL-shader views. the earlier point-cloud renderer is only a technical reference for:
 
-- PHATE/AE derived coordinate spaces
+- parametric diffusion coordinates and parametric derived coordinate spaces
 - 3D point clouds
 - interactive source-space graph exploration
 - brushing a point to inspect the original record and metric neighbors
@@ -434,5 +434,5 @@ After this first package lands, repeat the same pattern for:
    structure, and vector baseline failure.
 2. Cross-space dependency: two finite metric spaces, MGC dependence test,
    permutation/null visual, shuffled baseline.
-3. PHATE/AE derived space: source metric space, derived coordinate space,
+3. parametric diffusion coordinates and parametric derived space: source metric space, derived coordinate space,
    out-of-sample transform, geometry-preservation evidence.

@@ -34,7 +34,7 @@ template <typename Metric> constexpr auto is_quarantined_metric_v = core::metric
 //                       (only structural requirements such as alignment apply).
 //   restricted_metric - true metric, but only under enforced parameter/domain
 //                       gates (e.g. Minkowski p >= 1, nonnegative inputs, a
-//                       metric ground cost, a positive fitted scale). Still
+//                       metric ground cost, a positive calibrated scale). Still
 //                       routable by metric-only algorithms because the gate is
 //                       enforced on construction and on every evaluation.
 //   quarantine        - not a true metric as shipped, but a metric variant

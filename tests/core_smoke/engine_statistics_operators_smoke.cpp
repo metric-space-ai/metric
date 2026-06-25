@@ -82,7 +82,7 @@ int main()
 											  },
 											  mtrc::Euclidean<double>());
 	const auto mapped_entropy = mtrc::stats::properties::entropy(mapped_coordinates, 3, 2);
-	assert(mapped_entropy.representation == "deterministic_transform");
+	assert(mapped_entropy.representation == mapped_coordinates.representation);
 	assert(mapped_entropy.record_count == mapped_coordinates.space.size());
 
 	std::vector<std::vector<double>> first = {

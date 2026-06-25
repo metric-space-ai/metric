@@ -16,6 +16,7 @@ Copyright (c) 2018 Michael Welsch
 #include <utility>
 #include <vector>
 
+#include <metric/core/concepts.hpp>
 #include <metric/core/metric_traits.hpp>
 #include <metric/metric/detail/vector_input.hpp>
 
@@ -74,6 +75,12 @@ template <typename V> struct metric_traits<::mtrc::Euclidean<V>> {
 	static constexpr auto records = record_kind::aligned_vector;
 	static constexpr bool thread_safe = true;
 };
+
+namespace detail {
+
+template <typename V> struct coordinate_metric_family<::mtrc::Euclidean<V>> : std::true_type {};
+
+} // namespace detail
 
 } // namespace mtrc::core
 
@@ -251,7 +258,7 @@ template <typename V = double> struct Euclidean_soft_clipped {
  * Admitted metric domain
  * ----------------------
  * The admitted record is an aligned, finite real vector. The distance is the
- * Euclidean norm of the per-coordinate displacement after dividing by a fitted
+ * Euclidean norm of the per-coordinate displacement after dividing by a calibrated
  * positive scale `sigma`. Because the per-coordinate centering `mean` appears in
  * both terms it cancels exactly, so the distance depends only on `sigma`; the
  * `mean` member is kept for introspection and backward compatibility.
@@ -266,7 +273,7 @@ template <typename V = double> struct Euclidean_soft_clipped {
  * Parameter gate
  * --------------
  * A zero scale collapses a coordinate and destroys identity of indiscernibles
- * (and divides by zero), so every fitted scale must be finite and strictly
+ * (and divides by zero), so every calibrated scale must be finite and strictly
  * positive. The gate is enforced when fitting, when constructing from an
  * explicit `(mean, sigma)`, and on every evaluation (the scale vector is a public
  * member and could be mutated into a non-metric state). See
@@ -294,15 +301,15 @@ template <typename V = double> struct Euclidean_standardized {
 	explicit Euclidean_standardized() = default;
 
 	/**
-	 * @brief Fit the standardized metric from aligned training records.
+	 * @brief Calibrate the standardized metric from aligned records.
 	 *
 	 * The per-coordinate mean and population standard deviation are estimated
-	 * from @p A. Every fitted scale must be finite and strictly positive, so a
-	 * constant feature or a single training record (which both yield a zero
+	 * from @p A. Every calibrated scale must be finite and strictly positive, so a
+	 * constant coordinate or a single calibration record (which both yield a zero
 	 * scale) is rejected.
 	 *
-	 * @throws std::invalid_argument on empty/unaligned training data or a
-	 *         non-positive fitted scale.
+	 * @throws std::invalid_argument on empty/unaligned calibration records or a
+	 *         non-positive calibrated scale.
 	 */
 	template <typename Container> Euclidean_standardized(const Container &A);
 
@@ -322,7 +329,7 @@ template <typename V = double> struct Euclidean_standardized {
 	/**
 	 * @brief Standardized Euclidean distance `|| (a - b) / sigma ||_2`.
 	 *
-	 * @throws std::invalid_argument on an unfitted/invalid scale, a dimension
+	 * @throws std::invalid_argument on an uncalibrated/invalid scale, a dimension
 	 *         mismatch, or non-finite inputs.
 	 */
 	template <typename Container> auto operator()(const Container &a, const Container &b) const -> distance_type;
@@ -337,7 +344,7 @@ template <typename V = double> struct Euclidean_standardized {
  * @brief Standardized Manhattan metric `d(a, b) = sum_i |a_i - b_i| / sigma[i]`.
  *
  * This is the L1 analogue of @ref Euclidean_standardized: the displacement is
- * rescaled per coordinate by a fitted positive `sigma` and the centering `mean`
+ * rescaled per coordinate by a calibrated positive `sigma` and the centering `mean`
  * cancels. With every scale finite and strictly positive the rescaling is an
  * injective linear reparametrization, so the result is the metric induced by the
  * L1 norm and is admitted as `metric_law::metric`. The same positive-scale gate
@@ -357,10 +364,10 @@ template <typename V = double> struct Manhattan_standardized {
 	explicit Manhattan_standardized() = default;
 
 	/**
-	 * @brief Fit the standardized metric from aligned training records.
+	 * @brief Calibrate the standardized metric from aligned records.
 	 *
-	 * @throws std::invalid_argument on empty/unaligned training data or a
-	 *         non-positive fitted scale.
+	 * @throws std::invalid_argument on empty/unaligned calibration records or a
+	 *         non-positive calibrated scale.
 	 */
 	template <typename Container> Manhattan_standardized(const Container &A);
 
@@ -380,7 +387,7 @@ template <typename V = double> struct Manhattan_standardized {
 	/**
 	 * @brief Standardized Manhattan distance `sum_i |a_i - b_i| / sigma[i]`.
 	 *
-	 * @throws std::invalid_argument on an unfitted/invalid scale, a dimension
+	 * @throws std::invalid_argument on an uncalibrated/invalid scale, a dimension
 	 *         mismatch, or non-finite inputs.
 	 */
 	template <typename Container> auto operator()(const Container &a, const Container &b) const -> distance_type;
@@ -494,7 +501,7 @@ template <typename V> struct metric_traits<::mtrc::Chebyshev<V>> {
 	static constexpr bool thread_safe = true;
 };
 
-// Standardized vector metrics are admitted true metrics when every fitted scale
+// Standardized vector metrics are admitted true metrics when every calibrated scale
 // is finite and strictly positive (an injective linear reparametrization of the
 // underlying L2/L1 norm). The gate is enforced on construction and on every
 // evaluation. The distance depends only on `sigma` (the centering `mean`
@@ -534,6 +541,16 @@ template <typename V> struct metric_traits<::mtrc::Manhattan_standardized<V>> {
 		return key;
 	}
 };
+
+namespace detail {
+
+template <typename V> struct coordinate_metric_family<::mtrc::Manhattan<V>> : std::true_type {};
+template <typename V> struct coordinate_metric_family<::mtrc::P_norm<V>> : std::true_type {};
+template <typename V> struct coordinate_metric_family<::mtrc::Chebyshev<V>> : std::true_type {};
+template <typename V> struct coordinate_metric_family<::mtrc::Euclidean_standardized<V>> : std::true_type {};
+template <typename V> struct coordinate_metric_family<::mtrc::Manhattan_standardized<V>> : std::true_type {};
+
+} // namespace detail
 
 } // namespace mtrc::core
 

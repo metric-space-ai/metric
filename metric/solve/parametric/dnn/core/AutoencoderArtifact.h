@@ -34,6 +34,41 @@ template <class Scalar> auto scalar_type_name() -> std::string
 	}
 }
 
+template <class Scalar> auto calibration_spec_to_json(const TrainingSpec<Scalar> &spec) -> mtrc::core::Metadata
+{
+	return {{"calibration_steps", spec.epochs},
+			{"batch_size", spec.batch_size},
+			{"calibration_seed", spec.seed},
+			{"shuffle", spec.shuffle},
+			{"gradient_clip_norm", spec.gradient_clip_norm},
+			{"early_stop_min_delta", spec.early_stop_min_delta},
+			{"early_stop_patience", spec.early_stop_patience}};
+}
+
+template <class Scalar> auto calibration_step_to_json(const EpochReport<Scalar> &step) -> mtrc::core::Metadata
+{
+	mtrc::core::Metadata terms = mtrc::core::Metadata::array();
+	for (const auto &term : step.terms) {
+		terms.push_back(loss_term_report_to_json(term));
+	}
+	return {{"step", step.epoch},
+			{"objective_value", step.total_loss},
+			{"batch_count", step.batch_count},
+			{"terms", std::move(terms)}};
+}
+
+template <class Scalar> auto calibration_report_to_json(const TrainingReport<Scalar> &report) -> mtrc::core::Metadata
+{
+	mtrc::core::Metadata steps = mtrc::core::Metadata::array();
+	for (const auto &step : report.epochs) {
+		steps.push_back(calibration_step_to_json(step));
+	}
+	return {{"steps", std::move(steps)},
+			{"step_count", report.epochs.size()},
+			{"stopped_early", report.stopped_early},
+			{"stop_reason", report.stop_reason}};
+}
+
 template <class Scalar, class Codec>
 auto make_native_autoencoder_artifact(const AutoencoderModel<Scalar> &model, const Codec &codec,
 									  const CompositeLoss<Scalar> &objective, const TrainingSpec<Scalar> &training_spec,
@@ -44,10 +79,12 @@ auto make_native_autoencoder_artifact(const AutoencoderModel<Scalar> &model, con
 {
 	std::stringstream network_stream;
 	model.network().save(network_stream);
+	const auto parametric_diffusion_format = artifact_format == "metric.parametric_diffusion_coordinate_artifact";
 
 	NativeAutoencoderArtifact<Scalar> artifact;
 	artifact.network_binary = network_stream.str();
-	artifact.diagnostics = training_report_to_json(model.training_report());
+	artifact.diagnostics = parametric_diffusion_format ? calibration_report_to_json(model.training_report())
+													   : training_report_to_json(model.training_report());
 	artifact.manifest = {
 		{"format", std::move(artifact_format)},
 		{"format_version", 1},
@@ -58,11 +95,14 @@ auto make_native_autoencoder_artifact(const AutoencoderModel<Scalar> &model, con
 		{"autoencoder_topology", autoencoder_topology_to_json(model.topology())},
 		{"codec", codec.to_json()},
 		{"loss", objective.to_json()},
-		{"training_spec", training_spec_to_json(training_spec)},
-		{"diagnostics", {{"serialization", "json"}, {"epoch_count", model.training_report().epochs.size()}}},
+		{parametric_diffusion_format ? "calibration_spec" : "training_spec",
+		 parametric_diffusion_format ? calibration_spec_to_json(training_spec) : training_spec_to_json(training_spec)},
+		{"diagnostics",
+		 {{"serialization", "json"},
+		  {parametric_diffusion_format ? "step_count" : "epoch_count", model.training_report().epochs.size()}}},
 		{"source",
 		 {{"record_count", source_record_count},
-		  {"feature_count", codec.feature_count()},
+		  {"source_coordinate_count", codec.coordinate_count()},
 		  {"space_version", source_space_version}}}};
 	if (!additional_manifest.empty()) {
 		artifact.manifest.update(std::move(additional_manifest));
@@ -74,7 +114,7 @@ template <class Scalar>
 auto load_native_autoencoder_model(const NativeAutoencoderArtifact<Scalar> &artifact) -> AutoencoderModel<Scalar>
 {
 	const auto format = artifact.manifest.at("format").template get<std::string>();
-	if (format != "metric.native_autoencoder_artifact" && format != "metric.native_phate_autoencoder_artifact") {
+	if (format != "metric.native_autoencoder_artifact" && format != "metric.parametric_diffusion_coordinate_artifact") {
 		throw std::invalid_argument("unexpected native autoencoder artifact format");
 	}
 	if (artifact.manifest.at("format_version").template get<int>() != 1) {

@@ -23,6 +23,18 @@ namespace mtrc::stats::structural_analysis {
 
 namespace engine_detail {
 
+constexpr std::size_t max_default_exact_metric_space_clustering_records = 4096;
+
+inline auto require_default_exact_metric_space_clustering(std::size_t record_count) -> void
+{
+	if (record_count > max_default_exact_metric_space_clustering_records) {
+		throw std::invalid_argument(
+			"direct metric-space clustering overload refuses exact execution above 4096 records; "
+			"use find_groups(...) for default large-space behavior or pass a pairwise distance provider for explicit "
+			"exact execution");
+	}
+}
+
 template <typename Provider>
 auto initialize_medoids(const Provider &provider, std::size_t cluster_count) -> std::vector<RecordId>
 {
@@ -110,13 +122,13 @@ auto compute_cluster_medoids(const Provider &provider, const std::vector<std::si
 							 std::size_t cluster_count) -> std::vector<RecordId>
 {
 	using distance_type = typename Provider::distance_type;
-	const auto noise_label = ClusteringResult<distance_type>::noise_label;
+	const auto unassigned_label = ClusteringResult<distance_type>::unassigned_label;
 
 	std::vector<RecordId> medoids;
 	medoids.reserve(cluster_count);
 
 	const auto ids_by_cluster = core::record_id_buckets_excluding_assignment(
-		provider, assignments, cluster_count, noise_label, "clustering assignment references an unknown cluster");
+		provider, assignments, cluster_count, unassigned_label, "clustering assignment references an unknown cluster");
 	for (const auto &cluster_ids : ids_by_cluster) {
 		if (!cluster_ids.empty()) {
 			medoids.push_back(core::minimum_total_distance_record_id(provider, cluster_ids,
@@ -382,6 +394,7 @@ template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>
 auto kmedoids(const Space &space, std::size_t cluster_count, std::size_t max_iterations = 100)
 	-> ClusteringResult<typename Space::distance_type>
 {
+	engine_detail::require_default_exact_metric_space_clustering(space.size());
 	space::storage::LiveDistances<Space> provider(space);
 	auto result = kmedoids(provider, cluster_count, max_iterations);
 	result.representation = "metric_space";
@@ -393,14 +406,14 @@ auto dbscan(const Provider &provider, Radius radius, std::size_t min_points)
 	-> ClusteringResult<typename Provider::distance_type>
 {
 	using distance_type = typename Provider::distance_type;
-	const auto noise_label = ClusteringResult<distance_type>::noise_label;
+	const auto unassigned_label = ClusteringResult<distance_type>::unassigned_label;
 
 	if (provider.record_count() == 0) {
 		throw std::invalid_argument("cannot cluster an empty distance provider");
 	}
 	engine_detail::validate_dbscan_parameters(radius, min_points);
 
-	std::vector<std::size_t> assignments(provider.record_count(), noise_label);
+	std::vector<std::size_t> assignments(provider.record_count(), unassigned_label);
 	std::vector<bool> assigned(provider.record_count(), false);
 	std::vector<bool> visited(provider.record_count(), false);
 	std::vector<bool> core_record_flags(provider.record_count(), false);
@@ -424,14 +437,14 @@ auto dbscan(const Provider &provider, Radius radius, std::size_t min_points)
 		++cluster_count;
 	}
 
-	auto noise_records = core::record_ids_matching_value(provider, assignments, noise_label);
+	auto unassigned_records = core::record_ids_matching_value(provider, assignments, unassigned_label);
 	auto core_records = core::record_ids_matching_value(provider, core_record_flags, true);
-	auto cluster_sizes = numeric::index_counts_excluding(assignments, cluster_count, noise_label,
+	auto cluster_sizes = numeric::index_counts_excluding(assignments, cluster_count, unassigned_label,
 														"dbscan assignment references an unknown cluster");
 	auto medoids = engine_detail::compute_cluster_medoids(provider, assignments, cluster_count);
 
 	return core::make_clustering_result<distance_type>(std::move(assignments), std::move(medoids),
-													   std::move(core_records), std::move(noise_records),
+													   std::move(core_records), std::move(unassigned_records),
 													   std::move(cluster_sizes), 1, true, "dbscan",
 													   "pairwise_distances");
 }
@@ -440,6 +453,7 @@ template <typename Space, typename Radius, typename std::enable_if<MetricSpaceLi
 auto dbscan(const Space &space, Radius radius, std::size_t min_points)
 	-> ClusteringResult<typename Space::distance_type>
 {
+	engine_detail::require_default_exact_metric_space_clustering(space.size());
 	space::storage::LiveDistances<Space> provider(space);
 	auto result = dbscan(provider, radius, min_points);
 	result.representation = "metric_space";
@@ -521,6 +535,7 @@ auto affinity_propagation(const Space &space, double preference = 0.5, int max_i
 						  double tolerance = 1.0e-6, double damping = 0.5)
 	-> ClusteringResult<typename Space::distance_type>
 {
+	engine_detail::require_default_exact_metric_space_clustering(space.size());
 	space::storage::LiveDistances<Space> provider(space);
 	auto result = affinity_propagation(provider, preference, max_iterations, tolerance, damping);
 	result.representation = "metric_space";

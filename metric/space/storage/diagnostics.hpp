@@ -21,6 +21,7 @@ enum class representation_kind {
 	distance_table,
 	cover_tree_index,
 	knn_graph_index,
+	landmark_index,
 	graph_topology,
 };
 
@@ -66,6 +67,9 @@ struct distance_table_stats {
 	std::size_t misses{};
 	double fill_ratio{};
 	bool symmetric_storage{};
+	std::size_t spilled_blocks{};
+	std::size_t spill_reads{};
+	std::size_t spill_writes{};
 };
 
 struct cover_tree_stats {
@@ -80,6 +84,13 @@ struct knn_graph_stats {
 	std::size_t neighbors_requested{};
 	bool recall_validated{};
 	double sampled_recall{};
+};
+
+struct landmark_index_stats {
+	std::size_t nodes{};
+	std::size_t landmarks{};
+	std::size_t candidate_limit{};
+	std::size_t build_distance_evaluations{};
 };
 
 struct knn_graph_quality_diagnostics {

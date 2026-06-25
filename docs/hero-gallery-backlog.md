@@ -22,7 +22,7 @@ Every public gallery item needs:
 
 | Hero | Status | Dataset/source | Native C++ evidence | Visualization |
 |---|---|---|---|---|
-| MNIST dimension reduction | LIVE | Full MNIST training set, `60,000` records; PHATE-AE/GRAE10 reference documented in `docs/examples/mnist-grae10-gallery.md`. | `examples/engine/mnist_grae10_integrity.cpp` verifies record count, label match, finite 2D coordinates, and finite 3D coordinates. | `visual/examples/grae10-metric-engine/index.html` is the native METRIC Visual Engine 60k plot. |
+| MNIST dimension reduction | LIVE | Full MNIST training set, `60,000` records; parametric diffusion coordinate/GRAE10 reference documented in `docs/examples/mnist-grae10-gallery.md`. | `examples/engine/mnist_grae10_integrity.cpp` verifies record count, label match, finite 2D coordinates, and finite 3D coordinates. | `visual/examples/grae10-metric-engine/index.html` is the native METRIC Visual Engine 60k plot. |
 | UCR process curves | LIVE | UCR Time Series Anomaly Detection datasets 2021, DOI `10.6084/m9.figshare.26410744.v1`, CC BY 4.0; local slices documented in `docs/examples/process-curve-external-gallery.md`. | `examples/engine/process_curve_external_gallery.cpp` exports query winners, margins, tables, and assertions. | `docs/examples/assets/process-curve-external/hero-overview.svg` plus CSV/summary assets. |
 | Mixed records | PLANNED | Needs a real heterogeneous source, or a clearly documented checked fixture if no public source is suitable. | Needs native composed-metric evidence with per-field contributions, neighbors, representatives, outliers, and invariants. | Needs a visual showing native field structure and composed metric behavior from exported C++ evidence. |
 | Cross-space dependence | PLANNED | Needs a real paired-space dataset with documented relation between spaces. | Needs native dependence inputs, admitted metrics, baseline construction, and statistic export. | Needs paired-space visual plus dependency field from exported evidence. |
@@ -35,10 +35,10 @@ Every public gallery item needs:
 
 The public MNIST hero is accepted as a protected reference visual plus a native
 integrity check. The tree does not yet contain a native C++ executable that
-re-trains the full `60,000` record PHATE-AE/GRAE10 workflow and exports the
+re-trains the full `60,000` record parametric diffusion coordinate/GRAE10 workflow and exports the
 accepted visual dataset from scratch.
 
-The existing native PHATE-AE executable proves the C++ path on a balanced MNIST
+The existing native parametric diffusion coordinate executable proves the C++ path on a balanced MNIST
 subset. It must not be presented as a replacement for the accepted 60k reference
 until a full-scale exporter exists and is verified.
 

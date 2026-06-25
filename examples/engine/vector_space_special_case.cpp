@@ -95,8 +95,8 @@ int main()
 	assert(groups.representation == "distance_table");
 
 	const auto outliers = mtrc::find_outliers(space, mtrc::stats::structural_analysis::dbscan_options(0.7, 2), materialized_policy);
-	assert(outliers.strategy == "dbscan_noise");
-	assert(outliers.noise_count == 1);
+	assert(outliers.strategy == "dbscan_density_outlier");
+	assert(outliers.unassigned_count == 1);
 	assert(outliers.outliers.front().id == space.id(8));
 	assert(outliers.representation == "distance_table");
 

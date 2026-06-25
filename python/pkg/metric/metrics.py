@@ -1,8 +1,8 @@
 """Metric constructors exposed by the revived Python API.
 
-The core wheel currently guarantees the edit-distance binding. Legacy standard
-distance bindings and their compatibility aliases are re-exported when the full
-extension set is available.
+The core wheel currently guarantees the edit-distance binding. Additional
+standard metric constructors are re-exported only when the native extension
+exports them directly.
 """
 
 from typing import Protocol, runtime_checkable

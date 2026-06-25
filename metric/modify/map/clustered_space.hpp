@@ -24,7 +24,7 @@ struct ClusterRecord {
 	std::size_t label{};
 	RecordId representative;
 	std::vector<RecordId> members;
-	bool noise{false};
+	bool unassigned{false};
 };
 
 template <typename Distance> class ClusterRepresentativeMetric {
@@ -49,17 +49,18 @@ template <typename Distance> class ClusterRepresentativeMetric {
 	std::vector<std::vector<distance_type>> distances_;
 };
 
-template <typename Distance> class ClusteredSpaceModel {
+template <typename Distance> class ClusteredSpaceDerivation {
   public:
 	using distance_type = Distance;
 	using metric_type = ClusterRepresentativeMetric<distance_type>;
 	using space_type = MetricSpace<ClusterRecord, metric_type>;
 	using result_type = MappingResult<space_type>;
 
-	ClusteredSpaceModel(std::vector<ClusterRecord> records, std::vector<std::vector<distance_type>> distances,
-						std::vector<std::vector<RecordId>> source_records, std::vector<RecordId> representative_records,
-						std::size_t source_record_count, std::string strategy, std::string representation,
-						core::metric_law source_metric_law = core::metric_law::unknown)
+	ClusteredSpaceDerivation(std::vector<ClusterRecord> records, std::vector<std::vector<distance_type>> distances,
+							 std::vector<std::vector<RecordId>> source_records,
+							 std::vector<RecordId> representative_records, std::size_t source_record_count,
+							 std::string strategy, std::string representation,
+							 core::metric_law source_metric_law = core::metric_law::unknown)
 		: records_(std::move(records)), distances_(std::move(distances)), source_records_(std::move(source_records)),
 		  representative_records_(std::move(representative_records)), source_record_count_(source_record_count),
 		  strategy_(std::move(strategy)), representation_(std::move(representation)),
@@ -71,7 +72,7 @@ template <typename Distance> class ClusteredSpaceModel {
 	auto transform(const Space &space) const -> result_type
 	{
 		if (space.size() != source_record_count_) {
-			throw std::invalid_argument("source space size does not match fitted clustered-space mapping");
+			throw std::invalid_argument("source space size does not match clustered-space derivation");
 		}
 		return transform();
 	}
@@ -110,23 +111,23 @@ template <typename Distance> class ClusteredSpaceMapping {
 	explicit ClusteredSpaceMapping(clustering_type clustering) : clustering_(std::move(clustering)) {}
 
 	template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
-	auto fit(const Space &space) const -> ClusteredSpaceModel<distance_type>
+	auto derive_from(const Space &space) const -> ClusteredSpaceDerivation<distance_type>
 	{
 		space::storage::LiveDistances<Space> provider(space);
-		return build_model(provider, clustering_, core::metric_traits<typename Space::metric_type>::law);
+		return build_derivation(provider, clustering_, core::metric_traits<typename Space::metric_type>::law);
 	}
 
 	template <typename Provider, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
-	auto fit_provider(const Provider &provider) const -> ClusteredSpaceModel<distance_type>
+	auto derive_from_provider(const Provider &provider) const -> ClusteredSpaceDerivation<distance_type>
 	{
-		return build_model(provider, clustering_, core::metric_law::unknown);
+		return build_derivation(provider, clustering_, core::metric_law::unknown);
 	}
 
   private:
 	template <typename Provider>
-	static auto build_model(const Provider &provider, const clustering_type &clustering,
-							core::metric_law source_metric_law)
-		-> ClusteredSpaceModel<distance_type>
+	static auto build_derivation(const Provider &provider, const clustering_type &clustering,
+								 core::metric_law source_metric_law)
+		-> ClusteredSpaceDerivation<distance_type>
 	{
 		::mtrc::require_clustering_result_shape(clustering, provider.record_count(),
 												  "clustering record count does not match source provider",
@@ -156,9 +157,10 @@ template <typename Distance> class ClusteredSpaceMapping {
 		auto distances = ::mtrc::distance_table_for_record_ids(provider, representative_records,
 																"cluster representative id is outside provider");
 
-		return ClusteredSpaceModel<distance_type>(std::move(records), std::move(distances), std::move(source_records),
-												  std::move(representative_records), clustering.record_count,
-												  clustering.algorithm, clustering.representation, source_metric_law);
+		return ClusteredSpaceDerivation<distance_type>(std::move(records), std::move(distances),
+													   std::move(source_records), std::move(representative_records),
+													   clustering.record_count, clustering.algorithm,
+													   clustering.representation, source_metric_law);
 	}
 
 	clustering_type clustering_;
@@ -172,18 +174,18 @@ auto make_clustered_space_mapping(ClusteringResult<Distance> clustering) -> Clus
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto clustered_space(const Space &space, ClusteringResult<typename Space::distance_type> clustering) ->
-	typename ClusteredSpaceModel<typename Space::distance_type>::result_type
+	typename ClusteredSpaceDerivation<typename Space::distance_type>::result_type
 {
-	return make_clustered_space_mapping(std::move(clustering)).fit(space).transform(space);
+	return make_clustered_space_mapping(std::move(clustering)).derive_from(space).transform(space);
 }
 
 template <typename Provider, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
 auto clustered_space(const Provider &provider, ClusteringResult<typename Provider::distance_type> clustering) ->
-	typename ClusteredSpaceModel<typename Provider::distance_type>::result_type
+	typename ClusteredSpaceDerivation<typename Provider::distance_type>::result_type
 {
 	auto mapping = make_clustered_space_mapping(std::move(clustering));
-	auto model = mapping.fit_provider(provider);
-	return model.transform();
+	auto derivation = mapping.derive_from_provider(provider);
+	return derivation.transform();
 }
 
 } // namespace mtrc::modify::map

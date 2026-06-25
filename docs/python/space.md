@@ -5,9 +5,11 @@ finite set of records, an explicit metric callable, stable record IDs, and
 small runtime preferences for validation and distance caching.
 
 > **Availability.** Construction, `distance`, `pairwise`, representation views,
-> exact neighbors, groups, outliers, denoise, representatives, reduce/compress,
-> structure diagnostics, and aligned distance-profile `compare`/`correlate`
-> (equal-length, `align="position"`) run in the default core wheel. `embed`
+> exact neighbors, groups, outliers, density filtering, representatives,
+> reduce/compress, distribution-preserving thinning, uniform-density thinning,
+> density equalization, structure diagnostics, and aligned distance-profile
+> `compare`/`correlate` (equal-length, `align="position"`) run in the default
+> core wheel. `embed`
 > still raises `StrategyUnavailableError` until its binding is promoted, and
 > non-aligned (`align="ids"`) comparison stays native-only.
 
@@ -41,11 +43,15 @@ order. IDs are stable user-facing identifiers, not physical row positions.
 |---|---|
 | `"none"` | Skip constructor distance checks. |
 | `"sample"` | Check a small prefix for finite, real, non-negative distances. |
-| `"strict"` | Check every pair during construction. |
+| `"strict"` | Check every pair during construction after preflighting `max_distance_evaluations` and `max_dense_records`. |
+
+Use `"sample"` or `"none"` for large spaces unless full constructor validation is
+intentional and budgeted explicitly.
 
 `cache` accepts `"auto"`, `"none"`, `"lazy"`, `"materialized"`, or a
-`metric.runtime.CachePolicy`. The default `"auto"` materializes the exact
-pairwise matrix for the current Python finite-space representation.
+`metric.runtime.CachePolicy`. The default `"auto"` keeps source-metric access
+non-materialized. `"materialized"` explicitly requests an exact pairwise matrix
+and preflights dense budgets before invoking the metric.
 
 ## Records And IDs
 
@@ -82,7 +88,10 @@ assert matrix[0][1] == space.distance(0, 1)
 `pairwise_distances()`. For a symmetric metric the result is symmetric, and for
 an identity-respecting metric the diagonal is zero -- both follow from the
 underlying pairwise values. The method imports numpy lazily and raises
-`OptionalDependencyError` when numpy is not installed.
+`OptionalDependencyError` when numpy is not installed. It accepts the same
+`max_memory_bytes`, `max_distance_evaluations`, and `max_dense_records` dense
+budget parameters as `pairwise_distances()` and refuses before allocation or
+metric calls when the full matrix is over budget.
 
 ## DataFrame Rows
 
@@ -143,11 +152,12 @@ graph = space.to_graph(count=2)
 neighbors = space.neighbors("cut", count=2, representation=tree)
 ```
 
-`to_matrix()` returns an explicit finite matrix-space view. `to_tree()` and
-`to_graph(count=...)` expose exact deterministic representation vocabulary for
-neighbor and local-structure workflows. Representations capture the source
-space version. After `space.touch()`, old representations fail with
-`StaleRepresentationError` until rebuilt.
+`to_matrix()` returns an explicit finite matrix-space view after the same dense
+budget preflight. `to_tree()` and `to_graph(count=...)` expose exact
+deterministic representation vocabulary for neighbor and local-structure
+workflows. Representations capture the source space version. After
+`space.touch()`, old representations fail with `StaleRepresentationError` until
+rebuilt.
 
 ## Compare Aligned Spaces
 

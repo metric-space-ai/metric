@@ -21,6 +21,8 @@ layout, then concrete metrics, examples, bindings, and release rules.
 - [Metric Space](engine/metric-space.md)
 - [Storage And Indexes](engine/representations.md)
 - [Stats And Modify Components](engine/operators.md)
+- [Metric-Space Modification Roadmap](engine/metric-space-modification-plan.md)
+- [Metric-Space Research Track](engine/metric-space-research-track.md)
 - [Implementation Choices](engine/strategies.md)
 - [Mappings](engine/mappings.md)
 - [Execution Policies](engine/runtime.md)
@@ -51,6 +53,7 @@ layout, then concrete metrics, examples, bindings, and release rules.
 - [Python Binding API](api/python.md)
 - [Testing and CI Scope](testing-and-ci.md)
 - [Release Checklist](release-checklist.md)
+- [Release Readiness Notes](release-readiness-notes.md)
 
 ## Python Binding
 
@@ -74,7 +77,7 @@ Python is a binding and adapter layer over the native engine surface.
 - [Mixed Finite Metric Records (Hero)](examples/mixed-finite-records-hero.md)
 - [Cross-Space Dependency (Hero)](examples/cross-space-dependency.md)
 - [Cross-Space Dependency Baseline](examples/cross-space-dependency-baseline.md)
-- [PHATE-AE Pipeline Workflow](examples/phate-ae-pipeline-workflow.md)
+- [Parametric Diffusion Coordinate Pipeline Workflow](examples/parametric-diffusion-coordinate-pipeline-workflow.md)
 - [Entropy Diagnostics](examples/entropy-diagnostics.md)
 - [Industrial Anomaly Workflow](examples/industrial-anomaly-workflow.md)
 - [Engine Benchmark Report](examples/engine-benchmark-report.md)

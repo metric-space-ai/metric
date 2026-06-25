@@ -12,8 +12,37 @@
 #include <metric/core/result.hpp>
 #include <metric/correlation/mgc.hpp>
 #include <metric/space/storage/distance_matrix.hpp>
+#include <metric/stats/correlate/options.hpp>
 
 namespace mtrc::stats::correlate {
+
+namespace detail {
+
+inline auto effective_mgc_sample_count(std::size_t record_count, mgc_options options) -> std::size_t
+{
+	if (options.sample_count == 0) {
+		throw std::invalid_argument("MGC estimate sample_count must be >= 1");
+	}
+	return options.sample_count > record_count ? record_count : options.sample_count;
+}
+
+inline auto effective_mgc_iterations(std::size_t record_count, std::size_t sample_count, mgc_options options)
+	-> std::size_t
+{
+	if (sample_count == 0 || sample_count >= record_count) {
+		return 1;
+	}
+	const auto maximum_full_samples = record_count / sample_count;
+	if (maximum_full_samples == 0) {
+		return 1;
+	}
+	if (options.max_iterations == 0 || options.max_iterations > maximum_full_samples) {
+		return maximum_full_samples;
+	}
+	return options.max_iterations;
+}
+
+} // namespace detail
 
 // Multiscale Graph Correlation (MGC) answers the Level-1 question "are two paired
 // finite metric spaces dependent?". It is a *dependence statistic*, NOT a metric:
@@ -52,6 +81,43 @@ auto mgc(const LeftContainer &left_records, const LeftMetric &left_metric, const
 										 right_records.size(), "mgc", "records", "records");
 }
 
+template <typename LeftContainer, typename LeftMetric, typename RightContainer, typename RightMetric,
+		  typename LeftRecord = typename std::decay<typename LeftContainer::value_type>::type,
+		  typename RightRecord = typename std::decay<typename RightContainer::value_type>::type,
+		  typename std::enable_if<
+			  MetricCallable_v<LeftMetric, LeftRecord> && MetricCallable_v<RightMetric, RightRecord>, int>::type = 0>
+auto mgc_estimate(const LeftContainer &left_records, const LeftMetric &left_metric, const RightContainer &right_records,
+				  const RightMetric &right_metric, mgc_options options) -> CorrelationResult<double>
+{
+	if (left_records.size() != right_records.size()) {
+		throw std::invalid_argument("MGC estimate requires spaces with the same record count");
+	}
+	if (left_records.size() < 2) {
+		throw std::invalid_argument("MGC estimate requires at least two paired records");
+	}
+
+	mtrc::MGC<LeftRecord, LeftMetric, RightRecord, RightMetric> estimator(left_metric, right_metric);
+	const auto sample_count = detail::effective_mgc_sample_count(left_records.size(), options);
+	const auto sample_iterations = detail::effective_mgc_iterations(left_records.size(), sample_count, options);
+
+	if (sample_count >= left_records.size()) {
+		auto result = core::make_correlation_result(estimator(left_records, right_records), left_records.size(),
+												 right_records.size(), "mgc", "records", "records", true);
+		result.sample_count = sample_count;
+		result.sample_iterations = 1;
+		result.approximation_reason = "sample covers all records; exact MGC was used";
+		return result;
+	}
+
+	auto result = core::make_correlation_result(
+		estimator.estimate(left_records, right_records, sample_count, options.estimate_threshold, sample_iterations),
+		left_records.size(), right_records.size(), "mgc_estimate", "records_sample", "records_sample", false);
+	result.sample_count = sample_count;
+	result.sample_iterations = sample_iterations;
+	result.approximation_reason = "approximate runtime policy selected subsampled MGC";
+	return result;
+}
+
 template <typename LeftProvider, typename RightProvider,
 		  typename std::enable_if<PairwiseDistances_v<LeftProvider> && PairwiseDistances_v<RightProvider>, int>::type = 0>
 auto mgc(const LeftProvider &left_provider, const RightProvider &right_provider) -> CorrelationResult<double>
@@ -78,6 +144,23 @@ auto mgc(const LeftSpace &left_space, const RightSpace &right_space) -> Correlat
 	auto result = mgc(left_space.records(), left_space.metric(), right_space.records(), right_space.metric());
 	result.left_representation = "metric_space";
 	result.right_representation = "metric_space";
+	return result;
+}
+
+template <typename LeftSpace, typename RightSpace,
+		  typename std::enable_if<MetricSpaceLike_v<LeftSpace> && MetricSpaceLike_v<RightSpace>, int>::type = 0>
+auto mgc_estimate(const LeftSpace &left_space, const RightSpace &right_space, mgc_options options)
+	-> CorrelationResult<double>
+{
+	auto result =
+		mgc_estimate(left_space.records(), left_space.metric(), right_space.records(), right_space.metric(), options);
+	if (result.exact) {
+		result.left_representation = "metric_space";
+		result.right_representation = "metric_space";
+	} else {
+		result.left_representation = "metric_space_sample";
+		result.right_representation = "metric_space_sample";
+	}
 	return result;
 }
 

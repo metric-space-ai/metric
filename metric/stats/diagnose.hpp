@@ -31,6 +31,8 @@ struct diagnose_options {
 	std::size_t neighbor_count{1};
 	bool include_outlier_scores{true};
 	std::size_t outlier_neighbor_count{1};
+	std::size_t max_exact_outlier_records{1024};
+	bool skip_outlier_scores_over_budget{true};
 };
 
 template <typename Distance> struct SpaceDiagnosis {
@@ -61,6 +63,11 @@ inline auto require_diagnose_options(const diagnose_options &options) -> void
 	}
 	if (options.include_outlier_scores && options.outlier_neighbor_count == 0) {
 		throw std::invalid_argument("diagnose_space outlier_neighbor_count must be >= 1 when outlier scores are enabled");
+	}
+	if (options.include_outlier_scores && options.max_exact_outlier_records == 0 &&
+		options.skip_outlier_scores_over_budget) {
+		throw std::invalid_argument(
+			"diagnose_space max_exact_outlier_records must be >= 1 when budget skipping is enabled");
 	}
 }
 
@@ -113,6 +120,11 @@ auto diagnose_space(const Space &space, diagnose_options options = {}) -> SpaceD
 	}
 
 	if (options.include_outlier_scores) {
+		if (options.skip_outlier_scores_over_budget && space.size() > options.max_exact_outlier_records) {
+			result.exact = false;
+			result.notes.push_back("outlier score section skipped because exact all-record kNN scoring exceeds budget");
+			return result;
+		}
 		const auto count = std::min(options.outlier_neighbor_count, available_neighbors);
 		result.outliers = structural_analysis::nearest_neighbor_outliers(space, count);
 		result.has_outlier_scores = true;

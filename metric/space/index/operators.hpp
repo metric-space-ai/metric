@@ -24,12 +24,105 @@
 
 namespace mtrc::space::index {
 
+inline constexpr std::size_t default_max_exact_graph_distance_evaluations = 1'000'000;
+inline constexpr std::size_t default_max_graph_shortest_path_cells = 1'000'000;
+inline constexpr std::size_t default_max_graph_shortest_path_relaxations = 100'000'000;
+
+struct exact_graph_options {
+	// Maximum metric calls for exhaustive directed graph construction.
+	// Set to 0 only when the caller intentionally opts into unbounded exact work.
+	std::size_t max_distance_evaluations{default_max_exact_graph_distance_evaluations};
+};
+
+struct graph_stretch_options {
+	// Maximum metric calls used to compare graph paths with direct metric distances.
+	// Set any field to 0 only when intentionally opting out of that guard.
+	std::size_t max_metric_distance_evaluations{default_max_exact_graph_distance_evaluations};
+	std::size_t max_shortest_path_cells{default_max_graph_shortest_path_cells};
+	std::size_t max_shortest_path_relaxations{default_max_graph_shortest_path_relaxations};
+};
+
 namespace detail {
 
 template <typename Container> using record_type_t = typename std::decay<typename Container::value_type>::type;
 
 template <typename Container, typename Metric>
 using finite_space_t = ::mtrc::FiniteSpace<record_type_t<Container>, Metric>;
+
+inline auto checked_graph_size_product(std::size_t lhs, std::size_t rhs, const char *message) -> std::size_t
+{
+	if (rhs != 0 && lhs > std::numeric_limits<std::size_t>::max() / rhs) {
+		throw ::mtrc::RepresentationError(message);
+	}
+	return lhs * rhs;
+}
+
+inline auto graph_metric_pair_count(std::size_t record_count, bool directed) -> std::size_t
+{
+	if (record_count < 2) {
+		return 0;
+	}
+
+	const auto directed_count = checked_graph_size_product(
+		record_count, record_count - 1, "graph pair count exceeds size_t capacity");
+	return directed ? directed_count : directed_count / 2;
+}
+
+inline auto require_graph_distance_budget(std::size_t record_count, bool directed,
+										  std::size_t max_distance_evaluations, const char *operation,
+										  const char *options_hint) -> std::size_t
+{
+	const auto pair_count = graph_metric_pair_count(record_count, directed);
+	if (max_distance_evaluations == 0 || pair_count <= max_distance_evaluations) {
+		return pair_count;
+	}
+
+	throw ::mtrc::RepresentationError(
+		std::string(operation) + " refused exhaustive graph work before metric calls: records=" +
+		std::to_string(record_count) +
+		(directed ? ", directed_metric_pairs=" : ", metric_pairs=") + std::to_string(pair_count) +
+		", max_distance_evaluations=" + std::to_string(max_distance_evaluations) + ". " + options_hint);
+}
+
+inline auto graph_shortest_path_cell_count(std::size_t record_count) -> std::size_t
+{
+	return checked_graph_size_product(record_count, record_count,
+									  "graph shortest-path matrix exceeds size_t capacity");
+}
+
+inline auto graph_shortest_path_relaxation_count(std::size_t record_count) -> std::size_t
+{
+	return checked_graph_size_product(graph_shortest_path_cell_count(record_count), record_count,
+									  "graph shortest-path relaxation estimate exceeds size_t capacity");
+}
+
+inline auto require_graph_shortest_path_budget(std::size_t record_count, graph_stretch_options options,
+											   const char *operation) -> void
+{
+	const auto cell_count = graph_shortest_path_cell_count(record_count);
+	if (options.max_shortest_path_cells != 0 && cell_count > options.max_shortest_path_cells) {
+		throw ::mtrc::RepresentationError(
+			std::string(operation) + " refused dense shortest-path matrix before allocation: records=" +
+			std::to_string(record_count) + ", cells=" + std::to_string(cell_count) +
+			", max_shortest_path_cells=" + std::to_string(options.max_shortest_path_cells) +
+			". Pass graph_stretch_options{0, 0, 0} only when unbounded stretch diagnostics are intentional.");
+	}
+
+	if (options.max_shortest_path_relaxations == 0) {
+		return;
+	}
+
+	const auto relaxation_count = graph_shortest_path_relaxation_count(record_count);
+	if (relaxation_count > options.max_shortest_path_relaxations) {
+		throw ::mtrc::RepresentationError(
+			std::string(operation) +
+			" refused all-pairs shortest-path closure before allocation: records=" + std::to_string(record_count) +
+			", estimated_relaxations=" + std::to_string(relaxation_count) +
+			", max_shortest_path_relaxations=" +
+			std::to_string(options.max_shortest_path_relaxations) +
+			". Pass graph_stretch_options{0, 0, 0} only when unbounded stretch diagnostics are intentional.");
+	}
+}
 
 template <typename Space> class IndexPairwiseDistances {
   public:
@@ -387,7 +480,16 @@ template <typename Container, typename Metric>
 auto pairwise_distance_matrix(const Container &records, Metric distance)
 	-> std::vector<std::vector<typename detail::finite_space_t<Container, Metric>::distance_type>>
 {
+	(void)::mtrc::finite_space_detail::require_pairwise_matrix_budget(records.size(), ::mtrc::pairwise_matrix_options{});
 	return ::mtrc::Space::from_records(records, std::move(distance)).pairwise_distances();
+}
+
+template <typename Container, typename Metric>
+auto pairwise_distance_matrix(const Container &records, Metric distance, ::mtrc::pairwise_matrix_options options)
+	-> std::vector<std::vector<typename detail::finite_space_t<Container, Metric>::distance_type>>
+{
+	(void)::mtrc::finite_space_detail::require_pairwise_matrix_budget(records.size(), options);
+	return ::mtrc::Space::from_records(records, std::move(distance)).pairwise_distances(options);
 }
 
 template <typename Container, typename Metric>
@@ -405,7 +507,7 @@ auto range_neighbors(const Container &records, Metric distance, const detail::re
 }
 
 template <typename Container, typename Metric>
-auto exact_knn_graph(const Container &records, Metric distance, std::size_t k)
+auto exact_knn_graph(const Container &records, Metric distance, std::size_t k, exact_graph_options options = {})
 	-> GraphConstructionResult<typename detail::finite_space_t<Container, Metric>::distance_type>
 {
 	using distance_type = typename detail::finite_space_t<Container, Metric>::distance_type;
@@ -422,8 +524,14 @@ auto exact_knn_graph(const Container &records, Metric distance, std::size_t k)
 		throw std::invalid_argument("k cannot exceed the number of non-self neighbors");
 	}
 
+	(void)detail::require_graph_distance_budget(records.size(), true, options.max_distance_evaluations,
+												"exact_knn_graph",
+												"Pass exact_graph_options{0} only when unbounded exact graph "
+												"construction is intentional.");
+
 	const auto space = ::mtrc::Space::from_records(records, std::move(distance));
-	edges.reserve(records.size() * k);
+	edges.reserve(detail::checked_graph_size_product(records.size(), k,
+													 "exact_knn_graph edge count exceeds size_t capacity"));
 
 	for (std::size_t source_index = 0; source_index < records.size(); ++source_index) {
 		std::vector<std::pair<distance_type, std::size_t>> candidates;
@@ -446,14 +554,16 @@ auto exact_knn_graph(const Container &records, Metric distance, std::size_t k)
 }
 
 template <typename Container, typename Metric>
-auto exact_knn_graph_edges(const Container &records, Metric distance, std::size_t k) -> std::vector<
+auto exact_knn_graph_edges(const Container &records, Metric distance, std::size_t k,
+						   exact_graph_options options = {}) -> std::vector<
 	std::tuple<std::size_t, std::size_t, typename detail::finite_space_t<Container, Metric>::distance_type>>
 {
-	return exact_knn_graph(records, std::move(distance), k).edges;
+	return exact_knn_graph(records, std::move(distance), k, options).edges;
 }
 
 template <typename Container, typename Metric, typename Radius>
-auto exact_radius_graph(const Container &records, Metric distance, Radius radius) -> GraphConstructionResult<
+auto exact_radius_graph(const Container &records, Metric distance, Radius radius, exact_graph_options options = {})
+	-> GraphConstructionResult<
 	typename detail::finite_space_t<Container, Metric>::distance_type,
 	typename std::common_type<typename detail::finite_space_t<Container, Metric>::distance_type, Radius>::type>
 {
@@ -467,14 +577,21 @@ auto exact_radius_graph(const Container &records, Metric distance, Radius radius
 
 	std::vector<edge_type> edges;
 	const auto threshold = static_cast<comparison_type>(radius);
+	(void)detail::require_graph_distance_budget(records.size(), true, options.max_distance_evaluations,
+												"exact_radius_graph",
+												"Pass exact_graph_options{0} only when unbounded exact graph "
+												"construction is intentional.");
 	const auto space = ::mtrc::Space::from_records(records, std::move(distance));
 
-	for (const auto &pair : graph_metric_pair_indices(records.size(), true)) {
-		const auto source_index = pair.first;
-		const auto target_index = pair.second;
-		const auto edge_distance = space.distance(source_index, target_index);
-		if (static_cast<comparison_type>(edge_distance) <= threshold) {
-			edges.emplace_back(source_index, target_index, edge_distance);
+	for (std::size_t source_index = 0; source_index < records.size(); ++source_index) {
+		for (std::size_t target_index = 0; target_index < records.size(); ++target_index) {
+			if (source_index == target_index) {
+				continue;
+			}
+			const auto edge_distance = space.distance(source_index, target_index);
+			if (static_cast<comparison_type>(edge_distance) <= threshold) {
+				edges.emplace_back(source_index, target_index, edge_distance);
+			}
 		}
 	}
 
@@ -482,10 +599,11 @@ auto exact_radius_graph(const Container &records, Metric distance, Radius radius
 }
 
 template <typename Container, typename Metric, typename Radius>
-auto exact_radius_graph_edges(const Container &records, Metric distance, Radius radius) -> std::vector<
+auto exact_radius_graph_edges(const Container &records, Metric distance, Radius radius,
+							  exact_graph_options options = {}) -> std::vector<
 	std::tuple<std::size_t, std::size_t, typename detail::finite_space_t<Container, Metric>::distance_type>>
 {
-	return exact_radius_graph(records, std::move(distance), radius).edges;
+	return exact_radius_graph(records, std::move(distance), radius, options).edges;
 }
 
 template <typename Edge>
@@ -625,7 +743,8 @@ auto graph_connectivity_diagnostics(const GraphConstructionResult<Distance, Radi
 
 template <typename Container, typename Metric, typename Distance, typename RadiusValue>
 auto graph_stretch_diagnostics(const Container &records, Metric distance,
-							   const GraphConstructionResult<Distance, RadiusValue> &graph) -> GraphStretchDiagnostics
+							   const GraphConstructionResult<Distance, RadiusValue> &graph,
+							   graph_stretch_options options = {}) -> GraphStretchDiagnostics
 {
 	auto result = make_graph_stretch_diagnostics(graph.metadata.record_count, graph.edges.size(), graph.metadata.directed);
 
@@ -633,14 +752,28 @@ auto graph_stretch_diagnostics(const Container &records, Metric distance,
 		throw std::invalid_argument("graph metadata record_count must match records size");
 	}
 
+	detail::require_graph_shortest_path_budget(result.record_count, options, "graph_stretch_diagnostics");
+	(void)detail::require_graph_distance_budget(
+		result.record_count, graph.metadata.directed, options.max_metric_distance_evaluations,
+		"graph_stretch_diagnostics",
+		"Pass graph_stretch_options{0, 0, 0} only when unbounded stretch diagnostics are intentional.");
+
 	const auto shortest_paths = graph_shortest_path_distances(graph);
 	const auto space = ::mtrc::Space::from_records(records, std::move(distance));
 	GraphStretchAccumulator stretch_accumulator;
-	const auto pairs = graph_metric_pair_indices(result.record_count, graph.metadata.directed);
-	::mtrc::space::index::observe_graph_stretch_pairs(stretch_accumulator, shortest_paths, pairs,
-														 [&](std::size_t source_index, std::size_t target_index) {
-			return space.distance(source_index, target_index);
-		});
+	const auto metric_distance_at = [&](std::size_t source_index, std::size_t target_index) {
+		return space.distance(source_index, target_index);
+	};
+	for (std::size_t source_index = 0; source_index < result.record_count; ++source_index) {
+		const auto first_target = graph.metadata.directed ? std::size_t{0} : source_index + 1;
+		for (std::size_t target_index = first_target; target_index < result.record_count; ++target_index) {
+			if (source_index == target_index) {
+				continue;
+			}
+			::mtrc::space::index::observe_graph_stretch_pair(stretch_accumulator, shortest_paths, source_index,
+															 target_index, metric_distance_at);
+		}
+	}
 
 	const auto stretch_summary = stretch_accumulator.summary();
 	::mtrc::space::index::apply_graph_stretch_summary(result, stretch_summary);

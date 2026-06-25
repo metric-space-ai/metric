@@ -8,10 +8,10 @@ The revived core API is organized around explicit finite metric spaces:
 - ``metric.exceptions`` for public METRIC error types
 - ``metric.operators`` for small metric-space operators
 - ``metric.runtime`` for runtime policy objects
-- ``metric.mappings`` and ``metric.transforms`` for beta compatibility bridges
-- ``metric.compat`` for lazy legacy import-path discovery
+- ``metric.mappings`` for beta native mapping artifacts
+- ``metric.transforms`` for transform adapters
 
-Legacy compiled extension names remain available when their modules are present.
+Legacy mapping modules are not part of the core Python surface.
 """
 
 __version__ = "0.3.4"
@@ -21,7 +21,7 @@ try:
 except ModuleNotFoundError:
     pass
 
-from . import compat, core, exceptions, intent, mapping_pipeline, mappings, metrics, operators, representations, runtime, spaces, strategies, transforms
+from . import core, exceptions, intent, mapping_pipeline, mappings, metrics, operators, representations, runtime, spaces, strategies, transforms
 from .exceptions import (
     AmbiguousIntentError,
     IncompatibleSpaceError,
@@ -30,7 +30,7 @@ from .exceptions import (
     MetricError,
     MetricInputError,
     MissingMetricError,
-    NotFittedError,
+    NotDerivedError,
     OptionalDependencyError,
     RepresentationError,
     StaleRepresentationError,
@@ -45,7 +45,7 @@ from .operators import (
     CompressionResult,
     CorrelationResult,
     EmbeddingDiagnostics,
-    EmbeddingModel,
+    EmbeddingArtifact,
     EmbeddingResult,
     GraphConnectivityDiagnostics,
     GraphDegreeDiagnostics,
@@ -66,8 +66,10 @@ from .operators import (
     compare_spaces,
     correlate_spaces,
     dbscan,
-    denoise_space,
+    density_filter_space,
     describe_structure,
+    distribution_sample_space,
+    equalize_space,
     embed_space,
     exact_knn_graph,
     exact_knn_graph_edges,
@@ -94,13 +96,15 @@ from .operators import (
     separated_representative_indices,
     separated_representatives,
     symmetrize_graph,
+    thin_space,
+    uniform_density_sample_space,
 )
 from .runtime import CachePolicy, RuntimeDiagnostics, RuntimePolicy, available, capabilities, runtime_diagnostics
 from .spaces import FiniteMetricSpace, MatrixSpace, RecordId, Space
 
-# Low-level native numeric containers are pulled in by the wildcard import above
-# for legacy compatibility, but they are implementation detail, not part of the
-# documented top-level adapter surface, so keep them out of __all__.
+# Low-level native numeric containers are pulled in by the wildcard import above.
+# They are implementation detail, not part of the documented top-level adapter
+# surface, so keep them out of __all__.
 _PRIVATE_NATIVE_NAMES = {"CompressedMatrix", "DynamicMatrix"}
 
 __all__ = sorted(

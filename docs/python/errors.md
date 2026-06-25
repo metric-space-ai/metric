@@ -20,7 +20,7 @@ MetricError
   RepresentationError
     StaleRepresentationError
   OptionalDependencyError
-  NotFittedError
+  NotDerivedError
   UnsupportedOperationError
 ```
 
@@ -68,18 +68,18 @@ not prove every metric axiom unless user code asks for separate contract tests.
 from metric import Space
 from metric import StrategyUnavailableError
 from metric.metrics import Edit
-from metric.strategies import DSPCC
+from metric.strategies import ParametricDiffusionCoordinates
 
 space = Space(["cat", "cot", "coat"], metric=Edit())
 
 try:
-    space.map(strategy=DSPCC(dimensions=2))
+    space.map(strategy=ParametricDiffusionCoordinates(dimensions=2))
 except StrategyUnavailableError as error:
     print(error)
 ```
 
-Roadmap strategies fail explicitly instead of falling through to partial or
-legacy behavior.
+Native adapter strategies fail explicitly instead of falling through to partial
+Python behavior.
 
 ## Stale Representations
 
@@ -108,7 +108,7 @@ installed. Use `to_dict()` or `to_numpy()` for dependency-light code paths.
 
 ## Unsupported Inverse Reconstruction
 
-Lossy reduction, compression, deterministic mapping, and denoise results expose
+Lossy reduction, compression, deterministic mapping, and density-filter results expose
 `inverse_supported=False`. Calling `inverse_transform(...)` raises
 `UnsupportedOperationError` until a strategy with a promoted inverse contract is
 available.

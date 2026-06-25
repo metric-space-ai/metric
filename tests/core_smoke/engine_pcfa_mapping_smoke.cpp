@@ -22,11 +22,11 @@ int main()
 	auto mapping = mtrc::modify::map::pcfa(2);
 	static_assert(mtrc::Mapping_v<decltype(mapping), decltype(space)>);
 
-	auto model = mtrc::modify::map::fit(mapping, space);
-	static_assert(mtrc::MappingModel_v<decltype(model), decltype(space)>);
-	assert(model.component_count() == 2);
+	auto coordinate_map = mtrc::modify::map::derive_from(mapping, space);
+	static_assert(mtrc::DerivedSpaceTransform_v<decltype(coordinate_map), decltype(space)>);
+	assert(coordinate_map.component_count() == 2);
 
-	const auto reduced = mtrc::modify::map::transform(model, space);
+	const auto reduced = mtrc::modify::map::transform(coordinate_map, space);
 	using reduced_type = typename std::decay<decltype(reduced)>::type;
 	static_assert(std::is_same<typename reduced_type::space_type::record_type, record_type>::value);
 	assert(reduced.mapping == "pcfa");
@@ -43,7 +43,7 @@ int main()
 	assert(close(reduced.space.record(reduced.space.id(1))[0], 0.5));
 	assert(close(reduced.space.record(reduced.space.id(1))[1], 0.0));
 
-	const auto restored = model.inverse_transform(reduced);
+	const auto restored = coordinate_map.inverse_transform(reduced);
 	assert(restored.size() == space.size());
 	for (std::size_t index = 0; index < restored.size(); ++index) {
 		assert(restored[index].size() == space.record(space.id(index)).size());

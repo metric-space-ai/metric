@@ -153,13 +153,13 @@ auto main() -> int
 	assert(mtrc::numeric::index_counts(no_indices, 0).empty());
 	const std::vector<std::size_t> out_of_range_indices{0, 3};
 	assert_invalid_argument([&out_of_range_indices]() { (void)mtrc::numeric::index_counts(out_of_range_indices, 3); });
-	const std::vector<std::size_t> expected_index_counts_without_noise{2, 1, 0};
+	const std::vector<std::size_t> expected_index_counts_excluding_label{2, 1, 0};
 	assert(mtrc::numeric::index_counts_excluding(std::vector<std::size_t>{0, 99, 1, 0, 99}, 3, 99) ==
-		   expected_index_counts_without_noise);
+		   expected_index_counts_excluding_label);
 	assert(mtrc::numeric::index_counts_excluding(std::vector<std::size_t>{99, 99}, 0, 99).empty());
-	const std::vector<std::size_t> invalid_counts_without_noise{0, 3, 99};
-	assert_invalid_argument([&invalid_counts_without_noise]() {
-		(void)mtrc::numeric::index_counts_excluding(invalid_counts_without_noise, 3, 99);
+	const std::vector<std::size_t> invalid_counts_excluding_label{0, 3, 99};
+	assert_invalid_argument([&invalid_counts_excluding_label]() {
+		(void)mtrc::numeric::index_counts_excluding(invalid_counts_excluding_label, 3, 99);
 	});
 	assert((mtrc::numeric::positions_excluding_value(std::vector<std::size_t>{2, 0, 99, 1}, 99) ==
 			std::vector<std::size_t>{0, 1, 3}));
@@ -188,14 +188,14 @@ auto main() -> int
 	assert(bucketed_indices[3].empty());
 	assert(mtrc::numeric::index_buckets(no_indices, 0).empty());
 	assert_invalid_argument([&out_of_range_indices]() { (void)mtrc::numeric::index_buckets(out_of_range_indices, 3); });
-	const auto bucketed_without_noise =
+	const auto bucketed_excluding_label =
 		mtrc::numeric::index_buckets_excluding(std::vector<std::size_t>{0, 3, 1, 3, 0}, 2, 3);
-	assert(bucketed_without_noise.size() == 2);
-	assert((bucketed_without_noise[0] == std::vector<std::size_t>{0, 4}));
-	assert((bucketed_without_noise[1] == std::vector<std::size_t>{2}));
-	const std::vector<std::size_t> invalid_bucket_without_noise{0, 2, 3};
-	assert_invalid_argument([&invalid_bucket_without_noise]() {
-		(void)mtrc::numeric::index_buckets_excluding(invalid_bucket_without_noise, 2, 3);
+	assert(bucketed_excluding_label.size() == 2);
+	assert((bucketed_excluding_label[0] == std::vector<std::size_t>{0, 4}));
+	assert((bucketed_excluding_label[1] == std::vector<std::size_t>{2}));
+	const std::vector<std::size_t> invalid_bucket_excluding_label{0, 2, 3};
+	assert_invalid_argument([&invalid_bucket_excluding_label]() {
+		(void)mtrc::numeric::index_buckets_excluding(invalid_bucket_excluding_label, 2, 3);
 	});
 
 	Matrix top_two_source(3, 4);

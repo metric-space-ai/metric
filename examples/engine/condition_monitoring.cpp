@@ -23,14 +23,14 @@
 //  length change, so it confuses a time-shifted recurring signature with a clean plateau
 //  and misses the recurrence (Scenario 4). This example contrasts the two head to head.
 //
-//  What the space tells us (every signal below is a property of the metric space,
-//  computed from metric values -- never a hidden vector embedding):
+//  What the space tells us (every signal below stays explicit about its route:
+//  distance-only diagnostics read metric values; coordinate diagnostics first map/embed):
 //    * describe_structure(): diameter / mean distance / intrinsic dimension of the space
 //    * entropy():            kpN differential entropy -- the information content / local
-//                            freedom of the space (a Level-1 PROPERTY, not a metric)
+//                            freedom of an explicitly mapped coordinate view
 //    * find_neighbors():     nearest-neighbour distance to the healthy reference set
 //                            -> drift score and abrupt-change score
-//    * find_outliers():      DBSCAN noise -> abrupt regime change
+//    * find_outliers():      DBSCAN density-unassigned records -> abrupt regime change
 //    * compare(..., mgc):    MGC DEPENDENCE between the process space and an independent
 //                            condition-index space. MGC is used ONLY as a dependence test
 //                            between two spaces; it is never used as a metric.
@@ -39,7 +39,7 @@
 //    1. Normal state          2. Slow drift (early warning)
 //    3. Abrupt regime change  4. Recurring pattern (recognised across time)
 //
-//  The program is fully deterministic (a hashed-noise generator, no <random> locale or
+//  The program is fully deterministic (hashed coordinate jitter, no <random> locale or
 //  implementation drift) and depends only on the header-only METRIC core. It doubles as
 //  a regression test: every diagnosis is asserted, and it returns 0 only if all four
 //  conditions are correctly identified and the TWED metric space out-diagnoses the
@@ -234,8 +234,8 @@ auto build_reference_catalog() -> Catalog
 
 	// Healthy cycles -- varied phase (rise_start), ramp and internal plateau split, but a
 	// COMMON sample count (length = rise_start + 2*ramp + plateau + tail - 1 = 13 for all
-	// six). The healthy set is the one space whose kpN differential entropy we report, and
-	// that estimator treats data[0].size() as the space dimension and requires equal-length
+	// six). The healthy set can be mapped to a coordinate view for kpN differential entropy,
+	// whose estimator treats data[0].size() as the space dimension and requires equal-length
 	// records (see the assert before the entropy() call). The wider monitored streams stay
 	// ragged on purpose, to exercise TWED's warp-/length-invariance against the baseline.
 	add(healthy_cycle(2, 3, 3, 3, 11), Regime::Normal);
@@ -360,30 +360,30 @@ int main()
 	std::cout << "[reference] warn / alarm thresholds   = " << warn_threshold << " / " << alarm_threshold << "\n";
 
 #if defined(METRIC_HERO_WITH_ENTROPY)
-	// Entropy is a PROPERTY of the metric space (kpN differential entropy in nats),
-	// computed straight from TWED values -- the chosen metric stays in the diagnostic.
-	// The kpN estimator reads data[0].size() as the space dimension and indexes every record
-	// up to it, so it requires equal-length records: enforce that invariant on the healthy
-	// reference set (the catalog is built to honour it) before estimating.
+	// Entropy is a coordinate-space operator (kpN differential entropy in nats).
+	// The source diagnostic still uses TWED; this branch makes the coordinate view
+	// explicit before entropy instead of treating TWED values as local coordinates.
 	for (const auto &curve : healthy_only) {
 		assert(curve.size() == healthy_only.front().size());
 	}
-	const auto healthy_entropy = mtrc::stats::properties::entropy(healthy_space, /*k=*/3, /*p=*/2);
+	const auto healthy_coordinate_view =
+		mtrc::map(healthy_space, [](const Curve &curve) { return curve; }, mtrc::Euclidean<double>{});
+	const auto healthy_entropy = mtrc::stats::properties::entropy(healthy_coordinate_view, /*k=*/3, /*p=*/2);
 	assert(healthy_entropy.algorithm == "entropy");
-	assert(healthy_entropy.representation == "metric_space");
+	assert(healthy_entropy.representation == healthy_coordinate_view.representation);
 	assert(!std::isnan(healthy_entropy.value));
 	std::cout << "[reference] entropy (kpN, nats)       = " << healthy_entropy.value
-			  << "   (information content / local freedom of the healthy space)\n";
+			  << "   (information content / local freedom of the mapped coordinate view)\n";
 #else
 	std::cout << "[reference] entropy property          = skipped (LAPACK-free build)\n";
 #endif
 
 	// The healthy reference must be internally coherent: with the warn-band radius, the
-	// dense healthy cloud yields no DBSCAN noise.
+	// dense healthy cloud yields no DBSCAN-unassigned records.
 	const auto healthy_outliers = mtrc::find_outliers(healthy_space, warn_threshold, 2);
-	std::cout << "[reference] DBSCAN noise (healthy)    = " << healthy_outliers.noise_count
+	std::cout << "[reference] DBSCAN density-unassigned records   = " << healthy_outliers.unassigned_count
 			  << "  -> reference cloud is coherent\n";
-	assert(healthy_outliers.noise_count == 0);
+	assert(healthy_outliers.unassigned_count == 0);
 
 	// =================================================================================
 	//  Scenario 1: NORMAL STATE
@@ -454,9 +454,9 @@ int main()
 	const double fault_score = distance_to_healthy(process_space, families, fault_query);
 	const auto [fault_class, fault_nn] = classify(process_space, families, fault_query);
 
-	// DBSCAN over the live stream: the fault cycle is isolated and falls out as noise.
+	// DBSCAN over the live stream: the fault cycle is density-isolated.
 	const auto stream_outliers = mtrc::find_outliers(stream_space, warn_threshold, 2);
-	assert(stream_outliers.strategy == "dbscan_noise");
+	assert(stream_outliers.strategy == "dbscan_density_outlier");
 	bool fault_flagged = false;
 	for (const auto &outlier : stream_outliers) {
 		if (outlier.id.index() == fault_position) {
@@ -468,7 +468,7 @@ int main()
 			  << fault_position << ")\n";
 	std::cout << "  fault TWED distance to healthy= " << fault_score << "   (alarm > " << alarm_threshold << ")\n";
 	std::cout << "  fault TWED 1-NN class         = " << regime_name(fault_class) << " @ " << fault_nn << "\n";
-	std::cout << "  DBSCAN noise in stream        = " << stream_outliers.noise_count << "\n";
+	std::cout << "  DBSCAN density-unassigned records       = " << stream_outliers.unassigned_count << "\n";
 	std::cout << "  fault flagged as outlier      = " << (fault_flagged ? "yes" : "no") << "\n";
 	std::cout << "  diagnosis                     = "
 			  << (fault_score > alarm_threshold ? "ABRUPT REGIME CHANGE" : "??") << "\n";

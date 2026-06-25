@@ -5,8 +5,10 @@
 // =============================================================================
 //  modify::dynamics  --  Finite Metric Dynamics
 // -----------------------------------------------------------------------------
-//  Randomness, noise, diffusion and reverse diffusion expressed as an evolution
-//  *over the structure of a finite metric space*.
+//  Randomness, diffusion and reverse diffusion expressed as an evolution
+//  *over the structure of a finite metric space*. Redif measure dynamics is the
+//  coordinate-free noise surface; this file also contains vector-signal
+//  perturbation helpers for Euclidean/vector-valued records.
 //
 //  The single, load-bearing idea of this operator is:
 //
@@ -23,7 +25,7 @@
 //
 //  P_ij is the probability of stepping from node i to node j. It exists only
 //  because a metric exists. Every stochastic object in this file -- the random
-//  walk, the forward degradation noise, the stationary distribution -- is built
+//  walk, the forward degradation transition, the stationary distribution -- is built
 //  on top of P, i.e. on top of the geometry. We never start from a probability
 //  axiom; we read probability off the metric.
 //
@@ -33,19 +35,20 @@
 //          geometry -> probability. Builds P and its stationary distribution,
 //          and walks the graph by sampling neighbours ~ P_i.
 //
-//    * metric_diffuse        (forward / degradation)
+//    * metric_diffuse        (forward / vector-signal perturbation)
 //          a signal carried by the nodes is smoothed along the graph (heat flow)
-//          while seeded, geometry-shaped noise is injected. Structure decays.
+//          while seeded coordinate perturbation is applied. This is a vector
+//          record specialization, not the universal notion of metric noise.
 //
 //    * metric_reconstruct    (reverse / reconstruction)
-//          the same graph heat flow run without noise contracts the injected
-//          high-frequency fluctuations back onto the metric structure -- the
-//          dependency-free sibling of the native mtrc::Redif reverse-diffusion
-//          engine (graph-Laplacian backward diffusion).
+//          the same graph heat flow run without coordinate perturbation
+	//          contracts injected high-frequency fluctuations back onto the metric structure.
+	//          Coordinate-free inverse disorder over arbitrary records belongs to
+	//          Redif measure dynamics in redif.hpp.
 //
 //  The operator is header-only and depends only on the engine core and the C++
 //  standard library: no LAPACK, no numeric back-end, no new dependencies. The
-//  pseudo-random generator and its Gaussian/uniform draws are implemented inline
+//  pseudo-random generator and its normal/uniform draws are implemented inline
 //  so that a (seed, schedule) pair reproduces a run bit-for-bit on any platform.
 // =============================================================================
 
@@ -63,6 +66,7 @@
 #include <vector>
 
 #include <metric/core/concepts.hpp>
+#include <metric/core/errors.hpp>
 #include <metric/core/metric_space.hpp>
 #include <metric/core/result.hpp>
 #include <metric/record/id.hpp>
@@ -79,13 +83,16 @@ namespace mtrc::modify::dynamics {
 /// probability distribution as input. `bandwidth == 0` asks the operator to
 /// derive the heat-kernel scale `eps` from the data (mean k-NN distance), which
 /// keeps the transition probabilities a pure function of the metric.
+inline constexpr std::size_t default_metric_transition_max_dense_records = 4096;
+
 struct dynamics_schedule {
 	std::size_t neighbors = 6;   ///< k for the metric neighbourhood graph.
 	std::size_t steps = 12;      ///< number of dynamics steps to integrate.
 	double diffusivity = 0.5;    ///< alpha in (0, 1]; per-step graph mixing weight.
-	double noise_scale = 0.0;    ///< std-dev of the seeded forward degradation noise.
+	double perturbation_scale = 0.0; ///< std-dev of the vector-coordinate perturbation term.
 	std::uint64_t seed = 0;      ///< seed for every stochastic draw (full reproducibility).
 	double bandwidth = 0.0;      ///< heat-kernel eps; 0 => derive from mean k-NN distance.
+	std::size_t max_dense_records = default_metric_transition_max_dense_records; ///< 0 => no dense preflight limit.
 };
 
 // ----------------------------------------------------------------------------
@@ -115,7 +122,7 @@ class deterministic_rng {
 	auto uniform() -> double { return static_cast<double>(next_u64() >> 11) * (1.0 / 9007199254740992.0); }
 
 	/// Standard normal via Box-Muller (caches the second variate).
-	auto gaussian() -> double
+	auto standard_normal() -> double
 	{
 		if (has_cached_) {
 			has_cached_ = false;
@@ -133,7 +140,6 @@ class deterministic_rng {
 		has_cached_ = true;
 		return radius * std::cos(angle);
 	}
-
   private:
 	std::uint64_t state_;
 	double cached_ = 0.0;
@@ -223,6 +229,11 @@ auto metric_transition(const Space &space, const dynamics_schedule &schedule) ->
 	if (n == 0) {
 		throw std::invalid_argument("metric_transition requires a non-empty metric space");
 	}
+	if (schedule.max_dense_records > 0 && n > schedule.max_dense_records) {
+		throw MetricInputError("metric_transition dense construction exceeds max_dense_records: records=" +
+							   std::to_string(n) + " max_dense_records=" +
+							   std::to_string(schedule.max_dense_records));
+	}
 	const std::size_t k = std::min(schedule.neighbors, n > 0 ? n - 1 : 0);
 
 	const auto distances = detail::distance_matrix(space);
@@ -270,7 +281,7 @@ auto metric_transition(const Space &space, const dynamics_schedule &schedule) ->
 			const std::size_t j = order[t];
 			const double d = distances[i][j];
 			const double w = std::exp(-d * d * inv_eps2);
-			// symmetrise by max so the graph is undirected (cf. mtrc::Redif)
+			// symmetrise by max so the local graph is undirected.
 			if (w > affinity[i][j]) {
 				affinity[i][j] = w;
 				affinity[j][i] = w;
@@ -452,7 +463,7 @@ template <typename Space> auto signal_from_space(const Space &space) -> std::vec
 }
 
 /// Graph Dirichlet energy E(x) = sum_{i<j} W_ij ||x_i - x_j||^2. A signal that is
-/// smooth along the metric structure has low energy; injected noise raises it.
+/// smooth along the metric structure has low energy; coordinate perturbation raises it.
 inline auto dirichlet_energy(const MetricTransition &transition, const std::vector<std::vector<double>> &signal)
 	-> double
 {
@@ -526,7 +537,10 @@ auto terminal_mapping(const Space &space, const std::vector<std::vector<double>>
 	target_space_type derived(std::move(records), space.metric());
 	return core::make_mapping_result(std::move(derived), std::move(lineage.source_records),
 									 std::move(lineage.representative_records), space.size(), false, std::move(mapping),
-									 std::move(strategy), "metric_space");
+									 std::move(strategy), "metric_space",
+									 core::metric_traits<typename Space::metric_type>::law, false,
+									 "finite-dynamics terminal space; records are evolved in-sample from the source "
+									 "space and retain the source metric; not invertible");
 }
 
 } // namespace detail
@@ -534,10 +548,11 @@ auto terminal_mapping(const Space &space, const std::vector<std::vector<double>>
 /// Forward dynamics: degradation of a node signal over the metric structure.
 ///
 /// Each step combines deterministic heat flow (drift along the graph) with
-/// seeded, isotropic noise scaled by `noise_scale`. The metric structure stays
-/// fixed; the signal carried by the nodes loses structure step by step -- the
-/// forward (noising) process of diffusion, framed as a walk over geometry. The
-/// terminal MappingResult is the degraded finite metric space.
+/// seeded vector-coordinate perturbation scaled by `perturbation_scale`. The metric
+/// structure stays fixed; the signal carried by the nodes loses structure step by
+/// step. This overload is a vector-record specialization of finite-space
+/// dynamics; coordinate-free noise treatment lives in Redif measure dynamics.
+/// The terminal MappingResult is the degraded finite metric space.
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto metric_diffuse(const Space &space, const dynamics_schedule &schedule, const MetricTransition &transition)
 	-> DynamicsTrajectory<Space>
@@ -567,10 +582,10 @@ auto metric_diffuse(const Space &space, const dynamics_schedule &schedule, const
 	detail::deterministic_rng rng(schedule.seed);
 	for (std::size_t t = 0; t < schedule.steps; ++t) {
 		signal = detail::heat_step(transition, signal, schedule.diffusivity);
-		if (schedule.noise_scale > 0.0) {
+		if (schedule.perturbation_scale > 0.0) {
 			for (auto &node : signal) {
 				for (auto &component : node) {
-					component += schedule.noise_scale * rng.gaussian();
+					component += schedule.perturbation_scale * rng.standard_normal();
 				}
 			}
 		}
@@ -578,7 +593,8 @@ auto metric_diffuse(const Space &space, const dynamics_schedule &schedule, const
 		energy.push_back(detail::dirichlet_energy(transition, signal));
 	}
 
-	auto result = detail::terminal_mapping(space, signal, "metric_diffusion_forward", "graph_heat_flow+noise");
+	auto result =
+		detail::terminal_mapping(space, signal, "metric_diffusion_forward", "graph_heat_flow+coordinate_perturbation");
 	return DynamicsTrajectory<Space>{"metric_diffusion_forward", "forward",     schedule.steps, schedule.seed,
 									 dim,                        std::move(frames), std::move(energy),
 									 std::move(result)};
@@ -595,8 +611,7 @@ auto metric_diffuse(const Space &space, const dynamics_schedule &schedule) -> Dy
 /// structure. Pure graph heat flow (no noise) is a low-pass filter on the graph:
 /// it contracts the high-frequency fluctuations injected by `metric_diffuse`
 /// back onto the metric structure. This is the dependency-free sibling of the
-/// native mtrc::Redif reverse-diffusion engine (graph-Laplacian backward
-/// diffusion).
+/// Redif measure dynamics for coordinate-free inverse disorder.
 ///
 /// `degraded` is the starting (noisy) space; `transition` should be the operator
 /// of the structure being reconstructed onto (typically the original space).

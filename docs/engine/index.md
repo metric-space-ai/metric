@@ -15,7 +15,7 @@ that finite metric space.
 | --- | --- | --- |
 | Level 1 | Finite metric-space concepts: records, metric, space, entropy, correlation, sampling, and transformation. | `(X, d)`, record identity, metric law, finite-space property, derived space. |
 | Level 2 | Framework components and C++ namespaces that own the work. | `mtrc::record`, `mtrc::metric`, `mtrc::space`, `mtrc::stats`, `mtrc::modify`, `mtrc::solve`, `mtrc::numeric`. |
-| Level 3 | Concrete algorithms, estimators, papers, and compatibility adapters. | TWED, Wasserstein/EMD, MGC, entropy estimators, PHATE, autoencoders, native DNN solvers, PCFA, SOM/KOC, MDS, DBSCAN. |
+| Level 3 | Concrete algorithms, estimators, papers, and solver components. | TWED, Wasserstein/EMD, MGC, entropy estimators, parametric diffusion coordinates, parametric coordinate solver components, PCFA, MDS, DBSCAN density grouping. |
 
 Level 3 names are introduced only inside their Level 2 component and only after
 the finite metric-space question is explicit.
@@ -38,11 +38,14 @@ the finite metric-space question is explicit.
 - [Metric Space](metric-space.md)
 - [Space Storage And Indexes](representations.md)
 - [Stats And Modify Components](operators.md)
+- [Metric-Space Modification Roadmap](metric-space-modification-plan.md)
+- [Metric-Space Research Track](metric-space-research-track.md)
 - [Algorithm Choices](strategies.md)
 - [Mappings](mappings.md)
 - [Finite Metric Dynamics](dynamics.md)
 - [Execution Policies](runtime.md)
 - [Scale-Safe Performance Plan](scale-performance-plan.md)
+- [Pipeline Interoperability Implementation Plan](pipeline-interoperability-plan.md)
 - [Migration](migration.md)
 
 ## Placement Rule

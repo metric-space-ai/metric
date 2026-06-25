@@ -96,6 +96,29 @@ template <typename Radius> auto validate_radius(Radius radius) -> void
 	}
 }
 
+template <typename Provider, typename = void> struct HasDistanceAtPosition : std::false_type {};
+
+template <typename Provider>
+struct HasDistanceAtPosition<
+	Provider, std::void_t<decltype(std::declval<const Provider &>().distance_at_position(
+				  std::declval<std::size_t>(), std::declval<std::size_t>()))>> : std::true_type {};
+
+template <typename Provider>
+auto provider_distance_from_query_position(const Provider &provider, RecordId query_id,
+										   std::size_t query_position, RecordId candidate_id,
+										   std::size_t candidate_position) -> typename Provider::distance_type
+{
+	if constexpr (HasDistanceAtPosition<Provider>::value) {
+		(void)query_id;
+		(void)candidate_id;
+		return provider.distance_at_position(query_position, candidate_position);
+	} else {
+		(void)query_position;
+		(void)candidate_position;
+		return provider.distance(query_id, candidate_id);
+	}
+}
+
 } // namespace engine_detail
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
@@ -133,10 +156,14 @@ auto knn(const Provider &provider, RecordId query_id, std::size_t k) -> Neighbor
 	if (!provider.contains(query_id)) {
 		throw std::out_of_range("query record id is outside the distance provider");
 	}
+	const auto query_position = provider.position_of(query_id);
 
 	auto candidates = core::neighbor_candidates_if<distance_type>(
 		provider.record_count(), [&provider](std::size_t index) { return provider.id(index); },
-		[&provider, query_id](RecordId id, std::size_t) { return provider.distance(query_id, id); },
+		[&provider, query_id, query_position](RecordId id, std::size_t position) {
+			return engine_detail::provider_distance_from_query_position(provider, query_id, query_position, id,
+																		position);
+		},
 		[query_id](RecordId id, std::size_t) { return id != query_id; });
 
 	return core::nearest_neighbor_set(std::move(candidates), k, provider.record_count(), "pairwise_distances");
@@ -187,9 +214,14 @@ auto range(const Provider &provider, RecordId query_id, Radius radius) -> Neighb
 	if (!provider.contains(query_id)) {
 		throw std::out_of_range("query record id is outside the distance provider");
 	}
+	const auto query_position = provider.position_of(query_id);
 	auto candidates = core::neighbor_candidates_within_if<distance_type>(
 		provider.record_count(), [&provider](std::size_t index) { return provider.id(index); },
-		[&provider, query_id](RecordId id, std::size_t) { return provider.distance(query_id, id); }, radius,
+		[&provider, query_id, query_position](RecordId id, std::size_t position) {
+			return engine_detail::provider_distance_from_query_position(provider, query_id, query_position, id,
+																		position);
+		},
+		radius,
 		[query_id](RecordId id, std::size_t) { return id != query_id; });
 
 	return core::range_neighbor_set(std::move(candidates), provider.record_count(), "pairwise_distances");
@@ -220,6 +252,18 @@ auto knn_batch(const Space &space, const std::vector<RecordId> &query_ids, std::
 												   [&](std::size_t index) { return knn(space, query_ids[index], k); });
 }
 
+template <typename Provider, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
+auto knn_batch(const Provider &provider, const std::vector<RecordId> &query_ids, std::size_t k)
+	-> std::vector<NeighborSet<typename Provider::distance_type>>
+{
+	std::vector<NeighborSet<typename Provider::distance_type>> results;
+	results.reserve(query_ids.size());
+	for (const auto query_id : query_ids) {
+		results.push_back(knn(provider, query_id, k));
+	}
+	return results;
+}
+
 template <typename Space, typename Radius, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto range_batch(const Space &space, const std::vector<typename Space::record_type> &queries, Radius radius)
 	-> std::vector<NeighborSet<typename Space::distance_type>>
@@ -240,6 +284,19 @@ auto range_batch(const Space &space, const std::vector<RecordId> &query_ids, Rad
 	constexpr bool thread_safe = core::metric_thread_safe_v<typename Space::metric_type>;
 	return batch_detail::run_parallel<result_type>(query_ids.size(), thread_safe,
 												   [&](std::size_t index) { return range(space, query_ids[index], radius); });
+}
+
+template <typename Provider, typename Radius, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
+auto range_batch(const Provider &provider, const std::vector<RecordId> &query_ids, Radius radius)
+	-> std::vector<NeighborSet<typename Provider::distance_type>>
+{
+	engine_detail::validate_radius(radius);
+	std::vector<NeighborSet<typename Provider::distance_type>> results;
+	results.reserve(query_ids.size());
+	for (const auto query_id : query_ids) {
+		results.push_back(range(provider, query_id, radius));
+	}
+	return results;
 }
 
 } // namespace mtrc::stats::search

@@ -118,8 +118,8 @@ int main()
 	const auto density_groups = mtrc::find_groups(numbers, mtrc::stats::structural_analysis::dbscan_options(2.0, 2));
 	assert(density_groups.algorithm == "dbscan");
 	assert(density_groups.cluster_count == 2);
-	assert(density_groups.noise_count == 1);
-	assert(density_groups.noise_records[0] == numbers.id(4));
+	assert(density_groups.unassigned_count == 1);
+	assert(density_groups.unassigned_records[0] == numbers.id(4));
 
 	auto continuous = mtrc::make_space(std::vector<double>{0.0, 0.1, 10.0, 10.1}, DoubleAbsoluteDistance{});
 	const auto affinity_groups = mtrc::find_groups(continuous, mtrc::stats::structural_analysis::affinity_propagation_options(0.7));

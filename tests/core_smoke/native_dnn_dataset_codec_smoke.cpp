@@ -123,7 +123,7 @@ int main()
 
 	{
 		const auto codec =
-			mtrc::solve::parametric::dnn::make_feature_record_codec<SmallRecord, double>(3, SmallFeatureEncoder{3}, "small_features");
+			mtrc::solve::parametric::dnn::make_record_coordinate_codec<SmallRecord, double>(3, SmallFeatureEncoder{3}, "small_features");
 		const std::vector<SmallRecord> records{{1.0}, {4.0}};
 		const auto encoded = codec.encode_batch(records);
 		assert_same_shape(encoded, 2, 3);
@@ -138,7 +138,7 @@ int main()
 		assert(!codec.inverse_supported());
 
 		const auto bad_codec =
-			mtrc::solve::parametric::dnn::make_feature_record_codec<SmallRecord, double>(2, SmallFeatureEncoder{3}, "bad_features");
+			mtrc::solve::parametric::dnn::make_record_coordinate_codec<SmallRecord, double>(2, SmallFeatureEncoder{3}, "bad_features");
 		bool rejected_bad_feature_width = false;
 		try {
 			(void)bad_codec.encode_batch(records);

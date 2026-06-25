@@ -37,7 +37,7 @@ deterministic smoke tests continue to own pass/fail correctness.
 emits the checked-in [Engine Benchmark Report](examples/engine-benchmark-report.md)
 shape for benchmark suite metadata, distance cost, representation choice, and
 application-workflow comparisons across the promoted string, histogram, process-curve
-PHATE gallery, mixed-record, distribution/image recoding, and cross-space MGC
+diffusion-coordinate gallery, mixed-record, distribution/image recoding, and cross-space MGC
 fixtures.
 The manual `benchmark.yml` workflow builds the same generator, injects
 runner/build/commit metadata through `METRIC_BENCHMARK_REPORT_*`, renders
@@ -66,11 +66,11 @@ Primitive numeric smokes should reuse
 matrix/vector closeness checks instead of duplicating ad hoc comparison
 helpers.
 
-The promoted PHATE pipeline, application-workflow-evidence, and benchmark-report gates are
+The promoted diffusion-coordinate pipeline, application-workflow-evidence, and benchmark-report gates are
 labelled for focused local validation:
 
 ```bash
-ctest --test-dir build/core -L metric_phate_pipeline --output-on-failure
+ctest --test-dir build/core -L metric_diffusion_coordinate_pipeline --output-on-failure
 ctest --test-dir build/core -L metric_application_evidence --output-on-failure
 ctest --test-dir build/core -L metric_benchmark_report --output-on-failure
 ```
@@ -110,7 +110,7 @@ ctest --test-dir build/core -L metric_neighbor_oracle --output-on-failure
 
 `metric_numeric_dynamic_matrix_smoke`, `engine_clustering_operators_smoke`,
 `engine_intent_strategy_smoke`, and `engine_runtime_policy_smoke` protect the
-first promoted `metric::numeric::DynamicMatrix` migrations for PHATE geometry and
+first promoted `metric::numeric::DynamicMatrix` migrations for diffusion-coordinate target and
 affinity propagation.
 `metric_numeric_sparse_matrix_smoke` protects the first sparse
 `metric::numeric::CompressedMatrix` kernel contract for reserve/append/finalize,
@@ -189,7 +189,7 @@ values used by MGC, PCFA, and DNN paths.
 `var` and `stddev` reductions across rowwise and columnwise contracts, including
 sample-variance values and invalid one-row/one-column diagnostics.
 `metric_numeric_matrix_primitives_smoke` protects reusable Metric-owned matrix
-helpers used by PHATE geometry construction: `row_sums(...)`,
+helpers used by diffusion-coordinate target construction: `row_sums(...)`,
 `normalize_rows(...)`, `row_normalized(...)`, `positive_mean_or(...)`,
 `column_means(...)`, column centering, max-absolute column scaling,
 `columns_centered_to_unit_max_abs(...)`, `blend_with_identity(...)`,
@@ -224,7 +224,7 @@ matrix by column-vector multiplication.
 `metric_numeric_views_smoke` protects dense view behavior used by transform,
 wavelet, DNN, and solver paths: mutable `row`, `column`, `submatrix`, and
 `subvector` assignments over row-major and column-major storage.
-Native DNN, PHATE-AE, and runtime-policy rebuilds also act as the first
+Native DNN, parametric diffusion coordinate, and runtime-policy rebuilds also act as the first
 kernel-maintenance signal for warning-level `metric/numeric` fixes, with
 `metric_numeric_minmax_smoke` covering the direct variadic utility contract.
 
@@ -257,9 +257,12 @@ The core tests cover:
 - intrinsic-dimension regression values
 - exact graph edge fixtures for k-nearest-neighbor and radius construction
 - representative-selection, medoid, separated-representative, and radius-coverage regression values
+- finite metric-space modification smoke coverage for compression/thinning
+  contracts, including `modify_level2_components_smoke` and
+  `modify_thin_smoke` under the `metric_modify_components` CTest label
 - promoted examples for strings, custom metrics, explicit representations, TWED,
-  EMD, distribution/image recoding, PHATE-AE vector-row and process-curve
-  fitted mapping, MGC, intrinsic dimension, representative selection, and
+  EMD, distribution/image recoding, parametric diffusion coordinate vector-row and process-curve
+  mapping artifacts, MGC, intrinsic dimension, representative selection, and
   entropy when LAPACK is available
 
 The Python core wheel path covers:
@@ -282,11 +285,11 @@ python scripts/check_python_wheel_smoke.py
 
 This builds an `mtrc` wheel from `python/`, installs it into a fresh virtual
 environment, verifies that `metric` imports from `site-packages`, exercises a
-promoted Python facade slice across neighbors, groups, outliers, denoise,
+promoted Python facade slice across neighbors, groups, outliers, density_filter,
 representatives, reduce, compress, embed, map, compare, graph diagnostics, and
 runtime diagnostics, runs the promoted `python/examples/metric_space/*.py` and
 `python/examples/engine/*.py` examples from that installed wheel, and checks
-that vector-row PHATE-AE delegates to the native C++ binding while custom
+that vector-row parametric diffusion coordinate delegates to the native C++ binding while custom
 Python metric spaces are rejected. On local Python distributions where `venv`
 cannot seed `pip`, the script falls back to `uv venv --seed` when `uv` is
 available.
@@ -294,6 +297,21 @@ available.
 `python-core.yml` runs this installed-wheel smoke once on Ubuntu/Python 3.12.
 The full Python matrix still builds, installs, runs examples, and executes the
 core Python API tests for every supported CPython version.
+
+For the metric-space modification slice specifically, a clean C++ host can run:
+
+```bash
+cmake --build build/core --target modify_thin_smoke
+ctest --test-dir build/core -L metric_modify_components --output-on-failure
+```
+
+`core-cpp.yml` runs this label as its own cross-platform CI step before the
+rest of the core CTest suite, then excludes the same label from the broad core
+CTest step to avoid duplicate execution. Both `modify_level2_components_smoke`
+and `modify_thin_smoke` have local CTest timeouts so CI reports bounded failures
+instead of silently hanging on ordinary runtime stalls. These two smokes use
+explicit `REQUIRE` checks that print the failing expression and return non-zero,
+avoiding `assert()` / `abort()` paths for ordinary contract failures.
 
 ## Extended and Historical Tests
 

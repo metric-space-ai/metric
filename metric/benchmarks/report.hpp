@@ -66,8 +66,90 @@ struct PerformanceRow {
 	std::size_t naive_distance_evaluations{};
 	std::size_t materialized_distance_evaluations{};
 	std::size_t cache_miss_evaluations{};
+	std::size_t naive_memory_bytes_estimate{};
+	std::size_t materialized_memory_bytes_estimate{};
 	double evaluation_reduction_factor{};
 	bool exact_match{};
+	std::string notes;
+};
+
+struct BenchmarkTargetRow {
+	std::string benchmark;
+	std::string workload;
+	std::size_t record_count{};
+	std::size_t query_count{};
+	std::string target;
+	std::size_t max_distance_evaluations{};
+	std::size_t max_dense_slots{};
+	std::string expected_representation;
+	bool exact{};
+	bool automated{};
+	std::string notes;
+};
+
+struct BenchmarkTrendRow {
+	std::string benchmark;
+	std::string workload;
+	std::size_t record_count{};
+	std::size_t query_count{};
+	std::size_t baseline_distance_evaluations{};
+	std::size_t observed_distance_evaluations{};
+	std::size_t cached_distances{};
+	std::size_t dense_distance_slots{};
+	std::string representation;
+	bool exact{};
+	bool passed{};
+	std::string notes;
+};
+
+struct WallClockTrendRow {
+	std::string benchmark;
+	std::string workload;
+	std::size_t record_count{};
+	std::string representation;
+	std::size_t elapsed_ns{};
+	std::size_t distance_evaluations{};
+	std::size_t memory_bytes_estimate{};
+	std::size_t sample_count{};
+	std::string platform_label;
+	bool automated{};
+	bool passed{};
+	std::string notes;
+};
+
+struct ScaleGuardrailRow {
+	std::string benchmark;
+	std::string workload;
+	std::size_t record_count{};
+	std::size_t shared_operations{};
+	std::size_t exact_plan_distance_evaluations{};
+	std::size_t naive_workflow_distance_evaluations{};
+	std::size_t dense_distance_slots{};
+	std::size_t max_distance_evaluations{};
+	std::size_t expected_distance_evaluations{};
+	std::size_t observed_distance_evaluations{};
+	std::string decision;
+	std::string representation;
+	bool exact{};
+	bool passed{};
+	std::string notes;
+};
+
+struct OutOfCoreReadinessRow {
+	std::string benchmark;
+	std::string workload;
+	std::size_t record_count{};
+	std::size_t dense_distance_slots{};
+	std::size_t dense_memory_bytes_estimate{};
+	std::size_t memory_budget_bytes{};
+	std::size_t spill_block_bytes{};
+	std::size_t planned_spill_blocks{};
+	std::size_t max_resident_blocks{};
+	bool spill_enabled{};
+	bool explicit_policy_required{true};
+	std::string decision;
+	bool automated{};
+	bool passed{};
 	std::string notes;
 };
 
@@ -131,6 +213,8 @@ inline auto representation_kind_name(space::storage::representation_kind kind) -
 		return "cover_tree_index";
 	case space::storage::representation_kind::knn_graph_index:
 		return "knn_graph_index";
+	case space::storage::representation_kind::landmark_index:
+		return "landmark_index";
 	case space::storage::representation_kind::graph_topology:
 		return "graph_topology";
 	}
@@ -203,6 +287,36 @@ class BenchmarkReport {
 		return *this;
 	}
 
+	auto add_benchmark_target(BenchmarkTargetRow row) -> BenchmarkReport &
+	{
+		benchmark_targets_.push_back(std::move(row));
+		return *this;
+	}
+
+	auto add_benchmark_trend(BenchmarkTrendRow row) -> BenchmarkReport &
+	{
+		benchmark_trends_.push_back(std::move(row));
+		return *this;
+	}
+
+	auto add_wall_clock_trend(WallClockTrendRow row) -> BenchmarkReport &
+	{
+		wall_clock_trends_.push_back(std::move(row));
+		return *this;
+	}
+
+	auto add_scale_guardrail(ScaleGuardrailRow row) -> BenchmarkReport &
+	{
+		scale_guardrails_.push_back(std::move(row));
+		return *this;
+	}
+
+	auto add_out_of_core_readiness(OutOfCoreReadinessRow row) -> BenchmarkReport &
+	{
+		out_of_core_readiness_.push_back(std::move(row));
+		return *this;
+	}
+
 	auto set_run_metadata(BenchmarkRunMetadata metadata) -> BenchmarkReport &
 	{
 		run_metadata_ = std::move(metadata);
@@ -213,6 +327,14 @@ class BenchmarkReport {
 	auto representation_costs() const -> const std::vector<RepresentationCostRow> & { return representation_costs_; }
 	auto workflow_evidence() const -> const std::vector<WorkflowEvidenceRow> & { return workflow_evidence_; }
 	auto performance_rows() const -> const std::vector<PerformanceRow> & { return performance_rows_; }
+	auto benchmark_targets() const -> const std::vector<BenchmarkTargetRow> & { return benchmark_targets_; }
+	auto benchmark_trends() const -> const std::vector<BenchmarkTrendRow> & { return benchmark_trends_; }
+	auto wall_clock_trends() const -> const std::vector<WallClockTrendRow> & { return wall_clock_trends_; }
+	auto scale_guardrails() const -> const std::vector<ScaleGuardrailRow> & { return scale_guardrails_; }
+	auto out_of_core_readiness() const -> const std::vector<OutOfCoreReadinessRow> &
+	{
+		return out_of_core_readiness_;
+	}
 
 	auto to_markdown() const -> std::string
 	{
@@ -281,14 +403,100 @@ class BenchmarkReport {
 		if (!performance_rows_.empty()) {
 			output << "\n## Performance Evidence\n\n";
 			output << "| Benchmark | Workload | Records | Shared ops | Naive evals | Materialized evals | "
-					  "Cache-miss evals | Reduction | Exact | Notes |\n";
-			output << "|---|---|---:|---:|---:|---:|---:|---:|---|---|\n";
+						  "Cache-miss evals | Naive memory bytes | Materialized memory bytes | Reduction | Exact | Notes |\n";
+			output << "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|\n";
 			for (const auto &row : performance_rows_) {
 				output << "| " << detail::escape_cell(row.benchmark) << " | " << detail::escape_cell(row.workload)
 					   << " | " << row.record_count << " | " << row.shared_operations << " | "
 					   << row.naive_distance_evaluations << " | " << row.materialized_distance_evaluations << " | "
-					   << row.cache_miss_evaluations << " | " << detail::format_double(row.evaluation_reduction_factor)
-					   << " | " << (row.exact_match ? "yes" : "no") << " | " << detail::escape_cell(row.notes)
+					   << row.cache_miss_evaluations << " | " << row.naive_memory_bytes_estimate << " | "
+					   << row.materialized_memory_bytes_estimate << " | "
+					   << detail::format_double(row.evaluation_reduction_factor) << " | "
+					   << (row.exact_match ? "yes" : "no") << " | " << detail::escape_cell(row.notes) << " |\n";
+			}
+		}
+
+		if (!benchmark_targets_.empty()) {
+			output << "\n## Benchmark Targets\n\n";
+			output << "| Benchmark | Workload | Records | Queries | Target | Max evals | Max dense slots | "
+						  "Expected representation | Exact | Automated | Notes |\n";
+			output << "|---|---|---:|---:|---|---:|---:|---|---|---|---|\n";
+			for (const auto &row : benchmark_targets_) {
+				output << "| " << detail::escape_cell(row.benchmark) << " | " << detail::escape_cell(row.workload)
+					   << " | " << row.record_count << " | " << row.query_count << " | "
+					   << detail::escape_cell(row.target) << " | " << row.max_distance_evaluations << " | "
+					   << row.max_dense_slots << " | " << detail::escape_cell(row.expected_representation)
+					   << " | " << (row.exact ? "yes" : "no") << " | " << (row.automated ? "yes" : "no")
+					   << " | " << detail::escape_cell(row.notes) << " |\n";
+			}
+		}
+
+		if (!benchmark_trends_.empty()) {
+			output << "\n## Benchmark Trends\n\n";
+			output << "| Benchmark | Workload | Records | Queries | Baseline evals | Observed evals | Cached | "
+						  "Dense slots | Representation | Exact | Passed | Notes |\n";
+			output << "|---|---|---:|---:|---:|---:|---:|---:|---|---|---|---|\n";
+			for (const auto &row : benchmark_trends_) {
+				output << "| " << detail::escape_cell(row.benchmark) << " | " << detail::escape_cell(row.workload)
+					   << " | " << row.record_count << " | " << row.query_count << " | "
+					   << row.baseline_distance_evaluations << " | " << row.observed_distance_evaluations << " | "
+					   << row.cached_distances << " | " << row.dense_distance_slots << " | "
+					   << detail::escape_cell(row.representation) << " | " << (row.exact ? "yes" : "no")
+					   << " | " << (row.passed ? "yes" : "no") << " | " << detail::escape_cell(row.notes)
+					   << " |\n";
+			}
+		}
+
+		if (!wall_clock_trends_.empty()) {
+			output << "\n## Wall-clock Trends\n\n";
+			output << "| Benchmark | Workload | Records | Representation | Elapsed ns | Distance evals | "
+					  "Memory bytes | Samples | Platform | Automated | Passed | Notes |\n";
+			output << "|---|---|---:|---|---:|---:|---:|---:|---|---|---|---|\n";
+			for (const auto &row : wall_clock_trends_) {
+				output << "| " << detail::escape_cell(row.benchmark) << " | " << detail::escape_cell(row.workload)
+					   << " | " << row.record_count << " | " << detail::escape_cell(row.representation) << " | "
+					   << row.elapsed_ns << " | " << row.distance_evaluations << " | "
+					   << row.memory_bytes_estimate << " | " << row.sample_count << " | "
+					   << detail::escape_cell(row.platform_label) << " | " << (row.automated ? "yes" : "no")
+					   << " | " << (row.passed ? "yes" : "no") << " | " << detail::escape_cell(row.notes)
+					   << " |\n";
+			}
+		}
+
+		if (!scale_guardrails_.empty()) {
+			output << "\n## Scale Guardrails\n\n";
+			output << "| Benchmark | Workload | Records | Shared ops | Exact plan evals | Naive workflow evals | "
+					  "Dense slots | Max evals | Expected evals | Observed evals | Decision | Representation | "
+					  "Exact | Passed | Notes |\n";
+			output << "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|---|---|\n";
+			for (const auto &row : scale_guardrails_) {
+				output << "| " << detail::escape_cell(row.benchmark) << " | " << detail::escape_cell(row.workload)
+					   << " | " << row.record_count << " | " << row.shared_operations << " | "
+					   << row.exact_plan_distance_evaluations << " | "
+					   << row.naive_workflow_distance_evaluations << " | " << row.dense_distance_slots << " | "
+					   << row.max_distance_evaluations << " | " << row.expected_distance_evaluations << " | "
+					   << row.observed_distance_evaluations << " | " << detail::escape_cell(row.decision) << " | "
+					   << detail::escape_cell(row.representation) << " | " << (row.exact ? "yes" : "no")
+					   << " | " << (row.passed ? "yes" : "no") << " | " << detail::escape_cell(row.notes)
+					   << " |\n";
+			}
+		}
+
+		if (!out_of_core_readiness_.empty()) {
+			output << "\n## Out-of-core Readiness\n\n";
+			output << "| Benchmark | Workload | Records | Dense slots | Dense memory bytes | Memory budget bytes | "
+					  "Spill block bytes | Planned spill blocks | Max resident blocks | Spill enabled | "
+					  "Explicit policy required | Decision | Automated | Passed | Notes |\n";
+			output << "|---|---|---:|---:|---:|---:|---:|---:|---:|---|---|---|---|---|---|\n";
+			for (const auto &row : out_of_core_readiness_) {
+				output << "| " << detail::escape_cell(row.benchmark) << " | " << detail::escape_cell(row.workload)
+					   << " | " << row.record_count << " | " << row.dense_distance_slots << " | "
+					   << row.dense_memory_bytes_estimate << " | " << row.memory_budget_bytes << " | "
+					   << row.spill_block_bytes << " | " << row.planned_spill_blocks << " | "
+					   << row.max_resident_blocks << " | " << (row.spill_enabled ? "yes" : "no")
+					   << " | " << (row.explicit_policy_required ? "yes" : "no") << " | "
+					   << detail::escape_cell(row.decision) << " | " << (row.automated ? "yes" : "no")
+					   << " | " << (row.passed ? "yes" : "no") << " | " << detail::escape_cell(row.notes)
 					   << " |\n";
 			}
 		}
@@ -302,6 +510,11 @@ class BenchmarkReport {
 	std::vector<RepresentationCostRow> representation_costs_;
 	std::vector<WorkflowEvidenceRow> workflow_evidence_;
 	std::vector<PerformanceRow> performance_rows_;
+	std::vector<BenchmarkTargetRow> benchmark_targets_;
+	std::vector<BenchmarkTrendRow> benchmark_trends_;
+	std::vector<WallClockTrendRow> wall_clock_trends_;
+	std::vector<ScaleGuardrailRow> scale_guardrails_;
+	std::vector<OutOfCoreReadinessRow> out_of_core_readiness_;
 };
 
 } // namespace mtrc::benchmarks

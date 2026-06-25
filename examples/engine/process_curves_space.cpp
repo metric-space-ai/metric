@@ -93,8 +93,8 @@ int main()
 	assert(groups.algorithm == "kmedoids");
 
 	const auto outliers = mtrc::find_outliers(space, mtrc::stats::structural_analysis::dbscan_options(3.0, 2));
-	assert(outliers.strategy == "dbscan_noise");
-	assert(outliers.noise_count == 2);
+	assert(outliers.strategy == "dbscan_density_outlier");
+	assert(outliers.unassigned_count == 2);
 
 	const auto representatives = mtrc::find_representatives(space, 2, mtrc::space::select::farthest_first{});
 	assert(representatives.size() == 2);
@@ -125,7 +125,7 @@ int main()
 	std::cout << "process workflow baseline mismatch = yes\n";
 	std::cout << "process workflow metric margin = " << metric_margin << "\n";
 	std::cout << "process workflow groups = " << groups.cluster_count << "\n";
-	std::cout << "process workflow outliers = " << outliers.noise_count << "\n";
+	std::cout << "process workflow outliers = " << outliers.unassigned_count << "\n";
 	std::cout << "process workflow dense evaluations = " << matrix_diagnostics.cached_distances << "\n";
 	std::cout << "process curve graph edges = " << graph.edge_count() << "\n";
 

@@ -42,6 +42,70 @@ struct MetricSpaceLike<Space, std::void_t<typename Space::record_type, typename 
 
 template <typename Space> constexpr bool MetricSpaceLike_v = MetricSpaceLike<Space>::value;
 
+template <typename Space, typename = void> struct RecordMetricSpaceLike : std::false_type {};
+
+template <typename Space>
+struct RecordMetricSpaceLike<
+	Space,
+	std::void_t<typename Space::record_type, typename Space::metric_type, typename Space::distance_type,
+				decltype(std::declval<const Space &>().size()), decltype(std::declval<const Space &>().version()),
+				decltype(std::declval<const Space &>().id(std::declval<std::size_t>())),
+				decltype(std::declval<const Space &>().record(std::declval<RecordId>())),
+				decltype(std::declval<const Space &>().records()),
+				decltype(std::declval<const Space &>().metric()),
+				decltype(std::declval<const Space &>().distance(std::declval<RecordId>(), std::declval<RecordId>())),
+				decltype(std::declval<const Space &>().contains(std::declval<RecordId>())),
+				decltype(std::declval<const Space &>().position_of(std::declval<RecordId>()))>> : std::true_type {};
+
+template <typename Space> constexpr bool RecordMetricSpaceLike_v = RecordMetricSpaceLike<Space>::value;
+
+template <typename Value> struct CoordinateScalarLike {
+	using value_type = typename std::decay<Value>::type;
+	static constexpr bool value =
+		std::is_arithmetic<value_type>::value && !std::is_same<value_type, bool>::value &&
+		!std::is_same<value_type, char>::value && !std::is_same<value_type, signed char>::value &&
+		!std::is_same<value_type, unsigned char>::value;
+};
+
+template <typename Record, typename = void> struct CoordinateRecordLike : std::false_type {};
+
+template <typename Record>
+struct CoordinateRecordLike<
+	Record,
+	std::void_t<decltype(std::declval<const Record &>().size()),
+				decltype(std::declval<const Record &>()[std::declval<std::size_t>()])>>
+	: CoordinateScalarLike<decltype(std::declval<const Record &>()[std::declval<std::size_t>()])> {};
+
+template <typename Record> constexpr bool CoordinateRecordLike_v = CoordinateRecordLike<Record>::value;
+
+namespace detail {
+
+template <typename Metric> struct coordinate_metric_family : std::false_type {};
+
+} // namespace detail
+
+template <typename Metric, typename Record, typename = void> struct CoordinateMetricLike : std::false_type {};
+
+template <typename Metric, typename Record>
+struct CoordinateMetricLike<
+	Metric, Record,
+	std::enable_if_t<MetricCallable_v<Metric, Record> && CoordinateRecordLike_v<Record> &&
+					 metric_traits<typename std::decay<Metric>::type>::law == metric_law::metric &&
+					 detail::coordinate_metric_family<typename std::decay<Metric>::type>::value>>
+	: std::true_type {};
+
+template <typename Metric, typename Record>
+constexpr bool CoordinateMetricLike_v = CoordinateMetricLike<Metric, Record>::value;
+
+template <typename Space, typename = void> struct CoordinateSpaceLike : std::false_type {};
+
+template <typename Space>
+struct CoordinateSpaceLike<Space, std::enable_if_t<RecordMetricSpaceLike_v<Space> &&
+												  CoordinateMetricLike_v<typename Space::metric_type,
+																		 typename Space::record_type>>> : std::true_type {};
+
+template <typename Space> constexpr bool CoordinateSpaceLike_v = CoordinateSpaceLike<Space>::value;
+
 template <typename Source, typename = void> struct IndexedRecordIdSource : std::false_type {};
 
 template <typename Source>
@@ -323,6 +387,10 @@ struct PairwiseDistances<
 				decltype(std::declval<const Provider &>().is_stale())>> : std::true_type {};
 
 template <typename Provider> constexpr bool PairwiseDistances_v = PairwiseDistances<Provider>::value;
+
+template <typename Provider> using PairwiseDistanceProviderLike = PairwiseDistances<Provider>;
+template <typename Provider>
+constexpr bool PairwiseDistanceProviderLike_v = PairwiseDistanceProviderLike<Provider>::value;
 
 template <typename Provider, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
 auto total_distance_to_provider_records(const Provider &provider, RecordId source_id) -> typename Provider::distance_type
@@ -655,26 +723,67 @@ template <typename MappingT, typename Space, typename = void> struct Mapping : s
 
 template <typename MappingT, typename Space>
 struct Mapping<MappingT, Space,
-			   std::void_t<decltype(std::declval<const MappingT &>().fit(std::declval<const Space &>()))>>
+			   std::void_t<decltype(std::declval<const MappingT &>().derive_from(std::declval<const Space &>()))>>
 	: std::true_type {};
 
 template <typename MappingT, typename Space> constexpr bool Mapping_v = Mapping<MappingT, Space>::value;
 
-template <typename ModelT, typename Space, typename = void> struct MappingModel : std::false_type {};
+template <typename TransformT, typename Space, typename = void> struct DerivedSpaceTransform : std::false_type {};
 
-template <typename ModelT, typename Space>
-struct MappingModel<ModelT, Space,
-					std::void_t<decltype(std::declval<const ModelT &>().transform(std::declval<const Space &>()))>>
+template <typename TransformT, typename Space>
+struct DerivedSpaceTransform<
+	TransformT, Space,
+	std::void_t<decltype(std::declval<const TransformT &>().transform(std::declval<const Space &>()))>>
 	: std::true_type {};
 
-template <typename ModelT, typename Space> constexpr bool MappingModel_v = MappingModel<ModelT, Space>::value;
+template <typename TransformT, typename Space>
+constexpr bool DerivedSpaceTransform_v = DerivedSpaceTransform<TransformT, Space>::value;
+
+template <typename Result, typename = void> struct MappingResultLike : std::false_type {};
+
+template <typename Result>
+struct MappingResultLike<
+	Result,
+	std::void_t<typename Result::space_type, decltype(std::declval<const Result &>().space),
+				decltype(std::declval<const Result &>().source_records),
+				decltype(std::declval<const Result &>().representative_records),
+				decltype(std::declval<const Result &>().source_record_count),
+				decltype(std::declval<const Result &>().inverse_supported),
+				decltype(std::declval<const Result &>().mapping),
+				decltype(std::declval<const Result &>().strategy),
+				decltype(std::declval<const Result &>().representation),
+				decltype(std::declval<const Result &>().metric_status),
+				decltype(std::declval<const Result &>().out_of_sample_supported),
+				decltype(std::declval<const Result &>().validity)>> : std::true_type {};
+
+template <typename Result> constexpr bool MappingResultLike_v = MappingResultLike<Result>::value;
+
+template <typename Result, typename = void> struct CoordinateMappingResultLike : std::false_type {};
+
+template <typename Result>
+struct CoordinateMappingResultLike<Result, std::enable_if_t<MappingResultLike_v<Result> &&
+															CoordinateSpaceLike_v<typename Result::space_type>>>
+	: std::true_type {};
+
+template <typename Result>
+constexpr bool CoordinateMappingResultLike_v = CoordinateMappingResultLike<Result>::value;
 
 } // namespace mtrc::core
 
 namespace mtrc {
 using core::assign_records_to_representatives;
+using core::CoordinateMappingResultLike;
+using core::CoordinateMappingResultLike_v;
+using core::CoordinateMetricLike;
+using core::CoordinateMetricLike_v;
+using core::CoordinateRecordLike;
+using core::CoordinateRecordLike_v;
+using core::CoordinateSpaceLike;
+using core::CoordinateSpaceLike_v;
 using core::PairwiseDistances;
 using core::PairwiseDistances_v;
+using core::PairwiseDistanceProviderLike;
+using core::PairwiseDistanceProviderLike_v;
 using core::distance_table_for_record_ids;
 using core::distances_to_record_id;
 using core::expansion_dimension;
@@ -688,8 +797,10 @@ using core::IndexedRecordIdSource;
 using core::IndexedRecordIdSource_v;
 using core::Mapping;
 using core::Mapping_v;
-using core::MappingModel;
-using core::MappingModel_v;
+using core::DerivedSpaceTransform;
+using core::DerivedSpaceTransform_v;
+using core::MappingResultLike;
+using core::MappingResultLike_v;
 using core::mark_records_within_radius;
 using core::metric_result_t;
 using core::minimum_total_distance_record_id;
@@ -709,12 +820,14 @@ using core::position_of_record_id;
 using core::record_is_separated_from_record_ids;
 using core::record_id_overlap_count;
 using core::record_ids;
-	using core::record_ids_at_positions;
-	using core::records_for_record_ids;
-	using core::RecallAccumulator;
-	using core::RepresentativeAssignment;
-	using core::require_record_ids_in_space;
-	using core::ScalarAccumulator;
+using core::RecordMetricSpaceLike;
+using core::RecordMetricSpaceLike_v;
+using core::record_ids_at_positions;
+using core::records_for_record_ids;
+using core::RecallAccumulator;
+using core::RepresentativeAssignment;
+using core::require_record_ids_in_space;
+using core::ScalarAccumulator;
 using core::summarize_scalars;
 using core::total_distance_to_provider_records;
 using core::total_distance_to_record_ids;

@@ -4,7 +4,7 @@ This module is an adapter boundary, not an algorithm library. The result
 dataclasses marshal native results into stable public objects, and a few
 helpers invoke the caller's own metric/transform callable. Exact-scan pair,
 neighbor, representative-selection, reduction, compression, intrinsic-dimension,
-structure-description, clustering, outlier, denoise, and aligned
+structure-description, grouping, singular-record scoring, density filtering, and aligned
 distance-profile-correlation loops are exposed through the native C++ binding;
 higher METRIC algorithms (graph construction, embedding, MGC, non-aligned
 correlation) remain native-only facades until their binding is exposed. METRIC's
@@ -12,15 +12,22 @@ production numerics live in native C++.
 """
 
 from dataclasses import dataclass
+import math
 import operator
 from typing import ClassVar
 
 from metric.exceptions import (
     IncompatibleSpaceError,
+    MetricComputationError,
     OptionalDependencyError,
     StrategyUnavailableError,
     UnsupportedOperationError,
 )
+
+
+_RECALL_CALIBRATION_MIN_BUDGET = 4
+_RECALL_CALIBRATION_BUDGET_FRACTION = 4
+_RECALL_CALIBRATION_MAX_HOLDOUT_RECORDS = 16
 
 
 def _numpy():
@@ -85,14 +92,297 @@ def _normalize_neighbor_count(k=None, count=None):
     return requested
 
 
+def _normalize_optional_distance_budget(max_distance_evaluations):
+    if max_distance_evaluations is None:
+        return None
+    if isinstance(max_distance_evaluations, bool):
+        raise TypeError("max_distance_evaluations must be an integer")
+    try:
+        max_distance_evaluations = operator.index(max_distance_evaluations)
+    except TypeError:
+        raise TypeError("max_distance_evaluations must be an integer") from None
+    if max_distance_evaluations < 0:
+        raise ValueError("max_distance_evaluations must be non-negative")
+    return max_distance_evaluations
+
+
+def _sample_indices(record_count, sample_count):
+    sample_count = min(record_count, sample_count)
+    if sample_count <= 0:
+        return []
+    if sample_count >= record_count:
+        return list(range(record_count))
+    if sample_count == 1:
+        return [0]
+
+    last = record_count - 1
+    indices = []
+    seen = set()
+    for offset in range(sample_count):
+        index = round(offset * last / (sample_count - 1))
+        if index not in seen:
+            indices.append(index)
+            seen.add(index)
+
+    index = 0
+    while len(indices) < sample_count and index < record_count:
+        if index not in seen:
+            indices.append(index)
+            seen.add(index)
+        index += 1
+    return sorted(indices)
+
+
+def _sampled_neighbor_budget_split(record_count, distance_budget):
+    candidate_budget = min(record_count, distance_budget)
+    if candidate_budget <= 0:
+        return 0, 0
+    if record_count <= candidate_budget or candidate_budget < _RECALL_CALIBRATION_MIN_BUDGET:
+        return candidate_budget, 0
+
+    holdout_count = min(
+        record_count - 1,
+        max(
+            1,
+            min(
+                _RECALL_CALIBRATION_MAX_HOLDOUT_RECORDS,
+                candidate_budget // _RECALL_CALIBRATION_BUDGET_FRACTION,
+            ),
+        ),
+    )
+    sample_count = candidate_budget - holdout_count
+    if sample_count <= 0:
+        return candidate_budget, 0
+    return sample_count, holdout_count
+
+
+def _sampled_neighbor_holdout_indices(record_count, sampled_indices, holdout_count):
+    if holdout_count <= 0:
+        return []
+    sampled_index_set = set(sampled_indices)
+    candidates = [
+        record_index
+        for record_index in range(record_count)
+        if record_index not in sampled_index_set
+    ]
+    return [
+        candidates[offset]
+        for offset in _sample_indices(len(candidates), holdout_count)
+    ]
+
+
+def _unmeasured_recall_diagnostics(reason, *, recall_distance_evaluations=0):
+    return {
+        "recall_measured": False,
+        "recall": None,
+        "standard_error": 0.0,
+        "confidence_radius_95": 0.0,
+        "recall_sample_query_count": 0,
+        "recall_calibration_record_count": 0,
+        "recall_relevant_count": 0,
+        "recall_hit_count": 0,
+        "recall_distance_evaluations": recall_distance_evaluations,
+        "recall_measurement_reason": reason,
+    }
+
+
+def _recall_confidence_interval(hit_count, relevant_count):
+    if relevant_count <= 0:
+        return 0.0, 0.0
+    recall = hit_count / relevant_count
+    variance = recall * (1.0 - recall) / relevant_count
+    standard_error = math.sqrt(max(0.0, variance))
+    return standard_error, min(1.0, 1.96 * standard_error)
+
+
+def _sampled_neighbor_recall_diagnostics(
+    records,
+    metric,
+    queries,
+    sampled_distances_by_query,
+    *,
+    sampled_indices,
+    holdout_indices,
+    remaining_distance_budget,
+    count=None,
+    radius=None,
+    validate_distance=None,
+):
+    if not queries:
+        return _unmeasured_recall_diagnostics("no query was available for recall calibration")
+    if not sampled_indices:
+        return _unmeasured_recall_diagnostics("no sampled candidates were available for recall calibration")
+    if not holdout_indices or remaining_distance_budget <= 0:
+        return _unmeasured_recall_diagnostics("no distance budget remained for recall calibration")
+    if radius is None and (count is None or count <= 0):
+        return _unmeasured_recall_diagnostics("no requested neighbors were available for recall calibration")
+
+    measured_queries = 0
+    total_relevant = 0
+    total_hits = 0
+    total_calibration_records = 0
+    recall_distance_evaluations = 0
+
+    for query, sampled_distances in zip(queries, sampled_distances_by_query):
+        if recall_distance_evaluations >= remaining_distance_budget:
+            break
+
+        window_distances = dict(sampled_distances)
+        measured_holdout_count = 0
+        for record_index in holdout_indices:
+            if recall_distance_evaluations >= remaining_distance_budget:
+                break
+            distance = metric(query, records[record_index])
+            recall_distance_evaluations += 1
+            measured_holdout_count += 1
+            if validate_distance is not None:
+                validate_distance(distance, "query", record_index)
+            window_distances[record_index] = distance
+
+        if measured_holdout_count <= 0:
+            continue
+
+        if radius is None:
+            exact_pairs = sorted(
+                window_distances.items(),
+                key=lambda item: (item[1], item[0]),
+            )[:count]
+            sampled_pairs = sorted(
+                sampled_distances.items(),
+                key=lambda item: (item[1], item[0]),
+            )[:count]
+        else:
+            exact_pairs = [
+                (record_index, distance)
+                for record_index, distance in window_distances.items()
+                if distance <= radius
+            ]
+            sampled_pairs = [
+                (record_index, distance)
+                for record_index, distance in sampled_distances.items()
+                if distance <= radius
+            ]
+
+        exact_ids = {record_index for record_index, _distance in exact_pairs}
+        if not exact_ids:
+            continue
+        sampled_ids = {record_index for record_index, _distance in sampled_pairs}
+
+        measured_queries += 1
+        total_relevant += len(exact_ids)
+        total_hits += len(exact_ids & sampled_ids)
+        total_calibration_records += len(window_distances)
+
+    if measured_queries <= 0 or total_relevant <= 0:
+        reason = (
+            "calibration window contained no true radius neighbors"
+            if radius is not None
+            else "calibration window contained no comparable nearest neighbors"
+        )
+        return _unmeasured_recall_diagnostics(
+            reason,
+            recall_distance_evaluations=recall_distance_evaluations,
+        )
+
+    recall = total_hits / total_relevant
+    standard_error, confidence_radius_95 = _recall_confidence_interval(
+        total_hits,
+        total_relevant,
+    )
+    return {
+        "recall_measured": True,
+        "recall": recall,
+        "standard_error": standard_error,
+        "confidence_radius_95": confidence_radius_95,
+        "recall_sample_query_count": measured_queries,
+        "recall_calibration_record_count": total_calibration_records,
+        "recall_relevant_count": total_relevant,
+        "recall_hit_count": total_hits,
+        "recall_distance_evaluations": recall_distance_evaluations,
+        "recall_measurement_reason": (
+            "measured over sampled candidates plus holdout records within the distance budget"
+        ),
+    }
+
+
+def _refuse_over_budget_neighbor_helper(operation, record_count, budget):
+    raise MetricComputationError(
+        f"{operation} refused exact neighbor search before running metric calls: "
+        f"records={record_count}, estimated_distance_evaluations={record_count}, "
+        f"distance_evaluation_budget={budget}. "
+        "Suggested fallback: pass exact=False to use a bounded sampled scan, "
+        "reduce the query batch, or raise max_distance_evaluations."
+    )
+
+
+def _sampled_neighbor_scan(records, metric, query, *, count=None, radius=None, indices):
+    sampled_distances = {}
+    pairs = []
+    for record_index in indices:
+        distance = metric(query, records[record_index])
+        sampled_distances[record_index] = distance
+        if radius is None or distance <= radius:
+            pairs.append((record_index, distance))
+    pairs.sort(key=lambda item: (item[1], item[0]))
+    if count is not None:
+        pairs = pairs[:count]
+    return pairs, sampled_distances
+
+
+def _sampled_neighbor_pairs(records, metric, query, *, count=None, radius=None, sample_count):
+    pairs, _sampled_distances = _sampled_neighbor_scan(
+        records,
+        metric,
+        query,
+        count=count,
+        radius=radius,
+        indices=_sample_indices(len(records), sample_count),
+    )
+    return pairs
+
+
+def _sampled_neighbor_diagnostics(record_count, sample_count, *, budget, estimated_distance_evaluations):
+    candidate_count = min(record_count, sample_count)
+    return {
+        "diagnostic": "search_approximation",
+        "bounded": True,
+        "candidate_policy": "regular_sample",
+        "candidate_count": candidate_count,
+        "candidate_universe": record_count,
+        "candidate_fraction": 1.0 if record_count == 0 else candidate_count / record_count,
+        "distance_evaluations": candidate_count,
+        "sampled_distance_evaluations": candidate_count,
+        "sampled_record_count": candidate_count,
+        "estimated_distance_evaluations": estimated_distance_evaluations,
+        "distance_evaluation_budget": budget,
+        "recall_measured": False,
+        "recall": None,
+        "standard_error": 0.0,
+        "confidence_radius_95": 0.0,
+        "recall_sample_query_count": 0,
+        "recall_calibration_record_count": 0,
+        "recall_relevant_count": 0,
+        "recall_hit_count": 0,
+        "recall_distance_evaluations": 0,
+        "recall_measurement_reason": "no distance budget remained for recall calibration",
+        "approximation_reason": (
+            "exact neighbor scan exceeded max_distance_evaluations; bounded sampled candidates were used"
+        ),
+    }
+
+
 def _representative_strategy_seed(strategy):
     if strategy is None:
         return 0, "farthest_first"
 
-    from metric.strategies import FarthestFirst
+    from metric.strategies import Coverage, FarthestFirst, KCenter
 
     if isinstance(strategy, FarthestFirst):
         return _normalize_neighbor_count(strategy.seed_index, None), "farthest_first"
+    if isinstance(strategy, Coverage):
+        return _normalize_neighbor_count(strategy.seed_index, None), "coverage"
+    if isinstance(strategy, KCenter):
+        return _normalize_neighbor_count(strategy.seed_index, None), "k_center"
 
     _require_native_binding(
         "find_representatives(...)", f"{type(strategy).__name__} representative selection"
@@ -116,16 +406,170 @@ def _assign_to_representatives(records, metric, representatives):
     return tuple(assignments), tuple(distances)
 
 
+def _compression_representative_measure(assignments, representative_count, source_record_count):
+    if len(assignments) != source_record_count:
+        raise MetricComputationError(
+            "compression assignments must match source record count"
+        )
+
+    multiplicities = [0] * representative_count
+    for assignment in assignments:
+        representative_index = int(assignment)
+        if representative_index < 0 or representative_index >= representative_count:
+            raise MetricComputationError(
+                "compression assignment references an unknown representative"
+            )
+        multiplicities[representative_index] += 1
+
+    if source_record_count:
+        weights = tuple(multiplicity / source_record_count for multiplicity in multiplicities)
+    else:
+        weights = tuple(0.0 for _ in multiplicities)
+    return tuple(multiplicities), weights
+
+
+def _compression_validity(strategy):
+    return (
+        f"weighted metric-measure compression by {strategy}; kept records are an unmodified subset under the "
+        "source metric; assignments induce representative multiplicities and normalized weights; not dimension "
+        "reduction"
+    )
+
+
+def _radius_coverage_representative_indices(records, metric, radius):
+    if radius < 0:
+        raise ValueError("coverage radius must be non-negative")
+    if not records:
+        raise ValueError("cannot compress an empty metric space")
+
+    covered = [False] * len(records)
+    selected = []
+    covered_count = 0
+    while covered_count < len(records):
+        seed_index = next(index for index, is_covered in enumerate(covered) if not is_covered)
+        selected.append(seed_index)
+        seed_record = records[seed_index]
+        for index, record in enumerate(records):
+            if not covered[index] and metric(seed_record, record) <= radius:
+                covered[index] = True
+                covered_count += 1
+    return tuple(selected)
+
+
+def _regular_thin_indices(record_count, count, offset=0):
+    count = _normalize_neighbor_count(count, None)
+    offset = _normalize_neighbor_count(offset, None)
+    if count == 0:
+        return ()
+    if record_count == 0:
+        raise ValueError("cannot thin a non-empty set from an empty record set")
+    if count > record_count:
+        raise ValueError("thin count cannot exceed record count")
+    if offset >= record_count:
+        raise IndexError("thin offset is outside the record set")
+    return tuple(((index * record_count) // count + offset) % record_count for index in range(count))
+
+
+def _assign_positions_to_selected(records, metric, selected):
+    if not selected:
+        return (), ()
+    assignments = []
+    distances = []
+    for record in records:
+        best_position = 0
+        best_distance = metric(record, records[selected[0]])
+        for candidate_position, selected_index in enumerate(selected[1:], start=1):
+            distance = metric(record, records[selected_index])
+            if distance < best_distance or (
+                distance == best_distance and selected_index < selected[best_position]
+            ):
+                best_position = candidate_position
+                best_distance = distance
+        assignments.append(best_position)
+        distances.append(best_distance)
+    return tuple(assignments), tuple(distances)
+
+
+def _average_nearest_other_distance(records, metric):
+    if len(records) < 2:
+        return 0.0
+    total = 0.0
+    for index, record in enumerate(records):
+        best_distance = None
+        for other_index, other in enumerate(records):
+            if index == other_index:
+                continue
+            distance = metric(record, other)
+            if best_distance is None or distance < best_distance:
+                best_distance = distance
+        total += float(best_distance)
+    return total / len(records)
+
+
+def _average_local_volume(records, metric, radius):
+    if not records:
+        return 0.0, 0.0
+    total_count = 0.0
+    for record in records:
+        count = 0
+        for other in records:
+            if metric(record, other) <= radius:
+                count += 1
+        total_count += count
+    average_count = total_count / len(records)
+    return average_count, average_count / len(records)
+
+
+def _uniform_density_diagnostics(records, metric, selected, radius):
+    assignments, distances = _assign_positions_to_selected(records, metric, selected)
+    multiplicities, weights = _compression_representative_measure(
+        assignments,
+        len(selected),
+        len(records),
+    )
+    selected_records = [records[index] for index in selected]
+    coverage_radius = max(distances) if distances else 0.0
+    average_assignment_distance = (sum(float(distance) for distance in distances) / len(distances)) if distances else 0.0
+    source_knn = _average_nearest_other_distance(records, metric)
+    target_knn = _average_nearest_other_distance(selected_records, metric)
+    source_volume_count, source_volume_density = _average_local_volume(records, metric, radius)
+    target_volume_count, target_volume_density = _average_local_volume(selected_records, metric, radius)
+    return {
+        "diagnostic": "uniform_density_thinning",
+        "policy": "maximal_radius_net",
+        "radius": radius,
+        "source_record_count": len(records),
+        "target_record_count": len(selected),
+        "assignments": assignments,
+        "nearest_representative_distances": distances,
+        "representative_multiplicities": multiplicities,
+        "representative_weights": weights,
+        "coverage_radius": coverage_radius,
+        "average_assignment_distance": average_assignment_distance,
+        "source_average_nearest_neighbor_distance": source_knn,
+        "target_average_nearest_neighbor_distance": target_knn,
+        "local_density_drift": target_knn - source_knn,
+        "local_volume_radius": radius,
+        "source_average_local_volume_count": source_volume_count,
+        "target_average_local_volume_count": target_volume_count,
+        "local_volume_count_drift": target_volume_count - source_volume_count,
+        "source_average_local_volume_density": source_volume_density,
+        "target_average_local_volume_density": target_volume_density,
+        "local_volume_density_drift": target_volume_density - source_volume_density,
+        "empirical_density_preserved": False,
+    }
+
+
 def _clustering_result_from_payload(payload):
     return ClusteringResult(
         assignments=tuple(payload["assignments"]),
         medoids=tuple(payload["medoids"]),
         core_records=tuple(payload["core_records"]),
-        noise_records=tuple(payload["noise_records"]),
+        unassigned_records=tuple(payload["unassigned_records"]),
         cluster_sizes=tuple(payload["cluster_sizes"]),
         record_count=int(payload["record_count"]),
         cluster_count=int(payload["cluster_count"]),
-        noise_count=int(payload["noise_count"]),
+        unassigned_count=int(payload["unassigned_count"]),
         iterations=int(payload["iterations"]),
         converged=bool(payload["converged"]),
         algorithm=str(payload["algorithm"]),
@@ -138,7 +582,7 @@ def _outlier_result_from_payload(payload):
         outliers=tuple(Outlier(record_id=int(record_id), score=score) for record_id, score in payload["outliers"]),
         record_count=int(payload["record_count"]),
         cluster_count=int(payload["cluster_count"]),
-        noise_count=int(payload["noise_count"]),
+        unassigned_count=int(payload["unassigned_count"]),
         exact=bool(payload["exact"]),
         operator_name=str(payload["operator_name"]),
         strategy=str(payload["strategy"]),
@@ -222,9 +666,9 @@ def _require_aligned_record_counts(left_count, right_count):
 
 
 def _raise_unsupported_inverse(result):
-    if getattr(result, "operator_name", None) == "denoise":
+    if getattr(result, "operator_name", None) == "density_filter":
         raise UnsupportedOperationError(
-            "denoise results do not support inverse_transform() because density filtering drops source records. "
+            "density-filter results do not support inverse_transform() because source records were dropped. "
             "Use result.space for the filtered metric space, space.embed(...) for a derived coordinate view, "
             "or a strategy that declares inverse_supported=True when available."
         )
@@ -482,15 +926,12 @@ class GraphStretchDiagnostics:
 
 @dataclass(frozen=True)
 class Neighbor:
-    """One neighbor record with compatibility tuple behavior."""
+    """One neighbor record in a finite metric space."""
 
     id: int
     record: object
     distance: object
     rank: int
-
-    def as_tuple(self):
-        return (self.id, self.distance)
 
     def to_dict(self):
         return {
@@ -500,15 +941,6 @@ class Neighbor:
             "rank": self.rank,
         }
 
-    def __iter__(self):
-        return iter(self.as_tuple())
-
-    def __len__(self):
-        return 2
-
-    def __getitem__(self, index):
-        return self.as_tuple()[index]
-
     def __eq__(self, other):
         if isinstance(other, Neighbor):
             return (
@@ -517,14 +949,12 @@ class Neighbor:
                 and self.distance == other.distance
                 and self.rank == other.rank
             )
-        if isinstance(other, (list, tuple)) and len(other) == 2:
-            return self.as_tuple() == tuple(other)
         return False
 
 
 @dataclass(frozen=True)
 class NeighborResult:
-    """Engine-style neighbor result with sequence compatibility."""
+    """Neighbor result container."""
 
     query: object
     query_id: object
@@ -535,6 +965,8 @@ class NeighborResult:
     strategy: str
     representation: str
     diagnostics: object = None
+    route: str = "source_metric"
+    provenance: object = None
 
     def __len__(self):
         return len(self.rows) if self.rows else len(self.neighbors)
@@ -561,13 +993,10 @@ class NeighborResult:
                 and self.strategy == other.strategy
                 and self.representation == other.representation
                 and self.diagnostics == other.diagnostics
+                and self.route == other.route
+                and self.provenance == other.provenance
             )
-        return list(self) == other
-
-    def as_tuples(self):
-        if self.rows:
-            return [[neighbor.as_tuple() for neighbor in row] for row in self.rows]
-        return [neighbor.as_tuple() for neighbor in self.neighbors]
+        return False
 
     def to_dict(self):
         return {
@@ -583,6 +1012,8 @@ class NeighborResult:
             "strategy": self.strategy,
             "representation": self.representation,
             "diagnostics": self.diagnostics,
+            "route": self.route,
+            "provenance": self.provenance,
         }
 
     def to_numpy(self):
@@ -615,16 +1046,16 @@ class NeighborResult:
 class ClusteringResult:
     """Engine-style grouping result with assignments and cluster metadata."""
 
-    noise_label: ClassVar[int] = -1
+    unassigned_label: ClassVar[int] = -1
 
     assignments: tuple
     medoids: tuple
     core_records: tuple
-    noise_records: tuple
+    unassigned_records: tuple
     cluster_sizes: tuple
     record_count: int
     cluster_count: int
-    noise_count: int
+    unassigned_count: int
     iterations: int
     converged: bool
     algorithm: str
@@ -635,16 +1066,16 @@ class ClusteringResult:
             "assignments": self.assignments,
             "medoids": self.medoids,
             "core_records": self.core_records,
-            "noise_records": self.noise_records,
+            "unassigned_records": self.unassigned_records,
             "cluster_sizes": self.cluster_sizes,
             "record_count": self.record_count,
             "cluster_count": self.cluster_count,
-            "noise_count": self.noise_count,
+            "unassigned_count": self.unassigned_count,
             "iterations": self.iterations,
             "converged": self.converged,
             "algorithm": self.algorithm,
             "representation": self.representation,
-            "noise_label": self.noise_label,
+            "unassigned_label": self.unassigned_label,
         }
 
     def to_numpy(self):
@@ -660,7 +1091,7 @@ class ClusteringResult:
 
         medoids = set(self.medoids)
         core_records = set(self.core_records)
-        noise_records = set(self.noise_records)
+        unassigned_records = set(self.unassigned_records)
         rows = []
         for record_id, cluster_label in enumerate(self.assignments):
             cluster_size = None
@@ -673,7 +1104,7 @@ class ClusteringResult:
                     "cluster_size": cluster_size,
                     "is_medoid": record_id in medoids,
                     "is_core": record_id in core_records,
-                    "is_noise": record_id in noise_records or cluster_label == self.noise_label,
+                    "is_unassigned": record_id in unassigned_records or cluster_label == self.unassigned_label,
                     "algorithm": self.algorithm,
                     "representation": self.representation,
                 }
@@ -702,7 +1133,7 @@ class OutlierResult:
     outliers: tuple
     record_count: int
     cluster_count: int
-    noise_count: int
+    unassigned_count: int
     exact: bool
     operator_name: str
     strategy: str
@@ -713,7 +1144,7 @@ class OutlierResult:
             "outliers": [outlier.to_dict() for outlier in self.outliers],
             "record_count": self.record_count,
             "cluster_count": self.cluster_count,
-            "noise_count": self.noise_count,
+            "unassigned_count": self.unassigned_count,
             "exact": self.exact,
             "operator_name": self.operator_name,
             "strategy": self.strategy,
@@ -869,6 +1300,8 @@ class CompressionResult:
     source_record_ids: tuple
     assignments: tuple
     nearest_representative_distances: tuple
+    representative_multiplicities: tuple
+    representative_weights: tuple
     source_record_count: int
     compressed_record_count: int
     compression_ratio: float
@@ -879,6 +1312,8 @@ class CompressionResult:
     representation: str
     lossy: bool
     inverse_supported: bool
+    metric_status: str = "unknown"
+    validity: str = ""
 
     def inverse_transform(self, *args, **kwargs):
         _raise_unsupported_inverse(self)
@@ -888,6 +1323,8 @@ class CompressionResult:
             "source_record_ids": self.source_record_ids,
             "assignments": self.assignments,
             "nearest_representative_distances": self.nearest_representative_distances,
+            "representative_multiplicities": self.representative_multiplicities,
+            "representative_weights": self.representative_weights,
             "source_record_count": self.source_record_count,
             "compressed_record_count": self.compressed_record_count,
             "compression_ratio": self.compression_ratio,
@@ -898,6 +1335,8 @@ class CompressionResult:
             "representation": self.representation,
             "lossy": self.lossy,
             "inverse_supported": self.inverse_supported,
+            "metric_status": self.metric_status,
+            "validity": self.validity,
         }
 
     def to_numpy(self):
@@ -920,10 +1359,14 @@ class CompressionResult:
                     "compressed_record_id": compressed_record_id,
                     "representative_source_id": self.source_record_ids[compressed_record_id],
                     "nearest_representative_distance": self.nearest_representative_distances[source_record_id],
+                    "representative_multiplicity": self.representative_multiplicities[compressed_record_id],
+                    "representative_weight": self.representative_weights[compressed_record_id],
                     "is_representative": source_record_id in selected,
                     "compression": self.compression,
                     "strategy": self.strategy,
                     "representation": self.representation,
+                    "metric_status": self.metric_status,
+                    "validity": self.validity,
                 }
             )
         return pd.DataFrame.from_records(rows)
@@ -931,7 +1374,12 @@ class CompressionResult:
 
 @dataclass(frozen=True)
 class MappingResult:
-    """Mapped metric-space result with source-to-target lineage."""
+    """Mapped metric-space result with source-to-target lineage.
+
+    ``metric_status`` mirrors the C++ pipeline contract where the target metric
+    law is known. Python callable metrics generally report ``"unknown"`` rather
+    than pretending that an arbitrary callable has been validated as a metric.
+    """
 
     space: object
     source_record_ids: tuple
@@ -945,12 +1393,22 @@ class MappingResult:
     inverse_supported: bool
     source_records: tuple = ()
     representative_records: tuple = ()
-    fitted_model: object = None
+    assignments: tuple = ()
+    nearest_representative_distances: tuple = ()
+    representative_multiplicities: tuple = ()
+    representative_weights: tuple = ()
+    coverage_radius: object = None
+    average_assignment_distance: object = None
+    metric_status: str = "unknown"
+    out_of_sample_supported: bool = False
+    validity: str = ""
+    mapping_artifact: object = None
+    diagnostics: object = None
 
     def inverse_transform(self, records=None):
-        if self.inverse_supported and self.fitted_model is not None:
+        if self.inverse_supported and self.mapping_artifact is not None:
             latent_records = self.space.records if records is None else records
-            return self.fitted_model.inverse_transform(latent_records)
+            return self.mapping_artifact.inverse_transform(latent_records)
         _raise_unsupported_inverse(self)
 
     def to_dict(self):
@@ -966,6 +1424,16 @@ class MappingResult:
             "inverse_supported": self.inverse_supported,
             "source_records": self.source_records,
             "representative_records": self.representative_records,
+            "assignments": self.assignments,
+            "nearest_representative_distances": self.nearest_representative_distances,
+            "representative_multiplicities": self.representative_multiplicities,
+            "representative_weights": self.representative_weights,
+            "coverage_radius": self.coverage_radius,
+            "average_assignment_distance": self.average_assignment_distance,
+            "metric_status": self.metric_status,
+            "out_of_sample_supported": self.out_of_sample_supported,
+            "validity": self.validity,
+            "diagnostics": self.diagnostics,
         }
 
     def to_numpy(self):
@@ -987,18 +1455,29 @@ class MappingResult:
                 "mapping": self.mapping,
                 "strategy": self.strategy,
                 "representation": self.representation,
+                "metric_status": self.metric_status,
+                "out_of_sample_supported": self.out_of_sample_supported,
+                "validity": self.validity,
             }
             if self.source_records:
                 row["source_records"] = self.source_records[target_record_id]
             if self.representative_records:
                 row["representative_record"] = self.representative_records[target_record_id]
+            if self.representative_multiplicities:
+                row["representative_multiplicity"] = self.representative_multiplicities[target_record_id]
+            if self.representative_weights:
+                row["representative_weight"] = self.representative_weights[target_record_id]
+            if self.coverage_radius is not None:
+                row["coverage_radius"] = self.coverage_radius
+            if self.average_assignment_distance is not None:
+                row["average_assignment_distance"] = self.average_assignment_distance
             rows.append(row)
         return pd.DataFrame.from_records(rows)
 
 
 @dataclass(frozen=True)
 class StructureDescription:
-    """Exact finite-space structure diagnostics."""
+    """Finite-space structure diagnostics."""
 
     record_count: int
     pair_count: int
@@ -1011,6 +1490,7 @@ class StructureDescription:
     exact: bool
     strategy: str
     representation: str
+    diagnostics: object = None
 
     def to_dict(self):
         return {
@@ -1025,6 +1505,7 @@ class StructureDescription:
             "exact": self.exact,
             "strategy": self.strategy,
             "representation": self.representation,
+            "diagnostics": self.diagnostics,
         }
 
     def to_numpy(self):
@@ -1134,8 +1615,8 @@ class EmbeddingDiagnostics:
 
 
 @dataclass(frozen=True)
-class EmbeddingModel:
-    """Metadata for a deterministic embedding model."""
+class EmbeddingArtifact:
+    """Metadata for a deterministic embedding artifact."""
 
     method: str
     dimensions: int
@@ -1156,7 +1637,7 @@ class EmbeddingResult:
     coordinates: object
     embedded_space: object
     source_space: object
-    model: EmbeddingModel
+    mapping_artifact: EmbeddingArtifact
     source_record_ids: tuple
     source_record_count: int
     dimensions: int
@@ -1171,7 +1652,7 @@ class EmbeddingResult:
     def to_dict(self):
         return {
             "coordinates": _numpy().asarray(self.coordinates).tolist(),
-            "model": self.model.to_dict(),
+            "mapping_artifact": self.mapping_artifact.to_dict(),
             "source_record_ids": self.source_record_ids,
             "source_record_count": self.source_record_count,
             "dimensions": self.dimensions,
@@ -1234,13 +1715,50 @@ def _require_native_binding(operation, kind):
     )
 
 
-def pairwise_distance_matrix(records, metric):
+def _refuse_dense_materialization(operation, plan):
+    fallback = ", ".join(plan.fallback)
+    raise MetricComputationError(
+        f"{operation} refused dense all-pairs materialization: "
+        f"records={plan.record_count}, "
+        f"estimated_bytes={plan.memory_bytes_estimate}, "
+        f"budget_bytes={plan.max_memory_bytes}, "
+        f"estimated_distance_evaluations={plan.estimated_distance_evaluations}, "
+        f"distance_evaluation_budget={plan.max_distance_evaluations}, "
+        f"max_dense_records={plan.max_dense_records}. "
+        f"Reason: {plan.reason}. Suggested fallback: {fallback}."
+    )
+
+
+def pairwise_distance_matrix(
+    records,
+    metric,
+    *,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Materialize the explicit finite metric-space distance matrix.
 
     Native adapter: the all-pairs loop runs in C++ and invokes the supplied
-    metric callable for each pair.
+    metric callable for each pair after the dense materialization budget accepts
+    the requested matrix.
     """
-    return _native_metric_module().pairwise_distance_matrix(list(records), metric)
+    record_list = list(records)
+    from metric.spaces import _make_plan
+
+    plan = _make_plan(
+        "pairwise_distances",
+        len(record_list),
+        exact=True,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+        allow_approximate=False,
+        allow_chunking=False,
+    )
+    if plan.decision == "refused":
+        _refuse_dense_materialization("pairwise_distance_matrix(...)", plan)
+    return _native_metric_module().pairwise_distance_matrix(record_list, metric)
 
 
 def neighbor_result(
@@ -1254,6 +1772,8 @@ def neighbor_result(
     strategy="exact_scan",
     representation="metric_space",
     diagnostics=None,
+    route=None,
+    provenance=None,
 ):
     """Marshal raw ``(record_id, distance)`` neighbor data into a NeighborResult.
 
@@ -1298,17 +1818,87 @@ def neighbor_result(
         strategy=strategy,
         representation=representation,
         diagnostics=diagnostics,
+        route=route or _neighbor_search_route(strategy, representation),
+        provenance=provenance,
     )
 
 
-def nearest_neighbors(records, metric, query, k=None, count=None):
+def _neighbor_search_route(strategy, representation):
+    if representation == "metric_space":
+        return f"source_metric:{strategy}"
+    return f"representation:{representation}:{strategy}"
+
+
+def nearest_neighbors(
+    records,
+    metric,
+    query,
+    k=None,
+    count=None,
+    *,
+    representation="metric_space",
+    provenance=None,
+    exact=True,
+    max_distance_evaluations=None,
+    allow_approximate=True,
+):
     """Exact-scan k-nearest-neighbor search through the native C++ binding."""
     record_list = list(records)
+    requested = _normalize_neighbor_count(k, count)
+    budget = _normalize_optional_distance_budget(max_distance_evaluations)
+    if budget is not None and len(record_list) > budget:
+        if exact or not allow_approximate:
+            _refuse_over_budget_neighbor_helper("nearest_neighbors(...)", len(record_list), budget)
+        sample_count, holdout_count = _sampled_neighbor_budget_split(len(record_list), budget)
+        sampled_indices = _sample_indices(len(record_list), sample_count)
+        holdout_indices = _sampled_neighbor_holdout_indices(
+            len(record_list),
+            sampled_indices,
+            holdout_count,
+        )
+        pairs, sampled_distances = _sampled_neighbor_scan(
+            record_list,
+            metric,
+            query,
+            count=requested,
+            indices=sampled_indices,
+        )
+        diagnostics = _sampled_neighbor_diagnostics(
+            len(record_list),
+            sample_count,
+            budget=budget,
+            estimated_distance_evaluations=len(record_list),
+        )
+        recall_diagnostics = _sampled_neighbor_recall_diagnostics(
+            record_list,
+            metric,
+            (query,),
+            (sampled_distances,),
+            sampled_indices=sampled_indices,
+            holdout_indices=holdout_indices,
+            remaining_distance_budget=budget - sample_count,
+            count=requested,
+        )
+        diagnostics.update(recall_diagnostics)
+        diagnostics["distance_evaluations"] = (
+            diagnostics["sampled_distance_evaluations"]
+            + diagnostics["recall_distance_evaluations"]
+        )
+        return neighbor_result(
+            record_list,
+            query=query,
+            neighbors=pairs,
+            exact=False,
+            strategy="sampled_knn_budget_guard",
+            representation="sampled_live_scan",
+            diagnostics=diagnostics,
+            provenance=provenance,
+        )
     pairs = _native_metric_module().exact_scan_neighbors(
         record_list,
         metric,
         query,
-        _normalize_neighbor_count(k, count),
+        requested,
     )
     return neighbor_result(
         record_list,
@@ -1316,13 +1906,74 @@ def nearest_neighbors(records, metric, query, k=None, count=None):
         neighbors=pairs,
         exact=True,
         strategy="exact_scan",
-        representation="metric_space",
+        representation=representation,
+        provenance=provenance,
     )
 
 
-def range_neighbors(records, metric, query, radius):
+def range_neighbors(
+    records,
+    metric,
+    query,
+    radius,
+    *,
+    representation="metric_space",
+    provenance=None,
+    exact=True,
+    max_distance_evaluations=None,
+    allow_approximate=True,
+):
     """Exact-scan radius neighbor search through the native C++ binding."""
     record_list = list(records)
+    budget = _normalize_optional_distance_budget(max_distance_evaluations)
+    if budget is not None and len(record_list) > budget:
+        if exact or not allow_approximate:
+            _refuse_over_budget_neighbor_helper("range_neighbors(...)", len(record_list), budget)
+        sample_count, holdout_count = _sampled_neighbor_budget_split(len(record_list), budget)
+        sampled_indices = _sample_indices(len(record_list), sample_count)
+        holdout_indices = _sampled_neighbor_holdout_indices(
+            len(record_list),
+            sampled_indices,
+            holdout_count,
+        )
+        pairs, sampled_distances = _sampled_neighbor_scan(
+            record_list,
+            metric,
+            query,
+            radius=radius,
+            indices=sampled_indices,
+        )
+        diagnostics = _sampled_neighbor_diagnostics(
+            len(record_list),
+            sample_count,
+            budget=budget,
+            estimated_distance_evaluations=len(record_list),
+        )
+        recall_diagnostics = _sampled_neighbor_recall_diagnostics(
+            record_list,
+            metric,
+            (query,),
+            (sampled_distances,),
+            sampled_indices=sampled_indices,
+            holdout_indices=holdout_indices,
+            remaining_distance_budget=budget - sample_count,
+            radius=radius,
+        )
+        diagnostics.update(recall_diagnostics)
+        diagnostics["distance_evaluations"] = (
+            diagnostics["sampled_distance_evaluations"]
+            + diagnostics["recall_distance_evaluations"]
+        )
+        return neighbor_result(
+            record_list,
+            query=query,
+            neighbors=pairs,
+            exact=False,
+            strategy="sampled_range_budget_guard",
+            representation="sampled_live_scan",
+            diagnostics=diagnostics,
+            provenance=provenance,
+        )
     pairs = _native_metric_module().exact_scan_radius_neighbors(record_list, metric, query, radius)
     return neighbor_result(
         record_list,
@@ -1330,7 +1981,8 @@ def range_neighbors(records, metric, query, radius):
         neighbors=pairs,
         exact=True,
         strategy="exact_range",
-        representation="metric_space",
+        representation=representation,
+        provenance=provenance,
     )
 
 
@@ -1444,30 +2096,194 @@ def find_outliers(records, metric, strategy, *, representation="metric_space"):
     _require_native_binding("find_outliers(...)", f"{type(strategy).__name__} outlier detection")
 
 
-def denoise_space(records, metric, strategy, *, representation="metric_space"):
-    """Filter DBSCAN noise records into a derived metric space through the native C++ binding."""
+def density_filter_space(records, metric, strategy, *, representation="metric_space"):
+    """Filter DBSCAN-unassigned records into a derived finite metric space."""
     from metric.strategies import DBSCAN
     from metric.spaces import Space
 
     if not isinstance(strategy, DBSCAN):
-        _require_native_binding("denoise_space(...)", f"{type(strategy).__name__} denoising")
+        _require_native_binding("density_filter_space(...)", f"{type(strategy).__name__} density filtering")
 
     record_list = list(records)
     clustering = dbscan(record_list, metric, strategy.radius, strategy.min_points, representation=representation)
-    noise = set(clustering.noise_records)
-    kept_ids = tuple(index for index in range(len(record_list)) if index not in noise)
+    unassigned = set(clustering.unassigned_records)
+    kept_ids = tuple(index for index in range(len(record_list)) if index not in unassigned)
     filtered = [record_list[index] for index in kept_ids]
+    validity = (
+        "uneven-sampling correction by removing DBSCAN-unassigned records; kept records are an "
+        "unmodified subset under the source metric; in-sample only"
+    )
     return MappingResult(
-        space=Space(filtered, metric),
+        space=Space(
+            filtered,
+            metric,
+            metadata={
+                "mapping": "density_filter",
+                "strategy": "dbscan_density_filter",
+                "metric_status": "unknown",
+                "out_of_sample_supported": False,
+                "validity": validity,
+            },
+        ),
         source_record_ids=kept_ids,
         source_record_count=len(record_list),
         target_record_count=len(filtered),
         exact=True,
-        operator_name="denoise",
-        mapping="dbscan_noise_filter",
-        strategy="dbscan_noise",
+        operator_name="density_filter",
+        mapping="density_filter",
+        strategy="dbscan_density_filter",
         representation=representation,
         inverse_supported=False,
+        source_records=tuple((record_id,) for record_id in kept_ids),
+        representative_records=kept_ids,
+        metric_status="unknown",
+        out_of_sample_supported=False,
+        validity=validity,
+    )
+
+
+def _resample_space(records, metric, count=None, strategy=None, *, radius=None, representation="metric_space", mapping="thin"):
+    from metric.strategies import PreserveDistribution, UniformDensity
+    from metric.spaces import Space
+
+    if radius is not None:
+        if isinstance(strategy, UniformDensity) and strategy.radius != radius:
+            raise ValueError("use either radius= or UniformDensity(...), not conflicting radii")
+        if strategy is not None and not isinstance(strategy, UniformDensity):
+            raise ValueError("uniform-density thinning cannot combine radius= with another strategy")
+        strategy = UniformDensity(radius)
+    if strategy is None:
+        strategy = PreserveDistribution()
+    if not isinstance(strategy, (PreserveDistribution, UniformDensity)):
+        _require_native_binding("thin_space(...)", f"{type(strategy).__name__} thinning")
+
+    record_list = list(records)
+    diagnostics = None
+    assignments = ()
+    nearest_distances = ()
+    representative_multiplicities = ()
+    representative_weights = ()
+    coverage_radius = None
+    average_assignment_distance = None
+    if isinstance(strategy, UniformDensity):
+        if count is not None:
+            raise ValueError("uniform-density thinning chooses the representative count; omit count")
+        selected = _radius_coverage_representative_indices(record_list, metric, strategy.radius)
+        if mapping == "equalize":
+            validity = (
+                "density-equalizing deterministic thinning by maximal metric radius net; kept records are an "
+                "unmodified radius-separated and radius-covering subset under the source metric; empirical density "
+                "is intentionally normalized toward uniform metric coverage"
+            )
+        else:
+            validity = (
+                "uniform-density deterministic thinning by maximal metric radius net; kept records are an "
+                "unmodified radius-separated and radius-covering subset under the source metric; empirical density "
+                "is intentionally flattened"
+            )
+        strategy_name = "uniform_density_radius_net"
+        diagnostics = _uniform_density_diagnostics(record_list, metric, selected, strategy.radius)
+        assignments = diagnostics["assignments"]
+        nearest_distances = diagnostics["nearest_representative_distances"]
+        representative_multiplicities = diagnostics["representative_multiplicities"]
+        representative_weights = diagnostics["representative_weights"]
+        coverage_radius = diagnostics["coverage_radius"]
+        average_assignment_distance = diagnostics["average_assignment_distance"]
+    else:
+        if mapping == "equalize":
+            raise ValueError("equalize requires UniformDensity(...) or radius=")
+        if count is None:
+            raise ValueError("preserve-distribution thinning requires count")
+        selected = _regular_thin_indices(len(record_list), count, strategy.offset)
+        representative_multiplicities = tuple(1 for _ in selected)
+        representative_weights = (
+            tuple(1.0 / len(selected) for _ in selected)
+            if selected
+            else ()
+        )
+        validity = (
+            "distribution-preserving deterministic thinning; kept records are an unmodified regular sample "
+            "under the source metric; retained records carry normalized sample weights and no full-source "
+            "assignment map is implied"
+        )
+        strategy_name = "preserve_distribution_regular"
+    return MappingResult(
+        space=Space(
+            [record_list[index] for index in selected],
+            metric,
+            metadata={
+                "mapping": mapping,
+                "strategy": strategy_name,
+                "metric_status": "unknown",
+                "out_of_sample_supported": False,
+                "validity": validity,
+                "diagnostics": diagnostics,
+            },
+        ),
+        source_record_ids=selected,
+        source_record_count=len(record_list),
+        target_record_count=len(selected),
+        exact=True,
+        operator_name=mapping,
+        mapping=mapping,
+        strategy=strategy_name,
+        representation=representation,
+        inverse_supported=False,
+        source_records=tuple((index,) for index in selected),
+        representative_records=selected,
+        assignments=assignments,
+        nearest_representative_distances=nearest_distances,
+        representative_multiplicities=representative_multiplicities,
+        representative_weights=representative_weights,
+        coverage_radius=coverage_radius,
+        average_assignment_distance=average_assignment_distance,
+        metric_status="unknown",
+        out_of_sample_supported=False,
+        validity=validity,
+        diagnostics=diagnostics,
+    )
+
+
+def thin_space(records, metric, count=None, strategy=None, *, radius=None, representation="metric_space"):
+    """Distribution-preserving deterministic thinning by regular source order."""
+    return _resample_space(
+        records,
+        metric,
+        count=count,
+        strategy=strategy,
+        radius=radius,
+        representation=representation,
+        mapping="thin",
+    )
+
+
+def distribution_sample_space(records, metric, count, strategy=None, *, representation="metric_space"):
+    """Alias for distribution-preserving thinning."""
+    return thin_space(records, metric, count, strategy=strategy, representation=representation)
+
+
+def uniform_density_sample_space(records, metric, radius, *, representation="metric_space"):
+    """Alias for uniform-density thinning by maximal radius net."""
+    from metric.strategies import UniformDensity
+
+    return thin_space(records, metric, strategy=UniformDensity(radius), representation=representation)
+
+
+def equalize_space(records, metric, radius=None, strategy=None, *, representation="metric_space"):
+    """Density-equalizing thinning by maximal metric radius net."""
+    from metric.strategies import UniformDensity
+
+    if radius is None and strategy is None:
+        raise ValueError("equalize_space requires radius= or UniformDensity(...)")
+    if strategy is not None and not isinstance(strategy, UniformDensity):
+        _require_native_binding("equalize_space(...)", f"{type(strategy).__name__} equalization")
+    return _resample_space(
+        records,
+        metric,
+        strategy=strategy,
+        radius=radius,
+        representation=representation,
+        mapping="equalize",
     )
 
 
@@ -1531,16 +2347,129 @@ def reduce_space(records, metric, count=None, strategy=None, *, representation="
     )
 
 
-def compress_space(records, metric, count=None, strategy=None, *, representation="metric_space"):
+def compress_space(records, metric, count=None, strategy=None, *, radius=None, representation="metric_space"):
     """Compress a finite metric space by retaining representatives through the native C++ binding."""
+    from metric.strategies import KMedoids, RadiusCoverage
+
     record_list = list(records)
+    if radius is not None:
+        if isinstance(strategy, RadiusCoverage) and strategy.radius != radius:
+            raise ValueError("use either radius= or RadiusCoverage(...), not conflicting radii")
+        if strategy is not None and not isinstance(strategy, RadiusCoverage):
+            raise ValueError("radius compression cannot combine radius= with a count-based strategy")
+        strategy = RadiusCoverage(radius)
+
+    if isinstance(strategy, RadiusCoverage):
+        if count is not None:
+            raise ValueError("radius_coverage compression chooses the representative count; omit count")
+        selected = _radius_coverage_representative_indices(record_list, metric, strategy.radius)
+        assignments, distances = _assign_to_representatives(record_list, metric, selected)
+        multiplicities, weights = _compression_representative_measure(
+            assignments,
+            len(selected),
+            len(record_list),
+        )
+
+        from metric.spaces import Space
+
+        ratio = (len(selected) / len(record_list)) if record_list else 0.0
+        validity = _compression_validity("radius coverage")
+        return CompressionResult(
+            space=Space(
+                [record_list[index] for index in selected],
+                metric,
+                metadata={
+                    "operator_name": "compress",
+                    "strategy": "radius_coverage",
+                    "metric_status": "unknown",
+                    "validity": validity,
+                },
+            ),
+            source_record_ids=selected,
+            assignments=assignments,
+            nearest_representative_distances=distances,
+            representative_multiplicities=multiplicities,
+            representative_weights=weights,
+            source_record_count=len(record_list),
+            compressed_record_count=len(selected),
+            compression_ratio=ratio,
+            exact=True,
+            operator_name="compress",
+            compression="representatives",
+            strategy="radius_coverage",
+            representation=representation,
+            lossy=len(selected) < len(record_list),
+            inverse_supported=False,
+            metric_status="unknown",
+            validity=validity,
+        )
+
+    if isinstance(strategy, KMedoids):
+        if count is not None and count != strategy.groups:
+            raise ValueError("use either count= or KMedoids(groups=...), not conflicting group counts")
+        groups = kmedoids(
+            record_list,
+            metric,
+            strategy.groups,
+            strategy.max_iterations,
+            representation=representation,
+        )
+        selected = groups.medoids
+        assignments, distances = _assign_to_representatives(record_list, metric, selected)
+        multiplicities, weights = _compression_representative_measure(
+            assignments,
+            len(selected),
+            len(record_list),
+        )
+
+        from metric.spaces import Space
+
+        ratio = (len(selected) / len(record_list)) if record_list else 0.0
+        validity = _compression_validity("k-medoids")
+        return CompressionResult(
+            space=Space(
+                [record_list[index] for index in selected],
+                metric,
+                metadata={
+                    "operator_name": "compress",
+                    "strategy": "k_medoids",
+                    "metric_status": "unknown",
+                    "validity": validity,
+                },
+            ),
+            source_record_ids=selected,
+            assignments=assignments,
+            nearest_representative_distances=distances,
+            representative_multiplicities=multiplicities,
+            representative_weights=weights,
+            source_record_count=len(record_list),
+            compressed_record_count=len(selected),
+            compression_ratio=ratio,
+            exact=True,
+            operator_name="compress",
+            compression="representatives",
+            strategy="k_medoids",
+            representation=representation,
+            lossy=len(selected) < len(record_list),
+            inverse_supported=False,
+            metric_status="unknown",
+            validity=validity,
+        )
+
     reduction = reduce_space(record_list, metric, count=count, strategy=strategy, representation=representation)
     ratio = (reduction.reduced_record_count / reduction.source_record_count) if reduction.source_record_count else 0.0
+    multiplicities, weights = _compression_representative_measure(
+        reduction.assignments,
+        reduction.reduced_record_count,
+        reduction.source_record_count,
+    )
     return CompressionResult(
         space=reduction.space,
         source_record_ids=reduction.source_record_ids,
         assignments=reduction.assignments,
         nearest_representative_distances=reduction.nearest_representative_distances,
+        representative_multiplicities=multiplicities,
+        representative_weights=weights,
         source_record_count=reduction.source_record_count,
         compressed_record_count=reduction.reduced_record_count,
         compression_ratio=ratio,
@@ -1551,18 +2480,19 @@ def compress_space(records, metric, count=None, strategy=None, *, representation
         representation=reduction.representation,
         lossy=reduction.reduced_record_count < reduction.source_record_count,
         inverse_supported=False,
+        metric_status="unknown",
+        validity=_compression_validity(reduction.strategy),
     )
 
 
-def map_space(records, transform, metric, *, representation="metric_space"):
+def map_space(records, transform, metric, *, representation="metric_space", source_ids=None):
     """Map records through a caller-supplied deterministic transform.
 
     Adapter: this applies the caller's own ``transform`` callable to each record
     and wraps the mapped records in a Space using the caller's ``metric``. It is
-    element-wise data adaptation (analogous to ``map``), not a METRIC mapping
-    algorithm (PCFA/SOM/KOC/DSPCC/PHATE-AE), so it stays on the Python side.
-    Learned/structural mappings are reached through ``Space.map(strategy=...)``
-    and the native bindings in ``metric.mappings``.
+    element-wise data adaptation (analogous to ``map``), not a derived
+    finite-space mapping operator, so it stays on the Python side. Native
+    derived-coordinate artifacts are reached through ``metric.mappings``.
     """
     if not callable(transform):
         raise TypeError("transform must be callable")
@@ -1571,12 +2501,33 @@ def map_space(records, transform, metric, *, representation="metric_space"):
 
     records = list(records)
     mapped_records = [transform(record) for record in records]
+    if source_ids is None:
+        source_ids = tuple(range(len(records)))
+    else:
+        source_ids = tuple(source_ids)
+    if len(source_ids) != len(records):
+        raise ValueError("source_ids must match the mapped record count")
 
     from metric.spaces import Space
+    validity = (
+        "deterministic per-record transform; applicable out-of-sample when the caller's "
+        "transform and target metric accept the new record"
+    )
 
     return MappingResult(
-        space=Space(mapped_records, metric),
-        source_record_ids=tuple(range(len(records))),
+        space=Space(
+            mapped_records,
+            metric,
+            ids=source_ids,
+            metadata={
+                "mapping": "deterministic_transform",
+                "strategy": "deterministic_transform",
+                "metric_status": "unknown",
+                "out_of_sample_supported": True,
+                "validity": validity,
+            },
+        ),
+        source_record_ids=source_ids,
         source_record_count=len(records),
         target_record_count=len(mapped_records),
         exact=True,
@@ -1585,6 +2536,11 @@ def map_space(records, transform, metric, *, representation="metric_space"):
         strategy="deterministic_transform",
         representation=representation,
         inverse_supported=False,
+        source_records=tuple((record_id,) for record_id in source_ids),
+        representative_records=source_ids,
+        metric_status="unknown",
+        out_of_sample_supported=True,
+        validity=validity,
     )
 
 
@@ -1748,6 +2704,7 @@ def describe_structure(records, metric, *, representation="metric_space"):
         exact=bool(payload["exact"]),
         strategy=str(payload["strategy"]),
         representation=str(payload["representation"]),
+        diagnostics=payload.get("diagnostics"),
     )
 
 
@@ -1761,7 +2718,7 @@ __all__ = [
     "CompressionResult",
     "CorrelationResult",
     "EmbeddingDiagnostics",
-    "EmbeddingModel",
+    "EmbeddingArtifact",
     "EmbeddingResult",
     "GraphConnectivityDiagnostics",
     "GraphDegreeDiagnostics",
@@ -1780,8 +2737,10 @@ __all__ = [
     "correlate_spaces",
     "compress_space",
     "dbscan",
-    "denoise_space",
+    "density_filter_space",
     "describe_structure",
+    "distribution_sample_space",
+    "equalize_space",
     "embed_space",
     "find_groups",
     "find_outliers",
@@ -1814,4 +2773,6 @@ __all__ = [
     "separated_representative_indices",
     "separated_representatives",
     "symmetrize_graph",
+    "thin_space",
+    "uniform_density_sample_space",
 ]

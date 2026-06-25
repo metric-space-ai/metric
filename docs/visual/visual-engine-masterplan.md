@@ -245,14 +245,14 @@ GPU-backed inspection surface.
 C++ is the source of truth for:
 
 - metric values
-- algorithm outputs
+- derived states and solver outputs
 - search results
 - entropy, density, intrinsic dimension, local volume
-- clustering, groups, outliers, representatives
+- component groupings, density groupings, outliers, representatives
 - MGC and paired-space dependence evidence
-- diffusion, reverse diffusion, dynamics, Redif inverse-dynamics and resampling results
-- mapping outputs such as PHATE, PCFA, SOM/KOC, AE latent spaces
-- solver traces, DNN losses, graph solver residuals
+- diffusion, inverse diffusion, dynamics, Redif inverse-dynamics and resampling results
+- derived coordinate spaces such as parametric diffusion coordinates, PCFA, parametric latent spaces, and graph layouts
+- solver traces, objective trajectories, graph solver residuals
 - metric-law checks and admission/quarantine status
 
 JavaScript is responsible for:
@@ -477,7 +477,7 @@ Examples:
 - representative assignment
 - reconstruction error
 - graph residual
-- DNN loss
+- coordinate target error
 - metric-law violation
 
 ### `graphs`
@@ -524,10 +524,10 @@ Examples:
 
 - landmark 3D
 - landmark 2D
-- PHATE 2D/3D
-- AE latent
+- parametric diffusion coordinates 2D/3D
+- parametric latent coordinates
 - PCFA
-- SOM/KOC grid
+- derived grid
 - graph layout
 - solver scalar field lifted to 3D
 - user-provided coordinates
@@ -543,9 +543,9 @@ Examples:
 - reverse diffusion steps
 - Redif inverse-dynamics before/after
 - resampling before/after
-- mapping training epochs
+- coordinate calibration steps
 - graph solver iterations
-- DNN loss and latent-space evolution
+- objective traces and coordinate-state evolution
 
 The timeline contains references to coordinate states, properties, graphs, and
 relations. It does not ask JavaScript to recompute them.
@@ -594,10 +594,10 @@ WebGL is shader-based. The engine should use METRIC-owned shaders for:
 - matrix textures for relation fields, law checks, MGC grids, transition
   matrices, assignment matrices, and solver matrices
 - scalar fields for entropy, density, local volume, intrinsic dimension,
-  outlier score, residuals, and mapping loss
-- coordinate morphs between 2D, 3D, PHATE, AE, PCFA, SOM/KOC, graph layouts,
+  outlier score, residuals, and derivation residuals
+- coordinate morphs between 2D, 3D, parametric diffusion coordinates, parametric latent coordinates, PCFA, graph layouts,
   and solver layouts
-- trails and temporal fades for diffusion, reverse diffusion, resampling,
+- trails and temporal fades for diffusion, inverse diffusion, resampling,
   Redif inverse-dynamics, and iterative solvers
 - picking passes that keep selection accurate for dense point and graph scenes
 - optional postprocessing for glow, depth haze, high-contrast selection, and
@@ -608,7 +608,8 @@ should feel like a small physical model of a finite metric space: a stable
 ground plane, orthographic/isometric camera, shallow focus, dense relation
 fields, and precise linked objects. The ground is not empty decoration. It can
 show a semantic projection of the same records: an interpretable 2D shadow,
-PHATE/AE target state, cluster footprint, density/entropy field, or other
+diffusion-coordinate target state, parametric coordinate state, cluster footprint,
+density/entropy field, or other
 low-dimensional view exported by C++. Projection shadows should inherit the
 record or property colors and may form gradients when many projected records
 accumulate. Free camera movement can exist, but the brand default is a composed
@@ -686,7 +687,7 @@ Selecting a matrix cell must be able to update:
 
 2D-to-3D morph is a core engine capability.
 
-It is not a special PHATE/AE feature. It applies to any records with multiple
+It is not a special parametric diffusion coordinates or parametric-coordinate feature. It applies to any records with multiple
 coordinate states.
 
 Requirements:
@@ -696,7 +697,7 @@ Requirements:
 - automatic loop
 - linked selection stable during morph
 - optional scalar overlays preserved during morph
-- support for more than two states later: 2D, 3D, PHATE, AE, graph layout,
+- support for more than two states later: 2D, 3D, parametric diffusion coordinates, AE, graph layout,
   solver layout, and user-provided coordinates
 
 ## View Families
@@ -777,7 +778,7 @@ For:
 - representative assignment
 - reconstruction error
 - solver residual
-- training loss
+- calibration loss
 
 Views:
 
@@ -808,17 +809,16 @@ Views:
 - edge-weight matrix
 - graph timeline
 
-### Mapping Views
+### Derived Coordinate Views
 
 For:
 
-- PHATE
-- AE latent spaces
+- parametric diffusion coordinates
+- parametric latent spaces
 - PCFA
-- SOM/KOC
 - Redif
 - generic derived coordinate spaces
-- derived maps and out-of-sample behavior
+- derived maps and extension behavior
 
 Views:
 
@@ -857,7 +857,7 @@ For:
 - PCG
 - approximate Cholesky
 - sparse CSC
-- DNN/autoencoder training
+- parametric coordinate solver calibration
 
 Views:
 
@@ -972,7 +972,7 @@ Views:
 - pair distribution
 - quarantine report
 
-### Mapping, PHATE, AE, PCFA, SOM/KOC
+### Derived Coordinates, parametric diffusion coordinates, Parametric Latent Spaces, PCFA
 
 Exports:
 
@@ -980,8 +980,8 @@ Exports:
 - target coordinate spaces
 - preservation diagnostics
 - reconstruction data where applicable
-- out-of-sample evidence
-- training timeline where applicable
+- extension evidence
+- calibration timeline where applicable
 
 Views:
 
@@ -1113,7 +1113,7 @@ Deliverables:
 
 Acceptance:
 
-- PHATE/AE, PCFA, SOM/KOC, diffusion, Redif inverse-dynamics, and resampling evidence share
+- parametric diffusion coordinates, parametric latent spaces, PCFA, diffusion, Redif inverse-dynamics, and resampling evidence share
   the same coordinate/timeline primitives
 
 ### Track 6: Solver And Numeric Views
@@ -1123,12 +1123,12 @@ Deliverables:
 - sparse matrix texture view
 - residual/loss timelines
 - graph solver overlay
-- DNN/AE training trace view
+- coordinate-solver calibration trace view
 - numeric diagnostic panes
 
 Acceptance:
 
-- Laplacian, PCG, approximate Cholesky, sparse matrix, and DNN traces can be
+- Laplacian, PCG, approximate Cholesky, sparse matrix, and coordinate-solver traces can be
   inspected without custom one-off pages
 
 ### Track 7: Hero Workspaces
@@ -1139,7 +1139,7 @@ Deliverables:
 - mixed structured records workspace
 - histogram/image transport workspace
 - cross-space dependency workspace
-- PHATE/AE mapping workspace
+- parametric diffusion coordinates and parametric-coordinate workspace
 - finite dynamics workspace
 - graph solver workspace
 

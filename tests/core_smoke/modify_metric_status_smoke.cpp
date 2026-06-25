@@ -42,14 +42,14 @@ int main()
 	assert(!rep.out_of_sample_supported);
 	assert(rep.validity.find("selected records only") != std::string::npos);
 
-	const auto noisy = mtrc::make_space(std::vector<int>{0, 1, 2, 3, 4, 50}, AbsoluteDistance{});
-	const auto denoised = mtrc::denoise(noisy, 2.0, 2);
-	assert(denoised.metric_status == source_law);
-	assert(!denoised.out_of_sample_supported);
-	assert(denoised.validity.find("uneven-sampling correction") != std::string::npos);
-	for (const auto &row : denoised.source_records) {
+	const auto line_with_far_record = mtrc::make_space(std::vector<int>{0, 1, 2, 3, 4, 50}, AbsoluteDistance{});
+	const auto density_filtered = mtrc::density_filter(line_with_far_record, 2.0, 2);
+	assert(density_filtered.metric_status == source_law);
+	assert(!density_filtered.out_of_sample_supported);
+	assert(density_filtered.validity.find("density-based record filtering") != std::string::npos);
+	for (const auto &row : density_filtered.source_records) {
 		assert(row.size() == 1);
-		assert(noisy.contains(row[0]));
+		assert(line_with_far_record.contains(row[0]));
 	}
 
 	return 0;

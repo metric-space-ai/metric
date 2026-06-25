@@ -75,5 +75,5 @@ node visual/tools/check-visual-regression-public-examples.mjs
 node visual/tools/check-visual-performance-large-scenes.mjs
 node visual/tools/check-visual-document.mjs <exported metric.visual.json>
 ctest --test-dir build/core -R 'visual_(export|validate)' --output-on-failure
-ctest --test-dir build/core -L 'metric_application_evidence|metric_phate_pipeline|metric_mnist|metric_visual_integrity|metric_benchmark_report' --output-on-failure
+ctest --test-dir build/core -L 'metric_application_evidence|metric_diffusion_coordinate_pipeline|metric_mnist|metric_visual_integrity|metric_benchmark_report' --output-on-failure
 ```

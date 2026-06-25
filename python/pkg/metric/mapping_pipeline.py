@@ -1,18 +1,18 @@
-"""Metric-Space Mapping Pipeline -- Python adapter.
+"""Metric-Space Coordinate Pipeline -- Python adapter.
 
-This module exposes the native finite metric-space mapping pipeline (PHATE-AE)
-to Python *as an adapter only*. It marshals row data to the native C++ engine
-and re-packages the engine's results; it never computes PHATE geometry,
-diffusion, neural training, or neighbor-preservation scoring in Python. When the
-native binding is absent (e.g. a wheel built without it), every entry point
-raises :class:`StrategyUnavailableError` rather than falling back to a Python
-reimplementation -- Python must not own the mapping math.
+This module exposes a native finite metric-space coordinate pipeline to Python
+as an adapter only. It marshals row data to the native C++ engine and
+re-packages the engine's results; it never computes diffusion geometry,
+coordinate calibration, or neighbor-preservation scoring in Python. When the
+native binding is absent, every entry point raises
+:class:`StrategyUnavailableError` rather than falling back to a Python
+reimplementation.
 
 The pipeline is framed as a finite metric-space transform, not a neural-network
 product: a source finite metric space (records + a metric) is mapped into a
 derived coordinate space through interchangeable, role-based components
 (codec, pairwise distances, affinity kernel, diffusion operator, target
-generator, trainer, mapping model, artifact). The model handle surfaces those
+generator, calibration component, coordinate-map component, artifact). The artifact handle surfaces those
 components, the one-to-one lineage, and native diagnostics.
 """
 
@@ -24,10 +24,9 @@ STABILITY = "beta"
 
 _UNAVAILABLE_MESSAGE = (
     "The Metric-Space Mapping Pipeline requires the native C++ binding. "
-    "This adapter does not reimplement PHATE-AE, diffusion, or neighbor "
+    "This adapter does not reimplement metric-space diffusion or neighbor "
     "preservation in Python."
 )
-
 
 def _load_native_engine_module():
     try:
@@ -44,62 +43,66 @@ def _require_native(attribute):
     return native_metric
 
 
-@dataclass(frozen=True)
-class MetricSpaceMappingModel:
-    """Adapter handle for a native fitted metric-space mapping.
+def _normalize_component(component):
+    return dict(component)
 
-    All properties and methods delegate to the native model; this class holds
+
+@dataclass(frozen=True)
+class MetricSpaceMappingArtifact:
+    """Adapter handle for a native metric-space mapping artifact.
+
+    All properties and methods delegate to the native artifact; this class holds
     no mapping state and performs no numerical work.
     """
 
-    _model: object
+    _artifact: object
     distance_provider: str
     affinity_kernel: str
     diffusion_operator: str
 
     @property
     def mapping(self):
-        return self._model.mapping
+        return "parametric_diffusion_coordinates"
 
     @property
     def strategy(self):
-        return self._model.strategy
+        return "native_metric_diffusion_coordinate_solver"
 
     @property
     def source_record_count(self):
-        return self._model.source_record_count
+        return self._artifact.source_record_count
 
     @property
     def latent_dimension(self):
-        return self._model.latent_dimension
+        return self._artifact.latent_dimension
 
     @property
     def inverse_supported(self):
-        return self._model.inverse_supported
+        return self._artifact.inverse_supported
 
     @property
     def components(self):
         """The interchangeable pipeline components, as (role, name) records."""
-        return tuple(dict(component) for component in self._model.components)
+        return tuple(_normalize_component(component) for component in self._artifact.components)
 
     def lineage(self):
         """One-to-one provenance from the derived space back to the source."""
-        return dict(self._model.lineage())
+        return dict(self._artifact.lineage())
 
     def transform(self, records):
         """Map a finite metric space (rows) into the derived coordinate space."""
-        return self._model.transform(records)
+        return self._artifact.transform(records)
 
     def inverse_transform(self, latent_records):
         """Decode derived coordinates back into source-shaped records."""
-        return self._model.inverse_transform(latent_records)
+        return self._artifact.inverse_transform(latent_records)
 
     def neighbor_recall(self, neighbor_count=3):
-        """Native neighbor-preservation recall of the fitted derived space."""
-        return self._model.neighbor_recall(neighbor_count)
+        """Native neighbor-preservation recall of the derived coordinate space."""
+        return self._artifact.neighbor_recall(neighbor_count)
 
-    def training_report(self):
-        return self._model.training_report()
+    def calibration_report(self):
+        return dict(self._artifact.calibration_report())
 
     def to_dict(self):
         return {
@@ -127,7 +130,7 @@ def pipeline_components(
     """Return the interchangeable components of the pipeline plan.
 
     A pure-metadata adapter: it resolves the plan in the native engine and
-    returns its role-based components without fitting anything.
+    returns its role-based components without deriving any artifact.
     """
     native_metric = _require_native("_metric_space_mapping_pipeline_plan")
     components = native_metric._metric_space_mapping_pipeline_plan(
@@ -137,15 +140,15 @@ def pipeline_components(
         affinity_kernel=affinity_kernel,
         diffusion_operator=diffusion_operator,
     )
-    return tuple(dict(component) for component in components)
+    return tuple(_normalize_component(component) for component in components)
 
 
-def fit_mapping_pipeline(
+def derive_mapping_pipeline(
     records,
     *,
     dimensions=1,
-    epochs=100,
-    learning_rate=0.01,
+    calibration_steps=100,
+    step_size=0.01,
     diffusion_steps=3,
     kernel_scale=1.0,
     reconstruction_weight=0.05,
@@ -155,10 +158,10 @@ def fit_mapping_pipeline(
     affinity_kernel="gaussian_affinity_kernel",
     diffusion_operator="row_normalized_diffusion_operator",
 ):
-    """Fit the native metric-space mapping pipeline to vector-row records.
+    """Derive the native metric-space coordinate artifact for vector-row records.
 
     Binding adapter only: list/NumPy rows are marshalled to the native C++
-    pipeline, which performs all target construction and training.
+    pipeline, which performs all target construction and calibration.
 
     The native map is DETERMINISTIC by construction (closed-form weight
     initialization and no batch shuffling), so a given input always yields the
@@ -166,12 +169,12 @@ def fit_mapping_pipeline(
     the result; reproducibility is guaranteed structurally, not via the seed (see
     the determinism test in tests/core/test_mapping_pipeline_adapter.py).
     """
-    native_metric = _require_native("_metric_space_mapping_pipeline_fit")
-    model = native_metric._metric_space_mapping_pipeline_fit(
+    native_metric = _require_native("_metric_space_mapping_pipeline_derive")
+    artifact = native_metric._metric_space_mapping_pipeline_derive(
         records,
         dimensions=dimensions,
-        epochs=epochs,
-        learning_rate=learning_rate,
+        calibration_steps=calibration_steps,
+        step_size=step_size,
         diffusion_steps=diffusion_steps,
         kernel_scale=kernel_scale,
         reconstruction_weight=reconstruction_weight,
@@ -181,8 +184,8 @@ def fit_mapping_pipeline(
         affinity_kernel=affinity_kernel,
         diffusion_operator=diffusion_operator,
     )
-    return MetricSpaceMappingModel(
-        model,
+    return MetricSpaceMappingArtifact(
+        artifact,
         distance_provider=distance_provider,
         affinity_kernel=affinity_kernel,
         diffusion_operator=diffusion_operator,

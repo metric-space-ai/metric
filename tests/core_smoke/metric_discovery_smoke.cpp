@@ -29,7 +29,7 @@
 // RiemannianDistance is no longer part of the header-only public catalog.hpp
 // umbrella (it needs a LAPACK eigensolver). Include it BEFORE discovery.hpp so
 // the macro-guarded admission registration is active in this translation unit
-// (the same include-before-registry pattern as the quarantined SSIM/Kohonen).
+// (the same include-before-registry pattern as quarantined opt-in metrics).
 #include <metric/metric/catalog/space/Riemannian.hpp>
 
 #include <metric/metric/discovery.hpp>

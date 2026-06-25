@@ -2,11 +2,14 @@
 
 from collections.abc import Mapping
 import copy as _copy
+from dataclasses import dataclass
 import math
 import numbers
+import operator
 
 from metric.exceptions import (
     AmbiguousIntentError,
+    MetricComputationError,
     MetricContractError,
     MetricInputError,
     MissingMetricError,
@@ -18,7 +21,76 @@ from metric.runtime import CachePolicy, require_exact_runtime
 
 
 _VALIDATION_MODES = {"none", "sample", "strict"}
-_MATERIALIZED_CACHE_MODES = {"auto", "materialized"}
+_MATERIALIZED_CACHE_MODES = {"materialized"}
+_DEFAULT_MAX_MEMORY_BYTES = 512 * 1024 * 1024
+_DEFAULT_MAX_DISTANCE_EVALUATIONS = 100_000_000
+_DEFAULT_MAX_DENSE_RECORDS = 4096
+_PYTHON_DISTANCE_CELL_BYTES = 32
+_PYTHON_ROW_OVERHEAD_BYTES = 64
+_DEFAULT_LANDMARK_COUNT = 16
+_DEFAULT_LANDMARK_CANDIDATE_COUNT = 64
+_LANDMARK_REPRESENTATION_ALIASES = {
+    "landmark",
+    "landmarks",
+    "landmark_index",
+    "landmark_pivot",
+    "landmark_pivots",
+    "pivot",
+    "pivots",
+    "pivot_index",
+}
+_SOURCE_METRIC_REPRESENTATION_ALIASES = {
+    "metric_space",
+    "source_metric",
+    "live_scan",
+}
+
+
+@dataclass(frozen=True)
+class SpacePlan:
+    """User-facing execution and materialization plan for a finite space."""
+
+    record_count: int
+    intent: str
+    exactness: str
+    representation: str
+    estimated_distance_evaluations: int
+    memory_bytes_estimate: int
+    decision: str
+    reason: str
+    fallback: tuple = ()
+    query_count: object = None
+    max_memory_bytes: int = _DEFAULT_MAX_MEMORY_BYTES
+    max_distance_evaluations: int = _DEFAULT_MAX_DISTANCE_EVALUATIONS
+    max_dense_records: int = _DEFAULT_MAX_DENSE_RECORDS
+    diagnostics: object = None
+
+    def to_dict(self):
+        return {
+            "record_count": self.record_count,
+            "intent": self.intent,
+            "query_count": self.query_count,
+            "exactness": self.exactness,
+            "representation": self.representation,
+            "estimated_distance_evaluations": self.estimated_distance_evaluations,
+            "memory_bytes_estimate": self.memory_bytes_estimate,
+            "decision": self.decision,
+            "reason": self.reason,
+            "fallback": self.fallback,
+            "max_memory_bytes": self.max_memory_bytes,
+            "max_distance_evaluations": self.max_distance_evaluations,
+            "max_dense_records": self.max_dense_records,
+            "diagnostics": self.diagnostics,
+        }
+
+    def __str__(self):
+        return (
+            f"SpacePlan(intent={self.intent!r}, records={self.record_count}, "
+            f"decision={self.decision!r}, exactness={self.exactness!r}, "
+            f"representation={self.representation!r}, "
+            f"distance_evaluations={self.estimated_distance_evaluations}, "
+            f"memory_bytes={self.memory_bytes_estimate}, reason={self.reason!r})"
+        )
 
 
 class RecordId(int):
@@ -64,6 +136,938 @@ def _normalize_validation(validate):
 
 def _normalize_cache(cache):
     return cache if isinstance(cache, CachePolicy) else CachePolicy(cache)
+
+
+def _normalize_non_negative_count(value, name):
+    if isinstance(value, bool):
+        raise TypeError(f"{name} must be a non-negative integer")
+    try:
+        value = operator.index(value)
+    except TypeError:
+        raise TypeError(f"{name} must be a non-negative integer") from None
+    if value < 0:
+        raise ValueError(f"{name} must be non-negative")
+    return value
+
+
+def _normalize_optional_budget(value, name, default):
+    if value is None:
+        return default
+    return _normalize_non_negative_count(value, name)
+
+
+def _normalize_optional_positive_count(value, name):
+    if value is None:
+        return None
+    value = _normalize_non_negative_count(value, name)
+    if value <= 0:
+        raise ValueError(f"{name} must be positive")
+    return value
+
+
+def _normalize_bool(value, name):
+    if not isinstance(value, bool):
+        raise TypeError(f"{name} must be a bool")
+    return value
+
+
+def _normalize_representation_token(value):
+    if not isinstance(value, str):
+        return None
+    return value.strip().lower().replace("-", "_").replace(" ", "_")
+
+
+def _landmark_representation_name(value):
+    normalized = _normalize_representation_token(value)
+    if normalized in _LANDMARK_REPRESENTATION_ALIASES:
+        return "landmark_index"
+    return None
+
+
+def _source_metric_representation_name(value):
+    normalized = _normalize_representation_token(value)
+    if value is None or normalized in _SOURCE_METRIC_REPRESENTATION_ALIASES:
+        return "metric_space"
+    return None
+
+
+def _canonical_plan_intent(intent):
+    if not isinstance(intent, str):
+        raise TypeError("intent must be a string")
+    normalized = intent.strip().lower().replace("-", "_")
+    aliases = {
+        "knn": "neighbors",
+        "nearest": "neighbors",
+        "nearest_neighbors": "neighbors",
+        "radius": "range",
+        "range_neighbors": "range",
+        "within_radius": "range",
+        "matrix": "matrix",
+        "to_matrix": "matrix",
+        "distance_matrix": "matrix",
+        "distance_matrix_numpy": "matrix",
+        "pairwise": "matrix",
+        "pairwise_distances": "matrix",
+        "describe_structure": "describe",
+    }
+    return aliases.get(normalized, normalized)
+
+
+def _dense_memory_estimate(record_count, *, cell_bytes=_PYTHON_DISTANCE_CELL_BYTES):
+    return (
+        (record_count * record_count * cell_bytes)
+        + (record_count * _PYTHON_ROW_OVERHEAD_BYTES)
+        + _PYTHON_ROW_OVERHEAD_BYTES
+    )
+
+
+def _sample_record_count(record_count, max_dense_records, max_distance_evaluations):
+    if record_count <= 0:
+        return 0
+    if record_count == 1:
+        return record_count
+    if max_dense_records <= 0 or max_distance_evaluations <= 0:
+        return 1
+    by_dense_records = min(record_count, max_dense_records)
+    if by_dense_records <= 1:
+        return by_dense_records
+    by_evaluations = int(math.sqrt(max_distance_evaluations))
+    if by_evaluations <= 1:
+        return 1
+    return min(record_count, by_dense_records, by_evaluations)
+
+
+def _sample_indices(record_count, sample_count):
+    sample_count = min(record_count, sample_count)
+    if sample_count <= 0:
+        return []
+    if sample_count >= record_count:
+        return list(range(record_count))
+    if sample_count == 1:
+        return [0]
+
+    last = record_count - 1
+    indices = []
+    seen = set()
+    for offset in range(sample_count):
+        index = round(offset * last / (sample_count - 1))
+        if index not in seen:
+            indices.append(index)
+            seen.add(index)
+
+    index = 0
+    while len(indices) < sample_count and index < record_count:
+        if index not in seen:
+            indices.append(index)
+            seen.add(index)
+        index += 1
+    return sorted(indices)
+
+
+def _normalize_neighbor_limit(k=None, count=None):
+    if k is not None and count is not None and k != count:
+        raise ValueError("use either k or count, not conflicting values")
+    requested = count if count is not None else k
+    if requested is None:
+        requested = 1
+    return _normalize_non_negative_count(requested, "neighbor count")
+
+
+def _normalize_query_batch(query, queries):
+    if queries is None:
+        return [query], False
+    if query is not None:
+        raise ValueError("use either query or queries, not both")
+    return list(queries), True
+
+
+def _budget_reasons(record_count, distance_evaluations, memory_bytes, budgets):
+    reasons = []
+    max_memory_bytes, max_distance_evaluations, max_dense_records = budgets
+    if memory_bytes > max_memory_bytes:
+        reasons.append(
+            f"estimated memory {memory_bytes} bytes exceeds budget {max_memory_bytes} bytes"
+        )
+    if distance_evaluations > max_distance_evaluations:
+        reasons.append(
+            f"estimated distance evaluations {distance_evaluations} exceed budget "
+            f"{max_distance_evaluations}"
+        )
+    if record_count > max_dense_records:
+        reasons.append(
+            f"dense record count {record_count} exceeds budget {max_dense_records}"
+        )
+    return reasons
+
+
+def _make_strict_validation_plan(
+    record_count,
+    *,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
+    record_count = _normalize_non_negative_count(record_count, "record_count")
+    max_distance_evaluations = _normalize_optional_budget(
+        max_distance_evaluations,
+        "max_distance_evaluations",
+        _DEFAULT_MAX_DISTANCE_EVALUATIONS,
+    )
+    max_dense_records = _normalize_optional_budget(
+        max_dense_records,
+        "max_dense_records",
+        _DEFAULT_MAX_DENSE_RECORDS,
+    )
+    distance_evaluations = record_count * record_count
+    reasons = []
+    if distance_evaluations > max_distance_evaluations:
+        reasons.append(
+            f"estimated distance evaluations {distance_evaluations} exceed budget "
+            f"{max_distance_evaluations}"
+        )
+    if record_count > max_dense_records:
+        reasons.append(
+            f"strict validation record count {record_count} exceeds budget "
+            f"{max_dense_records}"
+        )
+    return SpacePlan(
+        record_count=record_count,
+        intent="strict_validation",
+        exactness="exact",
+        representation="validation_scan",
+        estimated_distance_evaluations=distance_evaluations,
+        memory_bytes_estimate=0,
+        decision="refused" if reasons else "allowed",
+        reason="; ".join(reasons) if reasons else "strict validation is within budget",
+        fallback=("use validate='sample'", "use validate='none'", "raise validation budgets"),
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+
+
+def _sampled_query_plan_diagnostics(
+    record_count,
+    query_count,
+    max_distance_evaluations,
+    *,
+    reason,
+):
+    if query_count <= 0 or record_count <= 0:
+        per_query_budget = 0
+        sample_count = 0
+        holdout_count = 0
+    else:
+        per_query_budget = max_distance_evaluations // max(1, query_count)
+        from metric.operators import _sampled_neighbor_budget_split
+
+        sample_count, holdout_count = _sampled_neighbor_budget_split(
+            record_count,
+            per_query_budget,
+        )
+
+    sampled_evaluations = sample_count * query_count
+    remaining_budget = max(0, max_distance_evaluations - sampled_evaluations)
+    recall_evaluations = min(holdout_count * query_count, remaining_budget)
+    total_evaluations = sampled_evaluations + recall_evaluations
+    return {
+        "diagnostic": "search_approximation_plan",
+        "bounded": True,
+        "candidate_policy": "regular_sample",
+        "candidate_count": sample_count,
+        "candidate_universe": record_count,
+        "candidate_fraction": 1.0 if record_count == 0 else sample_count / record_count,
+        "recall_holdout_count": holdout_count,
+        "distance_evaluation_budget_per_query": per_query_budget,
+        "estimated_sampled_distance_evaluations": sampled_evaluations,
+        "estimated_recall_distance_evaluations": recall_evaluations,
+        "estimated_distance_evaluations": total_evaluations,
+        "approximation_reason": reason,
+    }
+
+
+def _landmark_query_parameters(
+    record_count,
+    query_count,
+    max_distance_evaluations,
+    *,
+    landmark_count=None,
+    candidate_count=None,
+):
+    requested_landmarks = _normalize_optional_positive_count(
+        landmark_count,
+        "landmark_count",
+    )
+    requested_candidates = _normalize_optional_positive_count(
+        candidate_count,
+        "candidate_count",
+    )
+    if record_count <= 0:
+        return {
+            "landmark_count": 0,
+            "candidate_count": 0,
+            "requested_landmark_count": requested_landmarks,
+            "requested_candidate_count": requested_candidates,
+            "estimated_landmark_build_distance_evaluations": 0,
+            "estimated_query_landmark_distance_evaluations": 0,
+            "estimated_refinement_distance_evaluations": 0,
+            "estimated_distance_evaluations": 0,
+            "memory_bytes_estimate": _PYTHON_ROW_OVERHEAD_BYTES,
+            "budget_adapted": False,
+            "feasible": True,
+        }
+
+    query_count = max(0, query_count)
+    landmark_count = min(
+        record_count,
+        requested_landmarks
+        if requested_landmarks is not None
+        else _DEFAULT_LANDMARK_COUNT,
+    )
+    candidate_count = min(
+        record_count,
+        requested_candidates
+        if requested_candidates is not None
+        else _DEFAULT_LANDMARK_CANDIDATE_COUNT,
+    )
+    budget_adapted = False
+
+    if query_count > 0 and max_distance_evaluations is not None:
+        min_candidate_evaluations = query_count
+        min_landmark_evaluations = record_count + query_count
+        minimum_required = min_landmark_evaluations + min_candidate_evaluations
+        if max_distance_evaluations < minimum_required:
+            return {
+                "landmark_count": 0,
+                "candidate_count": 0,
+                "requested_landmark_count": requested_landmarks,
+                "requested_candidate_count": requested_candidates,
+                "estimated_landmark_build_distance_evaluations": 0,
+                "estimated_query_landmark_distance_evaluations": 0,
+                "estimated_refinement_distance_evaluations": 0,
+                "estimated_distance_evaluations": 0,
+                "memory_bytes_estimate": _PYTHON_ROW_OVERHEAD_BYTES,
+                "budget_adapted": True,
+                "feasible": False,
+                "minimum_required_distance_evaluations": minimum_required,
+            }
+
+        available_for_landmarks = max_distance_evaluations - min_candidate_evaluations
+        max_landmarks_by_budget = max(
+            1,
+            available_for_landmarks // max(1, record_count + query_count),
+        )
+        if landmark_count > max_landmarks_by_budget:
+            landmark_count = min(record_count, max_landmarks_by_budget)
+            budget_adapted = True
+
+        landmark_evaluations = landmark_count * (record_count + query_count)
+        remaining_for_refinement = max(0, max_distance_evaluations - landmark_evaluations)
+        max_candidates_by_budget = max(1, remaining_for_refinement // query_count)
+        if candidate_count > max_candidates_by_budget:
+            candidate_count = min(record_count, max_candidates_by_budget)
+            budget_adapted = True
+
+    landmark_build = record_count * landmark_count
+    query_landmarks = query_count * landmark_count
+    refinement = query_count * candidate_count
+    total = landmark_build + query_landmarks + refinement
+    memory_bytes = (
+        record_count * landmark_count * _PYTHON_DISTANCE_CELL_BYTES
+        + record_count * _PYTHON_ROW_OVERHEAD_BYTES
+        + _PYTHON_ROW_OVERHEAD_BYTES
+    )
+    return {
+        "landmark_count": landmark_count,
+        "candidate_count": candidate_count,
+        "requested_landmark_count": requested_landmarks,
+        "requested_candidate_count": requested_candidates,
+        "estimated_landmark_build_distance_evaluations": landmark_build,
+        "estimated_query_landmark_distance_evaluations": query_landmarks,
+        "estimated_refinement_distance_evaluations": refinement,
+        "estimated_distance_evaluations": total,
+        "memory_bytes_estimate": memory_bytes,
+        "budget_adapted": budget_adapted,
+        "feasible": True,
+    }
+
+
+def _landmark_query_plan_diagnostics(
+    record_count,
+    query_count,
+    max_distance_evaluations,
+    *,
+    reason,
+    landmark_count=None,
+    candidate_count=None,
+):
+    parameters = _landmark_query_parameters(
+        record_count,
+        query_count,
+        max_distance_evaluations,
+        landmark_count=landmark_count,
+        candidate_count=candidate_count,
+    )
+    diagnostics = {
+        "diagnostic": "landmark_search_plan",
+        "bounded": True,
+        "candidate_policy": "landmark_lower_bound",
+        "candidate_universe": record_count,
+        "candidate_fraction": (
+            1.0
+            if record_count == 0
+            else parameters["candidate_count"] / record_count
+        ),
+        "build_complexity": "O(n * p)",
+        "query_complexity": "O(p + c)",
+        "distance_evaluation_budget": max_distance_evaluations,
+        "approximation_reason": reason,
+    }
+    diagnostics.update(parameters)
+    return diagnostics
+
+
+def _landmark_neighbor_recall_diagnostics(
+    index,
+    queries,
+    returned_indices_by_query,
+    *,
+    candidate_count,
+    remaining_distance_budget,
+    count=None,
+    radius=None,
+):
+    from metric.operators import _recall_confidence_interval, _unmeasured_recall_diagnostics
+
+    def unmeasured(reason, *, recall_distance_evaluations=0):
+        diagnostics = _unmeasured_recall_diagnostics(
+            reason,
+            recall_distance_evaluations=recall_distance_evaluations,
+        )
+        diagnostics.update({
+            "recall_reference_candidate_count": 0,
+            "recall_reference_candidate_counts": (),
+        })
+        return diagnostics
+
+    record_count = len(index.records)
+    candidate_count = min(record_count, max(0, candidate_count))
+    if not queries:
+        return unmeasured("no query was available for recall calibration")
+    if record_count <= 0:
+        return unmeasured("no records were available for recall calibration")
+    if candidate_count <= 0:
+        return unmeasured("no landmark candidates were available for recall calibration")
+    if candidate_count >= record_count:
+        return unmeasured("landmark candidate window already covers all records")
+    if remaining_distance_budget <= 0:
+        return unmeasured("no distance budget remained for recall calibration")
+    if radius is None and (count is None or count <= 0):
+        return unmeasured("no requested neighbors were available for recall calibration")
+
+    target_reference_count = min(record_count, max(candidate_count + 1, candidate_count * 2))
+    measured_queries = 0
+    total_relevant = 0
+    total_hits = 0
+    total_calibration_records = 0
+    recall_distance_evaluations = 0
+    reference_candidate_counts = []
+
+    for query, returned_indices in zip(queries, returned_indices_by_query):
+        remaining = remaining_distance_budget - recall_distance_evaluations
+        if remaining <= 0:
+            break
+
+        available_for_refinement = remaining - index.landmark_count
+        if available_for_refinement <= candidate_count:
+            continue
+
+        reference_count = min(target_reference_count, available_for_refinement)
+        if reference_count <= candidate_count:
+            continue
+
+        reference_pairs, reference_diagnostics = index.query(
+            query,
+            candidate_count=reference_count,
+            count=count,
+            radius=radius,
+        )
+        spent = (
+            reference_diagnostics["query_landmark_distance_evaluations"]
+            + reference_diagnostics["refinement_distance_evaluations"]
+        )
+        recall_distance_evaluations += spent
+        reference_candidate_counts.append(reference_diagnostics["candidate_count"])
+        total_calibration_records += reference_diagnostics["candidate_count"]
+
+        reference_ids = {record_index for record_index, _distance in reference_pairs}
+        if not reference_ids:
+            continue
+
+        returned_ids = set(returned_indices)
+        measured_queries += 1
+        total_relevant += len(reference_ids)
+        total_hits += len(reference_ids & returned_ids)
+
+    if measured_queries <= 0 or total_relevant <= 0:
+        if recall_distance_evaluations <= 0:
+            reason = "not enough distance budget remained to expand landmark recall window"
+        elif radius is not None:
+            reason = "calibration window contained no true radius neighbors"
+        else:
+            reason = "calibration window contained no comparable nearest neighbors"
+        return unmeasured(
+            reason,
+            recall_distance_evaluations=recall_distance_evaluations,
+        )
+
+    recall = total_hits / total_relevant
+    standard_error, confidence_radius_95 = _recall_confidence_interval(
+        total_hits,
+        total_relevant,
+    )
+    return {
+        "recall_measured": True,
+        "recall": recall,
+        "standard_error": standard_error,
+        "confidence_radius_95": confidence_radius_95,
+        "recall_sample_query_count": measured_queries,
+        "recall_calibration_record_count": total_calibration_records,
+        "recall_relevant_count": total_relevant,
+        "recall_hit_count": total_hits,
+        "recall_distance_evaluations": recall_distance_evaluations,
+        "recall_reference_candidate_count": target_reference_count,
+        "recall_reference_candidate_counts": tuple(reference_candidate_counts),
+        "recall_measurement_reason": (
+            "measured over landmark candidates plus a larger lower-bound reference "
+            "window within the distance budget"
+        ),
+    }
+
+
+def _auto_landmark_query_plan_diagnostics(
+    record_count,
+    query_count,
+    max_distance_evaluations,
+    max_memory_bytes,
+    *,
+    reason,
+    landmark_count=None,
+    candidate_count=None,
+):
+    if query_count <= 1 or record_count <= 0:
+        return None
+
+    diagnostics = _landmark_query_plan_diagnostics(
+        record_count,
+        query_count,
+        max_distance_evaluations,
+        reason=reason,
+        landmark_count=landmark_count,
+        candidate_count=candidate_count,
+    )
+    if not diagnostics["feasible"]:
+        return None
+    if diagnostics["landmark_count"] <= 0:
+        return None
+    if diagnostics["candidate_count"] >= record_count:
+        return None
+    if diagnostics["memory_bytes_estimate"] > max_memory_bytes:
+        return None
+
+    diagnostics["selection"] = "automatic"
+    diagnostics["selected_representation"] = "landmark_index"
+    return diagnostics
+
+
+def _sampled_describe_plan_diagnostics(
+    record_count,
+    sample_count,
+    max_distance_evaluations,
+    *,
+    reason,
+):
+    sampled_pair_count = sample_count * max(0, sample_count - 1) // 2
+    full_pair_count = record_count * max(0, record_count - 1) // 2
+    return {
+        "diagnostic": "structure_approximation_plan",
+        "bounded": True,
+        "sample_policy": "regular_sample",
+        "sampled_record_count": sample_count,
+        "sample_universe": record_count,
+        "sample_fraction": 1.0 if record_count == 0 else sample_count / record_count,
+        "estimated_sampled_pair_count": sampled_pair_count,
+        "estimated_full_pair_count": full_pair_count,
+        "pair_fraction": 1.0 if full_pair_count == 0 else sampled_pair_count / full_pair_count,
+        "distance_evaluation_budget": max_distance_evaluations,
+        "approximation_reason": reason,
+    }
+
+
+def _make_plan(
+    intent,
+    record_count,
+    *,
+    query_count=None,
+    exact=True,
+    representation=None,
+    landmark_count=None,
+    candidate_count=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+    allow_approximate=True,
+    allow_chunking=True,
+    dense_cell_bytes=_PYTHON_DISTANCE_CELL_BYTES,
+):
+    intent = _canonical_plan_intent(intent)
+    record_count = _normalize_non_negative_count(record_count, "record_count")
+    if query_count is not None:
+        query_count = _normalize_non_negative_count(query_count, "query_count")
+    exact = _normalize_bool(exact, "exact")
+    allow_approximate = _normalize_bool(allow_approximate, "allow_approximate")
+    allow_chunking = _normalize_bool(allow_chunking, "allow_chunking")
+    max_memory_bytes = _normalize_optional_budget(
+        max_memory_bytes,
+        "max_memory_bytes",
+        _DEFAULT_MAX_MEMORY_BYTES,
+    )
+    max_distance_evaluations = _normalize_optional_budget(
+        max_distance_evaluations,
+        "max_distance_evaluations",
+        _DEFAULT_MAX_DISTANCE_EVALUATIONS,
+    )
+    max_dense_records = _normalize_optional_budget(
+        max_dense_records,
+        "max_dense_records",
+        _DEFAULT_MAX_DENSE_RECORDS,
+    )
+    budgets = (max_memory_bytes, max_distance_evaluations, max_dense_records)
+
+    if intent in {"neighbors", "range"}:
+        normalized_query_count = 1 if query_count is None else query_count
+        exact_evaluations = record_count * normalized_query_count
+        memory_bytes = 0
+        reasons = _budget_reasons(0, exact_evaluations, memory_bytes, budgets)
+        landmark_requested = _landmark_representation_name(representation) is not None
+        if not exact and landmark_requested and not allow_approximate:
+            return SpacePlan(
+                record_count=record_count,
+                intent=intent,
+                query_count=normalized_query_count,
+                exactness="approximate",
+                representation="landmark_index",
+                estimated_distance_evaluations=0,
+                memory_bytes_estimate=0,
+                decision="refused",
+                reason="landmark search is approximate but allow_approximate=False",
+                fallback=("set allow_approximate=True", "set exact=True for exact live_scan"),
+                max_memory_bytes=max_memory_bytes,
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
+            )
+        if (
+            not exact
+            and allow_approximate
+            and landmark_requested
+        ):
+            reason = (
+                "; ".join(reasons)
+                if reasons
+                else "exact=False requested bounded landmark search"
+            )
+            diagnostics = _landmark_query_plan_diagnostics(
+                record_count,
+                normalized_query_count,
+                max_distance_evaluations,
+                reason=reason,
+                landmark_count=landmark_count,
+                candidate_count=candidate_count,
+            )
+            if not diagnostics["feasible"]:
+                return SpacePlan(
+                    record_count=record_count,
+                    intent=intent,
+                    query_count=normalized_query_count,
+                    exactness="approximate",
+                    representation="landmark_index",
+                    estimated_distance_evaluations=0,
+                    memory_bytes_estimate=diagnostics["memory_bytes_estimate"],
+                    decision="refused",
+                    reason=(
+                        "distance-evaluation budget is too small for one landmark "
+                        "and one refined candidate per query"
+                    ),
+                    fallback=(
+                        "raise max_distance_evaluations",
+                        "use representation=None for sampled_live_scan",
+                    ),
+                    max_memory_bytes=max_memory_bytes,
+                    max_distance_evaluations=max_distance_evaluations,
+                    max_dense_records=max_dense_records,
+                    diagnostics=diagnostics,
+                )
+            return SpacePlan(
+                record_count=record_count,
+                intent=intent,
+                query_count=normalized_query_count,
+                exactness="approximate",
+                representation="landmark_index",
+                estimated_distance_evaluations=diagnostics["estimated_distance_evaluations"],
+                memory_bytes_estimate=diagnostics["memory_bytes_estimate"],
+                decision="downgraded" if reasons else "selected",
+                reason=reason,
+                fallback=(
+                    "set exact=True for exact live_scan",
+                    "use representation=None for sampled_live_scan",
+                    "raise max_distance_evaluations",
+                ),
+                max_memory_bytes=max_memory_bytes,
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
+                diagnostics=diagnostics,
+            )
+        if (
+            not exact
+            and allow_approximate
+            and not landmark_requested
+            and _source_metric_representation_name(representation) is not None
+        ):
+            reason = (
+                "; ".join(reasons)
+                if reasons
+                else "exact=False requested automatic bounded landmark search for repeated queries"
+            )
+            diagnostics = _auto_landmark_query_plan_diagnostics(
+                record_count,
+                normalized_query_count,
+                max_distance_evaluations,
+                max_memory_bytes,
+                reason=reason,
+                landmark_count=landmark_count,
+                candidate_count=candidate_count,
+            )
+            if diagnostics is not None:
+                return SpacePlan(
+                    record_count=record_count,
+                    intent=intent,
+                    query_count=normalized_query_count,
+                    exactness="approximate",
+                    representation="landmark_index",
+                    estimated_distance_evaluations=diagnostics["estimated_distance_evaluations"],
+                    memory_bytes_estimate=diagnostics["memory_bytes_estimate"],
+                    decision="downgraded" if reasons else "selected",
+                    reason=reason,
+                    fallback=(
+                        "set exact=True for exact live_scan",
+                        "set representation='sampled_live_scan' for sampled candidates",
+                        "raise max_distance_evaluations",
+                    ),
+                    max_memory_bytes=max_memory_bytes,
+                    max_distance_evaluations=max_distance_evaluations,
+                    max_dense_records=max_dense_records,
+                    diagnostics=diagnostics,
+                )
+        if not exact and allow_approximate:
+            reason = (
+                "; ".join(reasons)
+                if reasons
+                else "exact=False requested bounded sampled search"
+            )
+            diagnostics = _sampled_query_plan_diagnostics(
+                record_count,
+                normalized_query_count,
+                max_distance_evaluations,
+                reason=reason,
+            )
+            return SpacePlan(
+                record_count=record_count,
+                intent=intent,
+                query_count=normalized_query_count,
+                exactness="approximate",
+                representation="sampled_live_scan",
+                estimated_distance_evaluations=diagnostics["estimated_distance_evaluations"],
+                memory_bytes_estimate=0,
+                decision="downgraded" if reasons else "selected",
+                reason=reason,
+                fallback=(
+                    "set exact=True for exact live_scan",
+                    "reduce query_count",
+                    "raise max_distance_evaluations",
+                ),
+                max_memory_bytes=max_memory_bytes,
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
+                diagnostics=diagnostics,
+            )
+        if not reasons:
+            return SpacePlan(
+                record_count=record_count,
+                intent=intent,
+                query_count=normalized_query_count,
+                exactness="exact",
+                representation="live_scan",
+                estimated_distance_evaluations=exact_evaluations,
+                memory_bytes_estimate=memory_bytes,
+                decision="allowed",
+                reason="exact live scan is within budget",
+                max_memory_bytes=max_memory_bytes,
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
+            )
+        return SpacePlan(
+            record_count=record_count,
+            intent=intent,
+            query_count=normalized_query_count,
+            exactness="exact",
+            representation="live_scan",
+            estimated_distance_evaluations=exact_evaluations,
+            memory_bytes_estimate=memory_bytes,
+            decision="refused",
+            reason="; ".join(reasons),
+            fallback=("allow_approximate=True", "reduce query_count", "raise max_distance_evaluations"),
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
+
+    if intent == "describe":
+        exact_evaluations = record_count * record_count * record_count
+        memory_bytes = 0
+        reasons = _budget_reasons(0, exact_evaluations, memory_bytes, budgets)
+        if not reasons:
+            return SpacePlan(
+                record_count=record_count,
+                intent=intent,
+                query_count=query_count,
+                exactness="exact",
+                representation="live_diagnostics",
+                estimated_distance_evaluations=exact_evaluations,
+                memory_bytes_estimate=memory_bytes,
+                decision="allowed",
+                reason="exact diagnostics are within budget",
+                max_memory_bytes=max_memory_bytes,
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
+            )
+        if not exact and allow_approximate:
+            sample_count = _sample_record_count(
+                record_count,
+                max_dense_records,
+                max_distance_evaluations,
+            )
+            sample_evaluations = sample_count * sample_count
+            reason = "; ".join(reasons)
+            return SpacePlan(
+                record_count=record_count,
+                intent=intent,
+                query_count=query_count,
+                exactness="approximate",
+                representation="sample",
+                estimated_distance_evaluations=sample_evaluations,
+                memory_bytes_estimate=_dense_memory_estimate(sample_count),
+                decision="downgraded",
+                reason=reason,
+                fallback=("sample", "set exact=True and raise max_distance_evaluations"),
+                max_memory_bytes=max_memory_bytes,
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
+                diagnostics=_sampled_describe_plan_diagnostics(
+                    record_count,
+                    sample_count,
+                    max_distance_evaluations,
+                    reason=reason,
+                ),
+            )
+        return SpacePlan(
+            record_count=record_count,
+            intent=intent,
+            query_count=query_count,
+            exactness="exact",
+            representation="live_diagnostics",
+            estimated_distance_evaluations=exact_evaluations,
+            memory_bytes_estimate=memory_bytes,
+            decision="refused",
+            reason="; ".join(reasons),
+            fallback=("set exact=False with allow_approximate=True", "raise max_distance_evaluations"),
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
+
+    dense_evaluations = record_count * record_count
+    memory_bytes = _dense_memory_estimate(record_count, cell_bytes=dense_cell_bytes)
+    reasons = _budget_reasons(record_count, dense_evaluations, memory_bytes, budgets)
+    if not reasons:
+        return SpacePlan(
+            record_count=record_count,
+            intent=intent,
+            query_count=query_count,
+            exactness="exact",
+            representation="dense_matrix",
+            estimated_distance_evaluations=dense_evaluations,
+            memory_bytes_estimate=memory_bytes,
+            decision="allowed",
+            reason="dense all-pairs materialization is within budget",
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
+    if not exact and allow_chunking:
+        chunk_records = _sample_record_count(
+            record_count,
+            max_dense_records,
+            max_distance_evaluations,
+        )
+        return SpacePlan(
+            record_count=record_count,
+            intent=intent,
+            query_count=query_count,
+            exactness="approximate",
+            representation="chunked",
+            estimated_distance_evaluations=min(dense_evaluations, chunk_records * chunk_records),
+            memory_bytes_estimate=_dense_memory_estimate(chunk_records, cell_bytes=dense_cell_bytes),
+            decision="downgraded",
+            reason="; ".join(reasons),
+            fallback=("chunked", "live_scan", "raise dense materialization budgets"),
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
+    if not exact and allow_approximate:
+        sample_count = _sample_record_count(
+            record_count,
+            max_dense_records,
+            max_distance_evaluations,
+        )
+        return SpacePlan(
+            record_count=record_count,
+            intent=intent,
+            query_count=query_count,
+            exactness="approximate",
+            representation="sample",
+            estimated_distance_evaluations=sample_count * sample_count,
+            memory_bytes_estimate=_dense_memory_estimate(sample_count, cell_bytes=dense_cell_bytes),
+            decision="downgraded",
+            reason="; ".join(reasons),
+            fallback=("sample", "live_scan", "raise dense materialization budgets"),
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
+    return SpacePlan(
+        record_count=record_count,
+        intent=intent,
+        query_count=query_count,
+        exactness="exact",
+        representation="dense_matrix",
+        estimated_distance_evaluations=dense_evaluations,
+        memory_bytes_estimate=memory_bytes,
+        decision="refused",
+        reason="; ".join(reasons),
+        fallback=("use live_scan/query APIs", "raise max_memory_bytes or max_dense_records"),
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
 
 
 def _normalize_record_value_type(value_type):
@@ -202,16 +1206,16 @@ def _split_record_id_column(records, ids, id_column):
         raise TypeError("id_column must be an integer column index")
 
     extracted_ids = []
-    feature_records = []
+    field_records = []
     for row_index, row in enumerate(records):
         if not 0 <= id_column < len(row):
             raise IndexError(f"id_column {id_column} is out of range for row {row_index}")
         extracted_ids.append(row[id_column])
-        feature_record = [value for column, value in enumerate(row) if column != id_column]
-        if not feature_record:
+        field_record = [value for column, value in enumerate(row) if column != id_column]
+        if not field_record:
             raise ValueError("id_column leaves no record fields")
-        feature_records.append(feature_record)
-    return feature_records, extracted_ids
+        field_records.append(field_record)
+    return field_records, extracted_ids
 
 
 def _as_scalar_records(records):
@@ -281,6 +1285,138 @@ def _require_native_binding(operation, kind):
     )
 
 
+class _PythonLandmarkIndex:
+    """Deterministic metric-pivot candidate provider for Python search."""
+
+    def __init__(self, records, metric, *, landmark_count, validate_distance=None):
+        self.records = records
+        self.metric = metric
+        self.validate_distance = validate_distance
+        self.landmark_positions = []
+        self.distances_by_record = [[] for _record in records]
+        self.build_distance_evaluations = 0
+        self._build(min(len(records), landmark_count))
+
+    def _metric_distance(self, lhs, rhs, lhs_index, rhs_index):
+        distance = self.metric(lhs, rhs)
+        if self.validate_distance is not None:
+            self.validate_distance(distance, lhs_index, rhs_index)
+        return distance
+
+    def _build(self, landmark_count):
+        if landmark_count <= 0 or not self.records:
+            return
+
+        selected = set()
+        nearest_landmark_distance = [math.inf] * len(self.records)
+        next_position = 0
+
+        for _slot in range(landmark_count):
+            if next_position in selected:
+                break
+            landmark_position = next_position
+            selected.add(landmark_position)
+            self.landmark_positions.append(landmark_position)
+            landmark_record = self.records[landmark_position]
+
+            for record_index, record in enumerate(self.records):
+                distance = self._metric_distance(
+                    landmark_record,
+                    record,
+                    landmark_position,
+                    record_index,
+                )
+                self.build_distance_evaluations += 1
+                self.distances_by_record[record_index].append(distance)
+                if distance < nearest_landmark_distance[record_index]:
+                    nearest_landmark_distance[record_index] = distance
+
+            next_position = None
+            next_distance = None
+            for record_index, distance in enumerate(nearest_landmark_distance):
+                if record_index in selected:
+                    continue
+                if next_position is None or distance > next_distance:
+                    next_position = record_index
+                    next_distance = distance
+            if next_position is None:
+                break
+
+    @property
+    def landmark_count(self):
+        return len(self.landmark_positions)
+
+    def query(self, query_value, *, candidate_count, count=None, radius=None):
+        if not self.records:
+            return (), {
+                "query_landmark_distance_evaluations": 0,
+                "refinement_distance_evaluations": 0,
+                "candidate_count": 0,
+                "refined_candidate_count": 0,
+                "lower_bound_pruned_count": 0,
+                "unrefined_record_count": 0,
+            }
+
+        query_landmark_distances = []
+        for slot, landmark_position in enumerate(self.landmark_positions):
+            distance = self._metric_distance(
+                query_value,
+                self.records[landmark_position],
+                "query",
+                f"landmark[{slot}]",
+            )
+            query_landmark_distances.append(distance)
+
+        lower_bounds = []
+        for record_index, landmark_distances in enumerate(self.distances_by_record):
+            if query_landmark_distances:
+                lower_bound = max(
+                    abs(query_distance - record_distance)
+                    for query_distance, record_distance in zip(
+                        query_landmark_distances,
+                        landmark_distances,
+                    )
+                )
+            else:
+                lower_bound = 0
+            lower_bounds.append((record_index, lower_bound))
+
+        if count is not None:
+            candidate_count = max(candidate_count, count)
+        candidate_count = min(len(self.records), candidate_count)
+        candidate_positions = sorted(lower_bounds, key=lambda item: (item[1], item[0]))[:candidate_count]
+
+        refined = []
+        lower_bound_pruned_count = 0
+        refinement_distance_evaluations = 0
+        for record_index, lower_bound in candidate_positions:
+            if radius is not None and lower_bound > radius:
+                lower_bound_pruned_count += 1
+                continue
+            distance = self._metric_distance(
+                query_value,
+                self.records[record_index],
+                "query",
+                record_index,
+            )
+            refinement_distance_evaluations += 1
+            if radius is None or distance <= radius:
+                refined.append((record_index, distance))
+
+        refined.sort(key=lambda item: (item[1], item[0]))
+        if count is not None:
+            refined = refined[:count]
+
+        return refined, {
+            "query_landmark_distance_evaluations": len(query_landmark_distances),
+            "refinement_distance_evaluations": refinement_distance_evaluations,
+            "candidate_count": len(candidate_positions),
+            "refined_candidate_count": refinement_distance_evaluations,
+            "lower_bound_pruned_count": lower_bound_pruned_count,
+            "unrefined_record_count": max(0, len(self.records) - len(candidate_positions)),
+        }
+
+
 class FiniteMetricSpace:
     """Explicit finite metric space backed by a pairwise distance matrix."""
 
@@ -296,6 +1432,9 @@ class FiniteMetricSpace:
         validate="sample",
         copy=False,
         cache="auto",
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
     ):
         if metric is None:
             raise MissingMetricError(
@@ -325,11 +1464,23 @@ class FiniteMetricSpace:
         self._lazy_distances = {}
         self._distances = None
         if cache.mode in _MATERIALIZED_CACHE_MODES:
+            self._ensure_dense_materialization_allowed(
+                "matrix",
+                record_count=len(self.records),
+                max_memory_bytes=max_memory_bytes,
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
+                operation="cache='materialized'",
+            )
             self._distances = [
                 [self._compute_distance(lhs_index, rhs_index) for rhs_index in range(len(self.records))]
                 for lhs_index in range(len(self.records))
             ]
         elif validate == "strict":
+            self._ensure_strict_validation_allowed(
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
+            )
             self._validate_all_distances()
         else:
             self._validate_sample_distances()
@@ -415,19 +1566,19 @@ class FiniteMetricSpace:
         records = list(rows)
         if id_column is not None:
             ids = []
-            feature_records = []
+            field_records = []
             for row in records:
                 if not isinstance(row, Mapping):
                     raise TypeError("dataframe records must be mappings when id_column is used")
                 if id_column not in row:
                     raise KeyError(f"id_column {id_column!r} is not present in every row")
                 ids.append(row[id_column])
-                feature_records.append({
+                field_records.append({
                     column: value
                     for column, value in row.items()
                     if column != id_column
                 })
-            records = feature_records
+            records = field_records
 
         return cls(records, metric=metric, ids=ids, **kwargs)
 
@@ -572,8 +1723,140 @@ class FiniteMetricSpace:
     def record(self, record_id):
         return self.records[self._id_to_index[record_id]]
 
-    def pairwise_distances(self):
+    def plan(
+        self,
+        intent,
+        *,
+        query_count=None,
+        exact=True,
+        representation=None,
+        landmark_count=None,
+        candidate_count=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+        allow_approximate=True,
+        allow_chunking=True,
+    ):
+        """Estimate cost and representation choice before running an operation."""
+
         self.ensure_fresh()
+        return _make_plan(
+            intent,
+            len(self.records),
+            query_count=query_count,
+            exact=exact,
+            representation=self._representation_name(representation),
+            landmark_count=landmark_count,
+            candidate_count=candidate_count,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            allow_approximate=allow_approximate,
+            allow_chunking=allow_chunking,
+        )
+
+    def describe_plan(self, intent="describe", **kwargs):
+        """Return a structured execution-plan report for ``intent``."""
+
+        if _canonical_plan_intent(intent) == "describe" and "exact" not in kwargs:
+            kwargs["exact"] = False
+        return self.plan(intent, **kwargs).to_dict()
+
+    def _dense_materialization_plan(
+        self,
+        intent,
+        *,
+        record_count=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+        dense_cell_bytes=_PYTHON_DISTANCE_CELL_BYTES,
+    ):
+        return _make_plan(
+            intent,
+            len(self.records) if record_count is None else record_count,
+            exact=True,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            allow_approximate=False,
+            allow_chunking=False,
+            dense_cell_bytes=dense_cell_bytes,
+        )
+
+    def _ensure_dense_materialization_allowed(
+        self,
+        intent,
+        *,
+        record_count=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+        dense_cell_bytes=_PYTHON_DISTANCE_CELL_BYTES,
+        operation=None,
+    ):
+        plan = self._dense_materialization_plan(
+            intent,
+            record_count=record_count,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            dense_cell_bytes=dense_cell_bytes,
+        )
+        if plan.decision == "refused":
+            name = operation or intent
+            fallback = ", ".join(plan.fallback)
+            raise MetricComputationError(
+                f"{name} refused dense all-pairs materialization: "
+                f"records={plan.record_count}, "
+                f"estimated_bytes={plan.memory_bytes_estimate}, "
+                f"budget_bytes={plan.max_memory_bytes}, "
+                f"estimated_distance_evaluations={plan.estimated_distance_evaluations}, "
+                f"distance_evaluation_budget={plan.max_distance_evaluations}, "
+                f"max_dense_records={plan.max_dense_records}. "
+                f"Reason: {plan.reason}. Suggested fallback: {fallback}."
+            )
+        return plan
+
+    def _ensure_strict_validation_allowed(
+        self,
+        *,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+    ):
+        plan = _make_strict_validation_plan(
+            len(self.records),
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
+        if plan.decision == "refused":
+            fallback = ", ".join(plan.fallback)
+            raise MetricComputationError(
+                "validate='strict' refused full pair validation: "
+                f"records={plan.record_count}, "
+                f"estimated_distance_evaluations={plan.estimated_distance_evaluations}, "
+                f"distance_evaluation_budget={plan.max_distance_evaluations}, "
+                f"max_dense_records={plan.max_dense_records}. "
+                f"Reason: {plan.reason}. Suggested fallback: {fallback}."
+            )
+        return plan
+
+    def pairwise_distances(
+        self,
+        *,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+    ):
+        self.ensure_fresh()
+        self._ensure_dense_materialization_allowed(
+            "pairwise_distances",
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            operation="Space.pairwise_distances()",
+        )
         if self._distances is not None:
             return [row[:] for row in self._distances]
         return [
@@ -581,18 +1864,43 @@ class FiniteMetricSpace:
             for lhs_index in range(len(self.records))
         ]
 
-    def pairwise(self, ids=None):
+    def pairwise(
+        self,
+        ids=None,
+        *,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+    ):
         self.ensure_fresh()
         if ids is None:
-            return self.pairwise_distances()
+            return self.pairwise_distances(
+                max_memory_bytes=max_memory_bytes,
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
+            )
 
         positions = [self._id_to_index[record_id] for record_id in ids]
+        self._ensure_dense_materialization_allowed(
+            "pairwise",
+            record_count=len(positions),
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            operation="Space.pairwise(ids=...)",
+        )
         return [
             [self.distance(lhs, rhs) for rhs in positions]
             for lhs in positions
         ]
 
-    def distance_matrix_numpy(self):
+    def distance_matrix_numpy(
+        self,
+        *,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+    ):
         """Return the pairwise distance matrix as a square ``numpy.ndarray``.
 
         Adapter: this marshals the existing pairwise matrix
@@ -605,7 +1913,22 @@ class FiniteMetricSpace:
         Raises ``OptionalDependencyError`` if numpy is not installed.
         """
         np = _numpy()
-        return np.asarray(self.pairwise_distances(), dtype=float)
+        self._ensure_dense_materialization_allowed(
+            "distance_matrix_numpy",
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            dense_cell_bytes=_PYTHON_DISTANCE_CELL_BYTES + 8,
+            operation="Space.distance_matrix_numpy()",
+        )
+        return np.asarray(
+            self.pairwise_distances(
+                max_memory_bytes=max_memory_bytes,
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
+            ),
+            dtype=float,
+        )
 
     def to_csv(
         self,
@@ -665,7 +1988,20 @@ class FiniteMetricSpace:
             quote=quote,
         )
 
-    def to_matrix(self):
+    def to_matrix(
+        self,
+        *,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+    ):
+        self._ensure_dense_materialization_allowed(
+            "to_matrix",
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            operation="Space.to_matrix()",
+        )
         return FiniteMetricSpace(
             self.records,
             self.metric,
@@ -676,6 +2012,9 @@ class FiniteMetricSpace:
             metadata=self.metadata,
             validate=self.validate,
             cache="materialized",
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
         )
 
     def to_tree(self):
@@ -711,32 +2050,714 @@ class FiniteMetricSpace:
             strategy=result.strategy,
             representation=result.representation,
             diagnostics=result.diagnostics,
+            route=result.route,
+            provenance=result.provenance,
         )
 
-    def knn(self, query, k=1):
+    def _representation_name(self, representation):
+        if representation is None:
+            return "metric_space"
+        if isinstance(representation, str):
+            return representation
+        representation.ensure_fresh()
+        return getattr(representation, "representation", "metric_space")
+
+    def _neighbor_provenance(self, representation):
+        metadata = {
+            key: self.metadata[key]
+            for key in (
+                "mapping",
+                "strategy",
+                "metric_status",
+                "out_of_sample_supported",
+                "validity",
+                "source_space_version",
+            )
+            if key in self.metadata
+        }
+        provenance = {
+            "space_representation": self.representation,
+            "search_representation": representation,
+        }
+        if metadata:
+            provenance["mapping"] = metadata
+        return provenance
+
+    def _ensure_query_plan_allowed(
+        self,
+        operation,
+        intent,
+        *,
+        query_count,
+        exact,
+        representation=None,
+        landmark_count=None,
+        candidate_count=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+        allow_approximate=True,
+        allow_chunking=True,
+    ):
+        plan = self.plan(
+            intent,
+            query_count=query_count,
+            exact=exact,
+            representation=representation,
+            landmark_count=landmark_count,
+            candidate_count=candidate_count,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            allow_approximate=allow_approximate,
+            allow_chunking=allow_chunking,
+        )
+        if plan.decision == "refused":
+            fallback = ", ".join(plan.fallback)
+            raise MetricComputationError(
+                f"{operation} refused exact {intent} search before running metric calls: "
+                f"records={plan.record_count}, queries={plan.query_count}, "
+                f"estimated_distance_evaluations={plan.estimated_distance_evaluations}, "
+                f"distance_evaluation_budget={plan.max_distance_evaluations}. "
+                f"Reason: {plan.reason}. Suggested fallback: {fallback}."
+            )
+        return plan
+
+    def _sample_indices_for_query_plan(self, plan):
+        query_count = plan.query_count if plan.query_count is not None else 1
+        if query_count <= 0 or not self.records:
+            return []
+        per_query_budget = plan.max_distance_evaluations // max(1, query_count)
+        return _sample_indices(len(self.records), per_query_budget)
+
+    def _sampled_query_windows_for_plan(self, plan):
+        from metric.operators import (
+            _sampled_neighbor_budget_split,
+            _sampled_neighbor_holdout_indices,
+        )
+
+        query_count = plan.query_count if plan.query_count is not None else 1
+        if query_count <= 0 or not self.records:
+            return [], []
+        per_query_budget = plan.max_distance_evaluations // max(1, query_count)
+        sample_count, holdout_count = _sampled_neighbor_budget_split(
+            len(self.records),
+            per_query_budget,
+        )
+        sampled_indices = _sample_indices(len(self.records), sample_count)
+        holdout_indices = _sampled_neighbor_holdout_indices(
+            len(self.records),
+            sampled_indices,
+            holdout_count,
+        )
+        return sampled_indices, holdout_indices
+
+    def _sampled_neighbor_result(
+        self,
+        queries,
+        *,
+        batched,
+        plan,
+        k=None,
+        count=None,
+        radius=None,
+        provenance,
+    ):
+        from metric.operators import Neighbor, NeighborResult, _sampled_neighbor_recall_diagnostics
+
+        indices, holdout_indices = self._sampled_query_windows_for_plan(plan)
+        limit = None if radius is not None else _normalize_neighbor_limit(k, count)
+        strategy = "sampled_range_budget_guard" if radius is not None else "sampled_knn_budget_guard"
+        rows = []
+        sampled_distances_by_query = []
+        distance_evaluations = 0
+
+        for query_value in queries:
+            candidates = []
+            sampled_distances = {}
+            for record_index in indices:
+                distance = self.metric(query_value, self.records[record_index])
+                distance_evaluations += 1
+                sampled_distances[record_index] = distance
+                if self.validate != "none":
+                    _validate_distance_value(distance, "query", record_index)
+                if radius is None or distance <= radius:
+                    candidates.append((record_index, distance))
+
+            sampled_distances_by_query.append(sampled_distances)
+            candidates.sort(key=lambda item: (item[1], item[0]))
+            if limit is not None:
+                candidates = candidates[:limit]
+            rows.append(tuple(
+                Neighbor(
+                    id=self.ids[record_index],
+                    record=self.records[record_index],
+                    distance=distance,
+                    rank=rank,
+                )
+                for rank, (record_index, distance) in enumerate(candidates)
+            ))
+
+        remaining_distance_budget = max(0, plan.max_distance_evaluations - distance_evaluations)
+        recall_diagnostics = _sampled_neighbor_recall_diagnostics(
+            self.records,
+            self.metric,
+            queries,
+            sampled_distances_by_query,
+            sampled_indices=indices,
+            holdout_indices=holdout_indices,
+            remaining_distance_budget=remaining_distance_budget,
+            count=limit,
+            radius=radius,
+            validate_distance=(
+                None
+                if self.validate == "none"
+                else lambda distance, lhs_index, rhs_index: _validate_distance_value(
+                    distance,
+                    lhs_index,
+                    rhs_index,
+                )
+            ),
+        )
+        distance_evaluations += recall_diagnostics["recall_distance_evaluations"]
+
+        diagnostics = {
+            "diagnostic": "search_approximation",
+            "plan": plan.to_dict(),
+            "bounded": True,
+            "candidate_policy": "regular_sample",
+            "candidate_count": len(indices),
+            "candidate_universe": len(self.records),
+            "candidate_fraction": 1.0 if not self.records else len(indices) / len(self.records),
+            "sampled_record_count": len(indices),
+            "distance_evaluations": distance_evaluations,
+            "sampled_distance_evaluations": len(indices) * len(queries),
+            "distance_evaluations_per_query": (
+                0
+                if not queries
+                else distance_evaluations // len(queries)
+            ),
+            "sampled_distance_evaluations_per_query": len(indices),
+            "query_count": len(queries),
+            "recall_measured": False,
+            "recall": None,
+            "standard_error": 0.0,
+            "confidence_radius_95": 0.0,
+            "recall_sample_query_count": 0,
+            "recall_calibration_record_count": 0,
+            "recall_relevant_count": 0,
+            "recall_hit_count": 0,
+            "recall_distance_evaluations": 0,
+            "recall_measurement_reason": "no distance budget remained for recall calibration",
+            "approximation_reason": (
+                "exact neighbor scan exceeded max_distance_evaluations; bounded sampled candidates were used"
+            ),
+        }
+        diagnostics.update(recall_diagnostics)
+        if provenance is None:
+            result_provenance = {"budget_guard": diagnostics}
+        elif isinstance(provenance, dict):
+            result_provenance = dict(provenance)
+            result_provenance["budget_guard"] = diagnostics
+        else:
+            result_provenance = {"source_provenance": provenance, "budget_guard": diagnostics}
+
+        if batched:
+            result_rows = tuple(rows)
+            distances = tuple(tuple(neighbor.distance for neighbor in row) for row in result_rows)
+            neighbors = ()
+            result_query = tuple(queries)
+        else:
+            neighbors = rows[0] if rows else ()
+            result_rows = ()
+            distances = tuple(neighbor.distance for neighbor in neighbors)
+            result_query = queries[0] if queries else None
+
+        return NeighborResult(
+            query=result_query,
+            query_id=None,
+            neighbors=neighbors,
+            rows=result_rows,
+            distances=distances,
+            exact=False,
+            strategy=strategy,
+            representation=plan.representation,
+            diagnostics=diagnostics,
+            route=f"source_metric:{strategy}",
+            provenance=result_provenance,
+        )
+
+    def _landmark_neighbor_result(
+        self,
+        queries,
+        *,
+        batched,
+        plan,
+        k=None,
+        count=None,
+        radius=None,
+        provenance,
+    ):
+        from metric.operators import Neighbor, NeighborResult
+
+        limit = None if radius is not None else _normalize_neighbor_limit(k, count)
+        plan_diagnostics = dict(plan.diagnostics or {})
+        landmark_count = plan_diagnostics.get("landmark_count", 0)
+        candidate_count = plan_diagnostics.get("candidate_count", 0)
+        if limit is not None:
+            candidate_count = max(candidate_count, limit)
+        candidate_count = min(len(self.records), candidate_count)
+
+        validate_distance = None
+        if self.validate != "none":
+            validate_distance = lambda distance, lhs_index, rhs_index: _validate_distance_value(
+                distance,
+                lhs_index,
+                rhs_index,
+            )
+
+        index = _PythonLandmarkIndex(
+            self.records,
+            self.metric,
+            landmark_count=landmark_count,
+            validate_distance=validate_distance,
+        )
+        rows = []
+        query_landmark_distance_evaluations = 0
+        refinement_distance_evaluations = 0
+        candidate_counts = []
+        refined_candidate_counts = []
+        lower_bound_pruned_count = 0
+        unrefined_record_count = 0
+        returned_indices_by_query = []
+
+        for query_value in queries:
+            pairs, query_diagnostics = index.query(
+                query_value,
+                candidate_count=candidate_count,
+                count=limit,
+                radius=radius,
+            )
+            query_landmark_distance_evaluations += query_diagnostics[
+                "query_landmark_distance_evaluations"
+            ]
+            refinement_distance_evaluations += query_diagnostics[
+                "refinement_distance_evaluations"
+            ]
+            candidate_counts.append(query_diagnostics["candidate_count"])
+            refined_candidate_counts.append(query_diagnostics["refined_candidate_count"])
+            lower_bound_pruned_count += query_diagnostics["lower_bound_pruned_count"]
+            unrefined_record_count += query_diagnostics["unrefined_record_count"]
+            returned_indices_by_query.append(tuple(record_index for record_index, _distance in pairs))
+            rows.append(tuple(
+                Neighbor(
+                    id=self.ids[record_index],
+                    record=self.records[record_index],
+                    distance=distance,
+                    rank=rank,
+                )
+                for rank, (record_index, distance) in enumerate(pairs)
+            ))
+
+        distance_evaluations = (
+            index.build_distance_evaluations
+            + query_landmark_distance_evaluations
+            + refinement_distance_evaluations
+        )
+        remaining_distance_budget = max(0, plan.max_distance_evaluations - distance_evaluations)
+        recall_diagnostics = _landmark_neighbor_recall_diagnostics(
+            index,
+            queries,
+            returned_indices_by_query,
+            candidate_count=candidate_count,
+            remaining_distance_budget=remaining_distance_budget,
+            count=limit,
+            radius=radius,
+        )
+        distance_evaluations += recall_diagnostics["recall_distance_evaluations"]
+        query_count = len(queries)
+        diagnostics = {
+            "diagnostic": "landmark_search_approximation",
+            "plan": plan.to_dict(),
+            "bounded": True,
+            "candidate_policy": "landmark_lower_bound",
+            "candidate_universe": len(self.records),
+            "candidate_count": candidate_count,
+            "candidate_counts": tuple(candidate_counts),
+            "candidate_fraction": (
+                1.0
+                if not self.records
+                else candidate_count / len(self.records)
+            ),
+            "landmark_count": index.landmark_count,
+            "landmark_positions": tuple(index.landmark_positions),
+            "index_build_distance_evaluations": index.build_distance_evaluations,
+            "query_landmark_distance_evaluations": query_landmark_distance_evaluations,
+            "refinement_distance_evaluations": refinement_distance_evaluations,
+            "distance_evaluations": distance_evaluations,
+            "distance_evaluations_per_query": (
+                0
+                if query_count == 0
+                else (query_landmark_distance_evaluations + refinement_distance_evaluations) // query_count
+            ),
+            "refined_candidate_count": sum(refined_candidate_counts),
+            "refined_candidate_counts": tuple(refined_candidate_counts),
+            "lower_bound_pruned_count": lower_bound_pruned_count,
+            "unrefined_record_count": unrefined_record_count,
+            "query_count": query_count,
+            "build_complexity": "O(n * p)",
+            "query_complexity": "O(p + c)",
+            "recall_measured": False,
+            "recall": None,
+            "standard_error": 0.0,
+            "confidence_radius_95": 0.0,
+            "recall_sample_query_count": 0,
+            "recall_calibration_record_count": 0,
+            "recall_relevant_count": 0,
+            "recall_hit_count": 0,
+            "recall_distance_evaluations": 0,
+            "recall_reference_candidate_count": 0,
+            "recall_reference_candidate_counts": (),
+            "recall_measurement_reason": (
+                "landmark search uses bounded lower-bound candidates; no holdout recall calibration was run"
+            ),
+            "approximation_reason": plan.reason,
+        }
+        diagnostics.update(recall_diagnostics)
+        if provenance is None:
+            result_provenance = {"landmark_index": diagnostics}
+        elif isinstance(provenance, dict):
+            result_provenance = dict(provenance)
+            result_provenance["landmark_index"] = diagnostics
+        else:
+            result_provenance = {"source_provenance": provenance, "landmark_index": diagnostics}
+
+        if batched:
+            result_rows = tuple(rows)
+            distances = tuple(tuple(neighbor.distance for neighbor in row) for row in result_rows)
+            neighbors = ()
+            result_query = tuple(queries)
+        else:
+            neighbors = rows[0] if rows else ()
+            result_rows = ()
+            distances = tuple(neighbor.distance for neighbor in neighbors)
+            result_query = queries[0] if queries else None
+
+        strategy = "landmark_range_candidate_refinement" if radius is not None else "landmark_knn_candidate_refinement"
+        return NeighborResult(
+            query=result_query,
+            query_id=None,
+            neighbors=neighbors,
+            rows=result_rows,
+            distances=distances,
+            exact=False,
+            strategy=strategy,
+            representation="landmark_index",
+            diagnostics=diagnostics,
+            route=f"source_metric:{strategy}",
+            provenance=result_provenance,
+        )
+
+    def _query_neighbors(
+        self,
+        intent,
+        query=None,
+        *,
+        queries=None,
+        k=None,
+        count=None,
+        radius=None,
+        representation=None,
+        exact=True,
+        landmark_count=None,
+        candidate_count=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+        allow_approximate=True,
+        allow_chunking=True,
+        operation=None,
+    ):
+        query_values, batched = _normalize_query_batch(query, queries)
+        representation_name = self._representation_name(representation)
+        if _landmark_representation_name(representation_name) is not None:
+            if exact:
+                raise MetricInputError(
+                    "landmark search is approximate; pass exact=False with representation='landmark'"
+                )
+            representation_name = "landmark_index"
+        plan = self._ensure_query_plan_allowed(
+            operation or f"{type(self).__name__}.{intent}()",
+            intent,
+            query_count=len(query_values),
+            exact=exact,
+            representation=representation_name,
+            landmark_count=landmark_count,
+            candidate_count=candidate_count,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            allow_approximate=allow_approximate,
+            allow_chunking=allow_chunking,
+        )
+        provenance_representation = (
+            "landmark_index"
+            if plan.representation == "landmark_index"
+            else representation_name
+        )
+        provenance = self._neighbor_provenance(provenance_representation)
+
+        if plan.exactness != "exact":
+            if plan.representation == "landmark_index":
+                return self._landmark_neighbor_result(
+                    query_values,
+                    batched=batched,
+                    plan=plan,
+                    k=k,
+                    count=count,
+                    radius=radius,
+                    provenance=provenance,
+                )
+            return self._sampled_neighbor_result(
+                query_values,
+                batched=batched,
+                plan=plan,
+                k=k,
+                count=count,
+                radius=radius,
+                provenance=provenance,
+            )
+
+        if batched:
+            from metric.operators import NeighborResult, nearest_neighbors, range_neighbors
+
+            result_rows = []
+            for query_value in query_values:
+                if radius is not None:
+                    row_result = self._with_space_record_ids(
+                        range_neighbors(
+                            self.records,
+                            self.metric,
+                            query_value,
+                            radius,
+                            representation=representation_name,
+                            provenance=provenance,
+                        )
+                    )
+                else:
+                    row_result = self._with_space_record_ids(
+                        nearest_neighbors(
+                            self.records,
+                            self.metric,
+                            query_value,
+                            k=k,
+                            count=count,
+                            representation=representation_name,
+                            provenance=provenance,
+                        )
+                    )
+                result_rows.append(row_result.neighbors)
+
+            rows = tuple(result_rows)
+            return NeighborResult(
+                query=tuple(query_values),
+                query_id=None,
+                neighbors=(),
+                rows=rows,
+                distances=tuple(tuple(neighbor.distance for neighbor in row) for row in rows),
+                exact=True,
+                strategy="exact_range" if radius is not None else "exact_scan",
+                representation=representation_name,
+                diagnostics={"plan": plan.to_dict()},
+                route=(
+                    f"representation:{representation_name}:"
+                    f"{'exact_range' if radius is not None else 'exact_scan'}"
+                    if representation_name != "metric_space"
+                    else f"source_metric:{'exact_range' if radius is not None else 'exact_scan'}"
+                ),
+                provenance=provenance,
+            )
+
+        from metric.operators import nearest_neighbors, range_neighbors
+
+        if radius is not None:
+            return self._with_space_record_ids(
+                range_neighbors(
+                    self.records,
+                    self.metric,
+                    query_values[0],
+                    radius,
+                    representation=representation_name,
+                    provenance=provenance,
+                )
+            )
+        return self._with_space_record_ids(
+            nearest_neighbors(
+                self.records,
+                self.metric,
+                query_values[0],
+                k=k,
+                count=count,
+                representation=representation_name,
+                provenance=provenance,
+            )
+        )
+
+    def knn(
+        self,
+        query=None,
+        k=1,
+        *,
+        queries=None,
+        representation=None,
+        exact=True,
+        landmark_count=None,
+        candidate_count=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+        allow_approximate=True,
+        allow_chunking=True,
+    ):
         """Exact-scan k-nearest neighbors through the native C++ binding."""
-        from metric.operators import nearest_neighbors
+        return self._query_neighbors(
+            "neighbors",
+            query,
+            queries=queries,
+            count=k,
+            representation=representation,
+            exact=exact,
+            landmark_count=landmark_count,
+            candidate_count=candidate_count,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            allow_approximate=allow_approximate,
+            allow_chunking=allow_chunking,
+            operation=f"{type(self).__name__}.knn()",
+        )
 
-        return self._with_space_record_ids(nearest_neighbors(self.records, self.metric, query, count=k))
-
-    def nn(self, query):
+    def nn(
+        self,
+        query=None,
+        *,
+        queries=None,
+        representation=None,
+        exact=True,
+        landmark_count=None,
+        candidate_count=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+        allow_approximate=True,
+        allow_chunking=True,
+    ):
         """Exact-scan nearest neighbor through the native C++ binding."""
-        result = self.knn(query, k=1)
+        result = self.knn(
+            query,
+            queries=queries,
+            k=1,
+            representation=representation,
+            exact=exact,
+            landmark_count=landmark_count,
+            candidate_count=candidate_count,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            allow_approximate=allow_approximate,
+            allow_chunking=allow_chunking,
+        )
+        if result.rows:
+            return result
         return result.neighbors[0] if result.neighbors else None
 
-    def rnn(self, query, radius):
+    def rnn(
+        self,
+        query=None,
+        radius=None,
+        *,
+        queries=None,
+        representation=None,
+        exact=True,
+        landmark_count=None,
+        candidate_count=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+        allow_approximate=True,
+        allow_chunking=True,
+    ):
         """Exact-scan radius neighbors through the native C++ binding."""
-        from metric.operators import range_neighbors
+        if radius is None:
+            raise TypeError("radius is required")
+        return self._query_neighbors(
+            "range",
+            query,
+            queries=queries,
+            radius=radius,
+            representation=representation,
+            exact=exact,
+            landmark_count=landmark_count,
+            candidate_count=candidate_count,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            allow_approximate=allow_approximate,
+            allow_chunking=allow_chunking,
+            operation=f"{type(self).__name__}.rnn()",
+        )
 
-        return self._with_space_record_ids(range_neighbors(self.records, self.metric, query, radius))
-
-    def neighbors(self, query, k=None, count=None, radius=None):
+    def neighbors(
+        self,
+        query=None,
+        k=None,
+        count=None,
+        radius=None,
+        *,
+        queries=None,
+        representation=None,
+        exact=True,
+        landmark_count=None,
+        candidate_count=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+        allow_approximate=True,
+        allow_chunking=True,
+    ):
         """Exact-scan neighbor query through the native C++ binding."""
         if radius is not None:
-            return self.rnn(query, radius)
-        from metric.operators import nearest_neighbors
-
-        return self._with_space_record_ids(nearest_neighbors(self.records, self.metric, query, k=k, count=count))
+            return self.rnn(
+                query,
+                radius,
+                queries=queries,
+                representation=representation,
+                exact=exact,
+                landmark_count=landmark_count,
+                candidate_count=candidate_count,
+                max_memory_bytes=max_memory_bytes,
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
+                allow_approximate=allow_approximate,
+                allow_chunking=allow_chunking,
+            )
+        return self._query_neighbors(
+            "neighbors",
+            query,
+            queries=queries,
+            k=k,
+            count=count,
+            representation=representation,
+            exact=exact,
+            landmark_count=landmark_count,
+            candidate_count=candidate_count,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            allow_approximate=allow_approximate,
+            allow_chunking=allow_chunking,
+            operation=f"{type(self).__name__}.neighbors()",
+        )
 
     def _compute_distance(self, lhs_index, rhs_index):
         value = self.metric(self.records[lhs_index], self.records[rhs_index])
@@ -777,26 +2798,156 @@ class Space(FiniteMetricSpace):
         strategy=None,
         representation=None,
         runtime=None,
+        queries=None,
+        exact=True,
+        landmark_count=None,
+        candidate_count=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+        allow_approximate=True,
+        allow_chunking=True,
     ):
         """Exact-scan neighbor query through the native C++ binding."""
-        require_exact_runtime(runtime)
+        if runtime is not None:
+            require_exact_runtime(runtime)
+            if exact is False:
+                raise MetricInputError(
+                    "Space.neighbors(runtime=...) requires exact=True when an exact runtime is supplied"
+                )
+            exact = True
         if strategy is not None:
-            raise StrategyUnavailableError(
-                "Space.neighbors strategy selection is not promoted in Python yet; omit strategy for native exact scan"
-            )
-        if representation is not None:
-            representation.ensure_fresh()
+            landmark_strategy = _landmark_representation_name(strategy)
+            if landmark_strategy is not None:
+                if exact:
+                    raise MetricInputError(
+                        "Space.neighbors(strategy='landmark') is approximate; pass exact=False"
+                    )
+                if (
+                    representation is not None
+                    and _landmark_representation_name(self._representation_name(representation)) is None
+                ):
+                    raise MetricInputError(
+                        "Space.neighbors(strategy='landmark') cannot be combined with a non-landmark representation"
+                    )
+                representation = landmark_strategy
+            else:
+                raise StrategyUnavailableError(
+                    "Space.neighbors strategy selection is not promoted in Python yet; omit strategy for native exact scan"
+                )
+        representation_name = self._representation_name(representation)
         if radius is not None:
-            return self.within_radius(query, radius)
-        return super().neighbors(query, k=k, count=count)
+            return super().neighbors(
+                query,
+                radius=radius,
+                queries=queries,
+                representation=representation_name,
+                exact=exact,
+                landmark_count=landmark_count,
+                candidate_count=candidate_count,
+                max_memory_bytes=max_memory_bytes,
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
+                allow_approximate=allow_approximate,
+                allow_chunking=allow_chunking,
+            )
+        return super().neighbors(
+            query,
+            k=k,
+            count=count,
+            queries=queries,
+            representation=representation_name,
+            exact=exact,
+            landmark_count=landmark_count,
+            candidate_count=candidate_count,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            allow_approximate=allow_approximate,
+            allow_chunking=allow_chunking,
+        )
 
-    def nearest(self, query):
+    def nearest(
+        self,
+        query=None,
+        *,
+        queries=None,
+        representation=None,
+        runtime=None,
+        exact=True,
+        landmark_count=None,
+        candidate_count=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+        allow_approximate=True,
+        allow_chunking=True,
+    ):
         """Exact-scan nearest neighbor through the native C++ binding."""
-        return self.nn(query)
+        if runtime is not None:
+            require_exact_runtime(runtime)
+            if exact is False:
+                raise MetricInputError(
+                    "Space.nearest(runtime=...) requires exact=True when an exact runtime is supplied"
+                )
+            exact = True
+        return self.nn(
+            query,
+            queries=queries,
+            representation=representation,
+            exact=exact,
+            landmark_count=landmark_count,
+            candidate_count=candidate_count,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            allow_approximate=allow_approximate,
+            allow_chunking=allow_chunking,
+        )
 
-    def within_radius(self, query, radius):
+    def within_radius(
+        self,
+        query=None,
+        radius=None,
+        *,
+        queries=None,
+        representation=None,
+        runtime=None,
+        exact=True,
+        landmark_count=None,
+        candidate_count=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+        allow_approximate=True,
+        allow_chunking=True,
+    ):
         """Exact-scan radius neighbors through the native C++ binding."""
-        return self.rnn(query, radius)
+        if runtime is not None:
+            require_exact_runtime(runtime)
+            if exact is False:
+                raise MetricInputError(
+                    "Space.within_radius(runtime=...) requires exact=True when an exact runtime is supplied"
+                )
+            exact = True
+        return self.rnn(
+            query,
+            radius,
+            queries=queries,
+            representation=representation,
+            exact=exact,
+            landmark_count=landmark_count,
+            candidate_count=candidate_count,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            allow_approximate=allow_approximate,
+            allow_chunking=allow_chunking,
+        )
+
+    def range(self, query=None, radius=None, **kwargs):
+        """Radius-neighbor alias for APIs that name this intent as range."""
+        return self.within_radius(query, radius, **kwargs)
 
     def groups(self, strategy=None, *, count="auto", radius=None, min_size=1, representation=None, runtime=None):
         """Group records through promoted native clustering bindings."""
@@ -820,16 +2971,16 @@ class Space(FiniteMetricSpace):
         assignments = result.assignments
         medoids = tuple(id_by_position[int(index)] for index in result.medoids)
         core_records = tuple(id_by_position[int(index)] for index in result.core_records)
-        noise_records = tuple(id_by_position[int(index)] for index in result.noise_records)
+        unassigned_records = tuple(id_by_position[int(index)] for index in result.unassigned_records)
         return ClusteringResult(
             assignments=assignments,
             medoids=medoids,
             core_records=core_records,
-            noise_records=noise_records,
+            unassigned_records=unassigned_records,
             cluster_sizes=result.cluster_sizes,
             record_count=result.record_count,
             cluster_count=result.cluster_count,
-            noise_count=result.noise_count,
+            unassigned_count=result.unassigned_count,
             iterations=result.iterations,
             converged=result.converged,
             algorithm=result.algorithm,
@@ -872,14 +3023,14 @@ class Space(FiniteMetricSpace):
             outliers=outliers,
             record_count=result.record_count,
             cluster_count=result.cluster_count,
-            noise_count=len(outliers),
+            unassigned_count=len(outliers),
             exact=result.exact,
             operator_name=result.operator_name,
             strategy=result.strategy,
             representation=result.representation,
         )
 
-    def denoise(
+    def density_filter(
         self,
         strategy=None,
         *,
@@ -890,12 +3041,12 @@ class Space(FiniteMetricSpace):
         representation=None,
         runtime=None,
     ):
-        """Filter unusual records into a derived metric space through native bindings."""
+        """Filter density-isolated or selected source records into a derived metric space."""
         require_exact_runtime(runtime)
-        from metric.operators import MappingResult, denoise_space
+        from metric.operators import MappingResult, density_filter_space
 
         if strategy is not None:
-            result = denoise_space(
+            result = density_filter_space(
                 self.records,
                 self.metric,
                 strategy,
@@ -913,13 +3064,27 @@ class Space(FiniteMetricSpace):
             removed_ids = {outlier.record_id for outlier in outliers.outliers}
             kept_positions = [index for index, record_id in enumerate(self.ids) if record_id not in removed_ids]
 
+        validity = (
+            "uneven-sampling correction by filtering source records; kept records are an "
+            "unmodified subset under the source metric; in-sample only"
+        )
+        mapping_metadata = dict(self.metadata)
+        mapping_metadata.update({
+            "mapping": "density_filter",
+            "strategy": getattr(result, "strategy", "nearest_neighbor_isolation")
+            if strategy is not None
+            else "nearest_neighbor_isolation",
+            "metric_status": "unknown",
+            "out_of_sample_supported": False,
+            "validity": validity,
+        })
         return MappingResult(
             space=Space(
                 [self.records[index] for index in kept_positions],
                 self.metric,
                 ids=[self.ids[index] for index in kept_positions],
                 name=self.name,
-                metadata=self.metadata,
+                metadata=mapping_metadata,
                 validate=self.validate,
                 cache=self.cache,
             ),
@@ -927,11 +3092,170 @@ class Space(FiniteMetricSpace):
             source_record_count=len(self.records),
             target_record_count=len(kept_positions),
             exact=True,
-            operator_name="denoise",
-            mapping="noise_filter",
+            operator_name="density_filter",
+            mapping="density_filter",
             strategy=getattr(result, "strategy", "nearest_neighbor_isolation") if strategy is not None else "nearest_neighbor_isolation",
             representation=self._representation_name(representation),
             inverse_supported=False,
+            source_records=tuple((self.ids[index],) for index in kept_positions),
+            representative_records=tuple(self.ids[index] for index in kept_positions),
+            metric_status="unknown",
+            out_of_sample_supported=False,
+            validity=validity,
+        )
+
+    def _resample(self, count=None, strategy=None, *, radius=None, representation=None, runtime=None, mapping="thin"):
+        require_exact_runtime(runtime)
+        from metric.operators import (
+            MappingResult,
+            _radius_coverage_representative_indices,
+            _regular_thin_indices,
+            _uniform_density_diagnostics,
+        )
+        from metric.strategies import PreserveDistribution, UniformDensity
+
+        if radius is not None:
+            if isinstance(strategy, UniformDensity) and strategy.radius != radius:
+                raise ValueError("use either radius= or UniformDensity(...), not conflicting radii")
+            if strategy is not None and not isinstance(strategy, UniformDensity):
+                raise ValueError("uniform-density thinning cannot combine radius= with another strategy")
+            strategy = UniformDensity(radius)
+        if strategy is None:
+            strategy = PreserveDistribution()
+        if not isinstance(strategy, (PreserveDistribution, UniformDensity)):
+            from metric.operators import _require_native_binding
+
+            _require_native_binding("Space.thin(...)", f"{type(strategy).__name__} thinning")
+
+        diagnostics = None
+        assignments = ()
+        nearest_distances = ()
+        representative_multiplicities = ()
+        representative_weights = ()
+        coverage_radius = None
+        average_assignment_distance = None
+        if isinstance(strategy, UniformDensity):
+            if count is not None:
+                raise ValueError("uniform-density thinning chooses the representative count; omit count")
+            selected_positions = _radius_coverage_representative_indices(self.records, self.metric, strategy.radius)
+            if mapping == "equalize":
+                validity = (
+                    "density-equalizing deterministic thinning by maximal metric radius net; kept records are an "
+                    "unmodified radius-separated and radius-covering subset under the source metric; empirical density "
+                    "is intentionally normalized toward uniform metric coverage"
+                )
+            else:
+                validity = (
+                    "uniform-density deterministic thinning by maximal metric radius net; kept records are an "
+                    "unmodified radius-separated and radius-covering subset under the source metric; empirical density "
+                    "is intentionally flattened"
+                )
+            strategy_name = "uniform_density_radius_net"
+            diagnostics = _uniform_density_diagnostics(self.records, self.metric, selected_positions, strategy.radius)
+            assignments = diagnostics["assignments"]
+            nearest_distances = diagnostics["nearest_representative_distances"]
+            representative_multiplicities = diagnostics["representative_multiplicities"]
+            representative_weights = diagnostics["representative_weights"]
+            coverage_radius = diagnostics["coverage_radius"]
+            average_assignment_distance = diagnostics["average_assignment_distance"]
+        else:
+            if mapping == "equalize":
+                raise ValueError("equalize requires UniformDensity(...) or radius=")
+            if count is None:
+                raise ValueError("preserve-distribution thinning requires count")
+            selected_positions = _regular_thin_indices(len(self.records), count, strategy.offset)
+            representative_multiplicities = tuple(1 for _ in selected_positions)
+            representative_weights = (
+                tuple(1.0 / len(selected_positions) for _ in selected_positions)
+                if selected_positions
+                else ()
+            )
+            validity = (
+                "distribution-preserving deterministic thinning; kept records are an unmodified regular sample "
+                "under the source metric; retained records carry normalized sample weights and no full-source "
+                "assignment map is implied"
+            )
+            strategy_name = "preserve_distribution_regular"
+        mapping_metadata = dict(self.metadata)
+        mapping_metadata.update({
+            "mapping": mapping,
+            "strategy": strategy_name,
+            "metric_status": "unknown",
+            "out_of_sample_supported": False,
+            "validity": validity,
+            "diagnostics": diagnostics,
+        })
+        return MappingResult(
+            space=Space(
+                [self.records[index] for index in selected_positions],
+                self.metric,
+                ids=[self.ids[index] for index in selected_positions],
+                name=self.name,
+                metadata=mapping_metadata,
+                validate=self.validate,
+                cache=self.cache,
+            ),
+            source_record_ids=tuple(self.ids[index] for index in selected_positions),
+            source_record_count=len(self.records),
+            target_record_count=len(selected_positions),
+            exact=True,
+            operator_name=mapping,
+            mapping=mapping,
+            strategy=strategy_name,
+            representation=self._representation_name(representation),
+            inverse_supported=False,
+            source_records=tuple((self.ids[index],) for index in selected_positions),
+            representative_records=tuple(self.ids[index] for index in selected_positions),
+            assignments=assignments,
+            nearest_representative_distances=nearest_distances,
+            representative_multiplicities=representative_multiplicities,
+            representative_weights=representative_weights,
+            coverage_radius=coverage_radius,
+            average_assignment_distance=average_assignment_distance,
+            metric_status="unknown",
+            out_of_sample_supported=False,
+            validity=validity,
+            diagnostics=diagnostics,
+        )
+
+    def thin(self, count=None, strategy=None, *, radius=None, representation=None, runtime=None):
+        """Distribution-preserving deterministic thinning into a derived metric space."""
+        return self._resample(
+            count=count,
+            strategy=strategy,
+            radius=radius,
+            representation=representation,
+            runtime=runtime,
+            mapping="thin",
+        )
+
+    def distribution_sample(self, count, strategy=None, *, representation=None, runtime=None):
+        """Alias for distribution-preserving thinning."""
+        return self.thin(count, strategy=strategy, representation=representation, runtime=runtime)
+
+    def uniform_density_sample(self, radius, *, representation=None, runtime=None):
+        """Alias for uniform-density thinning by maximal radius net."""
+        from metric.strategies import UniformDensity
+
+        return self.thin(strategy=UniformDensity(radius), representation=representation, runtime=runtime)
+
+    def equalize(self, radius=None, strategy=None, *, representation=None, runtime=None):
+        """Density-equalizing thinning by maximal metric radius net."""
+        from metric.strategies import UniformDensity
+
+        if radius is None and strategy is None:
+            raise ValueError("equalize requires radius= or UniformDensity(...)")
+        if radius is not None:
+            if isinstance(strategy, UniformDensity) and strategy.radius != radius:
+                raise ValueError("use either radius= or UniformDensity(...), not conflicting radii")
+            if strategy is not None and not isinstance(strategy, UniformDensity):
+                raise ValueError("equalize cannot combine radius= with another strategy")
+            strategy = UniformDensity(radius)
+        return self._resample(
+            strategy=strategy,
+            representation=representation,
+            runtime=runtime,
+            mapping="equalize",
         )
 
     def representatives(self, k=None, strategy=None, *, count=None, representation=None, runtime=None):
@@ -962,8 +3286,11 @@ class Space(FiniteMetricSpace):
     def _representation_name(self, representation):
         representation_name = "metric_space"
         if representation is not None:
-            representation.ensure_fresh()
-            representation_name = getattr(representation, "representation", representation_name)
+            if isinstance(representation, str):
+                representation_name = representation
+            else:
+                representation.ensure_fresh()
+                representation_name = getattr(representation, "representation", representation_name)
         return representation_name
 
     def reduce(self, count=None, strategy=None, *, representation=None, runtime=None):
@@ -1001,18 +3328,165 @@ class Space(FiniteMetricSpace):
             inverse_supported=result.inverse_supported,
         )
 
-    def compress(self, count=None, strategy=None, *, representation=None, runtime=None):
+    def compress(self, count=None, strategy=None, *, radius=None, representation=None, runtime=None):
         """Compress the space by retaining representatives through the native C++ binding."""
         require_exact_runtime(runtime)
-        from metric.operators import CompressionResult
+        from metric.operators import (
+            CompressionResult,
+            _assign_to_representatives,
+            _compression_validity,
+            _compression_representative_measure,
+            _radius_coverage_representative_indices,
+            kmedoids,
+        )
+        from metric.strategies import KMedoids, RadiusCoverage
+
+        if radius is not None:
+            if isinstance(strategy, RadiusCoverage) and strategy.radius != radius:
+                raise ValueError("use either radius= or RadiusCoverage(...), not conflicting radii")
+            if strategy is not None and not isinstance(strategy, RadiusCoverage):
+                raise ValueError("radius compression cannot combine radius= with a count-based strategy")
+            strategy = RadiusCoverage(radius)
+
+        if isinstance(strategy, RadiusCoverage):
+            if count is not None:
+                raise ValueError("radius_coverage compression chooses the representative count; omit count")
+            selected_positions = list(
+                _radius_coverage_representative_indices(self.records, self.metric, strategy.radius)
+            )
+            assignments, distances = _assign_to_representatives(self.records, self.metric, selected_positions)
+            multiplicities, weights = _compression_representative_measure(
+                assignments,
+                len(selected_positions),
+                len(self.records),
+            )
+            ratio = (len(selected_positions) / len(self.records)) if self.records else 0.0
+            metric_status = self.metadata.get("metric_status", "unknown")
+            validity = _compression_validity("radius coverage")
+            compression_metadata = dict(self.metadata)
+            compression_metadata.update({
+                "operator_name": "compress",
+                "strategy": "radius_coverage",
+                "metric_status": metric_status,
+                "validity": validity,
+            })
+            return CompressionResult(
+                space=Space(
+                    [self.records[index] for index in selected_positions],
+                    self.metric,
+                    ids=[self.ids[index] for index in selected_positions],
+                    name=self.name,
+                    metadata=compression_metadata,
+                    validate=self.validate,
+                    cache=self.cache,
+                ),
+                source_record_ids=tuple(self.ids[index] for index in selected_positions),
+                assignments=assignments,
+                nearest_representative_distances=distances,
+                representative_multiplicities=multiplicities,
+                representative_weights=weights,
+                source_record_count=len(self.records),
+                compressed_record_count=len(selected_positions),
+                compression_ratio=ratio,
+                exact=True,
+                operator_name="compress",
+                compression="representatives",
+                strategy="radius_coverage",
+                representation=self._representation_name(representation),
+                lossy=len(selected_positions) < len(self.records),
+                inverse_supported=False,
+                metric_status=metric_status,
+                validity=validity,
+            )
+
+        if isinstance(strategy, KMedoids):
+            if count is not None and count != strategy.groups:
+                raise ValueError("use either count= or KMedoids(groups=...), not conflicting group counts")
+            groups = kmedoids(
+                self.records,
+                self.metric,
+                strategy.groups,
+                strategy.max_iterations,
+                representation=self._representation_name(representation),
+            )
+            selected_positions = [int(index) for index in groups.medoids]
+            assignments, distances = _assign_to_representatives(self.records, self.metric, selected_positions)
+            multiplicities, weights = _compression_representative_measure(
+                assignments,
+                len(selected_positions),
+                len(self.records),
+            )
+            ratio = (len(selected_positions) / len(self.records)) if self.records else 0.0
+            metric_status = self.metadata.get("metric_status", "unknown")
+            validity = _compression_validity("k-medoids")
+            compression_metadata = dict(self.metadata)
+            compression_metadata.update({
+                "operator_name": "compress",
+                "strategy": "k_medoids",
+                "metric_status": metric_status,
+                "validity": validity,
+            })
+            return CompressionResult(
+                space=Space(
+                    [self.records[index] for index in selected_positions],
+                    self.metric,
+                    ids=[self.ids[index] for index in selected_positions],
+                    name=self.name,
+                    metadata=compression_metadata,
+                    validate=self.validate,
+                    cache=self.cache,
+                ),
+                source_record_ids=tuple(self.ids[index] for index in selected_positions),
+                assignments=assignments,
+                nearest_representative_distances=distances,
+                representative_multiplicities=multiplicities,
+                representative_weights=weights,
+                source_record_count=len(self.records),
+                compressed_record_count=len(selected_positions),
+                compression_ratio=ratio,
+                exact=True,
+                operator_name="compress",
+                compression="representatives",
+                strategy="k_medoids",
+                representation=self._representation_name(representation),
+                lossy=len(selected_positions) < len(self.records),
+                inverse_supported=False,
+                metric_status=metric_status,
+                validity=validity,
+            )
 
         reduced = self.reduce(count=count, strategy=strategy, representation=representation, runtime=runtime)
         ratio = (reduced.reduced_record_count / reduced.source_record_count) if reduced.source_record_count else 0.0
+        multiplicities, weights = _compression_representative_measure(
+            reduced.assignments,
+            reduced.reduced_record_count,
+            reduced.source_record_count,
+        )
+        metric_status = self.metadata.get("metric_status", "unknown")
+        validity = _compression_validity(reduced.strategy)
+        compression_metadata = dict(reduced.space.metadata)
+        compression_metadata.update({
+            "operator_name": "compress",
+            "strategy": reduced.strategy,
+            "metric_status": metric_status,
+            "validity": validity,
+        })
+        reduced_space = Space(
+            reduced.space.records,
+            reduced.space.metric,
+            ids=reduced.space.ids,
+            name=reduced.space.name,
+            metadata=compression_metadata,
+            validate=reduced.space.validate,
+            cache=reduced.space.cache,
+        )
         return CompressionResult(
-            space=reduced.space,
+            space=reduced_space,
             source_record_ids=reduced.source_record_ids,
             assignments=reduced.assignments,
             nearest_representative_distances=reduced.nearest_representative_distances,
+            representative_multiplicities=multiplicities,
+            representative_weights=weights,
             source_record_count=reduced.source_record_count,
             compressed_record_count=reduced.reduced_record_count,
             compression_ratio=ratio,
@@ -1023,37 +3497,39 @@ class Space(FiniteMetricSpace):
             representation=reduced.representation,
             lossy=reduced.reduced_record_count < reduced.source_record_count,
             inverse_supported=False,
+            metric_status=metric_status,
+            validity=validity,
         )
 
     def map(self, transform=None, metric=None, *, target=None, strategy=None, representation=None, runtime=None):
         require_exact_runtime(runtime)
-        from metric.strategies import PhateAE
+        from metric.strategies import ParametricDiffusionCoordinates
 
-        if isinstance(strategy, PhateAE):
+        if isinstance(strategy, ParametricDiffusionCoordinates):
             if transform is not None or target is not None or metric is not None:
                 raise AmbiguousIntentError(
-                    "PhateAE native mappings derive their target from the source space; "
+                    "ParametricDiffusionCoordinates derives its target from the source space; "
                     "omit transform and target, and do not pass a metric"
                 )
             if not _is_native_euclidean_vector_metric(self.metric):
                 raise StrategyUnavailableError(
-                    "Space.map(strategy=PhateAE(...)) only delegates to the native C++ binding for "
-                    "Space.vectors(...) values that use the default native-compatible Euclidean vector metric. "
+                    "Space.map(strategy=ParametricDiffusionCoordinates(...)) only delegates to the native C++ binding for "
+                    "Space.vectors(...) values that use the default native Euclidean vector metric. "
                     "Custom Python metrics are not ignored; use "
-                    "metric.mappings.native_phate_autoencoder_fit_vectors(...) explicitly for native Euclidean "
+                    "metric.mappings.derive_parametric_diffusion_coordinates(...) explicitly for native Euclidean "
                     "vector rows or stay in C++ for custom metric semantics."
                 )
 
-            from metric.mappings import native_phate_autoencoder_fit_vectors
+            from metric.mappings import derive_parametric_diffusion_coordinates
             from metric.operators import MappingResult
 
             self.ensure_fresh()
             representation_name = self._representation_name(representation)
-            model = native_phate_autoencoder_fit_vectors(
+            mapping_artifact = derive_parametric_diffusion_coordinates(
                 self.records,
                 dimensions=strategy.dimensions,
-                epochs=strategy.epochs,
-                learning_rate=strategy.learning_rate,
+                calibration_steps=strategy.calibration_steps,
+                step_size=strategy.step_size,
                 diffusion_steps=strategy.diffusion_steps,
                 kernel_scale=1.0 if strategy.kernel_scale is None else strategy.kernel_scale,
                 reconstruction_weight=strategy.reconstruction_weight,
@@ -1063,7 +3539,12 @@ class Space(FiniteMetricSpace):
                 affinity_kernel=strategy.affinity_kernel,
                 diffusion_operator=strategy.diffusion_operator,
             )
-            latent_records = model.transform(self.records)
+            latent_records = mapping_artifact.transform(self.records)
+            validity = (
+                "native parametric diffusion coordinates; derived Euclidean coordinate space "
+                "approximates source geometry and supports native transform/inverse "
+                "for records matching the derived vector shape"
+            )
             latent_space = Space.vectors(
                 latent_records,
                 ids=self.ids,
@@ -1071,11 +3552,14 @@ class Space(FiniteMetricSpace):
                 cache="none",
                 metadata={
                     "source_space_version": self.version(),
-                    "mapping": model.mapping,
-                    "strategy": model.strategy,
-                    "distance_provider": model.distance_provider,
-                    "affinity_kernel": model.affinity_kernel,
-                    "diffusion_operator": model.diffusion_operator,
+                    "mapping": mapping_artifact.mapping,
+                    "strategy": mapping_artifact.strategy,
+                    "metric_status": "metric",
+                    "out_of_sample_supported": True,
+                    "validity": validity,
+                    "distance_provider": mapping_artifact.distance_provider,
+                    "affinity_kernel": mapping_artifact.affinity_kernel,
+                    "diffusion_operator": mapping_artifact.diffusion_operator,
                 },
             )
             source_ids = tuple(self.ids)
@@ -1086,13 +3570,16 @@ class Space(FiniteMetricSpace):
                 target_record_count=len(latent_records),
                 exact=True,
                 operator_name="map",
-                mapping=model.mapping,
-                strategy=model.strategy,
+                mapping=mapping_artifact.mapping,
+                strategy=mapping_artifact.strategy,
                 representation=representation_name,
-                inverse_supported=model.inverse_supported,
+                inverse_supported=mapping_artifact.inverse_supported,
                 source_records=tuple((record_id,) for record_id in source_ids),
                 representative_records=source_ids,
-                fitted_model=model,
+                metric_status="metric",
+                out_of_sample_supported=True,
+                validity=validity,
+                mapping_artifact=mapping_artifact,
             )
 
         if transform is None and target is None:
@@ -1111,21 +3598,167 @@ class Space(FiniteMetricSpace):
             )
 
         from metric.operators import map_space
+        if metric is None:
+            raise MissingMetricError(
+                "Space.map(transform=...) requires metric=... for the derived target space. "
+                "Pass metric=space.metric explicitly only when the transformed records remain in the source metric domain."
+            )
 
         return map_space(
             self.records,
             transform,
-            self.metric if metric is None else metric,
+            metric,
             representation=self._representation_name(representation),
+            source_ids=self.ids,
         )
 
     def embed(self, dimensions=2, strategy=None, *, representation=None, runtime=None):
         """Embed the space into Euclidean coordinates (native-only)."""
         _require_native_binding("Space.embed(...)", "metric-space embedding (e.g. classical MDS)")
 
-    def describe(self, *, representation=None, runtime=None):
-        """Describe exact finite-space structure through the native C++ binding."""
-        require_exact_runtime(runtime)
+    def _sample_indices_for_plan(self, plan):
+        sample_count = _sample_record_count(
+            len(self.records),
+            plan.max_dense_records,
+            plan.max_distance_evaluations,
+        )
+        if sample_count >= len(self.records):
+            return list(range(len(self.records)))
+        if sample_count <= 1:
+            return [0] if self.records else []
+        last = len(self.records) - 1
+        indices = []
+        seen = set()
+        for offset in range(sample_count):
+            index = round(offset * last / (sample_count - 1))
+            if index not in seen:
+                indices.append(index)
+                seen.add(index)
+        index = 0
+        while len(indices) < sample_count and index < len(self.records):
+            if index not in seen:
+                indices.append(index)
+                seen.add(index)
+            index += 1
+        return sorted(indices)
+
+    def _sampled_description(self, plan):
+        from metric.operators import StructureDescription
+
+        indices = self._sample_indices_for_plan(plan)
+        distances = []
+        zero_distance_pair_count = 0
+        minimum_nonzero_distance = None
+        maximum_distance = None
+
+        for lhs_offset, lhs_index in enumerate(indices):
+            for rhs_index in indices[lhs_offset + 1:]:
+                distance = self.distance(lhs_index, rhs_index)
+                distances.append(distance)
+                if distance == 0:
+                    zero_distance_pair_count += 1
+                else:
+                    if minimum_nonzero_distance is None or distance < minimum_nonzero_distance:
+                        minimum_nonzero_distance = distance
+                    if maximum_distance is None or distance > maximum_distance:
+                        maximum_distance = distance
+
+        pair_count = len(distances)
+        if maximum_distance is None:
+            maximum_distance = 0.0
+        average_distance = float(sum(distances) / pair_count) if pair_count else 0.0
+        if pair_count > 1:
+            variance = sum(
+                (distance - average_distance) ** 2
+                for distance in distances
+            ) / (pair_count - 1)
+            average_distance_standard_error = math.sqrt(variance / pair_count)
+            average_distance_confidence_radius_95 = 1.96 * average_distance_standard_error
+        else:
+            average_distance_standard_error = None
+            average_distance_confidence_radius_95 = None
+        full_pair_count = len(self.records) * max(0, len(self.records) - 1) // 2
+        diagnostics = {
+            "diagnostic": "structure_approximation",
+            "plan": plan.to_dict(),
+            "bounded": True,
+            "sample_policy": "regular_sample",
+            "sampled_record_count": len(indices),
+            "sample_universe": len(self.records),
+            "sample_fraction": 1.0 if not self.records else len(indices) / len(self.records),
+            "sampled_pair_count": pair_count,
+            "estimated_full_pair_count": full_pair_count,
+            "pair_fraction": 1.0 if full_pair_count == 0 else pair_count / full_pair_count,
+            "distance_evaluations": pair_count,
+            "distance_evaluation_budget": plan.max_distance_evaluations,
+            "average_distance_standard_error": average_distance_standard_error,
+            "average_distance_confidence_radius_95": average_distance_confidence_radius_95,
+            "zero_distance_pair_fraction": (
+                0.0 if pair_count == 0 else zero_distance_pair_count / pair_count
+            ),
+            "intrinsic_dimension_estimated": False,
+            "approximation_reason": (
+                "exact structure diagnostics exceeded budget; bounded sampled pairs were used"
+            ),
+        }
+        return StructureDescription(
+            record_count=len(self.records),
+            pair_count=pair_count,
+            zero_distance_pair_count=zero_distance_pair_count,
+            minimum_nonzero_distance=minimum_nonzero_distance,
+            maximum_distance=maximum_distance,
+            average_distance=average_distance,
+            intrinsic_dimension=0.0,
+            has_nonzero_distances=minimum_nonzero_distance is not None,
+            exact=False,
+            strategy="sampled_pairwise_budget_guard",
+            representation="sample",
+            diagnostics=diagnostics,
+        )
+
+    def describe(
+        self,
+        *,
+        representation=None,
+        runtime=None,
+        exact=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+        allow_approximate=True,
+        allow_chunking=True,
+    ):
+        """Describe finite-space structure with a budget-aware execution plan."""
+        if runtime is not None:
+            require_exact_runtime(runtime)
+            if exact is False:
+                raise MetricInputError(
+                    "Space.describe(runtime=...) requires exact=True when an exact runtime is supplied"
+                )
+            exact = True
+        if exact is None:
+            exact = False
+        plan = self.plan(
+            "describe",
+            exact=exact,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            allow_approximate=allow_approximate,
+            allow_chunking=allow_chunking,
+        )
+        if plan.decision == "refused":
+            fallback = ", ".join(plan.fallback)
+            raise MetricComputationError(
+                "Space.describe() refused exact structure diagnostics: "
+                f"records={plan.record_count}, "
+                f"estimated_distance_evaluations={plan.estimated_distance_evaluations}, "
+                f"distance_evaluation_budget={plan.max_distance_evaluations}. "
+                f"Reason: {plan.reason}. Suggested fallback: {fallback}."
+            )
+        if plan.exactness != "exact":
+            return self._sampled_description(plan)
+
         from metric.operators import describe_structure
 
         return describe_structure(
@@ -1134,9 +3767,9 @@ class Space(FiniteMetricSpace):
             representation=self._representation_name(representation),
         )
 
-    def describe_structure(self, *, representation=None, runtime=None):
+    def describe_structure(self, *, representation=None, runtime=None, **kwargs):
         """Describe exact finite-space structure through the native C++ binding."""
-        return self.describe(representation=representation, runtime=runtime)
+        return self.describe(representation=representation, runtime=runtime, **kwargs)
 
     def runtime_diagnostics(self, *, representation=None, runtime=None, intent=None):
         """Inspect the normalized runtime policy and chosen representation.
@@ -1250,4 +3883,4 @@ class Space(FiniteMetricSpace):
 
 MatrixSpace = FiniteMetricSpace
 
-__all__ = ["FiniteMetricSpace", "MatrixSpace", "Space"]
+__all__ = ["FiniteMetricSpace", "MatrixSpace", "RecordId", "Space", "SpacePlan"]

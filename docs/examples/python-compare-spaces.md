@@ -26,7 +26,7 @@ print(comparison.matched_ids)
 ```
 
 Use `align="ids"` when both spaces use the same stable record IDs. Use
-`align="position"` for compatibility with older positional workflows.
+`align="position"` for older positional workflows.
 
 Raw right-hand records are accepted when an explicit `other_metric` is passed:
 

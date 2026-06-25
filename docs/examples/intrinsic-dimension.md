@@ -1,6 +1,6 @@
 # Intrinsic Dimension Diagnostic
 
-Intrinsic-dimension diagnostics estimate how quickly neighborhoods grow inside a finite metric space. They are useful when deciding whether a tree, graph, or dense matrix representation is likely to fit the geometry.
+Intrinsic-dimension diagnostics estimate how quickly neighborhoods grow inside a finite metric space. They are useful when deciding whether a tree, graph, or dense matrix representation is likely to match the geometry.
 
 The revived core exposes a small expansion-dimension estimate:
 

@@ -5,12 +5,9 @@
 // Fresh adapter-only binding for the Metric-Space Mapping Pipeline.
 //
 // This binding marshals Python row data into the native C++ finite metric-space
-// mapping pipeline and exposes its interchangeable components, lineage, and
-// diagnostics. It contains NO mapping math: PHATE geometry, diffusion, neural
-// training, and neighbor-preservation scoring all run in the native engine. It
-// is deliberately registered under the metric.* engine namespace (the Python
-// wrapper lives at metric.mapping_pipeline), NOT a neural-network product
-// namespace -- the pipeline is a metric-space transform, not a DNN product.
+// coordinate pipeline and exposes its interchangeable components, lineage, and
+// diagnostics. It contains NO coordinate math: diffusion, coordinate calibration,
+// and neighbor-preservation scoring all run in the native engine.
 
 #include "metric/metric/catalog.hpp"
 #include "metric/engine.hpp"
@@ -34,7 +31,7 @@ namespace {
 using record_type = std::vector<double>;
 using records_type = std::vector<record_type>;
 using source_space_type = decltype(mtrc::make_space(std::declval<records_type>(), mtrc::Euclidean<double>{}));
-using native_model_type = mtrc::modify::map::NativeAutoencoderModel<record_type, double>;
+using coordinate_artifact_type = mtrc::modify::map::ParametricCoordinateMapArtifact<record_type, double>;
 
 auto records_from_array(py::array_t<double, py::array::c_style | py::array::forcecast> array) -> records_type
 {
@@ -62,13 +59,13 @@ auto records_from_sequence(const records_type &records) -> records_type
 	if (records.empty()) {
 		throw std::invalid_argument("mapping pipeline vector records must be non-empty");
 	}
-	const auto feature_count = records.front().size();
-	if (feature_count == 0) {
-		throw std::invalid_argument("mapping pipeline vector records must have at least one feature");
+	const auto source_dimension = records.front().size();
+	if (source_dimension == 0) {
+		throw std::invalid_argument("mapping pipeline vector records must have at least one coordinate");
 	}
 	for (const auto &record : records) {
-		if (record.size() != feature_count) {
-			throw std::invalid_argument("mapping pipeline vector records must have consistent feature counts");
+		if (record.size() != source_dimension) {
+			throw std::invalid_argument("mapping pipeline vector records must have consistent dimensions");
 		}
 	}
 	return records;
@@ -99,7 +96,7 @@ auto build_pipeline_plan(double reconstruction_weight, double geometry_weight, c
 	-> mtrc::modify::compose::PipelinePlan
 {
 	const auto pairwise_distances = normalize_distance_provider(distance_provider);
-	auto builder = mtrc::modify::compose::native_phate_autoencoder_pipeline_builder(reconstruction_weight,
+	auto builder = mtrc::modify::compose::parametric_diffusion_coordinate_pipeline_builder(reconstruction_weight,
 																					 geometry_weight);
 	if (pairwise_distances == "distance_table_pairwise_distances") {
 		builder.use_distance_table_pairwise_distances();
@@ -163,43 +160,43 @@ auto make_autoencoder_network(std::size_t input_dimension, std::size_t latent_di
 
 auto training_report_to_python(const mtrc::solve::parametric::dnn::TrainingReport<double> &report) -> py::dict
 {
-	py::list epochs;
-	for (const auto &epoch : report.epochs) {
-		py::dict epoch_result;
-		epoch_result["epoch"] = epoch.epoch;
-		epoch_result["total_loss"] = epoch.total_loss;
-		epochs.append(std::move(epoch_result));
+	py::list steps;
+	for (const auto &step : report.epochs) {
+		py::dict step_result;
+		step_result["step"] = step.epoch;
+		step_result["objective_value"] = step.total_loss;
+		steps.append(std::move(step_result));
 	}
 	py::dict result;
-	result["epoch_count"] = report.epochs.size();
+	result["step_count"] = report.epochs.size();
 	result["stopped_early"] = report.stopped_early;
-	result["epochs"] = std::move(epochs);
+	result["steps"] = std::move(steps);
 	return result;
 }
 
-// Fitted-pipeline handle: an adapter over the native mapping model. It keeps the
+// Pipeline artifact handle: an adapter over the native mapping artifact. It keeps the
 // source records only so the native neighbor-preservation diagnostic can rebuild
 // the source finite metric space; it computes nothing in Python.
-class PyMetricSpaceMappingModel {
+class PyMetricSpaceMappingArtifact {
   public:
-	PyMetricSpaceMappingModel(native_model_type model, records_type source_records)
-		: model_(std::move(model)), source_records_(std::move(source_records))
+	PyMetricSpaceMappingArtifact(coordinate_artifact_type artifact, records_type source_records)
+		: artifact_(std::move(artifact)), source_records_(std::move(source_records))
 	{
 	}
 
-	auto components() const -> py::list { return plan_components_to_python(model_.pipeline_plan()); }
+	auto components() const -> py::list { return plan_components_to_python(artifact_.pipeline_plan()); }
 
-	auto mapping_name() const -> std::string { return model_.mapping_name(); }
-	auto strategy_name() const -> std::string { return model_.strategy_name(); }
-	auto source_record_count() const -> std::size_t { return model_.source_record_count(); }
-	auto latent_dimension() const -> std::size_t { return model_.latent_dimension(); }
-	auto inverse_supported() const -> bool { return model_.codec().inverse_supported(); }
+	auto mapping_name() const -> std::string { return artifact_.mapping_name(); }
+	auto strategy_name() const -> std::string { return artifact_.strategy_name(); }
+	auto source_record_count() const -> std::size_t { return artifact_.source_record_count(); }
+	auto latent_dimension() const -> std::size_t { return artifact_.latent_dimension(); }
+	auto inverse_supported() const -> bool { return artifact_.codec().inverse_supported(); }
 
 	auto lineage() const -> py::dict
 	{
 		py::dict result;
 		result["scheme"] = "one_to_one_source_records";
-		result["source_record_count"] = model_.source_record_count();
+		result["source_record_count"] = artifact_.source_record_count();
 		result["derived_record_count"] = source_records_.size();
 		return result;
 	}
@@ -208,26 +205,26 @@ class PyMetricSpaceMappingModel {
 	{
 		const auto rows = records_from_python(records);
 		auto space = mtrc::make_space(rows, mtrc::Euclidean<double>{});
-		return mtrc::modify::map::transform(model_, space).space.records();
+		return mtrc::modify::map::transform(artifact_, space).space.records();
 	}
 
 	auto inverse_transform(const py::object &latent_records) const -> records_type
 	{
-		return model_.inverse_transform(records_from_python(latent_records));
+		return artifact_.inverse_transform(records_from_python(latent_records));
 	}
 
-	// Native neighbor-preservation recall of the fitted derived space.
+	// Native neighbor-preservation recall of the derived coordinate space.
 	auto neighbor_recall(std::size_t neighbor_count) const -> double
 	{
 		auto space = mtrc::make_space(source_records_, mtrc::Euclidean<double>{});
-		const auto latent = mtrc::modify::map::transform(model_, space);
+		const auto latent = mtrc::modify::map::transform(artifact_, space);
 		return mtrc::modify::map::neighbor_preservation(space, latent, neighbor_count).recall;
 	}
 
-	auto training_report() const -> py::dict { return training_report_to_python(model_.training_report()); }
+	auto calibration_report() const -> py::dict { return training_report_to_python(artifact_.calibration_report()); }
 
   private:
-	native_model_type model_;
+	coordinate_artifact_type artifact_;
 	records_type source_records_;
 };
 
@@ -239,61 +236,63 @@ auto pipeline_plan_components(double reconstruction_weight, double geometry_weig
 							diffusion_operator));
 }
 
-auto fit_metric_space_mapping_pipeline(const py::object &records, std::size_t dimensions, std::size_t epochs,
-									   double learning_rate, std::size_t diffusion_steps, double kernel_scale,
-									   double reconstruction_weight, double geometry_weight, std::uint64_t seed,
-									   std::string distance_provider, std::string affinity_kernel,
-									   std::string diffusion_operator) -> PyMetricSpaceMappingModel
+auto derive_metric_space_mapping_pipeline(const py::object &records, std::size_t dimensions,
+										  std::size_t calibration_steps, double step_size,
+										  std::size_t diffusion_steps, double kernel_scale,
+										  double reconstruction_weight, double geometry_weight, std::uint64_t seed,
+										  std::string distance_provider, std::string affinity_kernel,
+										  std::string diffusion_operator) -> PyMetricSpaceMappingArtifact
 {
 	const auto rows = records_from_python(records);
-	const auto feature_count = rows.front().size();
+	const auto source_dimension = rows.front().size();
 	auto space = mtrc::make_space(rows, mtrc::Euclidean<double>{});
 	const auto plan = build_pipeline_plan(reconstruction_weight, geometry_weight, distance_provider, affinity_kernel,
 										  diffusion_operator);
 
-	mtrc::modify::map::PhateGeometrySpec<double> geometry;
+	mtrc::modify::map::DiffusionCoordinateSpec<double> geometry;
 	geometry.dimensions = dimensions;
 	geometry.diffusion_steps = diffusion_steps;
 	geometry.kernel_scale = kernel_scale;
 	geometry.max_dense_records = rows.size();
 
-	mtrc::solve::parametric::dnn::TrainingSpec<double> training;
-	training.epochs = epochs;
-	training.batch_size = rows.size();
-	training.shuffle = false;
-	training.seed = seed;
-	training.gradient_clip_norm = 20.0;
+	mtrc::modify::map::CoordinateCalibrationSpec<double> calibration;
+	calibration.steps = calibration_steps;
+	calibration.batch_size = rows.size();
+	calibration.shuffle = false;
+	calibration.seed = seed;
+	calibration.gradient_clip_norm = 20.0;
 
-	auto pipeline = mtrc::modify::compose::native_phate_autoencoder(
-		plan, mtrc::solve::parametric::dnn::AutoencoderModel<double>(make_autoencoder_network(feature_count, dimensions, learning_rate)),
-		geometry, training);
-	return PyMetricSpaceMappingModel(mtrc::modify::map::fit(pipeline, space), rows);
+	auto pipeline = mtrc::modify::compose::parametric_diffusion_coordinates(
+		plan, mtrc::solve::parametric::dnn::AutoencoderModel<double>(
+				  make_autoencoder_network(source_dimension, dimensions, step_size)),
+		geometry, calibration);
+	return PyMetricSpaceMappingArtifact(mtrc::modify::map::derive_from(pipeline, space), rows);
 }
 
 } // namespace
 
 void export_metric_space_mapping_pipeline(py::module &m)
 {
-	py::class_<PyMetricSpaceMappingModel>(m, "_MetricSpaceMappingModel")
-		.def_property_readonly("mapping", &PyMetricSpaceMappingModel::mapping_name)
-		.def_property_readonly("strategy", &PyMetricSpaceMappingModel::strategy_name)
-		.def_property_readonly("source_record_count", &PyMetricSpaceMappingModel::source_record_count)
-		.def_property_readonly("latent_dimension", &PyMetricSpaceMappingModel::latent_dimension)
-		.def_property_readonly("inverse_supported", &PyMetricSpaceMappingModel::inverse_supported)
-		.def_property_readonly("components", &PyMetricSpaceMappingModel::components)
-		.def("lineage", &PyMetricSpaceMappingModel::lineage)
-		.def("transform", &PyMetricSpaceMappingModel::transform, py::arg("records"))
-		.def("inverse_transform", &PyMetricSpaceMappingModel::inverse_transform, py::arg("latent_records"))
-		.def("neighbor_recall", &PyMetricSpaceMappingModel::neighbor_recall, py::arg("neighbor_count") = 3)
-		.def("training_report", &PyMetricSpaceMappingModel::training_report);
+	py::class_<PyMetricSpaceMappingArtifact>(m, "_MetricSpaceMappingArtifact")
+		.def_property_readonly("mapping", &PyMetricSpaceMappingArtifact::mapping_name)
+		.def_property_readonly("strategy", &PyMetricSpaceMappingArtifact::strategy_name)
+		.def_property_readonly("source_record_count", &PyMetricSpaceMappingArtifact::source_record_count)
+		.def_property_readonly("latent_dimension", &PyMetricSpaceMappingArtifact::latent_dimension)
+		.def_property_readonly("inverse_supported", &PyMetricSpaceMappingArtifact::inverse_supported)
+		.def_property_readonly("components", &PyMetricSpaceMappingArtifact::components)
+		.def("lineage", &PyMetricSpaceMappingArtifact::lineage)
+		.def("transform", &PyMetricSpaceMappingArtifact::transform, py::arg("records"))
+		.def("inverse_transform", &PyMetricSpaceMappingArtifact::inverse_transform, py::arg("latent_records"))
+		.def("neighbor_recall", &PyMetricSpaceMappingArtifact::neighbor_recall, py::arg("neighbor_count") = 3)
+		.def("calibration_report", &PyMetricSpaceMappingArtifact::calibration_report);
 
 	m.def("_metric_space_mapping_pipeline_plan", &pipeline_plan_components, py::arg("reconstruction_weight") = 0.05,
 		  py::arg("geometry_weight") = 1.0, py::arg("distance_provider") = "exact_metric_space_distance_provider",
 		  py::arg("affinity_kernel") = "gaussian_affinity_kernel",
 		  py::arg("diffusion_operator") = "row_normalized_diffusion_operator");
 
-	m.def("_metric_space_mapping_pipeline_fit", &fit_metric_space_mapping_pipeline, py::arg("records"),
-		  py::arg("dimensions") = 1, py::arg("epochs") = 100, py::arg("learning_rate") = 0.01,
+	m.def("_metric_space_mapping_pipeline_derive", &derive_metric_space_mapping_pipeline, py::arg("records"),
+		  py::arg("dimensions") = 1, py::arg("calibration_steps") = 100, py::arg("step_size") = 0.01,
 		  py::arg("diffusion_steps") = 3, py::arg("kernel_scale") = 1.0, py::arg("reconstruction_weight") = 0.05,
 		  py::arg("geometry_weight") = 1.0, py::arg("seed") = 29,
 		  py::arg("distance_provider") = "exact_metric_space_distance_provider",

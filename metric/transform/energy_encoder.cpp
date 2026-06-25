@@ -14,7 +14,7 @@
 namespace mtrc {
 
 // recursive split for arbitrary depth
-// this code is COPIED from DSPCC, TODO update DSPCC to remove code dubbing if this code becomes common
+// Historical curve-encoder helper. Keep local unless promoted through a finite-space contract.
 
 template <template <typename, typename> class OuterContainer, template <typename, typename> class InnerContainer,
 		  typename ValueType, typename OuterAllocator, typename InnerAllocator>
@@ -58,7 +58,7 @@ template <template <typename, typename> class OuterContainer, class InnerContain
 OuterContainer<InnerContainer, OuterAllocator> // TODO better use -> for deduction by return value
 sequential_DWT(InnerContainer x, std::stack<std::size_t> &subband_length, int wavelet_type, std::size_t subbands_num)
 {
-	OuterContainer<InnerContainer, OuterAllocator> outer_x = {x}; // TODO also rename deque_x to outer_x in DSPCC
+	OuterContainer<InnerContainer, OuterAllocator> outer_x = {x};
 	return DWT_split(outer_x, subband_length, wavelet_type, subbands_num);
 }
 
@@ -70,7 +70,7 @@ sequential_iDWT(OuterContainer<InnerContainer<ValueType, InnerAllocator>, OuterA
 {
 	OuterContainer<InnerContainer<ValueType, InnerAllocator>, OuterAllocator> outer_out =
 		DWT_unsplit(in, subband_length, wavelet_type);
-	return outer_out[0]; // TODO rename deque_out also in DSPCC
+	return outer_out[0];
 }
 
 EnergyEncoder::EnergyEncoder(int wavelet_type, std::size_t splits, bool bothsided)

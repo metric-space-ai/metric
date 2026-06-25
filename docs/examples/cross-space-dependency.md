@@ -41,7 +41,7 @@ the missing significance layer the correct way — a **seeded permutation test b
 of the public `compare()` API**, not inside MGC and never as a distance:
 
 - **statistic** — MGC on the true observation pairing (the effect size).
-- **null model** — the same left space compared against the right space whose record
+- **null pairing** — the same left space compared against the right space whose record
   labels have been randomly **re-paired**. Re-pairing is the textbook independence null.
 - **p-value** — `(1 + #{permuted statistic ≥ observed}) / (1 + permutations)`. The
   standard add-one estimator: one-sided, monotone in the evidence, never exactly zero,
@@ -140,7 +140,7 @@ from the non-portable `std::*_distribution` / `std::shuffle` adaptors.
   cheap scalar summaries.
 - **The metric spaces, not the test, unlock the signal.** Forced-common-vector MGC drops to
   `0.510`: the same dependence test on naively vectorised records loses a large part of the
-  signal that the native edit/TWED spaces preserve. Without a model to learn a common
+  signal that the native edit/TWED spaces preserve. Without a learned artifact for a common
   embedding, the native metrics already expose the structure.
 - **The pairing carries the dependence.** Permuting the curve order collapses the statistic
   from `0.948` to `−0.019` (`p = 0.720`): each space is unchanged, only the cross-space
@@ -150,7 +150,7 @@ from the non-portable `std::*_distribution` / `std::shuffle` adaptors.
   `p = 0.535` — correctly not significant.
 
 The shared observation order is the alignment contract; the two record containers, types,
-and metrics stay completely separate. No common embedding model is trained or required.
+and metrics stay completely separate. No common embedding artifact is trained or required.
 
 ## Target Python shape
 

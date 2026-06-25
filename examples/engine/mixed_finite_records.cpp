@@ -65,7 +65,7 @@ constexpr MixedRecordMetric::Weights kWeights{
 
 auto make_fleet_metric(const std::vector<MixedRecord> &records) -> MixedRecordMetric
 {
-	return MixedRecordMetric(hero::kSpectrumBins, hero::fit_vitals_metric(records), kWeights);
+	return MixedRecordMetric(hero::kSpectrumBins, hero::derive_vitals_metric(records), kWeights);
 }
 
 auto clustering_purity(const std::vector<std::size_t> &assignments, const std::vector<std::string> &labels,
@@ -212,7 +212,7 @@ int main()
 	const auto policy = mtrc::space::storage::materialized(mtrc::space::storage::exact());
 	// Both flat baselines: the raw "feature vector" and the fair per-column z-scored
 	// one. The headline comparison uses the fair (standardized) baseline.
-	const auto fleet_scaler = hero::fit_flat_standardizer(hero::flat_projection(records));
+	const auto fleet_scaler = hero::derive_flat_standardizer(hero::flat_projection(records));
 	auto flat_space = mtrc::make_space(hero::standardized_flat_projection(records, fleet_scaler), FlatEuclidean{});
 	auto raw_flat_space = mtrc::make_space(hero::flat_projection(records), FlatEuclidean{});
 

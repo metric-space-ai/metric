@@ -33,25 +33,25 @@ target_compile_definitions(engine_process_curve_external_visual_export
         METRIC_PROCESS_CURVE_INTERNAL_BLEEDING_CSV="${CMAKE_CURRENT_SOURCE_DIR}/assets/process_curve_internal_bleeding_gallery.csv"
 )
 
-add_executable(engine_mnist_phate_autoencoder_smoke mnist_phate_autoencoder_smoke.cpp)
-target_link_libraries(engine_mnist_phate_autoencoder_smoke PRIVATE ${METRIC_TARGET_NAME})
-target_compile_definitions(engine_mnist_phate_autoencoder_smoke
+add_executable(engine_mnist_diffusion_coordinate_smoke mnist_diffusion_coordinate_smoke.cpp)
+target_link_libraries(engine_mnist_diffusion_coordinate_smoke PRIVATE ${METRIC_TARGET_NAME})
+target_compile_definitions(engine_mnist_diffusion_coordinate_smoke
     PRIVATE
-        METRIC_MNIST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../mapping_examples/assets/mnist"
+        METRIC_MNIST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets/mnist"
 )
 
-add_executable(engine_mnist_phate_autoencoder_gallery mnist_phate_autoencoder_gallery.cpp)
-target_link_libraries(engine_mnist_phate_autoencoder_gallery PRIVATE ${METRIC_TARGET_NAME})
-target_compile_definitions(engine_mnist_phate_autoencoder_gallery
+add_executable(engine_mnist_diffusion_coordinate_gallery mnist_diffusion_coordinate_gallery.cpp)
+target_link_libraries(engine_mnist_diffusion_coordinate_gallery PRIVATE ${METRIC_TARGET_NAME})
+target_compile_definitions(engine_mnist_diffusion_coordinate_gallery
     PRIVATE
-        METRIC_MNIST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../mapping_examples/assets/mnist"
+        METRIC_MNIST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets/mnist"
 )
 
 add_executable(engine_mnist_grae10_integrity mnist_grae10_integrity.cpp)
 target_link_libraries(engine_mnist_grae10_integrity PRIVATE ${METRIC_TARGET_NAME})
 target_compile_definitions(engine_mnist_grae10_integrity
     PRIVATE
-        METRIC_MNIST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../mapping_examples/assets/mnist"
+        METRIC_MNIST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets/mnist"
         METRIC_GRAE10_DATA_JSON="${CMAKE_SOURCE_DIR}/visual/examples/grae10-metric-engine/grae10-data.json"
 )
 
@@ -79,17 +79,17 @@ target_link_libraries(engine_representation_swap PRIVATE ${METRIC_TARGET_NAME})
 add_executable(engine_modify_space_components modify_space_components.cpp)
 target_link_libraries(engine_modify_space_components PRIVATE ${METRIC_TARGET_NAME})
 
-add_executable(engine_phate_autoencoder_map phate_autoencoder_map.cpp)
-target_link_libraries(engine_phate_autoencoder_map PRIVATE ${METRIC_TARGET_NAME})
+add_executable(engine_parametric_diffusion_coordinate_map parametric_diffusion_coordinate_map.cpp)
+target_link_libraries(engine_parametric_diffusion_coordinate_map PRIVATE ${METRIC_TARGET_NAME})
 
-add_executable(engine_process_curve_phate_map process_curve_phate_map.cpp)
-target_link_libraries(engine_process_curve_phate_map PRIVATE ${METRIC_TARGET_NAME})
+add_executable(engine_process_curve_diffusion_coordinate_map process_curve_diffusion_coordinate_map.cpp)
+target_link_libraries(engine_process_curve_diffusion_coordinate_map PRIVATE ${METRIC_TARGET_NAME})
 
-add_executable(engine_process_curve_phate_gallery process_curve_phate_gallery.cpp)
-target_link_libraries(engine_process_curve_phate_gallery PRIVATE ${METRIC_TARGET_NAME})
+add_executable(engine_process_curve_diffusion_coordinate_gallery process_curve_diffusion_coordinate_gallery.cpp)
+target_link_libraries(engine_process_curve_diffusion_coordinate_gallery PRIVATE ${METRIC_TARGET_NAME})
 
-add_executable(engine_phate_pipeline_builder phate_pipeline_builder.cpp)
-target_link_libraries(engine_phate_pipeline_builder PRIVATE ${METRIC_TARGET_NAME})
+add_executable(engine_parametric_diffusion_coordinate_pipeline_builder parametric_diffusion_coordinate_pipeline_builder.cpp)
+target_link_libraries(engine_parametric_diffusion_coordinate_pipeline_builder PRIVATE ${METRIC_TARGET_NAME})
 
 add_executable(engine_metric_space_mapping_pipeline metric_space_mapping_pipeline.cpp)
 target_link_libraries(engine_metric_space_mapping_pipeline PRIVATE ${METRIC_TARGET_NAME})
@@ -106,9 +106,9 @@ target_link_libraries(engine_hero_application_benchmarks PRIVATE ${METRIC_TARGET
 
 add_executable(engine_condition_monitoring condition_monitoring.cpp)
 target_link_libraries(engine_condition_monitoring PRIVATE ${METRIC_TARGET_NAME})
-# Entropy is a LAPACK-backed space property (numeric-core determinant / EP path). Mirror the
-# repo's core-entropy gate: demonstrate the entropy property only where LAPACK is
-# available; otherwise the example degrades to its structure-based space properties.
+# Entropy is a LAPACK-backed coordinate-space property (numeric-core determinant / EP path).
+# Mirror the repo's core-entropy gate: demonstrate the mapped-coordinate entropy property
+# only where LAPACK is available; otherwise the example degrades to distance-only diagnostics.
 if (METRIC_BUILD_CORE_ENTROPY)
     target_compile_definitions(engine_condition_monitoring PRIVATE METRIC_HERO_WITH_ENTROPY)
 endif ()
@@ -152,8 +152,8 @@ if (BUILD_TESTING)
         COMMAND engine_process_curve_external_visual_export
             --export-dir ${CMAKE_CURRENT_BINARY_DIR}/visual_exports/process_curve_external
     )
-    add_test(NAME example_engine_mnist_phate_autoencoder_smoke COMMAND engine_mnist_phate_autoencoder_smoke --per-class 6 --epochs 4)
-    add_test(NAME example_engine_mnist_phate_autoencoder_gallery COMMAND engine_mnist_phate_autoencoder_gallery --per-class 3 --epochs 2)
+    add_test(NAME example_engine_mnist_diffusion_coordinate_smoke COMMAND engine_mnist_diffusion_coordinate_smoke --per-class 6 --calibration-steps 4)
+    add_test(NAME example_engine_mnist_diffusion_coordinate_gallery COMMAND engine_mnist_diffusion_coordinate_gallery --per-class 3 --calibration-steps 2)
     add_test(NAME example_engine_mnist_grae10_integrity COMMAND engine_mnist_grae10_integrity)
     add_test(NAME example_engine_vector_space_special_case COMMAND engine_vector_space_special_case)
     add_test(NAME example_engine_histogram_transport_space COMMAND engine_histogram_transport_space)
@@ -163,10 +163,10 @@ if (BUILD_TESTING)
     add_test(NAME example_engine_cross_space_dependency COMMAND engine_cross_space_dependency)
     add_test(NAME example_engine_representation_swap COMMAND engine_representation_swap)
     add_test(NAME example_engine_modify_space_components COMMAND engine_modify_space_components)
-    add_test(NAME example_engine_phate_autoencoder_map COMMAND engine_phate_autoencoder_map)
-    add_test(NAME example_engine_process_curve_phate_map COMMAND engine_process_curve_phate_map)
-    add_test(NAME example_engine_process_curve_phate_gallery COMMAND engine_process_curve_phate_gallery)
-    add_test(NAME example_engine_phate_pipeline_builder COMMAND engine_phate_pipeline_builder)
+    add_test(NAME example_engine_parametric_diffusion_coordinate_map COMMAND engine_parametric_diffusion_coordinate_map)
+    add_test(NAME example_engine_process_curve_diffusion_coordinate_map COMMAND engine_process_curve_diffusion_coordinate_map)
+    add_test(NAME example_engine_process_curve_diffusion_coordinate_gallery COMMAND engine_process_curve_diffusion_coordinate_gallery)
+    add_test(NAME example_engine_parametric_diffusion_coordinate_pipeline_builder COMMAND engine_parametric_diffusion_coordinate_pipeline_builder)
     add_test(NAME example_engine_metric_space_mapping_pipeline COMMAND engine_metric_space_mapping_pipeline)
     add_test(NAME example_engine_benchmark_report COMMAND engine_benchmark_report)
     add_test(NAME example_engine_hero_application_benchmarks COMMAND engine_hero_application_benchmarks)
@@ -303,27 +303,31 @@ if (BUILD_TESTING)
     endif ()
 
     set_tests_properties(
-        example_engine_mnist_phate_autoencoder_smoke
-        example_engine_mnist_phate_autoencoder_gallery
-        PROPERTIES LABELS "metric_phate_pipeline;metric_mnist;metric_smoke"
+        example_engine_mnist_diffusion_coordinate_smoke
+        example_engine_mnist_diffusion_coordinate_gallery
+        PROPERTIES
+            LABELS "metric_diffusion_coordinate_pipeline;metric_mnist;metric_smoke"
+            SKIP_RETURN_CODE 77
     )
 
     set_tests_properties(
         example_engine_mnist_grae10_integrity
-        PROPERTIES LABELS "metric_application_evidence;metric_mnist;metric_visual_integrity"
+        PROPERTIES
+            LABELS "metric_application_evidence;metric_mnist;metric_visual_integrity"
+            SKIP_RETURN_CODE 77
     )
 
     set_tests_properties(
-        example_engine_phate_autoencoder_map
-        example_engine_process_curve_phate_map
-        example_engine_process_curve_phate_gallery
+        example_engine_parametric_diffusion_coordinate_map
+        example_engine_process_curve_diffusion_coordinate_map
+        example_engine_process_curve_diffusion_coordinate_gallery
         example_engine_metric_space_mapping_pipeline
-        PROPERTIES LABELS "metric_application_evidence;metric_phate_pipeline"
+        PROPERTIES LABELS "metric_application_evidence;metric_diffusion_coordinate_pipeline"
     )
 
     set_tests_properties(
-        example_engine_phate_pipeline_builder
-        PROPERTIES LABELS metric_phate_pipeline
+        example_engine_parametric_diffusion_coordinate_pipeline_builder
+        PROPERTIES LABELS metric_diffusion_coordinate_pipeline
     )
 
     set_tests_properties(

@@ -240,15 +240,15 @@ int main()
 	}
 	assert(rejected_unaligned_l1_vectors);
 
-	bool rejected_unaligned_fit = false;
+	bool rejected_unaligned_calibration = false;
 	try {
 		(void)mtrc::Euclidean_standardized<double>{
 			std::vector<std::vector<double>>{{0.0, 1.0}, {1.0}},
 		};
 	} catch (const std::invalid_argument &) {
-		rejected_unaligned_fit = true;
+		rejected_unaligned_calibration = true;
 	}
-	assert(rejected_unaligned_fit);
+	assert(rejected_unaligned_calibration);
 
 	assert_metric_contracts(std::vector<std::string>{"red", "reed", "road", "blue"}, padded_hamming);
 
@@ -283,7 +283,7 @@ int main()
 	(void)mtrc::space::storage::cover_tree(ruzicka_space);
 
 	// Standardized vector metrics are admitted true metrics under a positive
-	// fitted scale, so metric-only routing (cover-tree) must accept them.
+	// calibrated scale, so metric-only routing (cover-tree) must accept them.
 	const std::vector<std::vector<double>> standardized_records{
 		{0.0, 0.0, 0.0},
 		{1.0, 0.0, 2.0},

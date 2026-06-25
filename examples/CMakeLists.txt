@@ -15,7 +15,7 @@ option(METRIC_EXAMPLES_WITH_JSON
 option(METRIC_EXAMPLES_WITH_BOOST_GIL
        "Build example programs that require Boost.GIL + libjpeg (external; NOT a METRIC dependency)" OFF)
 option(METRIC_EXAMPLES_WITH_MNIST
-       "Build example programs that need an external MNIST dataset (raw IDX via a bundled example-only MIT reader, or the legacy cereal archive the dependency-free core no longer loads)" OFF)
+       "Build example programs that need an external MNIST dataset (raw IDX via the bundled example-only MIT reader)" OFF)
 
 # When the JSON examples are requested, try to locate nlohmann/json without
 # fetching it. If found we link the imported target; otherwise we warn and let
@@ -42,14 +42,8 @@ if (METRIC_EXAMPLES_WITH_MNIST)
 endif ()
 
 # add_subdirectory(correlation_examples)
-add_subdirectory(energies_examples)
 add_subdirectory(distance_examples)
-# dnn_examples is disabled: it ships a ~47 MB stale data.cereal MNIST archive that the
-# dependency-free core can no longer read (Datasets::getMnist throws). Kept out of the build.
-# add_subdirectory(dnn_examples)
-add_subdirectory(ensemble_examples)
 #add_subdirectory(graph_pyhton_assets)
 add_subdirectory(laplacians_example)
-add_subdirectory(mapping_examples)
 add_subdirectory(space_examples)
 add_subdirectory(transform_examples)

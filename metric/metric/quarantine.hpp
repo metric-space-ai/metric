@@ -5,7 +5,6 @@
 #ifndef _METRIC_METRIC_QUARANTINE_HPP
 #define _METRIC_METRIC_QUARANTINE_HPP
 
-#include <metric/metric/quarantine/Kohonen.hpp>
 #include <metric/metric/quarantine/SSIM.hpp>
 
 #endif

@@ -219,7 +219,7 @@ std::tuple<Container, Container> dwt(Container const &x, int waveletType); // ov
  * @return
  */
 template <typename Container>
-Container idwt(Container a, Container d, int waveletType, int lx); // overload added by Max F, called in DSPCC
+Container idwt(Container a, Container d, int waveletType, int lx);
 
 /**
  * @brief
@@ -269,27 +269,6 @@ template <typename Container> std::deque<Container> wavedec(Container const &x, 
  * @return
  */
 template <typename Container> Container waverec(std::deque<Container> const &subBands, int waveletType);
-
-///**
-// * @brief
-// *
-// * @param data
-// * @param tresh
-// * @return
-// */
-// template <typename T>
-// std::deque<std::vector<T>> denoise(std::deque<std::vector<T>> const& data, T const& tresh); // not implemented
-
-/**
- * @brief
- *
- * @param data
- * @param tresh
- * @return
- */
-template <typename Container>
-std::deque<Container> denoise(std::deque<Container> const &data,
-							  typename Container::value_type const &tresh); // not implemented
 
 ///**
 // * @brief

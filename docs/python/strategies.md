@@ -9,19 +9,28 @@ exported as top-level algorithm names.
 | Strategy | Intent Path | Notes |
 |---|---|---|
 | `MDS` / `ClassicMDS` | `space.embed(...)` | Deterministic classical MDS over the exact finite distance matrix. |
-| `KMedoids` | `space.groups(...)` | Deterministic representative grouping. |
-| `DBSCAN` | `space.groups(...)`, `space.outliers(...)`, `space.denoise(...)` | Deterministic density grouping and noise filtering. |
+| `KMedoids` | `space.groups(...)`, `space.compress(...)` | Deterministic representative grouping and medoid-based compression. |
+| `DBSCAN` | `space.groups(...)`, `space.outliers(...)`, `space.density_filter(...)` | Deterministic density grouping and DBSCAN-unassigned record filtering. |
 | `FarthestFirst` | `space.representatives(...)`, `space.reduce(...)`, `space.compress(...)` | Deterministic representative selection. |
+| `Coverage` | `space.representatives(...)`, `space.reduce(...)`, `space.compress(...)` | Intent alias for coverage/k-center representative selection by requested count. |
+| `KCenter` | `space.representatives(...)`, `space.reduce(...)`, `space.compress(...)` | Explicit k-center alias for coverage-style compression. |
+| `RadiusCoverage` | `space.compress(...)`, `compress_space(...)` | Greedy radius cover; the radius determines the representative count. |
+| `PreserveDistribution` | `space.thin(...)`, `space.distribution_sample(...)` | Deterministic regular thinning that keeps empirical order/density representative. |
+| `UniformDensity` | `space.thin(...)`, `space.uniform_density_sample(...)`, `space.equalize(...)` | Maximal metric radius net that intentionally flattens sampling density. |
 | `DistanceProfileCorrelation` | `space.compare(...)` | Pearson correlation of exact pairwise distance profiles. |
 
 ```python
 from metric import Space
 from metric.metrics import Edit
-from metric.strategies import FarthestFirst, KMedoids
+from metric.strategies import FarthestFirst, KMedoids, PreserveDistribution, RadiusCoverage, UniformDensity
 
 space = Space(["cat", "cot", "coat", "dog"], metric=Edit())
 representatives = space.representatives(count=2, strategy=FarthestFirst(seed_index=0))
 groups = space.groups(strategy=KMedoids(groups=2, max_iterations=50))
+compressed = space.compress(strategy=RadiusCoverage(radius=1))
+panel = space.thin(2, strategy=PreserveDistribution(offset=0))
+net = space.thin(strategy=UniformDensity(radius=1))
+equalized = space.equalize(radius=1)
 ```
 
 Use strategy objects only when the default intent behavior is not explicit
@@ -59,57 +68,51 @@ Runtime policy objects live in `metric.runtime` and are also re-exported from
 `metric`. The promoted Python facade is exact-first. Approximate runtime
 requests fail explicitly until approximate result contracts are promoted.
 
-## Native Fitted Map Vocabulary
+## Native Mapping Artifact Vocabulary
 
-`PhateAE` names a native C++ preset workflow for a fitted map. In METRIC terms,
-it combines source distances, diffusion compression, a native fitted-map
-component, and diagnostics. The Python facade must delegate to C++ before this
-strategy becomes executable.
+`ParametricDiffusionCoordinates` names a native C++ preset workflow for a derived mapping artifact. In
+METRIC terms, it combines source distances, diffusion compression, a native
+coordinate-map component, and diagnostics. The Python facade must delegate to C++
+before this strategy becomes executable.
 
-`Space.map(strategy=PhateAE(...))` delegates to C++ only for
+`Space.map(strategy=ParametricDiffusionCoordinates(...))` delegates to C++ only for
 `Space.vectors(...)` values that use the default native-compatible Euclidean
 vector metric. Spaces with custom Python metrics raise `StrategyUnavailableError`
 instead of silently replacing their metric semantics. Use C++
-`metric::mappings::native_phate_autoencoder` or Python
-`metric.mappings.native_phate_autoencoder_fit_vectors(...)` when you want the
+`metric::mappings::parametric_diffusion_coordinates` or Python
+`metric.mappings.derive_parametric_diffusion_coordinates(...)` when you want the
 explicit native vector-row path.
 
-Native fitted mapping artifacts can be inspected from Python with
+Native mapping artifacts can be inspected from Python with
 `metric.mappings.load_native_mapping_artifact(...)`. That projection exposes
 manifest, mapping, strategy, pipeline, component, source, diagnostic, and
-network-byte metadata only. For native PHATE-AE artifacts, that includes fitted
-pipeline-plan component choices such as `feature_record_codec` and
+network-byte metadata only. For native parametric diffusion coordinate artifacts, that includes derived
+pipeline-plan component choices such as `record_coordinate_codec` and
 `distance_table_pairwise_access`. It also exposes native component names such as
 `exponential_affinity_kernel` and `lazy_row_normalized_diffusion_operator` when
 they are present in the manifest.
 `transform(...)` and `inverse_transform(...)` on the
-projection raise `StrategyUnavailableError` until the native C++ model binding
+projection raise `StrategyUnavailableError` until the native C++ artifact binding
 is promoted.
 
-`metric.mappings.native_phate_autoencoder_fit_vectors(...)` delegates fitting,
-transform, inverse transform, diffusion geometry, and native fitted-map training
-to C++ for native Euclidean vector rows. `PhateAE` and the explicit fit helper
+`metric.mappings.derive_parametric_diffusion_coordinates(...)` delegates artifact
+derivation, transform, inverse transform, diffusion geometry, and native map solving
+to C++ for native Euclidean vector rows. `ParametricDiffusionCoordinates` and the explicit derive helper
 may pass supported native distance-access, affinity-kernel, and
 diffusion-operator names through the binding. Python only marshals list or
-NumPy row data and exposes the native model handle.
+NumPy row data and exposes the native mapping artifact.
 
-`PhateAE` is not an embedding strategy; `Space.embed(strategy=PhateAE(...))`
+`ParametricDiffusionCoordinates` is not an embedding strategy; `Space.embed(strategy=ParametricDiffusionCoordinates(...))`
 raises `StrategyUnavailableError`.
 
 ## Roadmap Strategies
 
-The following strategy objects are importable from `metric.strategies` so users
-can write stable engine vocabulary, but execution raises
-`StrategyUnavailableError` until deterministic fixtures, diagnostics, and
-release gates are promoted:
+Only finite-metric-space roadmap strategies remain importable. They exist to
+name a future metric-space operation, not to preserve old algorithm entry
+points.
 
 | Strategy | Roadmap Area |
 |---|---|
-| `DiffusionEmbedding` | Diffusion and PHATE-style embedding. |
-| `PCFA` | PCFA reduction or mapping. |
-| `SOM` | Self-organizing-map reduction or mapping. |
-| `KOC` | Kohonen outlier chart reduction or mapping. |
-| `DSPCC` | DSPCC reduction or dependency-preserving mapping. |
+| `DiffusionEmbedding` | Diffusion and diffusion-coordinate embedding. |
 
-Roadmap strategy imports are acceptable in expert documentation, but examples
-must show that they are not promoted execution paths yet.
+Examples must show that roadmap entries are not promoted execution paths yet.

@@ -11,6 +11,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -19,6 +20,7 @@
 #include <metric/core/metric_traits.hpp>
 #include <metric/record/id.hpp>
 #include "diagnostics.hpp"
+#include "policy.hpp"
 
 namespace mtrc::space::storage {
 
@@ -31,9 +33,22 @@ struct distance_table_options {
 	distance_table_mode mode{distance_table_mode::eager};
 	std::size_t max_dense_records{};
 	std::size_t max_memory_bytes{};
+	runtime_guard runtime;
 };
 
 namespace detail {
+
+using record_position_lookup_type = std::unordered_map<RecordId, std::size_t>;
+
+inline auto make_record_position_lookup(const std::vector<RecordId> &ids) -> record_position_lookup_type
+{
+	record_position_lookup_type positions;
+	positions.reserve(ids.size());
+	for (std::size_t position = 0; position < ids.size(); ++position) {
+		positions.emplace(ids[position], position);
+	}
+	return positions;
+}
 
 inline auto checked_distance_table_size_product(std::size_t lhs, std::size_t rhs, const char *message) -> std::size_t
 {
@@ -57,6 +72,19 @@ inline auto distance_table_dense_slot_count(std::size_t record_count) -> std::si
 		record_count, record_count, "distance table dense storage exceeds size_t capacity");
 }
 
+inline auto distance_table_record_id_storage_bytes(std::size_t record_count) -> std::size_t
+{
+	return checked_distance_table_size_product(
+		record_count, sizeof(RecordId), "distance table memory estimate exceeds size_t capacity");
+}
+
+inline auto distance_table_position_index_storage_bytes(std::size_t record_count) -> std::size_t
+{
+	return checked_distance_table_size_product(
+		record_count, sizeof(record_position_lookup_type::value_type),
+		"distance table memory estimate exceeds size_t capacity");
+}
+
 } // namespace detail
 
 template <typename Distance> auto estimate_distance_table_memory_bytes(std::size_t record_count) -> std::size_t
@@ -64,10 +92,12 @@ template <typename Distance> auto estimate_distance_table_memory_bytes(std::size
 	const auto dense_slots = detail::distance_table_dense_slot_count(record_count);
 	const auto matrix_bytes = detail::checked_distance_table_size_product(
 		dense_slots, sizeof(std::optional<Distance>), "distance table memory estimate exceeds size_t capacity");
-	const auto id_bytes = detail::checked_distance_table_size_product(
-		record_count, sizeof(RecordId), "distance table memory estimate exceeds size_t capacity");
+	const auto id_bytes = detail::distance_table_record_id_storage_bytes(record_count);
+	const auto index_bytes = detail::distance_table_position_index_storage_bytes(record_count);
 	return detail::checked_distance_table_size_sum(
-		matrix_bytes, id_bytes, "distance table memory estimate exceeds size_t capacity");
+		detail::checked_distance_table_size_sum(
+			matrix_bytes, id_bytes, "distance table memory estimate exceeds size_t capacity"),
+		index_bytes, "distance table memory estimate exceeds size_t capacity");
 }
 
 template <typename Distance> struct distance_table_snapshot_cell {
@@ -75,6 +105,28 @@ template <typename Distance> struct distance_table_snapshot_cell {
 	RecordId rhs;
 	Distance distance;
 };
+
+struct distance_table_snapshot_cell_key {
+	RecordId lhs;
+	RecordId rhs;
+
+	friend auto operator==(distance_table_snapshot_cell_key lhs, distance_table_snapshot_cell_key rhs) -> bool
+	{
+		return lhs.lhs == rhs.lhs && lhs.rhs == rhs.rhs;
+	}
+};
+
+struct distance_table_snapshot_cell_key_hash {
+	auto operator()(distance_table_snapshot_cell_key key) const noexcept -> std::size_t
+	{
+		const auto lhs = std::hash<RecordId>{}(key.lhs);
+		const auto rhs = std::hash<RecordId>{}(key.rhs);
+		return lhs ^ (rhs + 0x9e3779b97f4a7c15ULL + (lhs << 6U) + (lhs >> 2U));
+	}
+};
+
+using distance_table_snapshot_cell_index =
+	std::unordered_map<distance_table_snapshot_cell_key, std::size_t, distance_table_snapshot_cell_key_hash>;
 
 template <typename Distance>
 auto distance_table_snapshot_cell_position(const std::vector<distance_table_snapshot_cell<Distance>> &cells, RecordId lhs,
@@ -125,26 +177,91 @@ template <typename Distance> struct distance_table_snapshot {
 	std::string cache_key;
 	std::vector<RecordId> source_record_ids;
 	std::vector<cell_type> distances;
+	mutable detail::record_position_lookup_type record_positions_;
+	mutable distance_table_snapshot_cell_index cell_positions_;
+	mutable std::size_t indexed_record_count_{};
+	mutable std::size_t indexed_distance_count_{};
 
+	auto rebuild_indexes() -> void
+	{
+		rebuild_indexes_();
+	}
+
+	auto rebuild_indexes() const -> void
+	{
+		rebuild_indexes_();
+	}
+
+  private:
+	auto ensure_record_index() const -> void
+	{
+		if (indexed_record_count_ != source_record_ids.size()) {
+			rebuild_record_index_();
+		}
+	}
+
+	auto ensure_cell_index() const -> void
+	{
+		if (indexed_distance_count_ != distances.size()) {
+			rebuild_cell_index_();
+		}
+	}
+
+  public:
 	auto contains(RecordId id) const -> bool
 	{
-		return mtrc::contains_record_id(source_record_ids, id);
+		ensure_record_index();
+		return record_positions_.find(id) != record_positions_.end();
 	}
 
 	auto position_of(RecordId id) const -> std::size_t
 	{
-		return mtrc::position_of_record_id(source_record_ids, id, "record id is outside the distance table snapshot");
+		ensure_record_index();
+		const auto position = record_positions_.find(id);
+		if (position == record_positions_.end()) {
+			throw std::out_of_range("record id is outside the distance table snapshot");
+		}
+		return position->second;
 	}
 
 	auto has_distance(RecordId lhs, RecordId rhs) const -> bool
 	{
-		return has_distance_table_snapshot_cell(distances, lhs, rhs);
+		ensure_cell_index();
+		return cell_positions_.find(distance_table_snapshot_cell_key{lhs, rhs}) != cell_positions_.end();
 	}
 
 	auto distance(RecordId lhs, RecordId rhs) const -> distance_type
 	{
-		return distance_table_snapshot_cell_distance_or_throw(
-			distances, lhs, rhs, "distance cell is not present in the distance table snapshot");
+		ensure_cell_index();
+		const auto position = cell_positions_.find(distance_table_snapshot_cell_key{lhs, rhs});
+		if (position == cell_positions_.end()) {
+			throw std::out_of_range("distance cell is not present in the distance table snapshot");
+		}
+		return distances[position->second].distance;
+	}
+
+  private:
+	auto rebuild_indexes_() const -> void
+	{
+		rebuild_record_index_();
+		rebuild_cell_index_();
+	}
+
+	auto rebuild_record_index_() const -> void
+	{
+		record_positions_ = detail::make_record_position_lookup(source_record_ids);
+		indexed_record_count_ = source_record_ids.size();
+	}
+
+	auto rebuild_cell_index_() const -> void
+	{
+		cell_positions_.clear();
+		cell_positions_.reserve(distances.size());
+		for (std::size_t position = 0; position < distances.size(); ++position) {
+			cell_positions_.emplace(
+				distance_table_snapshot_cell_key{distances[position].lhs, distances[position].rhs}, position);
+		}
+		indexed_distance_count_ = distances.size();
 	}
 };
 
@@ -188,13 +305,15 @@ template <typename Space> class DistanceTable {
 	{
 		enforce_budget();
 		ids_ = mtrc::record_ids(space);
+		id_positions_ = detail::make_record_position_lookup(ids_);
 		cache_key_ = representation_cache_key("distance_table", metric_key_, version_, ids_);
 
 		if (options_.mode == distance_table_mode::eager) {
 			matrix_.resize(dense_distance_slots_);
 			for (std::size_t lhs = 0; lhs < record_count_; ++lhs) {
 				for (std::size_t rhs = 0; rhs < record_count_; ++rhs) {
-					matrix_[offset(lhs, rhs)] = space.distance(ids_[lhs], ids_[rhs]);
+					options_.runtime.throw_if_cancelled("distance_table materialization");
+					matrix_[offset(lhs, rhs)] = space.metric()(space.records().at(lhs), space.records().at(rhs));
 					++cached_count_;
 				}
 			}
@@ -209,6 +328,37 @@ template <typename Space> class DistanceTable {
 		}
 		const auto lhs_position = position_of(lhs);
 		const auto rhs_position = position_of(rhs);
+		return distance_at_validated_position(lhs_position, rhs_position);
+	}
+
+	auto distance_at_position(std::size_t lhs_position, std::size_t rhs_position) const -> distance_type
+	{
+		if (options_.mode == distance_table_mode::lazy && is_stale()) {
+			throw StaleRepresentationError(
+				"lazy distance table is stale: source metric space changed since construction; rebuild the table");
+		}
+		validate_position(lhs_position);
+		validate_position(rhs_position);
+		return distance_at_validated_position(lhs_position, rhs_position);
+	}
+
+	auto distance_at_position(std::size_t lhs_position, std::size_t rhs_position,
+							  runtime_guard runtime) const -> distance_type
+	{
+		runtime.throw_if_cancelled("distance_table lookup");
+		if (options_.mode == distance_table_mode::lazy && is_stale()) {
+			throw StaleRepresentationError(
+				"lazy distance table is stale: source metric space changed since construction; rebuild the table");
+		}
+		validate_position(lhs_position);
+		validate_position(rhs_position);
+		return distance_at_validated_position(lhs_position, rhs_position, runtime);
+	}
+
+  private:
+	auto distance_at_validated_position(std::size_t lhs_position, std::size_t rhs_position,
+										runtime_guard runtime = {}) const -> distance_type
+	{
 		if (options_.mode == distance_table_mode::eager) {
 			auto &cached = matrix_[offset(lhs_position, rhs_position)];
 			if (cached.has_value()) {
@@ -216,7 +366,7 @@ template <typename Space> class DistanceTable {
 				return *cached;
 			}
 			++misses_;
-			cached = space_->distance(lhs, rhs);
+			cached = compute_source_distance_at_position(lhs_position, rhs_position);
 			++cached_count_;
 			return *cached;
 		}
@@ -230,12 +380,14 @@ template <typename Space> class DistanceTable {
 
 		enforce_sparse_cache_budget(sparse_cache_.size() + 1);
 		++misses_;
-		const auto distance = space_->distance(lhs, rhs);
+		runtime.throw_if_cancelled("distance_table distance evaluation");
+		const auto distance = compute_source_distance_at_position(lhs_position, rhs_position);
 		sparse_cache_.emplace(key, distance);
 		++cached_count_;
 		return distance;
 	}
 
+  public:
 	auto record_count() const -> std::size_t { return record_count_; }
 	auto id(std::size_t position) const -> RecordId
 	{
@@ -244,11 +396,15 @@ template <typename Space> class DistanceTable {
 	}
 	auto position_of(RecordId id) const -> std::size_t
 	{
-		return mtrc::position_of_record_id(ids_, id, "record id is outside the distance table");
+		const auto position = id_positions_.find(id);
+		if (position == id_positions_.end()) {
+			throw std::out_of_range("record id is outside the distance table");
+		}
+		return position->second;
 	}
 	auto contains(RecordId id) const -> bool
 	{
-		return mtrc::contains_record_id(ids_, id);
+		return id_positions_.find(id) != id_positions_.end();
 	}
 	auto version() const -> std::size_t { return version_; }
 	auto is_stale() const -> bool { return space_->version() != version_; }
@@ -290,6 +446,7 @@ template <typename Space> class DistanceTable {
 					ids_[cached.first.first], ids_[cached.first.second], cached.second});
 			}
 		}
+		result.rebuild_indexes();
 		return result;
 	}
 
@@ -347,8 +504,10 @@ template <typename Space> class DistanceTable {
 		if (mode == distance_table_mode::eager) {
 			return estimate_distance_table_memory_bytes<distance_type>(record_count);
 		}
-		return detail::checked_distance_table_size_product(
-			record_count, sizeof(RecordId), "distance table memory estimate exceeds size_t capacity");
+		return detail::checked_distance_table_size_sum(
+			detail::distance_table_record_id_storage_bytes(record_count),
+			detail::distance_table_position_index_storage_bytes(record_count),
+			"distance table memory estimate exceeds size_t capacity");
 	}
 
 	auto enforce_budget() const -> void
@@ -357,7 +516,8 @@ template <typename Space> class DistanceTable {
 			record_count_ > options_.max_dense_records) {
 			throw RepresentationError(
 				"distance table dense storage exceeds max_dense_records: records=" +
-				std::to_string(record_count_) + " max_dense_records=" + std::to_string(options_.max_dense_records) +
+				std::to_string(record_count_) + " estimated_bytes=" + std::to_string(memory_bytes_estimate_) +
+				" max_dense_records=" + std::to_string(options_.max_dense_records) +
 				"; use live distances, exact scan, or a sparse index for larger spaces");
 		}
 		if (options_.max_memory_bytes > 0 && memory_bytes_estimate_ > options_.max_memory_bytes) {
@@ -411,10 +571,15 @@ template <typename Space> class DistanceTable {
 			"distance table memory estimate exceeds size_t capacity");
 		const auto id_bytes = detail::checked_distance_table_size_product(
 			ids_.size(), sizeof(RecordId), "distance table memory estimate exceeds size_t capacity");
+		const auto index_bytes = detail::checked_distance_table_size_product(
+			id_positions_.size(), sizeof(detail::record_position_lookup_type::value_type),
+			"distance table memory estimate exceeds size_t capacity");
 		return detail::checked_distance_table_size_sum(
 			detail::checked_distance_table_size_sum(
 				dense_bytes, sparse_bytes, "distance table memory estimate exceeds size_t capacity"),
-			id_bytes, "distance table memory estimate exceeds size_t capacity");
+			detail::checked_distance_table_size_sum(
+				id_bytes, index_bytes, "distance table memory estimate exceeds size_t capacity"),
+			"distance table memory estimate exceeds size_t capacity");
 	}
 
 	auto validate_position(std::size_t position) const -> void
@@ -422,6 +587,12 @@ template <typename Space> class DistanceTable {
 		if (position >= record_count_) {
 			throw std::out_of_range("record position is outside the distance table");
 		}
+	}
+
+	auto compute_source_distance_at_position(std::size_t lhs_position, std::size_t rhs_position) const
+		-> distance_type
+	{
+		return space_->metric()(space_->records().at(lhs_position), space_->records().at(rhs_position));
 	}
 
 	const space_type *space_;
@@ -433,6 +604,7 @@ template <typename Space> class DistanceTable {
 	std::string metric_key_;
 	std::string cache_key_;
 	std::vector<RecordId> ids_;
+	detail::record_position_lookup_type id_positions_;
 	mutable std::vector<std::optional<distance_type>> matrix_;
 	mutable sparse_cache_type sparse_cache_;
 	mutable std::size_t cached_count_{};

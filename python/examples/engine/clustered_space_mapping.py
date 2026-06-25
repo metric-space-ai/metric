@@ -16,8 +16,8 @@ def main():
     groups = space.groups(KMedoids(groups=2))
 
     mapping = mappings.make_clustered_space_mapping(groups)
-    model = mappings.fit(mapping, space)
-    clustered = mappings.transform(model, space)
+    derivation = mappings.derive_from(mapping, space)
+    clustered = mappings.transform(derivation, space)
     direct = mappings.clustered_space(space, groups)
 
     assert clustered.mapping == "clustered_space"

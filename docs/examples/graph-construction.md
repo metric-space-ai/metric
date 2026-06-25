@@ -72,7 +72,7 @@ For `records = [0, 1, 2, 3, 4]`, the exact radius graph with radius `1` has dire
 (4, 3, 1)
 ```
 
-These helpers are exact because they evaluate the pairwise distances needed for every source record. The `*_edges` helpers remain available for callers that only need edge tuples. `mtrc::KNNGraph` remains an approximate compatibility representation and should not be used as evidence for exact graph construction unless its edge set is compared against dense pairwise distances for the fixture.
+These helpers are exact because they evaluate the pairwise distances needed for every source record. C++ exact kNN and radius graph helpers guard that exhaustive directed work with `exact_graph_options` before invoking the metric; pass `exact_graph_options{0}` only when unbounded construction is intentional. The `*_edges` helpers remain available for callers that only need edge tuples. `mtrc::KNNGraph` remains an approximate graph representation and should not be used as evidence for exact graph construction unless its edge set is compared against dense pairwise distances for the fixture.
 
 For `records = [0, 1, 2, 3, 4]`, symmetrizing the exact kNN graph with `k=1` and the `union` policy produces undirected edges:
 

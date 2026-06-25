@@ -35,7 +35,7 @@ void insert_random(mtrc::Tree<RecType, Metric> &cTree, int samples, int dimensio
 	for (int i = 0; i < samples; ++i) {
 		std::vector<double> vec = assets::linspace(gen(), gen(), dimension); // gererator random lines.
 		mtrc::numeric::CompressedVector<double> comp_vec(dimension);
-		comp_vec = assets::smoothDenoise(vec, 0.1); // denoise and sparse the data
+		comp_vec = assets::smoothDenoise(vec, 0.1); // smooth and sparsify the coordinate data
 		cTree.insert(comp_vec);
 	}
 	return;

@@ -70,19 +70,22 @@ auto space = mtrc::space::space_builder<std::vector<double>>(mtrc::Euclidean<dou
 
 ## Properties
 
-An existing space answers structural questions
-(`examples/core/metric_space_entropy.cpp`, `metric_space_intrinsic_dimension.cpp`):
+An existing space answers structural questions. Entropy is the coordinate-space
+case: either the source space is already a coordinate space, or you first map/embed
+the source and run entropy on the derived coordinate space.
+(`examples/tutorial.cpp`, `metric_space_intrinsic_dimension.cpp`; mapped-source
+entropy is shown in `examples/engine/condition_monitoring.cpp`):
 
 ```cpp
-auto e = mtrc::entropy(space);
+auto e = mtrc::stats::properties::entropy(coordinate_space_or_mapping);
 if (e.succeeded()) std::cout << e << "\n";              // EntropyResult(value=..., status=valid, ...)
 std::cout << "intrinsic dimension: " << mtrc::intrinsic_dimension(space) << "\n";
 ```
 
 ## Mapping
 
-When coordinates help, derive a coordinate space (PCFA, native autoencoder, or
-PHATE-AE). See `examples/engine/metric_space_mapping_pipeline.cpp`. These are
+When coordinates help, derive a coordinate space (PCFA, parametric coordinate solver, or
+parametric diffusion coordinate). See `examples/engine/metric_space_mapping_pipeline.cpp`. These are
 derived spaces; the source metric stays authoritative.
 
 ## Inspecting results

@@ -93,13 +93,13 @@ int main()
 	assert(artifact.manifest.at("network_json").at("train").at("optimizer").at("type") == "RMSProp");
 	assert(artifact.manifest.at("autoencoder_topology").at("bottleneck_layer") == model.topology().bottleneck_layer);
 	assert(artifact.manifest.at("codec").at("type") == "VectorRecordCodec");
-	assert(artifact.manifest.at("codec").at("feature_count") == codec.feature_count());
+	assert(artifact.manifest.at("codec").at("coordinate_count") == codec.coordinate_count());
 	assert(artifact.manifest.at("loss").at("terms").size() == 2);
 	assert(artifact.manifest.at("loss").at("terms").at(0).at("weight") == 0.25);
 	assert(artifact.manifest.at("loss").at("terms").at(1).at("term").at("target_count") == records.size());
 	assert(artifact.manifest.at("training_spec").at("epochs") == spec.epochs);
 	assert(artifact.manifest.at("source").at("record_count") == records.size());
-	assert(artifact.manifest.at("source").at("feature_count") == codec.feature_count());
+	assert(artifact.manifest.at("source").at("source_coordinate_count") == codec.coordinate_count());
 	assert(artifact.manifest.at("source").at("space_version") == dataset.source_space_version());
 	assert(artifact.diagnostics.at("epoch_count") == spec.epochs);
 	assert(artifact.diagnostics.at("epochs").size() == spec.epochs);

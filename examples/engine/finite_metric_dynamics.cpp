@@ -5,8 +5,8 @@
 // =============================================================================
 //  Finite Metric Dynamics  --  hero example for mtrc::modify::dynamics
 // -----------------------------------------------------------------------------
-//  Randomness, noise, forward diffusion and reverse diffusion, all expressed as
-//  an evolution over the structure of a finite metric space. The thesis the
+//  Randomness, disorder, forward diffusion and reverse diffusion, all expressed
+//  as an evolution over the structure of a finite metric space. The thesis the
 //  example proves, line by assertable line:
 //
 //        Probability is a derived interpretation of the geometry,
@@ -18,15 +18,14 @@
 //         long-run geometry of a random walk over the metric graph, and that it
 //         is invariant under any distance-preserving change of the records.
 //
-//  Act 2  Forward diffusion / degradation
-//         Evolve a signal carried by the nodes with graph heat flow plus seeded,
-//         geometry-shaped noise. Structure decays; the run is reproducible.
+//  Act 2  Forward vector-signal dynamics / degradation
+//         Evolve a signal carried by the nodes with graph heat flow plus seeded
+//         coordinate perturbation. Structure decays; the run is reproducible.
 //
 //  Act 3  Reverse diffusion / reconstruction
-//         Run the same graph heat flow without noise. As a low-pass filter on
-//         the metric graph it contracts the injected fluctuations back onto the
-//         structure -- the dependency-free sibling of the native mtrc::Redif
-//         reverse-diffusion engine. Reconstruction beats the degraded input.
+//         Run the same graph heat flow without coordinate perturbation. As a
+//         low-pass filter on the metric graph it contracts fluctuations back
+//         onto the structure. Reconstruction beats the degraded input.
 //
 //  Every claim below is checked with `require`, which fails the process (exit 1)
 //  independently of NDEBUG, so this example doubles as a regression test.
@@ -231,12 +230,12 @@ int main()
 	std::cout << "  walk TV to stationary    = " << walk.total_variation_to_stationary << "\n\n";
 
 	// =========================================================================
-	// Act 2 -- Forward diffusion / degradation.
+	// Act 2 -- Forward vector-signal dynamics / degradation.
 	// =========================================================================
 	mtrc::DynamicsSchedule forward = structure;
 	forward.steps = 6;
 	forward.diffusivity = 0.05; // light drift along the graph
-	forward.noise_scale = 0.06; // seeded, geometry-shaped degradation
+	forward.perturbation_scale = 0.06; // seeded coordinate perturbation for vector records
 	forward.seed = 1234;
 
 	const auto forward_run = mtrc::metric_diffuse(space, forward, transition);
@@ -281,10 +280,10 @@ int main()
 	const double degraded_mse = mse(degraded, clean);
 	require(degraded_mse > 0.0, "forward diffusion degraded the signal");
 	require(forward_run.dirichlet_energy.back() > forward_run.dirichlet_energy.front(),
-			"noise raised the graph Dirichlet energy");
+			"coordinate perturbation raised the graph Dirichlet energy");
 
-	std::cout << "Act 2  forward diffusion / degradation\n";
-	std::cout << "  steps = " << forward.steps << ", noise = " << forward.noise_scale << ", seed = " << forward.seed
+	std::cout << "Act 2  forward vector-signal dynamics / degradation\n";
+	std::cout << "  steps = " << forward.steps << ", coordinate_perturbation = " << forward.perturbation_scale << ", seed = " << forward.seed
 			  << "\n";
 	std::cout << "  Dirichlet energy " << forward_run.dirichlet_energy.front() << " -> "
 			  << forward_run.dirichlet_energy.back() << "\n";
@@ -298,7 +297,7 @@ int main()
 	mtrc::DynamicsSchedule reverse = structure;
 	reverse.steps = 40;
 	reverse.diffusivity = 0.18; // gentle contraction toward the structure
-	reverse.noise_scale = 0.0;  // reverse diffusion injects no noise
+	reverse.perturbation_scale = 0.0; // reverse dynamics applies no coordinate perturbation
 
 	const auto &degraded_space = forward_run.result.space;
 	const auto reverse_run = mtrc::metric_reconstruct(degraded_space, reverse, transition);
@@ -356,7 +355,7 @@ int main()
 
 	// (3e) The structure need not be handed to us: rebuild the graph from the
 	// degraded observations alone (the convenience overload, mirroring the
-	// adaptive native mtrc::Redif) and confirm reconstruction still improves.
+	// adaptive Redif measure dynamics) and confirm reconstruction still improves.
 	const auto adaptive_run = mtrc::metric_reconstruct(degraded_space, reverse);
 	double adaptive_best = degraded_mse;
 	std::size_t adaptive_step = 0;

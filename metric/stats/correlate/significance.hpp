@@ -16,10 +16,13 @@
 #include <vector>
 
 #include <metric/core/concepts.hpp>
+#include <metric/core/errors.hpp>
+#include <metric/core/metric_space.hpp>
 #include <metric/core/result.hpp>
 #include <metric/correlation/mgc.hpp>
 #include <metric/record/id.hpp>
 #include <metric/space/storage/distance_matrix.hpp>
+#include <metric/space/storage/execution.hpp>
 #include <metric/space/storage/implicit.hpp>
 #include <metric/stats/correlate/correlation.hpp>
 
@@ -63,6 +66,34 @@ struct significance_options {
 };
 
 namespace significance_detail {
+
+constexpr std::size_t max_default_exact_mgc_significance_records = 4096;
+
+inline auto default_mgc_significance_preflight_policy() -> space::storage::policy
+{
+	return space::storage::with_distance_table_budget(
+		space::storage::materialized(space::storage::exact()), max_default_exact_mgc_significance_records, 0);
+}
+
+inline auto significance_plan_failure_message(const space::storage::execution_plan &plan) -> std::string
+{
+	auto message = plan.reason.empty() ? std::string("MGC significance refused by resource budget") : plan.reason;
+	if (!plan.fallback_hint.empty()) {
+		message += "; fallback: " + plan.fallback_hint;
+	}
+	message += "; MGC significance requires dense exact pairwise distances, so reduce record count or pass an explicit "
+			   "pairwise-distance provider";
+	return message;
+}
+
+template <typename Space> inline auto require_default_mgc_significance_preflight(const Space &space) -> void
+{
+	const auto plan = space::storage::estimate_cost(
+		space, "compare", default_mgc_significance_preflight_policy());
+	if (plan.refused) {
+		throw mtrc::RepresentationError(significance_plan_failure_message(plan));
+	}
+}
 
 inline auto symmetric_double_matrix_is_finite(const mtrc::DistanceMatrix<double> &matrix) -> bool
 {
@@ -180,11 +211,35 @@ auto mgc_significance(const LeftSpace &left_space, const RightSpace &right_space
 		throw std::invalid_argument("MGC significance requires at least two paired records");
 	}
 
+	significance_detail::require_default_mgc_significance_preflight(left_space);
+	significance_detail::require_default_mgc_significance_preflight(right_space);
+
 	space::storage::LiveDistances<LeftSpace> left_provider(left_space);
 	space::storage::LiveDistances<RightSpace> right_provider(right_space);
 	auto left_matrix = space::storage::provider_symmetric_distance_matrix<double>(left_provider);
 	auto right_matrix = space::storage::provider_symmetric_distance_matrix<double>(right_provider);
 	return significance_detail::run_mgc_permutation(left_matrix, right_matrix, options, "metric_space", "metric_space");
+}
+
+template <typename LeftContainer, typename LeftMetric, typename RightContainer, typename RightMetric,
+		  typename LeftRecord = typename std::decay<typename LeftContainer::value_type>::type,
+		  typename RightRecord = typename std::decay<typename RightContainer::value_type>::type,
+		  typename std::enable_if<
+			  MetricCallable_v<LeftMetric, LeftRecord> && MetricCallable_v<RightMetric, RightRecord>, int>::type = 0>
+auto mgc_significance(const LeftContainer &left_records, const LeftMetric &left_metric,
+					  const RightContainer &right_records, const RightMetric &right_metric,
+					  significance_options options = {}) -> SignificanceResult<double>
+{
+	using left_metric_type = typename std::decay<LeftMetric>::type;
+	using right_metric_type = typename std::decay<RightMetric>::type;
+	core::MetricSpace<LeftRecord, left_metric_type> left_space(
+		std::vector<LeftRecord>(left_records.begin(), left_records.end()), left_metric_type(left_metric));
+	core::MetricSpace<RightRecord, right_metric_type> right_space(
+		std::vector<RightRecord>(right_records.begin(), right_records.end()), right_metric_type(right_metric));
+	auto result = mgc_significance(left_space, right_space, options);
+	result.left_representation = "records";
+	result.right_representation = "records";
+	return result;
 }
 
 // RecordId alignment. align_by_record_id pairs the two spaces by shared record identity:

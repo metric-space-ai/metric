@@ -13,10 +13,10 @@ gallery pages, and commits.
 
 Read:
 
-- `examples/engine/process_curve_phate_map.cpp`
-- `examples/engine/process_curve_phate_gallery.cpp`
+- `examples/engine/process_curve_diffusion_coordinate_map.cpp`
+- `examples/engine/process_curve_diffusion_coordinate_gallery.cpp`
 - `examples/engine/metric_space_mapping_pipeline.cpp`
-- `examples/engine/phate_pipeline_builder.cpp`
+- `examples/engine/parametric_diffusion_coordinate_pipeline_builder.cpp`
 - `visual/cpp/mtrc_visual.hpp`
 - `docs/visual/metric-visual-v1-schema.md`
 

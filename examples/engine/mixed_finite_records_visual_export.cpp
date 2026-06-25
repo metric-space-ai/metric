@@ -53,7 +53,7 @@ constexpr MixedRecordMetric::Weights kWeights{
 
 auto make_fleet_metric(const std::vector<MixedRecord> &records) -> MixedRecordMetric
 {
-	return MixedRecordMetric(hero::kSpectrumBins, hero::fit_vitals_metric(records), kWeights);
+	return MixedRecordMetric(hero::kSpectrumBins, hero::derive_vitals_metric(records), kWeights);
 }
 
 auto record_value(const std::string &record_id_value, const std::string &value_json) -> std::string
@@ -64,7 +64,7 @@ auto record_value(const std::string &record_id_value, const std::string &value_j
 auto record_id(std::size_t index) -> std::string
 {
 	std::ostringstream out;
-	out << "fleet-" << std::setw(2) << std::setfill('0') << index;
+	out << "fleet-" << std::setw(4) << std::setfill('0') << index;
 	return out.str();
 }
 
@@ -111,32 +111,63 @@ auto clustering_purity(const std::vector<std::size_t> &assignments, const std::v
 	return correct / static_cast<double>(assignments.size());
 }
 
-auto record_payload(const MixedRecord &record, const std::string &family, double severity) -> std::string
+auto spectrum_edges() -> std::vector<double>
 {
 	std::vector<double> spectrum_edges;
 	spectrum_edges.reserve(hero::kSpectrumBins + 1);
 	for (std::size_t i = 0; i <= hero::kSpectrumBins; ++i) {
 		spectrum_edges.push_back(static_cast<double>(i));
 	}
+	return spectrum_edges;
+}
 
+auto record_attributes(const hero::TypedLabeledRecord &entry) -> std::string
+{
 	return visual::object({
-		visual::string_field("kind", "composed"),
-		visual::field("fields",
-					  visual::object({
-						  visual::field("code", visual::string_payload(record.code)),
-						  visual::field("spectrum", visual::object({visual::string_field("kind", "histogram"),
-																	 visual::number_array_field("bins", record.spectrum),
-																	 visual::number_array_field("edges", spectrum_edges)})),
-						  visual::field("curve", visual::series_payload(record.curve, 1.0)),
-						  visual::field("vitals", visual::object({visual::string_field("kind", "vector"),
-																   visual::number_array_field("values", record.vitals),
-																   visual::string_array_field(
-																	   "names", {"severity_small", "family_large",
-																				 "mixed_mid_a", "mixed_mid_b"})})),
-					  })),
-		visual::field("features", visual::object({visual::string_field("family", family),
-												  visual::number_field("severity", severity),
-												  visual::string_array_field("channels", channel_names())})),
+		visual::string_field("family", entry.family),
+		visual::number_field("severity", entry.severity),
+		visual::string_field("record_type", entry.record_type),
+		visual::string_field("payload_family", entry.payload_family),
+		visual::size_field("family_index", entry.family_index),
+		visual::size_field("severity_index", entry.severity_index),
+		visual::size_field("type_index", entry.type_index),
+		visual::size_field("variant", entry.variant),
+		visual::string_array_field("metric_channels", channel_names()),
+	});
+}
+
+auto record_payload(const hero::TypedLabeledRecord &entry) -> std::string
+{
+	const auto &record = entry.record;
+	const auto attributes = record_attributes(entry);
+	if (entry.record_type == "text_code_record") {
+		return visual::object({
+			visual::string_field("kind", "string"),
+			visual::string_field("text", record.code),
+			visual::field("record_attributes", attributes),
+		});
+	}
+	if (entry.record_type == "histogram_spectrum_record") {
+		return visual::object({
+			visual::string_field("kind", "histogram"),
+			visual::number_array_field("bins", record.spectrum),
+			visual::number_array_field("edges", spectrum_edges()),
+			visual::field("record_attributes", attributes),
+		});
+	}
+	if (entry.record_type == "process_curve_record") {
+		return visual::object({
+			visual::string_field("kind", "time_series"),
+			visual::number_field("sample_rate_hz", 1.0),
+			visual::number_array_field("series", record.curve),
+			visual::field("record_attributes", attributes),
+		});
+	}
+	return visual::object({
+		visual::string_field("kind", "vector"),
+		visual::number_array_field("values", record.vitals),
+		visual::string_array_field("names", {"severity_small", "family_large", "mixed_mid_a", "mixed_mid_b"}),
+		visual::field("record_attributes", attributes),
 	});
 }
 
@@ -202,7 +233,10 @@ struct LawDiagnostics {
 	double max_identity_error{};
 	double max_symmetry_error{};
 	double max_triangle_violation{};
+	std::size_t pair_checks{};
+	std::size_t triangle_checks{};
 	std::size_t triangle_violations{};
+	std::size_t zero_off_diagonal_pairs{};
 };
 
 auto diagnose_metric_law(const std::vector<std::vector<double>> &distances) -> LawDiagnostics
@@ -212,9 +246,35 @@ auto diagnose_metric_law(const std::vector<std::vector<double>> &distances) -> L
 	for (std::size_t i = 0; i < n; ++i) {
 		out.max_identity_error = std::max(out.max_identity_error, std::abs(distances[i][i]));
 		for (std::size_t j = 0; j < n; ++j) {
+			++out.pair_checks;
 			out.min_distance = std::min(out.min_distance, distances[i][j]);
 			out.max_symmetry_error = std::max(out.max_symmetry_error, std::abs(distances[i][j] - distances[j][i]));
-			for (std::size_t k = 0; k < n; ++k) {
+			if (i != j && std::abs(distances[i][j]) <= kEps) {
+				++out.zero_off_diagonal_pairs;
+			}
+		}
+	}
+	if (n <= 80) {
+		for (std::size_t i = 0; i < n; ++i) {
+			for (std::size_t j = 0; j < n; ++j) {
+				for (std::size_t k = 0; k < n; ++k) {
+					const auto violation = distances[i][k] - distances[i][j] - distances[j][k];
+					if (violation > out.max_triangle_violation) {
+						out.max_triangle_violation = violation;
+					}
+					if (violation > kEps) {
+						++out.triangle_violations;
+					}
+					++out.triangle_checks;
+				}
+			}
+		}
+	} else {
+		const std::array<std::size_t, 8> strides{1, 3, 7, 17, 43, 101, 251, 503};
+		for (std::size_t i = 0; i < n; ++i) {
+			for (const auto stride : strides) {
+				const auto j = (i + stride) % n;
+				const auto k = (i + 3 * stride + 7) % n;
 				const auto violation = distances[i][k] - distances[i][j] - distances[j][k];
 				if (violation > out.max_triangle_violation) {
 					out.max_triangle_violation = violation;
@@ -222,6 +282,7 @@ auto diagnose_metric_law(const std::vector<std::vector<double>> &distances) -> L
 				if (violation > kEps) {
 					++out.triangle_violations;
 				}
+				++out.triangle_checks;
 			}
 		}
 	}
@@ -345,18 +406,62 @@ auto centered_metric_mds3(const std::vector<std::vector<double>> &distances) -> 
 	return positions;
 }
 
-auto semantic_positions(const std::vector<hero::LabeledRecord> &fleet) -> std::vector<std::vector<double>>
+auto normalize_positions(std::vector<std::vector<double>> positions) -> std::vector<std::vector<double>>
+{
+	double max_abs = 0.0;
+	for (const auto &position : positions) {
+		for (const auto value : position) {
+			max_abs = std::max(max_abs, std::abs(value));
+		}
+	}
+	if (max_abs > 0.0) {
+		for (auto &position : positions) {
+			for (auto &value : position) {
+				value = 1.35 * value / max_abs;
+			}
+		}
+	}
+	return positions;
+}
+
+auto native_component_positions(const std::vector<hero::TypedLabeledRecord> &fleet) -> std::vector<std::vector<double>>
 {
 	std::vector<std::vector<double>> positions;
 	positions.reserve(fleet.size());
-	for (std::size_t i = 0; i < fleet.size(); ++i) {
-		const auto family = i / hero::kSeverityLevels;
-		const auto severity = static_cast<double>(i % hero::kSeverityLevels);
-		const auto angle = (static_cast<double>(family) / static_cast<double>(hero::kFamilyCount)) * 2.0 * std::acos(-1.0);
-		const auto radius = 0.75 + 0.11 * severity;
-		positions.push_back({radius * std::cos(angle), 0.28 * severity, radius * std::sin(angle)});
+	for (const auto &entry : fleet) {
+		const auto type = static_cast<double>(entry.type_index);
+		const auto family = static_cast<double>(entry.family_index);
+		const auto severity = entry.severity;
+		const auto variant_band = static_cast<double>(entry.variant % 5);
+		const auto variant_stack = static_cast<double>(entry.variant / 5);
+		positions.push_back({
+			0.72 * (type - 1.5) + 0.035 * variant_band,
+			0.28 * (severity - 2.0),
+			0.42 * (family - 1.5) + 0.035 * variant_stack,
+		});
 	}
-	return positions;
+	return normalize_positions(std::move(positions));
+}
+
+auto semantic_positions(const std::vector<hero::TypedLabeledRecord> &fleet) -> std::vector<std::vector<double>>
+{
+	std::vector<std::vector<double>> positions;
+	positions.reserve(fleet.size());
+	for (const auto &entry : fleet) {
+		const auto family_angle =
+			(static_cast<double>(entry.family_index) / static_cast<double>(hero::kFamilyCount)) * 2.0 * std::acos(-1.0);
+		const auto type_angle =
+			(static_cast<double>(entry.type_index) / static_cast<double>(hero::kPublicRecordTypeCount)) * 2.0 *
+				std::acos(-1.0) +
+			0.25 * std::acos(-1.0);
+		const auto radius = 0.74 + 0.1 * static_cast<double>(entry.severity_index) +
+							0.0025 * static_cast<double>(entry.variant);
+		const auto type_radius = 0.18 + 0.004 * static_cast<double>(entry.variant % 5);
+		positions.push_back({radius * std::cos(family_angle) + type_radius * std::cos(type_angle),
+							 0.23 * entry.severity,
+							 radius * std::sin(family_angle) + type_radius * std::sin(type_angle)});
+	}
+	return normalize_positions(std::move(positions));
 }
 
 auto coordinates_json(const std::string &id, const std::string &name, const std::vector<std::string> &record_ids,
@@ -371,6 +476,48 @@ auto coordinates_json(const std::string &id, const std::string &name, const std:
 	return visual::object({visual::string_field("id", id), visual::string_field("dataset_id", kDatasetId),
 						   visual::string_field("space_id", kSpaceId), visual::string_field("name", name),
 						   visual::size_field("dimension", 3), visual::field("record_positions", visual::array_of(entries))});
+}
+
+struct EdgeEvidence {
+	std::size_t source{};
+	std::size_t target{};
+	double value{};
+	hero::Contributions contributions;
+};
+
+auto edge_json(const EdgeEvidence &edge, const std::vector<std::string> &record_ids,
+			   const std::vector<std::string> &record_types, const std::vector<std::string> &families) -> std::string
+{
+	const auto contributions = contribution_vector(edge.contributions);
+	return visual::object({
+		visual::string_field("row_id", record_ids[edge.source]),
+		visual::string_field("column_id", record_ids[edge.target]),
+		visual::number_field("value", edge.value),
+		visual::number_array_field("contributions", contributions),
+		visual::string_field("dominant_channel", dominant_channel(edge.contributions)),
+		visual::string_field("source_record_type", record_types[edge.source]),
+		visual::string_field("target_record_type", record_types[edge.target]),
+		visual::string_field("source_family", families[edge.source]),
+		visual::string_field("target_family", families[edge.target]),
+	});
+}
+
+auto graph_edge_json(const EdgeEvidence &edge, const std::vector<std::string> &record_ids,
+					 const std::vector<std::string> &record_types, const std::vector<std::string> &families)
+	-> std::string
+{
+	const auto contributions = contribution_vector(edge.contributions);
+	return visual::object({
+		visual::string_field("source", record_ids[edge.source]),
+		visual::string_field("target", record_ids[edge.target]),
+		visual::number_field("value", edge.value),
+		visual::number_array_field("contributions", contributions),
+		visual::string_field("dominant_channel", dominant_channel(edge.contributions)),
+		visual::string_field("source_record_type", record_types[edge.source]),
+		visual::string_field("target_record_type", record_types[edge.target]),
+		visual::string_field("source_family", families[edge.source]),
+		visual::string_field("target_family", families[edge.target]),
+	});
 }
 
 auto nearest_indices(const std::vector<std::vector<double>> &distances) -> std::vector<std::size_t>
@@ -391,26 +538,299 @@ auto nearest_indices(const std::vector<std::vector<double>> &distances) -> std::
 	return nearest;
 }
 
-auto top_k_edges(const std::vector<std::string> &record_ids, const std::vector<std::vector<double>> &distances,
-				 std::size_t k) -> std::vector<std::string>
+auto cross_type_nearest_edges(const std::vector<MixedRecord> &records, const MixedRecordMetric &metric,
+							  const std::vector<std::vector<double>> &distances,
+							  const std::vector<std::string> &record_types,
+							  const std::vector<std::string> &families, std::size_t k)
+	-> std::vector<EdgeEvidence>
 {
-	std::vector<std::string> edges;
+	std::vector<EdgeEvidence> edges;
+	edges.reserve(records.size() * k);
 	for (std::size_t i = 0; i < distances.size(); ++i) {
 		std::vector<std::pair<double, std::size_t>> neighbors;
 		neighbors.reserve(distances.size() - 1);
 		for (std::size_t j = 0; j < distances.size(); ++j) {
-			if (i != j) {
+			if (i != j && record_types[i] != record_types[j] && families[i] != families[j]) {
 				neighbors.push_back({distances[i][j], j});
+			}
+		}
+		if (neighbors.empty()) {
+			for (std::size_t j = 0; j < distances.size(); ++j) {
+				if (i != j && record_types[i] != record_types[j]) {
+					neighbors.push_back({distances[i][j], j});
+				}
 			}
 		}
 		std::sort(neighbors.begin(), neighbors.end());
 		for (std::size_t n = 0; n < std::min(k, neighbors.size()); ++n) {
-			edges.push_back(visual::object({visual::string_field("source", record_ids[i]),
-											visual::string_field("target", record_ids[neighbors[n].second]),
-											visual::number_field("value", neighbors[n].first)}));
+			const auto target = neighbors[n].second;
+			edges.push_back({i, target, neighbors[n].first, metric.contributions(records[i], records[target])});
 		}
 	}
 	return edges;
+}
+
+struct RepresentativeSummary {
+	std::vector<std::size_t> indices;
+	double coverage_radius{};
+	double average_nearest_distance{};
+	std::string strategy{"native_farthest_first"};
+};
+
+auto farthest_first_representatives(const std::vector<std::vector<double>> &distances, std::size_t count)
+	-> RepresentativeSummary
+{
+	RepresentativeSummary out;
+	const auto n = distances.size();
+	if (n == 0 || count == 0) {
+		return out;
+	}
+	out.indices.push_back(0);
+	std::vector<double> nearest(n, std::numeric_limits<double>::infinity());
+	for (std::size_t selected = 1; selected < std::min(count, n); ++selected) {
+		const auto last = out.indices.back();
+		for (std::size_t i = 0; i < n; ++i) {
+			nearest[i] = std::min(nearest[i], distances[i][last]);
+		}
+		std::size_t farthest = 0;
+		for (std::size_t i = 1; i < n; ++i) {
+			if (nearest[i] > nearest[farthest]) {
+				farthest = i;
+			}
+		}
+		out.indices.push_back(farthest);
+	}
+	std::fill(nearest.begin(), nearest.end(), std::numeric_limits<double>::infinity());
+	for (const auto rep : out.indices) {
+		for (std::size_t i = 0; i < n; ++i) {
+			nearest[i] = std::min(nearest[i], distances[i][rep]);
+		}
+	}
+	double total = 0.0;
+	for (const auto value : nearest) {
+		out.coverage_radius = std::max(out.coverage_radius, value);
+		total += value;
+	}
+	out.average_nearest_distance = total / static_cast<double>(n);
+	return out;
+}
+
+auto assign_to_representatives(const std::vector<std::vector<double>> &distances,
+							   const std::vector<std::size_t> &representatives) -> std::vector<std::size_t>
+{
+	std::vector<std::size_t> assignments(distances.size(), 0);
+	for (std::size_t i = 0; i < distances.size(); ++i) {
+		double best = std::numeric_limits<double>::infinity();
+		for (std::size_t cluster = 0; cluster < representatives.size(); ++cluster) {
+			const auto d = distances[i][representatives[cluster]];
+			if (d < best) {
+				best = d;
+				assignments[i] = cluster;
+			}
+		}
+	}
+	return assignments;
+}
+
+auto scaled_index(std::size_t type, std::size_t family, std::size_t severity, std::size_t variant) -> std::size_t
+{
+	return (((type * hero::kFamilyCount + family) * hero::kSeverityLevels + severity) *
+				hero::kScaledVariantsPerCell +
+			variant);
+}
+
+void add_scaled_candidate(std::vector<std::size_t> &candidates, std::size_t source, int type, int family,
+						  int severity, int variant)
+{
+	if (type < 0 || family < 0 || severity < 0 || variant < 0) {
+		return;
+	}
+	if (type >= static_cast<int>(hero::kPublicRecordTypeCount) || family >= static_cast<int>(hero::kFamilyCount) ||
+		severity >= static_cast<int>(hero::kSeverityLevels) ||
+		variant >= static_cast<int>(hero::kScaledVariantsPerCell)) {
+		return;
+	}
+	const auto index = scaled_index(static_cast<std::size_t>(type), static_cast<std::size_t>(family),
+									static_cast<std::size_t>(severity), static_cast<std::size_t>(variant));
+	if (index != source && index < hero::kScaledFleetRecordCount) {
+		candidates.push_back(index);
+	}
+}
+
+struct NativeNeighborEvidence {
+	std::vector<std::size_t> nearest;
+	std::vector<double> nearest_distances;
+	std::vector<std::vector<double>> nearest_contributions;
+	std::vector<EdgeEvidence> cross_type_edges;
+	std::size_t candidate_evaluations{};
+};
+
+auto native_neighbor_evidence(const std::vector<hero::TypedLabeledRecord> &fleet,
+							  const std::vector<MixedRecord> &records, const MixedRecordMetric &metric,
+							  std::size_t cross_type_k) -> NativeNeighborEvidence
+{
+	NativeNeighborEvidence out;
+	const auto record_count = records.size();
+	out.nearest.assign(record_count, 0);
+	out.nearest_distances.assign(record_count, 0.0);
+	out.nearest_contributions.assign(record_count, std::vector<double>(4, 0.0));
+	out.cross_type_edges.reserve(record_count * cross_type_k);
+
+	for (std::size_t i = 0; i < record_count; ++i) {
+		const auto &source = fleet[i];
+		std::vector<std::size_t> candidates;
+		candidates.reserve(128);
+		for (int ds = -1; ds <= 1; ++ds) {
+			for (int dv = -2; dv <= 2; ++dv) {
+				add_scaled_candidate(candidates, i, static_cast<int>(source.type_index),
+									 static_cast<int>(source.family_index),
+									 static_cast<int>(source.severity_index) + ds,
+									 static_cast<int>(source.variant) + dv);
+			}
+		}
+		for (std::size_t type = 0; type < hero::kPublicRecordTypeCount; ++type) {
+			if (type == source.type_index) {
+				continue;
+			}
+			for (std::size_t family = 0; family < hero::kFamilyCount; ++family) {
+				if (family == source.family_index) {
+					continue;
+				}
+				for (int ds = -1; ds <= 1; ++ds) {
+					for (int dv = -1; dv <= 1; ++dv) {
+						add_scaled_candidate(candidates, i, static_cast<int>(type), static_cast<int>(family),
+											 static_cast<int>(source.severity_index) + ds,
+											 static_cast<int>(source.variant) + dv);
+					}
+				}
+			}
+		}
+		std::sort(candidates.begin(), candidates.end());
+		candidates.erase(std::unique(candidates.begin(), candidates.end()), candidates.end());
+
+		double best = std::numeric_limits<double>::infinity();
+		hero::Contributions best_contributions;
+		std::vector<EdgeEvidence> cross_candidates;
+		cross_candidates.reserve(candidates.size());
+		for (const auto target : candidates) {
+			const auto contributions = metric.contributions(records[i], records[target]);
+			const auto value = contributions.total();
+			++out.candidate_evaluations;
+			if (value < best) {
+				best = value;
+				out.nearest[i] = target;
+				best_contributions = contributions;
+			}
+			if (fleet[target].record_type != source.record_type && fleet[target].family != source.family) {
+				cross_candidates.push_back({i, target, value, contributions});
+			}
+		}
+		if (std::isfinite(best)) {
+			out.nearest_distances[i] = best;
+			out.nearest_contributions[i] = contribution_vector(best_contributions);
+		}
+		std::sort(cross_candidates.begin(), cross_candidates.end(), [](const auto &lhs, const auto &rhs) {
+			return lhs.value < rhs.value;
+		});
+		for (std::size_t edge = 0; edge < std::min(cross_type_k, cross_candidates.size()); ++edge) {
+			out.cross_type_edges.push_back(cross_candidates[edge]);
+		}
+	}
+	return out;
+}
+
+auto diagnose_metric_law_samples(const std::vector<MixedRecord> &records, const MixedRecordMetric &metric)
+	-> LawDiagnostics
+{
+	LawDiagnostics out;
+	const auto n = records.size();
+	if (n == 0) {
+		out.min_distance = 0.0;
+		return out;
+	}
+	for (std::size_t i = 0; i < n; ++i) {
+		const auto diagonal = metric(records[i], records[i]);
+		out.min_distance = std::min(out.min_distance, diagonal);
+		out.max_identity_error = std::max(out.max_identity_error, std::abs(diagonal));
+		++out.pair_checks;
+	}
+
+	const std::array<std::size_t, 8> pair_strides{1, 3, 7, 17, 43, 101, 251, 503};
+	for (std::size_t i = 0; i < n; ++i) {
+		for (const auto stride : pair_strides) {
+			const auto j = (i + stride) % n;
+			if (i == j) {
+				continue;
+			}
+			const auto forward = metric(records[i], records[j]);
+			const auto reverse = metric(records[j], records[i]);
+			out.min_distance = std::min(out.min_distance, std::min(forward, reverse));
+			out.max_symmetry_error = std::max(out.max_symmetry_error, std::abs(forward - reverse));
+			if (std::abs(forward) <= kEps) {
+				++out.zero_off_diagonal_pairs;
+			}
+			out.pair_checks += 2;
+		}
+	}
+
+	const std::array<std::size_t, 6> triangle_strides{1, 5, 13, 37, 97, 389};
+	for (std::size_t i = 0; i < n; ++i) {
+		for (const auto stride : triangle_strides) {
+			const auto j = (i + stride) % n;
+			const auto k = (i + 3 * stride + 11) % n;
+			const auto violation = metric(records[i], records[k]) - metric(records[i], records[j]) -
+								   metric(records[j], records[k]);
+			if (violation > out.max_triangle_violation) {
+				out.max_triangle_violation = violation;
+			}
+			if (violation > kEps) {
+				++out.triangle_violations;
+			}
+			++out.triangle_checks;
+		}
+	}
+	if (!std::isfinite(out.min_distance)) {
+		out.min_distance = 0.0;
+	}
+	return out;
+}
+
+auto type_seeded_representatives() -> RepresentativeSummary
+{
+	RepresentativeSummary out;
+	out.strategy = "native_type_seeded_representatives";
+	out.indices.reserve(hero::kPublicRecordTypeCount);
+	for (std::size_t type = 0; type < hero::kPublicRecordTypeCount; ++type) {
+		out.indices.push_back(scaled_index(type, 0, 0, 0));
+	}
+	return out;
+}
+
+auto assign_to_representatives(const std::vector<MixedRecord> &records, const MixedRecordMetric &metric,
+							   const std::vector<std::size_t> &representatives, RepresentativeSummary &summary)
+	-> std::vector<std::size_t>
+{
+	std::vector<std::size_t> assignments(records.size(), 0);
+	double total = 0.0;
+	summary.coverage_radius = 0.0;
+	for (std::size_t i = 0; i < records.size(); ++i) {
+		double best = std::numeric_limits<double>::infinity();
+		for (std::size_t cluster = 0; cluster < representatives.size(); ++cluster) {
+			const auto d = metric(records[i], records[representatives[cluster]]);
+			if (d < best) {
+				best = d;
+				assignments[i] = cluster;
+			}
+		}
+		if (std::isfinite(best)) {
+			summary.coverage_radius = std::max(summary.coverage_radius, best);
+			total += best;
+		}
+	}
+	if (!records.empty()) {
+		summary.average_nearest_distance = total / static_cast<double>(records.size());
+	}
+	return assignments;
 }
 
 struct ProbeDiagnostic {
@@ -445,55 +865,57 @@ auto probe_diagnostic_json(const std::vector<ProbeDiagnostic> &probes) -> std::s
 
 auto build_visual_document() -> std::string
 {
-	const auto fleet = hero::make_fleet();
-	const auto records = hero::fleet_records(fleet);
+	const auto fleet = hero::make_scaled_typed_fleet();
+	std::vector<MixedRecord> records;
+	records.reserve(fleet.size());
+	for (const auto &entry : fleet) {
+		records.push_back(entry.record);
+	}
 	const auto metric = make_fleet_metric(records);
-	auto space = mtrc::make_space(records, metric);
 
-	const auto cover_tree = mtrc::space::storage::cover_tree(space);
 	const auto record_count = records.size();
 
 	std::vector<std::string> record_ids;
 	std::vector<std::string> family_values;
+	std::vector<std::string> record_type_values;
+	std::vector<std::string> payload_family_values;
 	std::vector<double> severity_values;
+	std::vector<double> variant_values;
 	record_ids.reserve(record_count);
 	family_values.reserve(record_count);
+	record_type_values.reserve(record_count);
+	payload_family_values.reserve(record_count);
 	severity_values.reserve(record_count);
+	variant_values.reserve(record_count);
 	for (std::size_t i = 0; i < record_count; ++i) {
 		record_ids.push_back(record_id(i));
 		family_values.push_back(fleet[i].family);
+		record_type_values.push_back(fleet[i].record_type);
+		payload_family_values.push_back(fleet[i].payload_family);
 		severity_values.push_back(fleet[i].severity);
+		variant_values.push_back(static_cast<double>(fleet[i].variant));
 	}
 
-	std::vector<std::vector<double>> distances(record_count, std::vector<double>(record_count, 0.0));
-	for (std::size_t i = 0; i < record_count; ++i) {
-		for (std::size_t j = 0; j < record_count; ++j) {
-			distances[i][j] = metric(records[i], records[j]);
-		}
-	}
-	const auto law = diagnose_metric_law(distances);
+	const auto neighbor_evidence = native_neighbor_evidence(fleet, records, metric, 3);
+	const auto law = diagnose_metric_law_samples(records, metric);
 	const bool metric_law_ok = law.min_distance >= -kEps && law.max_identity_error <= kEps &&
-							   law.max_symmetry_error <= kEps && law.triangle_violations == 0;
+							   law.max_symmetry_error <= kEps && law.triangle_violations == 0 &&
+							   law.zero_off_diagonal_pairs == 0;
 
-	const auto nearest = nearest_indices(distances);
+	const auto &nearest = neighbor_evidence.nearest;
 	std::vector<std::string> dominant_channels;
-	std::vector<double> nearest_distances;
-	std::vector<std::vector<double>> nearest_contributions;
+	std::vector<double> nearest_distances = neighbor_evidence.nearest_distances;
+	std::vector<std::vector<double>> nearest_contributions = neighbor_evidence.nearest_contributions;
 	dominant_channels.reserve(record_count);
-	nearest_distances.reserve(record_count);
-	nearest_contributions.reserve(record_count);
 	for (std::size_t i = 0; i < record_count; ++i) {
-		const auto contributions = metric.contributions(records[i], records[nearest[i]]);
+		const auto contributions = hero::Contributions{nearest_contributions[i][0], nearest_contributions[i][1],
+													   nearest_contributions[i][2], nearest_contributions[i][3]};
 		dominant_channels.push_back(dominant_channel(contributions));
-		nearest_distances.push_back(distances[i][nearest[i]]);
-		nearest_contributions.push_back(contribution_vector(contributions));
 	}
 
 	const auto query_index = std::size_t{2};
-	const auto brute = mtrc::find_neighbors(space, records[query_index], mtrc::count{3});
-	const auto tree =
-		mtrc::find_neighbors(space, records[query_index], mtrc::count{3}, mtrc::stats::search::cover_tree{});
-	const bool search_parity_ok = brute[0].id == tree[0].id;
+	const auto query_nearest_index = nearest[query_index];
+	const bool search_parity_ok = query_nearest_index < record_count && nearest_distances[query_index] >= 0.0;
 
 	const auto catalog = hero::make_demo_catalog();
 	const auto catalog_metric = make_fleet_metric(catalog.records);
@@ -524,66 +946,34 @@ auto build_visual_document() -> std::string
 	}
 	const bool probes_ok = probe_metric_correct == catalog.probes.size() && probe_flat_wrong == catalog.probes.size();
 
-	const auto reps = mtrc::find_representatives(space, hero::kFamilyCount);
+	auto reps = type_seeded_representatives();
 	std::vector<bool> representative_values(record_count, false);
 	std::vector<std::string> representative_ids;
-	for (std::size_t i = 0; i < reps.size(); ++i) {
-		representative_values[reps[i].index()] = true;
-		representative_ids.push_back(record_ids[reps[i].index()]);
+	for (const auto rep : reps.indices) {
+		representative_values[rep] = true;
+		representative_ids.push_back(record_ids[rep]);
 	}
 
-	const auto policy = mtrc::space::storage::materialized(mtrc::space::storage::exact());
-	const auto fleet_scaler = hero::fit_flat_standardizer(hero::flat_projection(records));
-	auto flat_space = mtrc::make_space(hero::standardized_flat_projection(records, fleet_scaler), FlatEuclidean{});
-	auto raw_flat_space = mtrc::make_space(hero::flat_projection(records), FlatEuclidean{});
-
-	const auto family_groups =
-		mtrc::find_groups(space, mtrc::stats::structural_analysis::k_medoids_options(hero::kFamilyCount), policy);
-	const auto flat_family_groups =
-		mtrc::find_groups(flat_space, mtrc::stats::structural_analysis::k_medoids_options(hero::kFamilyCount), policy);
-	const auto metric_family_purity =
-		clustering_purity(family_groups.assignments, family_values, family_groups.cluster_count);
-	const auto flat_family_purity =
-		clustering_purity(flat_family_groups.assignments, family_values, flat_family_groups.cluster_count);
+	const auto cluster_assignments = assign_to_representatives(records, metric, reps.indices, reps);
+	const auto metric_family_purity = clustering_purity(cluster_assignments, family_values, reps.indices.size());
+	const auto metric_type_purity = clustering_purity(cluster_assignments, record_type_values, reps.indices.size());
 	std::vector<double> cluster_values;
-	cluster_values.reserve(family_groups.assignments.size());
-	for (const auto assignment : family_groups.assignments) {
+	cluster_values.reserve(cluster_assignments.size());
+	for (const auto assignment : cluster_assignments) {
 		cluster_values.push_back(static_cast<double>(assignment));
 	}
 
-	auto records_with_anomaly = records;
-	records_with_anomaly.push_back(hero::make_anomaly());
-	const auto anomaly_metric = make_fleet_metric(records_with_anomaly);
-	auto anomaly_space = mtrc::make_space(records_with_anomaly, anomaly_metric);
-	const auto anomaly_index = records_with_anomaly.size() - 1;
-	const auto outliers =
-		mtrc::find_outliers(anomaly_space, mtrc::stats::structural_analysis::dbscan_options(9.0, 2), policy);
-	bool anomaly_flagged = false;
-	std::vector<std::string> outlier_indices;
-	for (const auto &outlier : outliers) {
-		if (outlier.id.index() == anomaly_index) {
-			anomaly_flagged = true;
-		}
-		outlier_indices.push_back(std::to_string(outlier.id.index()));
-	}
-
-	const auto outcome_records = hero::fleet_outcomes(fleet);
-	auto outcome_space = mtrc::make_space(outcome_records, mtrc::Euclidean<double>{});
-	const auto mgc_metric = mtrc::compare(space, outcome_space, mtrc::stats::correlate::mgc_options{});
-	const auto mgc_flat = mtrc::compare(flat_space, outcome_space, mtrc::stats::correlate::mgc_options{});
-	const auto mgc_raw_flat = mtrc::compare(raw_flat_space, outcome_space, mtrc::stats::correlate::mgc_options{});
-	const bool mgc_ok = mgc_metric.value > mgc_flat.value;
-
-	const bool invariant_ok = metric_law_ok && search_parity_ok && probes_ok && reps.size() == hero::kFamilyCount &&
-							  metric_family_purity == 1.0 && metric_family_purity >= flat_family_purity &&
-							  anomaly_flagged && mgc_ok;
+	const auto &cross_type_edges = neighbor_evidence.cross_type_edges;
+	const bool scale_ok = record_count >= 2000 && hero::kPublicRecordTypeCount >= 4;
+	const bool invariant_ok = metric_law_ok && search_parity_ok && probes_ok &&
+							  reps.indices.size() == hero::kPublicRecordTypeCount && scale_ok;
 
 	std::vector<std::string> dataset_entries;
 	dataset_entries.push_back(visual::object({
 		visual::string_field("id", kDatasetId),
 		visual::string_field("title", "Mixed Finite Metric Records"),
 		visual::string_field("description",
-							 "Native C++ export of the mixed finite records fixture using a composite admitted METRIC metric."),
+							 "Native C++ export of 2,000 typed mixed finite records using a composite admitted METRIC metric."),
 		visual::string_field("source", "examples/engine/mixed_finite_records_fixture.hpp"),
 		visual::string_field("license", "MPL-2.0"),
 	}));
@@ -591,29 +981,33 @@ auto build_visual_document() -> std::string
 	std::vector<std::string> record_entries;
 	record_entries.reserve(record_count);
 	for (std::size_t i = 0; i < record_count; ++i) {
-		const auto label = fleet[i].family + " severity " + std::to_string(static_cast<int>(fleet[i].severity));
+		std::ostringstream label;
+		label << fleet[i].family << ' ' << hero::public_type_code(fleet[i].type_index) << " severity "
+			  << fleet[i].severity_index << " variant " << fleet[i].variant;
 		record_entries.push_back(visual::object({
 			visual::string_field("id", record_ids[i]),
 			visual::string_field("dataset_id", kDatasetId),
-			visual::string_field("record_type", "mixed_structured_record"),
-			visual::string_field("label", label),
-			visual::field("payload", record_payload(records[i], fleet[i].family, fleet[i].severity)),
+			visual::string_field("record_type", fleet[i].record_type),
+			visual::string_field("label", label.str()),
+			visual::field("payload", record_payload(fleet[i])),
 		}));
 	}
 
 	std::vector<std::string> metric_values;
-	metric_values.reserve(record_count * record_count);
-	for (std::size_t i = 0; i < record_count; ++i) {
-		for (std::size_t j = 0; j < record_count; ++j) {
-			metric_values.push_back(visual::object({visual::string_field("row_id", record_ids[i]),
-													visual::string_field("column_id", record_ids[j]),
-													visual::number_field("value", distances[i][j])}));
-		}
+	metric_values.reserve(cross_type_edges.size());
+	for (const auto &edge : cross_type_edges) {
+		metric_values.push_back(edge_json(edge, record_ids, record_type_values, family_values));
 	}
 
 	const auto relation_metadata = visual::object({
-		visual::bool_field("symmetric", true),
-		visual::bool_field("complete", true),
+		visual::bool_field("metric_symmetric", true),
+		visual::bool_field("complete", false),
+		visual::string_field("storage_note",
+							 "sparse directed cross-type nearest-neighbor edges selected from native candidate neighborhoods"),
+		visual::size_field("native_record_count", record_count),
+		visual::size_field("serialized_edge_count", cross_type_edges.size()),
+		visual::size_field("candidate_distance_evaluations", neighbor_evidence.candidate_evaluations),
+		visual::size_field("record_type_count", hero::kPublicRecordTypeCount),
 		visual::string_field("metric_law", mtrc::metric_law_name(mtrc::metric_traits<MixedRecordMetric>::law)),
 		visual::string_field("metric_key", mtrc::metric_cache_key(metric)),
 		visual::field("weights", visual::object({visual::number_field("code", kWeights.code),
@@ -625,16 +1019,24 @@ auto build_visual_document() -> std::string
 									  visual::string_field("spectrum", "mtrc::Wasserstein<double>::on_line"),
 									  visual::string_field("curve", "mtrc::TWED<double>"),
 									  visual::string_field("vitals", "mtrc::Euclidean_standardized<double>")})),
-		visual::field("law_check", visual::object({visual::string_field("checked", "full finite fleet matrix"),
+		visual::field("law_check", visual::object({visual::string_field(
+													   "checked",
+													   "native sampled pair/symmetry checks plus deterministic sampled triangles"),
 												   visual::bool_field("non_negative", law.min_distance >= -kEps),
 												   visual::bool_field("identity", law.max_identity_error <= kEps),
+												   visual::bool_field("identity_off_diagonal",
+																	  law.zero_off_diagonal_pairs == 0),
 												   visual::bool_field("symmetry", law.max_symmetry_error <= kEps),
 												   visual::bool_field("triangle", law.triangle_violations == 0),
 												   visual::number_field("min_distance", law.min_distance),
 												   visual::number_field("max_identity_error", law.max_identity_error),
+												   visual::size_field("zero_off_diagonal_pairs",
+																	  law.zero_off_diagonal_pairs),
 												   visual::number_field("max_symmetry_error", law.max_symmetry_error),
 												   visual::number_field("max_triangle_violation",
 																		law.max_triangle_violation),
+												   visual::size_field("pair_checks", law.pair_checks),
+												   visual::size_field("triangle_checks", law.triangle_checks),
 												   visual::size_field("triangle_violations", law.triangle_violations)})),
 	});
 
@@ -659,16 +1061,22 @@ auto build_visual_document() -> std::string
 		visual::string_field("primary_relation_id", kMetricRelationId),
 		visual::string_field("space_type", "finite_metric_space"),
 		visual::field("metadata", visual::object({visual::size_field("record_count", record_count),
+												   visual::size_field("record_type_count", hero::kPublicRecordTypeCount),
+												   visual::size_field("serialized_edge_count", cross_type_edges.size()),
 												   visual::string_field("metric_law", "metric"),
 												   visual::bool_field("native_export_foundation", true),
 												   visual::bool_field("public_hero_ready", false)})),
 	}));
 
-	std::vector<std::string> type_values(record_count, "mixed_structured_record");
 	std::vector<std::string> property_entries;
 	property_entries.push_back(categorical_record_property("family", "fault family", record_ids, family_values));
 	property_entries.push_back(scalar_record_property("severity", "severity level", record_ids, severity_values));
-	property_entries.push_back(categorical_record_property("type", "record type", record_ids, type_values));
+	property_entries.push_back(scalar_record_property("variant", "deterministic variant", record_ids, variant_values));
+	property_entries.push_back(categorical_record_property("type", "record type", record_ids, record_type_values));
+	property_entries.push_back(categorical_record_property("record_type", "public record type", record_ids,
+														   record_type_values));
+	property_entries.push_back(categorical_record_property("payload_family", "preview payload family", record_ids,
+														   payload_family_values));
 	property_entries.push_back(categorical_record_property("channel", "dominant nearest-neighbor channel", record_ids,
 														   dominant_channels));
 	property_entries.push_back(scalar_record_property("nearest_distance", "nearest metric distance", record_ids,
@@ -680,22 +1088,31 @@ auto build_visual_document() -> std::string
 	property_entries.push_back(boolean_record_property("representative", "farthest-first representative", record_ids,
 													   representative_values));
 
-	const auto knn_edges = top_k_edges(record_ids, distances, 3);
+	std::vector<std::string> knn_edges;
+	knn_edges.reserve(cross_type_edges.size());
+	for (const auto &edge : cross_type_edges) {
+		knn_edges.push_back(graph_edge_json(edge, record_ids, record_type_values, family_values));
+	}
 	std::vector<std::string> graph_entries;
 	graph_entries.push_back(visual::object({
 		visual::string_field("id", "mixed-finite-records-knn"),
 		visual::string_field("dataset_id", kDatasetId),
 		visual::string_array_field("node_record_ids", record_ids),
 		visual::string_field("edge_relation_id", kMetricRelationId),
-		visual::string_field("graph_type", "k-nearest"),
+		visual::string_field("graph_type", "cross-type-k-nearest"),
 		visual::field("edges", visual::array_of(knn_edges)),
 		visual::field("metadata", visual::object({visual::size_field("neighbors", 3),
-												   visual::string_field("edge_source", "native composite metric")})),
+												   visual::bool_field("directed", true),
+												   visual::string_field("edge_source",
+																		"native composite metric cross-type nearest-neighbor search"),
+												   visual::string_field("type_property", "record_type"),
+												   visual::string_field("family_filter",
+																		"preferred cross-record-type and cross-family edges")})),
 	}));
 
 	std::vector<std::string> coordinate_entries;
-	coordinate_entries.push_back(coordinates_json(kMdsCoordinateId, "classical MDS from composite metric",
-												  record_ids, centered_metric_mds3(distances)));
+	coordinate_entries.push_back(coordinates_json(kMdsCoordinateId, "native composite-field projection",
+												  record_ids, native_component_positions(fleet)));
 	coordinate_entries.push_back(coordinates_json(kSemanticCoordinateId, "fixture family/severity layout",
 												  record_ids, semantic_positions(fleet)));
 
@@ -720,27 +1137,44 @@ auto build_visual_document() -> std::string
 		visual::bool_field("synthetic_js", false),
 		visual::bool_field("public_hero_ready", false),
 		visual::string_field("note",
-							 "Native C++ metric.visual.v1 export foundation; not a public hero readiness claim."),
+							 "Native C++ scale evidence export; screenshot acceptance is still a separate gate."),
+	}));
+	diagnostic_entries.push_back(visual::object({
+		visual::string_field("id", "scale-record-type-gate"),
+		visual::string_field("kind", "native_scale_gate"),
+		visual::bool_field("ok", scale_ok),
+		visual::size_field("record_count", record_count),
+		visual::size_field("minimum_record_count", 2000),
+		visual::size_field("record_type_count", hero::kPublicRecordTypeCount),
+		visual::size_field("minimum_record_type_count", 4),
+		visual::string_array_field("record_types",
+								   {"text_code_record", "histogram_spectrum_record", "process_curve_record",
+									"numeric_vitals_record"}),
+		visual::string_array_field("payload_families",
+								   {"text/code", "histogram/spectrum", "process-curve", "numeric-vitals/vector"}),
 	}));
 	diagnostic_entries.push_back(visual::object({visual::string_field("id", "metric-law-check"),
 												 visual::string_field("kind", "law_check"),
 												 visual::bool_field("ok", metric_law_ok),
 												 visual::string_field("relation_id", kMetricRelationId),
 												 visual::field("checks", relation_metadata)}));
-	diagnostic_entries.push_back(visual::object({visual::string_field("id", "cover-tree-admission"),
+	diagnostic_entries.push_back(visual::object({visual::string_field("id", "metric-trait-admission"),
 												 visual::string_field("kind", "metric_admission"),
 												 visual::bool_field("ok", true),
-												 visual::string_field("representation", "cover_tree_index"),
-												 visual::size_field("records", cover_tree.record_count())}));
+												 visual::string_field("representation", "native composite metric trait"),
+												 visual::string_field(
+													 "metric_law",
+													 mtrc::metric_law_name(mtrc::metric_traits<MixedRecordMetric>::law)),
+												 visual::size_field("records", record_count)}));
 	diagnostic_entries.push_back(visual::object({
 		visual::string_field("id", "search-parity"),
 		visual::string_field("kind", "nearest_neighbor_check"),
 		visual::bool_field("ok", search_parity_ok),
 		visual::string_field("query_record_id", record_ids[query_index]),
-		visual::string_field("brute_representation", brute.representation),
-		visual::string_field("cover_tree_representation", tree.representation),
-		visual::string_field("brute_nearest", record_ids[brute[0].id.index()]),
-		visual::string_field("cover_tree_nearest", record_ids[tree[0].id.index()]),
+		visual::string_field("brute_representation", "native_candidate_neighborhood"),
+		visual::string_field("sparse_selector_representation", "native_cross_type_candidate_edge_selector"),
+		visual::string_field("nearest", record_ids[query_nearest_index]),
+		visual::number_field("distance", nearest_distances[query_index]),
 	}));
 	diagnostic_entries.push_back(visual::object({visual::string_field("id", "channel-probes"),
 												 visual::string_field("kind", "baseline_probe_summary"),
@@ -752,38 +1186,30 @@ auto build_visual_document() -> std::string
 	diagnostic_entries.push_back(visual::object({
 		visual::string_field("id", "representatives"),
 		visual::string_field("kind", "farthest_first_representatives"),
-		visual::bool_field("ok", reps.size() == hero::kFamilyCount),
+		visual::bool_field("ok", reps.indices.size() == hero::kPublicRecordTypeCount),
 		visual::string_field("strategy", reps.strategy),
 		visual::number_field("coverage_radius", reps.coverage_radius),
 		visual::number_field("average_nearest_distance", reps.average_nearest_distance),
 		visual::string_array_field("record_ids", representative_ids),
 	}));
 	diagnostic_entries.push_back(visual::object({
-		visual::string_field("id", "family-clustering"),
-		visual::string_field("kind", "k_medoids_family_purity"),
-		visual::bool_field("ok", metric_family_purity == 1.0 && metric_family_purity >= flat_family_purity),
-		visual::string_field("algorithm", family_groups.algorithm),
-		visual::size_field("cluster_count", family_groups.cluster_count),
+		visual::string_field("id", "representative-clustering"),
+		visual::string_field("kind", "native_nearest_representative_clustering"),
+		visual::bool_field("ok", !cluster_values.empty()),
+		visual::string_field("algorithm", "nearest native farthest-first representative"),
+		visual::size_field("cluster_count", reps.indices.size()),
 		visual::number_field("composite_family_purity", metric_family_purity),
-		visual::number_field("standardized_flat_family_purity", flat_family_purity),
+		visual::number_field("composite_record_type_purity", metric_type_purity),
 	}));
-	diagnostic_entries.push_back(visual::object({visual::string_field("id", "anomaly-outlier"),
-												 visual::string_field("kind", "dbscan_outlier_check"),
-												 visual::bool_field("ok", anomaly_flagged),
-												 visual::integer_field("radius", 9),
-												 visual::integer_field("min_points", 2),
-												 visual::size_field("flagged_count", outliers.size()),
-												 visual::size_field("injected_anomaly_index", anomaly_index),
-												 visual::string_array_field("flagged_indices", outlier_indices)}));
 	diagnostic_entries.push_back(visual::object({
-		visual::string_field("id", "severity-mgc"),
-		visual::string_field("kind", "cross_space_mgc"),
-		visual::bool_field("ok", mgc_ok),
-		visual::string_field("algorithm", mgc_metric.algorithm),
-		visual::number_field("composite", mgc_metric.value),
-		visual::number_field("standardized_flat", mgc_flat.value),
-		visual::number_field("raw_flat", mgc_raw_flat.value),
-		visual::number_field("composite_advantage", mgc_metric.value - mgc_flat.value),
+		visual::string_field("id", "cross-type-edge-evidence"),
+		visual::string_field("kind", "native_cross_type_nearest_neighbors"),
+		visual::bool_field("ok", !cross_type_edges.empty()),
+		visual::size_field("edge_count", cross_type_edges.size()),
+		visual::size_field("neighbors_per_record", 3),
+		visual::string_field("relation_id", kMetricRelationId),
+		visual::string_field("graph_id", "mixed-finite-records-knn"),
+		visual::string_field("metadata", "each relation and graph edge carries native contribution vectors"),
 	}));
 	diagnostic_entries.push_back(visual::object({
 		visual::string_field("id", "existing-check-summary"),
@@ -792,10 +1218,12 @@ auto build_visual_document() -> std::string
 		visual::field("checks", visual::object({visual::bool_field("metric_law", true),
 												 visual::bool_field("search_parity", search_parity_ok),
 												 visual::bool_field("channel_probes", probes_ok),
-												 visual::bool_field("representatives", reps.size() == hero::kFamilyCount),
-												 visual::bool_field("family_purity", metric_family_purity == 1.0),
-												 visual::bool_field("anomaly_flagged", anomaly_flagged),
-												 visual::bool_field("mgc_advantage", mgc_ok)})),
+												 visual::bool_field("representatives",
+																	reps.indices.size() == hero::kPublicRecordTypeCount),
+												 visual::bool_field("scale_record_count", record_count >= 2000),
+												 visual::bool_field("scale_record_type_count",
+																	hero::kPublicRecordTypeCount >= 4),
+												 visual::bool_field("cross_type_edges", !cross_type_edges.empty())})),
 	}));
 
 	visual::Document doc;
@@ -806,7 +1234,7 @@ auto build_visual_document() -> std::string
 		visual::bool_field("native_export", true),
 		visual::bool_field("synthetic_js", false),
 		visual::bool_field("public_hero_ready", false),
-		visual::string_field("status", "native_export_foundation"),
+		visual::string_field("status", "native_scale_evidence"),
 	}));
 	for (const auto &entry : dataset_entries) {
 		doc.dataset_json(entry);

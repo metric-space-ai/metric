@@ -75,7 +75,7 @@ async function inspectBrief(brief) {
     const assetPath = resolve(EXAMPLES_DIR, exampleId, target);
     try {
       const document = JSON.parse(await readFile(assetPath, "utf8"));
-      const asset = summarizeAsset(target, assetPath, document);
+      const asset = summarizeAsset(exampleId, target, assetPath, document);
       assets.push(asset);
       if (asset.schema !== "metric.visual.v1") {
         issues.push({ code: "native-asset-schema-invalid", example: exampleId, target, schema: asset.schema });
@@ -94,7 +94,8 @@ async function inspectBrief(brief) {
     }
   }
 
-  const recordCount = maxNumber(assets.map((asset) => asset.recordCount));
+  const totalRecordCount = maxNumber(assets.map((asset) => asset.recordCount));
+  const recordCount = maxNumber(assets.map((asset) => asset.scaleRecordCount ?? asset.recordCount));
   const relationCount = maxNumber(assets.map((asset) => asset.relationCount));
   const recordTypeCount = maxNumber(assets.map((asset) => asset.recordTypeCount));
   const recordCountReady = minRecordCount == null || recordCount >= minRecordCount;
@@ -122,6 +123,7 @@ async function inspectBrief(brief) {
     exampleId,
     nativeScaleReady,
     recordCount,
+    totalRecordCount,
     relationCount,
     recordTypeCount,
     minRecordCountForHero: minRecordCount,
@@ -140,14 +142,19 @@ async function publicNativeAssetTargets(exampleId) {
     .filter((target) => nativeAssetPattern.test(target));
 }
 
-function summarizeAsset(target, assetPath, document) {
+function summarizeAsset(exampleId, target, assetPath, document) {
   const records = Array.isArray(document?.records) ? document.records : [];
+  const relationRecordCount = maxRelationRecordCount(document);
+  const scaleRecordCount = scaleRecordCountForExample(exampleId, records.length, relationRecordCount);
   return {
     target,
     path: assetPath,
     schema: document?.schema ?? null,
     synthetic: document?.provenance?.synthetic === true,
     recordCount: records.length,
+    scaleRecordCount,
+    scaleRecordCountSource: scaleRecordCount === records.length ? "records" : "metric-relation-record-ids",
+    relationRecordCount,
     relationCount: Array.isArray(document?.relations) ? document.relations.length : 0,
     coordinateCount: Array.isArray(document?.coordinates) ? document.coordinates.length : 0,
     viewKinds: Array.isArray(document?.views) ? document.views.map((view) => view?.kind).filter(Boolean) : [],
@@ -162,6 +169,26 @@ function summarizeAsset(target, assetPath, document) {
       nativeExport: document?.provenance?.native_export === true || document?.provenance?.nativeExport === true,
     },
   };
+}
+
+function scaleRecordCountForExample(exampleId, recordCount, relationRecordCount) {
+  if (exampleId === "process-curve-external-hero") {
+    return relationRecordCount;
+  }
+  return recordCount;
+}
+
+function maxRelationRecordCount(document) {
+  const relations = Array.isArray(document?.relations) ? document.relations : [];
+  const counts = [];
+  for (const relation of relations) {
+    if (Array.isArray(relation?.record_ids)) {
+      counts.push(relation.record_ids.length);
+    } else if (Array.isArray(relation?.recordIds)) {
+      counts.push(relation.recordIds.length);
+    }
+  }
+  return maxNumber(counts);
 }
 
 function isNativeMetricVisualDocument(document) {

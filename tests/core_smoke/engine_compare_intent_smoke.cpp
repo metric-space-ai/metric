@@ -1,8 +1,12 @@
 #include <array>
 #include <cassert>
 #include <cmath>
+#include <cstddef>
 #include <deque>
+#include <memory>
 #include <stdexcept>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "metric/metric/catalog.hpp"
@@ -14,6 +18,38 @@ auto close(double actual, double expected, double tolerance = 1e-12) -> bool
 {
 	return std::abs(actual - expected) < tolerance;
 }
+
+struct CountingLengthDistance {
+	explicit CountingLengthDistance(std::shared_ptr<std::size_t> calls)
+		: calls(std::move(calls))
+	{
+	}
+
+	auto operator()(const std::string &lhs, const std::string &rhs) const -> int
+	{
+		++(*calls);
+		const auto difference = static_cast<int>(lhs.size()) - static_cast<int>(rhs.size());
+		return difference < 0 ? -difference : difference;
+	}
+
+	std::shared_ptr<std::size_t> calls;
+};
+
+struct CountingAbsoluteDistance {
+	explicit CountingAbsoluteDistance(std::shared_ptr<std::size_t> calls)
+		: calls(std::move(calls))
+	{
+	}
+
+	auto operator()(double lhs, double rhs) const -> double
+	{
+		++(*calls);
+		const auto difference = lhs - rhs;
+		return difference < 0.0 ? -difference : difference;
+	}
+
+	std::shared_ptr<std::size_t> calls;
+};
 
 } // namespace
 
@@ -69,13 +105,86 @@ int main()
 	assert(materialized_correlated.right_representation == "distance_table");
 	assert(close(materialized_correlated.value, compared.value));
 
-	bool rejected_approximate_runtime = false;
-	try {
-		(void)mtrc::compare(first_space, second_space, mtrc::space::storage::approximate());
-	} catch (const std::invalid_argument &) {
-		rejected_approximate_runtime = true;
-	}
-	assert(rejected_approximate_runtime);
+	auto left_metric_calls = std::make_shared<std::size_t>(0);
+	auto right_metric_calls = std::make_shared<std::size_t>(0);
+	auto counted_left_space = mtrc::make_space(
+		std::vector<std::string>{"a", "bbb", "cc", "eeeee"}, CountingLengthDistance(left_metric_calls));
+	auto counted_right_space = mtrc::make_space(
+		std::deque<double>{2.0, -1.0, 4.5, 8.0}, CountingAbsoluteDistance(right_metric_calls));
+	const auto exact_counted = mtrc::compare(counted_left_space, counted_right_space);
+	assert(exact_counted.exact);
+	assert(exact_counted.left_representation == "metric_space");
+	assert(exact_counted.right_representation == "metric_space");
+	assert(*left_metric_calls > 0);
+	assert(*right_metric_calls > 0);
+
+	const auto refusing_materialized_policy =
+		mtrc::space::storage::with_distance_table_budget(mtrc::space::storage::materialized(), 1, 0);
+	auto assert_refused_before_metric_calls = [&](auto operation) {
+		*left_metric_calls = 0;
+		*right_metric_calls = 0;
+		bool rejected = false;
+		try {
+			operation();
+		} catch (const mtrc::RepresentationError &error) {
+			rejected = true;
+			const std::string message = error.what();
+			assert(message.find("max_dense_records") != std::string::npos);
+			assert(message.find("fallback") != std::string::npos);
+		}
+		assert(rejected);
+		assert(*left_metric_calls == 0);
+		assert(*right_metric_calls == 0);
+	};
+	assert_refused_before_metric_calls([&] {
+		(void)mtrc::compare(counted_left_space, counted_right_space, refusing_materialized_policy);
+	});
+	assert_refused_before_metric_calls([&] {
+		(void)mtrc::correlate(counted_left_space, counted_right_space, mtrc::stats::correlate::mgc_options{},
+							  refusing_materialized_policy);
+	});
+
+	const auto blocked_materialized_policy =
+		mtrc::space::storage::allow_chunking_fallback(refusing_materialized_policy);
+	*left_metric_calls = 0;
+	*right_metric_calls = 0;
+	const auto blocked_compared = mtrc::compare(counted_left_space, counted_right_space, blocked_materialized_policy);
+	assert(blocked_compared.exact);
+	assert(blocked_compared.left_representation == "blocked_distance_table");
+	assert(blocked_compared.right_representation == "blocked_distance_table");
+	assert(close(blocked_compared.value, exact_counted.value));
+	assert(*left_metric_calls > 0);
+	assert(*right_metric_calls > 0);
+
+	*left_metric_calls = 0;
+	*right_metric_calls = 0;
+	const auto blocked_correlated =
+		mtrc::correlate(counted_left_space, counted_right_space, mtrc::stats::correlate::mgc_options{},
+						blocked_materialized_policy);
+	assert(blocked_correlated.exact);
+	assert(blocked_correlated.left_representation == "blocked_distance_table");
+	assert(blocked_correlated.right_representation == "blocked_distance_table");
+	assert(close(blocked_correlated.value, exact_counted.value));
+	assert(*left_metric_calls > 0);
+	assert(*right_metric_calls > 0);
+
+	mtrc::stats::correlate::mgc_options approximate_options;
+	approximate_options.sample_count = 10;
+	approximate_options.max_iterations = 3;
+	const auto approximate =
+		mtrc::compare(first_space, second_space, approximate_options, mtrc::space::storage::approximate());
+	assert(approximate.algorithm == "mgc_estimate");
+	assert(!approximate.exact);
+	assert(approximate.left_representation == "metric_space_sample");
+	assert(approximate.right_representation == "metric_space_sample");
+	assert(approximate.left_record_count == first_space.size());
+	assert(approximate.right_record_count == second_space.size());
+	assert(approximate.sample_count == 10);
+	assert(approximate.sample_iterations == 3);
+	assert(!approximate.approximation_reason.empty());
+	assert(std::isfinite(approximate.value));
+	assert(approximate.value >= -1.0);
+	assert(approximate.value <= 1.0);
 
 	return 0;
 }

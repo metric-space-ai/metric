@@ -91,7 +91,8 @@ absence is a warning).
   relation-independent, but when present it must resolve to an exported
   relation.
 Examples: entropy, density, local volume, intrinsic dimension, outlier score,
-cluster id, representative assignment, reconstruction error, mapping residual.
+component id, representative assignment, reconstruction error, derivation
+residual.
 
 ### `graphs`
 `id`, `dataset_id`, `node_record_ids`, `edge_relation_id`, `graph_type`,
@@ -107,15 +108,16 @@ transition, diffusion, solver, sparsified, component, custom.
 `record_positions` entry is `{ record_id, position: [...] }`, `record_id`
 must reference a record, and `position` must contain numeric entries with at
 least `dimension` values. Coordinate states are derived display states
-(landmark 2D/3D, PHATE, AE latent, PCFA, SOM/KOC grid, graph layout), not the
+(landmark 2D/3D, parametric diffusion coordinates, parametric latent coordinates, PCFA, derived grids,
+graph layout), not the
 metric space itself.
 
 ### `timelines`
 `id`, `dataset_id`, `name`, `steps`. Each step may carry `coordinate_id`,
 `property_id`, `relation_id` and/or `graph_id`; when present they must resolve.
-Timelines describe state changes over existing records (2D→3D morph, diffusion
-/ reverse diffusion steps, Redif inverse-dynamics before/after, training
-epochs, solver iterations). They reference exported states; they do not ask
+Timelines describe state changes over existing records (2D/3D morph, diffusion
+or inverse-diffusion steps, Redif inverse-dynamics before/after, calibration
+steps, solver iterations). They reference exported states; they do not ask
 JavaScript to recompute them.
 
 ### `views`, `events`, `diagnostics`

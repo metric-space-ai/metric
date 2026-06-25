@@ -32,7 +32,7 @@
 // NOT reach into MGC internals and we never treat MGC as a distance.
 //
 //   statistic  = MGC sample statistic on the true observation pairing (effect)
-//   null model = the SAME left space compared against the right space whose
+//   null pairing = the SAME left space compared against the right space whose
 //                records have been randomly re-paired (observation labels
 //                shuffled). Re-pairing is the textbook independence null.
 //   p_value    = (1 + #{ permuted statistic >= observed }) / (1 + permutations)

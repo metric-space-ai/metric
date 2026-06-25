@@ -39,10 +39,10 @@ metric spaces -- a statistic in `[-1, 1]`, never a record metric -- and
 - `mtrc::modify::represent`: representative spaces
 - `mtrc::modify::reduce`: thinning or coarsening finite spaces
 - `mtrc::modify::expand`: domain-supported interpolation or expansion
-- `mtrc::modify::resample`: sampling correction and denoise-style workflows
+- `mtrc::modify::resample`: sampling correction and density-filter workflows
 - `mtrc::modify::map`: maps into derived spaces, including coordinate spaces
 - `mtrc::modify::dynamics`: diffusion and evolution over a finite space
 - `mtrc::modify::compose`: inspectable composed workflows
 
-Concrete implementations such as MGC, DBSCAN, PCFA, or PHATE-AE are named after
+Concrete implementations such as MGC, DBSCAN, PCFA, or parametric diffusion coordinate are named after
 the owning component is clear.

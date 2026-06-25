@@ -25,11 +25,16 @@ def venv_python(venv_dir: Path) -> Path:
 
 
 def create_venv(venv_dir: Path) -> None:
+    uv = shutil.which("uv")
+    if uv is not None:
+        if venv_dir.exists():
+            shutil.rmtree(venv_dir)
+        run([uv, "venv", "--clear", "--seed", "--python", sys.executable, str(venv_dir)])
+        return
     try:
         venv.EnvBuilder(with_pip=True, clear=True).create(venv_dir)
         return
     except subprocess.CalledProcessError:
-        uv = shutil.which("uv")
         if uv is None:
             raise
         if venv_dir.exists():
@@ -74,6 +79,7 @@ def main() -> int:
                 "cmake>=3.19",
                 "pybind11>=3.0.0",
                 "numpy>=1.23",
+                "pytest",
             ]
         )
 
@@ -110,6 +116,7 @@ def main() -> int:
         smoke_env["METRIC_WHEEL_SMOKE_REPO"] = str(repo)
         smoke = textwrap.dedent(
             r"""
+            import importlib.util
             import os
             from pathlib import Path
 
@@ -117,20 +124,22 @@ def main() -> int:
             import numpy as np
             from metric.exceptions import StrategyUnavailableError
             from metric.metrics import Edit
-            from metric.operators import (
-                exact_knn_graph,
-                graph_connectivity_diagnostics,
-                graph_degree_diagnostics,
-            )
+            from metric.operators import exact_knn_graph
             from metric.runtime import RuntimePolicy, runtime_diagnostics, using_matrix
             from metric.spaces import Space
-            from metric.strategies import KMedoids, MDS, PCFA, PhateAE
+            from metric.strategies import KMedoids, MDS, ParametricDiffusionCoordinates
             from metric import mappings
 
             repo = Path(os.environ["METRIC_WHEEL_SMOKE_REPO"]).resolve()
             module_path = Path(metric.__file__).resolve()
             assert repo not in module_path.parents, module_path
             assert "site-packages" in module_path.parts or "dist-packages" in module_path.parts, module_path
+            assert importlib.util.find_spec("metric.compat") is None
+            assert importlib.util.find_spec("metric.space") is None
+            assert importlib.util.find_spec("metric.mapping") is None
+            assert importlib.util.find_spec("metric.spaces") is not None
+            assert importlib.util.find_spec("metric.mappings") is not None
+            assert importlib.util.find_spec("metric.transforms") is not None
 
             string_space = Space(["cat", "cot", "coat", "dog"], Edit())
             neighbors = string_space.neighbors("cut", count=2)
@@ -138,26 +147,24 @@ def main() -> int:
             assert [neighbor.id for neighbor in neighbors.neighbors] == [0, 1]
 
             groups = string_space.groups(KMedoids(groups=2), runtime=using_matrix())
-            assert groups.representation == "matrix"
+            assert groups.representation == "metric_space"
             assert groups.record_count == 4
 
             diagnostics = runtime_diagnostics(RuntimePolicy(cache="materialized"), intent="neighbors")
             assert diagnostics.representation == "matrix"
             assert diagnostics.supported is True
 
-            with np.testing.assert_raises(StrategyUnavailableError):
-                string_space.reduce(strategy=PCFA(dimensions=1))
-
             def absolute_distance(lhs, rhs):
                 return abs(lhs - rhs)
 
             numeric_space = Space([0, 1, 2, 10, 11], absolute_distance)
             assert numeric_space.outliers(count=1).record_count == 5
-            assert numeric_space.denoise(count=1).target_record_count == 4
+            assert numeric_space.density_filter(count=1).target_record_count == 4
             assert numeric_space.representatives(count=2).requested_count == 2
             assert numeric_space.reduce(count=2).reduced_record_count == 2
             assert numeric_space.compress(count=2).compressed_record_count == 2
-            assert numeric_space.embed(dimensions=2, strategy=MDS(dimensions=2)).coordinates.shape == (5, 2)
+            with np.testing.assert_raises(StrategyUnavailableError):
+                numeric_space.embed(dimensions=2, strategy=MDS(dimensions=2))
             mapped_numeric = numeric_space.map(
                 transform=lambda record: record // 10,
                 metric=absolute_distance,
@@ -169,42 +176,40 @@ def main() -> int:
             assert compared.left_record_count == 5
             assert compared.right_record_count == 5
 
-            graph = exact_knn_graph(numeric_space.records, numeric_space.metric, 2)
-            assert graph.metadata.exact is True
-            assert graph_degree_diagnostics(graph).record_count == 5
-            assert graph_connectivity_diagnostics(graph).component_count == 1
+            with np.testing.assert_raises(StrategyUnavailableError):
+                exact_knn_graph(numeric_space.records, numeric_space.metric, 2)
 
             rows = np.asarray(
                 [[0.0, 0.0], [0.5, 0.5], [1.0, 1.0], [1.5, 1.5], [2.0, 2.0]],
                 dtype=float,
             )
-            model = mappings.native_phate_autoencoder_fit_vectors(
+            artifact = mappings.derive_parametric_diffusion_coordinates(
                 rows,
                 dimensions=1,
-                epochs=2,
-                learning_rate=0.001,
-                distance_provider="matrix_cache_distance_provider",
+                calibration_steps=2,
+                step_size=0.001,
+                distance_provider="exact_metric_space_distance_provider",
                 affinity_kernel="exponential_affinity_kernel",
                 diffusion_operator="lazy_row_normalized_diffusion_operator",
             )
-            assert model.mapping == "native_phate_autoencoder"
-            assert model.strategy == "native_dnn_phate_ae"
-            assert model.training_report()["epoch_count"] == 2
-            assert len(model.transform(rows)) == len(rows)
+            assert artifact.mapping == "parametric_diffusion_coordinates"
+            assert artifact.strategy == "native_metric_diffusion_coordinate_solver"
+            assert artifact.calibration_report()["step_count"] == 2
+            assert len(artifact.transform(rows)) == len(rows)
 
             vector_space = Space.vectors(rows, validate="none", cache="none")
             mapped = vector_space.map(
-                strategy=PhateAE(
+                strategy=ParametricDiffusionCoordinates(
                     dimensions=1,
-                    epochs=2,
-                    learning_rate=0.001,
-                    distance_provider="matrix_cache_distance_provider",
+                    calibration_steps=2,
+                    step_size=0.001,
+                    distance_provider="exact_metric_space_distance_provider",
                     affinity_kernel="exponential_affinity_kernel",
                     diffusion_operator="lazy_row_normalized_diffusion_operator",
                 )
             )
-            assert mapped.mapping == "native_phate_autoencoder"
-            assert mapped.strategy == "native_dnn_phate_ae"
+            assert mapped.mapping == "parametric_diffusion_coordinates"
+            assert mapped.strategy == "native_metric_diffusion_coordinate_solver"
             assert mapped.inverse_supported is True
             assert len(mapped.inverse_transform()) == len(rows)
 
@@ -215,10 +220,22 @@ def main() -> int:
                 cache="none",
             )
             with np.testing.assert_raises(StrategyUnavailableError):
-                custom_metric_space.map(strategy=PhateAE(dimensions=1, epochs=1))
+                custom_metric_space.map(strategy=ParametricDiffusionCoordinates(dimensions=1, calibration_steps=1))
             """
         )
         run([str(python), "-c", smoke], cwd=tmp_dir, env=smoke_env)
+        run([str(python), str(repo / "python" / "tests" / "core" / "test_revival_api.py")], cwd=tmp_dir, env=smoke_env)
+        run(
+            [
+                str(python),
+                "-m",
+                "pytest",
+                str(repo / "python" / "tests" / "core" / "test_binding_adapter_boundary.py"),
+                str(repo / "python" / "tests" / "core" / "test_mapping_pipeline_adapter.py"),
+            ],
+            cwd=tmp_dir,
+            env=smoke_env,
+        )
 
         for example in promoted_python_examples(repo):
             run([str(python), str(example)], cwd=tmp_dir, env=smoke_env)

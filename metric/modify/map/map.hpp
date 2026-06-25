@@ -58,10 +58,10 @@ auto map(const Space &space, Transform transform, TargetMetric metric, space::st
 template <typename Space, typename Mapping,
 		  typename std::enable_if<MetricSpaceLike_v<Space> && Mapping_v<Mapping, Space>, int>::type = 0>
 auto map(const Space &space, const Mapping &mapping)
-	-> decltype(modify::map::transform(modify::map::fit(mapping, space), space))
+	-> decltype(modify::map::transform(modify::map::derive_from(mapping, space), space))
 {
-	auto model = modify::map::fit(mapping, space);
-	return modify::map::transform(model, space);
+	auto mapping_artifact = modify::map::derive_from(mapping, space);
+	return modify::map::transform(mapping_artifact, space);
 }
 
 template <typename Space, typename Mapping,

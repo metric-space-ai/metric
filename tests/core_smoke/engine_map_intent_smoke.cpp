@@ -20,7 +20,9 @@ int main()
 	const auto manual = mtrc::core::make_mapping_result(
 		std::move(manual_space), std::vector<std::vector<mtrc::RecordId>>{{space.id(0)}, {space.id(1)}},
 		std::vector<mtrc::RecordId>{space.id(0), space.id(1)}, space.size(), true, "manual_mapping",
-		"manual_strategy", "manual_representation");
+		"manual_strategy", "manual_representation", mtrc::metric_law::unknown, false,
+		"manual mapping fixture with explicit two-record lineage");
+	mtrc::core::require_mapping_result_contract(manual, "manual mapping smoke");
 	assert(manual.size() == 2);
 	assert(!manual.empty());
 	assert(manual.source_record_count == space.size());
@@ -52,6 +54,7 @@ int main()
 	assert(mapped.space.record(mapped.space.id(0)) == 6);
 	assert(mapped.space.record(mapped.space.id(1)) == 3);
 	assert(mapped.space.distance(mapped.space.id(0), mapped.space.id(1)) == 3);
+	mtrc::core::require_mapping_result_contract(mapped, "deterministic map smoke");
 
 	for (std::size_t index = 0; index < space.size(); ++index) {
 		assert(mapped.source_records[index].size() == 1);

@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cstddef>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -7,6 +8,52 @@
 
 struct AbsoluteDistance {
 	auto operator()(int lhs, int rhs) const -> int { return lhs > rhs ? lhs - rhs : rhs - lhs; }
+};
+
+struct PositionCountingProvider {
+	using distance_type = int;
+
+	std::vector<mtrc::RecordId> ids;
+	std::vector<int> records;
+	mutable std::size_t position_lookups{};
+	mutable std::size_t id_distances{};
+	mutable std::size_t position_distances{};
+
+	auto distance(mtrc::RecordId, mtrc::RecordId) const -> int
+	{
+		++id_distances;
+		return -1;
+	}
+	auto distance_at_position(std::size_t lhs_position, std::size_t rhs_position) const -> int
+	{
+		++position_distances;
+		const auto lhs = records[lhs_position];
+		const auto rhs = records[rhs_position];
+		return lhs > rhs ? lhs - rhs : rhs - lhs;
+	}
+	auto record_count() const -> std::size_t { return ids.size(); }
+	auto id(std::size_t position) const -> mtrc::RecordId { return ids[position]; }
+	auto position_of(mtrc::RecordId id) const -> std::size_t
+	{
+		++position_lookups;
+		for (std::size_t position = 0; position < ids.size(); ++position) {
+			if (ids[position] == id) {
+				return position;
+			}
+		}
+		throw std::out_of_range("record id is outside the counting provider");
+	}
+	auto contains(mtrc::RecordId id) const -> bool
+	{
+		for (const auto candidate : ids) {
+			if (candidate == id) {
+				return true;
+			}
+		}
+		return false;
+	}
+	auto version() const -> std::size_t { return 1; }
+	auto is_stale() const -> bool { return false; }
 };
 
 namespace mtrc::core {
@@ -56,6 +103,10 @@ auto assert_matches_oracle(const Result &actual, const std::vector<neighbor_type
 	assert(actual.operator_name == "knn");
 	assert(actual.exact);
 	assert(actual.representation == expected_representation);
+	assert(actual.provenance.route_kind ==
+		   mtrc::default_search_route_kind_for_representation(expected_representation));
+	assert(actual.provenance.domain_kind ==
+		   mtrc::default_result_domain_kind_for_representation(expected_representation));
 	assert(actual.size() == expected.size());
 	assert(actual.requested_count >= actual.size());
 	for (std::size_t index = 0; index < expected.size(); ++index) {
@@ -135,6 +186,14 @@ int main()
 	assert(zero_neighbors.empty());
 	assert(zero_neighbors.requested_count == 0);
 	assert(zero_neighbors.representation == "cover_tree_index");
+
+	PositionCountingProvider provider{{space.id(0), space.id(1), space.id(2), space.id(3), space.id(4)}, records};
+	static_assert(mtrc::PairwiseDistances_v<PositionCountingProvider>);
+	const auto provider_neighbors = mtrc::stats::search::knn(provider, query_id, id_count);
+	assert_matches_oracle(provider_neighbors, expected_id, "pairwise_distances");
+	assert(provider.position_lookups == 1);
+	assert(provider.position_distances == records.size() - 1);
+	assert(provider.id_distances == 0);
 
 	return 0;
 }

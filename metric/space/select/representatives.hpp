@@ -66,12 +66,103 @@ auto find_representatives(const Provider &provider, std::size_t count, space::se
 										 provider.record_count(), count, "farthest_first", "pairwise_distances");
 }
 
+template <typename Provider, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
+auto find_representatives(const Provider &provider, std::size_t count, space::select::coverage strategy)
+	-> RepresentativeSet<typename Provider::distance_type>
+{
+	auto result = find_representatives(provider, count, space::select::farthest_first{strategy.seed_index});
+	result.strategy = "coverage";
+	return result;
+}
+
+template <typename Provider, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
+auto find_representatives(const Provider &provider, std::size_t count, space::select::k_center strategy)
+	-> RepresentativeSet<typename Provider::distance_type>
+{
+	auto result = find_representatives(provider, count, space::select::farthest_first{strategy.seed_index});
+	result.strategy = "k_center";
+	return result;
+}
+
+template <typename Provider, typename Radius, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
+auto find_representatives(const Provider &provider, space::select::radius_coverage<Radius> strategy)
+	-> RepresentativeSet<typename Provider::distance_type>
+{
+	using distance_type = typename Provider::distance_type;
+
+	if (strategy.radius < Radius{}) {
+		throw std::invalid_argument("coverage radius must be non-negative");
+	}
+	if (provider.record_count() == 0) {
+		return core::make_representative_set(std::vector<RecordId>{}, std::vector<distance_type>{}, 0, 0,
+											 "radius_coverage", "pairwise_distances");
+	}
+
+	std::vector<RecordId> representatives;
+	std::vector<bool> covered(provider.record_count(), false);
+	std::size_t covered_count = 0;
+	const auto radius = static_cast<distance_type>(strategy.radius);
+
+	while (covered_count < provider.record_count()) {
+		const auto seed_index = core::first_unmarked_position(covered, "failed to select the next coverage seed");
+		const auto seed_id = provider.id(seed_index);
+		representatives.push_back(seed_id);
+		covered_count += core::mark_records_within_radius(
+			provider, seed_id, radius, covered, "coverage state count does not match provider",
+			"coverage representative id is outside provider");
+	}
+
+	auto nearest_representative_distances =
+		core::distances_to_record_id(provider, representatives.front(), "representative id is outside provider");
+	for (std::size_t representative_index = 1; representative_index < representatives.size(); ++representative_index) {
+		core::update_min_distances_to_record_id(provider, nearest_representative_distances,
+												representatives[representative_index],
+												"nearest representative distance count does not match provider",
+												"representative id is outside provider");
+	}
+
+	const auto representative_count = representatives.size();
+	return core::make_representative_set(std::move(representatives), std::move(nearest_representative_distances),
+										 provider.record_count(), representative_count, "radius_coverage",
+										 "pairwise_distances");
+}
+
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto find_representatives(const Space &space, std::size_t count, space::select::farthest_first strategy = {})
 	-> RepresentativeSet<typename Space::distance_type>
 {
 	space::storage::LiveDistances<Space> provider(space);
 	auto result = find_representatives(provider, count, strategy);
+	result.representation = "metric_space";
+	return result;
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_representatives(const Space &space, std::size_t count, space::select::coverage strategy)
+	-> RepresentativeSet<typename Space::distance_type>
+{
+	space::storage::LiveDistances<Space> provider(space);
+	auto result = find_representatives(provider, count, strategy);
+	result.representation = "metric_space";
+	return result;
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_representatives(const Space &space, std::size_t count, space::select::k_center strategy)
+	-> RepresentativeSet<typename Space::distance_type>
+{
+	space::storage::LiveDistances<Space> provider(space);
+	auto result = find_representatives(provider, count, strategy);
+	result.representation = "metric_space";
+	return result;
+}
+
+template <typename Space, typename Radius, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_representatives(const Space &space, space::select::radius_coverage<Radius> strategy)
+	-> RepresentativeSet<typename Space::distance_type>
+{
+	space::storage::LiveDistances<Space> provider(space);
+	auto result = find_representatives(provider, strategy);
 	result.representation = "metric_space";
 	return result;
 }
@@ -89,6 +180,18 @@ auto find_representatives(const Container &records, const Metric &metric, std::s
 	return result;
 }
 
+template <typename Container, typename Metric, typename Radius,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto find_representatives(const Container &records, const Metric &metric, space::select::radius_coverage<Radius> strategy)
+	-> RepresentativeSet<metric_result_t<Metric, Record>>
+{
+	auto space = core::make_space(records, metric);
+	auto result = find_representatives(space, strategy);
+	result.representation = "records";
+	return result;
+}
+
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto find_representatives(const Space &space, std::size_t count, space::select::farthest_first strategy,
 						  space::storage::policy runtime_policy) -> RepresentativeSet<typename Space::distance_type>
@@ -96,13 +199,55 @@ auto find_representatives(const Space &space, std::size_t count, space::select::
 	space::storage::require_exact_representatives(runtime_policy);
 	space::storage::require_parallel_metric<typename Space::metric_type>(runtime_policy);
 	if (runtime_policy.uses_materialization()) {
-		space::storage::DistanceTable<Space> matrix(space);
+		auto matrix = space::storage::make_distance_table(space, runtime_policy);
 		auto result = find_representatives(matrix, count, strategy);
 		result.representation = space::storage::representative_representation(runtime_policy);
 		return result;
 	}
 
 	auto result = find_representatives(space, count, strategy);
+	result.representation = space::storage::representative_representation(runtime_policy);
+	return result;
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_representatives(const Space &space, std::size_t count, space::select::coverage strategy,
+						  space::storage::policy runtime_policy) -> RepresentativeSet<typename Space::distance_type>
+{
+	auto result =
+		find_representatives(space, count, space::select::farthest_first{strategy.seed_index}, runtime_policy);
+	if (result.strategy == "farthest_first") {
+		result.strategy = "coverage";
+	}
+	return result;
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_representatives(const Space &space, std::size_t count, space::select::k_center strategy,
+						  space::storage::policy runtime_policy) -> RepresentativeSet<typename Space::distance_type>
+{
+	auto result =
+		find_representatives(space, count, space::select::farthest_first{strategy.seed_index}, runtime_policy);
+	if (result.strategy == "farthest_first") {
+		result.strategy = "k_center";
+	}
+	return result;
+}
+
+template <typename Space, typename Radius, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_representatives(const Space &space, space::select::radius_coverage<Radius> strategy,
+						  space::storage::policy runtime_policy) -> RepresentativeSet<typename Space::distance_type>
+{
+	space::storage::require_exact_representatives(runtime_policy);
+	space::storage::require_parallel_metric<typename Space::metric_type>(runtime_policy);
+	if (runtime_policy.uses_materialization()) {
+		auto matrix = space::storage::make_distance_table(space, runtime_policy);
+		auto result = find_representatives(matrix, strategy);
+		result.representation = space::storage::representative_representation(runtime_policy);
+		return result;
+	}
+
+	auto result = find_representatives(space, strategy);
 	result.representation = space::storage::representative_representation(runtime_policy);
 	return result;
 }

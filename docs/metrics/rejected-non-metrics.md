@@ -21,7 +21,7 @@ from the public metric library.
 | Raw Jensen-Shannon divergence | Quarantine, then remove | The divergence itself is not the metric candidate. | Use admitted `mtrc::SqrtJensenShannon<V>` on normalized probability vectors. |
 | Squared Cramer-von-Mises statistic | Quarantine, then remove as a metric | Squared CDF `L2` distances do not inherit the metric law. | Use admitted `mtrc::EmpiricalCramer<V>` for empirical step CDFs. |
 | Raw chi-square and asymmetric divergences | Quarantine, then remove | Many forms are asymmetric, unstable near zero, or lack triangle law. | Hellinger, Total Variation, or another admitted distribution metric. |
-| Model-scored heuristic distances | Quarantine, then remove as metrics | A fitted score has no metric law by default and may change with training data or model version. | Expose the fitted model as a mapping or result-space view only when the output space uses an admitted metric. |
+| Model-scored heuristic distances | Quarantine, then remove as metrics | A derived score has no metric law by default and may change with source data or artifact version. | Expose the score as a mapping artifact or result-space view only when the output space uses an admitted metric. |
 
 ## Rules For Quarantine
 

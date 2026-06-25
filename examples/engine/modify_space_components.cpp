@@ -10,7 +10,7 @@
 #include <metric/modify/expand/generated.hpp>
 #include <metric/modify/map/map.hpp>
 #include <metric/modify/reduce/compress.hpp>
-#include <metric/modify/resample/denoise.hpp>
+#include <metric/modify/resample/density_filter.hpp>
 #include <metric/stats/structural_analysis/options.hpp>
 
 namespace {
@@ -27,7 +27,7 @@ int main()
 
 	const auto reduced = mtrc::modify::reduce::compress(space, 3);
 	const auto resampled =
-		mtrc::modify::resample::denoise(space, mtrc::stats::structural_analysis::dbscan_options(1.5, 2));
+		mtrc::modify::resample::density_filter(space, mtrc::stats::structural_analysis::dbscan_options(1.5, 2));
 	const auto expanded = mtrc::modify::expand::expand(
 		space, std::vector<int>{5}, {{space.id(2), space.id(3)}});
 	const auto mapped = mtrc::map(space, [](int value) { return static_cast<double>(value) / 10.0; },
@@ -42,7 +42,7 @@ int main()
 
 	mtrc::modify::compose::PipelinePlan plan(
 		"modify_space_components", {{"reduce", "representatives"},
-									{"resample", "density_denoise"},
+									{"resample", "density_filter"},
 									{"expand", "generated_records"},
 									{"dynamics", "diffusion_process"},
 									{"map", "deterministic_transform"}});

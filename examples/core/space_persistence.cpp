@@ -1,8 +1,9 @@
 // Save and reload a finite metric space without turning records into vectors.
 //
 // The artifact stores records, stable RecordIds, metric identity, the space version,
-// and optional materialized pair values. Loading supplies the metric explicitly, so
-// arbitrary metric callables remain native C++ code instead of serialized code.
+// and optional materialized pair values under an explicit export budget. Loading
+// supplies the metric explicitly, so arbitrary metric callables remain native C++
+// code instead of serialized code.
 
 #include <cassert>
 #include <iostream>
@@ -21,8 +22,11 @@ int main()
 	space.erase(space.id(1));
 	const auto fixed = space.insert("maintenance done");
 
+	auto save_options = mtrc::space::persistence::artifact_options{};
+	save_options.max_materialized_pair_distances = 16;
+
 	std::stringstream artifact_stream;
-	mtrc::space::persistence::save(artifact_stream, space);
+	mtrc::space::persistence::save(artifact_stream, space, save_options);
 
 	auto loaded = mtrc::space::persistence::load<std::string>(artifact_stream, mtrc::Edit<char>{});
 	assert(loaded.space.version() == space.version());
@@ -32,7 +36,7 @@ int main()
 
 	auto subspace = mtrc::space::select_subspace(space, std::vector<mtrc::RecordId>{normal, fixed});
 	std::stringstream subspace_stream;
-	mtrc::space::persistence::save(subspace_stream, subspace);
+	mtrc::space::persistence::save(subspace_stream, subspace, save_options);
 	auto loaded_subspace = mtrc::space::persistence::load_subspace<std::string>(subspace_stream, mtrc::Edit<char>{});
 	assert(mtrc::space::parent_record_id(loaded_subspace.subspace, loaded_subspace.subspace.space.id(1)) == fixed);
 

@@ -62,7 +62,7 @@ Interpretation:
   [Process Curve External Gallery](process-curve-external-gallery.md), covering
   PowerDemand and InternalBleeding with the same metric-vs-vector comparison
   comparison
-- the fitted mapping variant is tracked in
-  [Process Curve PHATE Map](process-curve-phate-map.md), where the same
-  non-vector source shape feeds a native PHATE-AE pipeline through an explicit
-  `feature_record_codec`
+- the mapping-artifact variant is tracked in
+  [Process Curve parametric diffusion coordinates Map](process-curve-diffusion-coordinate-map.md), where the same
+  non-vector source shape feeds a native parametric diffusion coordinate pipeline through an explicit
+  `record_coordinate_codec`

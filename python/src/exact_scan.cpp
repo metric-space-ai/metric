@@ -322,7 +322,7 @@ auto cluster_sizes_from_assignments(const std::vector<int> &assignments, std::si
 }
 
 auto clustering_payload(const std::vector<int> &assignments, const std::vector<std::size_t> &medoids,
-						const std::vector<std::size_t> &core_records, const std::vector<std::size_t> &noise_records,
+						const std::vector<std::size_t> &core_records, const std::vector<std::size_t> &unassigned_records,
 						std::size_t iterations, bool converged, const std::string &algorithm,
 						const std::string &representation) -> py::dict
 {
@@ -330,11 +330,11 @@ auto clustering_payload(const std::vector<int> &assignments, const std::vector<s
 	result["assignments"] = assignments;
 	result["medoids"] = medoids;
 	result["core_records"] = core_records;
-	result["noise_records"] = noise_records;
+	result["unassigned_records"] = unassigned_records;
 	result["cluster_sizes"] = cluster_sizes_from_assignments(assignments, medoids.size());
 	result["record_count"] = assignments.size();
 	result["cluster_count"] = medoids.size();
-	result["noise_count"] = noise_records.size();
+	result["unassigned_count"] = unassigned_records.size();
 	result["iterations"] = iterations;
 	result["converged"] = converged;
 	result["algorithm"] = algorithm;
@@ -780,18 +780,18 @@ auto native_dbscan(py::sequence records, py::object metric, double radius, std::
 	}
 
 	std::vector<std::size_t> core_records;
-	std::vector<std::size_t> noise_records;
+	std::vector<std::size_t> unassigned_records;
 	for (std::size_t record = 0; record < record_count; ++record) {
 		if (core[record]) {
 			core_records.push_back(record);
 		}
 		if (assignments[record] == -1) {
-			noise_records.push_back(record);
+			unassigned_records.push_back(record);
 		}
 	}
 
 	const auto medoids = cluster_medoids(distances, assignments, cluster_count);
-	return clustering_payload(assignments, medoids, core_records, noise_records, 1, true, "dbscan", representation);
+	return clustering_payload(assignments, medoids, core_records, unassigned_records, 1, true, "dbscan", representation);
 }
 
 auto native_nearest_neighbor_outliers(py::sequence records, py::object metric, std::size_t count,
@@ -828,7 +828,7 @@ auto native_nearest_neighbor_outliers(py::sequence records, py::object metric, s
 	result["outliers"] = scored;
 	result["record_count"] = record_count;
 	result["cluster_count"] = 0;
-	result["noise_count"] = scored.size();
+	result["unassigned_count"] = scored.size();
 	result["exact"] = true;
 	result["operator_name"] = "find_outliers";
 	result["strategy"] = "nearest_neighbor_isolation";
@@ -841,11 +841,11 @@ auto native_dbscan_outliers(py::sequence records, py::object metric, double radi
 {
 	const auto clustering = native_dbscan(records, metric, radius, min_points, representation);
 	const auto assignments = clustering["assignments"].cast<std::vector<int>>();
-	const auto noise_records = clustering["noise_records"].cast<std::vector<std::size_t>>();
+	const auto unassigned_records = clustering["unassigned_records"].cast<std::vector<std::size_t>>();
 	const auto distances = native_pairwise_distance_matrix(records, metric);
 
 	std::vector<std::pair<std::size_t, double>> scored;
-	for (const auto record : noise_records) {
+	for (const auto record : unassigned_records) {
 		auto score = 0.0;
 		auto has_reference = false;
 		for (std::size_t candidate = 0; candidate < assignments.size(); ++candidate) {
@@ -880,10 +880,10 @@ auto native_dbscan_outliers(py::sequence records, py::object metric, double radi
 	result["outliers"] = scored;
 	result["record_count"] = assignments.size();
 	result["cluster_count"] = clustering["cluster_count"];
-	result["noise_count"] = scored.size();
+	result["unassigned_count"] = scored.size();
 	result["exact"] = true;
 	result["operator_name"] = "find_outliers";
-	result["strategy"] = "dbscan_noise";
+	result["strategy"] = "dbscan_density_outlier";
 	result["representation"] = representation;
 	return result;
 }

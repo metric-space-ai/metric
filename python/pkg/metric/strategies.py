@@ -17,7 +17,7 @@ class MDS(ClassicMDS):
 
 @dataclass(frozen=True)
 class DiffusionEmbedding:
-    """Roadmap PHATE-style diffusion embedding strategy.
+    """Roadmap diffusion-coordinate embedding strategy.
 
     The strategy object is importable so examples can use stable engine
     vocabulary, but execution is promoted only after deterministic fixtures and
@@ -30,51 +30,22 @@ class DiffusionEmbedding:
 
 
 @dataclass(frozen=True)
-class PCFA:
-    """Roadmap PCFA reduction or mapping strategy."""
+class ParametricDiffusionCoordinates:
+    """Native parametric coordinate derivation over a finite metric space.
 
-    dimensions: int = 2
-
-
-@dataclass(frozen=True)
-class SOM:
-    """Roadmap SOM/KOC reduction or mapping strategy."""
-
-    grid: tuple = (6, 6)
-
-
-@dataclass(frozen=True)
-class KOC:
-    """Roadmap Kohonen outlier chart reduction or mapping strategy."""
-
-    clusters: int = 2
-
-
-@dataclass(frozen=True)
-class DSPCC:
-    """Roadmap DSPCC reduction or mapping strategy."""
-
-    dimensions: int = 2
-
-
-@dataclass(frozen=True)
-class PhateAE:
-    """Binding vocabulary for the native C++ PHATE-AE mapping strategy.
-
-    The native map is DETERMINISTIC by construction (closed-form weight
-    initialization, no batch shuffling), so a given input always yields the same
-    coordinates. ``seed`` is accepted for API stability but has no effect on the
-    result; reproducibility is structural, not seed-driven.
+    The native derivation is deterministic by construction, so a given input
+    yields the same coordinates. ``seed`` is reserved for native solvers that
+    need it; the current native path is structurally deterministic.
     """
 
     dimensions: int = 2
-    epochs: int = 100
-    learning_rate: float = 0.05
+    calibration_steps: int = 100
+    step_size: float = 0.05
     diffusion_steps: int = 2
     kernel_scale: object = None
     reconstruction_weight: float = 0.05
     geometry_weight: float = 1.0
-    seed: int = 23  # reserved; the native PHATE-AE map is deterministic (no effect)
+    seed: int = 23
     distance_provider: str = "exact_metric_space_distance_provider"
     affinity_kernel: str = "gaussian_affinity_kernel"
     diffusion_operator: str = "row_normalized_diffusion_operator"
@@ -85,6 +56,41 @@ class FarthestFirst:
     """Deterministic farthest-first representative-selection strategy."""
 
     seed_index: int = 0
+
+
+@dataclass(frozen=True)
+class Coverage:
+    """Coverage/k-center representative-selection strategy by requested count."""
+
+    seed_index: int = 0
+
+
+@dataclass(frozen=True)
+class KCenter:
+    """Explicit k-center alias for coverage-style representative selection."""
+
+    seed_index: int = 0
+
+
+@dataclass(frozen=True)
+class RadiusCoverage:
+    """Radius-bounded coverage strategy that chooses the representative count."""
+
+    radius: float
+
+
+@dataclass(frozen=True)
+class PreserveDistribution:
+    """Deterministic regular thinning that preserves empirical sampling order."""
+
+    offset: int = 0
+
+
+@dataclass(frozen=True)
+class UniformDensity:
+    """Uniform-density thinning by maximal metric radius net."""
+
+    radius: float
 
 
 @dataclass(frozen=True)
@@ -112,15 +118,16 @@ class DistanceProfileCorrelation:
 
 __all__ = [
     "ClassicMDS",
+    "Coverage",
     "DBSCAN",
-    "DSPCC",
     "DiffusionEmbedding",
     "DistanceProfileCorrelation",
     "FarthestFirst",
-    "KOC",
+    "KCenter",
     "KMedoids",
     "MDS",
-    "PCFA",
-    "PhateAE",
-    "SOM",
+    "ParametricDiffusionCoordinates",
+    "PreserveDistribution",
+    "RadiusCoverage",
+    "UniformDensity",
 ]

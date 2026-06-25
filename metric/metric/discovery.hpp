@@ -13,9 +13,8 @@
 // docs/metrics/discovery-table.md for the human-facing catalog).
 //
 // Including this header pulls in the metric catalog (catalog.hpp) and registers
-// the 24 catalog classes. The two physically-quarantined classes that live
-// under metric/metric/quarantine/ (SSIM, Kohonen) drag in heavy mapping/solver
-// dependencies, so they are registered only when their headers have already
+// the catalog classes. Physically-quarantined classes that live under
+// metric/metric/quarantine/ are registered only when their headers have already
 // been included (guarded on their include-guard macros below). When they are
 // not included they keep the safe default status (quarantine) from the primary
 // metric_admission template.
@@ -68,10 +67,10 @@ template <typename V> struct metric_admission<::mtrc::Wasserstein<V>> {
 	static constexpr admission_status status = admission_status::restricted_metric; // metric ground cost, equal mass
 };
 template <typename V> struct metric_admission<::mtrc::Euclidean_standardized<V>> {
-	static constexpr admission_status status = admission_status::restricted_metric; // every fitted sigma finite, > 0
+	static constexpr admission_status status = admission_status::restricted_metric; // every calibrated sigma finite, > 0
 };
 template <typename V> struct metric_admission<::mtrc::Manhattan_standardized<V>> {
-	static constexpr admission_status status = admission_status::restricted_metric; // every fitted sigma finite, > 0
+	static constexpr admission_status status = admission_status::restricted_metric; // every calibrated sigma finite, > 0
 };
 
 // Vector-family true metrics admitted under a domain/parameter gate.
@@ -201,7 +200,7 @@ template <typename V> struct metric_admission<::mtrc::Sorensen<V>> {
 // Optional registration of heavy / external-backend classes. These are only
 // declared when their headers have already been included by the translation
 // unit, so this registry header (and the public catalog.hpp umbrella) stays
-// free of the mapping/SOM/solver/LAPACK dependencies those classes pull in.
+// free of external-backend dependencies those classes pull in.
 // ---------------------------------------------------------------------------
 
 // conditionally restricted (law inherited from the base metric):
@@ -225,14 +224,6 @@ template <typename RecType, typename Metric> struct metric_admission<::mtrc::Rie
 // Raw SSIM / 1-SSIM are not metrics; SSIM-derived metric variants exist in the
 // literature (Brunet/Vrscay/Wang 2012).
 template <typename D, typename V> struct metric_admission<::mtrc::SSIM<D, V>> {
-	static constexpr admission_status status = admission_status::quarantine;
-};
-#endif
-
-#if defined(_METRIC_DISTANCE_K_STRUCTURED_KOHONEN_HPP)
-// Learned, training-dependent SOM graph approximation -> relocate to mapping.
-template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-struct metric_admission<::mtrc::Kohonen<D, Sample, Graph, Metric, Distribution>> {
 	static constexpr admission_status status = admission_status::quarantine;
 };
 #endif

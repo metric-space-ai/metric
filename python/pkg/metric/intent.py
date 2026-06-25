@@ -4,8 +4,9 @@ from .operators import (
     compress_space,
     compare_spaces,
     correlate_spaces,
-    denoise_space,
+    density_filter_space,
     describe_structure,
+    equalize_space,
     embed_space,
     find_groups,
     find_outliers,
@@ -21,8 +22,9 @@ within_radius = range_neighbors
 compress = compress_space
 compare = compare_spaces
 correlate = correlate_spaces
-denoise = denoise_space
+density_filter = density_filter_space
 describe = describe_structure
+equalize = equalize_space
 embed = embed_space
 groups = find_groups
 map = map_space
@@ -37,10 +39,12 @@ __all__ = [
     "compare_spaces",
     "correlate",
     "correlate_spaces",
-    "denoise",
-    "denoise_space",
+    "density_filter",
+    "density_filter_space",
     "describe",
     "describe_structure",
+    "equalize",
+    "equalize_space",
     "embed",
     "embed_space",
     "find_groups",

@@ -1,8 +1,7 @@
-"""Mapping namespace for the revived Python API.
+"""Mapping namespace for finite-space derived-coordinate and quotient surfaces.
 
-Mapping algorithms are currently a beta/compatibility surface. This module
-provides a stable import location without forcing the core wheel to import the
-broader legacy compiled mapping bindings.
+Mapping surfaces are currently beta extensions. This module provides a stable
+import location without making them part of the core finite-space API.
 """
 
 from collections.abc import Mapping as MappingABC
@@ -16,8 +15,7 @@ from metric.exceptions import MetricInputError, StrategyUnavailableError
 
 STABILITY = "beta"
 _NATIVE_MAPPING_ARTIFACT_FORMATS = frozenset({
-    "metric.native_autoencoder_artifact",
-    "metric.native_phate_autoencoder_artifact",
+    "metric.parametric_diffusion_coordinate_artifact",
 })
 
 
@@ -28,12 +26,12 @@ class ClusterRecord:
     label: int
     representative: object
     members: tuple
-    noise: bool = False
+    unassigned: bool = False
 
 
 @dataclass(frozen=True)
-class ClusteredSpaceModel:
-    """Fitted model that derives a cluster-level metric space."""
+class ClusteredSpaceDerivation:
+    """Derived artifact that produces a cluster-level finite metric space."""
 
     records: tuple
     distances: tuple
@@ -45,7 +43,7 @@ class ClusteredSpaceModel:
 
     def transform(self, space=None):
         if space is not None and len(space) != self.source_record_count:
-            raise ValueError("source space size does not match fitted clustered-space mapping")
+            raise ValueError("source space size does not match clustered-space derivation")
 
         distances = self.distances
 
@@ -55,8 +53,22 @@ class ClusteredSpaceModel:
         from metric.operators import MappingResult
         from metric.spaces import Space
 
+        validity = (
+            "cluster-representative space; pairwise distances are inherited from the source metric "
+            "between representatives; in-sample only"
+        )
         return MappingResult(
-            space=Space(list(self.records), metric=cluster_distance),
+            space=Space(
+                list(self.records),
+                metric=cluster_distance,
+                metadata={
+                    "mapping": "clustered_space",
+                    "strategy": self.strategy,
+                    "metric_status": "unknown",
+                    "out_of_sample_supported": False,
+                    "validity": validity,
+                },
+            ),
             source_record_ids=tuple(self.representative_records),
             source_record_count=self.source_record_count,
             target_record_count=len(self.records),
@@ -68,6 +80,9 @@ class ClusteredSpaceModel:
             inverse_supported=False,
             source_records=self.source_records,
             representative_records=self.representative_records,
+            metric_status="unknown",
+            out_of_sample_supported=False,
+            validity=validity,
         )
 
     def inverse_supported(self):
@@ -80,16 +95,16 @@ class ClusteredSpaceMapping:
 
     clustering: object
 
-    def fit(self, space):
-        return _build_clustered_space_model(space, self.clustering)
+    def derive_from(self, space):
+        return _build_clustered_space_derivation(space, self.clustering)
 
 
 @dataclass(frozen=True)
 class NativeMappingArtifact:
-    """Read-only Python projection of a native C++ fitted mapping artifact.
+    """Read-only Python projection of a native C++ mapping artifact.
 
     This object exposes manifest, provenance, and pipeline metadata only. It is
-    not a Python implementation of the native model.
+    not a Python implementation of the native transform.
     """
 
     manifest: object
@@ -166,8 +181,8 @@ class NativeMappingArtifact:
         return _nested(self.manifest, ("source", "record_count"))
 
     @property
-    def source_feature_count(self):
-        return _nested(self.manifest, ("source", "feature_count"))
+    def source_coordinate_count(self):
+        return _nested(self.manifest, ("source", "source_coordinate_count"))
 
     @property
     def source_space_version(self):
@@ -205,7 +220,7 @@ class NativeMappingArtifact:
             "pipeline": self.pipeline_name,
             "components": self.components,
             "source_record_count": self.source_record_count,
-            "source_feature_count": self.source_feature_count,
+            "source_coordinate_count": self.source_coordinate_count,
             "source_space_version": self.source_space_version,
             "network_byte_count": self.network_byte_count,
             "transform_supported": self.transform_supported,
@@ -216,46 +231,46 @@ class NativeMappingArtifact:
 
 
 @dataclass(frozen=True)
-class NativePhateAutoencoderModel:
-    """Python handle for a native C++ PHATE-AE fitted vector-row model."""
+class ParametricDiffusionCoordinateArtifact:
+    """Python handle for a native C++ parametric coordinate artifact."""
 
-    _model: object
+    _artifact: object
     distance_provider: str
     affinity_kernel: str
     diffusion_operator: str
 
     @property
     def mapping(self):
-        return self._model.mapping
+        return "parametric_diffusion_coordinates"
 
     @property
     def strategy(self):
-        return self._model.strategy
+        return "native_metric_diffusion_coordinate_solver"
 
     @property
     def source_record_count(self):
-        return self._model.source_record_count
+        return self._artifact.source_record_count
 
     @property
     def latent_dimension(self):
-        return self._model.latent_dimension
+        return self._artifact.latent_dimension
 
     @property
     def inverse_supported(self):
-        return self._model.inverse_supported
+        return self._artifact.inverse_supported
 
     @property
     def transform_supported(self):
         return True
 
     def transform(self, records):
-        return self._model.transform(records)
+        return self._artifact.transform(records)
 
     def inverse_transform(self, latent_records):
-        return self._model.inverse_transform(latent_records)
+        return self._artifact.inverse_transform(latent_records)
 
-    def training_report(self):
-        return self._model.training_report()
+    def calibration_report(self):
+        return dict(self._artifact.calibration_report())
 
     def to_dict(self):
         return {
@@ -268,32 +283,8 @@ class NativePhateAutoencoderModel:
             "diffusion_operator": self.diffusion_operator,
             "transform_supported": self.transform_supported,
             "inverse_supported": self.inverse_supported,
-            "training_report": self.training_report(),
+            "calibration_report": self.calibration_report(),
         }
-
-
-def _load_legacy_module():
-    try:
-        from metric import mapping
-    except (ImportError, ModuleNotFoundError):
-        return None
-    return mapping
-
-
-def available():
-    """Return public mapping names available in the installed wheel."""
-    module = _load_legacy_module()
-    if module is None:
-        return tuple()
-    return tuple(sorted(name for name in dir(module) if not name.startswith("_")))
-
-
-def legacy_module():
-    """Return the legacy mapping module when the installed wheel provides it."""
-    module = _load_legacy_module()
-    if module is None:
-        raise ImportError("metric.mapping is not available in this wheel")
-    return module
 
 
 def _load_native_engine_module():
@@ -304,18 +295,18 @@ def _load_native_engine_module():
     return native_metric
 
 
-def fit(mapping, space):
-    """Fit a promoted mapping adapter to a finite metric space."""
-    return mapping.fit(space)
+def derive_from(mapping, space):
+    """Derive a mapping artifact from a finite metric space."""
+    return mapping.derive_from(space)
 
 
-def transform(model, space=None):
-    """Transform a finite metric space through a fitted mapping model."""
-    return model.transform(space)
+def transform(mapping_artifact, space=None):
+    """Transform a finite metric space through a derived mapping artifact."""
+    return mapping_artifact.transform(space)
 
 
 def load_native_mapping_artifact(artifact):
-    """Project a native fitted mapping artifact into Python metadata.
+    """Project a native mapping artifact into Python metadata.
 
     Accepts a manifest mapping, a JSON manifest string/bytes object, a bundle
     with a ``manifest`` field, or a future bound C++ artifact object with a
@@ -346,62 +337,71 @@ def load_native_mapping_artifact(artifact):
     )
 
 
-def native_mapping_artifact(artifact):
-    """Compatibility alias for ``load_native_mapping_artifact``."""
-
-    return load_native_mapping_artifact(artifact)
-
-
-def native_phate_autoencoder_fit_vectors(
+def derive_parametric_diffusion_coordinates(
     records,
     *,
     dimensions=1,
-    epochs=100,
-    learning_rate=0.001,
+    calibration_steps=100,
+    step_size=0.001,
     diffusion_steps=2,
     kernel_scale=1.0,
     reconstruction_weight=0.05,
     geometry_weight=1.0,
-    seed=23,  # reserved for API stability; the native map is deterministic (no effect)
+    seed=23,
     distance_provider="exact_metric_space_distance_provider",
     affinity_kernel="gaussian_affinity_kernel",
     diffusion_operator="row_normalized_diffusion_operator",
 ):
-    """Fit a native C++ PHATE-AE vector-row model.
+    """Derive a native C++ parametric diffusion coordinate artifact.
 
     This is a binding adapter. It marshals Python list/NumPy row data to the
-    native C++ implementation and does not compute PHATE geometry or neural
-    training behavior in Python.
+    native C++ implementation and does not compute diffusion geometry or
+    coordinate calibration in Python.
 
-    The native map is DETERMINISTIC by construction (closed-form weight
-    initialization, no batch shuffling): a given input always yields the same
-    coordinates. ``seed`` is accepted for API stability but has no effect on the
-    result; reproducibility is structural, not seed-driven.
+    The native path is deterministic by construction: a given input always
+    yields the same coordinates.
     """
 
     native_metric = _load_native_engine_module()
-    if native_metric is None or not hasattr(native_metric, "_native_phate_autoencoder_fit_vectors"):
+    if native_metric is None:
         raise StrategyUnavailableError(
-            "Native PHATE-AE vector fitting requires the native C++ binding. "
-            "Python must not reimplement PHATE-AE math."
+            "Native parametric diffusion coordinate derivation requires the native C++ binding. "
+            "Python must not reimplement the metric-space dynamics."
         )
 
-    model = native_metric._native_phate_autoencoder_fit_vectors(
-        records,
-        dimensions=dimensions,
-        epochs=epochs,
-        learning_rate=learning_rate,
-        diffusion_steps=diffusion_steps,
-        kernel_scale=kernel_scale,
-        reconstruction_weight=reconstruction_weight,
-        geometry_weight=geometry_weight,
-        seed=seed,
-        distance_provider=distance_provider,
-        affinity_kernel=affinity_kernel,
-        diffusion_operator=diffusion_operator,
-    )
-    return NativePhateAutoencoderModel(
-        model,
+    derive_vectors = getattr(native_metric, "_parametric_diffusion_coordinate_derive_vectors", None)
+    if derive_vectors is None:
+        raise StrategyUnavailableError(
+            "Native parametric diffusion coordinate derivation requires the native C++ binding. "
+            "Python must not reimplement the metric-space dynamics."
+        )
+
+    try:
+        artifact = derive_vectors(
+            records,
+            dimensions=dimensions,
+            calibration_steps=calibration_steps,
+            step_size=step_size,
+            diffusion_steps=diffusion_steps,
+            kernel_scale=kernel_scale,
+            reconstruction_weight=reconstruction_weight,
+            geometry_weight=geometry_weight,
+            seed=seed,
+            distance_provider=distance_provider,
+            affinity_kernel=affinity_kernel,
+            diffusion_operator=diffusion_operator,
+        )
+    except ValueError as exc:
+        message = str(exc)
+        if "distance provider" in message:
+            raise ValueError("unsupported parametric diffusion coordinate distance provider") from exc
+        if "affinity kernel" in message:
+            raise ValueError("unsupported parametric diffusion coordinate affinity kernel") from exc
+        if "diffusion operator" in message:
+            raise ValueError("unsupported parametric diffusion coordinate diffusion operator") from exc
+        raise
+    return ParametricDiffusionCoordinateArtifact(
+        artifact,
         distance_provider=distance_provider,
         affinity_kernel=affinity_kernel,
         diffusion_operator=diffusion_operator,
@@ -415,10 +415,10 @@ def make_clustered_space_mapping(clustering):
 
 def clustered_space(space, clustering):
     """Derive a cluster-level Space from a source Space and clustering result."""
-    return make_clustered_space_mapping(clustering).fit(space).transform(space)
+    return make_clustered_space_mapping(clustering).derive_from(space).transform(space)
 
 
-def _build_clustered_space_model(space, clustering):
+def _build_clustered_space_derivation(space, clustering):
     record_count = _coerce_count(getattr(clustering, "record_count", None), "record_count")
     if record_count != len(space):
         raise ValueError("clustering record count does not match source space")
@@ -431,12 +431,12 @@ def _build_clustered_space_model(space, clustering):
     if cluster_count == 0:
         raise ValueError("cannot derive a clustered space without clusters")
 
-    noise_label = getattr(clustering, "noise_label", -1)
+    unassigned_label = getattr(clustering, "unassigned_label", -1)
     source_ids = tuple(getattr(space, "ids", tuple(range(record_count))))
     source_records = [[] for _ in range(cluster_count)]
 
     for index, label in enumerate(assignments):
-        if label == noise_label:
+        if label == unassigned_label:
             continue
         label = _coerce_count(label, "cluster assignment")
         if label >= cluster_count:
@@ -473,7 +473,7 @@ def _build_clustered_space_model(space, clustering):
         for lhs in representative_positions
     )
 
-    return ClusteredSpaceModel(
+    return ClusteredSpaceDerivation(
         records=tuple(records),
         distances=distances,
         source_records=tuple(tuple(members) for members in source_records),
@@ -525,9 +525,9 @@ def _validate_native_mapping_manifest(manifest):
     if not mapping.get("name") or not mapping.get("strategy"):
         raise MetricInputError("native mapping artifact mapping provenance is incomplete")
 
-    if artifact_format == "metric.native_phate_autoencoder_artifact":
-        if mapping.get("name") != "native_phate_autoencoder" or mapping.get("strategy") != "native_dnn_phate_ae":
-            raise MetricInputError("unexpected native PHATE autoencoder mapping provenance")
+    if artifact_format == "metric.parametric_diffusion_coordinate_artifact":
+        if mapping.get("name") != "parametric_diffusion_coordinates" or mapping.get("strategy") != "native_metric_diffusion_coordinate_solver":
+            raise MetricInputError("unexpected parametric diffusion coordinate provenance")
 
     source = manifest.get("source")
     if not isinstance(source, MappingABC):
@@ -555,16 +555,13 @@ __all__ = [
     "STABILITY",
     "ClusterRecord",
     "ClusteredSpaceMapping",
-    "ClusteredSpaceModel",
+    "ClusteredSpaceDerivation",
     "NativeMappingArtifact",
-    "NativePhateAutoencoderModel",
-    "available",
+    "ParametricDiffusionCoordinateArtifact",
     "clustered_space",
-    "fit",
-    "legacy_module",
+    "derive_parametric_diffusion_coordinates",
+    "derive_from",
     "load_native_mapping_artifact",
     "make_clustered_space_mapping",
-    "native_mapping_artifact",
-    "native_phate_autoencoder_fit_vectors",
     "transform",
 ]

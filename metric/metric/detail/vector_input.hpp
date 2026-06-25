@@ -24,7 +24,7 @@ template <typename TrainingData>
 auto aligned_vector_dimension(const TrainingData &data, const char *name) -> std::size_t
 {
 	if (data.empty()) {
-		throw std::invalid_argument(std::string(name) + " requires non-empty training data");
+		throw std::invalid_argument(std::string(name) + " requires non-empty calibration records");
 	}
 	return data[0].size();
 }

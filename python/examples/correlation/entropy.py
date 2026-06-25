@@ -1,3 +1,10 @@
+"""Legacy native entropy estimator over coordinate-like records.
+
+Framework-level entropy in METRIC is a post-map/post-embed coordinate-space
+operator. This legacy example exercises the native estimator adapter directly;
+it is not a shortcut from arbitrary source records plus a source metric.
+"""
+
 import numpy
 from metric.correlation import Entropy
 from metric.distance import Euclidean, P_norm, Manhattan

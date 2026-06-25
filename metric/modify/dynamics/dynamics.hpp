@@ -9,10 +9,9 @@
 // into a row-stochastic (Markov) transition operator, raises it to the requested
 // number of diffusion steps, and applies it to the record coordinates. The result
 // is a derived finite metric space of diffusion-smoothed records under the source
-// metric (so the metric law is preserved). This is the forward, native, fully
-// deterministic counterpart to the legacy reverse-diffusion mapper
-// (metric/mapping/Redif.hpp, quarantined): it depends only on mtrc::numeric and
-// carries lineage, metric status and validity bounds.
+// metric (so the metric law is preserved). It carries lineage, metric status and
+// validity bounds. Coordinate-free inverse disorder over arbitrary records lives
+// in redif.hpp.
 //
 // The operation is promoted only for floating-point vector records, where
 // diffusion of coordinates is well defined; other record domains throw
@@ -53,8 +52,11 @@ struct supports_diffusion<
 
 template <typename Record> constexpr bool supports_diffusion_v = supports_diffusion<Record>::value;
 
+inline constexpr std::size_t default_diffuse_max_dense_records = 4096;
+
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
-auto diffuse(const Space &space, std::size_t steps, double kernel_scale = 0.0, bool lazy = false)
+auto diffuse(const Space &space, std::size_t steps, double kernel_scale = 0.0, bool lazy = false,
+			 std::size_t max_dense_records = default_diffuse_max_dense_records)
 	-> MappingResult<MetricSpace<typename Space::record_type, typename Space::metric_type>>
 {
 	using record_type = typename Space::record_type;
@@ -71,6 +73,11 @@ auto diffuse(const Space &space, std::size_t steps, double kernel_scale = 0.0, b
 		}
 
 		const auto count = space.size();
+		if (max_dense_records > 0 && count > max_dense_records) {
+			throw MetricInputError("modify::dynamics::diffuse dense distance matrix exceeds max_dense_records: records=" +
+								   std::to_string(count) + " max_dense_records=" +
+								   std::to_string(max_dense_records));
+		}
 		const auto dimension = space.records().front().size();
 		for (std::size_t index = 0; index < count; ++index) {
 			if (space.records()[index].size() != dimension) {

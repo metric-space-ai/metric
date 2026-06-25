@@ -133,6 +133,10 @@ auto take_nearest_neighbors(std::vector<Neighbor<Distance>> neighbors, std::size
 		sort_neighbors(neighbors);
 		return neighbors;
 	}
+	if (count == 1) {
+		const auto nearest = std::min_element(neighbors.begin(), neighbors.end(), NeighborLess<Distance>{});
+		return {*nearest};
+	}
 
 	std::nth_element(neighbors.begin(), neighbors.begin() + count, neighbors.end(), NeighborLess<Distance>{});
 	neighbors.resize(count);

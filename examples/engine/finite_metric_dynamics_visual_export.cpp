@@ -174,6 +174,81 @@ auto integer_array_json(const std::vector<std::size_t> &values) -> std::string
 	return visual::size_array(values);
 }
 
+auto sampled_step_indices(std::size_t frame_count, std::size_t max_samples, std::size_t include_step) -> std::vector<std::size_t>
+{
+	std::vector<std::size_t> indices;
+	if (frame_count == 0 || max_samples == 0) {
+		return indices;
+	}
+	if (frame_count <= max_samples) {
+		indices.reserve(frame_count);
+		for (std::size_t i = 0; i < frame_count; ++i) {
+			indices.push_back(i);
+		}
+		return indices;
+	}
+
+	indices.reserve(max_samples + 1);
+	const std::size_t last = frame_count - 1;
+	for (std::size_t i = 0; i < max_samples; ++i) {
+		const double position = static_cast<double>(i) * static_cast<double>(last) /
+								static_cast<double>(max_samples - 1);
+		const auto index = static_cast<std::size_t>(std::llround(position));
+		if (std::find(indices.begin(), indices.end(), index) == indices.end()) {
+			indices.push_back(index);
+		}
+	}
+	if (include_step < frame_count && std::find(indices.begin(), indices.end(), include_step) == indices.end()) {
+		indices.push_back(include_step);
+	}
+	std::sort(indices.begin(), indices.end());
+	return indices;
+}
+
+auto state_values_for_record(const std::vector<Signal> &frames, const std::vector<std::size_t> &indices,
+							 std::size_t record_index) -> Matrix
+{
+	Matrix values;
+	values.reserve(indices.size());
+	for (const auto index : indices) {
+		values.push_back(frames[index][record_index]);
+	}
+	return values;
+}
+
+auto state_history_json(std::size_t record_index, const std::vector<std::size_t> &forward_indices,
+						const std::vector<std::size_t> &reverse_indices, const std::vector<Signal> &forward_frames,
+						const std::vector<Signal> &reverse_frames, const Signal &clean,
+						const std::string &forward_timeline_id, const std::string &reverse_timeline_id,
+						std::size_t best_step) -> std::string
+{
+	return json_object({{"schema", visual::quote("metric.visual.record_state_history.v1")},
+						{"computed_by", visual::quote("METRIC C++ metric_diffuse/metric_reconstruct")},
+						{"dimension", json_size(clean[record_index].size())},
+						{"forward_timeline_id", visual::quote(forward_timeline_id)},
+						{"reverse_timeline_id", visual::quote(reverse_timeline_id)},
+						{"forward_steps", integer_array_json(forward_indices)},
+						{"reverse_steps", integer_array_json(reverse_indices)},
+						{"forward_values",
+						 dense_matrix_json(state_values_for_record(forward_frames, forward_indices, record_index))},
+						{"reverse_values",
+						 dense_matrix_json(state_values_for_record(reverse_frames, reverse_indices, record_index))},
+						{"clean_value", visual::number_array(clean[record_index])},
+						{"degraded_value", visual::number_array(forward_frames.back()[record_index])},
+						{"best_reverse_step", json_size(best_step)},
+						{"best_reverse_value", visual::number_array(reverse_frames[best_step][record_index])},
+						{"terminal_reverse_value", visual::number_array(reverse_frames.back()[record_index])},
+						{"forward_terminal_mse", visual::num(node_mse(forward_frames.back()[record_index],
+																		clean[record_index]))},
+						{"best_reverse_mse",
+						 visual::num(node_mse(reverse_frames[best_step][record_index], clean[record_index]))},
+						{"terminal_reverse_mse",
+						 visual::num(node_mse(reverse_frames.back()[record_index], clean[record_index]))},
+						{"timeline_policy",
+						 visual::quote("full forward trajectory and sampled reverse preview; full reverse timeline "
+									   "coordinates remain exported separately")}});
+}
+
 auto scalar_record_property(const std::string &id, const std::string &dataset_id, const std::string &name,
 							const std::vector<std::string> &record_ids, const std::vector<double> &values,
 							const std::string &description) -> std::string
@@ -447,13 +522,13 @@ auto build_visual_document() -> std::string
 	const std::string forward_timeline_id = "forward-diffusion";
 	const std::string reverse_timeline_id = "reverse-reconstruction";
 
-	const auto records = finite_metric_dynamics_fixture::make_records();
+	const auto records = finite_metric_dynamics_fixture::make_visual_records();
 	const Signal clean = signal_of_records(records);
 	auto space = mtrc::make_space(records, mtrc::Euclidean<double>{});
 	const std::size_t n = space.size();
 
 	mtrc::DynamicsSchedule structure;
-	structure.neighbors = 4;
+	structure.neighbors = 48;
 	structure.bandwidth = 0.0;
 
 	const auto distances = native_distance_matrix(space);
@@ -467,7 +542,7 @@ auto build_visual_document() -> std::string
 	mtrc::DynamicsSchedule forward = structure;
 	forward.steps = 6;
 	forward.diffusivity = 0.05;
-	forward.noise_scale = 0.06;
+	forward.perturbation_scale = 0.06;
 	forward.seed = 1234;
 	const auto forward_run = mtrc::metric_diffuse(space, forward, transition);
 	const auto forward_repeat = mtrc::metric_diffuse(space, forward, transition);
@@ -481,7 +556,7 @@ auto build_visual_document() -> std::string
 	mtrc::DynamicsSchedule reverse = structure;
 	reverse.steps = 40;
 	reverse.diffusivity = 0.18;
-	reverse.noise_scale = 0.0;
+	reverse.perturbation_scale = 0.0;
 	const auto reverse_run = mtrc::metric_reconstruct(forward_run.result.space, reverse, transition);
 
 	double best_mse = degraded_mse;
@@ -533,7 +608,7 @@ auto build_visual_document() -> std::string
 	const double reverse_max_energy_delta = max_energy_increase(reverse_run.dirichlet_energy);
 
 	native_checks_pass &= native_boolean_check(diagnostics, "check-fixture-node-count", "fixture node count",
-											   n == finite_metric_dynamics_fixture::node_count);
+											   n == finite_metric_dynamics_fixture::visual_node_count);
 	native_checks_pass &= native_check(diagnostics, "check-metric-diagonal", "metric diagonal is zero",
 									   metric_diag_error < 1e-12, metric_diag_error, "<", 1e-12);
 	native_checks_pass &= native_check(diagnostics, "check-metric-symmetry", "metric is symmetric",
@@ -628,12 +703,18 @@ auto build_visual_document() -> std::string
 
 	std::vector<std::string> records_json;
 	records_json.reserve(n);
+	const auto forward_preview_steps = sampled_step_indices(forward_run.frames.size(), forward_run.frames.size(), 0);
+	const auto reverse_preview_steps = sampled_step_indices(reverse_run.frames.size(), 13, best_step);
 	for (std::size_t i = 0; i < n; ++i) {
 		const auto payload = json_object({{"kind", visual::quote("vector")},
 										  {"values", visual::number_array(records[i])},
-										  {"fixture", visual::quote("s_curve_y_equals_sin_x")},
+										  {"fixture", visual::quote("multi_cycle_s_curve_with_deterministic_variation")},
 										  {"index", json_size(i)},
-										  {"clean_state", "true"}});
+										  {"clean_state", "true"},
+										  {"state_history",
+										   state_history_json(i, forward_preview_steps, reverse_preview_steps,
+															  forward_run.frames, reverse_run.frames, clean,
+															  forward_timeline_id, reverse_timeline_id, best_step)}});
 		records_json.push_back(json_object({{"id", visual::quote(record_ids[i])},
 											{"dataset_id", visual::quote(dataset_id)},
 											{"record_type", visual::quote("vector")},
@@ -825,7 +906,7 @@ auto build_visual_document() -> std::string
 												   {"direction", visual::quote(forward_run.direction)},
 												   {"steps", json_size(forward.steps)},
 												   {"diffusivity", visual::num(forward.diffusivity)},
-												   {"noise_scale", visual::num(forward.noise_scale)},
+												   {"coordinate_perturbation_scale", visual::num(forward.perturbation_scale)},
 												   {"seed", std::to_string(forward.seed)}})}}));
 	timelines.push_back(json_object({{"id", visual::quote(reverse_timeline_id)},
 									 {"dataset_id", visual::quote(dataset_id)},
@@ -838,7 +919,7 @@ auto build_visual_document() -> std::string
 												   {"direction", visual::quote(reverse_run.direction)},
 												   {"steps", json_size(reverse.steps)},
 												   {"diffusivity", visual::num(reverse.diffusivity)},
-												   {"noise_scale", visual::num(reverse.noise_scale)},
+												   {"coordinate_perturbation_scale", visual::num(reverse.perturbation_scale)},
 												   {"best_step", json_size(best_step)},
 												   {"best_mse", visual::num(best_mse)},
 												   {"degraded_mse", visual::num(degraded_mse)},

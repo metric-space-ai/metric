@@ -16,10 +16,10 @@
 #include <string>
 #include <vector>
 
-#include "../mapping_examples/assets/mnist/mnist_reader.hpp"
+#include "assets/mnist/mnist_reader.hpp"
 
 #ifndef METRIC_MNIST_DATA_DIR
-#define METRIC_MNIST_DATA_DIR "../mapping_examples/assets/mnist"
+#define METRIC_MNIST_DATA_DIR "examples/engine/assets/mnist"
 #endif
 
 #ifndef METRIC_GRAE10_DATA_JSON
@@ -27,6 +27,8 @@
 #endif
 
 namespace {
+
+constexpr int kSkipMissingMnistData = 77;
 
 struct Options {
 	std::filesystem::path mnist_dir{METRIC_MNIST_DATA_DIR};
@@ -65,6 +67,11 @@ auto parse_options(int argc, char **argv) -> Options
 		}
 	}
 	return options;
+}
+
+auto has_mnist_calibration_labels(const std::filesystem::path &folder) -> bool
+{
+	return std::filesystem::exists(folder / "train-labels-idx1-ubyte");
 }
 
 auto key_position(const std::string &json, const std::string &key) -> std::size_t
@@ -237,8 +244,13 @@ auto label_counts(const std::vector<std::uint8_t> &labels) -> std::array<std::si
 int main(int argc, char **argv)
 {
 	const auto options = parse_options(argc, argv);
+	if (!has_mnist_calibration_labels(options.mnist_dir)) {
+		std::cout << "mnist grae10 integrity skipped: MNIST train label IDX file not found in "
+				  << options.mnist_dir.string() << "\n";
+		return kSkipMissingMnistData;
+	}
 	const auto json = read_text(options.visual_json);
-	const auto labels = mnist::read_training_labels<std::vector, std::uint8_t>(options.mnist_dir.string(), 0);
+	const auto labels = mnist::read_calibration_labels<std::vector, std::uint8_t>(options.mnist_dir.string(), 0);
 	const auto mnist_labels = labels_text(labels);
 	const auto mnist_counts = label_counts(labels);
 

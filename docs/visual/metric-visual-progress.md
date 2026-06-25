@@ -43,7 +43,7 @@ node visual/tools/check-visual-regression-public-examples.mjs
 node visual/tools/check-visual-performance-large-scenes.mjs
 node visual/tools/check-hero-visual-briefs.mjs
 node visual/tools/check-hero-screenshot-review.mjs
-ctest --test-dir build/core -L 'metric_application_evidence|metric_phate_pipeline|metric_mnist|metric_visual_integrity|metric_benchmark_report' --output-on-failure
+ctest --test-dir build/core -L 'metric_application_evidence|metric_diffusion_coordinate_pipeline|metric_mnist|metric_visual_integrity|metric_benchmark_report' --output-on-failure
 ```
 
 Browser screenshot checks currently need a Playwright package on `NODE_PATH` or
@@ -54,8 +54,8 @@ passing when the package is unavailable.
 
 | Evidence | Status | Proof |
 | --- | --- | --- |
-| MNIST 60k dimension-reduction reference | checked | `examples/engine/mnist_grae10_integrity.cpp` verifies `60,000` records, labels against the MNIST IDX training labels, finite 2D coordinates, finite 3D coordinates, and the protected GRAE10 visual hash. |
-| MNIST PHATE-AE native smoke/gallery path | checked, not 60k gallery | `examples/engine/mnist_phate_autoencoder_smoke.cpp` and `examples/engine/mnist_phate_autoencoder_gallery.cpp` run native PHATE-AE on a balanced MNIST subset. This does not replace the 60k GRAE10 reference. |
+| MNIST 60k dimension-reduction reference | checked | `examples/engine/mnist_grae10_integrity.cpp` verifies `60,000` records, labels against the MNIST IDX calibration labels, finite 2D coordinates, finite 3D coordinates, and the protected GRAE10 visual hash. |
+| MNIST parametric diffusion coordinate native smoke/gallery path | checked, not 60k gallery | `examples/engine/mnist_diffusion_coordinate_smoke.cpp` and `examples/engine/mnist_diffusion_coordinate_gallery.cpp` run native parametric diffusion coordinate on a balanced MNIST subset. This does not replace the 60k GRAE10 reference. |
 | UCR process curves | checked | `examples/engine/process_curve_external_gallery.cpp` exports query winners, distance tables, summaries, and SVG assets from the UCR Time Series Anomaly Detection datasets. |
 | Engine application examples | checked | CTest label `metric_application_evidence` covers the current native C++ application examples and assertions. |
 | Condition-monitoring visual evidence | checked native export, not public hero | `examples/engine/condition_monitoring_visual_export.cpp` writes `docs/examples/assets/condition-monitoring/metric.visual.json`; `visual/tools/check-visual-document.mjs` validates the exported `metric.visual.v1` document with `provenance.synthetic: false`. |

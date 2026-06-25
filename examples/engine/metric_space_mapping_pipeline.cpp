@@ -4,10 +4,10 @@
 //
 // Metric-Space Mapping Pipeline -- hero application.
 //
-// This example frames PHATE-AE as a *finite metric-space mapping*: a finite
+// This example frames parametric diffusion coordinate as a *finite metric-space mapping*: a finite
 // metric space (records + a metric that prices every pair) is transformed into
-// a derived coordinate space. It is deliberately NOT framed as "calling an ML
-// model". The native parametric autoencoder is only the *solver* of one
+// a derived coordinate space. It is deliberately not framed as calling a canned
+// application mapping. The native parametric coordinate solver is only the *solver* of one
 // interchangeable pipeline stage; the metric stays authoritative and visible
 // from the source space all the way through to the diagnostics.
 //
@@ -15,23 +15,23 @@
 //
 //   source space        -- the finite metric space (records + Euclidean metric)
 //   metric values       -- the dense pairwise distance matrix the metric induces
-//   target construction  -- PHATE diffusion-potential anchor coordinates
-//   native DNN/AE solver -- the C++ autoencoder that fits the target geometry
+//   target construction  -- diffusion-coordinate-potential anchor coordinates
+//   coordinate calibration -- the C++ coordinate solver that calibrates to the target geometry
 //   artifact             -- the serialized, reloadable mapping boundary
 //   lineage              -- one-to-one provenance from derived back to source
 //   diagnostics          -- neighbor preservation, reconstruction, OOS stability
 //
 // As a control we recode the *same metric values* with classical
 // multidimensional scaling (a non-parametric linear distance embedding) and
-// compare neighbor preservation against the PHATE-AE map on identical lineage.
+// compare neighbor preservation against the parametric diffusion coordinate map on identical lineage.
 // The contrast is the point: classical MDS preserves the raw (ambient) metric
 // values, while the target here is built from the diffusion potential
 // -log(diffused) of the metric space -- it reweights record relations by
 // multi-scale connectivity (anchor-record potential coordinates) rather than raw
 // distance. It is not itself a diffusion-map/MDS embedding of the potential, and
-// only the parametric autoencoder map offers an out-of-sample transform and an
+// only the parametric coordinate solver map offers an out-of-sample transform and an
 // inverse. The asserted advantage below is that structural (invertible,
-// out-of-sample) capability, not a claim that PHATE beats MDS on neighbor recall.
+// out-of-sample) capability, not a claim that parametric diffusion coordinates beats MDS on neighbor recall.
 
 #include <cassert>
 #include <cmath>
@@ -43,7 +43,6 @@
 
 #include <metric/metric/catalog.hpp>
 #include <metric/engine.hpp>
-#include <metric/solve/parametric/dnn.hpp>
 
 namespace {
 
@@ -75,7 +74,7 @@ auto make_arc_records(std::size_t count) -> std::vector<record_type>
 }
 
 // Held-out query records: fresh points interpolated onto the same arc. They are
-// never seen during fitting and exercise the parametric out-of-sample path.
+// never seen during calibration and exercise the parametric out-of-sample path.
 auto make_query_records() -> std::vector<record_type>
 {
 	const double pi = 3.14159265358979323846;
@@ -206,43 +205,6 @@ auto classical_mds_coordinates(const std::vector<std::vector<double>> &distances
 	return coordinates;
 }
 
-// ---------------------------------------------------------------------------
-// Native autoencoder prototype: a 2 -> 1 -> 2 identity network. The bottleneck
-// coordinate loss pulls the latent axis toward the diffusion-potential target,
-// while the (lightly weighted) reconstruction loss keeps the decoder honest.
-// ---------------------------------------------------------------------------
-auto add_identity_dense_layer(mtrc::solve::parametric::dnn::Network<double> &network, std::size_t input_size,
-							  std::size_t output_size) -> void
-{
-	mtrc::solve::parametric::dnn::FullyConnected<double, mtrc::solve::parametric::dnn::Identity<double>> layer(
-		input_size, output_size);
-	layer.initConstant(0.0, 0.0);
-	network.addLayer(layer);
-}
-
-auto make_autoencoder_network() -> mtrc::solve::parametric::dnn::Network<double>
-{
-	mtrc::solve::parametric::dnn::Network<double> network;
-	add_identity_dense_layer(network, 2, 1);
-	add_identity_dense_layer(network, 1, 2);
-	network.setOutput(mtrc::solve::parametric::dnn::RegressionMSE<double>());
-	network.setOptimizer(mtrc::solve::parametric::dnn::RMSProp<double>(0.05, 1.0e-8, 0.0));
-	network.layers[0]->setParameters({{0.10, 0.05}, {0.00}});
-	network.layers[1]->setParameters({{0.09, 0.045}, {0.00, 0.00}});
-	return network;
-}
-
-auto find_epoch_term(const mtrc::solve::parametric::dnn::EpochReport<double> &epoch, const std::string &name) -> double
-{
-	for (const auto &term : epoch.terms) {
-		if (term.name == name) {
-			return term.value;
-		}
-	}
-	assert(false);
-	return 0.0;
-}
-
 auto reconstruction_mse(const std::vector<record_type> &lhs, const std::vector<record_type> &rhs) -> double
 {
 	assert(lhs.size() == rhs.size());
@@ -269,7 +231,9 @@ auto as_mapping_result(const Space &source_space, std::vector<record_type> coord
 	return mtrc::core::make_mapping_result(std::move(derived_space), std::move(lineage.source_records),
 										   std::move(lineage.representative_records), source_space.size(),
 										   /*inverse_supported=*/false, std::move(mapping), std::move(strategy),
-										   "metric_space");
+										   "metric_space", mtrc::core::metric_traits<mtrc::Euclidean<double>>::law, false,
+										   "in-sample coordinate embedding; derived Euclidean coordinate space "
+										   "approximates source geometry and has no derived out-of-sample transform");
 }
 
 } // namespace
@@ -297,18 +261,18 @@ int main()
 	// Interchangeable target-construction components are declared on the plan
 	// builder; here we promote the exponential affinity kernel and the lazy
 	// row-normalized diffusion operator over the gaussian / strict defaults.
-	mtrc::modify::map::PhateGeometrySpec<double> geometry;
+	mtrc::modify::map::DiffusionCoordinateSpec<double> geometry;
 	geometry.dimensions = 1;
 	geometry.diffusion_steps = 5;
 	geometry.kernel_scale = 0.0; // 0 => auto-derive the bandwidth from the metric values
 	geometry.max_dense_records = records.size();
 
-	const auto pipeline_builder = mtrc::modify::compose::native_phate_autoencoder_pipeline_builder(0.05, 1.0)
+	const auto pipeline_builder = mtrc::modify::compose::parametric_diffusion_coordinate_pipeline_builder(0.05, 1.0)
 									  .use_distance_table_pairwise_distances()
 									  .use_exponential_affinity_kernel()
 									  .use_lazy_row_normalized_diffusion_operator();
 
-	const auto targets = mtrc::modify::map::phate_geometry_targets<decltype(space), double>(
+	const auto targets = mtrc::modify::map::diffusion_coordinate_targets<decltype(space), double>(
 		space, geometry, "distance_table_pairwise_distances", "exponential_affinity_kernel",
 		"lazy_row_normalized_diffusion_operator");
 	assert(targets.coordinates.size() == records.size());
@@ -321,43 +285,53 @@ int main()
 	assert(targets.affinity_kernel == "exponential_affinity_kernel");
 	assert(targets.diffusion_operator == "lazy_row_normalized_diffusion_operator");
 
-	// === native DNN/AE solver =================================================
-	mtrc::solve::parametric::dnn::TrainingSpec<double> training;
-	training.epochs = 400;
-	training.batch_size = records.size();
-	training.shuffle = false;
-	training.seed = 29;
-	training.gradient_clip_norm = 20.0;
+	// === native coordinate calibration ========================================
+	mtrc::modify::map::CoordinateCalibrationSpec<double> calibration;
+	calibration.steps = 400;
+	calibration.batch_size = records.size();
+	calibration.shuffle = false;
+	calibration.seed = 29;
+	calibration.gradient_clip_norm = 20.0;
 
-	auto pipeline = mtrc::modify::compose::native_phate_autoencoder(
-		pipeline_builder, mtrc::solve::parametric::dnn::AutoencoderModel<double>(make_autoencoder_network()), geometry,
-		training);
-	assert(pipeline.name() == "native_phate_autoencoder_pipeline");
+	mtrc::solve::parametric::LinearCoordinateSolverSpec<double> solver_spec;
+	solver_spec.input_dimensions = records.front().size();
+	solver_spec.coordinate_dimensions = geometry.dimensions;
+	solver_spec.learning_rate = 0.05;
+	solver_spec.encoder_weights = {0.10, 0.05};
+	solver_spec.encoder_bias = {0.00};
+	solver_spec.decoder_weights = {0.09, 0.045};
+	solver_spec.decoder_bias = {0.00, 0.00};
+
+	auto pipeline = mtrc::modify::compose::parametric_diffusion_coordinates(
+		pipeline_builder, mtrc::solve::parametric::make_linear_coordinate_solver(solver_spec), geometry, calibration);
+	assert(pipeline.name() == "parametric_diffusion_coordinate_pipeline");
 	assert(pipeline.codec() == "vector_record_codec");
 	assert(pipeline.pairwise_distances() == "distance_table_pairwise_distances");
 	assert(pipeline.affinity_kernel() == "exponential_affinity_kernel");
 	assert(pipeline.diffusion_operator() == "lazy_row_normalized_diffusion_operator");
 	assert(pipeline.has_component("target_generator", "diffusion_potential_anchor_coordinates"));
-	assert(pipeline.has_component("trainer", "native_dnn_autoencoder_trainer"));
-	assert(pipeline.has_component("mapping_model", "native_autoencoder_mapping_model"));
-	assert(pipeline.has_component("artifact", "native_mapping_artifact"));
+	assert(pipeline.has_component("coordinate_calibration", "native_coordinate_calibration"));
+	assert(pipeline.has_component("coordinate_artifact", "native_coordinate_mapping_artifact"));
+	assert(pipeline.has_component("artifact", "native_coordinate_artifact"));
 	assert(pipeline.has_component("loss", "reconstruction_mse_loss"));
-	assert(pipeline.has_component("loss", "bottleneck_coordinate_mse_loss"));
 
-	auto model = mtrc::modify::map::fit(pipeline, space);
-	assert(model.latent_dimension() == geometry.dimensions);
-	assert(model.has_pipeline_plan());
+	auto mapping_artifact = mtrc::modify::map::derive_from(pipeline, space);
+	assert(mapping_artifact.latent_dimension() == geometry.dimensions);
+	assert(mapping_artifact.has_pipeline_plan());
 
-	const auto &report = model.native_model().training_report();
-	assert(report.epochs.size() == training.epochs);
-	const auto initial_bottleneck = find_epoch_term(report.epochs.front(), "bottleneck_coordinate_mse");
-	const auto final_bottleneck = find_epoch_term(report.epochs.back(), "bottleneck_coordinate_mse");
-	assert(final_bottleneck < initial_bottleneck); // the solver actually learned the target geometry
+	const auto &report = mapping_artifact.calibration_report();
+	const auto calibrated_steps = mtrc::solve::parametric::coordinate_calibration_step_count(report);
+	assert(calibrated_steps == calibration.steps);
+	const auto initial_coordinate_error = mtrc::solve::parametric::coordinate_calibration_target_error(
+		report, mtrc::solve::parametric::CoordinateCalibrationPoint::first);
+	const auto final_coordinate_error = mtrc::solve::parametric::coordinate_calibration_target_error(
+		report, mtrc::solve::parametric::CoordinateCalibrationPoint::last);
+	assert(final_coordinate_error < initial_coordinate_error);
 
 	// === derived space + lineage ==============================================
-	auto latent = mtrc::modify::map::transform(model, space);
-	assert(latent.mapping == "native_phate_autoencoder");
-	assert(latent.strategy == "native_dnn_phate_ae");
+	auto latent = mtrc::modify::map::transform(mapping_artifact, space);
+	assert(latent.mapping == "parametric_diffusion_coordinates");
+	assert(latent.strategy == "native_metric_diffusion_coordinate_solver");
 	assert(latent.inverse_supported);
 	assert(latent.space.size() == records.size());
 	assert(latent.space.record(latent.space.id(0)).size() == geometry.dimensions);
@@ -372,14 +346,14 @@ int main()
 
 	// === artifact + roundtrip =================================================
 	const auto objective =
-		mtrc::modify::map::native_phate_autoencoder_objective(model.native_model(), targets, 0.05, 1.0);
-	const auto artifact = mtrc::modify::map::make_native_phate_autoencoder_artifact(model, objective, training, geometry,
+		mtrc::modify::map::parametric_diffusion_coordinate_objective(mapping_artifact.coordinate_solver(), targets, 0.05, 1.0);
+	const auto artifact = mtrc::modify::map::make_parametric_diffusion_coordinate_artifact(mapping_artifact, objective, calibration, geometry,
 																				   targets, space.version());
-	assert(artifact.manifest.at("format") == "metric.native_phate_autoencoder_artifact");
+	assert(artifact.manifest.at("format") == "metric.parametric_diffusion_coordinate_artifact");
 	assert(artifact.manifest.at("backend") == "native_dnn");
 	assert(artifact.manifest.at("pipeline").at("components").size() == pipeline.component_count());
 
-	auto reloaded = mtrc::modify::map::load_native_phate_autoencoder_model<record_type, double>(artifact);
+	auto reloaded = mtrc::modify::map::load_parametric_diffusion_coordinate_artifact<record_type, double>(artifact);
 	auto reloaded_latent = mtrc::modify::map::transform(reloaded, space);
 	// transform parity: the reloaded mapping reproduces the derived space exactly.
 	assert(reloaded_latent.space.size() == latent.space.size());
@@ -396,17 +370,17 @@ int main()
 	assert(latent.representative_records == reloaded_latent.representative_records);
 
 	// inverse transform: decode the latent space back into source-shaped records.
-	const auto restored_records = model.inverse_transform(latent);
+	const auto restored_records = mapping_artifact.inverse_transform(latent);
 	const auto reconstruction_error = reconstruction_mse(records, restored_records);
 	assert(std::isfinite(reconstruction_error));
 
 	// === diagnostics ==========================================================
 	const std::size_t neighbor_count = 3;
-	const auto phate_preservation = mtrc::modify::map::neighbor_preservation(space, latent, neighbor_count);
+	const auto coordinate_preservation = mtrc::modify::map::neighbor_preservation(space, latent, neighbor_count);
 
 	auto query_space = mtrc::make_space(make_query_records(), mtrc::Euclidean<double>{});
 	const auto oos_stability =
-		mtrc::modify::map::out_of_sample_neighbor_stability(model, space, query_space, neighbor_count);
+		mtrc::modify::map::out_of_sample_neighbor_stability(mapping_artifact, space, query_space, neighbor_count);
 	assert(oos_stability.transform_supported);
 	assert(oos_stability.anchor_recall >= 0.0 && oos_stability.anchor_recall <= 1.0);
 
@@ -415,18 +389,18 @@ int main()
 	const auto mds_result = as_mapping_result(space, mds_coordinates, "classical_mds", "double_centered_eigenmap");
 	const auto mds_preservation = mtrc::modify::map::neighbor_preservation(space, mds_result, neighbor_count);
 
-	const auto preservation_margin = phate_preservation.recall - mds_preservation.recall;
+	const auto preservation_margin = coordinate_preservation.recall - mds_preservation.recall;
 	// Honest baseline comparison. On a simple convex manifold a linear distance
 	// embedding already preserves neighbors well, so we do NOT stake the demo on
-	// PHATE-AE winning the in-sample recall race -- both recalls are reported. The
-	// decisive, always-true advantage is structural: the PHATE-AE map is
+	// parametric diffusion coordinate winning the in-sample recall race -- both recalls are reported. The
+	// decisive, always-true advantage is structural: the parametric diffusion coordinate map is
 	// parametric (out-of-sample capable) and invertible, while classical MDS is a
 	// one-shot, in-sample-only, non-invertible embedding.
-	assert(phate_preservation.recall >= 0.5);  // the derived geometry is non-degenerate
+	assert(coordinate_preservation.recall >= 0.5);  // the derived geometry is non-degenerate
 	assert(mds_preservation.recall >= 0.0 && mds_preservation.recall <= 1.0);
-	assert(latent.inverse_supported);          // PHATE-AE: decoder inverse_transform
+	assert(latent.inverse_supported);          // parametric diffusion coordinate: decoder inverse_transform
 	assert(!mds_result.inverse_supported);     // classical MDS: no inverse
-	assert(oos_stability.transform_supported); // PHATE-AE: out-of-sample transform
+	assert(oos_stability.transform_supported); // parametric diffusion coordinate: out-of-sample transform
 	assert(oos_stability.anchor_recall >= 0.5);// and it generalizes to held-out queries
 
 	// === finite metric-space mapping report ===================================
@@ -445,22 +419,21 @@ int main()
 	std::cout << "mapping_pipeline_component_affinity_kernel = " << pipeline.affinity_kernel() << "\n";
 	std::cout << "mapping_pipeline_component_diffusion_operator = " << pipeline.diffusion_operator() << "\n";
 	std::cout << "mapping_pipeline_component_count = " << pipeline.component_count() << "\n";
-	std::cout << "mapping_pipeline_solver = native_dnn_autoencoder_trainer\n";
-	std::cout << "mapping_pipeline_solver_epochs = " << report.epochs.size() << "\n";
-	std::cout << "mapping_pipeline_solver_seed = " << training.seed << "\n";
-	std::cout << "mapping_pipeline_solver_bottleneck_loss = " << initial_bottleneck << " -> " << final_bottleneck
+	std::cout << "mapping_pipeline_solver = native_coordinate_calibration\n";
+	std::cout << "mapping_pipeline_calibration_steps = " << calibrated_steps << "\n";
+	std::cout << "mapping_pipeline_calibration_seed = " << calibration.seed << "\n";
+	std::cout << "mapping_pipeline_coordinate_target_error = " << initial_coordinate_error << " -> " << final_coordinate_error
 			  << "\n";
 	std::cout << "mapping_pipeline_artifact_format = "
 			  << artifact.manifest.at("format").template get<std::string>() << "\n";
-	std::cout << "mapping_pipeline_artifact_backend = "
-			  << artifact.manifest.at("backend").template get<std::string>() << "\n";
+	std::cout << "mapping_pipeline_artifact_solver = native_coordinate_solver\n";
 	std::cout << "mapping_pipeline_artifact_roundtrip = transform_and_lineage_parity\n";
 	std::cout << "mapping_pipeline_lineage = one_to_one_source_records\n";
 	std::cout << "mapping_pipeline_inverse_support = decoder_inverse_transform\n";
 	std::cout << "mapping_pipeline_reconstruction_mse = " << reconstruction_error << "\n";
-	std::cout << "mapping_pipeline_phate_neighbor_recall = " << phate_preservation.recall << "\n";
-	std::cout << "mapping_pipeline_phate_out_of_sample_records = " << oos_stability.query_record_count << "\n";
-	std::cout << "mapping_pipeline_phate_out_of_sample_anchor_recall = " << oos_stability.anchor_recall << "\n";
+	std::cout << "mapping_pipeline_diffusion_coordinate_neighbor_recall = " << coordinate_preservation.recall << "\n";
+	std::cout << "mapping_pipeline_diffusion_coordinate_out_of_sample_records = " << oos_stability.query_record_count << "\n";
+	std::cout << "mapping_pipeline_diffusion_coordinate_out_of_sample_anchor_recall = " << oos_stability.anchor_recall << "\n";
 	std::cout << "mapping_pipeline_baseline = classical_mds\n";
 	std::cout << "mapping_pipeline_baseline_inverse_support = none\n";
 	std::cout << "mapping_pipeline_baseline_out_of_sample_support = none\n";

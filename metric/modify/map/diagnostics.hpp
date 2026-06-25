@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include <metric/core/concepts.hpp>
@@ -18,6 +19,20 @@
 #include <metric/stats/search/nearest.hpp>
 
 namespace mtrc::modify::map {
+namespace diagnostics_detail {
+
+template <typename Transform, typename Space, typename = void> struct DerivedSpaceTransformFor : std::false_type {};
+
+template <typename Transform, typename Space>
+struct DerivedSpaceTransformFor<
+	Transform, Space,
+	std::enable_if_t<::mtrc::MappingResultLike_v<decltype(std::declval<const Transform &>().transform(
+		std::declval<const Space &>()))>>> : std::true_type {};
+
+template <typename Transform, typename Space>
+inline constexpr bool DerivedSpaceTransformFor_v = DerivedSpaceTransformFor<Transform, Space>::value;
+
+} // namespace diagnostics_detail
 
 struct NeighborPreservationDiagnostics {
 	std::size_t source_record_count{};
@@ -134,13 +149,14 @@ auto neighbor_preservation(const SourceSpace &source_space, const MappingResult 
 	return diagnostics;
 }
 
-template <typename Model, typename SourceSpace, typename QuerySpace,
+template <typename Transform, typename SourceSpace, typename QuerySpace,
 		  typename std::enable_if<
 			  MetricSpaceLike_v<SourceSpace> && MetricSpaceLike_v<QuerySpace> &&
 				  std::is_same<typename SourceSpace::record_type, typename QuerySpace::record_type>::value &&
-				  MappingModel_v<Model, SourceSpace> && MappingModel_v<Model, QuerySpace>,
+				  diagnostics_detail::DerivedSpaceTransformFor_v<Transform, SourceSpace> &&
+				  diagnostics_detail::DerivedSpaceTransformFor_v<Transform, QuerySpace>,
 			  int>::type = 0>
-auto out_of_sample_neighbor_stability(const Model &model, const SourceSpace &source_space,
+auto out_of_sample_neighbor_stability(const Transform &mapping_artifact, const SourceSpace &source_space,
 									  const QuerySpace &query_space, std::size_t neighbor_count)
 	-> OutOfSampleStabilityDiagnostics
 {
@@ -154,8 +170,8 @@ auto out_of_sample_neighbor_stability(const Model &model, const SourceSpace &sou
 		throw std::invalid_argument("out-of-sample stability diagnostics require a positive neighbor count");
 	}
 
-	const auto mapped_source = model.transform(source_space);
-	const auto mapped_query = model.transform(query_space);
+	const auto mapped_source = mapping_artifact.transform(source_space);
+	const auto mapped_query = mapping_artifact.transform(query_space);
 	if (mapped_source.space.size() != source_space.size()) {
 		throw std::invalid_argument("out-of-sample stability diagnostics require same-size source transform output");
 	}

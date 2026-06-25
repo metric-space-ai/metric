@@ -10,15 +10,15 @@
 namespace mtrc::modify::map {
 
 template <typename Mapping, typename Space, typename std::enable_if<Mapping_v<Mapping, Space>, int>::type = 0>
-auto fit(const Mapping &mapping, const Space &space) -> decltype(mapping.fit(space))
+auto derive_from(const Mapping &mapping, const Space &space) -> decltype(mapping.derive_from(space))
 {
-	return mapping.fit(space);
+	return mapping.derive_from(space);
 }
 
-template <typename Model, typename Space, typename std::enable_if<MappingModel_v<Model, Space>, int>::type = 0>
-auto transform(const Model &model, const Space &space) -> decltype(model.transform(space))
+template <typename Transform, typename Space, typename std::enable_if<DerivedSpaceTransform_v<Transform, Space>, int>::type = 0>
+auto transform(const Transform &mapping_artifact, const Space &space) -> decltype(mapping_artifact.transform(space))
 {
-	return model.transform(space);
+	return mapping_artifact.transform(space);
 }
 
 } // namespace mtrc::modify::map

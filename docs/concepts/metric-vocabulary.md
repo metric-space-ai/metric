@@ -3,6 +3,9 @@
 METRIC is a finite metric-space framework. The public language must make that
 clear before it names specific algorithms or papers.
 
+For the broader comparison against classical statistics and ML wording, see
+[Finite Metric-Space Principles And Special Cases](finite-metric-space-principles.md).
+
 The order is:
 
 ```text
@@ -24,7 +27,7 @@ Core terms:
 - metric value
 - finite metric space
 - neighborhood, ball, cover, dimension, local structure
-- entropy and information content of a finite metric space
+- entropy and information content of an embedded coordinate representation
 - correlation or dependence between paired finite metric spaces
 - sampling, search, clustering, representatives, outliers, and patterns inside
   a finite metric space
@@ -49,12 +52,13 @@ it names where code belongs.
 
 Examples:
 
-- Entropy is a Level-1 property/question of a finite metric space. The C++
-  implementation belongs under `mtrc::stats::properties`.
+- Entropy is a Level-1 property/question of an embedded coordinate
+  representation. The C++ implementation belongs under
+  `mtrc::stats::properties`.
 - Correlation between two paired spaces is a Level-1 question. MGC is one
   concrete implementation under `mtrc::stats::correlate`.
-- A PHATE-AE workflow is a composition under `mtrc::modify::compose`, using
-  metric-space access, mapping, and native solvers. PHATE, AE, and DNN are not
+- A parametric diffusion coordinate workflow is a composition under `mtrc::modify::compose`, using
+  metric-space access, mapping, and native solvers. Concrete solver mechanisms are not
   the framework vocabulary.
 - A pairwise metric-value table is `mtrc::space::storage::DistanceTable`; it is
   an execution representation of a source space, not the source space itself.
@@ -70,7 +74,7 @@ Examples:
 - cover tree, kNN graph, distance table, graph sparsification
 - k-medoids, DBSCAN, affinity propagation, farthest-first representatives
 - entropy estimators, MGC, distance-correlation variants
-- PCFA, PHATE-style geometry, diffusion maps, SOM/KOC, native autoencoder maps
+- PCFA, diffusion-coordinate geometry, diffusion maps, and parametric coordinate solver-backed maps
 - application workflows and benchmark demos
 
 These names are necessary for provenance and implementation detail. They should
@@ -91,9 +95,10 @@ Before adding a public method, document, or example, answer:
 Good:
 
 ```text
-Compute entropy of a finite metric space built from process windows and an
-alignment metric. The implementation lives in mtrc::stats::properties and uses
-a documented estimator with explicit neighborhood parameters.
+Map process windows from their source alignment-metric space into an explicit
+coordinate representation, then compute entropy there. The implementation lives
+in mtrc::stats::properties and uses a documented estimator with explicit
+neighborhood parameters.
 ```
 
 Good:
@@ -106,8 +111,8 @@ mtrc::stats::correlate; MGC is the concrete promoted implementation.
 Good:
 
 ```text
-Fit a map from a source finite metric space into a coordinate result space and
-report neighbor preservation. The workflow lives under mtrc::modify::map or
+Derive a map from a source finite metric space into a coordinate result space
+and report neighbor preservation. The workflow lives under mtrc::modify::map or
 mtrc::modify::compose and may use native parametric solvers.
 ```
 

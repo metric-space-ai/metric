@@ -45,7 +45,7 @@ dynamics/noise must not collapse into static colored point clouds.
 ## Hard Stop Rules
 
 - Stop if mapping or dynamics examples are just one static point cloud.
-- Stop if JavaScript computes PHATE, AE, diffusion, Redif inverse-dynamics or solver results.
+- Stop if JavaScript computes parametric diffusion coordinates, AE, diffusion, Redif inverse-dynamics or solver results.
 - Stop if animation is page-local and not reusable through timeline/runtime
   contracts.
 

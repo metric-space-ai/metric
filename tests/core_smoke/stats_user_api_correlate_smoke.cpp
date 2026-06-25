@@ -10,12 +10,16 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstddef>
 #include <limits>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include "metric/metric/catalog.hpp"
 #include "metric/core/metric_space.hpp"
+#include "metric/space/storage/implicit.hpp"
+#include "metric/stats/correlate/compare.hpp"
 #include "metric/stats/correlate/correlation.hpp"
 #include "metric/stats/correlate/significance.hpp"
 
@@ -34,6 +38,16 @@ struct NaNPairDistance {
 	}
 };
 
+struct CountingPairDistance {
+	std::size_t *calls{};
+
+	auto operator()(const Rec &lhs, const Rec &rhs) const -> double
+	{
+		++(*calls);
+		return std::abs(lhs.front() - rhs.front());
+	}
+};
+
 auto close(double lhs, double rhs, double tolerance = 1.0e-9) -> bool { return std::abs(lhs - rhs) < tolerance; }
 
 template <typename Function> auto throws_invalid_argument(Function run) -> bool
@@ -44,6 +58,110 @@ template <typename Function> auto throws_invalid_argument(Function run) -> bool
 		return true;
 	}
 	return false;
+}
+
+void public_domain_overloads_match_mgc_core()
+{
+	namespace correlate = mtrc::stats::correlate;
+
+	std::vector<Rec> x, y;
+	for (int i = 0; i < 8; ++i) {
+		x.push_back({static_cast<double>(i)});
+		y.push_back({static_cast<double>(i * i)});
+	}
+	const auto sx = mtrc::make_space(x, Eucl());
+	const auto sy = mtrc::make_space(y, Eucl());
+	const mtrc::space::storage::LiveDistances<decltype(sx)> left_provider(sx);
+	const mtrc::space::storage::LiveDistances<decltype(sy)> right_provider(sy);
+
+	const auto records_mgc = correlate::mgc(x, Eucl(), y, Eucl());
+	const auto provider_mgc = correlate::mgc(left_provider, right_provider);
+	assert(provider_mgc.left_representation == "pairwise_distances");
+	assert(provider_mgc.right_representation == "pairwise_distances");
+	assert(close(provider_mgc.value, records_mgc.value));
+
+	const auto records_compare = mtrc::compare(x, Eucl(), y, Eucl());
+	const auto records_correlate = mtrc::correlate(x, Eucl(), y, Eucl());
+	assert(records_compare.left_representation == "records");
+	assert(records_correlate.right_representation == "records");
+	assert(close(records_compare.value, records_mgc.value));
+	assert(close(records_correlate.value, records_mgc.value));
+
+	const auto provider_compare = mtrc::compare(left_provider, right_provider);
+	const auto provider_correlate = mtrc::correlate(left_provider, right_provider);
+	assert(provider_compare.left_representation == "pairwise_distances");
+	assert(provider_correlate.right_representation == "pairwise_distances");
+	assert(close(provider_compare.value, records_mgc.value));
+	assert(close(provider_correlate.value, records_mgc.value));
+
+	const correlate::significance_options options(0, 123ULL);
+	const auto provider_significance = correlate::mgc_significance(left_provider, right_provider, options);
+	assert(provider_significance.left_representation == "pairwise_distances");
+	assert(close(provider_significance.statistic, records_mgc.value));
+	const auto records_significance = correlate::mgc_significance(x, Eucl(), y, Eucl(), options);
+	assert(records_significance.left_representation == "records");
+	assert(records_significance.right_representation == "records");
+	assert(close(records_significance.statistic, records_mgc.value));
+}
+
+void large_metric_space_defaults_preflight_dense_mgc()
+{
+	namespace correlate = mtrc::stats::correlate;
+
+	constexpr std::size_t large_count = 4100;
+	std::vector<Rec> x;
+	std::vector<Rec> y;
+	x.reserve(large_count);
+	y.reserve(large_count);
+	for (std::size_t index = 0; index < large_count; ++index) {
+		x.push_back({static_cast<double>(index)});
+		y.push_back({static_cast<double>((index * 17) % 251)});
+	}
+
+	std::size_t left_calls = 0;
+	std::size_t right_calls = 0;
+	const auto sx = mtrc::make_space(x, CountingPairDistance{&left_calls});
+	const auto sy = mtrc::make_space(y, CountingPairDistance{&right_calls});
+	const auto dense_all_pairs = large_count * large_count;
+
+	const auto compared = mtrc::compare(sx, sy);
+	assert(!compared.exact);
+	assert(compared.algorithm == "mgc_estimate");
+	assert(compared.left_representation == "metric_space_sample");
+	assert(compared.right_representation == "metric_space_sample");
+	assert(compared.left_record_count == large_count);
+	assert(compared.right_record_count == large_count);
+	assert(compared.sample_count == mtrc::stats::correlate::mgc_options{}.sample_count);
+	assert(left_calls > 0);
+	assert(right_calls > 0);
+	assert(left_calls < dense_all_pairs);
+	assert(right_calls < dense_all_pairs);
+
+	left_calls = 0;
+	right_calls = 0;
+	const auto correlated = mtrc::correlate(sx, sy);
+	assert(!correlated.exact);
+	assert(correlated.algorithm == "mgc_estimate");
+	assert(correlated.left_representation == "metric_space_sample");
+	assert(correlated.right_representation == "metric_space_sample");
+	assert(left_calls > 0);
+	assert(right_calls > 0);
+	assert(left_calls < dense_all_pairs);
+	assert(right_calls < dense_all_pairs);
+
+	left_calls = 0;
+	right_calls = 0;
+	bool refused_significance = false;
+	try {
+		(void)correlate::mgc_significance(sx, sy, correlate::significance_options(0));
+	} catch (const mtrc::RepresentationError &error) {
+		refused_significance = true;
+		const std::string message = error.what();
+		assert(message.find("max_dense_records") != std::string::npos);
+	}
+	assert(refused_significance);
+	assert(left_calls == 0);
+	assert(right_calls == 0);
 }
 
 void permutation_test_separates_dependent_from_independent()
@@ -163,6 +281,8 @@ void record_id_alignment_reports_dropped_pairs()
 
 int main()
 {
+	public_domain_overloads_match_mgc_core();
+	large_metric_space_defaults_preflight_dense_mgc();
 	permutation_test_separates_dependent_from_independent();
 	permutation_test_is_reproducible_for_a_seed();
 	permutation_test_rejects_invalid_inputs();

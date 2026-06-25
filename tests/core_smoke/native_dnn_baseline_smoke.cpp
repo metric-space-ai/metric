@@ -9,7 +9,6 @@
 
 #include <metric/numeric/Math.h>
 
-#include "metric/mapping/autoencoder.hpp"
 #include "metric/solve/parametric/dnn.hpp"
 
 namespace {
@@ -18,33 +17,6 @@ using Matrix = mtrc::numeric::DynamicMatrix<double>;
 using RowVector = mtrc::numeric::DynamicVector<double, mtrc::numeric::rowVector>;
 
 auto close(double lhs, double rhs, double tolerance = 1.0e-9) -> bool { return std::abs(lhs - rhs) <= tolerance; }
-
-auto small_autoencoder_json() -> std::string
-{
-	return R"({
-		"0": {
-			"type": "FullyConnected",
-			"inputSize": 2,
-			"outputSize": 1,
-			"activation": "Identity"
-		},
-		"1": {
-			"type": "FullyConnected",
-			"inputSize": 1,
-			"outputSize": 2,
-			"activation": "Identity"
-		},
-		"train": {
-			"loss": "RegressionMSE",
-			"optimizer": {
-				"type": "RMSProp",
-				"learningRate": 0.001,
-				"eps": 1e-8,
-				"decay": 0.99
-			}
-		}
-	})";
-}
 
 auto assert_same_shape(const Matrix &matrix, std::size_t rows, std::size_t columns) -> void
 {
@@ -162,35 +134,6 @@ int main()
 			(void)mtrc::solve::parametric::dnn::internal::create_shuffled_batches(samples, targets, 0, rng, sample_batches,
 																 target_batches);
 		});
-	}
-
-	{
-		mtrc::Autoencoder<double, double> autoencoder(small_autoencoder_json());
-		autoencoder.setNormValue(0);
-		const std::vector<double> samples{0.0, 1.0, 1.0, 0.0};
-		autoencoder.train(samples, 1, 1);
-
-		const std::vector<double> sample{0.25, 0.75};
-		const auto prediction = autoencoder.predict(sample);
-		const auto latent = autoencoder.encode(sample);
-		const auto decoded = autoencoder.decode(latent);
-		assert(prediction.size() == sample.size());
-		assert(latent.size() == 1);
-		assert(decoded.size() == sample.size());
-
-		std::stringstream archive;
-		autoencoder.save(archive);
-
-		mtrc::Autoencoder<double, double> loaded;
-		loaded.setNormValue(0);
-		loaded.load(archive);
-		const auto loaded_prediction = loaded.predict(sample);
-		assert(loaded_prediction.size() == prediction.size());
-		const auto roundtrip_tolerance = 1.0e-9;
-		for (std::size_t index = 0; index < prediction.size(); ++index) {
-			assert(std::isfinite(loaded_prediction[index]));
-			assert(close(loaded_prediction[index], prediction[index], roundtrip_tolerance));
-		}
 	}
 
 	return 0;

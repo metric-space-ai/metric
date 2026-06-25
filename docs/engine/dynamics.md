@@ -1,8 +1,9 @@
 # Finite Metric Dynamics
 
 `mtrc::modify::dynamics` builds and evolves a process **over the structure of a
-finite metric space**. It is the component home for diffusion, random walks,
-forward degradation (noising) and reverse diffusion (reconstruction).
+finite metric space**. It is the component home for metric-derived
+probabilities, diffusion paths, forward disorder, and reverse diffusion
+(reconstruction).
 
 Its single load-bearing idea:
 
@@ -46,41 +47,57 @@ degree `d_i = sum_j W_ij`, and it satisfies `pi P = pi`.
 | --- | --- |
 | `metric_transition(space, schedule)` | Derive `P`, its affinity `W`, degrees and stationary `pi` from a finite metric space. |
 | `metric_random_walk(transition, start, steps, seed, walkers)` | Walk the metric graph by sampling neighbours `~ P_i`; returns visit frequencies and their total-variation gap to `pi`. |
-| `metric_diffuse(space, schedule[, transition])` | Forward dynamics: degrade a node signal with graph heat flow plus seeded, geometry-shaped noise. |
-| `metric_reconstruct(degraded, schedule[, transition])` | Reverse dynamics: contract the degraded signal back onto the structure with noise-free graph heat flow. |
+| `redif_operator(space, options)` | Derive the inspectable Redif local-distance relation, affinity, degree measure, Laplacian, transition, and stationary measure. |
+| `redif_add_noise(space, options)` | Forward metric dynamics: evolve Dirac mass at each atom into a transport path over the finite metric space. |
+| `redif_remove_noise(space, options)` | Reverse Redif dynamics: apply the implicit Euler inverse-diffusion step to measures over the space atoms. |
+| `redif_outliers(space, options)` | Score singular records by Wasserstein path length under Redif dynamics. |
+| `metric_diffuse(space, schedule[, transition])` | Vector-record specialization: evolve a node signal with graph heat flow plus coordinate perturbation. |
+| `metric_reconstruct(degraded, schedule[, transition])` | Vector-record specialization: contract a perturbed node signal back onto the structure with graph heat flow. |
 
-`metric_transition` and `metric_random_walk` work for **any** `MetricSpaceLike`
-record/metric pair (strings, histograms, mixed records): geometry → probability
-needs only distances. `metric_diffuse` / `metric_reconstruct` evolve a vector signal carried by
-the nodes, so they require vector-valued records (a `static_assert` enforces it).
+`metric_transition`, `metric_random_walk`, and the Redif measure APIs work for
+**any** `MetricSpaceLike` record/metric pair (strings, histograms, mixed
+records): geometry -> probability needs only distances. `metric_diffuse` /
+`metric_reconstruct` evolve a coordinate signal carried by the nodes, so they are
+specialized to vector-valued records (a `static_assert` enforces it).
 
 The `dynamics_schedule` carries only geometry- and reproducibility-facing knobs:
 `neighbors` (graph `k`), `steps`, `diffusivity` (the per-step mixing weight
-`alpha`), `noise_scale`, `bandwidth` (`0` ⇒ derive `eps` from the metric), and a
-`seed`. None of them is a probability distribution.
+`alpha`), `perturbation_scale`, `bandwidth` (`0` ⇒ derive `eps` from the
+metric), and a `seed`. None of them is a probability distribution.
 
 ## Level 1 — the dynamics
 
-The metric structure (the graph) is the fixed substrate. A signal carried by the
-nodes evolves over it with the metric Laplacian smoothing operator
+The metric structure (the graph) is the fixed substrate. A measure or signal
+carried by the nodes evolves over it with operators derived from the metric.
+For the vector-signal specialization, the smoothing operator is
 
 ```text
 S = (1 - alpha) I + alpha P            (alpha in (0, 1])
 ```
 
-- **Forward / degradation (`metric_diffuse`).** Each step applies `S` (drift along the
-  graph) and adds seeded isotropic noise scaled by `noise_scale`. Structure
-  decays: the signal leaves the low-dimensional manifold and the graph Dirichlet
-  energy rises. This is the forward (noising) process of a diffusion model,
-  framed as a walk over geometry.
+- **Forward disorder (`redif_add_noise`).** Each atom starts as a Dirac measure.
+  The Redif transition derived from the local distance relation spreads that
+  mass through the finite space. The intrinsic signal is the path of measures,
+  its transport length, and its entropy relative to the stationary distribution.
 
-- **Reverse / reconstruction (`metric_reconstruct`).** The same `S` run *without* noise
-  is a low-pass filter on the graph: it contracts the injected high-frequency
-  fluctuations back onto the structure. It is the dependency-free sibling of the
-  native `mtrc::Redif` reverse-diffusion engine (graph-Laplacian backward
-  diffusion). Because `S` is row-stochastic it obeys a **maximum principle** — a
-  reverse step is a convex combination of node values, so it can never create a
-  new per-coordinate extremum, and a constant signal is an exact fixed point.
+- **Reverse Redif (`redif_remove_noise`).** Redif builds the same local
+  k-neighbour distance relation, derives the weighted graph Laplacian, and
+  applies the implicit Euler inverse-diffusion step to measures over the
+  original atoms. No coordinate chart, record recoding, or external probability
+  artifact is required.
+
+- **Vector perturbation (`metric_diffuse`).** Each step applies `S` (drift along
+  the graph) and adds seeded coordinate perturbation scaled by
+  `perturbation_scale`.
+  This is a useful Euclidean/vector-record specialization, not the general
+  definition of metric noise.
+
+- **Vector reconstruction (`metric_reconstruct`).** The same `S` run without the
+  coordinate perturbation contracts a vector signal back onto the structure. It
+  is a vector-record companion to Redif's graph-Laplacian reverse diffusion.
+  Because `S` is row-stochastic it obeys a **maximum principle**: a reverse step
+  is a convex combination of node values, so it can never create a new
+  per-coordinate extremum, and a constant signal is an exact fixed point.
 
 Both directions are fully reproducible: a `(seed, schedule)` pair reproduces a run
 bit-for-bit on any platform, because the pseudo-random draws (splitmix64 +
@@ -94,13 +111,13 @@ records.
 
 ## Level 3 — relationship to named algorithms
 
-The transition operator is the diffusion-maps / PHATE affinity (a heat kernel,
-row-normalised to a Markov matrix). The reverse flow is the explicit-step form of
-the graph-Laplacian backward diffusion implemented by `mtrc::Redif` (see
-`metric/mapping/Redif.hpp`). Naming these is a Level-3 reference; the Level-1
-statement stands on its own: a finite metric space already contains a diffusion,
-a random walk and a reverse process, and the probabilities in all three are read
-off the geometry.
+The transition operator is a heat-kernel affinity row-normalised to a Markov
+matrix. Redif is the implicit Euler inverse-diffusion dynamics over the weighted
+graph Laplacian. Names such as parametric diffusion coordinates, diffusion maps, or Gaussian kernels are
+Level-3 special cases; the Level-1 statement stands on its own: a finite metric
+space already contains a diffusion, a random walk, transport paths, entropy
+change, and a reverse process, and the probabilities in all of them are read off
+the geometry.
 
 ## Worked example
 

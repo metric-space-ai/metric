@@ -11,7 +11,7 @@ from metric import mappings
 from metric.exceptions import MissingMetricError, OptionalDependencyError, StrategyUnavailableError
 from metric.operators import CorrelationResult
 from metric.spaces import Space
-from metric.strategies import PhateAE
+from metric.strategies import ParametricDiffusionCoordinates
 
 
 def _native_correlation_available():
@@ -73,7 +73,7 @@ C31_REQUIRED_CAPABILITY_KEYS = {
     "structure",
     "groups",
     "outliers",
-    "denoise",
+    "density_filter",
     "embed",
     "compare_correlate",
     "correlation_package",
@@ -116,7 +116,7 @@ def test_c31_available_reports_dict_of_bool_capability_flags():
         "structure",
         "groups",
         "outliers",
-        "denoise",
+        "density_filter",
     ):
         assert result[key] is True, key
 
@@ -154,9 +154,6 @@ def test_standard_vector_metrics_are_native_distance_exports():
         assert exported is getattr(native_distance, name)
         assert exported.__module__ == "metric._impl.distance"
 
-    assert distance.Minkowski is distance.P_norm
-    assert distance.ThresholdedEuclidean is distance.Euclidean_thresholded
-
 
 def test_space_vectors_uses_native_euclidean_without_python_fallback():
     records = np.asarray([[0.0, 0.0], [3.0, 4.0]], dtype=float)
@@ -185,7 +182,7 @@ def test_unpromoted_stats_modify_calls_still_raise():
     assert space.describe().record_count == 3
     assert space.groups(2).cluster_count == 2
     assert len(space.outliers(count=1).outliers) == 1
-    assert space.denoise(count=1).target_record_count == 2
+    assert space.density_filter(count=1).target_record_count == 2
 
     # compare/correlate are promoted for the aligned (equal-length) path.
     comparison = space.compare(space)
@@ -199,15 +196,15 @@ def test_unpromoted_stats_modify_calls_still_raise():
             call()
 
     with pytest.raises(StrategyUnavailableError, match="Custom Python metrics are not ignored"):
-        space.map(strategy=PhateAE(dimensions=1))
+        space.map(strategy=ParametricDiffusionCoordinates(dimensions=1))
 
 
-def test_native_phate_adapter_passes_public_provider_keyword_to_cpp():
+def test_parametric_diffusion_adapter_passes_public_provider_keyword_to_cpp():
     try:
-        mappings.native_phate_autoencoder_fit_vectors(
+        mappings.derive_parametric_diffusion_coordinates(
             [[0.0, 0.0], [1.0, 1.0]],
             dimensions=1,
-            epochs=0,
+            calibration_steps=0,
             distance_provider="unknown_provider",
         )
     except TypeError as exc:
@@ -215,6 +212,6 @@ def test_native_phate_adapter_passes_public_provider_keyword_to_cpp():
             pytest.skip("local metric._impl.metric extension is stale; fresh build is blocked by C++ headers")
         raise
     except ValueError as exc:
-        assert "unsupported native PHATE-AE distance provider" in str(exc)
+        assert "unsupported parametric diffusion coordinate distance provider" in str(exc)
     else:
-        raise AssertionError("unknown native PHATE-AE distance provider was accepted")
+        raise AssertionError("unknown parametric diffusion coordinate distance provider was accepted")

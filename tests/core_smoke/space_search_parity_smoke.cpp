@@ -1,4 +1,4 @@
-// Exact-search parity for the legacy explicit representations: the cover Tree and the distance Matrix must
+// Exact-search parity for explicit representations: the cover Tree and the distance Matrix must
 // return the same nearest neighbours as a brute-force scan, for both a signed and an UNSIGNED distance type.
 // The unsigned case guards the cover-tree pruning fix (the previous `dist_child - 2*covdist` underflowed for
 // unsigned Distance and could prune the branch holding the true nearest neighbour). Also covers the batch

@@ -72,10 +72,10 @@ auto require_fresh(const Representation &representation,
 template <typename Space>
 auto rebuild(const storage::DistanceTable<Space> &table, const Space &space) -> storage::DistanceTable<Space>
 {
-	// Preserve the table's defining parameters: its lazy/eager mode and dense-storage bound. A table
-	// the caller built lazy stays lazy after a rebuild (no surprise all-pairs materialization).
+	// Preserve the table's defining parameters. A table the caller built lazy stays lazy after a
+	// rebuild (no surprise all-pairs materialization), and budget limits continue to apply.
 	return storage::DistanceTable<Space>(
-		space, storage::distance_table_options{table.mode(), table.max_dense_records()});
+		space, storage::distance_table_options{table.mode(), table.max_dense_records(), table.max_memory_bytes()});
 }
 
 template <typename Space>

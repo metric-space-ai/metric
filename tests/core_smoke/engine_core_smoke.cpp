@@ -141,20 +141,20 @@ int main()
 	assert(mtrc::core::expansion_dimension(LineDistanceMatrix{}, 0, 0) == 0.0);
 	assert(mtrc::core::expansion_dimension(LineDistanceMatrix{}, 1, 0) == 0.0);
 	const auto assignment_ids = mtrc::core::record_ids_excluding_assignment(
-		typed_space, std::vector<std::size_t>{0, mtrc::ClusteringResult<std::size_t>::noise_label, 1, 1},
-		mtrc::ClusteringResult<std::size_t>::noise_label);
+		typed_space, std::vector<std::size_t>{0, mtrc::ClusteringResult<std::size_t>::unassigned_label, 1, 1},
+		mtrc::ClusteringResult<std::size_t>::unassigned_label);
 	assert((assignment_ids == std::vector<mtrc::RecordId>{metric_id, matrix_id, tree_id}));
 	const auto matching_assignment_ids = mtrc::core::record_ids_matching_value(
-		typed_space, std::vector<std::size_t>{0, mtrc::ClusteringResult<std::size_t>::noise_label, 1,
-											  mtrc::ClusteringResult<std::size_t>::noise_label},
-		mtrc::ClusteringResult<std::size_t>::noise_label);
+		typed_space, std::vector<std::size_t>{0, mtrc::ClusteringResult<std::size_t>::unassigned_label, 1,
+											  mtrc::ClusteringResult<std::size_t>::unassigned_label},
+		mtrc::ClusteringResult<std::size_t>::unassigned_label);
 	assert((matching_assignment_ids == std::vector<mtrc::RecordId>{metrics_id, tree_id}));
 	const auto matching_flag_ids =
 		mtrc::core::record_ids_matching_value(typed_space, std::vector<bool>{true, false, true, false}, true);
 	assert((matching_flag_ids == std::vector<mtrc::RecordId>{metric_id, matrix_id}));
 	mtrc::ClusteringResult<std::size_t> grouped_records;
-	grouped_records.assignments = {0, mtrc::ClusteringResult<std::size_t>::noise_label, 1,
-								   mtrc::ClusteringResult<std::size_t>::noise_label};
+	grouped_records.assignments = {0, mtrc::ClusteringResult<std::size_t>::unassigned_label, 1,
+								   mtrc::ClusteringResult<std::size_t>::unassigned_label};
 	grouped_records.record_count = typed_space.size();
 	mtrc::core::require_clustering_result_shape(grouped_records, typed_space.size(), "bad clustering record count",
 												  "bad clustering assignment count");
@@ -176,10 +176,10 @@ int main()
 		rejected_bad_clustering_assignment_count = true;
 	}
 	assert(rejected_bad_clustering_assignment_count);
-	const auto grouped_noise_ids = mtrc::core::noise_record_ids(typed_space, grouped_records);
-	assert((grouped_noise_ids == std::vector<mtrc::RecordId>{metrics_id, tree_id}));
-	const auto grouped_non_noise_ids = mtrc::core::non_noise_record_ids(typed_space, grouped_records);
-	assert((grouped_non_noise_ids == std::vector<mtrc::RecordId>{metric_id, matrix_id}));
+	const auto grouped_unassigned_ids = mtrc::core::unassigned_record_ids(typed_space, grouped_records);
+	assert((grouped_unassigned_ids == std::vector<mtrc::RecordId>{metrics_id, tree_id}));
+	const auto grouped_assigned_ids = mtrc::core::assigned_record_ids(typed_space, grouped_records);
+	assert((grouped_assigned_ids == std::vector<mtrc::RecordId>{metric_id, matrix_id}));
 	grouped_records.cluster_count = 2;
 	const auto direct_assignment_buckets = mtrc::core::record_id_buckets_for_assignments(
 		typed_space, std::vector<std::size_t>{0, 1, 1, 0}, grouped_records.cluster_count);
@@ -196,7 +196,7 @@ int main()
 	assert(rejected_bad_direct_assignment_bucket);
 	const auto assignment_buckets = mtrc::core::record_id_buckets_excluding_assignment(
 		typed_space, grouped_records.assignments, grouped_records.cluster_count,
-		mtrc::ClusteringResult<std::size_t>::noise_label);
+		mtrc::ClusteringResult<std::size_t>::unassigned_label);
 	assert(assignment_buckets.size() == 2);
 	assert((assignment_buckets[0] == std::vector<mtrc::RecordId>{metric_id}));
 	assert((assignment_buckets[1] == std::vector<mtrc::RecordId>{matrix_id}));
@@ -206,7 +206,7 @@ int main()
 	try {
 		(void)mtrc::core::record_id_buckets_excluding_assignment(
 			typed_space, std::vector<std::size_t>{0, 2}, 2,
-			mtrc::ClusteringResult<std::size_t>::noise_label, "assignment label outside buckets");
+			mtrc::ClusteringResult<std::size_t>::unassigned_label, "assignment label outside buckets");
 	} catch (const std::invalid_argument &) {
 		rejected_bad_assignment_bucket = true;
 	}

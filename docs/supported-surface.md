@@ -17,13 +17,18 @@ surface never surprises you.
 - **Search:** exact k-NN, nearest, and range queries.
 - **Structure / stats:** `describe_structure`, `profile`, `entropy`,
   `intrinsic_dimension`, `regular_sample`, distance distribution.
-- **Clustering:** `kmedoids`, `dbscan`, `affinity_propagation` — and only these.
-- **Outliers:** DBSCAN-noise and k-NN-distance scoring — and only these.
-- **Representatives / reduction / compression:** farthest-first, coverage, k-medoids.
+- **Grouping:** `kmedoids`, `dbscan`, `affinity_propagation` — and only these.
+- **Singular-record scoring:** DBSCAN density-residual records and
+  k-NN-distance scoring — and only these.
+- **Representatives / reduction / compression / thinning:** farthest-first,
+  coverage/k-center, radius coverage, k-medoids, distribution-preserving
+  thinning, uniform-density radius nets, equalization by uniform-density radius
+  nets.
 - **Dependence:** MGC significance between aligned spaces (a dependence test,
   never a metric).
-- **Derived coordinate spaces (maps):** PCFA (linear), the native autoencoder,
-  and PHATE-AE. Classical MDS is available as the embedding baseline.
+- **Derived coordinate spaces (maps):** PCFA (linear), solver-backed
+  coordinate solver coordinate maps, and parametric diffusion coordinate. Classical MDS is available as a
+  coordinate-space baseline.
 - **I/O:** `mtrc::record::read_csv` / `read_tsv` / `write_csv` / `write_tsv`;
   record import/export/compose/group.
 - **Inspection:** every `*Result` streams a one-line summary (`operator<<` /
@@ -35,31 +40,36 @@ surface never surprises you.
 These are deliberately absent; do not expect them in the supported surface:
 
 - Neighbor-graph manifold embeddings (UMAP / t-SNE / Isomap / LLE). Only PCFA,
-  the native autoencoder, PHATE-AE, and classical MDS exist.
-- Broad clustering families beyond the three above (no k-means, GMM, spectral,
-  or hierarchical clustering in the promoted surface).
-- Supervised learning (no classification or regression). METRIC is an
-  unsupervised / structural-analysis framework. A metric k-NN classifier can be
-  built on top of the search surface, but none ships.
+  the parametric coordinate solver, parametric diffusion coordinate, and classical MDS exist.
+- Broad grouping families beyond the three above (no k-means, GMM, spectral, or
+  hierarchical clustering in the promoted surface).
+- Classification and regression surfaces. METRIC is not a supervised or
+  unsupervised ML collection; it is a library for computing with finite metric
+  spaces. A classifier can be built on top of a metric-space search surface, but
+  it is an application layer and none ships here.
 - Time-series forecasting / changepoint / seasonal tooling. Time series are
   supported only as records under elastic distances (TWED/ERP).
-- Anomaly families beyond DBSCAN-noise + k-NN-distance (no LOF / isolation-forest
-  / one-class).
+- Anomaly-detection families beyond the promoted singular-record scores (no LOF /
+  isolation-forest / one-class).
 
-## Legacy / unpromoted (present but not supported)
+## Historical Sources
 
-- `<metric/mapping.hpp>` is a deprecated legacy umbrella (ESN, KOC, SOM,
-  ensembles, kmeans, hierarchical clustering). It is not covered by the core test
-  gate. Use `<metric/stats.hpp>` / `<metric/modify.hpp>` instead.
-- The `reduce()` SOM / KOC / DSPCC strategy options and the KOC mapping
-  (`KOCMapping` / `KOCModel` / `koc()`) are constructible but not promoted and
-  raise at runtime. Use `pcfa_options`, the native autoencoder, or PHATE-AE.
+- The old broad mapping umbrella is no longer part of the promoted surface or
+  default build. Use `<metric/stats.hpp>` / `<metric/modify.hpp>` /
+  `<metric/engine.hpp>` instead.
+- Placeholder strategy options for old mapping algorithms were removed from
+  `mtrc::modify`. A future operator must enter through a finite-metric-space
+  contract with lineage, metric-status reporting, diagnostics, and tests.
+- The [Metric-Space Research Track](engine/metric-space-research-track.md)
+  lists experimental finite-metric-space candidates such as graph spanners,
+  spectral graph sparsifiers, metric-measure drift, adaptive equalization, and
+  quotient hierarchies. Those entries are not supported APIs until promoted here.
 
 ## Quarantined non-metrics
 
 Some catalog distribution functions are NOT true metrics and are quarantined:
-Sorensen, Cosine (use Angular), RandomEMD, SSIM, Kohonen, CramervonMises,
-KolmogorovSmirnov. They remain constructible for compatibility but are not
+Sorensen, Cosine (use Angular), RandomEMD, SSIM, CramervonMises,
+KolmogorovSmirnov. They remain explicit quarantine entries and are not
 admitted by metric-geometry operators; `mtrc::metric` discovery reports their
 admission status and the admitted alternative. Prefer the admitted metric named
 by discovery (e.g. Wasserstein/EMD instead of RandomEMD, Angular instead of

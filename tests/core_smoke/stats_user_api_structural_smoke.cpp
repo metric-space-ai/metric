@@ -45,7 +45,7 @@ void cluster_diagnostics_on_two_clean_clusters()
 	assert(diagnostics.algorithm == "cluster_diagnostics");
 	assert(diagnostics.cluster_count == 2);
 	assert(diagnostics.evaluated_record_count == 6);
-	assert(diagnostics.noise_count == 0);
+	assert(diagnostics.unassigned_count == 0);
 	assert((diagnostics.cluster_sizes == std::vector<std::size_t>{3, 3}));
 	assert(diagnostics.silhouettes.size() == 6);
 	assert(diagnostics.evaluated_ids.size() == 6);
@@ -76,17 +76,17 @@ void cluster_diagnostics_single_cluster_is_zero()
 	assert(close(diagnostics.mean_nearest_cluster_distance, 0.0));
 }
 
-void cluster_diagnostics_excludes_noise()
+void cluster_diagnostics_excludes_unassigned_records()
 {
 	namespace structural = mtrc::stats::structural_analysis;
-	// Two dense triplets plus a single far record that DBSCAN labels as noise.
+	// Two dense triplets plus a single far record that DBSCAN leaves unassigned.
 	const auto space = mtrc::make_space(std::vector<int>{0, 1, 2, 20, 21, 22, 50}, AbsoluteDistance{});
 
 	const auto clusters = structural::dbscan(space, 2, 2);
 	const auto diagnostics = structural::cluster_diagnostics(space, clusters);
 	assert(diagnostics.cluster_count == 2);
-	assert(diagnostics.noise_count == 1);
-	assert(diagnostics.evaluated_record_count == 6); // the noise record is not evaluated
+	assert(diagnostics.unassigned_count == 1);
+	assert(diagnostics.evaluated_record_count == 6); // the unassigned record is not evaluated
 	assert(diagnostics.mean_silhouette > 0.9);
 }
 
@@ -117,7 +117,7 @@ int main()
 {
 	cluster_diagnostics_on_two_clean_clusters();
 	cluster_diagnostics_single_cluster_is_zero();
-	cluster_diagnostics_excludes_noise();
+	cluster_diagnostics_excludes_unassigned_records();
 	nearest_neighbor_outliers_score_isolation();
 	return 0;
 }

@@ -51,6 +51,22 @@ int main()
 	assert(verification.ok());
 	assert(verification.checked == 3);
 
+	auto limited_options = mtrc::space::persistence::artifact_options{};
+	limited_options.max_materialized_pair_distances = 2;
+	assert(throws<mtrc::MetricInputError>(
+		[&] { (void)mtrc::space::persistence::export_space(space, limited_options); }));
+
+	limited_options.include_pair_distances = false;
+	const auto metadata_only_artifact = mtrc::space::persistence::export_space(space, limited_options);
+	assert(!metadata_only_artifact.pair_distances_included);
+	assert(metadata_only_artifact.pair_count() == 0);
+
+	limited_options.include_pair_distances = true;
+	limited_options.allow_unbounded_pair_distances = true;
+	const auto explicit_pair_artifact = mtrc::space::persistence::export_space(space, limited_options);
+	assert(explicit_pair_artifact.pair_distances_included);
+	assert(explicit_pair_artifact.pair_count() == artifact.pair_count());
+
 	auto restored = mtrc::space::persistence::restore_space(artifact, metric_type{});
 	assert(restored.size() == space.size());
 	assert(restored.version() == space.version());

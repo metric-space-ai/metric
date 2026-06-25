@@ -80,10 +80,10 @@ void dbscan_density_connected_line_is_one_cluster()
 
 	const auto single = structural::dbscan(table, 2, 1);
 	assert(single.cluster_count == 1);
-	assert(single.noise_count == 0);
+	assert(single.unassigned_count == 0);
 	assert(single.core_records.size() == 4);
 	assert((single.assignments == std::vector<std::size_t>{0, 0, 0, 0}));
-	(void)IntGroups::noise_label;
+	(void)IntGroups::unassigned_label;
 }
 
 void repeated_runs_are_identical()
@@ -102,7 +102,7 @@ void repeated_runs_are_identical()
 	const auto dbscan_b = structural::dbscan(table, 2, 2);
 	assert(dbscan_a.assignments == dbscan_b.assignments);
 	assert(dbscan_a.medoids == dbscan_b.medoids);
-	assert(dbscan_a.noise_records == dbscan_b.noise_records);
+	assert(dbscan_a.unassigned_records == dbscan_b.unassigned_records);
 }
 
 } // namespace

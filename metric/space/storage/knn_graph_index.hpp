@@ -21,6 +21,26 @@
 
 namespace mtrc::space::storage {
 
+struct knn_graph_index_refresh_report {
+	bool refreshed{false};
+	bool rebuild_required{false};
+	bool no_op{false};
+	bool exact_rows_updated{false};
+	std::size_t old_size{};
+	std::size_t new_size{};
+	std::size_t appended{};
+	std::size_t version_before{};
+	std::size_t version_after{};
+	std::size_t graph_neighbors{};
+	std::size_t old_row_update_distance_evaluations{};
+	std::size_t appended_row_distance_evaluations{};
+	std::size_t distance_evaluations{};
+	std::string reason;
+	std::vector<std::string> warnings;
+
+	auto changed() const -> bool { return appended > 0; }
+};
+
 template <typename Space> class KnnGraphIndex {
   public:
 	using space_type = Space;
@@ -39,7 +59,7 @@ template <typename Space> class KnnGraphIndex {
 
 		adjacency_.reserve(record_count_);
 		for (std::size_t source = 0; source < record_count_; ++source) {
-			adjacency_.push_back(build_neighbors(source));
+			adjacency_.push_back(build_neighbors(source, &build_distance_evaluations_));
 		}
 	}
 
@@ -58,6 +78,12 @@ template <typename Space> class KnnGraphIndex {
 
 	auto k() const -> std::size_t { return k_; }
 	auto record_count() const -> std::size_t { return record_count_; }
+	auto build_distance_evaluations() const -> std::size_t { return build_distance_evaluations_; }
+	auto maintenance_distance_evaluations() const -> std::size_t { return maintenance_distance_evaluations_; }
+	auto total_distance_evaluations() const -> std::size_t
+	{
+		return build_distance_evaluations_ + maintenance_distance_evaluations_;
+	}
 	auto id(std::size_t position) const -> RecordId
 	{
 		validate_position(position);
@@ -183,7 +209,7 @@ template <typename Space> class KnnGraphIndex {
 		result.built_for_version = version_;
 		result.stale = is_stale();
 		result.records = record_count_;
-		result.distance_evaluations = record_count_ * (record_count_ > 0 ? record_count_ - 1 : 0);
+		result.distance_evaluations = total_distance_evaluations();
 		result.cached_distances = edge_count();
 		result.memory_bytes_estimate = ids_.size() * sizeof(RecordId) + records_.size() * sizeof(record_type);
 		for (const auto &neighbors : adjacency_) {
@@ -198,6 +224,53 @@ template <typename Space> class KnnGraphIndex {
 		return result;
 	}
 
+	auto refresh_after_append() -> knn_graph_index_refresh_report
+	{
+		return refresh_after_append_with_ids(mtrc::record_ids(*space_));
+	}
+
+	template <typename AppendReport>
+	auto refresh_after_append(const AppendReport &append_report) -> knn_graph_index_refresh_report
+	{
+		auto current_ids = mtrc::record_ids(*space_);
+		auto report = make_refresh_report();
+		report.new_size = current_ids.size();
+		report.version_after = space_->version();
+
+		if (append_report.version_before != version_) {
+			report.rebuild_required = true;
+			report.reason = "append report does not start from the kNN graph index version; rebuild required";
+			return report;
+		}
+		if (append_report.version_after != space_->version()) {
+			report.rebuild_required = true;
+			report.reason = "append report is no longer current for the source space; rebuild required";
+			return report;
+		}
+		if (current_ids.size() < ids_.size()) {
+			report.rebuild_required = true;
+			report.reason = "source space shrank after the append report; rebuild required";
+			return report;
+		}
+
+		const auto expected_appended = current_ids.size() - ids_.size();
+		if (append_report.appended != expected_appended ||
+			append_report.appended_ids.size() != expected_appended) {
+			report.rebuild_required = true;
+			report.reason = "append report does not match the source space suffix; rebuild required";
+			return report;
+		}
+		for (std::size_t offset = 0; offset < expected_appended; ++offset) {
+			if (append_report.appended_ids[offset] != current_ids[ids_.size() + offset]) {
+				report.rebuild_required = true;
+				report.reason = "append report RecordIds do not match the source space suffix; rebuild required";
+				return report;
+			}
+		}
+
+		return refresh_after_append_with_ids(current_ids);
+	}
+
   private:
 	template <typename Provider>
 	auto exact_provider_neighbors(const Provider &provider, RecordId source_id) const -> std::vector<neighbor_type>
@@ -209,15 +282,120 @@ template <typename Space> class KnnGraphIndex {
 		return core::take_nearest_neighbors(std::move(candidates), k_);
 	}
 
-	auto build_neighbors(std::size_t source_position) const -> std::vector<neighbor_type>
+	auto build_neighbors(std::size_t source_position, std::size_t *distance_evaluations = nullptr) const
+		-> std::vector<neighbor_type>
 	{
 		auto candidates = core::neighbor_candidates_if<distance_type>(
 			record_count_, [this](std::size_t target) { return ids_[target]; },
-			[this, source_position](RecordId, std::size_t target) {
+			[this, source_position, distance_evaluations](RecordId, std::size_t target) {
+				if (distance_evaluations != nullptr) {
+					++(*distance_evaluations);
+				}
 				return space_->metric()(records_[source_position], records_[target]);
 			},
 			[source_position](RecordId, std::size_t target) { return target != source_position; });
 		return core::take_nearest_neighbors(std::move(candidates), k_);
+	}
+
+	auto make_refresh_report() const -> knn_graph_index_refresh_report
+	{
+		knn_graph_index_refresh_report report;
+		report.old_size = record_count_;
+		report.new_size = space_->size();
+		report.version_before = version_;
+		report.version_after = space_->version();
+		report.graph_neighbors = k_;
+		return report;
+	}
+
+	auto refresh_after_append_with_ids(const std::vector<RecordId> &current_ids)
+		-> knn_graph_index_refresh_report
+	{
+		auto report = make_refresh_report();
+		report.new_size = current_ids.size();
+		report.version_after = space_->version();
+
+		const auto refusal = append_only_refusal(current_ids);
+		if (!refusal.empty()) {
+			report.rebuild_required = true;
+			report.reason = refusal;
+			return report;
+		}
+
+		const auto old_count = record_count_;
+		report.appended = current_ids.size() - ids_.size();
+		if (report.appended == 0) {
+			report.refreshed = true;
+			report.no_op = true;
+			report.exact_rows_updated = true;
+			report.reason = "kNN graph index is already current";
+			return report;
+		}
+
+		ids_.reserve(current_ids.size());
+		records_.reserve(current_ids.size());
+		adjacency_.reserve(current_ids.size());
+		for (std::size_t position = old_count; position < current_ids.size(); ++position) {
+			const auto id = current_ids[position];
+			ids_.push_back(id);
+			records_.push_back(space_->record(id));
+			adjacency_.push_back({});
+		}
+		record_count_ = ids_.size();
+
+		if (k_ > 0) {
+			for (std::size_t source = 0; source < old_count; ++source) {
+				auto candidates = adjacency_[source];
+				candidates.reserve(candidates.size() + report.appended);
+				for (std::size_t target = old_count; target < record_count_; ++target) {
+					candidates.push_back(neighbor_type{
+						ids_[target],
+						static_cast<distance_type>(space_->metric()(records_[source], records_[target]))});
+					++report.old_row_update_distance_evaluations;
+				}
+				adjacency_[source] = core::take_nearest_neighbors(std::move(candidates), k_);
+			}
+			for (std::size_t source = old_count; source < record_count_; ++source) {
+				adjacency_[source] = build_neighbors(source, &report.appended_row_distance_evaluations);
+			}
+		}
+
+		report.distance_evaluations =
+			report.old_row_update_distance_evaluations + report.appended_row_distance_evaluations;
+		version_ = space_->version();
+		maintenance_distance_evaluations_ += report.distance_evaluations;
+		report.refreshed = true;
+		report.exact_rows_updated = true;
+		report.reason = "updated exact kNN rows for appended records without rebuilding old all-pairs rows";
+		refresh_cache_key();
+		return report;
+	}
+
+	auto append_only_refusal(const std::vector<RecordId> &current_ids) const -> std::string
+	{
+		if (current_ids.size() < ids_.size()) {
+			return "source space shrank since the kNN graph snapshot; rebuild required";
+		}
+		for (std::size_t position = 0; position < ids_.size(); ++position) {
+			if (current_ids[position] != ids_[position]) {
+				return "source RecordIds no longer match the kNN graph snapshot prefix; rebuild required";
+			}
+		}
+		if (space_->version() < version_) {
+			return "source space version moved behind the kNN graph snapshot; rebuild required";
+		}
+		const auto appended = current_ids.size() - ids_.size();
+		const auto version_delta = space_->version() - version_;
+		if (version_delta != appended) {
+			return "source space version changed without a matching append-only suffix; rebuild required";
+		}
+		return {};
+	}
+
+	auto refresh_cache_key() -> void
+	{
+		cache_key_ = representation_cache_key("knn_graph_index", metric_key_, version_, ids_,
+											  {{"k", std::to_string(k_)}});
 	}
 
 	auto validate_position(std::size_t position) const -> void
@@ -233,6 +411,8 @@ template <typename Space> class KnnGraphIndex {
 	std::size_t version_;
 	std::string metric_key_;
 	std::string cache_key_;
+	std::size_t build_distance_evaluations_{};
+	std::size_t maintenance_distance_evaluations_{};
 	std::vector<RecordId> ids_;
 	std::vector<record_type> records_;
 	std::vector<std::vector<neighbor_type>> adjacency_;

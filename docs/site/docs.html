@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="Technical documentation for the METRIC native C++ finite metric-space engine."
+      content="Technical documentation for METRIC, the native C++ framework for finite metric spaces."
     />
     <title>METRIC Docs</title>
     <style>
@@ -325,7 +325,7 @@
           <p class="kicker">Technical Documentation</p>
           <h1>Finite metric spaces as native C++ numerical objects.</h1>
           <p class="lead">
-            METRIC works with records and explicit metrics. The core engine owns the metric-space model; bindings adapt external language data to that native implementation.
+            METRIC works with records and explicit metrics. The core engine owns the metric-space object model; bindings adapt external language data to that native implementation.
           </p>
         </div>
 
@@ -336,6 +336,9 @@
           </p>
           <p>
             Records do not need to be vectors. METRIC can use strings with edit distance, histograms with transport distance, process curves with alignment distance, mixed records with composed domain penalties, or vectors with Euclidean distance.
+          </p>
+          <p>
+            Coordinate workflows are special cases of the finite-space object. METRIC starts from records and a metric, then derives coordinate views or vector-style strategies when that is the right representation.
           </p>
         </section>
 
@@ -401,13 +404,13 @@ print(space.neighbors("cut", k=2))</code></pre>
         <section id="examples">
           <h2>Application Workflows</h2>
           <p>
-            The checked examples are C++ workflows that start from native record types and an admitted or explicitly documented metric computation. They demonstrate modeling patterns for monitoring, distribution recoding, mixed records, dependency analysis, sampling, and metric-aware transformations.
+            The checked examples are C++ workflows that start from native record types and an admitted or explicitly documented metric computation. They demonstrate finite-space patterns for monitoring, distribution recoding, mixed records, dependency analysis, sampling, and metric-aware transformations.
           </p>
           <div class="cards">
             <div class="card"><strong>Condition Monitoring</strong><span>Process windows remain time-series records. Alignment metrics support entropy, outlier, representative, and dependency analysis over the process geometry.</span></div>
             <div class="card"><strong>Distribution Recoding</strong><span>Histograms and image-like records use movement cost, so shifted structure can remain near even when coordinate overlap is weak.</span></div>
-            <div class="card"><strong>Mixed Industrial Records</strong><span>Sensor vectors, states, text, histograms, and curves can be compared with one composed metric instead of a forced multimodal embedding.</span></div>
-            <div class="card"><strong>Metric-Aware Embeddings</strong><span>PHATE-AE-style pipelines are native engine compositions that produce derived coordinate spaces with provenance and diagnostics.</span></div>
+            <div class="card"><strong>Mixed Industrial Records</strong><span>Sensor vectors, states, text, histograms, and curves can be compared with one composed metric without requiring a shared coordinate representation.</span></div>
+            <div class="card"><strong>Metric-Aware Coordinates</strong><span>Diffusion-coordinate pipelines are native framework compositions that produce derived coordinate spaces with provenance and diagnostics.</span></div>
           </div>
           <p>
             The documented outputs are in <a href="https://github.com/metric-space-ai/metric/blob/master/docs/examples/engine-demo-outputs.md">docs/examples/engine-demo-outputs.md</a>.

@@ -1,8 +1,11 @@
 #include <cassert>
+#include <cstddef>
 #include <cmath>
 #include <limits>
+#include <memory>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "metric/core/metric_space.hpp"
@@ -21,6 +24,22 @@ namespace {
 struct AbsoluteDistance {
 	auto operator()(int lhs, int rhs) const -> int
 	{
+		const auto difference = lhs - rhs;
+		return difference < 0 ? -difference : difference;
+	}
+};
+
+struct CountingAbsoluteDistance {
+	std::shared_ptr<std::size_t> calls;
+
+	explicit CountingAbsoluteDistance(std::shared_ptr<std::size_t> call_counter)
+		: calls(std::move(call_counter))
+	{
+	}
+
+	auto operator()(int lhs, int rhs) const -> int
+	{
+		++(*calls);
 		const auto difference = lhs - rhs;
 		return difference < 0 ? -difference : difference;
 	}
@@ -105,6 +124,17 @@ int main()
 	assert((one_radius.counts == std::vector<std::size_t>{4, 4, 4, 4, 1}));
 	assert(close(one_radius.average_density, 17.0 / 25.0));
 
+	const auto profile_calls = std::make_shared<std::size_t>(0);
+	const auto counted_uneven_space =
+		mtrc::make_space(std::vector<int>{0, 0, 0, 1, 100}, CountingAbsoluteDistance(profile_calls));
+	const auto growth_profile = properties::local_volume_profile(counted_uneven_space, std::vector<int>{0, 1});
+	assert(growth_profile.size() == 2);
+	assert(growth_profile.entries[0].minimum_count == 1);
+	assert(growth_profile.entries[0].maximum_count == 3);
+	assert(close(growth_profile.entries[0].average_count, 2.2));
+	assert(close(growth_profile.entries[1].average_count, 17.0 / 5.0));
+	assert(*profile_calls == counted_uneven_space.size() * counted_uneven_space.size());
+
 	const auto farthest = sample::farthest_first(uneven_space, 3);
 	const auto farthest_again = sample::farthest_first(uneven_space, 3);
 	assert(farthest.algorithm == "farthest_first");
@@ -155,17 +185,17 @@ int main()
 
 	const auto dbscan_duplicates = structural::dbscan(identical_space, 0, 2);
 	assert(dbscan_duplicates.cluster_count == 1);
-	assert(dbscan_duplicates.noise_count == 0);
+	assert(dbscan_duplicates.unassigned_count == 0);
 	assert((dbscan_duplicates.cluster_sizes == std::vector<std::size_t>{4}));
 	assert(dbscan_duplicates.core_records.size() == 4);
 	assert(mtrc::summary(dbscan_duplicates).find("ClusteringResult") != std::string::npos);
 
-	const auto all_noise = structural::find_outliers(uneven_space, structural::dbscan_options(1.0, 2));
-	assert(all_noise.noise_count == 1);
-	assert(all_noise.size() == 1);
-	assert(all_noise[0].id == uneven_space.id(4));
-	assert(all_noise[0].score == 99);
-	assert(mtrc::summary(all_noise).find("OutlierResult") != std::string::npos);
+	const auto unassigned_outliers = structural::find_outliers(uneven_space, structural::dbscan_options(1.0, 2));
+	assert(unassigned_outliers.unassigned_count == 1);
+	assert(unassigned_outliers.size() == 1);
+	assert(unassigned_outliers[0].id == uneven_space.id(4));
+	assert(unassigned_outliers[0].score == 99);
+	assert(mtrc::summary(unassigned_outliers).find("OutlierResult") != std::string::npos);
 
 	assert(throws_invalid_argument([&] { (void)properties::local_volume(uneven_space, -1); }));
 	assert(throws_invalid_argument([&] {

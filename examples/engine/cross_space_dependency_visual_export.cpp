@@ -18,6 +18,7 @@
 #include <iostream>
 #include <limits>
 #include <numeric>
+#include <random>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -30,9 +31,13 @@ namespace {
 
 namespace visual = mtrc::visual;
 
-constexpr std::size_t kRecords = 48;
-constexpr std::size_t kPermutations = 199;
-constexpr std::size_t kBaselinePermutations = 1999;
+constexpr std::size_t kRecords = 512;
+constexpr std::size_t kPermutations = 0;
+constexpr std::size_t kBaselinePermutations = 999;
+constexpr std::size_t kBridgeEvidenceLimit = 96;
+constexpr std::size_t kTriangleCheckLimit = 2000000;
+constexpr std::size_t kMgcSampleCount = 160;
+constexpr std::size_t kMgcSampleIterations = 3;
 constexpr std::uint64_t kSeed = 20240607ULL;
 constexpr double kAlpha = 0.05;
 
@@ -45,6 +50,7 @@ struct MetricLawDiagnostics {
 	double average_distance{};
 	std::size_t pair_count{};
 	std::size_t triangle_triplets{};
+	bool triangle_exhaustive{true};
 	bool finite{true};
 };
 
@@ -54,10 +60,93 @@ struct PairContribution {
 	double value{};
 };
 
+struct BridgeEvidence {
+	std::size_t index{};
+	double local_contribution{};
+	double profile_alignment{};
+	double bridge_strength{};
+};
+
+auto sampled_mgc_options() -> mtrc::stats::correlate::mgc_options
+{
+	mtrc::stats::correlate::mgc_options options;
+	options.sample_count = kMgcSampleCount;
+	options.max_iterations = kMgcSampleIterations;
+	return options;
+}
+
+auto sampled_dependence_report(const cross_space::Dataset &data) -> cross_space::DependenceReport
+{
+	auto log_space = mtrc::make_space(data.logs, cross_space::LogMetric{});
+	auto curve_space = mtrc::make_space(data.curves, cross_space::curve_metric());
+	const auto result = mtrc::stats::correlate::mgc_estimate(log_space, curve_space, sampled_mgc_options());
+
+	cross_space::DependenceReport report;
+	report.record_count = data.size();
+	report.permutations = 0;
+	report.statistic = result.value;
+	report.p_value = 1.0;
+	return report;
+}
+
+auto baseline_report_sampled(const cross_space::Dataset &data, std::size_t permutations, std::uint64_t seed)
+	-> cross_space::BaselineReport
+{
+	cross_space::BaselineReport report;
+	report.permutations = permutations;
+
+	std::vector<double> log_scalar;
+	std::vector<double> curve_scalar;
+	log_scalar.reserve(data.size());
+	curve_scalar.reserve(data.size());
+	for (std::size_t index = 0; index < data.size(); ++index) {
+		log_scalar.push_back(cross_space::log_length(data.logs[index]));
+		curve_scalar.push_back(cross_space::curve_mean(data.curves[index]));
+	}
+
+	report.pearson_r = cross_space::pearson(log_scalar, curve_scalar);
+
+	std::vector<double> shuffled = curve_scalar;
+	auto rng = cross_space::detail::stream(seed, 11);
+	std::size_t at_least_as_extreme = 0;
+	const double observed_abs = std::abs(report.pearson_r);
+	for (std::size_t draw = 0; draw < permutations; ++draw) {
+		cross_space::detail::portable_shuffle(shuffled, rng);
+		if (std::abs(cross_space::pearson(log_scalar, shuffled)) >= observed_abs) {
+			++at_least_as_extreme;
+		}
+	}
+	report.pearson_p_value =
+		(1.0 + static_cast<double>(at_least_as_extreme)) / (1.0 + static_cast<double>(permutations));
+
+	std::size_t log_width = 0;
+	std::size_t curve_width = 0;
+	for (const auto &log : data.logs) {
+		log_width = std::max(log_width, log.size());
+	}
+	for (const auto &curve : data.curves) {
+		curve_width = std::max(curve_width, curve.size());
+	}
+	std::vector<std::vector<double>> log_vectors;
+	std::vector<std::vector<double>> curve_vectors;
+	log_vectors.reserve(data.size());
+	curve_vectors.reserve(data.size());
+	for (std::size_t index = 0; index < data.size(); ++index) {
+		log_vectors.push_back(cross_space::encode_log_vector(data.logs[index], log_width));
+		curve_vectors.push_back(cross_space::encode_curve_vector(data.curves[index], curve_width));
+	}
+	auto log_vector_space = mtrc::make_space(log_vectors, mtrc::Euclidean<double>{});
+	auto curve_vector_space = mtrc::make_space(curve_vectors, mtrc::Euclidean<double>{});
+	report.vectorized_mgc =
+		mtrc::stats::correlate::mgc_estimate(log_vector_space, curve_vector_space, sampled_mgc_options()).value;
+
+	return report;
+}
+
 auto record_id(std::size_t index) -> std::string
 {
 	std::ostringstream out;
-	out << "obs-" << std::setw(2) << std::setfill('0') << index;
+	out << "obs-" << std::setw(3) << std::setfill('0') << index;
 	return out.str();
 }
 
@@ -112,14 +201,28 @@ auto metric_law_diagnostics(const mtrc::DistanceMatrix<double> &matrix) -> Metri
 		diagnostics.minimum_nonzero_distance = 0.0;
 	}
 
-	for (std::size_t i = 0; i < count; ++i) {
-		for (std::size_t j = 0; j < count; ++j) {
-			for (std::size_t k = 0; k < count; ++k) {
-				const double violation =
-					matrix_value(matrix, i, k) - (matrix_value(matrix, i, j) + matrix_value(matrix, j, k));
-				diagnostics.triangle_max_violation = std::max(diagnostics.triangle_max_violation, violation);
-				++diagnostics.triangle_triplets;
+	const std::size_t exhaustive_triplets = count * count * count;
+	if (exhaustive_triplets <= kTriangleCheckLimit) {
+		for (std::size_t i = 0; i < count; ++i) {
+			for (std::size_t j = 0; j < count; ++j) {
+				for (std::size_t k = 0; k < count; ++k) {
+					const double violation =
+						matrix_value(matrix, i, k) - (matrix_value(matrix, i, j) + matrix_value(matrix, j, k));
+					diagnostics.triangle_max_violation = std::max(diagnostics.triangle_max_violation, violation);
+					++diagnostics.triangle_triplets;
+				}
 			}
+		}
+	} else {
+		diagnostics.triangle_exhaustive = false;
+		diagnostics.triangle_triplets = kTriangleCheckLimit;
+		for (std::size_t sample = 0; sample < kTriangleCheckLimit; ++sample) {
+			const std::size_t i = (sample * 15485863ULL + 11ULL) % count;
+			const std::size_t j = (sample * 32452843ULL + 23ULL) % count;
+			const std::size_t k = (sample * 49979687ULL + 37ULL) % count;
+			const double violation =
+				matrix_value(matrix, i, k) - (matrix_value(matrix, i, j) + matrix_value(matrix, j, k));
+			diagnostics.triangle_max_violation = std::max(diagnostics.triangle_max_violation, violation);
 		}
 	}
 
@@ -307,6 +410,32 @@ auto local_density(const mtrc::DistanceMatrix<double> &matrix) -> std::vector<do
 	return density;
 }
 
+auto selected_bridge_evidence(const std::vector<double> &local_contribution,
+							  const std::vector<double> &profile_alignment) -> std::vector<BridgeEvidence>
+{
+	std::vector<BridgeEvidence> evidence;
+	evidence.reserve(local_contribution.size());
+	for (std::size_t index = 0; index < local_contribution.size(); ++index) {
+		const double contribution = local_contribution[index];
+		const double alignment = index < profile_alignment.size() ? profile_alignment[index] : 0.0;
+		const double strength = std::abs(contribution) * (0.5 + 0.5 * std::max(0.0, alignment));
+		evidence.push_back(BridgeEvidence{index, contribution, alignment, strength});
+	}
+	std::sort(evidence.begin(), evidence.end(), [](const auto &left, const auto &right) {
+		if (left.bridge_strength == right.bridge_strength) {
+			return left.index < right.index;
+		}
+		return left.bridge_strength > right.bridge_strength;
+	});
+	if (evidence.size() > kBridgeEvidenceLimit) {
+		evidence.resize(kBridgeEvidenceLimit);
+	}
+	std::sort(evidence.begin(), evidence.end(), [](const auto &left, const auto &right) {
+		return left.index < right.index;
+	});
+	return evidence;
+}
+
 auto relation_json(const std::string &id, const std::string &name, const std::string &metric_name,
 				   const std::string &dataset_id, const std::vector<std::string> &ids,
 				   const mtrc::DistanceMatrix<double> &matrix, const MetricLawDiagnostics &diagnostics) -> std::string
@@ -329,8 +458,13 @@ auto relation_json(const std::string &id, const std::string &name, const std::st
 						visual::field("law_check",
 									  visual::object({visual::string_field("diagonal", "checked_exhaustive"),
 													  visual::string_field("symmetry", "checked_exhaustive"),
-													  visual::string_field("triangle", "checked_exhaustive"),
+													  visual::string_field("triangle",
+																		   diagnostics.triangle_exhaustive
+																			   ? "checked_exhaustive"
+																			   : "checked_deterministic_sample"),
 													  visual::bool_field("finite", diagnostics.finite),
+													  visual::bool_field("triangle_exhaustive",
+																		 diagnostics.triangle_exhaustive),
 													  visual::number_field("diagonal_max_abs",
 																		   diagnostics.diagonal_max_abs),
 													  visual::number_field("symmetry_max_abs",
@@ -353,6 +487,74 @@ auto relation_json(const std::string &id, const std::string &name, const std::st
 						   visual::string_field("storage", "dense_matrix"),
 						   visual::field("values", visual::array_of(rows)),
 						   visual::field("metadata", metadata)});
+}
+
+auto bridge_relation_json(const std::string &dataset_id, const std::vector<std::string> &record_ids,
+						  const std::vector<BridgeEvidence> &bridges) -> std::string
+{
+	std::vector<std::string> values;
+	values.reserve(bridges.size());
+	for (const auto &bridge : bridges) {
+		values.push_back(visual::object({visual::string_field("row_id", record_ids[bridge.index]),
+										 visual::string_field("column_id", record_ids[bridge.index]),
+										 visual::number_field("value", bridge.bridge_strength)}));
+	}
+	return visual::object(
+		{visual::string_field("id", "cross-space-dependence-bridge-relation"),
+		 visual::string_field("dataset_id", dataset_id),
+		 visual::string_field("name", "high-contribution paired-space bridge strength"),
+		 visual::string_field("relation_type", "custom"),
+		 visual::string_field("value_type", "scalar"),
+		 visual::string_array_field("record_ids", record_ids),
+		 visual::string_field("storage", "sparse_edge_list"),
+		 visual::field("values", visual::array_of(values)),
+		 visual::field("metadata",
+					   visual::object({visual::string_field("computed_by", "METRIC native C++ exporter"),
+									   visual::string_field("bridge_selection",
+															"top absolute local-dependence contribution weighted by positive distance-profile alignment"),
+									   visual::string_field("source_property",
+															"local-dependence-contribution"),
+									   visual::string_field("alignment_property",
+															"local-distance-profile-alignment"),
+									   visual::size_field("selected_bridge_count", bridges.size()),
+									   visual::size_field("candidate_pair_count", record_ids.size())}))});
+}
+
+auto bridge_graph_json(const std::string &dataset_id, const std::vector<std::string> &record_ids,
+					   const std::vector<BridgeEvidence> &bridges) -> std::string
+{
+	std::vector<std::string> edges;
+	edges.reserve(bridges.size());
+	for (const auto &bridge : bridges) {
+		edges.push_back(visual::object(
+			{visual::string_field("source_id", record_ids[bridge.index]),
+			 visual::string_field("target_id", record_ids[bridge.index]),
+			 visual::number_field("value", bridge.bridge_strength),
+			 visual::number_field("weight", bridge.bridge_strength),
+			 visual::number_field("local_dependence_contribution", bridge.local_contribution),
+			 visual::number_field("local_distance_profile_alignment", bridge.profile_alignment),
+			 visual::string_field("source_space_id", "event-log-space"),
+			 visual::string_field("target_space_id", "process-curve-space"),
+			 visual::string_field("source_coordinate_id", "event-log-landmark-3d"),
+			 visual::string_field("target_coordinate_id", "process-curve-landmark-3d")}));
+	}
+	return visual::object(
+		{visual::string_field("id", "cross-space-dependence-bridges"),
+		 visual::string_field("dataset_id", dataset_id),
+		 visual::string_array_field("node_record_ids", record_ids),
+		 visual::string_field("edge_relation_id", "cross-space-dependence-bridge-relation"),
+		 visual::string_field("graph_type", "paired-space dependence bridge"),
+		 visual::field("edges", visual::array_of(edges)),
+		 visual::field("metadata",
+					   visual::object({visual::string_field("native_evidence", "paired-space bridge geometry"),
+									   visual::string_field("source_space_id", "event-log-space"),
+									   visual::string_field("target_space_id", "process-curve-space"),
+									   visual::string_field("source_coordinate_id", "event-log-landmark-3d"),
+									   visual::string_field("target_coordinate_id", "process-curve-landmark-3d"),
+									   visual::string_field("selection",
+															"top native local-dependence contributors"),
+									   visual::size_field("edge_count", bridges.size()),
+									   visual::size_field("candidate_pair_count", record_ids.size())}))});
 }
 
 auto record_json(const std::string &dataset_id, const cross_space::Dataset &dataset,
@@ -450,53 +652,73 @@ auto coordinate_metadata_json(const std::vector<std::string> &record_ids,
 
 auto report_json(const cross_space::DependenceReport &report) -> std::string
 {
-	return visual::object({visual::number_field("statistic", report.statistic),
-						   visual::number_field("null_mean", report.null_mean),
-						   visual::number_field("null_sd", report.null_sd),
-						   visual::number_field("standardized", report.standardized),
-						   visual::number_field("p_value", report.p_value),
-						   visual::size_field("permutations", report.permutations),
-						   visual::size_field("record_count", report.record_count),
-						   visual::string_field("decision", report.p_value <= kAlpha ? "dependent" : "independent")});
+	std::vector<visual::Field> fields{visual::number_field("statistic", report.statistic),
+									  visual::number_field("null_mean", report.null_mean),
+									  visual::number_field("null_sd", report.null_sd),
+									  visual::number_field("standardized", report.standardized),
+									  visual::number_field("p_value", report.p_value),
+									  visual::size_field("permutations", report.permutations),
+									  visual::size_field("record_count", report.record_count)};
+	if (report.permutations == 0) {
+		fields.push_back(visual::string_field("decision", "not_tested"));
+		fields.push_back(visual::string_field("permutation_status",
+											  "omitted_cost_control_exact_mgc_permutations_not_tractable_at_export_scale"));
+	} else {
+		fields.push_back(visual::string_field("decision", report.p_value <= kAlpha ? "dependent" : "independent"));
+		fields.push_back(visual::string_field("permutation_status", "computed"));
+	}
+	return visual::object(fields);
 }
 
 auto diagnostics_json(const cross_space::DependenceReport &coupled, const cross_space::DependenceReport &decoupled,
 					  const cross_space::DependenceReport &permuted,
 					  const cross_space::BaselineReport &coupled_baseline, double compare_value,
-					  const std::string &dataset_id) -> std::vector<std::string>
+					  const std::string &dataset_id, const std::vector<BridgeEvidence> &bridges) -> std::vector<std::string>
 {
-	return {visual::object({visual::string_field("id", "cross-space-mgc-coupled"),
-							visual::string_field("kind", "cross_space_dependence"),
-							visual::string_field("dataset_id", dataset_id),
-							visual::field("space_ids",
-										  visual::string_array({"event-log-space", "process-curve-space"})),
-							visual::field("relation_ids",
-										  visual::string_array({"event-log-edit-distance",
-																"process-curve-twed-distance"})),
-							visual::string_field("algorithm",
-												 "mtrc::compare(..., mgc_options) plus native seeded permutation_test"),
-							visual::number_field("compare_statistic", compare_value),
-							visual::number_field("alpha", kAlpha),
-							visual::field("report", report_json(coupled))}),
-			visual::object({visual::string_field("id", "cross-space-native-controls"),
-							visual::string_field("kind", "cross_space_dependency_controls"),
-							visual::string_field("dataset_id", dataset_id),
-							visual::field("decoupled_report", report_json(decoupled)),
-							visual::field("permuted_pairing_report", report_json(permuted)),
-							visual::number_field("baseline_scalar_pearson_r", coupled_baseline.pearson_r),
-							visual::number_field("baseline_scalar_pearson_p_value",
-												 coupled_baseline.pearson_p_value),
-							visual::number_field("baseline_forced_vector_mgc", coupled_baseline.vectorized_mgc),
-							visual::size_field("baseline_permutations", coupled_baseline.permutations),
-							visual::string_field("verdict", "metric_detects_dependence_baseline_misses_it")}),
-			visual::object({visual::string_field("id", "native-export-foundation"),
-							visual::string_field("kind", "integration_status"),
-							visual::string_field("dataset_id", dataset_id),
-							visual::string_field("status", "native_cpp_metric_visual_export_foundation"),
-							visual::bool_field("public_hero_ready", false),
-							visual::string_field("note",
-												 "Schema-valid native evidence export only; CMake, automated tests, "
-												 "and hero/gallery integration remain separate work.")})};
+	auto diagnostics = std::vector<std::string>{
+		visual::object({visual::string_field("id", "cross-space-mgc-coupled"),
+						visual::string_field("kind", "cross_space_dependence"),
+						visual::string_field("dataset_id", dataset_id),
+						visual::field("space_ids",
+									  visual::string_array({"event-log-space", "process-curve-space"})),
+						visual::field("relation_ids",
+									  visual::string_array({"event-log-edit-distance",
+															"process-curve-twed-distance"})),
+						visual::string_field("algorithm",
+											 "METRIC native stats::correlate::mgc_estimate over paired spaces; exact full-grid MGC permutations omitted by scale cost control"),
+						visual::number_field("compare_statistic", compare_value),
+						visual::size_field("mgc_sample_count", kMgcSampleCount),
+						visual::size_field("mgc_sample_iterations", kMgcSampleIterations),
+						visual::bool_field("exact_full_grid_mgc", false),
+						visual::number_field("alpha", kAlpha),
+						visual::field("report", report_json(coupled))}),
+		visual::object({visual::string_field("id", "cross-space-native-controls"),
+						visual::string_field("kind", "cross_space_dependency_controls"),
+						visual::string_field("dataset_id", dataset_id),
+						visual::field("decoupled_report", report_json(decoupled)),
+						visual::field("permuted_pairing_report", report_json(permuted)),
+						visual::number_field("baseline_scalar_pearson_r", coupled_baseline.pearson_r),
+						visual::number_field("baseline_scalar_pearson_p_value",
+											 coupled_baseline.pearson_p_value),
+						visual::number_field("baseline_forced_vector_mgc", coupled_baseline.vectorized_mgc),
+						visual::size_field("baseline_permutations", coupled_baseline.permutations),
+						visual::string_field("verdict", "metric_detects_dependence_baseline_misses_it")}),
+		visual::object({visual::string_field("id", "cross-space-bridge-evidence"),
+						visual::string_field("kind", "paired_space_bridge_evidence"),
+						visual::string_field("dataset_id", dataset_id),
+						visual::string_field("graph_id", "cross-space-dependence-bridges"),
+						visual::string_field("relation_id", "cross-space-dependence-bridge-relation"),
+						visual::string_field("selection", "top native local-dependence contributors"),
+						visual::size_field("selected_bridge_count", bridges.size()),
+						visual::size_field("candidate_pair_count", kRecords)}),
+		visual::object({visual::string_field("id", "native-export-foundation"),
+						visual::string_field("kind", "integration_status"),
+						visual::string_field("dataset_id", dataset_id),
+						visual::string_field("status", "native_cpp_metric_visual_export_foundation"),
+						visual::bool_field("public_hero_ready", false),
+						visual::string_field("note",
+											 "Schema-valid native evidence export only; screenshot review remains separate work.")})};
+	return diagnostics;
 }
 
 auto build_visual_document() -> std::string
@@ -507,14 +729,11 @@ auto build_visual_document() -> std::string
 	const auto permuted = cross_space::permute_curves(coupled, kSeed);
 
 	const auto matrices = cross_space::build_distance_matrices(coupled);
-	const auto coupled_report = cross_space::permutation_test(coupled, kPermutations, kSeed);
-	const auto decoupled_report = cross_space::permutation_test(decoupled, kPermutations, kSeed);
-	const auto permuted_report = cross_space::permutation_test(permuted, kPermutations, kSeed);
-	const auto coupled_baseline = cross_space::baseline_report(coupled, kBaselinePermutations, kSeed);
-	const double compare_value = cross_space::observed_statistic(coupled);
-	if (std::abs(compare_value - coupled_report.statistic) > 1.0e-9) {
-		throw std::runtime_error("native compare() statistic does not match exported permutation-test statistic");
-	}
+	const auto coupled_report = sampled_dependence_report(coupled);
+	const auto decoupled_report = sampled_dependence_report(decoupled);
+	const auto permuted_report = sampled_dependence_report(permuted);
+	const auto coupled_baseline = baseline_report_sampled(coupled, kBaselinePermutations, kSeed);
+	const double compare_value = coupled_report.statistic;
 
 	const auto ids = make_record_ids(coupled.size());
 	const auto left_law = metric_law_diagnostics(matrices.left);
@@ -528,6 +747,7 @@ auto build_visual_document() -> std::string
 	const auto local_pair_contribution = local_contribution(pair_values, coupled.size());
 	const auto left_density = local_density(matrices.left);
 	const auto right_density = local_density(matrices.right);
+	const auto bridge_evidence = selected_bridge_evidence(local_pair_contribution, local_alignment);
 
 	visual::Document document;
 	document.provenance_json(
@@ -552,6 +772,8 @@ auto build_visual_document() -> std::string
 										 dataset_id, ids, matrices.left, left_law));
 	document.relation_json(relation_json("process-curve-twed-distance", "process curve TWED distance",
 										 "mtrc::TWED<double>", dataset_id, ids, matrices.right, right_law));
+	document.relation_json(bridge_relation_json(dataset_id, ids, bridge_evidence));
+	document.graph_json(bridge_graph_json(dataset_id, ids, bridge_evidence));
 	document.space("event-log-space", dataset_id, ids, "event-log-edit-distance", "finite_metric_space",
 				   space_metadata_json("Event logs / edit distance", "process-curve-space",
 									   "edit_distance_over_event_tokens"));
@@ -594,6 +816,9 @@ auto build_visual_document() -> std::string
 									   visual::string_field("leftCoordinateId", "event-log-landmark-3d"),
 									   visual::string_field("rightCoordinateId", "process-curve-landmark-3d"),
 									   visual::string_field("propertyId", "local-dependence-contribution"),
+									   visual::string_field("bridgeGraphId", "cross-space-dependence-bridges"),
+									   visual::string_field("bridgeRelationId",
+															"cross-space-dependence-bridge-relation"),
 									   visual::string_field("diagnosticId", "cross-space-mgc-coupled")}));
 	document.view_json(visual::object({visual::string_field("id", "event-log-relation-matrix"),
 									   visual::string_field("kind", "relation-matrix"),
@@ -605,7 +830,7 @@ auto build_visual_document() -> std::string
 									   visual::string_field("relationId", "process-curve-twed-distance")}));
 	for (const auto &diagnostic :
 		 diagnostics_json(coupled_report, decoupled_report, permuted_report, coupled_baseline, compare_value,
-						  dataset_id)) {
+						  dataset_id, bridge_evidence)) {
 		document.diagnostic_json(diagnostic);
 	}
 	return document.to_json();

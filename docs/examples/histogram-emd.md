@@ -1,8 +1,8 @@
 # Histogram Space With EMD
 
-Histograms and empirical distributions are often better compared by transport cost than by coordinate-wise vector distance. Earth mover distance models how much mass must move between bins and how expensive those bin-to-bin moves are.
+Histograms and empirical distributions are often better compared by transport cost than by coordinate-wise vector distance. Earth mover distance measures how much mass must move between bins and how expensive those bin-to-bin moves are.
 
-METRIC exposes two transport surfaces. `mtrc::Wasserstein<V>` is the **strict true metric** (`metric_law::metric`): it admits only a metric ground cost and equal nonnegative mass, so it can be routed into metric-only algorithms such as cover-tree indexing. `mtrc::EMD<V>` is the older **permissive compatibility** route (`metric_law::distance`): it accepts an arbitrary ground cost and unbalanced mass via an extra-mass penalty, which does not preserve the metric axioms, so it must not be used as a metric. Prefer `mtrc::Wasserstein<V>` for new code; see the [Metric Quarantine Inventory](../metrics/quarantine-inventory.md) for the split rationale.
+METRIC exposes two transport surfaces. `mtrc::Wasserstein<V>` is the **strict true metric** (`metric_law::metric`): it admits only a metric ground cost and equal nonnegative mass, so it can be routed into metric-only algorithms such as cover-tree indexing. `mtrc::EMD<V>` is the older **permissive distance** route (`metric_law::distance`): it accepts an arbitrary ground cost and unbalanced mass via an extra-mass penalty, which does not preserve the metric axioms, so it must not be used as a metric. Prefer `mtrc::Wasserstein<V>` for new code; see the [Metric Quarantine Inventory](../metrics/quarantine-inventory.md) for the split rationale.
 
 The promoted C++ example [histogram_emd_space.cpp](../../examples/core/histogram_emd_space.cpp) uses a small one-dimensional ground-cost matrix, then builds a `mtrc::MatrixSpace` over histogram records.
 

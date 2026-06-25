@@ -6,7 +6,7 @@
 //
 // There is no runtime randomness: every record is a closed-form function of a
 // (fault family, severity) pair, plus a small set of hand-built probes that
-// isolate one field at a time. The generative model is split so that
+// isolate one field at a time. The generative fixture is split so that
 //
 //   * FAULT FAMILY  is carried by the text code, the process-curve *phase*, and
 //     the large-scale vital -> this is what clustering / representatives recover;
@@ -23,9 +23,14 @@
 #ifndef METRIC_EXAMPLES_ENGINE_MIXED_FINITE_RECORDS_FIXTURE_HPP
 #define METRIC_EXAMPLES_ENGINE_MIXED_FINITE_RECORDS_FIXTURE_HPP
 
+#include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
+#include <iomanip>
+#include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "mixed_finite_records.hpp"
@@ -38,11 +43,27 @@ namespace hero {
 
 inline constexpr std::size_t kFamilyCount = 4;
 inline constexpr std::size_t kSeverityLevels = 5;
+inline constexpr std::size_t kPublicRecordTypeCount = 4;
+inline constexpr std::size_t kScaledVariantsPerCell = 25;
+inline constexpr std::size_t kScaledFleetRecordCount =
+	kPublicRecordTypeCount * kFamilyCount * kSeverityLevels * kScaledVariantsPerCell;
 
 struct LabeledRecord {
 	MixedRecord record;
 	std::string family; // ground-truth fault family
 	double severity{};  // latent outcome in [0, kSeverityLevels - 1]
+};
+
+struct TypedLabeledRecord {
+	MixedRecord record;
+	std::string family;         // ground-truth fault family
+	double severity{};          // latent outcome, with a deterministic variant offset
+	std::string record_type;    // public metric.visual.v1 record_type
+	std::string payload_family; // public preview payload family
+	std::size_t family_index{};
+	std::size_t severity_index{};
+	std::size_t type_index{};
+	std::size_t variant{};
 };
 
 inline auto family_code(std::size_t family) -> std::string
@@ -51,6 +72,34 @@ inline auto family_code(std::size_t family) -> std::string
 	// but identical within a family so it carries no severity signal at all.
 	static const std::array<std::string, kFamilyCount> stems{"valveflow", "bearingrun", "pumphead", "filterbed"};
 	return stems[family];
+}
+
+inline auto public_record_type(std::size_t type) -> std::string
+{
+	static const std::array<std::string, kPublicRecordTypeCount> names{
+		"text_code_record",
+		"histogram_spectrum_record",
+		"process_curve_record",
+		"numeric_vitals_record",
+	};
+	return names[type % names.size()];
+}
+
+inline auto public_payload_family(std::size_t type) -> std::string
+{
+	static const std::array<std::string, kPublicRecordTypeCount> names{
+		"text/code",
+		"histogram/spectrum",
+		"process-curve",
+		"numeric-vitals/vector",
+	};
+	return names[type % names.size()];
+}
+
+inline auto public_type_code(std::size_t type) -> std::string
+{
+	static const std::array<std::string, kPublicRecordTypeCount> codes{"txt", "hist", "curve", "vitals"};
+	return codes[type % codes.size()];
 }
 
 // One process curve: a triangular bump whose CENTER encodes the family (a phase
@@ -89,6 +138,88 @@ inline auto family_spectrum(std::size_t severity) -> std::vector<double>
 {
 	const auto peak = 3 + 2 * severity; // 3, 5, 7, 9, 11
 	return peak_spectrum(peak, /*sharpness=*/2.0);
+}
+
+inline auto scaled_record_code(std::size_t family, std::size_t severity, std::size_t type, std::size_t variant)
+	-> std::string
+{
+	std::ostringstream out;
+	out << family_code(family) << '-' << public_type_code(type) << "-s" << severity << "-v" << std::setw(2)
+		<< std::setfill('0') << variant;
+	return out.str();
+}
+
+inline auto scaled_family_spectrum(std::size_t family, std::size_t severity, std::size_t type, std::size_t variant)
+	-> std::vector<double>
+{
+	auto bins = family_spectrum(severity);
+	const auto primary = (3 + 2 * severity + family + variant) % kSpectrumBins;
+	const auto secondary = (primary + 3 + type) % kSpectrumBins;
+	const auto tertiary = (severity + 5 * family + 7 * type + variant) % kSpectrumBins;
+	const auto amount = 0.004 + 0.0007 * static_cast<double>(variant % 7);
+	bins[primary] += amount;
+	bins[secondary] += 0.5 * amount;
+	bins[tertiary] += 0.25 * amount;
+	return unit_mass(std::move(bins));
+}
+
+inline auto scaled_family_curve(std::size_t family, std::size_t severity, std::size_t type, std::size_t variant)
+	-> std::vector<double>
+{
+	auto curve = family_curve(family, severity);
+	const auto phase = 0.31 * static_cast<double>(variant + 1 + type);
+	for (std::size_t i = 0; i < curve.size(); ++i) {
+		const auto ripple = 0.045 * std::sin((static_cast<double>(i) + 1.0) * phase);
+		curve[i] = std::max(0.0, curve[i] + ripple + 0.015 * static_cast<double>(type));
+	}
+	if (variant % 4 == 3) {
+		curve.push_back(0.5 * curve.back() + 0.05 * static_cast<double>(type));
+	}
+	return curve;
+}
+
+inline auto scaled_family_vitals(std::size_t family, std::size_t severity, std::size_t type, std::size_t variant)
+	-> std::vector<double>
+{
+	auto vitals = family_vitals(family, severity);
+	const auto v = static_cast<double>(variant);
+	const auto t = static_cast<double>(type);
+	vitals[0] += 0.05 * v + 0.11 * t;
+	vitals[1] += 3.0 * v + 17.0 * t;
+	vitals[2] += 0.01 * static_cast<double>((variant % 5) * (family + 1)) + 0.03 * t;
+	vitals[3] += 0.02 * static_cast<double>((variant + severity) % 7) - 0.04 * t;
+	return vitals;
+}
+
+inline auto make_scaled_typed_fleet() -> std::vector<TypedLabeledRecord>
+{
+	std::vector<TypedLabeledRecord> fleet;
+	fleet.reserve(kScaledFleetRecordCount);
+	for (std::size_t type = 0; type < kPublicRecordTypeCount; ++type) {
+		for (std::size_t family = 0; family < kFamilyCount; ++family) {
+			for (std::size_t severity = 0; severity < kSeverityLevels; ++severity) {
+				for (std::size_t variant = 0; variant < kScaledVariantsPerCell; ++variant) {
+					MixedRecord record;
+					record.code = scaled_record_code(family, severity, type, variant);
+					record.spectrum = scaled_family_spectrum(family, severity, type, variant);
+					record.curve = scaled_family_curve(family, severity, type, variant);
+					record.vitals = scaled_family_vitals(family, severity, type, variant);
+					const auto severity_score =
+						static_cast<double>(severity) + 0.02 * static_cast<double>(variant);
+					fleet.push_back({std::move(record),
+									 family_code(family),
+									 severity_score,
+									 public_record_type(type),
+									 public_payload_family(type),
+									 family,
+									 severity,
+									 type,
+									 variant});
+				}
+			}
+		}
+	}
+	return fleet;
 }
 
 inline auto make_fleet() -> std::vector<LabeledRecord>

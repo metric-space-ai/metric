@@ -32,7 +32,7 @@ Production-readiness tracks:
 
 - metric catalog completion and per-metric discovery documentation
 - space/search/storage and stats hardening
-- modify/map/dynamics hardening, including PHATE-AE as a composed finite-space
+- modify/map/dynamics hardening, including parametric diffusion coordinate as a composed finite-space
   mapping workflow
 - solve/numeric quality for Laplacian, PCG, native DNN, and promoted numeric
   contracts

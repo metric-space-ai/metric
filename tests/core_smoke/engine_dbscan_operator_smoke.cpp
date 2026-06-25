@@ -24,18 +24,18 @@ int main()
 
 	using ManualResult = mtrc::ClusteringResult<int>;
 	const auto manual = mtrc::core::make_clustering_result<int>(
-		std::vector<std::size_t>{0, 1, ManualResult::noise_label},
+		std::vector<std::size_t>{0, 1, ManualResult::unassigned_label},
 		std::vector<mtrc::RecordId>{space.id(0), space.id(1)}, std::vector<mtrc::RecordId>{space.id(0)},
 		std::vector<mtrc::RecordId>{space.id(2)}, std::vector<std::size_t>{1, 1}, 3, true, "manual_cluster",
 		"manual_provider");
 	assert(manual.record_count == 3);
 	assert(manual.cluster_count == 2);
-	assert(manual.noise_count == 1);
+	assert(manual.unassigned_count == 1);
 	assert(manual.iterations == 3);
 	assert(manual.converged);
 	assert(manual.algorithm == "manual_cluster");
 	assert(manual.representation == "manual_provider");
-	assert(manual.noise_records[0] == space.id(2));
+	assert(manual.unassigned_records[0] == space.id(2));
 
 	const auto empty_manual = mtrc::core::make_clustering_result<int>(
 		std::vector<std::size_t>{}, std::vector<mtrc::RecordId>{}, std::vector<mtrc::RecordId>{},
@@ -44,7 +44,7 @@ int main()
 	assert(empty_manual.empty());
 	assert(empty_manual.record_count == 0);
 	assert(empty_manual.cluster_count == 0);
-	assert(empty_manual.noise_count == 0);
+	assert(empty_manual.unassigned_count == 0);
 	assert(!empty_manual.converged);
 	assert(empty_manual.algorithm == "empty_cluster");
 	assert(empty_manual.representation == "empty_provider");
@@ -57,7 +57,7 @@ int main()
 	assert(clustered.representation == "pairwise_distances");
 	assert(clustered.record_count == space.size());
 	assert(clustered.cluster_count == 2);
-	assert(clustered.noise_count == 1);
+	assert(clustered.unassigned_count == 1);
 	assert(clustered.iterations == 1);
 	assert(clustered.converged);
 	assert(clustered.assignments.size() == space.size());
@@ -65,7 +65,7 @@ int main()
 	assert(clustered.assignments[1] == 0);
 	assert(clustered.assignments[2] == 1);
 	assert(clustered.assignments[3] == 1);
-	assert(clustered.assignments[4] == Result::noise_label);
+	assert(clustered.assignments[4] == Result::unassigned_label);
 	assert(clustered.cluster_sizes[0] == 2);
 	assert(clustered.cluster_sizes[1] == 2);
 	assert(clustered.medoids[0] == space.id(0));
@@ -73,18 +73,18 @@ int main()
 	assert(clustered.core_records.size() == 4);
 	assert(clustered.core_records[0] == space.id(0));
 	assert(clustered.core_records[3] == space.id(3));
-	assert(clustered.noise_records.size() == 1);
-	assert(clustered.noise_records[0] == space.id(4));
+	assert(clustered.unassigned_records.size() == 1);
+	assert(clustered.unassigned_records[0] == space.id(4));
 
 	const auto implicit = mtrc::stats::structural_analysis::dbscan(space, 2, 2);
 	assert(implicit.representation == "metric_space");
 	assert(implicit.assignments == clustered.assignments);
-	assert(implicit.noise_records == clustered.noise_records);
+	assert(implicit.unassigned_records == clustered.unassigned_records);
 	assert(implicit.medoids == clustered.medoids);
 
 	const auto self_core = mtrc::stats::structural_analysis::dbscan(space, 0, 1);
 	assert(self_core.cluster_count == space.size());
-	assert(self_core.noise_count == 0);
+	assert(self_core.unassigned_count == 0);
 	assert(self_core.core_records.size() == space.size());
 	assert(self_core.core_records[0] == space.id(0));
 	assert(self_core.core_records[4] == space.id(4));

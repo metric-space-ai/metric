@@ -43,11 +43,11 @@ template <typename Result> auto assert_same_groups(const Result &actual, const R
 	assert(actual.assignments == expected.assignments);
 	assert(actual.medoids == expected.medoids);
 	assert(actual.core_records == expected.core_records);
-	assert(actual.noise_records == expected.noise_records);
+	assert(actual.unassigned_records == expected.unassigned_records);
 	assert(actual.cluster_sizes == expected.cluster_sizes);
 	assert(actual.record_count == expected.record_count);
 	assert(actual.cluster_count == expected.cluster_count);
-	assert(actual.noise_count == expected.noise_count);
+	assert(actual.unassigned_count == expected.unassigned_count);
 	assert(actual.converged == expected.converged);
 	assert(actual.algorithm == expected.algorithm);
 }
@@ -70,6 +70,11 @@ template <typename Result> auto assert_same_compression(const Result &actual, co
 	assert(actual.source_record_ids == expected.source_record_ids);
 	assert(actual.assignments == expected.assignments);
 	assert(actual.nearest_representative_distances == expected.nearest_representative_distances);
+	assert(actual.representative_multiplicities == expected.representative_multiplicities);
+	assert(actual.representative_weights.size() == expected.representative_weights.size());
+	for (std::size_t index = 0; index < expected.representative_weights.size(); ++index) {
+		assert(close(actual.representative_weights[index], expected.representative_weights[index]));
+	}
 	assert(actual.source_record_count == expected.source_record_count);
 	assert(actual.compressed_record_count == expected.compressed_record_count);
 	assert(close(actual.compression_ratio, expected.compression_ratio));
@@ -89,7 +94,7 @@ template <typename Result> auto assert_same_outliers(const Result &actual, const
 {
 	assert(actual.record_count == expected.record_count);
 	assert(actual.cluster_count == expected.cluster_count);
-	assert(actual.noise_count == expected.noise_count);
+	assert(actual.unassigned_count == expected.unassigned_count);
 	assert(actual.exact == expected.exact);
 	assert(actual.operator_name == expected.operator_name);
 	assert(actual.strategy == expected.strategy);
@@ -192,10 +197,12 @@ int main()
 	assert(matrix_outliers.representation == "distance_table");
 	assert_same_outliers(matrix_outliers, outliers);
 
-	const auto denoised = mtrc::denoise(space, mtrc::stats::structural_analysis::dbscan_options(2.0, 2), lazy_policy);
-	const auto matrix_denoised = mtrc::denoise(space, mtrc::stats::structural_analysis::dbscan_options(2.0, 2), materialized_policy);
-	assert(matrix_denoised.representation == "distance_table");
-	assert_same_mapping(matrix_denoised, denoised);
+	const auto density_filtered =
+		mtrc::density_filter(space, mtrc::stats::structural_analysis::dbscan_options(2.0, 2), lazy_policy);
+	const auto matrix_density_filtered =
+		mtrc::density_filter(space, mtrc::stats::structural_analysis::dbscan_options(2.0, 2), materialized_policy);
+	assert(matrix_density_filtered.representation == "distance_table");
+	assert_same_mapping(matrix_density_filtered, density_filtered);
 
 	const auto representatives = mtrc::find_representatives(space, 3, lazy_policy);
 	const auto matrix_representatives = mtrc::find_representatives(space, 3, materialized_policy);

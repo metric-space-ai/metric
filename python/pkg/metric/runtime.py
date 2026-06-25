@@ -344,13 +344,13 @@ def capabilities():
             native_binding_available("kmedoids")
             and native_binding_available("dbscan")
         ),
-        # Outlier detection (nearest-neighbor scoring / DBSCAN noise).
+        # Singular-record scoring (nearest-neighbor isolation / DBSCAN density-unassigned records).
         "outliers": (
             native_binding_available("nearest_neighbor_outliers")
             and native_binding_available("dbscan_outliers")
         ),
-        # DBSCAN noise filtering into a derived space.
-        "denoise": native_binding_available("dbscan"),
+        # DBSCAN density filtering into a derived finite metric space.
+        "density_filter": native_binding_available("dbscan"),
         # Metric-space embedding (never promoted in this batch).
         "embed": native_binding_available("embed"),
         # Cross-space distance-profile comparison/correlation. The native

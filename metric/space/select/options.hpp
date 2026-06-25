@@ -17,6 +17,30 @@ struct farthest_first {
 	std::size_t seed_index{};
 };
 
+struct coverage {
+	coverage() = default;
+
+	explicit coverage(std::size_t seed_index) : seed_index(seed_index) {}
+
+	std::size_t seed_index{};
+};
+
+struct k_center {
+	k_center() = default;
+
+	explicit k_center(std::size_t seed_index) : seed_index(seed_index) {}
+
+	std::size_t seed_index{};
+};
+
+template <typename Radius> struct radius_coverage {
+	explicit radius_coverage(Radius radius) : radius(radius) {}
+
+	Radius radius;
+};
+
+template <typename Radius> radius_coverage(Radius) -> radius_coverage<Radius>;
+
 } // namespace mtrc::space::select
 
 #endif

@@ -6,7 +6,7 @@ pair.
 
 ## Starting Point
 
-METRIC uses the following model.
+METRIC uses the following starting point.
 
 1. There are observations.
 2. Observations are different and distinguishable.
@@ -50,9 +50,10 @@ The pair `(X, d)` is a finite metric space.
 A metric value can be read in more than one way.
 
 In a geometric interpretation, it is the length of a minimal path through an
-imagined intermediate space. That intermediate space is a model, not a required
-input. Locally, valid metric geometry can often be approximated by Euclidean
-coordinate patches; the required dimension and accuracy are execution questions.
+imagined intermediate space. That intermediate space is an interpretation, not a
+required input. Locally, valid metric geometry can often be approximated by
+Euclidean coordinate patches; the required dimension and accuracy are execution
+questions.
 
 In a non-geometric interpretation, the metric value is the minimal admissible
 recoding effort between two records. Edit distance, transport distance, time
@@ -93,7 +94,7 @@ turn every record into a vector.
 
 ## Implicit Space, Explicit Representations
 
-The user model is usually implicit: keep records and compute the metric value
+The usual representation is implicit: keep records and compute the metric value
 when an operation needs it.
 
 METRIC can also build explicit execution forms over the same source space:
@@ -147,14 +148,14 @@ print(space.neighbors("cut", k=2))
 ```
 
 The Python object adapts user data to the native engine surface. The
-metric-space model and promoted algorithms belong to the C++ implementation.
+metric-space object and promoted operations belong to the C++ implementation.
 
 ## Why This Is Broader Than Vector Search
 
 Vector-search libraries assume the record is already a vector, or that a
-separate model has embedded it into one. METRIC treats vectors as one valid
-record type among many. When the domain has a better native metric than an
-embedding distance, METRIC computes directly on that metric space.
+separate coordinate embedding has turned it into one. METRIC treats vectors as
+one valid record type among many. When the domain has a better native metric
+than an embedding distance, METRIC computes directly on that metric space.
 
 Related concepts:
 
