@@ -64,7 +64,7 @@ passing when the package is unavailable.
 | GRAE10 protected visual | checked | `visual/examples/grae10-metric-engine/index.html` must match `visual/regression-baselines/grae10-metric-engine.sha256`; `visual/tools/check-grae10-golden.mjs` enforces this. |
 | Shared semantic views | checked headlessly | `visual/tools/check-views.mjs` verifies the current semantic views produce renderable descriptors. |
 | View reference validation | checked headlessly | `visual/tools/check-view-reference-contract.mjs` verifies explicit coordinate, relation and property IDs fail hard instead of falling back to unrelated defaults; it also verifies `MappingView` emits labels from an exported label property. |
-| Runtime inspection and picking | checked headlessly and in browser | `MetricVisualRuntime.pickAt()` and `inspectAt()` now use one engine path for GPU picking on stock point, glyph, ground-projection and relation-edge layers, relation-matrix picking, graph-edge picking and deterministic projected-record fallback. `visual/tools/check-runtime-picking-preview.mjs` verifies record selection, pair selection, runtime state and preview resolution; `visual/tools/check-visual-regression-public-examples.mjs` verifies public examples stay renderable, interactive and report `gpu-picking` hits with record IDs or edge IDs where a pickable record or graph-edge layer is present. |
+| Runtime inspection and picking | checked headlessly and in browser | `MetricVisualRuntime.pickAt()` and `inspectAt()` now use one engine path for GPU picking on stock point, glyph, ground-projection, heat-field and relation-edge layers, relation-matrix picking, graph-edge picking and deterministic projected-record fallback. `visual/tools/check-runtime-picking-preview.mjs` verifies record selection, pair selection, runtime state and preview resolution; `visual/tools/check-visual-regression-public-examples.mjs` verifies public examples stay renderable, interactive and report `gpu-picking` hits with record IDs or edge IDs where a pickable record, field or graph-edge layer is present. |
 | Relation matrix picking | checked headlessly and in browser | `visual/src/relational/matrix-picking.js` maps pointer positions to exported dense-matrix cells; `visual/tools/check-relation-matrix-picker.mjs` verifies relation id/name, pair key, native pair evidence and layer selection. Public regression verifies relation-matrix interaction updates selected pair state from native evidence. |
 | Engine pair preview | checked headlessly and in browser | Matrix cells preserve native pair evidence and optional pair properties for the engine picker. `RecordPreviewPanel` can attach to runtime inspection and resolve record or pair previews from `metric.visual.v1` evidence instead of page-local DOM logic. |
 | Relation matrix linked selection | checked headlessly and in browser | `MetricVisualRuntime.selectPair()` stores selected pair identity and pick source, `RelationMatrixLayer.setSelection()` highlights the selected row, column and cell, and the runtime state exposes selected pair data for shared preview/selection UI. |
@@ -81,12 +81,12 @@ The relation grammar contract preserves native pair evidence on matrix cells,
 returns stable relation/row/column pair identities from the matrix picker, and
 marks graph descriptors with the same native relation selection model. Runtime
 inspection now wires those pair identities through shared picking, selection and
-preview state. Stock point, glyph, ground-projection record layers and
-relation-edge layers now expose `renderPicking()` implementations. The browser
-public-regression gate requires native preview examples with pickable record or
-graph-edge layers to return `source: gpu-picking` and a concrete record or edge
-ID. Remaining picking work is specialized field, curve and matrix GPU picking
-where semantic pickers are not enough.
+preview state. Stock point, glyph, ground-projection record layers,
+heat-field layers and relation-edge layers now expose `renderPicking()`
+implementations. The browser public-regression gate requires native preview
+examples with pickable record, field or graph-edge layers to return `source:
+gpu-picking` and a concrete record or edge ID. Remaining picking work is
+specialized curve and matrix GPU picking where semantic pickers are not enough.
 
 ## Public Gallery Status
 

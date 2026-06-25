@@ -27,10 +27,13 @@ export class HeatFieldLayer extends BaseLayer {
     this.count = 0;
     this.buffers = {};
     this.program = null;
+    this.pickProgram = null;
     this.pointSizeLimits = [1, 64];
     this.recordIds = [];
     this.baseFocus = new Float32Array();
     this.selectedRecordId = null;
+    this.pickColorRegistry = null;
+    this.pickColorRegistrySize = -1;
   }
 
   ensureResources() {
@@ -57,6 +60,8 @@ export class HeatFieldLayer extends BaseLayer {
       : new Float32Array(this.count).fill(defaultRadius(this.geometry));
     this.baseFocus = combineScalarChannels(this.channels, ["focusWeight", "focus", "selection"], this.count, 0);
     this.recordIds = recordIdsForChannels(this.channels, this.count);
+    this.pickColorRegistry = null;
+    this.pickColorRegistrySize = -1;
     const focus = this.selectionFocusData();
 
     this.replaceBuffer("position", positions);
@@ -100,6 +105,64 @@ export class HeatFieldLayer extends BaseLayer {
     bindAttribute(gl, this.program, this.capabilities, "aFocus", this.buffers.focus, 1);
     gl.drawArrays(gl.POINTS, 0, this.count);
     restoreDepthWrite(gl);
+    return this;
+  }
+
+  renderPicking(context = {}) {
+    if (this.disposed || this.visible === false || !this.ensureResources() || this.count <= 0) return this;
+    if (!context.registry || !this.recordIds.length) return this;
+    const gl = this.gl;
+    const material = this.material || {};
+    const geometry = this.geometry || {};
+
+    if (!this.pickProgram) {
+      this.pickProgram = this.track(createProgram(gl, "HeatFieldLayerPicking", HEAT_PICK_VERTEX_SHADER, HEAT_PICK_FRAGMENT_SHADER));
+    }
+    this.updatePickColorBuffer(context);
+
+    configureDrawState(gl, { depthWrite: true, alphaMode: "opaque" }, {
+      blend: false,
+      cullFace: false,
+      depthWrite: true,
+    });
+
+    this.pickProgram.use();
+    setCameraUniforms(this.pickProgram, context, this.renderer);
+    this.pickProgram.setUniform("uPointPixelScale", numberOption(material.pointPixelScale, geometry.pointPixelScale, this.options.pointPixelScale, 10));
+    this.pickProgram.setUniform("uMinPointSize", numberOption(material.minPointSize, geometry.minPointSize, 1));
+    this.pickProgram.setUniform("uMaxPointSize", numberOption(material.maxPointSize, geometry.maxPointSize, this.pointSizeLimits[1] || 128));
+    this.pickProgram.setUniform("uRadial", geometry.mode === "grid" || material.shape === "cell" ? 0 : 1);
+
+    bindAttribute(gl, this.pickProgram, this.capabilities, "aPosition", this.buffers.position, 3);
+    bindAttribute(gl, this.pickProgram, this.capabilities, "aRadius", this.buffers.radius, 1);
+    bindAttribute(gl, this.pickProgram, this.capabilities, "aPickColor", this.buffers.pickColor, 4);
+    gl.drawArrays(gl.POINTS, 0, this.count);
+    restoreDepthWrite(gl);
+    return this;
+  }
+
+  updatePickColorBuffer(context = {}) {
+    const registry = context.registry;
+    const registrySize = registry?.size ?? -1;
+    if (this.buffers.pickColor && this.pickColorRegistry === registry && this.pickColorRegistrySize === registrySize) {
+      return this;
+    }
+    const encode = context.encodePickIdRGBAFloat || encodePickIdRGBAFloatLocal;
+    const colors = new Float32Array(this.count * 4);
+    const scope = this.descriptor?.id || this.id || this.descriptor?.primitive || null;
+    for (let index = 0; index < this.count; index += 1) {
+      const recordId = this.recordIds[index] ?? String(index);
+      const numericId = registry.registerRecord(String(recordId), {
+        scope,
+        layerId: this.id,
+        index,
+        descriptor: this.descriptor,
+      });
+      encode(numericId, colors, index * 4);
+    }
+    this.replaceBuffer("pickColor", colors);
+    this.pickColorRegistry = registry;
+    this.pickColorRegistrySize = registry?.size ?? registrySize;
     return this;
   }
 
@@ -151,6 +214,7 @@ export class HeatFieldLayer extends BaseLayer {
   dispose() {
     this.buffers = {};
     this.program = null;
+    this.pickProgram = null;
     super.dispose();
   }
 }
@@ -187,6 +251,15 @@ function recordIdsForChannels(channels, count) {
   const ids = getChannelArray(recordChannel);
   if (!ids) return Array.from({ length: count }, (_, index) => String(index));
   return Array.from({ length: count }, (_, index) => String(ids[index] ?? index));
+}
+
+function encodePickIdRGBAFloatLocal(id, out = [0, 0, 0, 0], offset = 0) {
+  const numericId = Math.max(0, Math.floor(Number(id) || 0));
+  out[offset] = (numericId % 256) / 255;
+  out[offset + 1] = (Math.floor(numericId / 256) % 256) / 255;
+  out[offset + 2] = (Math.floor(numericId / 65536) % 256) / 255;
+  out[offset + 3] = (Math.floor(numericId / 16777216) % 256) / 255;
+  return out;
 }
 
 function color3(value, fallback) {
@@ -239,6 +312,40 @@ void main() {
   vColor = aColor;
   vScalar = aScalar;
   vFocus = focus;
+}
+`;
+
+const HEAT_PICK_VERTEX_SHADER = `
+attribute vec3 aPosition;
+attribute float aRadius;
+attribute vec4 aPickColor;
+
+uniform mat4 uViewProjectionMatrix;
+uniform float uPointPixelScale;
+uniform float uMinPointSize;
+uniform float uMaxPointSize;
+
+varying vec4 vPickColor;
+
+void main() {
+  gl_Position = uViewProjectionMatrix * vec4(aPosition, 1.0);
+  gl_PointSize = clamp(max(aRadius, 0.001) * uPointPixelScale, uMinPointSize, uMaxPointSize);
+  vPickColor = aPickColor;
+}
+`;
+
+const HEAT_PICK_FRAGMENT_SHADER = `
+precision mediump float;
+
+uniform float uRadial;
+varying vec4 vPickColor;
+
+void main() {
+  if (uRadial > 0.5) {
+    vec2 centered = gl_PointCoord * 2.0 - 1.0;
+    if (dot(centered, centered) > 1.0) discard;
+  }
+  gl_FragColor = vPickColor;
 }
 `;
 

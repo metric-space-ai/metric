@@ -62,10 +62,11 @@ This plan is authoritative only with the following current-state constraints:
   application evidence and must not be published as real heroes.
 - Runtime inspection now routes record picking, relation-matrix picking,
   graph-edge picking, linked selection and record/pair preview through
-  reusable engine modules. Stock point, glyph and ground-projection record
-  layers plus relation-edge layers expose GPU picking hooks, and the public
-  browser gate verifies `gpu-picking` hits with record IDs or edge IDs for the
-  native preview examples that use pickable record or graph-edge layers.
+  reusable engine modules. Stock point, glyph, ground-projection and heat-field
+  record layers plus relation-edge layers expose GPU picking hooks, and the
+  public browser gate verifies `gpu-picking` hits with record IDs or edge IDs
+  for the native preview examples that use pickable record, field or graph-edge
+  layers.
 - The next production step is to harden each native public preview into an
   accepted hero through larger evidence where required, grammar-specific
   performance budgets and screenshot review, not more hand-written hero HTML
@@ -2116,9 +2117,9 @@ Next mandatory engine work:
 1. Promote the native preview exports into polished hero-specific visual
    grammars only after screenshot review.
 2. Implement reusable pair preview contracts.
-3. Extend layer-specific picking beyond point, glyph, ground projection and
-   relation edges to field, curve and matrix cases where the semantic CPU
-   pickers are not sufficient.
+3. Extend layer-specific picking beyond point, glyph, ground projection,
+   heat fields and relation edges to curve and matrix cases where the semantic
+   CPU pickers are not sufficient.
 4. Improve `RelationMatrixLayer` readability: block ordering, mip/LOD strategy,
    explicit row/column focus, and no moire-like artifacts.
 5. Replace placeholder glyph rendering with true type-specific glyph geometry

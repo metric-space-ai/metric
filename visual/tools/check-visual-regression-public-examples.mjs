@@ -386,6 +386,75 @@ const PAGE_PROBE_SCRIPT = String.raw`
     }
     return { available: false, hit: false, source: "no-gpu-pickable-edge-runtime" };
   }
+  function gpuFieldPickingProbe() {
+    for (const entry of runtimeObjects()) {
+      const runtime = entry.runtime;
+      if (typeof runtime.refreshPickingIndex !== "function" || typeof runtime.pickAt !== "function") continue;
+      runtime.refreshPickingIndex();
+      const index = runtime.pickingIndex || {};
+      if (!(index.gpuLayerCount > 0) || !Array.isArray(index.recordPoints) || !index.recordPoints.length) continue;
+      const fieldLayerIds = new Set((runtime.layers || [])
+        .filter((layer) => layer && layer.visible !== false && (
+          layer.constructor?.name === "HeatFieldLayer" ||
+          layer.descriptor?.primitive === "HeatFieldLayer" ||
+          layer.descriptor?.kind === "HeatFieldLayer"
+        ))
+        .map((layer) => layer.id)
+        .filter(Boolean));
+      if (!fieldLayerIds.size) continue;
+      const candidates = index.recordPoints
+        .filter((point) => fieldLayerIds.has(point.layerId))
+        .slice(0, 160);
+      const misses = [];
+      for (const point of candidates) {
+        const pixel = runtime.camera?.projectToPixel?.(point.position, {});
+        if (!pixel || pixel.visible === false || !Number.isFinite(pixel.x) || !Number.isFinite(pixel.y)) continue;
+        const result = runtime.pickAt({ x: pixel.x, y: pixel.y }, {
+          gpu: true,
+          relationMatrix: false,
+          graph: false,
+          cpuFallback: false,
+          source: "gpu-field-contract-probe",
+        });
+        const sample = {
+          source: result?.source || null,
+          recordId: result?.recordId ?? null,
+          expectedRecordId: point.recordId ?? null,
+          layerId: point.layerId ?? null,
+          x: Math.round(pixel.x),
+          y: Math.round(pixel.y),
+        };
+        if (result?.source === "gpu-picking" && result?.hit === true && result?.layerId === point.layerId) {
+          return {
+            key: entry.key,
+            available: true,
+            hit: true,
+            source: "gpu-picking",
+            recordId: result?.recordId ?? null,
+            expectedRecordId: point.recordId ?? null,
+            layerId: point.layerId ?? null,
+            layerCount: index.gpuLayerCount,
+            candidateCount: index.recordPoints.length,
+            pickableCandidateCount: candidates.length,
+            testedCandidates: misses.length + 1,
+          };
+        }
+        if (misses.length < 8) misses.push(sample);
+      }
+      return {
+        key: entry.key,
+        available: true,
+        hit: false,
+        source: "no-gpu-hit-for-visible-field-candidates",
+        layerCount: index.gpuLayerCount,
+        candidateCount: index.recordPoints.length,
+        pickableCandidateCount: candidates.length,
+        testedCandidates: candidates.length,
+        misses,
+      };
+    }
+    return { available: false, hit: false, source: "no-gpu-pickable-field-runtime" };
+  }
   const canvases = canvasSummaries();
   const handles = runtimeHandles();
   const largestCanvas = canvases[0] || null;
@@ -403,6 +472,7 @@ const PAGE_PROBE_SCRIPT = String.raw`
     runtimeState,
     gpuPickingProbe: gpuPickingProbe(),
     gpuEdgePickingProbe: gpuEdgePickingProbe(),
+    gpuFieldPickingProbe: gpuFieldPickingProbe(),
     gpuDiagnostics: window.__metricVisualGpuDiagnostics || null,
     loadingText: Array.from(document.querySelectorAll(".loading")).map((node) => node.textContent.trim()).join(" | "),
     ready: Boolean(largestCanvas?.visible) && (
@@ -600,6 +670,13 @@ async function checkExample(browser, baseUrl, name) {
       probe: probe?.gpuEdgePickingProbe || null,
     });
   }
+  if (requiresGpuFieldPicking(runtime.state) && probe?.gpuFieldPickingProbe?.source !== "gpu-picking") {
+    issues.push({
+      code: "gpu-field-picking-probe-failed",
+      primitives: runtime.state?.descriptorPrimitives || [],
+      probe: probe?.gpuFieldPickingProbe || null,
+    });
+  }
   if (name === "grae10-metric-engine" && !evidence.protectedGrae10?.ok) {
     issues.push({ code: "grae10-protection-failed", details: evidence.protectedGrae10 });
   }
@@ -616,6 +693,7 @@ async function checkExample(browser, baseUrl, name) {
     runtime,
     gpuPickingProbe: probe?.gpuPickingProbe || null,
     gpuEdgePickingProbe: probe?.gpuEdgePickingProbe || null,
+    gpuFieldPickingProbe: probe?.gpuFieldPickingProbe || null,
     issues,
   };
 }
@@ -624,12 +702,18 @@ function requiresGpuPicking(runtimeState) {
   const primitives = runtimeState?.descriptorPrimitives || [];
   return primitives.includes("InstancedPointLayer") ||
     primitives.includes("InstancedGlyphLayer") ||
-    primitives.includes("GroundProjectionLayer");
+    primitives.includes("GroundProjectionLayer") ||
+    primitives.includes("HeatFieldLayer");
 }
 
 function requiresGpuEdgePicking(runtimeState) {
   const primitives = runtimeState?.descriptorPrimitives || [];
   return primitives.includes("RelationEdgeLayer") && Number(runtimeState?.inspection?.graph?.edgeCount || 0) > 0;
+}
+
+function requiresGpuFieldPicking(runtimeState) {
+  const primitives = runtimeState?.descriptorPrimitives || [];
+  return primitives.includes("HeatFieldLayer");
 }
 
 function classifyStatus(name, evidence, grammar) {
