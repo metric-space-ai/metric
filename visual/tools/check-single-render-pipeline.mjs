@@ -27,6 +27,17 @@ const heroPageForbiddenImports = [
   "DenseFieldView",
 ];
 
+const metricVisualForbidden = [
+  {
+    pattern: /\brecordTrajectoryDescriptor\b/,
+    message: "trajectory/path grammar must live in TrajectoryPathView, not metric-visual.js",
+  },
+  {
+    pattern: /\bcreateTubeRibbonPathLayerDescriptor\b/,
+    message: "trajectory tube/ribbon descriptors must be emitted by semantic views, not metric-visual.js",
+  },
+];
+
 const failures = [];
 
 for (const dir of scannedRoots) {
@@ -37,6 +48,11 @@ for (const dir of scannedRoots) {
     for (const rule of forbidden) {
       if (rule.pattern.test(text)) {
         failures.push(`${rel}: ${rule.message}`);
+      }
+    }
+    if (rel === "visual/src/metric-visual.js") {
+      for (const rule of metricVisualForbidden) {
+        if (rule.pattern.test(text)) failures.push(`${rel}: ${rule.message}`);
       }
     }
     if (rel.startsWith("visual/examples/") && /-hero\/index\.html$/.test(rel)) {

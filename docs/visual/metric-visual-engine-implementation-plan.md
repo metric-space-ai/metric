@@ -60,6 +60,9 @@ This plan is authoritative only with the following current-state constraints:
   files remain synthetic renderer fixtures only.
 - Synthetic fixtures may be used to develop renderer layers, but they are not
   application evidence and must not be published as real heroes.
+- Native public evidence must carry explicit provenance. The native-scale gate
+  requires `provenance.native_export === true`; a writer path, runtime label or
+  source filename alone is not enough.
 - Runtime inspection now routes record picking, relation-matrix picking,
   graph-edge picking, linked selection and record/pair preview through
   reusable engine modules. Stock point, glyph, ground-projection and heat-field
@@ -69,6 +72,10 @@ This plan is authoritative only with the following current-state constraints:
   record, field, graph-edge or ribbon-trajectory layers. Tube-curve picking is
   verified on the native engine probe because it is an internal engine example,
   not a public hero gate.
+- Trajectory/path rendering now belongs to the semantic `TrajectoryPathView`.
+  Condition monitoring, finite dynamics and process-curve previews must use
+  that view for record paths, graph/transition evidence and exported timeline
+  states instead of surface-local trajectory helpers.
 - The relation-matrix grammar now has engine-level readability metadata and a
   WebGL tile-summary LOD texture derived from already exported matrix texture
   values. This reduces dense-matrix aliasing without adding DOM/SVG fallbacks,

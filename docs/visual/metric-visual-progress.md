@@ -91,7 +91,7 @@ passing when the package is unavailable.
 | Grammar contract | checked headlessly | `visual/tools/check-hero-grammar-contract.mjs` rejects collapsing unrelated hero concepts into one point-cloud-only grammar. |
 | Single runtime path | checked headlessly | `visual/tools/check-single-render-pipeline.mjs` protects the one-runtime pipeline rule. |
 | Public gallery evidence gate | checked headlessly | `visual/tools/check-public-gallery-evidence.mjs` blocks synthetic hero fixtures from the public site and protects the GRAE10 reference hash. |
-| Native hero evidence scale gate | checked headlessly | `visual/tools/check-native-hero-evidence-scale.mjs` reads public preview briefs and native `metric.visual.v1` assets without browser rendering. It verifies native provenance plus record-count, relation-count and record-type thresholds against explicit blockers. Current result: only `relation-matrix-neighborhood` meets native scale; six previews remain record-count-blocked, and `mixed-record-hero` also remains record-type-diversity-blocked. |
+| Native hero evidence scale gate | checked headlessly | `visual/tools/check-native-hero-evidence-scale.mjs` reads public preview briefs and native `metric.visual.v1` assets without browser rendering. It now requires an explicit `native_export: true` provenance flag and verifies native provenance plus record-count, relation-count and record-type thresholds against explicit blockers. Current result: only `relation-matrix-neighborhood` meets native scale; six previews remain record-count-blocked, and `mixed-record-hero` also remains record-type-diversity-blocked. |
 | Public visual regression gate | checked in browser | `visual/tools/check-visual-regression-public-examples.mjs` verifies the protected GRAE10 60k reference plus seven native preview examples load, render nonblank canvases, use native evidence and keep their declared grammar/status. It also requires the mapping preview to expose a native `MappingView` residual/error layer with residual magnitudes instead of a page-level fallback. The current gate covers eight public pages total. |
 | Hero visual briefs gate | checked from browser artifacts | `visual/tools/check-hero-visual-briefs.mjs` requires every `public-preview-only` example in the browser regression report to have a visual claim, expected grammar, required primitives, minimum evidence target and explicit acceptance blockers. |
 | Hero screenshot review gate | checked from browser artifacts | `visual/tools/check-hero-screenshot-review.mjs` consumes the public browser regression report and screenshot files, keeps GRAE10 accepted by protected reference, and leaves the other public previews in explicit review-pending status until a review manifest accepts them. |
@@ -131,6 +131,20 @@ dynamics and solver trace views now attach motion/timeline evidence descriptors
 to exported coordinate states, trajectories and objective curves. Runtime state
 also exposes layer diagnostics, which lets browser gates verify matrix
 readability and field grammar without relying on screenshot guesswork.
+
+### Trajectory Path View Slice - 2026-06-25
+
+Trajectory/path rendering moved out of the surface-local
+`recordTrajectoryDescriptor` helper into `TrajectoryPathView`. The reusable
+view now emits `CurveRibbonLayer` or `CurveTubeMeshLayer` descriptors from
+explicit record paths, exported graph/transition evidence, record order or
+exported timeline coordinate states. `showConditionMonitoring`,
+`showDynamics` and `showProcessCurves` now configure that semantic view instead
+of building their own path descriptors. `visual/tools/check-trajectory-path-view.mjs`
+verifies graph transitions, explicit record paths, condition monitoring,
+dynamics timelines and process-curve tube tracks. `visual/tools/check-single-render-pipeline.mjs`
+now rejects reintroducing `recordTrajectoryDescriptor` or direct tube/ribbon
+trajectory descriptor construction in `metric-visual.js`.
 
 ### Runtime Picking/Preview Workstream Note - 2026-06-25
 

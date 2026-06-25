@@ -1,7 +1,7 @@
 import { BaseView } from "./BaseView.js";
 import { PointCloudView } from "./PointCloudView.js";
+import { TrajectoryPathView } from "./TrajectoryPathView.js";
 import { VisualLayer } from "./VisualLayer.js";
-import { createTrajectoryBundleLayerDescriptor } from "../curves/index.js";
 import {
   createTimelineAnimationDescriptor,
   createTimelineControlDescriptor,
@@ -39,6 +39,7 @@ export class DynamicsView extends BaseView {
     this.timelineState = options.timelineState || null;
     this.timelineControl = options.timelineControl || null;
     this.timelineFieldState = options.timelineFieldState || selectTimelineFieldState(this.timelineState, options);
+    this.nativeEvidence = options.nativeEvidence || options.metadata?.nativeEvidence || null;
     const sampledStep = Number.isFinite(Number(this.timelineState?.activeStepOrder))
       ? Number(this.timelineState.activeStepOrder)
       : 0;
@@ -175,6 +176,7 @@ export class DynamicsView extends BaseView {
         scalarValues: property ? extractPropertyValues(property, { records, recordIds: positions.ids }) : null,
       };
     });
+    const nativeEvidence = createDynamicsTrajectoryEvidenceReference(document, timeline, stepStates);
 
     return new DynamicsView({
       ...options,
@@ -192,6 +194,7 @@ export class DynamicsView extends BaseView {
       fieldPropertyId: explicitFieldPropertyRef,
       timelineAnimation,
       timelineEvidence,
+      nativeEvidence,
       metadata: {
         ...(options.metadata || {}),
         timelineId: timeline?.id,
@@ -200,6 +203,7 @@ export class DynamicsView extends BaseView {
         timelineControl,
         timelineState,
         timelineEvidence,
+        nativeEvidence,
       },
     });
   }
@@ -365,73 +369,56 @@ export class DynamicsView extends BaseView {
   }
 
   trajectoryDescriptor() {
-    const paths = [];
-    for (let recordIndex = 0; recordIndex < this.recordIds.length; recordIndex += 1) {
-      const recordId = this.recordIds[recordIndex];
-      const points = [];
-      for (let stepIndex = 0; stepIndex < this.fittedStates.length; stepIndex += 1) {
-        const state = this.fittedStates[stepIndex];
-        const position = positionFor(state.positions, recordId);
-        if (!position) continue;
-        points.push({
-          x: position[0],
-          y: position[1],
-          z: position[2],
-          time: Number.isFinite(Number(state.time)) ? Number(state.time) : stepIndex,
-          color: timelinePathColor(stepIndex, this.fittedStates.length, this.pathAlpha),
-          width: this.pathWidth,
-        });
-      }
-      if (points.length >= 2) {
-        paths.push({
-          id: `${this.id}:trajectory:${recordId}`,
-          points,
-          metadata: {
-            recordId,
-            evidenceType: "diffusion-trajectory",
-            timelineId: this.timelineId,
-          },
-        });
-      }
-    }
-    if (!paths.length) return null;
-    const descriptor = createTrajectoryBundleLayerDescriptor({ paths }, {
+    const [descriptor] = new TrajectoryPathView({
       id: `${this.id}:trajectory`,
+      kind: "dynamics-trajectory",
+      descriptorKind: "trajectory",
+      sourceViewKind: "dynamics-trajectory",
+      datasetId: this.datasetId,
+      spaceId: this.spaceId,
+      recordIds: this.recordIds,
+      stepStates: this.fittedStates,
+      width: this.pathWidth,
+      alpha: this.pathAlpha,
       order: 28,
-      alpha: 1,
-      defaultWidth: this.pathWidth,
-      flowStrength: 0.16,
-      flowScale: 3.1,
-      flowSpeed: 0.28,
-      ambient: 0.42,
-      pointLight: 0.54,
-      coreGlow: 0.18,
-      rimLight: 0.22,
-      saturation: 1.08,
-      depthWrite: false,
-    });
-    descriptor.kind = "trajectory";
-    descriptor.source = {
-      ...descriptor.source,
-      viewId: this.id,
-      viewKind: "dynamics-trajectory",
-      timelineId: this.timelineId,
-    };
-    descriptor.metadata = {
-      ...descriptor.metadata,
-      ...this.metadata,
-      ...this.timelineDescriptorMetadata(),
-      role: "trajectory",
-      evidenceRole: "trajectory/path",
-      stateHistoryRole: "timeline-state-history",
       motionGrammar: "timeline-trajectory-state-history",
-      pathCount: paths.length,
-      stepCount: this.fittedStates.length,
-      timelineId: this.timelineId,
-      timelineFieldState: this.timelineFieldState,
-      coordinateIds: this.fittedStates.map((state) => state.coordinateId).filter(Boolean),
-      algorithmicComputation: false,
-    };
+      nativeEvidence: this.nativeEvidence || {
+        schema: "metric.visual.trajectory_path_evidence_ref.v1",
+        source: "exported-timeline-states",
+        documentSchema: null,
+        provenance: null,
+        datasetId: this.datasetId || null,
+        spaceId: this.spaceId || null,
+        coordinateId: null,
+        relationId: null,
+        graphId: null,
+        timelineId: this.timelineId || null,
+      },
+      curveOptions: {
+        alpha: 1,
+        defaultWidth: this.pathWidth,
+        flowStrength: 0.16,
+        flowScale: 3.1,
+        flowSpeed: 0.28,
+        ambient: 0.42,
+        pointLight: 0.54,
+        coreGlow: 0.18,
+        rimLight: 0.22,
+        saturation: 1.08,
+        depthWrite: false,
+      },
+      metadata: {
+        ...this.metadata,
+        ...this.timelineDescriptorMetadata(),
+        stateHistoryRole: "timeline-state-history",
+        motionGrammar: "timeline-trajectory-state-history",
+        stepCount: this.fittedStates.length,
+        timelineId: this.timelineId,
+        timelineFieldState: this.timelineFieldState,
+        coordinateIds: this.fittedStates.map((state) => state.coordinateId).filter(Boolean),
+        algorithmicComputation: false,
+      },
+    }).toLayerDescriptors();
     return descriptor;
   }
 
@@ -505,19 +492,27 @@ function firstTimeline(document) {
   return timelines[0] || null;
 }
 
-function positionFor(map, id) {
-  return map?.get?.(id) || map?.get?.(String(id)) || null;
-}
-
-function timelinePathColor(stepIndex, stepCount, alpha) {
-  const t = stepCount <= 1 ? 0 : stepIndex / (stepCount - 1);
-  const low = [0.12, 0.25, 0.42];
-  const mid = [0.12, 0.54, 0.52];
-  const high = [0.92, 0.54, 0.22];
-  const color = t < 0.58
-    ? mixColor(low, mid, t / 0.58)
-    : mixColor(mid, high, (t - 0.58) / 0.42);
-  return [color[0], color[1], color[2], alpha];
+function createDynamicsTrajectoryEvidenceReference(document, timeline, stepStates = []) {
+  return {
+    schema: "metric.visual.trajectory_path_evidence_ref.v1",
+    source: "exported-timeline-states",
+    documentSchema: document?.schema || null,
+    provenance: document?.provenance ? {
+      writer: document.provenance.writer || null,
+      runtime: document.provenance.runtime || null,
+      source_example: document.provenance.source_example || null,
+      native_export: document.provenance.native_export === true || document.provenance.nativeExport === true,
+      synthetic: document.provenance.synthetic === true,
+      synthetic_js: document.provenance.synthetic_js === true,
+    } : null,
+    datasetId: timeline?.dataset_id || null,
+    spaceId: timeline?.space_id || null,
+    coordinateId: null,
+    coordinateIds: stepStates.map((state) => state.coordinateId).filter(Boolean),
+    relationId: null,
+    graphId: null,
+    timelineId: timeline?.id || null,
+  };
 }
 
 function resolveTimelineSamplingOptions(options = {}) {

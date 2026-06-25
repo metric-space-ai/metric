@@ -2,7 +2,7 @@
 /*
  * Reusable view smoke test.
  *
- * Constructs each of the seven semantic views from metric.visual.v1 fixtures
+ * Constructs each semantic view from metric.visual.v1 fixtures
  * and asserts the layer descriptors they emit are renderable: every primitive
  * is registered in the layer factory, point views carry one instance per
  * record, relation views carry texture/edge evidence, and morph/dynamics views
@@ -23,6 +23,7 @@ import {
   MappingView,
   DynamicsView,
   SolverTraceView,
+  TrajectoryPathView,
 } from "../src/views/index.js";
 import { defaultLayerRegistry } from "../src/layers/index.js";
 
@@ -150,11 +151,31 @@ async function main() {
     const view = DynamicsView.fromVisualSpace(metricSpace, { timelineId: "condition-morph" });
     const descriptors = view.toLayerDescriptors();
     checkRenderable(checks, "DynamicsView", descriptors);
-    assert(checks, "DynamicsView: emits trajectory segments", descriptors.some((d) => d.metadata?.role === "trajectory"));
+    assert(checks, "DynamicsView: emits trajectory/path segments", descriptors.some((d) => d.metadata?.role === "trajectory/path" && d.metadata?.viewClass === "TrajectoryPathView"));
     assert(checks, "DynamicsView: emits active state points", descriptors.some((d) => (d.primitive || d.kind) === "InstancedPointLayer"));
   }
 
-  // 7. SolverTraceView (explicit converging residual series)
+  // 7. TrajectoryPathView (record-order path grammar)
+  {
+    const space = MetricSpaceView.fromVisualSpace(metricSpace, {
+      spaceId: "sensor-space",
+      coordinateId: "landmark-3d",
+    });
+    const view = TrajectoryPathView.fromMetricSpaceView(space, {
+      id: "sensor-record-order:trajectory",
+      pathCount: 4,
+      width: 2.8,
+    });
+    const descriptors = view.toLayerDescriptors();
+    checkRenderable(checks, "TrajectoryPathView", descriptors);
+    const [trajectory] = descriptors;
+    assert(checks, "TrajectoryPathView: emits reusable curve grammar", trajectory?.primitive === "CurveRibbonLayer", { primitive: trajectory?.primitive });
+    assert(checks, "TrajectoryPathView: reports trajectory/path role", trajectory?.metadata?.role === "trajectory/path", trajectory?.metadata);
+    assert(checks, "TrajectoryPathView: reports record and path counts", trajectory?.metadata?.recordCount === 24 && trajectory?.metadata?.pathCount === 4, trajectory?.metadata);
+    assert(checks, "TrajectoryPathView: declares no JS algorithmic computation", trajectory?.metadata?.algorithmicComputation === false, trajectory?.metadata);
+  }
+
+  // 8. SolverTraceView (explicit converging residual series)
   {
     const series = Array.from({ length: 20 }, (_, index) => 1.0 * Math.pow(0.7, index));
     const view = SolverTraceView.fromVisualSpace(metricSpace, { series, logScale: true, traceLabel: "PCG residual" });

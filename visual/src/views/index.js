@@ -17,6 +17,7 @@ export { SpacePropertiesView, createSpacePropertiesView } from "./SpacePropertie
 export { MappingView, createMappingView } from "./MappingView.js";
 export { DynamicsView, createDynamicsView } from "./DynamicsView.js";
 export { SolverTraceView, createSolverTraceView } from "./SolverTraceView.js";
+export { TrajectoryPathView, createTrajectoryPathView } from "./TrajectoryPathView.js";
 export {
   createProcessCurveMiniatureLayerDescriptors,
   createProcessCurveMiniatureSceneBundle,

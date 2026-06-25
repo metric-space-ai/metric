@@ -1,4 +1,3 @@
-import { createTubeRibbonPathLayerDescriptor } from "../curves/index.js";
 import {
   createMiniatureAnimationPreset,
   createMiniatureSceneBundle,
@@ -7,6 +6,7 @@ import {
 import { DenseFieldView } from "./DenseFieldView.js";
 import { GroundProjectionView } from "./GroundProjectionView.js";
 import { MorphView } from "./MorphView.js";
+import { TrajectoryPathView } from "./TrajectoryPathView.js";
 import { createChannel } from "./view-utils.js";
 
 export function resolveProcessCurveSceneInputs(document, options = {}) {
@@ -314,6 +314,7 @@ function createProcessCurveTrackDescriptor(document, inputs, options) {
   const labels = new Map((inputs.labelProperty.values || []).map((entry) => [entry.record_id, entry.value]));
   const categories = new Map();
   const pathsByLabel = new Map();
+  const trackRecordIds = [];
   const groundY = finiteNumber(options.groundY, -0.5);
 
   for (const record of records) {
@@ -327,8 +328,11 @@ function createProcessCurveTrackDescriptor(document, inputs, options) {
         label,
         color: trackColor(categories.get(label)),
         points: [],
+        recordIds: [],
       });
     }
+    trackRecordIds.push(record.id);
+    pathsByLabel.get(label).recordIds.push(record.id);
     pathsByLabel.get(label).points.push([
       Number(position[0]) || 0,
       groundY,
@@ -336,23 +340,55 @@ function createProcessCurveTrackDescriptor(document, inputs, options) {
     ]);
   }
 
-  return createTubeRibbonPathLayerDescriptor(Array.from(pathsByLabel.values()), {
+  const view = new TrajectoryPathView({
     id: `track:${inputs.datasetId}:record-order`,
     kind: "record-track",
+    descriptorKind: "record-track",
+    sourceViewKind: "record-track",
+    datasetId: inputs.datasetId,
+    coordinateId: inputs.targetCoordinate.id,
+    propertyId: inputs.labelProperty.id,
+    recordIds: trackRecordIds,
+    paths: Array.from(pathsByLabel.values()),
+    pathSource: "exported-record-order",
     order: -8,
     mode: options.trackMode || "ribbon",
-    radius: finiteNumber(options.trackRadius, 0.018),
-    radialSegments: Math.max(3, Math.floor(finiteNumber(options.trackRadialSegments, 8))),
-    useWidthsAsRadius: options.trackUseWidthsAsRadius === true,
     width: finiteNumber(options.trackWidth, 3.15),
     alpha: finiteNumber(options.trackAlpha, 0.72),
-    emission: finiteNumber(options.trackEmission, 0.14),
-    rimLight: finiteNumber(options.trackRimLight, 0.36),
-    coreGlow: finiteNumber(options.trackCoreGlow, 0.2),
-    flowStrength: finiteNumber(options.trackFlowStrength, 0.1),
-    depthWrite: options.trackMode === "tube" ? true : false,
-    resample: false,
+    descriptorFactory: "tube-ribbon",
+    nativeEvidence: {
+      schema: "metric.visual.trajectory_path_evidence_ref.v1",
+      source: "exported-record-order",
+      documentSchema: document?.schema || null,
+      provenance: document?.provenance ? {
+        writer: document.provenance.writer || null,
+        runtime: document.provenance.runtime || null,
+        source_example: document.provenance.source_example || null,
+        synthetic: document.provenance.synthetic === true,
+      } : null,
+      datasetId: inputs.datasetId,
+      spaceId: inputs.targetCoordinate.space_id || null,
+      coordinateId: inputs.targetCoordinate.id,
+      relationId: null,
+      graphId: null,
+      timelineId: null,
+    },
+    curveOptions: {
+      radius: finiteNumber(options.trackRadius, 0.018),
+      radialSegments: Math.max(3, Math.floor(finiteNumber(options.trackRadialSegments, 8))),
+      useWidthsAsRadius: options.trackUseWidthsAsRadius === true,
+      emission: finiteNumber(options.trackEmission, 0.14),
+      rimLight: finiteNumber(options.trackRimLight, 0.36),
+      coreGlow: finiteNumber(options.trackCoreGlow, 0.2),
+      flowStrength: finiteNumber(options.trackFlowStrength, 0.1),
+      depthWrite: options.trackMode === "tube" ? true : false,
+      resample: false,
+    },
+    metadata: {
+      visualGrammar: "process-curves",
+    },
   });
+  return view.toLayerDescriptors()[0];
 }
 
 function createProcessCurveSkylineDescriptor(document, inputs, options) {

@@ -468,6 +468,8 @@ auto build_condition_monitoring_document(const std::vector<Observation> &observa
 	visual::Document doc;
 	doc.provenance_json(visual::object({visual::string_field("writer", "examples/engine/condition_monitoring_visual_export.cpp"),
 										visual::string_field("runtime", "native-c++"),
+										visual::bool_field("native_export", true),
+										visual::bool_field("synthetic_js", false),
 										visual::string_field("source_example", "examples/engine/condition_monitoring.cpp")}))
 		.dataset(dataset_id, "Condition monitoring process windows",
 				 "Native C++ finite-metric evidence for process-window condition monitoring.",

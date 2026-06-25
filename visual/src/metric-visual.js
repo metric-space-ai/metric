@@ -2,7 +2,6 @@ import { loadVisualDocument, normalizeVisualInput, VisualSpace } from "./data/in
 import { createLayerFromDescriptor } from "./layers/index.js";
 import { MetricVisualRuntime } from "./runtime/index.js";
 import { createMiniatureHeroRuntimeOptions } from "./style/miniature/index.js";
-import { createTubeRibbonPathLayerDescriptor } from "./curves/index.js";
 import { RecordPreviewPanel, TimelineControlWidget, findTimelineControlDescriptor } from "./interaction/index.js";
 import { createRelationMatrixPicker } from "./relational/index.js";
 import {
@@ -17,6 +16,7 @@ import {
   RelationMatrixView,
   SolverTraceView,
   SpacePropertiesView,
+  TrajectoryPathView,
 } from "./views/index.js";
 import { VisualLayer } from "./views/VisualLayer.js";
 import { createChannel, createStringChannel } from "./views/view-utils.js";
@@ -351,7 +351,28 @@ export class MetricVisualSurface {
       ...options,
     });
     const space = MetricSpaceView.fromVisualSpace(this.document, normalized);
-    this.views = [space];
+    const path = TrajectoryPathView.fromMetricSpaceView(space, {
+      document: this.document,
+      id: options.pathId || "condition-monitoring:trajectory",
+      kind: "condition-monitoring-trajectory",
+      descriptorKind: "trajectory",
+      sourceViewKind: "condition-monitoring-trajectory",
+      preferGraph: true,
+      pathGraphId: options.pathGraphId || options.graphId,
+      pathRelationId: options.pathRelationId || options.transitionRelationId,
+      pathCount: options.pathCount || 16,
+      width: options.pathWidth ?? 3.4,
+      alpha: options.pathAlpha ?? 0.68,
+      color: options.pathColor || [0.12, 0.36, 0.42, 0.68],
+      order: 32,
+      curveOptions: {
+        colorMix: 1,
+      },
+      metadata: {
+        visualGrammar: "condition-monitoring",
+      },
+    });
+    this.views = [space, path];
     const descriptors = [
       ...space.toLayerDescriptors(),
       ...propertyFieldDescriptors(this.document, {
@@ -366,15 +387,7 @@ export class MetricVisualSurface {
         },
       }, space),
     ];
-    const path = recordTrajectoryDescriptor(space, {
-      id: options.pathId || "condition-monitoring:trajectory",
-      pathCount: options.pathCount || 16,
-      width: options.pathWidth ?? 3.4,
-      alpha: options.pathAlpha ?? 0.68,
-      color: options.pathColor || [0.12, 0.36, 0.42, 0.68],
-      order: 32,
-    });
-    if (path) descriptors.push(path);
+    descriptors.push(...path.toLayerDescriptors());
     this.setLayerDescriptors(descriptors, { source: "showConditionMonitoring", viewKind: "condition-monitoring" });
     if (options.camera !== false) {
       this.setCamera(options.camera || conditionMonitoringCamera());
@@ -1367,41 +1380,6 @@ function propertyFieldDescriptors(document, options = {}, fittedSpace = null) {
   } catch {
     return [];
   }
-}
-
-function recordTrajectoryDescriptor(space, options = {}) {
-  if (!space?.recordIds?.length || !space.positions) return null;
-  const ids = space.recordIds.slice();
-  const pathCount = Math.max(1, Math.floor(Number(options.pathCount) || 1));
-  const segmentSize = Math.max(2, Math.ceil(ids.length / pathCount));
-  const paths = [];
-  for (let start = 0; start < ids.length; start += segmentSize) {
-    const group = ids.slice(start, start + segmentSize);
-    const points = [];
-    for (const id of group) {
-      const position = getPosition(space.positions, id);
-      if (position) points.push(position);
-    }
-    if (points.length >= 2) {
-      paths.push({
-        id: `${options.id || space.id}:path-${paths.length}`,
-        points,
-        color: options.color || [0.14, 0.36, 0.46, options.alpha ?? 0.78],
-        width: options.width ?? 4,
-        metadata: { evidenceType: "record-order-trajectory", sourceView: space.id },
-      });
-    }
-  }
-  if (!paths.length) return null;
-  const descriptor = createTubeRibbonPathLayerDescriptor({ paths }, {
-    id: options.id || `${space.id}:trajectory`,
-    order: options.order ?? 30,
-    alpha: options.alpha ?? 0.78,
-    defaultWidth: options.width ?? 4,
-    colorMix: 1,
-  });
-  descriptor.metadata = { ...descriptor.metadata, role: "trajectory/path" };
-  return descriptor;
 }
 
 function pairedRecordBridgeDescriptor(left, right, options = {}) {

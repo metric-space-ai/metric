@@ -86,6 +86,9 @@ async function inspectBrief(brief) {
       if (asset.native !== true) {
         issues.push({ code: "native-asset-provenance-missing", example: exampleId, target, provenance: asset.provenance });
       }
+      if (asset.nativeExportExplicit !== true) {
+        issues.push({ code: "native-asset-native-export-flag-missing", example: exampleId, target, provenance: asset.provenance });
+      }
     } catch (error) {
       issues.push({ code: "native-asset-unreadable", example: exampleId, target, message: error.message });
     }
@@ -150,6 +153,7 @@ function summarizeAsset(target, assetPath, document) {
     viewKinds: Array.isArray(document?.views) ? document.views.map((view) => view?.kind).filter(Boolean) : [],
     recordTypeCount: countRecordTypes(records),
     native: isNativeMetricVisualDocument(document),
+    nativeExportExplicit: document?.provenance?.native_export === true || document?.provenance?.nativeExport === true,
     provenance: {
       writer: document?.provenance?.writer ?? null,
       runtime: document?.provenance?.runtime ?? null,
