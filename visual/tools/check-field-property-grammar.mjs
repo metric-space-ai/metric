@@ -8,10 +8,12 @@ import {
   PROPERTY_FIELD_GRAMMAR_SCHEMA,
   SpacePropertiesView,
 } from "../src/views/SpacePropertiesView.js";
+import { PropertyFieldView } from "../src/views/PropertyFieldView.js";
 import { HeatFieldLayer, heatFieldRampMode } from "../src/layers/HeatFieldLayer.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..", "..");
+const METRIC_VISUAL_SOURCE = resolve(ROOT, "visual", "src", "metric-visual.js");
 const CONDITION_ASSET = resolve(ROOT, "docs", "examples", "assets", "condition-monitoring", "metric.visual.json");
 const METRIC_SPACE_FIXTURE = resolve(ROOT, "visual", "examples", "fixtures", "metric-space.visual.json");
 
@@ -25,7 +27,12 @@ function assert(message, ok, details = {}) {
 }
 
 function propertyField(document, propertyId, options = {}) {
-  const view = SpacePropertiesView.fromVisualSpace(document, {
+  const properties = SpacePropertiesView.fromVisualSpace(document, {
+    coordinateId: "process-state-trajectory-3d",
+    propertyId,
+    ...options,
+  });
+  const view = PropertyFieldView.fromMetricSpaceView(document, properties.space, {
     coordinateId: "process-state-trajectory-3d",
     propertyId,
     ...options,
@@ -46,6 +53,19 @@ const entropy = propertyField(metricSpaceFixture, "entropy", {
 
 for (const [label, result] of [["density", density], ["entropy", entropy], ["anomaly", anomaly], ["outlier", outlier]]) {
   assert(`${label} field emits HeatFieldLayer`, Boolean(result.field));
+  assert(`${label} field is emitted by PropertyFieldView`,
+    result.field.metadata?.viewClass === "PropertyFieldView"
+      && result.field.source?.viewClass === "PropertyFieldView"
+      && result.field.metadata?.algorithmicComputation === false,
+    { source: result.field.source, metadata: result.field.metadata });
+  assert(`${label} field keeps reusable descriptor metadata`,
+    result.field.metadata?.propertyId === result.view.propertyId
+      && result.field.metadata?.coordinateId === result.view.coordinateId
+      && result.field.metadata?.recordCount === result.document.records.length
+      && result.field.metadata?.nativeEvidence?.source === "exported-record-property"
+      && result.field.metadata?.nativeEvidence?.propertyId === result.view.propertyId
+      && result.field.metadata?.nativeEvidence?.coordinateId === result.view.coordinateId,
+    { metadata: result.field.metadata });
   assert(`${label} field uses exported record ids`,
     result.field.channels.recordId?.count === result.document.records.length,
     { count: result.field.channels.recordId?.count, records: result.document.records.length });
@@ -106,6 +126,11 @@ assert("outlier property maps to outlier ramp", outlier.field.metadata.propertyS
 assert("lifted field mode is represented in geometry and metadata",
   anomaly.field.geometry.mode === "lifted-property-field" && anomaly.field.metadata.fieldMode === "lifted",
   { geometry: anomaly.field.geometry, fieldMode: anomaly.field.metadata.fieldMode });
+
+const metricVisualSource = await readFile(METRIC_VISUAL_SOURCE, "utf8");
+assert("surface helper propertyFieldDescriptors is not present in metric-visual.js",
+  !metricVisualSource.includes("propertyFieldDescriptors"),
+  { source: METRIC_VISUAL_SOURCE });
 
 console.log(JSON.stringify({
   ok: true,

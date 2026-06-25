@@ -76,6 +76,10 @@ This plan is authoritative only with the following current-state constraints:
   Condition monitoring, finite dynamics and process-curve previews must use
   that view for record paths, graph/transition evidence and exported timeline
   states instead of surface-local trajectory helpers.
+- Scalar property-field rendering now belongs to the semantic
+  `PropertyFieldView`. Metric-space, property, dynamics and condition-monitoring
+  commands must use that view for exported entropy, density, anomaly, residual
+  or uncertainty fields instead of surface-local field helpers.
 - The relation-matrix grammar now has engine-level readability metadata and a
   WebGL tile-summary LOD texture derived from already exported matrix texture
   values. This reduces dense-matrix aliasing without adding DOM/SVG fallbacks,
@@ -1067,8 +1071,9 @@ Allowed:
 - `MetricVisualRuntime` as the engine
 - `MetricSpaceView` as the dense point-cloud grammar
 - additional semantic views such as `RelationMatrixView`,
-  `NeighborhoodGraphView`, `SpacePropertiesView`, `MappingView` and
-  `DynamicsView`, composed through the same descriptor/runtime pipeline
+  `NeighborhoodGraphView`, `SpacePropertiesView`, `PropertyFieldView`,
+  `MappingView`, `TrajectoryPathView` and `DynamicsView`, composed through the
+  same descriptor/runtime pipeline
 - example pages as configuration shells only
 
 If a hero needs a visual grammar missing from the engine, implement the grammar

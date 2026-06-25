@@ -36,6 +36,14 @@ const metricVisualForbidden = [
     pattern: /\bcreateTubeRibbonPathLayerDescriptor\b/,
     message: "trajectory tube/ribbon descriptors must be emitted by semantic views, not metric-visual.js",
   },
+  {
+    pattern: /\bpropertyFieldDescriptors\b/,
+    message: "property-field grammar must live in PropertyFieldView, not metric-visual.js",
+  },
+  {
+    pattern: /\bDenseFieldView\b/,
+    message: "metric-visual.js must use PropertyFieldView for property fields, not direct DenseFieldView helpers",
+  },
 ];
 
 const failures = [];

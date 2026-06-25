@@ -6,12 +6,12 @@ import { RecordPreviewPanel, TimelineControlWidget, findTimelineControlDescripto
 import { createRelationMatrixPicker } from "./relational/index.js";
 import {
   CrossSpaceView,
-  DenseFieldView,
   DynamicsView,
   MappingView,
   MetricSpaceView,
   MixedRecordView,
   NeighborhoodGraphView,
+  PropertyFieldView,
   createProcessCurveMiniatureLayerDescriptors,
   RelationMatrixView,
   SolverTraceView,
@@ -255,11 +255,14 @@ export class MetricVisualSurface {
   }
 
   showMetricSpace(options = {}) {
-    const view = MetricSpaceView.fromVisualSpace(this.document, normalizeMetricViewOptions(this.document, options));
+    const normalized = normalizeMetricViewOptions(this.document, options);
+    const view = MetricSpaceView.fromVisualSpace(this.document, normalized);
     this.views = [view];
     const descriptors = view.toLayerDescriptors();
-    if (options.groundField) {
-      descriptors.splice(1, 0, ...propertyFieldDescriptors(this.document, options, view));
+    if (normalized.groundField || normalized.propertyField) {
+      const field = PropertyFieldView.fromMetricSpaceView(this.document, view, normalizePropertyFieldViewOptions(normalized));
+      this.views.push(field);
+      descriptors.splice(1, 0, ...field.toLayerDescriptors());
     }
     this.setLayerDescriptors(descriptors, { source: "showMetricSpace", viewKind: "metric-space" });
     return this.configurePreview(options);
@@ -281,10 +284,11 @@ export class MetricVisualSurface {
 
   showSpaceProperties(options = {}) {
     const normalized = normalizePropertyOptions(this.document, options);
-    const view = SpacePropertiesView.fromVisualSpace(this.document, normalized);
-    this.views = [view];
+    const view = SpacePropertiesView.fromVisualSpace(this.document, { ...normalized, field: false, propertyField: false });
+    const field = PropertyFieldView.fromMetricSpaceView(this.document, view.space, normalized);
+    this.views = [view, field];
     const descriptors = view.toLayerDescriptors();
-    descriptors.splice(1, 0, ...propertyFieldDescriptors(this.document, normalized, view.space));
+    descriptors.splice(1, 0, ...field.toLayerDescriptors());
     this.setLayerDescriptors(descriptors, { source: "showSpaceProperties", viewKind: "space-properties" });
     return this.configurePreview(options);
   }
@@ -299,16 +303,28 @@ export class MetricVisualSurface {
 
   showDynamics(options = {}) {
     const normalized = normalizeMetricViewOptions(this.document, options);
-    const view = DynamicsView.fromVisualSpace(this.document, normalized);
+    const fieldEnabled = normalized.propertyField || normalized.groundField;
+    const view = DynamicsView.fromVisualSpace(this.document, fieldEnabled
+      ? { ...normalized, field: false, propertyField: false, groundField: false }
+      : normalized);
     this.lastDynamicsOptions = { ...normalized };
     this.views = [view];
     const descriptors = view.toLayerDescriptors();
-    if (normalized.propertyField || normalized.groundField) {
-      descriptors.unshift(...propertyFieldDescriptors(this.document, {
+    if (fieldEnabled) {
+      const active = view.fittedStates?.[view.activeStep];
+      const field = PropertyFieldView.fromMetricSpaceView(this.document, {
+        recordIds: view.recordIds,
+        positions: active?.positions,
+        datasetId: view.datasetId,
+        spaceId: view.spaceId,
+        coordinateId: active?.coordinateId,
+        groundY: view.groundY,
+      }, normalizePropertyFieldViewOptions({
         ...normalized,
-        coordinateId: view.fittedStates?.[view.activeStep]?.coordinateId,
-        propertyId: normalized.propertyField || normalized.groundField,
+        coordinateId: active?.coordinateId,
       }));
+      descriptors.unshift(...field.toLayerDescriptors());
+      this.views.push(field);
     }
     this.setLayerDescriptors(descriptors, { source: "showDynamics", viewKind: "dynamics" });
     this.configureTimelineControl(view, normalized);
@@ -373,19 +389,26 @@ export class MetricVisualSurface {
       },
     });
     this.views = [space, path];
+    const field = PropertyFieldView.fromMetricSpaceView(this.document, space, {
+      ...normalized,
+      propertyId: typeof options.groundField === "string"
+        ? options.groundField
+        : typeof options.propertyField === "string"
+          ? options.propertyField
+          : firstAvailablePropertyId(this.document, ["local-density", "density"]),
+      groundY: options.fieldGroundY ?? 0.035,
+      alpha: options.fieldAlpha ?? 0.2,
+      radius: options.fieldRadius ?? 0.16,
+      material: {
+        contour: 0.1,
+        glow: 0.04,
+        ...(options.fieldMaterial || {}),
+      },
+    });
+    this.views.splice(1, 0, field);
     const descriptors = [
       ...space.toLayerDescriptors(),
-      ...propertyFieldDescriptors(this.document, {
-        ...normalized,
-        propertyId: options.groundField || options.propertyField || "density",
-        alpha: options.fieldAlpha ?? 0.2,
-        radius: options.fieldRadius ?? 0.16,
-        material: {
-          contour: 0.1,
-          glow: 0.04,
-          ...(options.fieldMaterial || {}),
-        },
-      }, space),
+      ...field.toLayerDescriptors(),
     ];
     descriptors.push(...path.toLayerDescriptors());
     this.setLayerDescriptors(descriptors, { source: "showConditionMonitoring", viewKind: "condition-monitoring" });
@@ -1285,6 +1308,19 @@ function firstRelationId(document) {
   return Array.isArray(document?.relations) && document.relations.length ? document.relations[0].id : null;
 }
 
+function firstAvailablePropertyId(document, candidates = []) {
+  for (const id of candidates) {
+    if (findVisualItem(document, "properties", id)) return id;
+  }
+  const property = Array.isArray(document?.properties)
+    ? document.properties.find((entry) => {
+      const valueType = entry?.value_type ?? entry?.valueType;
+      return valueType === "scalar" || valueType === "rank" || valueType === "number";
+    })
+    : null;
+  return property?.id;
+}
+
 function resolveMetricVisualCanvas(options = {}) {
   if (options.canvas instanceof HTMLCanvasElement) return options.canvas;
   const target = options.target || document.body;
@@ -1345,41 +1381,24 @@ function normalizePropertyOptions(document, options = {}) {
   return next;
 }
 
+function normalizePropertyFieldViewOptions(options = {}) {
+  const next = { ...options };
+  const explicitPropertyId = typeof options.propertyField === "string"
+    ? options.propertyField
+    : typeof options.groundField === "string"
+      ? options.groundField
+      : null;
+  if (explicitPropertyId) next.propertyId = explicitPropertyId;
+  else if (next.propertyId === true || next.propertyId === false) delete next.propertyId;
+  return next;
+}
+
 function normalizeMappingOptions(document, options = {}) {
   const next = normalizeMetricViewOptions(document, options);
   if (next.residual && !next.residualProperty) next.residualProperty = next.residual;
   if (next.residualProperty && !next.scalarProperty) next.scalarProperty = next.residualProperty;
   if (next.morphDurationMs !== undefined && next.durationMs === undefined) next.durationMs = next.morphDurationMs;
   return next;
-}
-
-function propertyFieldDescriptors(document, options = {}, fittedSpace = null) {
-  const propertyId = options.propertyId || options.property || options.groundField;
-  if (!propertyId) return [];
-  try {
-    const field = DenseFieldView.fromVisualSpace(document, {
-      ...options,
-      propertyId,
-      coordinateId: options.coordinateId || fittedSpace?.coordinateId,
-      alpha: options.alpha ?? 0.34,
-      radius: options.radius ?? 0.2,
-      material: {
-        alpha: options.alpha ?? 0.34,
-        contour: 0.14,
-        glow: 0.1,
-        depthWrite: false,
-        ...(options.material || {}),
-      },
-    });
-    const descriptors = field.toLayerDescriptors();
-    for (const descriptor of descriptors) {
-      descriptor.order = options.order ?? -2;
-      descriptor.metadata = { ...descriptor.metadata, role: "property-field", propertyId };
-    }
-    return descriptors;
-  } catch {
-    return [];
-  }
 }
 
 function pairedRecordBridgeDescriptor(left, right, options = {}) {

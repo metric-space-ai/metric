@@ -19,6 +19,7 @@ import {
   MetricSpaceView,
   RelationMatrixView,
   NeighborhoodGraphView,
+  PropertyFieldView,
   SpacePropertiesView,
   MappingView,
   DynamicsView,
@@ -61,6 +62,15 @@ function checkRenderable(checks, label, descriptors) {
 
 function assert(checks, message, ok, details = {}) {
   checks.push({ ok: Boolean(ok), message, details: ok ? undefined : details });
+}
+
+function assertThrows(checks, message, fn, pattern) {
+  try {
+    fn();
+    assert(checks, message, false, { error: "did not throw" });
+  } catch (error) {
+    assert(checks, message, pattern.test(String(error?.message || error)), { error: String(error?.message || error) });
+  }
 }
 
 async function main() {
@@ -131,7 +141,34 @@ async function main() {
     assert(checks, "SpacePropertiesView: ranks records", summary.top.length > 0 && summary.bottom.length > 0);
   }
 
-  // 5. MappingView
+  // 5. PropertyFieldView
+  {
+    const view = PropertyFieldView.fromVisualSpace(metricSpace, { propertyId: "entropy", coordinateId: "landmark-3d" });
+    const descriptors = view.toLayerDescriptors();
+    checkRenderable(checks, "PropertyFieldView", descriptors);
+    const [field] = descriptors;
+    assert(checks, "PropertyFieldView: emits HeatFieldLayer", field?.primitive === "HeatFieldLayer", { primitive: field?.primitive });
+    assert(checks, "PropertyFieldView: marks reusable view metadata",
+      field?.metadata?.viewClass === "PropertyFieldView"
+        && field?.metadata?.role === "property-field"
+        && field?.metadata?.algorithmicComputation === false,
+      field?.metadata);
+    assert(checks, "PropertyFieldView: preserves property/coordinate/native evidence",
+      field?.metadata?.propertyId === "entropy"
+        && field?.metadata?.coordinateId === "landmark-3d"
+        && field?.metadata?.recordCount === 24
+        && field?.metadata?.nativeEvidence?.propertyId === "entropy"
+        && field?.metadata?.nativeEvidence?.coordinateId === "landmark-3d",
+      field?.metadata);
+    assertThrows(checks, "PropertyFieldView: unknown explicit property fails", () => {
+      PropertyFieldView.fromVisualSpace(metricSpace, { propertyId: "missing-property", coordinateId: "landmark-3d" });
+    }, /Unknown property reference/);
+    assertThrows(checks, "PropertyFieldView: unknown explicit coordinate fails", () => {
+      PropertyFieldView.fromVisualSpace(metricSpace, { propertyId: "entropy", coordinateId: "missing-coordinate" });
+    }, /Unknown coordinate reference/);
+  }
+
+  // 6. MappingView
   {
     const view = MappingView.fromVisualSpace(metricSpace, {
       sourceCoordinateId: "landmark-2d",
@@ -146,7 +183,7 @@ async function main() {
     assert(checks, "MappingView: preservation summary present", preservation.count === 24, { count: preservation.count });
   }
 
-  // 6. DynamicsView
+  // 7. DynamicsView
   {
     const view = DynamicsView.fromVisualSpace(metricSpace, { timelineId: "condition-morph" });
     const descriptors = view.toLayerDescriptors();
@@ -155,7 +192,7 @@ async function main() {
     assert(checks, "DynamicsView: emits active state points", descriptors.some((d) => (d.primitive || d.kind) === "InstancedPointLayer"));
   }
 
-  // 7. TrajectoryPathView (record-order path grammar)
+  // 8. TrajectoryPathView (record-order path grammar)
   {
     const space = MetricSpaceView.fromVisualSpace(metricSpace, {
       spaceId: "sensor-space",
@@ -175,7 +212,7 @@ async function main() {
     assert(checks, "TrajectoryPathView: declares no JS algorithmic computation", trajectory?.metadata?.algorithmicComputation === false, trajectory?.metadata);
   }
 
-  // 8. SolverTraceView (explicit converging residual series)
+  // 9. SolverTraceView (explicit converging residual series)
   {
     const series = Array.from({ length: 20 }, (_, index) => 1.0 * Math.pow(0.7, index));
     const view = SolverTraceView.fromVisualSpace(metricSpace, { series, logScale: true, traceLabel: "PCG residual" });

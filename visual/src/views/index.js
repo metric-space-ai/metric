@@ -2,6 +2,7 @@ export { BaseView } from "./BaseView.js";
 export { VisualLayer, createVisualLayer } from "./VisualLayer.js";
 export { PointCloudView, createPointCloudView } from "./PointCloudView.js";
 export { DenseFieldView, createDenseFieldView } from "./DenseFieldView.js";
+export { PropertyFieldView, createPropertyFieldView } from "./PropertyFieldView.js";
 export { HeatMapView, createHeatMapView } from "./HeatMapView.js";
 export { SurfaceView, createSurfaceView } from "./SurfaceView.js";
 export { GroundProjectionView, createGroundProjectionView } from "./GroundProjectionView.js";

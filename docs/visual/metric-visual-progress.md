@@ -146,6 +146,21 @@ dynamics timelines and process-curve tube tracks. `visual/tools/check-single-ren
 now rejects reintroducing `recordTrajectoryDescriptor` or direct tube/ribbon
 trajectory descriptor construction in `metric-visual.js`.
 
+### Property Field View Slice - 2026-06-25
+
+Scalar property-field rendering moved out of the surface-local
+`propertyFieldDescriptors` helper into `PropertyFieldView`. The reusable view
+adapts already-exported scalar record properties and already-exported or fitted
+coordinates into the shared `HeatFieldLayer` field grammar. It does not compute
+density, entropy, anomaly, residual or any other algorithmic value in
+JavaScript. `showMetricSpace`, `showSpaceProperties`, `showDynamics` and
+`showConditionMonitoring` now compose `PropertyFieldView` through the same
+semantic-view -> descriptor -> runtime pipeline. `visual/tools/check-field-property-grammar.mjs`
+verifies field metadata, native evidence references and scalar-property
+semantics. `visual/tools/check-single-render-pipeline.mjs` now rejects
+reintroducing `propertyFieldDescriptors` or direct `DenseFieldView` usage in
+`metric-visual.js`.
+
 ### Runtime Picking/Preview Workstream Note - 2026-06-25
 
 The relation grammar contract preserves native pair evidence on matrix cells,
