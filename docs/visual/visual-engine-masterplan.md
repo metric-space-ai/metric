@@ -133,6 +133,9 @@ Implemented native slices:
 - reusable record/pair preview panel resolution from `metric.visual.v1`
   evidence, including runtime selection state for selected record previews,
   selected pair previews and inspection payloads
+- richer record/pair preview payload resolution for exported payload families,
+  record properties, linked coordinate/view memberships, relation-independent
+  pair properties and symmetric native pair values
 - reusable `MixedRecordView` semantic grammar for heterogeneous records,
   typed glyph descriptors and cross-type relation-edge evidence without
   page-local render helpers
@@ -142,6 +145,12 @@ Implemented native slices:
 - reusable timeline state/control descriptors for `DynamicsView`, including
   sampled exported timeline state, deterministic start/middle/end samples and
   animation-control metadata
+- user-facing timeline-control metadata for scrubber/playback/reset controls
+  plus active ground/field state descriptors from exported timeline-step
+  properties
+- reusable relation-matrix readability metadata for block/tile/LOD contracts,
+  weighted dense-cell smoothing, logical tile boundaries and row/column/cell
+  selection focus
 - stricter `metric.visual.v1` validation for dense relation shapes, relation
   value endpoints, coordinate-position dimensions and pair-property endpoints
 - browser-backed public regression gate for the accepted GRAE10 reference and
@@ -157,10 +166,10 @@ Known gaps:
 - first full-frame capture path exists; no polished multi-algorithm hero
   application/gallery yet
 - no full visual gallery for every METRIC algorithm family yet
-- relation matrix has native exported evidence and a first readable WebGL
-  matrix grammar pass with block bands, block boundaries, row/column/cell
+- relation matrix has native exported evidence and a reusable WebGL readability
+  pass with block bands, tile/LOD metadata, block boundaries, row/column/cell
   focus and pair-evidence picking, but it is not yet a polished public
-  matrix/neighborhood hero
+  matrix/neighborhood hero until screenshot review accepts it
 - metric curve-body study-style curve bodies now have a native `CurveTubeMeshLayer`; more
   algorithm-family views still need to adopt it where world-space continuity is
   the main evidence

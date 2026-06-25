@@ -2111,17 +2111,24 @@ Not visually accepted yet:
 - `CrossSpaceView` is now a reusable paired-space semantic view with side
   spaces, exported pair bridge descriptors and linked-selection metadata. It
   still needs richer runtime linked brushing and pair preview presentation.
-- `DynamicsView` now emits timeline state/control descriptors and deterministic
-  timeline samples. It still needs user-facing timeline controls and changing
-  ground/field state during playback.
-- Record and pair preview now share the runtime inspection path. The remaining
-  preview work is richer payload renderers and linked multi-view presentation,
-  not basic GPU record picking.
+- `DynamicsView` now emits timeline state/control descriptors, user-facing
+  scrubber/playback/reset metadata, deterministic timeline samples and active
+  ground/field state from exported timeline-step properties. It still needs
+  runtime UI widgets and screenshot/readability acceptance.
+- Record and pair preview now share the runtime inspection path and resolve
+  payload families, record properties, linked memberships, relation-independent
+  pair properties and symmetric native pair values. Remaining preview work is
+  layout/presentation quality for large composed payloads, not page-local
+  preview paths.
 - `RelationMatrixLayer` has a first WebGL readability pass: block ranges render
   as subtle same-block bands plus explicit boundaries, dense cells use
   pixel-footprint smoothing, and selection differentiates row, column and cell.
   Matrix hits carry relation id/name, native pair identity and pair properties
   into the shared runtime pair-preview path.
+- `RelationMatrixLayer` now also consumes reusable block/tile/LOD readability
+  metadata for weighted dense-cell smoothing, logical tile boundaries and
+  explicit no-DOM fallback diagnostics. It is still not hero-accepted until
+  screenshot review proves readability at the public target scale.
 - The large-scene performance gate now covers the point-cloud stress rows and
   current public preview grammar rows for field, glyph, relation-matrix/graph,
   dynamics, mapping and cross-space scenes. These rows prove runtime mechanics,
@@ -2131,22 +2138,63 @@ Next mandatory engine work:
 
 1. Promote the native preview exports into polished hero-specific visual
    grammars only after screenshot review.
-2. Finish richer preview presentation for records, pairs and linked multi-view
-   inspection. The basic runtime preview payload contract exists; the remaining
-   work is useful presentation, not another page-local preview path.
+2. Improve preview panel layout and linked multi-view presentation for large
+   composed record payloads. Do not add another page-local preview path.
 3. Extend layer-specific matrix picking to a GPU/tiled strategy only where the
    semantic matrix picker is not sufficient at larger scales.
 4. Continue `RelationMatrixLayer` readability toward hero acceptance:
-   large-matrix tiling/LOD, screenshot review, row/column focus under dense
-   matrices and no moire-like artifacts.
+   streamed/tiled large-matrix rendering if needed, screenshot review,
+   row/column focus under dense matrices and no moire-like artifacts.
 5. Replace placeholder glyph rendering with true type-specific glyph geometry
    for mixed records.
-6. Build user-facing timeline controls for `DynamicsView` on top of the new
-   timeline-control descriptor, including changing ground/field state.
+6. Build runtime UI widgets that consume the timeline-control descriptors
+   emitted by `DynamicsView`.
 7. Complete linked selection presentation between relation matrix, graph,
    paired-space bridge and metric-space records.
 8. Re-run browser screenshots and only then decide which hero is allowed to
    become the first visual quality bar.
+
+## Implementation Checkpoint: Inspection, Readability And Timeline Controls
+
+Status date: 2026-06-25
+
+Implemented:
+
+- Shared record/pair preview now resolves exported payload families, record
+  properties, coordinate/view memberships, row/column record context,
+  relation-independent pair properties and symmetric native pair values from
+  `metric.visual.v1` evidence.
+- Relation-matrix readability now has reusable block/tile/LOD metadata,
+  weighted dense-cell smoothing, logical tile boundary cues, separate
+  row/column/cell selection colors and explicit no-DOM fallback diagnostics.
+- Dynamics timeline control descriptors now expose scrubber/playback/reset
+  metadata and active ground/field state from exported timeline-step
+  properties.
+
+Verified:
+
+- `node visual/tools/check-record-preview-payloads.mjs`
+- `node visual/tools/check-runtime-picking-preview.mjs`
+- `node visual/tools/check-relation-matrix-picker.mjs`
+- `node visual/tools/check-relation-matrix-readability.mjs`
+- `node visual/tools/check-dynamics-timeline-control.mjs`
+- `node visual/tools/check-timeline-motion-contract.mjs`
+- `node visual/tools/check-dynamics-motion-grammar.mjs`
+- `node visual/tools/check-visual-command-api.mjs`
+- `node visual/tools/check-views.mjs`
+- `node visual/tools/check-single-render-pipeline.mjs`
+- `node visual/tools/check-hero-grammar-contract.mjs`
+- `node visual/tools/check-public-gallery-evidence.mjs`
+- `node visual/tools/check-grae10-golden.mjs`
+- `node visual/tools/check-visual-regression-public-examples.mjs`
+- `node visual/tools/check-visual-performance-large-scenes.mjs`
+
+Corrected status:
+
+- These slices are engine capability progress. They do not promote any preview
+  to hero-accepted.
+- The next acceptance bottleneck is visual screenshot review and public-scale
+  evidence quality, not another custom page script.
 
 ## Implementation Checkpoint: Semantic View Extraction And Schema Gates
 
