@@ -36,7 +36,7 @@ ctest --test-dir build/core -L 'metric_application_evidence|metric_diffusion_coo
 | Relation matrix exporter | `examples/engine/relation_matrix_visual_export.cpp` | integrated in CMake/CTest | `docs/examples/assets/relation-matrix/metric.visual.json` |
 | Condition monitoring exporter | `examples/engine/condition_monitoring_visual_export.cpp` | integrated in CMake/CTest | `docs/examples/assets/condition-monitoring/metric.visual.json` |
 | Mapping/dimensionality exporter | `examples/engine/mapping_dimensionality_visual_export.cpp` | integrated in CMake/CTest | `docs/examples/assets/mapping-dimensionality/metric.visual.json` |
-| Process-curve external exporter | `examples/engine/process_curve_external_visual_export.cpp` | integrated in CMake/CTest; preview-only | `docs/examples/assets/process-curve-external/metric.visual.json` |
+| Process-curve external exporter | `examples/engine/process_curve_external_visual_export.cpp` | integrated in CMake/CTest; preview-only; blocked for hero scale until more real UCR source windows are available | `docs/examples/assets/process-curve-external/metric.visual.json` |
 
 ## Integrated Exporter Tests
 
@@ -66,10 +66,29 @@ native scale threshold; the other six public previews are correctly blocked by
 record count, and `mixed-record-hero` is additionally blocked by record-type
 diversity.
 
-The UCR process-curve export is the next public hero candidate because the
-records, query outcomes and baseline comparison already exist outside the
-browser renderer. It remains preview-only until screenshot review accepts the
-visual grammar and composition.
+The UCR process-curve export has real native evidence, query outcomes and
+baseline comparison outside the browser renderer, but it is not yet a scale
+candidate for public hero acceptance. The checked-in UCR-derived slices contain
+48 real source windows plus query records, below the 500-source-record target.
+Do not scale this hero with synthetic windows or query padding. The blocker is
+tracked in:
+
+```text
+docs/visual/reports/process-curve-external-scale-exporter.md
+```
+
+Scale-up implementation contracts for the native preview families are tracked
+in:
+
+```text
+docs/visual/agent-tasks/condition-monitoring-scale-exporter.md
+docs/visual/agent-tasks/mixed-records-scale-exporter.md
+docs/visual/agent-tasks/cross-space-scale-exporter.md
+docs/visual/agent-tasks/dynamics-scale-exporter.md
+docs/visual/agent-tasks/mapping-dimensionality-scale-exporter.md
+docs/visual/agent-tasks/process-curve-external-scale-exporter.md
+docs/visual/agent-tasks/relation-matrix-hero-readability.md
+```
 
 ## C++ Writer Core
 
