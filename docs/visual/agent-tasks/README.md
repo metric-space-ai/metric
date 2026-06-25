@@ -35,9 +35,9 @@ set, and one validation path.
 | `visual-regression-performance-workstream.md` | browser regression and performance gates | ready to assign |
 | `cpp-visual-export-core-workstream.md` | reusable C++ `metric.visual.v1` writer core and single-exporter refactor rules | integrated |
 | `gpu-picking-preview-workstream.md` | GPU/CPU picking, record preview and pair preview contracts | ready to assign |
-| `preview-panel-presentation-workstream.md` | bounded record/pair preview presentation for exported payloads | assigned |
-| `relation-matrix-readability-workstream.md` | matrix readability, row/column/cell focus and large-matrix diagnostics | assigned |
-| `visual-acceptance-gates-workstream.md` | regression, performance and screenshot gates that cannot promote smoke tests to heroes | assigned |
+| `preview-panel-presentation-workstream.md` | bounded record/pair preview presentation for exported payloads | integrated |
+| `relation-matrix-readability-workstream.md` | matrix readability, row/column/cell focus and large-matrix diagnostics | integrated |
+| `visual-acceptance-gates-workstream.md` | regression, performance and screenshot gates that cannot promote smoke tests to heroes | integrated |
 
 ## Next Slots
 

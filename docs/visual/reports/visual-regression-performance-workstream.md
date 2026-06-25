@@ -1,29 +1,19 @@
-# Visual Regression And Performance Gate Report
+# Visual Acceptance Gates Report
 
 Date: 2026-06-25
 
 ## Scope
 
-This milestone reruns the browser-backed regression, screenshot-review and
-performance gates after adding relation-matrix tile-summary LOD rendering,
-runtime layer diagnostics, field/glyph grammar contracts and mapping/dynamics
-motion evidence. The gate still records the original large-scene point rows and
-loads the public preview pages for field, glyph, matrix, graph, dynamics, and
-mapping grammars.
+This run executed the visual acceptance gates after the record-preview
+presentation and relation-matrix readability integration. It covers public
+visual examples, large-scene performance, grammar-specific preview evidence,
+and the separate hero screenshot review gate.
 
-Updated gate:
+Generated screenshots and JSON reports remain transient under `output/visual/`.
+No project page, native exporter, protected GRAE10 data, screenshot baseline, or
+public hero acceptance manifest was changed by this gate run.
 
-- `visual/tools/check-visual-performance-large-scenes.mjs`
-
-The runtime now reports layer-level grammar/readability diagnostics, and the
-performance gate checks that the relation-matrix preview exposes its
-tile-summary LOD diagnostic through the runtime state. No native exporter,
-project page, GRAE10 reference, or baseline file was changed. Generated
-screenshots and JSON reports remain transient under `output/visual/`.
-
-## Acceptance Commands
-
-Passed:
+## Commands Run
 
 ```bash
 node visual/tools/check-grae10-golden.mjs
@@ -35,111 +25,68 @@ node visual/tools/check-visual-performance-large-scenes.mjs
 node visual/tools/check-hero-screenshot-review.mjs
 ```
 
-Additional local syntax check:
+## Generated Reports
 
-```bash
-node --check visual/tools/check-visual-performance-large-scenes.mjs
-```
+| Gate | Path | Generated |
+| --- | --- | --- |
+| Public visual regression | `output/visual/check-visual-regression-public-examples/results.json` | `2026-06-25T10:01:04.477Z` |
+| Large-scene performance | `output/visual/check-visual-performance-large-scenes/results.json` | `2026-06-25T09:57:30.611Z` |
+| Hero screenshot review | `output/visual/check-hero-screenshot-review/results.json` | `2026-06-25T10:01:35.477Z` |
 
-## Hero Acceptance Semantics
+## Hero Acceptance
 
-The public browser gates keep load, render, native evidence, intended grammar,
-interaction, and performance evidence separate from hero acceptance.
+- Accepted hero count: 1
+- Review-pending preview count: 6
+- Accepted hero: `grae10-metric-engine`
+- Public previews remain `public-preview-only`; load, render, native evidence,
+  grammar, screenshots, and performance evidence do not promote them to
+  hero-accepted.
 
-`grae10-metric-engine` remains the only accepted hero because the protected 60k
-GRAE10 hash and dataset shape are intact. Every other public visual page is
-reported as `public-preview-only`, even when it loads, renders nonblank pixels,
-uses native `metric.visual.v1` evidence, satisfies the grammar contract, passes
-interaction probes, and meets performance diagnostics.
+## Public Regression
 
-## Public Preview Classification
+| Preview | Classification | Grammar | Native evidence | Runtime layers | Draw calls |
+| --- | --- | --- | --- | ---: | ---: |
+| `grae10-metric-engine` | `hero-accepted` | pass | protected GRAE10 dataset | n/a | 208 |
+| `condition-monitoring-hero` | `public-preview-only` | pass | yes | 6 | 453 |
+| `mixed-record-hero` | `public-preview-only` | pass | yes | 5 | 368 |
+| `cross-space-dependency-hero` | `public-preview-only` | pass | yes | 4 | 374 |
+| `relation-matrix-neighborhood` | `public-preview-only` | pass | yes | 3 | 291 |
+| `dynamics-noise-hero` | `public-preview-only` | pass | yes | 4 | 364 |
+| `mapping-dimensionality-hero` | `public-preview-only` | pass | yes | 5 | 356 |
 
-Regression report:
+## Performance Rows
 
-- Path: `output/visual/check-visual-regression-public-examples/results.json`
-- Generated: `2026-06-25T09:12:18.508Z`
-- Result: 7 checked, 0 failed
+| Records | Result | Descriptors | Runtime layers | Frames | Median frame | GPU buffer bytes | Draw calls |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1,000 | pass | 1 | 1 | 421 | 8.3 ms | 52,096 | 521 |
+| 10,000 | pass | 1 | 1 | 421 | 8.3 ms | 520,096 | 526 |
+| 60,000 | pass | 1 | 1 | 420 | 8.3 ms | 3,120,096 | 506 |
 
-| Preview | Classification | Native evidence | Runtime layers | Draw calls |
-| --- | --- | --- | ---: | ---: |
-| `grae10-metric-engine` | hero-accepted | protected GRAE10 dataset | n/a | 234 |
-| `condition-monitoring-hero` | public-preview-only | native `metric.visual.v1` | 6 | 432 |
-| `mixed-record-hero` | public-preview-only | native `metric.visual.v1` | 5 | 368 |
-| `cross-space-dependency-hero` | public-preview-only | native `metric.visual.v1` | 4 | 355 |
-| `relation-matrix-neighborhood` | public-preview-only | native `metric.visual.v1` | 3 | 327 |
-| `dynamics-noise-hero` | public-preview-only | native `metric.visual.v1` | 4 | 383 |
-| `mapping-dimensionality-hero` | public-preview-only | native `metric.visual.v1` | 5 | 356 |
+## Grammar Preview Status
 
-Screenshot review report:
-
-- Path: `output/visual/check-hero-screenshot-review/results.json`
-- Generated: `2026-06-25T09:17:38.382Z`
-- Result: pass
-- Accepted heroes: 1
-- Review-pending previews: 6
-
-## Performance Evidence
-
-Performance report:
-
-- Path: `output/visual/check-visual-performance-large-scenes/results.json`
-- Generated: `2026-06-25T09:12:38.389Z`
-- Result: pass
-- Browser: headless Chrome using the available WebGL backend
-- Budget: median frame <= 150 ms, at least 10 sampled frames, at least one
-  runtime layer, descriptor, GPU upload, and draw call
-
-### Point-Cloud Scaling
-
-| Records | Result | Median frame | Frames sampled | Runtime layers | Buffer bytes | Draw calls |
-| ---: | --- | ---: | ---: | ---: | ---: | ---: |
-| 1,000 | pass | 8.3 ms | 421 | 1 | 52,096 | 516 |
-| 10,000 | pass | 8.3 ms | 421 | 1 | 520,096 | 513 |
-| 60,000 | pass | 8.3 ms | 421 | 1 | 3,120,096 | 517 |
-
-### Grammar Diagnostics
-
-| Preview | Grammar | Required primitives | Records | Descriptors | Runtime layers | Median frame | GPU buffer bytes | Draw calls |
-| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `condition-monitoring-hero` | field | `HeatFieldLayer`, `CurveRibbonLayer` | 15 | 6 | 6 | 8.3 ms | 5,544 | 1,128 |
-| `mixed-record-hero` | glyph | `InstancedGlyphLayer`, `RelationEdgeLayer` | 20 | 5 | 5 | 8.3 ms | 4,808 | 1,035 |
-| `relation-matrix-neighborhood` | matrix+graph | `RelationMatrixLayer`, `RelationEdgeLayer` | 130 | 3 | 3 | 8.3 ms | 48,584 | 915 |
-| `dynamics-noise-hero` | dynamics | `CurveRibbonLayer`, `HeatFieldLayer`, `InstancedPointLayer` | 28 | 4 | 4 | 8.3 ms | 380,208 | 965 |
-| `mapping-dimensionality-hero` | mapping | `InstancedPointLayer`, `GroundProjectionLayer` | 15 | 5 | 5 | 8.3 ms | 4,032 | 1,015 |
-| `cross-space-dependency-hero` | graph | `RelationEdgeLayer`, `InstancedGlyphLayer` | 48 | 4 | 4 | 8.3 ms | 14,136 | 1,098 |
-
-The grammar rows explicitly set `classification: "public-preview-only"` and
-`heroAccepted: false`; render/load/performance evidence does not promote them.
-The report now also records `layerDiagnostics` per runtime layer; field and
-dynamics previews expose `HeatFieldLayer` grammar diagnostics, and the
-relation-matrix preview exposes `RelationMatrixLayer` readability diagnostics
-including the tile-summary LOD texture source.
-
-## Synthetic Fixtures
-
-Local `visual/examples/*/evidence.json` files remain synthetic development
-fixtures. The public pages resolve native assets under `docs/examples/assets/`
-instead, and `check-public-gallery-evidence.mjs` reports no public synthetic
-examples and no synthetic examples marked done.
+| Preview | Grammar | Status | Hero accepted | Records | Descriptors | Runtime layers | Required primitives | Median frame | Draw calls |
+| --- | --- | --- | --- | ---: | ---: | ---: | --- | ---: | ---: |
+| `condition-monitoring-hero` | `field` | pass, `public-preview-only` | false | 15 | 6 | 6 | `HeatFieldLayer`, `CurveRibbonLayer` | 8.3 ms | 2,472 |
+| `mixed-record-hero` | `glyph` | pass, `public-preview-only` | false | 20 | 5 | 5 | `InstancedGlyphLayer`, `RelationEdgeLayer` | 8.3 ms | 2,015 |
+| `relation-matrix-neighborhood` | `matrix+graph` | pass, `public-preview-only` | false | 130 | 3 | 3 | `RelationMatrixLayer`, `RelationEdgeLayer` | 8.3 ms | 1,419 |
+| `dynamics-noise-hero` | `dynamics` | pass, `public-preview-only` | false | 28 | 4 | 4 | `CurveRibbonLayer`, `HeatFieldLayer`, `InstancedPointLayer` | 8.3 ms | 1,345 |
+| `mapping-dimensionality-hero` | `mapping` | pass, `public-preview-only` | false | 15 | 5 | 5 | `InstancedPointLayer`, `GroundProjectionLayer` | 8.3 ms | 1,315 |
+| `cross-space-dependency-hero` | `graph` | pass, `public-preview-only` | false | 48 | 4 | 4 | `RelationEdgeLayer`, `InstancedGlyphLayer` | 8.3 ms | 1,022 |
 
 ## Generated Artifacts
 
-Transient local artifacts were written under:
+Generated screenshots and JSON output stayed under `output/visual/`:
 
 - `output/visual/check-visual-regression-public-examples/`
 - `output/visual/check-visual-performance-large-scenes/results.json`
 - `output/visual/check-hero-screenshot-review/results.json`
 
-These files are not baselines and should not be committed unless a future task
-explicitly promotes documented baseline artifacts.
+These generated `output/` files were not staged or committed.
 
 ## Remaining Gaps
 
-- These gates prove objective mechanics, not visual taste or final hero
-  acceptance.
-- Public previews other than GRAE10 remain public-preview-only until stronger
-  screenshot acceptance criteria exist.
-- Grammar performance rows use current public native evidence sizes, which are
-  intentionally smaller than large-scene point-cloud stress counts.
-- Absolute timing is local-browser evidence; the JSON report records renderer
-  details so future comparisons can account for the WebGL backend.
+- The gates prove objective mechanics, not final visual taste.
+- Public previews other than GRAE10 remain review-pending until explicit
+  screenshot acceptance criteria or a review manifest exists.
+- Performance timings are local-browser evidence; renderer details are captured
+  in the generated JSON for future comparison.

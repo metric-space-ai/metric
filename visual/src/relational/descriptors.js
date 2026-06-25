@@ -1,5 +1,6 @@
 import { buildRelationMatrixTextureData } from "./matrix-texture.js";
 import { createRelationMatrixReadabilityProfile } from "./matrix-readability.js";
+import { createRelationMatrixDiagnostics } from "./diagnostics.js";
 import { buildGraphEdgeChannels, buildRelationNeighborhoodGraph } from "./neighborhood-graph.js";
 
 /**
@@ -17,6 +18,12 @@ export function createRelationMatrixLayerDescriptor(source, options = {}) {
   const denseCellSmoothing = readability.lod.denseCellSmoothing;
   const relationId = options.relationId || source?.id || source?.relation_id || texture.relationId || texture.matrix?.relationId || null;
   const relationName = options.relationName || source?.name || source?.label || texture.relationName || texture.matrix?.relationName || null;
+  const readabilityDiagnostics = createRelationMatrixDiagnostics({
+    matrix: texture.matrix,
+    readability,
+    relationId,
+    relationName,
+  });
 
   return {
     id: options.id || "relation-matrix",
@@ -73,9 +80,17 @@ export function createRelationMatrixLayerDescriptor(source, options = {}) {
     },
     metadata: {
       relationVisualization: "matrix",
-      diagnostics: texture.diagnostics,
+      diagnostics: {
+        ...texture.diagnostics,
+        blockCount: readabilityDiagnostics.blockCount,
+        tileCount: readabilityDiagnostics.tileCount,
+        tileSummarySource: readabilityDiagnostics.tileSummarySource,
+        selected: readabilityDiagnostics.selected,
+        matrixReadability: readabilityDiagnostics,
+      },
       matrix: texture.matrix,
       readability,
+      readabilityDiagnostics,
       relationId,
       relationName,
       selectionModel: {
@@ -128,7 +143,12 @@ export function createRelationGraphEdgeLayerDescriptor(source, options = {}) {
     metadata: {
       relationVisualization: "neighborhood-graph",
       graph,
-      diagnostics: graph.diagnostics,
+      diagnostics: {
+        ...graph.diagnostics,
+        relationId: graph.relationId || options.relationId || source?.id || null,
+        edgeCount: graph.edgeCount,
+        graphEdgeCount: graph.edgeCount,
+      },
       selectionModel: {
         relationId: graph.relationId || options.relationId || source?.id || null,
         graphId: graph.id || options.graphId || options.graph?.id || null,

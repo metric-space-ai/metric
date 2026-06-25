@@ -9,6 +9,7 @@ import {
 } from "../layers/gl-utils.js";
 import { buildRelationMatrixTextureData } from "./matrix-texture.js";
 import { createRelationMatrixReadabilityProfile } from "./matrix-readability.js";
+import { createRelationMatrixDiagnostics } from "./diagnostics.js";
 
 const MAX_BLOCK_BOUNDARIES = 16;
 const MAX_BLOCK_RANGES = 16;
@@ -230,6 +231,7 @@ export class RelationMatrixLayer extends BaseLayer {
 
   describeReadability() {
     const profile = this.readabilityProfile || this.descriptor?.metadata?.readability || null;
+    const diagnostics = this.getDiagnostics();
     return {
       primitive: "RelationMatrixLayer",
       path: "webgl-texture-layer",
@@ -237,7 +239,9 @@ export class RelationMatrixLayer extends BaseLayer {
       domFallback: false,
       svgFallback: false,
       selection: { ...this.selection },
+      selected: diagnostics.selected,
       readability: profile,
+      diagnostics,
       tileSummary: this.tileSummaryPayload ? {
         width: this.tileSummaryPayload.width,
         height: this.tileSummaryPayload.height,
@@ -245,6 +249,19 @@ export class RelationMatrixLayer extends BaseLayer {
         source: this.tileSummaryPayload.source,
       } : null,
     };
+  }
+
+  getDiagnostics() {
+    const profile = this.readabilityProfile || this.descriptor?.metadata?.readability || null;
+    const matrix = this.texturePayload?.matrix || this.descriptor?.metadata?.matrix || null;
+    return createRelationMatrixDiagnostics({
+      matrix,
+      readability: profile,
+      selection: this.selection,
+      tileSummary: this.tileSummaryPayload,
+      relationId: this.source?.relationId || this.metadata?.relationId || matrix?.relationId || null,
+      relationName: this.source?.relationName || this.metadata?.relationName || matrix?.relationName || null,
+    });
   }
 }
 

@@ -8,6 +8,7 @@ import {
   createRelationMatrixPicker,
   createRelationMatrixReadabilityProfile,
   MATRIX_FRAGMENT_SHADER,
+  RELATION_MATRIX_READABILITY_DIAGNOSTICS_SCHEMA,
   RelationMatrixLayer,
 } from "../src/relational/index.js";
 
@@ -79,6 +80,14 @@ assert.equal(descriptor.picking.svgFallback, false);
 assert.deepEqual(descriptor.metadata.selectionModel.selectedFeatures, ["row", "column", "cell"]);
 assert.deepEqual(descriptor.metadata.selectionModel.selectedFeatureSemantics.selectedFeatures, ["row", "column", "cell"]);
 assert.equal(descriptor.metadata.selectionModel.picker, "semantic-matrix-picker");
+assert.equal(descriptor.metadata.readabilityDiagnostics.schema, RELATION_MATRIX_READABILITY_DIAGNOSTICS_SCHEMA);
+assert.deepEqual(descriptor.metadata.readabilityDiagnostics.matrixDimensions, { width: 130, height: 130, size: 130 });
+assert.equal(descriptor.metadata.readabilityDiagnostics.blockCount, 5);
+assert.equal(descriptor.metadata.readabilityDiagnostics.tileCount, 25);
+assert.equal(descriptor.metadata.readabilityDiagnostics.tileSummarySource, "exported-relation-texture-downsample");
+assert.equal(descriptor.metadata.readabilityDiagnostics.missingValueCount, 0);
+assert.equal(descriptor.metadata.readabilityDiagnostics.selected.state, "none");
+assert.equal(descriptor.metadata.diagnostics.matrixReadability.schema, RELATION_MATRIX_READABILITY_DIAGNOSTICS_SCHEMA);
 
 const picker = createRelationMatrixPicker(descriptor);
 const nativeCell = picker.cellAtNormalizedPoint((1.5 / 130), (0.5 / 130));
@@ -113,6 +122,18 @@ assert.deepEqual(layer.selection, {
   columnActive: true,
   active: true,
 });
+assert.deepEqual(layer.getDiagnostics().matrixDimensions, { width: 130, height: 130, size: 130 });
+assert.equal(layer.getDiagnostics().blockCount, 5);
+assert.equal(layer.getDiagnostics().tileCount, 25);
+assert.equal(layer.getDiagnostics().tileSummarySource, "exported-relation-texture-downsample");
+assert.equal(layer.getDiagnostics().missingValueCount, 0);
+assert.deepEqual(layer.getDiagnostics().selected, {
+  row: { index: 0, active: true },
+  column: { index: 1, active: true },
+  cell: { row: 0, column: 1, active: true },
+  state: "cell",
+  matrixDimensions: { width: 130, height: 130, size: 130 },
+});
 
 layer.setSelection({ rowId: "pc-004" });
 assert.deepEqual(layer.selection, {
@@ -122,6 +143,9 @@ assert.deepEqual(layer.selection, {
   columnActive: false,
   active: false,
 });
+assert.equal(layer.getDiagnostics().selected.state, "row");
+assert.equal(layer.getDiagnostics().selected.row.index, 4);
+assert.equal(layer.getDiagnostics().selected.column.index, null);
 
 layer.setSelection({ columnId: "pc-005" });
 assert.deepEqual(layer.selection, {
@@ -131,6 +155,9 @@ assert.deepEqual(layer.selection, {
   columnActive: true,
   active: false,
 });
+assert.equal(layer.getDiagnostics().selected.state, "column");
+assert.equal(layer.getDiagnostics().selected.row.index, null);
+assert.equal(layer.getDiagnostics().selected.column.index, 5);
 
 layer.setSelection({ recordId: "pc-006" });
 assert.deepEqual(layer.selection, {

@@ -23,7 +23,9 @@ export {
 export {
   checkAsymmetricRelations,
   checkSymmetricRelations,
+  createRelationMatrixDiagnostics,
   diagnoseRelationSymmetry,
+  RELATION_MATRIX_READABILITY_DIAGNOSTICS_SCHEMA,
 } from "./diagnostics.js";
 
 export {

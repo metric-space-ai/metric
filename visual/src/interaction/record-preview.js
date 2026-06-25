@@ -1,4 +1,5 @@
 const STYLE_ID = "mtrc-record-preview-panel-style";
+export const PREVIEW_PRESENTATION_DIAGNOSTICS_SCHEMA = "metric.visual.preview_presentation_diagnostics.v1";
 
 export class RecordPreviewPanel {
   constructor(options = {}) {
@@ -201,6 +202,12 @@ export function buildMetricRecordPreview(input = {}, context = {}) {
     linkedViews,
     fields: fields.concat(featureFields),
     sections: [],
+    diagnostics: createRecordPreviewDiagnostics({
+      payloadPreview,
+      payloadSnippet,
+      recordProperties,
+      linkedViews,
+    }),
   };
   const payloadFields = payloadPreview.fields.length ? payloadPreview.fields : payloadSnippet;
   if (payloadFields.length > 0 || payloadPreview.sectionSeries.length > 0 || payloadPreview.image) {
@@ -308,6 +315,16 @@ export function buildMetricPairPreview(input = {}, context = {}) {
       columnRecordProperties,
       context,
     }),
+    diagnostics: createPairPreviewDiagnostics({
+      relationId,
+      relation,
+      relationName,
+      rowRecord,
+      columnRecord,
+      pairProperties,
+      present,
+      entryMatch,
+    }),
   };
 }
 
@@ -371,6 +388,22 @@ function renderFieldList(fields) {
 function renderImagePreview(image) {
   const figure = document.createElement("figure");
   figure.className = "mtrc-record-preview__image";
+  if (Array.isArray(image?.values) || Array.isArray(image?.pixels)) {
+    const canvas = document.createElement("canvas");
+    const width = Math.max(1, Math.min(256, Math.round(Number(image.renderWidth || image.width) || 1)));
+    const height = Math.max(1, Math.min(256, Math.round(Number(image.renderHeight || image.height) || 1)));
+    canvas.width = width;
+    canvas.height = height;
+    canvas.setAttribute("aria-label", stringValue(image.alt || image.label || "record image array"));
+    drawCompactImage(canvas, image);
+    figure.appendChild(canvas);
+    if (image.label) {
+      const caption = document.createElement("figcaption");
+      caption.textContent = stringValue(image.label);
+      figure.appendChild(caption);
+    }
+    return figure;
+  }
   const img = document.createElement("img");
   img.src = stringValue(image.href || image.src || "");
   img.alt = stringValue(image.alt || image.label || "record image");
@@ -383,6 +416,40 @@ function renderImagePreview(image) {
     figure.appendChild(caption);
   }
   return figure;
+}
+
+function drawCompactImage(canvas, image) {
+  const ctx = canvas.getContext?.("2d");
+  if (!ctx) return;
+  const values = (image.values || image.pixels || []).map(Number);
+  const width = canvas.width;
+  const height = canvas.height;
+  const channels = Math.max(1, Math.round(Number(image.channels) || 1));
+  const range = image.valueRange || finiteRange(values);
+  const data = ctx.createImageData(width, height);
+  const sourceWidth = Math.max(1, Math.round(Number(image.sourceWidth || image.width || width) || width));
+  const sourceHeight = Math.max(1, Math.round(Number(image.sourceHeight || image.height || height) || height));
+  for (let y = 0; y < height; y += 1) {
+    const sourceY = Math.min(sourceHeight - 1, Math.floor((y / Math.max(1, height)) * sourceHeight));
+    for (let x = 0; x < width; x += 1) {
+      const sourceX = Math.min(sourceWidth - 1, Math.floor((x / Math.max(1, width)) * sourceWidth));
+      const sourceIndex = (sourceY * sourceWidth + sourceX) * channels;
+      const targetIndex = (y * width + x) * 4;
+      if (channels >= 3) {
+        data.data[targetIndex] = scaleImageChannel(values[sourceIndex], range);
+        data.data[targetIndex + 1] = scaleImageChannel(values[sourceIndex + 1], range);
+        data.data[targetIndex + 2] = scaleImageChannel(values[sourceIndex + 2], range);
+        data.data[targetIndex + 3] = channels >= 4 ? scaleImageChannel(values[sourceIndex + 3], { min: 0, max: 1 }) : 255;
+      } else {
+        const gray = scaleImageChannel(values[sourceIndex], range);
+        data.data[targetIndex] = gray;
+        data.data[targetIndex + 1] = gray;
+        data.data[targetIndex + 2] = gray;
+        data.data[targetIndex + 3] = 255;
+      }
+    }
+  }
+  ctx.putImageData(data, 0, 0);
 }
 
 function renderSparkline(series) {
@@ -429,17 +496,19 @@ function installRecordPreviewStyle() {
       top: 0;
       z-index: 12;
       width: min(320px, calc(100vw - 28px));
+      max-height: min(440px, calc(100vh - 28px));
       padding: 12px 13px;
       border: 1px solid rgba(40, 58, 59, 0.18);
-      border-radius: 12px;
+      border-radius: 8px;
       color: #243034;
-      background: rgba(239, 238, 221, 0.94);
+      background: rgb(246, 246, 238);
       box-shadow: 0 18px 48px rgba(44, 55, 53, 0.20);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      overflow: hidden auto;
       pointer-events: none;
       opacity: 0;
       transition: opacity 120ms ease;
       will-change: transform, opacity;
-      backdrop-filter: blur(9px);
     }
 
     .mtrc-record-preview[data-visible="true"] {
@@ -524,6 +593,16 @@ function installRecordPreviewStyle() {
       background: rgba(255, 252, 235, 0.42);
     }
 
+    .mtrc-record-preview__image canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 130px;
+      image-rendering: pixelated;
+      border-radius: 8px;
+      background: rgba(255, 252, 235, 0.42);
+    }
+
     .mtrc-record-preview__image figcaption {
       color: #607073;
       font-size: 10px;
@@ -537,7 +616,8 @@ function formatValue(value) {
   if (typeof value === "number") return formatNumber(value);
   if (value && typeof value === "object") return summarizePreviewValue(value);
   if (value == null) return "";
-  return String(value);
+  const text = String(value);
+  return text.length > 220 ? `${text.slice(0, 217)}...` : text;
 }
 
 function formatNumber(value) {
@@ -593,54 +673,46 @@ function describeRecordPayload(payload, context = {}, depth = 0) {
   const maxFields = context.maxPayloadFields ?? 6;
   const maxComponents = context.maxPayloadComponents ?? 4;
   const maxNamedValues = context.maxNamedPayloadValues ?? 6;
+  const maxTextLength = context.maxPayloadTextLength ?? 180;
+  const maxSeriesValues = context.maxPayloadSeriesValues ?? 512;
   const kind = payloadKind(payload);
+  const renderer = payloadRendererFor(payload, kind);
   const preview = {
     kind,
+    renderer,
     fields: [],
     sections: [],
     series: [],
     sectionSeries: [],
     image: null,
+    diagnostics: createPayloadDiagnostics({ kind, renderer }),
   };
 
-  if (!payload || typeof payload !== "object") return preview;
+  if (!payload || typeof payload !== "object") {
+    preview.diagnostics.unavailable = true;
+    preview.diagnostics.notes.push("payload unavailable");
+    return preview;
+  }
   if (kind) preview.fields.push({ label: "kind", value: kind });
 
-  if (kind === "string" || typeof payload.text === "string") {
-    preview.fields.push({ label: "text", value: payload.text ?? payload.value ?? "" });
-  }
-
-  if (Array.isArray(payload.values)) {
-    preview.fields.push({ label: "values", value: summarizePreviewValue(payload.values) });
-    const named = namedNumericFields(payload.values, payload.names, maxNamedValues);
-    preview.fields.push(...named);
-    if (payload.values.every((value) => Number.isFinite(Number(value)))) {
-      preview.series.push({ label: "values", values: payload.values, color: "rgba(32, 118, 132, 0.86)" });
+  const textValue = payload.text ?? (isTextPayloadKind(kind) ? payload.value : undefined);
+  if (renderer === "text") {
+    if (typeof textValue === "string") {
+      preview.fields.push({ label: "text", value: boundedTextValue(textValue, maxTextLength, preview.diagnostics) });
+    } else {
+      preview.fields.push({ label: "text", value: "" });
+      preview.diagnostics.unavailable = true;
+      preview.diagnostics.notes.push("text payload missing text/value");
     }
-  } else if (payload.values !== undefined) {
-    preview.fields.push({ label: "value", value: summarizePreviewValue(payload.values) });
   }
 
-  if (Array.isArray(payload.series)) {
-    preview.fields.push({ label: "samples", value: payload.series.length });
-    if (payload.sample_rate_hz !== undefined) preview.fields.push({ label: "sample rate", value: `${payload.sample_rate_hz} Hz` });
-    if (payload.unit !== undefined) preview.fields.push({ label: "unit", value: payload.unit });
-    preview.series.push({ label: "series", values: payload.series, color: "rgba(32, 118, 132, 0.86)" });
-  }
-
-  if (Array.isArray(payload.bins)) {
-    preview.fields.push({ label: "bins", value: payload.bins.length });
-    if (Array.isArray(payload.edges)) preview.fields.push({ label: "edges", value: payload.edges.length });
-    preview.sectionSeries.push({ label: "bins", values: payload.bins, color: "rgba(116, 81, 154, 0.82)" });
-  }
-
-  const href = payload.href || payload.url || payload.src;
-  if (kind === "image" || kind === "image_ref" || href) {
-    if (href) preview.fields.push({ label: "href", value: href });
+  if (renderer === "image-reference") {
+    const href = payload.href || payload.url || payload.src;
+    if (href) preview.fields.push({ label: "href", value: boundedTextValue(href, maxTextLength, preview.diagnostics) });
     if (payload.width !== undefined || payload.height !== undefined) {
       preview.fields.push({ label: "size", value: `${payload.width ?? "?"} x ${payload.height ?? "?"}` });
     }
-    if (payload.alt) preview.fields.push({ label: "alt", value: payload.alt });
+    if (payload.alt) preview.fields.push({ label: "alt", value: boundedTextValue(payload.alt, maxTextLength, preview.diagnostics) });
     if (href) {
       preview.image = {
         href,
@@ -649,7 +721,71 @@ function describeRecordPayload(payload, context = {}, depth = 0) {
         alt: payload.alt,
         label: payload.label,
       };
+    } else {
+      preview.diagnostics.unavailable = true;
+      preview.diagnostics.notes.push("image reference missing href/url/src");
     }
+  }
+
+  if (renderer === "compact-image") {
+    const compactImage = compactImageFromPayload(payload, context, preview.diagnostics);
+    if (compactImage) {
+      preview.image = compactImage;
+      preview.fields.push({ label: "size", value: `${compactImage.sourceWidth} x ${compactImage.sourceHeight}` });
+      preview.fields.push({ label: "channels", value: compactImage.channels });
+      preview.fields.push({ label: "pixels", value: compactImage.sourceLength });
+      if (compactImage.valueRange) {
+        preview.fields.push({ label: "range", value: [compactImage.valueRange.min, compactImage.valueRange.max] });
+      }
+    } else {
+      preview.diagnostics.unavailable = true;
+      preview.diagnostics.notes.push("compact image array missing numeric pixel data");
+    }
+  }
+
+  const seriesValues = seriesValuesForPayload(payload, renderer);
+  if (renderer === "time-series" && Array.isArray(seriesValues)) {
+    const values = summarizeNumericSeries(seriesValues, maxSeriesValues, preview.diagnostics);
+    preview.fields.push({ label: "samples", value: seriesValues.length });
+    if (payload.sample_rate_hz !== undefined) preview.fields.push({ label: "sample rate", value: `${payload.sample_rate_hz} Hz` });
+    if (payload.unit !== undefined) preview.fields.push({ label: "unit", value: payload.unit });
+    preview.series.push({ label: "series", values, color: "rgba(32, 118, 132, 0.86)" });
+    preview.diagnostics.summarized = true;
+  }
+
+  const histogramValues = histogramValuesForPayload(payload, renderer);
+  if (renderer === "histogram" && Array.isArray(histogramValues)) {
+    const values = summarizeNumericSeries(histogramValues, maxSeriesValues, preview.diagnostics);
+    preview.fields.push({ label: "bins", value: histogramValues.length });
+    if (Array.isArray(payload.edges)) preview.fields.push({ label: "edges", value: payload.edges.length });
+    preview.sectionSeries.push({ label: "bins", values, color: "rgba(116, 81, 154, 0.82)" });
+    preview.diagnostics.summarized = true;
+  }
+
+  if (renderer === "vector" && Array.isArray(payload.values)) {
+    preview.fields.push({ label: "values", value: summarizePreviewValue(payload.values) });
+    const named = namedNumericFields(payload.values, payload.names, maxNamedValues);
+    preview.fields.push(...named);
+    if (Array.isArray(payload.names) && payload.names.length > maxNamedValues) {
+      preview.diagnostics.truncated = true;
+      preview.diagnostics.notes.push("named vector fields truncated");
+    }
+    if (payload.values.every((value) => Number.isFinite(Number(value)))) {
+      preview.series.push({
+        label: "values",
+        values: summarizeNumericSeries(payload.values, maxSeriesValues, preview.diagnostics),
+        color: "rgba(32, 118, 132, 0.86)",
+      });
+      preview.diagnostics.summarized = true;
+    }
+  } else if (renderer === "vector" && payload.values !== undefined) {
+    preview.fields.push({ label: "value", value: summarizePreviewValue(payload.values) });
+    if (Array.isArray(payload.values)) preview.diagnostics.summarized = true;
+  }
+
+  if (renderer === "properties") {
+    const propertyFields = genericPayloadFields(payload, maxFields, preview.diagnostics);
+    preview.fields.push(...propertyFields);
   }
 
   const components = payloadComponents(payload);
@@ -668,15 +804,23 @@ function describeRecordPayload(payload, context = {}, depth = 0) {
       }
       if (components.length > maxComponents) {
         preview.fields.push({ label: "more components", value: components.length - maxComponents });
+        preview.diagnostics.truncated = true;
+        preview.diagnostics.notes.push("component sections truncated");
       }
     }
+    preview.diagnostics.summarized = true;
   }
 
   if (payload.features && typeof payload.features === "object" && !Array.isArray(payload.features)) {
-    for (const [label, value] of Object.entries(payload.features).slice(0, maxFields)) {
+    const featureEntries = Object.entries(payload.features);
+    for (const [label, value] of featureEntries.slice(0, maxFields)) {
       if (!preview.fields.some((field) => field.label === label)) {
         preview.fields.push({ label, value: summarizePreviewValue(value) });
       }
+    }
+    if (featureEntries.length > maxFields) {
+      preview.diagnostics.truncated = true;
+      preview.diagnostics.notes.push("feature fields truncated");
     }
   }
 
@@ -684,8 +828,368 @@ function describeRecordPayload(payload, context = {}, depth = 0) {
     preview.fields.push(...payloadSnippetFields(payload, maxFields));
   }
 
-  preview.fields = preview.fields.slice(0, Math.max(maxFields + 2, maxFields));
+  const fieldLimit = Math.max(maxFields + 2, maxFields);
+  if (preview.fields.length > fieldLimit) {
+    preview.diagnostics.truncated = true;
+    preview.diagnostics.notes.push("payload fields truncated");
+  }
+  preview.fields = preview.fields.slice(0, fieldLimit);
+  preview.diagnostics.fieldCount = preview.fields.length;
+  preview.diagnostics.sectionCount = preview.sections.length;
+  preview.diagnostics.seriesCount = preview.series.length + preview.sectionSeries.length;
+  preview.diagnostics.image = Boolean(preview.image);
   return preview;
+}
+
+function createPayloadDiagnostics({ kind, renderer }) {
+  return {
+    schema: PREVIEW_PRESENTATION_DIAGNOSTICS_SCHEMA,
+    source: "metric.visual.v1",
+    scope: "record-payload",
+    payloadKind: kind || "unknown",
+    renderer: renderer || "unavailable",
+    truncated: false,
+    summarized: false,
+    unavailable: false,
+    notes: [],
+  };
+}
+
+function createRecordPreviewDiagnostics({ payloadPreview, payloadSnippet, recordProperties, linkedViews }) {
+  const payloadDiagnostics = payloadPreview?.diagnostics || {};
+  return {
+    schema: PREVIEW_PRESENTATION_DIAGNOSTICS_SCHEMA,
+    source: "metric.visual.v1",
+    kind: "record",
+    renderer: "record-preview",
+    payloadRenderer: payloadDiagnostics.renderer || payloadPreview?.renderer || "unavailable",
+    payloadKind: payloadPreview?.kind || "unknown",
+    truncated: Boolean(payloadDiagnostics.truncated),
+    summarized: Boolean(payloadDiagnostics.summarized),
+    unavailable: Boolean(payloadDiagnostics.unavailable),
+    payload: payloadDiagnostics,
+    counts: {
+      payloadFields: payloadPreview?.fields?.length || 0,
+      payloadSnippetFields: payloadSnippet?.length || 0,
+      payloadSections: payloadPreview?.sections?.length || 0,
+      payloadSeries: (payloadPreview?.series?.length || 0) + (payloadPreview?.sectionSeries?.length || 0),
+      recordProperties: recordProperties?.length || 0,
+      linkedViews: linkedViews?.length || 0,
+    },
+  };
+}
+
+function createPairPreviewDiagnostics({
+  relationId,
+  relation,
+  relationName,
+  rowRecord,
+  columnRecord,
+  pairProperties,
+  present,
+  entryMatch,
+}) {
+  return {
+    schema: PREVIEW_PRESENTATION_DIAGNOSTICS_SCHEMA,
+    source: "metric.visual.v1",
+    kind: "pair",
+    renderer: "pair-preview",
+    payloadRenderer: "pair-relation",
+    payloadKind: relation?.relation_type || "pair",
+    truncated: false,
+    summarized: false,
+    unavailable: !present,
+    relation: {
+      id: relationId || null,
+      name: relationName || relation?.name || null,
+      type: relation?.relation_type || null,
+      symmetric: isSymmetricRelation(relation),
+      reversedLookup: Boolean(entryMatch?.reversed),
+      valuePresent: Boolean(present),
+    },
+    fields: {
+      rowIdentity: Boolean(rowRecord),
+      columnIdentity: Boolean(columnRecord),
+      pairProperties: pairProperties?.length || 0,
+    },
+  };
+}
+
+function payloadRendererFor(payload, kind) {
+  if (!payload || typeof payload !== "object") return "unavailable";
+  const components = payloadComponents(payload);
+  const normalizedKind = normalizePayloadKind(kind);
+  const href = payload.href || payload.url || payload.src;
+  if (isComposedPayloadKind(kind) || components.length > 0) return "composed";
+  if (isTextPayloadKind(kind) || typeof payload.text === "string") return "text";
+  if (isTimeSeriesPayloadKind(kind)
+    || Array.isArray(payload.series)
+    || Array.isArray(payload.samples)
+    || Array.isArray(payload.curve)) return "time-series";
+  if (isHistogramPayloadKind(kind)
+    || Array.isArray(payload.bins)
+    || Array.isArray(payload.counts)
+    || Array.isArray(payload.distribution)) return "histogram";
+  if (href && (isImagePayloadKind(kind) || normalizedKind === "external-ref")) return "image-reference";
+  if (isImagePayloadKind(kind)
+    || payload.pixels
+    || payload.pixel_values
+    || payload.matrix
+    || payload.image
+    || (hasImageDimensions(payload) && (payload.values || payload.data))) return "compact-image";
+  if (isVectorPayloadKind(kind) || Array.isArray(payload.values)) return "vector";
+  if (hasGenericPayloadFields(payload)) return "properties";
+  if (href) return "image-reference";
+  if (Object.keys(payload).some((key) => key !== "kind")) return "properties";
+  return "unavailable";
+}
+
+function normalizePayloadKind(kind) {
+  return String(kind || "").trim().toLowerCase().replace(/[_\s]+/g, "-");
+}
+
+function isTextPayloadKind(kind) {
+  return ["string", "text", "code", "log", "log-line"].includes(normalizePayloadKind(kind));
+}
+
+function isTimeSeriesPayloadKind(kind) {
+  return ["time-series", "timeseries", "series", "curve", "process-curve", "process-series"].includes(normalizePayloadKind(kind));
+}
+
+function isHistogramPayloadKind(kind) {
+  return ["histogram", "distribution", "spectrum", "bins", "probability-distribution"].includes(normalizePayloadKind(kind));
+}
+
+function isImagePayloadKind(kind) {
+  return [
+    "image",
+    "image-ref",
+    "image-reference",
+    "image-like",
+    "pixels",
+    "pixel-array",
+    "matrix",
+    "spectrogram",
+  ].includes(normalizePayloadKind(kind));
+}
+
+function isComposedPayloadKind(kind) {
+  return ["composed", "mixed", "structured", "record", "parts"].includes(normalizePayloadKind(kind));
+}
+
+function isVectorPayloadKind(kind) {
+  return ["vector", "embedding", "values", "feature-vector", "numeric-vector"].includes(normalizePayloadKind(kind));
+}
+
+function hasGenericPayloadFields(payload) {
+  if (!payload || typeof payload !== "object") return false;
+  return payload.value !== undefined
+    || payload.scalar !== undefined
+    || payload.category !== undefined
+    || payload.label !== undefined
+    || payload.features && typeof payload.features === "object";
+}
+
+function hasImageDimensions(payload) {
+  return payload
+    && (payload.width !== undefined
+      || payload.height !== undefined
+      || payload.rows !== undefined
+      || payload.columns !== undefined
+      || payload.cols !== undefined
+      || Array.isArray(payload.shape)
+      || Array.isArray(payload.dimensions));
+}
+
+function boundedTextValue(value, maxLength, diagnostics) {
+  const text = String(value ?? "");
+  if (text.length <= maxLength) return text;
+  diagnostics.truncated = true;
+  diagnostics.notes.push("text value truncated");
+  return `${text.slice(0, Math.max(0, maxLength - 3))}...`;
+}
+
+function seriesValuesForPayload(payload, renderer) {
+  if (renderer !== "time-series") return null;
+  if (Array.isArray(payload.series)) return payload.series;
+  if (Array.isArray(payload.samples)) return payload.samples;
+  if (Array.isArray(payload.curve)) return payload.curve;
+  if (Array.isArray(payload.values) && isTimeSeriesPayloadKind(payload.kind)) return payload.values;
+  return null;
+}
+
+function histogramValuesForPayload(payload, renderer) {
+  if (renderer !== "histogram") return null;
+  if (Array.isArray(payload.bins)) return payload.bins;
+  if (Array.isArray(payload.counts)) return payload.counts;
+  if (Array.isArray(payload.distribution)) return payload.distribution;
+  if (Array.isArray(payload.values) && isHistogramPayloadKind(payload.kind)) return payload.values;
+  return null;
+}
+
+function summarizeNumericSeries(values, maxValues, diagnostics) {
+  const numericValues = values.map(Number).filter(Number.isFinite);
+  if (numericValues.length <= maxValues) return numericValues;
+  diagnostics.summarized = true;
+  diagnostics.notes.push("numeric series sampled for preview");
+  const sampled = [];
+  const step = (numericValues.length - 1) / Math.max(1, maxValues - 1);
+  for (let index = 0; index < maxValues; index += 1) {
+    sampled.push(numericValues[Math.round(index * step)]);
+  }
+  return sampled;
+}
+
+function genericPayloadFields(payload, maxFields, diagnostics) {
+  const fields = [];
+  const skip = new Set([
+    "kind",
+    "type",
+    "features",
+    "fields",
+    "components",
+    "parts",
+    "series",
+    "values",
+    "bins",
+    "edges",
+    "pixels",
+    "matrix",
+  ]);
+  for (const label of ["value", "scalar", "category", "label"]) {
+    if (payload[label] !== undefined) fields.push({ label, value: summarizePreviewValue(payload[label]) });
+  }
+  if (payload.features && typeof payload.features === "object" && !Array.isArray(payload.features)) {
+    for (const [label, value] of Object.entries(payload.features)) {
+      fields.push({ label, value: summarizePreviewValue(value) });
+    }
+  }
+  for (const [label, value] of Object.entries(payload)) {
+    if (skip.has(label) || fields.some((field) => field.label === label)) continue;
+    fields.push({ label, value: summarizePreviewValue(value) });
+  }
+  if (fields.length > maxFields) {
+    diagnostics.truncated = true;
+    diagnostics.notes.push("property fields truncated");
+  }
+  if (fields.some((field) => typeof field.value === "string" && /fields|values/.test(field.value))) {
+    diagnostics.summarized = true;
+  }
+  return fields.slice(0, maxFields);
+}
+
+function compactImageFromPayload(payload, context, diagnostics) {
+  const source = payload.pixels ?? payload.pixel_values ?? payload.values ?? payload.matrix ?? payload.image ?? payload.data;
+  const shape = Array.isArray(payload.shape) ? payload.shape : Array.isArray(payload.dimensions) ? payload.dimensions : null;
+  const dimensions = compactImageDimensions(payload, source, shape);
+  const maxValues = context.maxCompactImageValues ?? 4096;
+  const values = flattenNumericValues(source, maxValues);
+  if (!values.length) return null;
+  const requiredValues = dimensions.sourceWidth * dimensions.sourceHeight * dimensions.channels;
+  if (requiredValues > 0 && values.length < Math.min(requiredValues, maxValues)) {
+    diagnostics.truncated = true;
+    diagnostics.notes.push("compact image has fewer values than dimensions require");
+  }
+  if (requiredValues > maxValues || values.truncated) {
+    diagnostics.summarized = true;
+    diagnostics.truncated = true;
+    diagnostics.notes.push("compact image values truncated for preview");
+  }
+  const valueRange = finiteRange(values);
+  return {
+    kind: "compact-array",
+    values,
+    width: dimensions.renderWidth,
+    height: dimensions.renderHeight,
+    renderWidth: dimensions.renderWidth,
+    renderHeight: dimensions.renderHeight,
+    sourceWidth: dimensions.sourceWidth,
+    sourceHeight: dimensions.sourceHeight,
+    channels: dimensions.channels,
+    sourceLength: dimensions.sourceLength || values.length,
+    valueRange,
+    alt: payload.alt || payload.label || "compact image array",
+    label: payload.label || `${dimensions.sourceWidth} x ${dimensions.sourceHeight} array`,
+  };
+}
+
+function compactImageDimensions(payload, source, shape) {
+  let channels = positiveInteger(payload.channels ?? payload.channel_count ?? payload.channelCount ?? shape?.[2]) || 1;
+  let sourceWidth = positiveInteger(payload.width ?? payload.columns ?? payload.cols ?? shape?.[1]) || null;
+  let sourceHeight = positiveInteger(payload.height ?? payload.rows ?? shape?.[0]) || null;
+  if (Array.isArray(source) && Array.isArray(source[0])) {
+    sourceHeight ||= source.length;
+    sourceWidth ||= Math.max(1, ...source.map((row) => Array.isArray(row) ? row.length : 1));
+  }
+  const sourceLength = countNestedValues(source);
+  if (sourceWidth && !sourceHeight) sourceHeight = Math.max(1, Math.floor(sourceLength / Math.max(1, sourceWidth * channels)));
+  if (sourceHeight && !sourceWidth) sourceWidth = Math.max(1, Math.floor(sourceLength / Math.max(1, sourceHeight * channels)));
+  if (!sourceWidth || !sourceHeight) {
+    const side = Math.max(1, Math.round(Math.sqrt(sourceLength / channels)));
+    sourceWidth = side;
+    sourceHeight = Math.max(1, Math.ceil((sourceLength / channels) / side));
+  }
+  const cellCount = Math.max(1, sourceWidth * sourceHeight);
+  if (channels === 1 && sourceLength === cellCount * 3) channels = 3;
+  if (channels === 1 && sourceLength === cellCount * 4) channels = 4;
+  const maxRenderSide = 96;
+  const scale = Math.min(1, maxRenderSide / Math.max(sourceWidth, sourceHeight));
+  return {
+    sourceWidth,
+    sourceHeight,
+    renderWidth: Math.max(1, Math.round(sourceWidth * scale)),
+    renderHeight: Math.max(1, Math.round(sourceHeight * scale)),
+    channels,
+    sourceLength,
+  };
+}
+
+function flattenNumericValues(source, limit, out = []) {
+  if (out.length >= limit) {
+    out.truncated = true;
+    return out;
+  }
+  if (Array.isArray(source) || ArrayBuffer.isView(source)) {
+    for (const value of source) {
+      flattenNumericValues(value, limit, out);
+      if (out.length >= limit) {
+        out.truncated = true;
+        break;
+      }
+    }
+    return out;
+  }
+  const number = Number(source);
+  if (Number.isFinite(number)) out.push(number);
+  return out;
+}
+
+function countNestedValues(source) {
+  if (Array.isArray(source) || ArrayBuffer.isView(source)) {
+    return Array.from(source).reduce((count, value) => count + countNestedValues(value), 0);
+  }
+  return Number.isFinite(Number(source)) ? 1 : 0;
+}
+
+function positiveInteger(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? Math.round(number) : null;
+}
+
+function finiteRange(values) {
+  const numericValues = values.map(Number).filter(Number.isFinite);
+  if (!numericValues.length) return { min: 0, max: 1 };
+  const min = Math.min(...numericValues);
+  const max = Math.max(...numericValues);
+  return { min, max: max === min ? min + 1 : max };
+}
+
+function scaleImageChannel(value, range) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return 0;
+  if (range.min >= 0 && range.max <= 1) return clamp(Math.round(number * 255), 0, 255);
+  if (range.min >= 0 && range.max <= 255) return clamp(Math.round(number), 0, 255);
+  return clamp(Math.round(((number - range.min) / Math.max(1e-9, range.max - range.min)) * 255), 0, 255);
 }
 
 function payloadKind(payload) {
@@ -694,9 +1198,15 @@ function payloadKind(payload) {
   if (typeof payload.text === "string") return "string";
   if (Array.isArray(payload.series)) return "time_series";
   if (Array.isArray(payload.bins)) return "histogram";
+  if (payload.pixels
+    || payload.pixel_values
+    || payload.matrix
+    || payload.image
+    || (hasImageDimensions(payload) && (payload.values || payload.data))) return "image";
   if (Array.isArray(payload.values)) return "vector";
   if (payload.fields || payload.components || payload.parts) return "composed";
   if (payload.href || payload.url || payload.src) return "external_ref";
+  if (hasGenericPayloadFields(payload)) return "properties";
   return null;
 }
 
@@ -826,7 +1336,9 @@ function pairPropertyTargets(pair = {}) {
 
 function pushUniquePairTarget(targets, target) {
   const key = `${target.relation_id ?? ""}\u0000${target.row_id ?? ""}\u0000${target.column_id ?? ""}`;
-  if (targets.some((candidate) => `${candidate.relation_id ?? ""}\u0000${candidate.row_id ?? ""}\u0000${candidate.column_id ?? ""}` === key)) return;
+  if (targets.some((candidate) => {
+    return `${candidate.relation_id ?? ""}\u0000${candidate.row_id ?? ""}\u0000${candidate.column_id ?? ""}` === key;
+  })) return;
   targets.push(target);
 }
 

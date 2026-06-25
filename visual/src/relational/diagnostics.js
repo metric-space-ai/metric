@@ -7,6 +7,8 @@ import {
   relationPairs,
 } from "./relation-source.js";
 
+export const RELATION_MATRIX_READABILITY_DIAGNOSTICS_SCHEMA = "metric.visual.relation_matrix_readability_diagnostics.v1";
+
 /**
  * Check reciprocal relation values for symmetric visualization diagnostics.
  *
@@ -144,6 +146,65 @@ export function diagnoseRelationSymmetry(source, options = {}) {
   };
 }
 
+/**
+ * Build a compact diagnostic payload for matrix readability contracts.
+ *
+ * The payload is intentionally descriptive: it reports exported matrix and
+ * layer state without computing missing relation values or graph topology.
+ *
+ * @param {object} input
+ * @param {object} [input.matrix]
+ * @param {object} [input.readability]
+ * @param {object} [input.selection]
+ * @param {object} [input.tileSummary]
+ * @param {object} [input.graph]
+ * @param {string|null} [input.relationId]
+ * @param {string|null} [input.relationName]
+ * @returns {object}
+ */
+export function createRelationMatrixDiagnostics(input = {}) {
+  const matrix = input.matrix || {};
+  const readability = input.readability || {};
+  const graph = input.graph || null;
+  const dimensions = matrixDimensions(matrix);
+  const relationId = input.relationId
+    ?? matrix.relationId
+    ?? graph?.relationId
+    ?? graph?.edge_relation_id
+    ?? null;
+  const relationName = input.relationName ?? matrix.relationName ?? null;
+  const tileSummarySource = input.tileSummary?.source
+    ?? readability?.lod?.tileSummaryLod?.source
+    ?? null;
+
+  return {
+    schema: RELATION_MATRIX_READABILITY_DIAGNOSTICS_SCHEMA,
+    kind: "relation-matrix-readability-diagnostics",
+    relationId,
+    relationName,
+    matrixDimensions: dimensions,
+    blockCount: blockCount(matrix, readability),
+    blockBoundaryCount: Array.isArray(readability?.blocks?.boundaries) ? readability.blocks.boundaries.length : null,
+    tileCount: integerOrNull(readability?.tiles?.count),
+    tileSize: integerOrNull(readability?.tiles?.tileSize ?? input.tileSummary?.tileSize),
+    tileSummarySource,
+    tileSummaryDimensions: input.tileSummary ? {
+      width: integerOrNull(input.tileSummary.width),
+      height: integerOrNull(input.tileSummary.height),
+    } : null,
+    missingValueCount: integerOrNull(matrix.missingValueCount),
+    presentValueCount: integerOrNull(matrix.presentValueCount),
+    selected: normalizeSelectionState(input.selection, dimensions),
+    graph: graph ? {
+      graphId: graph.id ?? null,
+      relationId: graph.relationId ?? graph.edge_relation_id ?? relationId,
+      edgeCount: integerOrNull(graph.edgeCount ?? graph.graphEdgeCount ?? graph.edges?.length),
+      graphEdgeCount: integerOrNull(graph.edgeCount ?? graph.graphEdgeCount ?? graph.edges?.length),
+      native: graph.native === true,
+    } : null,
+  };
+}
+
 function relationMap(source, options = {}) {
   const recordIds = options.recordIds || collectRecordIds(source, options);
   const out = new Map();
@@ -161,3 +222,45 @@ function pairKey(source, target) {
   return `${source}\u0000${target}`;
 }
 
+function matrixDimensions(matrix) {
+  const size = integerOrNull(matrix?.size ?? matrix?.recordIds?.length);
+  const width = integerOrNull(matrix?.width ?? size);
+  const height = integerOrNull(matrix?.height ?? size);
+  return { width, height, size };
+}
+
+function blockCount(matrix, readability) {
+  if (Array.isArray(readability?.blocks?.ranges)) return readability.blocks.ranges.length;
+  if (Array.isArray(matrix?.blockRanges)) return matrix.blockRanges.length;
+  return integerOrNull(matrix?.diagnostics?.blockCount);
+}
+
+function normalizeSelectionState(selection = {}, dimensions = {}) {
+  const row = integerOrNull(selection.row);
+  const column = integerOrNull(selection.column);
+  const rowActive = selection.rowActive === true || (row != null && row >= 0);
+  const columnActive = selection.columnActive === true || (column != null && column >= 0);
+  const cellActive = selection.active === true || (rowActive && columnActive);
+  return {
+    row: {
+      index: rowActive ? row : null,
+      active: rowActive,
+    },
+    column: {
+      index: columnActive ? column : null,
+      active: columnActive,
+    },
+    cell: {
+      row: cellActive ? row : null,
+      column: cellActive ? column : null,
+      active: cellActive,
+    },
+    state: cellActive ? "cell" : rowActive && !columnActive ? "row" : columnActive && !rowActive ? "column" : "none",
+    matrixDimensions: dimensions,
+  };
+}
+
+function integerOrNull(value) {
+  const number = Number(value);
+  return Number.isInteger(number) ? number : null;
+}

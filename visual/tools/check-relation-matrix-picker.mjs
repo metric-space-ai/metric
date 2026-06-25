@@ -185,6 +185,27 @@ assert.equal(nativeTexture.matrix.pairEvidence.get(1).relationId, nativeRelation
 assert.equal(nativeTexture.matrix.pairEvidence.get(1).pairKey, `${nativeRelation.id}\u0000pc-000\u0000pc-001`);
 assert.equal(nativeTexture.matrix.pairEvidence.get(1).pair?.value, 2.34478);
 
+const nativePicker = createRelationMatrixPicker(createRelationMatrixLayerDescriptor(nativeTexture, {
+  relationId: nativeRelation.id,
+  relationName: nativeRelation.name,
+}));
+const selectedPair = nativePicker.cellAtNormalizedPoint((1.5 / 130), (0.5 / 130));
+assert.equal(selectedPair.rowId, "pc-000");
+assert.equal(selectedPair.columnId, "pc-001");
+assert.equal(selectedPair.relationId, nativeRelation.id);
+assert(Math.abs(selectedPair.value - 2.34478) < 1e-6);
+assert.equal(selectedPair.present, true);
+assert.deepEqual(selectedPair.pairIdentity, {
+  relationId: nativeRelation.id,
+  relationName: nativeRelation.name,
+  pairId: null,
+  pairKey: `${nativeRelation.id}\u0000pc-000\u0000pc-001`,
+  rowId: "pc-000",
+  columnId: "pc-001",
+  present: true,
+});
+assert(selectedPair.nativePair, "selected pair is runtime-preview ready and keeps native pair evidence");
+
 const nativeLayer = new RelationMatrixLayer({ metadata: { matrix: nativeTexture.matrix } });
 nativeLayer.updateBlockBoundaries(nativeTexture);
 assert.equal(nativeLayer.blockBoundaryCount, 4);
@@ -239,6 +260,9 @@ assert.equal(graphDescriptor.metadata.graph.mode, "native");
 assert.equal(graphDescriptor.metadata.graph.relationId, nativeRelation.id);
 assert.equal(graphDescriptor.metadata.graph.edgeCount, nativeGraph.edges.length);
 assert.equal(graphDescriptor.source.nativeGraph, true);
+assert.deepEqual(graphDescriptor.metadata.graph.recordIds, nativeRelation.record_ids);
+assert.equal(graphDescriptor.metadata.diagnostics.relationId, nativeRelation.id);
+assert.equal(graphDescriptor.metadata.diagnostics.graphEdgeCount, nativeGraph.edges.length);
 assert.equal(graphDescriptor.metadata.selectionModel.relationId, nativeRelation.id);
 assert.equal(graphDescriptor.metadata.selectionModel.graphId, nativeGraph.id);
 assert.equal(graphDescriptor.metadata.selectionModel.pairSource, "native-graph-evidence");
