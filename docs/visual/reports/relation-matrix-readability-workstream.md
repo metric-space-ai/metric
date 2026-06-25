@@ -11,7 +11,8 @@ relation values.
 Changed contract:
 
 - `RelationMatrixLayer` consumes descriptor readability metadata for dense-cell
-  LOD smoothing, logical tile boundaries, and separate row/column/cell focus.
+  LOD smoothing, alpha-weighted GPU tile-summary LOD textures, logical tile
+  boundaries, and separate row/column/cell focus.
 - `matrix-readability.js` derives a reusable readability profile from exported
   dense matrix evidence: block boundaries, tile summaries, LOD thresholds, and
   picker/fallback semantics.
@@ -19,8 +20,9 @@ Changed contract:
   pair identity preservation, selected feature semantics, and no DOM/SVG
   fallback flags.
 - headless checks cover block boundaries, dense-cell smoothing/LOD metadata,
-  selected row/column/cell semantics, native pair identity, and the absence of a
-  DOM/SVG fallback in the relation-matrix engine modules.
+  GPU tile-summary texture creation, selected row/column/cell semantics, native
+  pair identity, and the absence of a DOM/SVG fallback in the relation-matrix
+  engine modules.
 
 ## Acceptance Commands
 
@@ -48,8 +50,11 @@ node visual/tools/check-visual-performance-large-scenes.mjs
   tile summary coverage.
 - A 384-record dense matrix exposes a 64-cell logical tile grid and weighted
   3x3 dense-cell LOD metadata.
-- The fragment shader exposes LOD smoothing, logical tile boundary, and
-  separate row/column/cell selection uniforms.
+- `RelationMatrixLayer` creates a 5 x 5 alpha-weighted tile-summary texture
+  for the native 130-record relation matrix from the exported RGBA matrix
+  texture.
+- The fragment shader exposes LOD smoothing, tile-summary texture, logical tile
+  boundary, and separate row/column/cell selection uniforms.
 - The semantic matrix picker still returns native pair evidence and stable
   relation/row/column pair identity.
 - `RelationMatrixLayer.setSelection()` accepts pair, row-only, column-only,
@@ -58,8 +63,9 @@ node visual/tools/check-visual-performance-large-scenes.mjs
 ## Remaining Gaps
 
 - This is still not hero acceptance. Screenshot review is still required.
-- The matrix is still a single WebGL texture with logical tile metadata and tile
-  boundary cues; it is not yet a streamed multi-texture tile renderer.
+- The matrix still uses one source WebGL texture plus one derived tile-summary
+  LOD texture. It is not yet a streamed multi-texture tile renderer for very
+  large out-of-core matrices.
 - Matrix picking remains the deterministic semantic picker. GPU/tiled matrix
   picking should be added only if the semantic picker becomes insufficient at
   larger matrix scales.

@@ -69,6 +69,10 @@ This plan is authoritative only with the following current-state constraints:
   record, field, graph-edge or ribbon-trajectory layers. Tube-curve picking is
   verified on the native engine probe because it is an internal engine example,
   not a public hero gate.
+- The relation-matrix grammar now has engine-level readability metadata and a
+  WebGL tile-summary LOD texture derived from already exported matrix texture
+  values. This reduces dense-matrix aliasing without adding DOM/SVG fallbacks,
+  page-local canvas renderers or JavaScript relation computation.
 - The next production step is to harden each native public preview into an
   accepted hero through larger evidence where required, grammar-specific
   performance budgets and screenshot review, not more hand-written hero HTML

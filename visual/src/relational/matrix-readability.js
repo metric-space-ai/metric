@@ -26,6 +26,7 @@ export function createRelationMatrixReadabilityProfile(matrix, options = {}) {
   const lodSmoothingStrength = finiteOption(options.lodSmoothingStrength ?? options.denseLodSmoothingStrength, density >= 0.6 ? 0.46 : 0.28);
   const lodStartCellPixels = finiteOption(options.lodSmoothingStartCellPixels ?? options.lodStartCellPixels, 2.45);
   const lodFullCellPixels = finiteOption(options.lodSmoothingFullCellPixels ?? options.lodFullCellPixels, 0.85);
+  const tileSummaryStrength = finiteOption(options.tileSummaryStrength ?? options.tileSummaryLodStrength, density >= 0.6 ? 0.68 : 0.34);
 
   return {
     kind: "relation-matrix-readability-profile",
@@ -66,6 +67,14 @@ export function createRelationMatrixReadabilityProfile(matrix, options = {}) {
         fullCellPixels: lodFullCellPixels,
         kernel: "weighted-3x3",
       },
+      tileSummaryLod: {
+        enabled: true,
+        strategy: "gpu-tile-summary-texture",
+        source: "exported-relation-texture-downsample",
+        tileSize,
+        tileCount: tiles.count,
+        strength: tileSummaryStrength,
+      },
       levels: [
         {
           id: "cell-exact",
@@ -88,9 +97,10 @@ export function createRelationMatrixReadabilityProfile(matrix, options = {}) {
         },
         {
           id: "logical-tiles",
-          role: "tile-summary-metadata",
+          role: "tile-summary-texture",
           tileSize,
           tileCount: tiles.count,
+          maxSmoothing: tileSummaryStrength,
         },
       ],
     },

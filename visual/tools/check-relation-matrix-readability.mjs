@@ -62,7 +62,15 @@ assert.equal(readability.lod.denseCellSmoothing.enabled, true);
 assert.equal(readability.lod.denseCellSmoothing.kernel, "weighted-3x3");
 assert.equal(readability.lod.denseCellSmoothing.smoothingCellPixels, 4.25);
 assert.equal(readability.lod.denseCellSmoothing.lodSmoothingStrength, 0.46);
-assert(readability.lod.levels.some((level) => level.id === "logical-tiles"), "LOD metadata includes logical tile level");
+assert.equal(readability.lod.tileSummaryLod.enabled, true);
+assert.equal(readability.lod.tileSummaryLod.strategy, "gpu-tile-summary-texture");
+assert.equal(readability.lod.tileSummaryLod.source, "exported-relation-texture-downsample");
+assert.equal(readability.lod.tileSummaryLod.tileSize, 32);
+assert.equal(readability.lod.tileSummaryLod.strength, 0.68);
+assert(
+  readability.lod.levels.some((level) => level.id === "logical-tiles" && level.role === "tile-summary-texture"),
+  "LOD metadata includes GPU tile-summary texture level",
+);
 
 assert.equal(descriptor.picking.mode, "semantic-matrix-picker");
 assert.equal(descriptor.picking.preservesNativePairIdentity, true);
@@ -87,6 +95,15 @@ assert.equal(layer.blockRangeCount, 5);
 assert.equal(layer.describeReadability().domFallback, false);
 assert.equal(layer.describeReadability().svgFallback, false);
 assert.equal(layer.describeReadability().readability.tiles.tileSize, 32);
+
+layer.gl = createTextureOnlyGl();
+layer.replaceTexture(nativeTexture);
+assert.equal(layer.describeReadability().tileSummary.width, 5);
+assert.equal(layer.describeReadability().tileSummary.height, 5);
+assert.equal(layer.describeReadability().tileSummary.tileSize, 32);
+assert.equal(layer.describeReadability().tileSummary.source, "exported-relation-texture-downsample");
+assert(layer.tileSummaryPayload.data[3] > 0, "tile summary keeps visible alpha for dense native tiles");
+assert(layer.tileSummaryPayload.data[0] > 0 || layer.tileSummaryPayload.data[1] > 0 || layer.tileSummaryPayload.data[2] > 0, "tile summary carries alpha-weighted color");
 
 layer.setSelection({ pair: nativeCell });
 assert.deepEqual(layer.selection, {
@@ -143,10 +160,15 @@ assert.equal(largeProfile.tiles.columns, 6);
 assert.equal(largeProfile.tiles.count, 36);
 assert.equal(largeProfile.tiles.coverage, "full");
 assert.equal(largeProfile.lod.denseCellSmoothing.kernel, "weighted-3x3");
+assert.equal(largeProfile.lod.tileSummaryLod.strategy, "gpu-tile-summary-texture");
+assert.equal(largeProfile.lod.tileSummaryLod.tileSize, 64);
 
 assert(MATRIX_FRAGMENT_SHADER.includes("uLodSmoothingStrength"), "shader exposes dense-cell LOD smoothing uniform");
 assert(MATRIX_FRAGMENT_SHADER.includes("neighborhoodTexel"), "shader includes weighted neighborhood smoothing");
 assert(MATRIX_FRAGMENT_SHADER.includes("uTileSize"), "shader exposes logical tile boundary uniform");
+assert(MATRIX_FRAGMENT_SHADER.includes("uTileSummaryTexture"), "shader exposes tile-summary texture uniform");
+assert(MATRIX_FRAGMENT_SHADER.includes("uTileSummaryGridSize"), "shader exposes tile-summary grid uniform");
+assert(MATRIX_FRAGMENT_SHADER.includes("tileSummaryMix"), "shader mixes tile-summary LOD at collapsed cell footprints");
 assert(MATRIX_FRAGMENT_SHADER.includes("uSelectionRowColor"), "shader separates row selection color");
 assert(MATRIX_FRAGMENT_SHADER.includes("uSelectionColumnColor"), "shader separates column selection color");
 assert(MATRIX_FRAGMENT_SHADER.includes("uSelectionCellColor"), "shader separates cell selection color");
@@ -164,6 +186,31 @@ for (const [label, source] of Object.entries({
 }
 
 console.log("Relation matrix readability contract passed.");
+
+function createTextureOnlyGl() {
+  let id = 0;
+  return {
+    TEXTURE_2D: 0x0DE1,
+    TEXTURE_MIN_FILTER: 0x2801,
+    TEXTURE_MAG_FILTER: 0x2800,
+    TEXTURE_WRAP_S: 0x2802,
+    TEXTURE_WRAP_T: 0x2803,
+    LINEAR: 0x2601,
+    CLAMP_TO_EDGE: 0x812F,
+    RGBA: 0x1908,
+    UNSIGNED_BYTE: 0x1401,
+    UNPACK_ALIGNMENT: 0x0CF5,
+    createTexture() {
+      id += 1;
+      return { id };
+    },
+    deleteTexture() {},
+    bindTexture() {},
+    pixelStorei() {},
+    texParameteri() {},
+    texImage2D() {},
+  };
+}
 
 function buildDenseMatrixEvidence(size) {
   const recordIds = Array.from({ length: size }, (_, index) => `large-${String(index).padStart(3, "0")}`);

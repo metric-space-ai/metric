@@ -26,8 +26,10 @@ export class RelationMatrixLayer extends BaseLayer {
     super(descriptor, rendererOrGl, options);
     this.program = null;
     this.texture = null;
+    this.tileSummaryTexture = null;
     this.buffers = {};
     this.texturePayload = null;
+    this.tileSummaryPayload = null;
     this.readabilityProfile = this.descriptor?.metadata?.readability || null;
     this.vertexCount = 4;
     this.blockBoundaries = new Float32Array(MAX_BLOCK_BOUNDARIES);
@@ -89,6 +91,7 @@ export class RelationMatrixLayer extends BaseLayer {
 
     this.program.use();
     this.program.bindTexture("uMatrixTexture", this.texture, 0);
+    this.program.bindTexture("uTileSummaryTexture", this.tileSummaryTexture || this.texture, 1);
     this.program.setUniform("uRect", rect);
     this.program.setUniform("uAlpha", numberOption(material.alpha, 1));
     this.program.setUniform("uBackground", material.background || [0.02, 0.025, 0.03, 1]);
@@ -125,6 +128,14 @@ export class RelationMatrixLayer extends BaseLayer {
     this.program.setUniform("uBlockLineWidthCells", numberOption(material.blockLineWidthCells, 0.68));
     this.program.setUniform("uOuterBorderAlpha", numberOption(material.outerBorderAlpha, 0.42));
     this.program.setUniform("uTileSize", numberOption(material.tileSize, this.readabilityProfile?.tiles?.tileSize, 0));
+    this.program.setUniform("uTileSummaryGridSize", [
+      this.tileSummaryPayload?.width || 0,
+      this.tileSummaryPayload?.height || 0,
+    ]);
+    this.program.setUniform(
+      "uTileSummaryStrength",
+      numberOption(material.tileSummaryStrength, this.readabilityProfile?.lod?.tileSummaryLod?.strength, 0.68),
+    );
     this.program.setUniform("uTileBoundaryAlpha", numberOption(material.tileBoundaryAlpha, 0.16));
     this.program.setUniform("uTileBoundaryWidthCells", numberOption(material.tileBoundaryWidthCells, 0.42));
     this.program.setUniform("uTileBoundaryColor", material.tileBoundaryColor || [0.72, 0.84, 1.0, 1]);
@@ -166,29 +177,19 @@ export class RelationMatrixLayer extends BaseLayer {
       gl.deleteTexture(this.texture);
       this.resources = this.resources.filter((resource) => resource.handle !== this.texture);
     }
+    if (this.tileSummaryTexture) {
+      gl.deleteTexture(this.tileSummaryTexture);
+      this.resources = this.resources.filter((resource) => resource.handle !== this.tileSummaryTexture);
+    }
 
-    const texture = gl.createTexture();
-    if (!texture) throw new Error("Unable to create relation matrix texture.");
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texImage2D(
-      gl.TEXTURE_2D,
-      0,
-      gl.RGBA,
-      payload.width,
-      payload.height,
-      0,
-      gl.RGBA,
-      gl.UNSIGNED_BYTE,
-      payload.data,
-    );
-
+    const tileSummaryPayload = buildTileSummaryTexturePayload(payload, this.readabilityProfile);
+    const texture = createRgbaTexture(gl, payload, "Unable to create relation matrix texture.");
+    const tileSummaryTexture = createRgbaTexture(gl, tileSummaryPayload, "Unable to create relation matrix tile summary texture.");
     this.texture = texture;
+    this.tileSummaryTexture = tileSummaryTexture;
+    this.tileSummaryPayload = tileSummaryPayload;
     this.track({ kind: "texture", handle: texture });
+    this.track({ kind: "texture", handle: tileSummaryTexture });
   }
 
   updateBlockBoundaries(payload) {
@@ -221,6 +222,8 @@ export class RelationMatrixLayer extends BaseLayer {
   dispose() {
     this.program = null;
     this.texture = null;
+    this.tileSummaryTexture = null;
+    this.tileSummaryPayload = null;
     this.buffers = {};
     super.dispose();
   }
@@ -235,6 +238,12 @@ export class RelationMatrixLayer extends BaseLayer {
       svgFallback: false,
       selection: { ...this.selection },
       readability: profile,
+      tileSummary: this.tileSummaryPayload ? {
+        width: this.tileSummaryPayload.width,
+        height: this.tileSummaryPayload.height,
+        tileSize: this.tileSummaryPayload.tileSize,
+        source: this.tileSummaryPayload.source,
+      } : null,
     };
   }
 }
@@ -247,6 +256,84 @@ function resolveTexturePayload(source = {}, descriptor = {}) {
     return buildRelationMatrixTextureData(source, descriptor.metadata?.matrixOptions || {});
   }
   throw new Error("RelationMatrixLayer requires relation matrix texture data or exported relation pairs.");
+}
+
+function createRgbaTexture(gl, payload, errorMessage) {
+  const texture = gl.createTexture();
+  if (!texture) throw new Error(errorMessage);
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texImage2D(
+    gl.TEXTURE_2D,
+    0,
+    gl.RGBA,
+    payload.width,
+    payload.height,
+    0,
+    gl.RGBA,
+    gl.UNSIGNED_BYTE,
+    payload.data,
+  );
+  return texture;
+}
+
+function buildTileSummaryTexturePayload(payload, readabilityProfile) {
+  const tileSize = Math.max(1, Math.floor(Number(readabilityProfile?.lod?.tileSummaryLod?.tileSize
+    ?? readabilityProfile?.tiles?.tileSize
+    ?? 0)));
+  const sourceWidth = Math.max(1, Math.floor(Number(payload?.width) || 1));
+  const sourceHeight = Math.max(1, Math.floor(Number(payload?.height) || 1));
+  const width = tileSize > 0 ? Math.max(1, Math.ceil(sourceWidth / tileSize)) : 1;
+  const height = tileSize > 0 ? Math.max(1, Math.ceil(sourceHeight / tileSize)) : 1;
+  const data = new Uint8Array(width * height * 4);
+  const sourceData = payload?.data || new Uint8Array(sourceWidth * sourceHeight * 4);
+
+  for (let tileY = 0; tileY < height; tileY += 1) {
+    for (let tileX = 0; tileX < width; tileX += 1) {
+      let red = 0;
+      let green = 0;
+      let blue = 0;
+      let alpha = 0;
+      let samples = 0;
+      const startX = tileX * tileSize;
+      const startY = tileY * tileSize;
+      const endX = Math.min(sourceWidth, startX + tileSize);
+      const endY = Math.min(sourceHeight, startY + tileSize);
+      for (let y = startY; y < endY; y += 1) {
+        for (let x = startX; x < endX; x += 1) {
+          const sourceOffset = (y * sourceWidth + x) * 4;
+          const sourceAlpha = sourceData[sourceOffset + 3];
+          red += sourceData[sourceOffset] * sourceAlpha;
+          green += sourceData[sourceOffset + 1] * sourceAlpha;
+          blue += sourceData[sourceOffset + 2] * sourceAlpha;
+          alpha += sourceAlpha;
+          samples += 1;
+        }
+      }
+      const targetOffset = (tileY * width + tileX) * 4;
+      const colorDenominator = Math.max(1, alpha);
+      const alphaDenominator = Math.max(1, samples);
+      data[targetOffset] = Math.round(red / colorDenominator);
+      data[targetOffset + 1] = Math.round(green / colorDenominator);
+      data[targetOffset + 2] = Math.round(blue / colorDenominator);
+      data[targetOffset + 3] = Math.round(alpha / alphaDenominator);
+    }
+  }
+
+  return {
+    kind: "relation-matrix-tile-summary-texture-data",
+    source: "exported-relation-texture-downsample",
+    width,
+    height,
+    tileSize,
+    sourceWidth,
+    sourceHeight,
+    data,
+  };
 }
 
 function resolveReadabilityProfile(payload, descriptor = {}) {
@@ -319,6 +406,7 @@ export const MATRIX_FRAGMENT_SHADER = `
 precision mediump float;
 
 uniform sampler2D uMatrixTexture;
+uniform sampler2D uTileSummaryTexture;
 uniform float uAlpha;
 uniform vec4 uBackground;
 uniform vec2 uTextureSize;
@@ -351,6 +439,8 @@ uniform float uBlockLineAlpha;
 uniform float uBlockLineWidthCells;
 uniform float uOuterBorderAlpha;
 uniform float uTileSize;
+uniform vec2 uTileSummaryGridSize;
+uniform float uTileSummaryStrength;
 uniform vec4 uTileBoundaryColor;
 uniform float uTileBoundaryAlpha;
 uniform float uTileBoundaryWidthCells;
@@ -382,9 +472,16 @@ void main() {
     * clamp(uLodSmoothingStrength, 0.0, 1.0);
   vec4 texel = mix(exactTexel, smoothTexel, smoothing);
   texel = mix(texel, neighborhoodTexel, lodSmoothing);
+  vec2 matrixCoord = safeUv * uTextureSize;
+  if (uTileSize > 0.0 && uTileSummaryGridSize.x > 0.0 && uTileSummaryGridSize.y > 0.0) {
+    vec2 tileCoord = floor(matrixCoord / uTileSize);
+    vec2 tileUv = (tileCoord + vec2(0.5)) / uTileSummaryGridSize;
+    vec4 tileTexel = texture2D(uTileSummaryTexture, clamp(tileUv, vec2(0.0), vec2(1.0)));
+    float tileSummaryMix = lodSmoothing * clamp(uTileSummaryStrength, 0.0, 1.0);
+    texel = mix(texel, tileTexel, tileSummaryMix);
+  }
   float alpha = texel.a * uAlpha;
   vec3 color = mix(uBackground.rgb, texel.rgb, texel.a);
-  vec2 matrixCoord = safeUv * uTextureSize;
   vec2 visibleCell = floor(matrixCoord);
   vec2 cellLocal = fract(matrixCoord);
   float rowSelected = step(0.0, uSelectedCell.y);
