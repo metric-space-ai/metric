@@ -1,4 +1,5 @@
 import { buildRelationMatrixTextureData } from "./matrix-texture.js";
+import { createRelationMatrixReadabilityProfile } from "./matrix-readability.js";
 import { buildGraphEdgeChannels, buildRelationNeighborhoodGraph } from "./neighborhood-graph.js";
 
 /**
@@ -12,8 +13,10 @@ export function createRelationMatrixLayerDescriptor(source, options = {}) {
   const texture = source?.kind === "relation-matrix-texture-data"
     ? source
     : buildRelationMatrixTextureData(source, options);
-  const relationId = options.relationId || source?.id || source?.relation_id || null;
-  const relationName = options.relationName || source?.name || source?.label || null;
+  const readability = createRelationMatrixReadabilityProfile(texture.matrix, options);
+  const denseCellSmoothing = readability.lod.denseCellSmoothing;
+  const relationId = options.relationId || source?.id || source?.relation_id || texture.relationId || texture.matrix?.relationId || null;
+  const relationName = options.relationName || source?.name || source?.label || texture.relationName || texture.matrix?.relationName || null;
 
   return {
     id: options.id || "relation-matrix",
@@ -35,31 +38,54 @@ export function createRelationMatrixLayerDescriptor(source, options = {}) {
       alpha: resolveMaterialAlpha(options),
       missingAlpha: options.missingAlpha ?? 0,
       background: options.background || [0.02, 0.025, 0.03, 1],
-      smoothingCellPixels: options.smoothingCellPixels ?? options.readabilityCellPixels ?? 4.25,
-      smoothingStrength: options.smoothingStrength ?? options.valueSmoothing ?? 0.72,
+      smoothingCellPixels: denseCellSmoothing.smoothingCellPixels,
+      smoothingStrength: denseCellSmoothing.smoothingStrength,
+      lodSmoothingStrength: denseCellSmoothing.lodSmoothingStrength,
+      lodSmoothingStartCellPixels: denseCellSmoothing.startCellPixels,
+      lodSmoothingFullCellPixels: denseCellSmoothing.fullCellPixels,
       selectionAlpha: options.selectionAlpha ?? 0.38,
+      selectionRowAlpha: options.selectionRowAlpha ?? options.selectionAlpha ?? 0.38,
+      selectionColumnAlpha: options.selectionColumnAlpha ?? options.selectionAlpha ?? 0.38,
       selectionCellAlpha: options.selectionCellAlpha ?? 0.72,
       selectionOutlineAlpha: options.selectionOutlineAlpha ?? 0.92,
       selectionOutlinePixels: options.selectionOutlinePixels ?? 1.35,
       selectionColor: options.selectionColor || [1, 0.86, 0.42, 1],
+      selectionRowColor: options.selectionRowColor || options.selectionColor || [1, 0.86, 0.42, 1],
+      selectionColumnColor: options.selectionColumnColor || [0.42, 0.66, 1, 1],
+      selectionCellColor: options.selectionCellColor || options.selectionColor || [1, 0.92, 0.56, 1],
       blockBandAlpha: options.blockBandAlpha ?? 0.055,
       blockBandColor: options.blockBandColor || [1, 0.95, 0.72, 1],
       blockLineAlpha: options.blockLineAlpha ?? 0.32,
       blockLineColor: options.blockLineColor || [1, 1, 1, 1],
       blockLineWidthCells: options.blockLineWidthCells ?? 0.68,
       outerBorderAlpha: options.outerBorderAlpha ?? 0.42,
+      tileSize: readability.tiles.tileSize,
+      tileBoundaryAlpha: options.tileBoundaryAlpha ?? 0.16,
+      tileBoundaryWidthCells: options.tileBoundaryWidthCells ?? 0.42,
+      tileBoundaryColor: options.tileBoundaryColor || [0.72, 0.84, 1, 1],
+    },
+    picking: {
+      mode: "semantic-matrix-picker",
+      source: "dense-relation-matrix",
+      preservesNativePairIdentity: true,
+      domFallback: false,
+      svgFallback: false,
     },
     metadata: {
       relationVisualization: "matrix",
       diagnostics: texture.diagnostics,
       matrix: texture.matrix,
+      readability,
       relationId,
       relationName,
       selectionModel: {
         relationId,
         recordIds: texture.recordIds,
+        picker: "semantic-matrix-picker",
+        preservesNativePairIdentity: true,
         respondsTo: ["record", "pair"],
         selectedFeatures: ["row", "column", "cell"],
+        selectedFeatureSemantics: readability.selection,
       },
     },
   };

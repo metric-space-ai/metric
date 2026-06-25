@@ -784,7 +784,7 @@ For:
 - SOM/KOC
 - Redif
 - generic derived coordinate spaces
-- fitted maps and out-of-sample behavior
+- derived maps and out-of-sample behavior
 
 Views:
 

@@ -8,6 +8,7 @@ import {
   trackBuffer,
 } from "../layers/gl-utils.js";
 import { buildRelationMatrixTextureData } from "./matrix-texture.js";
+import { createRelationMatrixReadabilityProfile } from "./matrix-readability.js";
 
 const MAX_BLOCK_BOUNDARIES = 16;
 const MAX_BLOCK_RANGES = 16;
@@ -27,6 +28,7 @@ export class RelationMatrixLayer extends BaseLayer {
     this.texture = null;
     this.buffers = {};
     this.texturePayload = null;
+    this.readabilityProfile = this.descriptor?.metadata?.readability || null;
     this.vertexCount = 4;
     this.blockBoundaries = new Float32Array(MAX_BLOCK_BOUNDARIES);
     this.blockBoundaryCount = 0;
@@ -57,6 +59,7 @@ export class RelationMatrixLayer extends BaseLayer {
   upload() {
     const payload = resolveTexturePayload(this.source, this.descriptor);
     this.texturePayload = payload;
+    this.readabilityProfile = resolveReadabilityProfile(payload, this.descriptor);
     this.replaceTexture(payload);
     this.needsUpload = false;
   }
@@ -94,15 +97,23 @@ export class RelationMatrixLayer extends BaseLayer {
     this.program.setUniform("uCellPixelSize", cellPixelSize);
     this.program.setUniform("uSmoothingCellPixels", numberOption(material.smoothingCellPixels, material.readabilityCellPixels, 4.25));
     this.program.setUniform("uSmoothingStrength", numberOption(material.smoothingStrength, material.valueSmoothing, 0.72));
+    this.program.setUniform("uLodSmoothingStrength", numberOption(material.lodSmoothingStrength, this.readabilityProfile?.lod?.denseCellSmoothing?.lodSmoothingStrength, 0.46));
+    this.program.setUniform("uLodSmoothingStartCellPixels", numberOption(material.lodSmoothingStartCellPixels, this.readabilityProfile?.lod?.denseCellSmoothing?.startCellPixels, 2.45));
+    this.program.setUniform("uLodSmoothingFullCellPixels", numberOption(material.lodSmoothingFullCellPixels, this.readabilityProfile?.lod?.denseCellSmoothing?.fullCellPixels, 0.85));
     this.program.setUniform("uSelectedCell", [
       this.selection.columnActive ? this.selection.column : -1,
       this.selection.rowActive ? this.selection.row : -1,
     ]);
     this.program.setUniform("uSelectionAlpha", numberOption(material.selectionAlpha, 0.38));
+    this.program.setUniform("uSelectionRowAlpha", numberOption(material.selectionRowAlpha, material.selectionAlpha, 0.38));
+    this.program.setUniform("uSelectionColumnAlpha", numberOption(material.selectionColumnAlpha, material.selectionAlpha, 0.38));
     this.program.setUniform("uSelectionCellAlpha", numberOption(material.selectionCellAlpha, 0.72));
     this.program.setUniform("uSelectionOutlineAlpha", numberOption(material.selectionOutlineAlpha, 0.92));
     this.program.setUniform("uSelectionOutlinePixels", numberOption(material.selectionOutlinePixels, 1.35));
     this.program.setUniform("uSelectionColor", material.selectionColor || [1.0, 0.86, 0.42, 1]);
+    this.program.setUniform("uSelectionRowColor", material.selectionRowColor || material.selectionColor || [1.0, 0.86, 0.42, 1]);
+    this.program.setUniform("uSelectionColumnColor", material.selectionColumnColor || [0.42, 0.66, 1.0, 1]);
+    this.program.setUniform("uSelectionCellColor", material.selectionCellColor || material.selectionColor || [1.0, 0.92, 0.56, 1]);
     this.program.setUniform("uBlockRangeCount", this.blockRangeCount);
     this.program.setUniform("uBlockRanges", this.blockRanges);
     this.program.setUniform("uBlockBandColor", material.blockBandColor || [1.0, 0.95, 0.72, 1]);
@@ -113,6 +124,10 @@ export class RelationMatrixLayer extends BaseLayer {
     this.program.setUniform("uBlockLineAlpha", numberOption(material.blockLineAlpha, 0.32));
     this.program.setUniform("uBlockLineWidthCells", numberOption(material.blockLineWidthCells, 0.68));
     this.program.setUniform("uOuterBorderAlpha", numberOption(material.outerBorderAlpha, 0.42));
+    this.program.setUniform("uTileSize", numberOption(material.tileSize, this.readabilityProfile?.tiles?.tileSize, 0));
+    this.program.setUniform("uTileBoundaryAlpha", numberOption(material.tileBoundaryAlpha, 0.16));
+    this.program.setUniform("uTileBoundaryWidthCells", numberOption(material.tileBoundaryWidthCells, 0.42));
+    this.program.setUniform("uTileBoundaryColor", material.tileBoundaryColor || [0.72, 0.84, 1.0, 1]);
     bindAttribute(gl, this.program, this.capabilities, "aUnitPosition", this.buffers.quad, 2);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.vertexCount);
     restoreDepthWrite(gl);
@@ -121,11 +136,13 @@ export class RelationMatrixLayer extends BaseLayer {
 
   setSelection(selection = {}) {
     const pair = selection.pair || null;
-    const rowId = pair?.rowId ?? pair?.row_id ?? pair?.sourceId ?? pair?.source_id ?? selection.recordId;
-    const columnId = pair?.columnId ?? pair?.column_id ?? pair?.targetId ?? pair?.target_id ?? selection.recordId;
+    const rowId = pair?.rowId ?? pair?.row_id ?? pair?.sourceId ?? pair?.source_id
+      ?? selection.rowId ?? selection.row_id ?? selection.sourceId ?? selection.source_id ?? selection.recordId;
+    const columnId = pair?.columnId ?? pair?.column_id ?? pair?.targetId ?? pair?.target_id
+      ?? selection.columnId ?? selection.column_id ?? selection.targetId ?? selection.target_id ?? selection.recordId;
     const matrix = this.texturePayload?.matrix || this.descriptor?.metadata?.matrix;
-    const row = matrix?.recordIds?.findIndex?.((id) => String(id) === String(rowId)) ?? -1;
-    const column = matrix?.recordIds?.findIndex?.((id) => String(id) === String(columnId)) ?? -1;
+    const row = findMatrixIndex(matrix, rowId, pair?.row ?? selection.row);
+    const column = findMatrixIndex(matrix, columnId, pair?.column ?? selection.column);
     const rowActive = row >= 0;
     const columnActive = column >= 0;
     const active = rowActive && columnActive;
@@ -179,6 +196,7 @@ export class RelationMatrixLayer extends BaseLayer {
     this.blockBoundaryCount = 0;
     this.blockRanges.fill(0);
     this.blockRangeCount = 0;
+    this.readabilityProfile = this.readabilityProfile || resolveReadabilityProfile(payload, this.descriptor);
     const matrix = payload?.matrix || null;
     const size = Number(matrix?.size);
     if (!Number.isFinite(size) || size <= 0) return this;
@@ -206,6 +224,19 @@ export class RelationMatrixLayer extends BaseLayer {
     this.buffers = {};
     super.dispose();
   }
+
+  describeReadability() {
+    const profile = this.readabilityProfile || this.descriptor?.metadata?.readability || null;
+    return {
+      primitive: "RelationMatrixLayer",
+      path: "webgl-texture-layer",
+      semanticPicker: "relation-matrix-picking",
+      domFallback: false,
+      svgFallback: false,
+      selection: { ...this.selection },
+      readability: profile,
+    };
+  }
 }
 
 function resolveTexturePayload(source = {}, descriptor = {}) {
@@ -216,6 +247,20 @@ function resolveTexturePayload(source = {}, descriptor = {}) {
     return buildRelationMatrixTextureData(source, descriptor.metadata?.matrixOptions || {});
   }
   throw new Error("RelationMatrixLayer requires relation matrix texture data or exported relation pairs.");
+}
+
+function resolveReadabilityProfile(payload, descriptor = {}) {
+  return descriptor?.metadata?.readability
+    || payload?.readability
+    || createRelationMatrixReadabilityProfile(payload?.matrix, descriptor.metadata?.matrixOptions || {});
+}
+
+function findMatrixIndex(matrix, id, fallbackIndex) {
+  const index = matrix?.recordIds?.findIndex?.((recordId) => String(recordId) === String(id)) ?? -1;
+  if (index >= 0) return index;
+  const numeric = Number(fallbackIndex);
+  const size = Number(matrix?.size ?? matrix?.recordIds?.length ?? 0);
+  return Number.isInteger(numeric) && numeric >= 0 && numeric < size ? numeric : -1;
 }
 
 function numberOption(...values) {
@@ -281,9 +326,17 @@ uniform vec2 uMatrixPixelSize;
 uniform vec2 uCellPixelSize;
 uniform float uSmoothingCellPixels;
 uniform float uSmoothingStrength;
+uniform float uLodSmoothingStrength;
+uniform float uLodSmoothingStartCellPixels;
+uniform float uLodSmoothingFullCellPixels;
 uniform vec2 uSelectedCell;
 uniform vec4 uSelectionColor;
+uniform vec4 uSelectionRowColor;
+uniform vec4 uSelectionColumnColor;
+uniform vec4 uSelectionCellColor;
 uniform float uSelectionAlpha;
+uniform float uSelectionRowAlpha;
+uniform float uSelectionColumnAlpha;
 uniform float uSelectionCellAlpha;
 uniform float uSelectionOutlineAlpha;
 uniform float uSelectionOutlinePixels;
@@ -297,6 +350,10 @@ uniform vec4 uBlockLineColor;
 uniform float uBlockLineAlpha;
 uniform float uBlockLineWidthCells;
 uniform float uOuterBorderAlpha;
+uniform float uTileSize;
+uniform vec4 uTileBoundaryColor;
+uniform float uTileBoundaryAlpha;
+uniform float uTileBoundaryWidthCells;
 
 varying vec2 vUv;
 varying vec2 vUnit;
@@ -304,13 +361,27 @@ varying vec2 vUnit;
 void main() {
   vec2 safeUv = clamp(vUv, vec2(0.0), vec2(0.999999));
   vec2 halfTexel = vec2(0.5) / uTextureSize;
+  vec2 texelStep = vec2(1.0) / uTextureSize;
   vec2 cellUv = (floor(safeUv * uTextureSize) + vec2(0.5)) / uTextureSize;
   vec4 exactTexel = texture2D(uMatrixTexture, cellUv);
   vec4 smoothTexel = texture2D(uMatrixTexture, clamp(vUv, halfTexel, vec2(1.0) - halfTexel));
+  vec4 neighborhoodTexel = exactTexel * 0.24;
+  neighborhoodTexel += texture2D(uMatrixTexture, clamp(cellUv + vec2(texelStep.x, 0.0), halfTexel, vec2(1.0) - halfTexel)) * 0.12;
+  neighborhoodTexel += texture2D(uMatrixTexture, clamp(cellUv + vec2(-texelStep.x, 0.0), halfTexel, vec2(1.0) - halfTexel)) * 0.12;
+  neighborhoodTexel += texture2D(uMatrixTexture, clamp(cellUv + vec2(0.0, texelStep.y), halfTexel, vec2(1.0) - halfTexel)) * 0.12;
+  neighborhoodTexel += texture2D(uMatrixTexture, clamp(cellUv + vec2(0.0, -texelStep.y), halfTexel, vec2(1.0) - halfTexel)) * 0.12;
+  neighborhoodTexel += texture2D(uMatrixTexture, clamp(cellUv + vec2(texelStep.x, texelStep.y), halfTexel, vec2(1.0) - halfTexel)) * 0.07;
+  neighborhoodTexel += texture2D(uMatrixTexture, clamp(cellUv + vec2(-texelStep.x, texelStep.y), halfTexel, vec2(1.0) - halfTexel)) * 0.07;
+  neighborhoodTexel += texture2D(uMatrixTexture, clamp(cellUv + vec2(texelStep.x, -texelStep.y), halfTexel, vec2(1.0) - halfTexel)) * 0.07;
+  neighborhoodTexel += texture2D(uMatrixTexture, clamp(cellUv + vec2(-texelStep.x, -texelStep.y), halfTexel, vec2(1.0) - halfTexel)) * 0.07;
   float minCellPixels = max(0.001, min(uCellPixelSize.x, uCellPixelSize.y));
   float smoothing = clamp((uSmoothingCellPixels - minCellPixels) / max(uSmoothingCellPixels, 0.001), 0.0, 1.0)
     * clamp(uSmoothingStrength, 0.0, 1.0);
+  float lodRange = max(0.001, uLodSmoothingStartCellPixels - uLodSmoothingFullCellPixels);
+  float lodSmoothing = clamp((uLodSmoothingStartCellPixels - minCellPixels) / lodRange, 0.0, 1.0)
+    * clamp(uLodSmoothingStrength, 0.0, 1.0);
   vec4 texel = mix(exactTexel, smoothTexel, smoothing);
+  texel = mix(texel, neighborhoodTexel, lodSmoothing);
   float alpha = texel.a * uAlpha;
   vec3 color = mix(uBackground.rgb, texel.rgb, texel.a);
   vec2 matrixCoord = safeUv * uTextureSize;
@@ -322,6 +393,8 @@ void main() {
   float columnHit = step(0.5, 1.0 - abs(visibleCell.x - uSelectedCell.x)) * columnSelected;
   float lineHit = clamp(max(rowHit, columnHit), 0.0, 1.0);
   float cellHit = clamp(rowHit * columnHit, 0.0, 1.0);
+  float rowOnlyHit = rowHit * (1.0 - cellHit);
+  float columnOnlyHit = columnHit * (1.0 - cellHit);
   float outlineWidthCells = clamp(uSelectionOutlinePixels / minCellPixels, 0.08, 0.48);
   float edgeDistance = min(min(cellLocal.x, 1.0 - cellLocal.x), min(cellLocal.y, 1.0 - cellLocal.y));
   float selectedCellOutline = cellHit * (1.0 - smoothstep(0.0, outlineWidthCells, edgeDistance));
@@ -343,15 +416,29 @@ void main() {
       boundaryHit = max(boundaryHit, 1.0 - smoothstep(0.0, boundaryWidth, distanceToBoundary));
     }
   }
+  float tileBoundaryHit = 0.0;
+  if (uTileSize > 0.0) {
+    vec2 tileLocal = mod(matrixCoord, uTileSize);
+    vec2 tileDistance = min(tileLocal, uTileSize - tileLocal);
+    float tileDistanceCells = min(tileDistance.x, tileDistance.y);
+    float tileWidthCells = clamp(uTileBoundaryWidthCells, 0.04, 0.95);
+    float interior = step(0.5, matrixCoord.x) * step(0.5, matrixCoord.y)
+      * step(matrixCoord.x, uTextureSize.x - 0.5) * step(matrixCoord.y, uTextureSize.y - 0.5);
+    tileBoundaryHit = (1.0 - smoothstep(0.0, tileWidthCells, tileDistanceCells)) * interior;
+  }
   float borderWidth = max(0.0008, 1.25 / max(1.0, min(uMatrixPixelSize.x, uMatrixPixelSize.y)));
   float borderDistance = min(min(safeUv.x, 1.0 - safeUv.x), min(safeUv.y, 1.0 - safeUv.y));
   float borderHit = 1.0 - smoothstep(0.0, borderWidth, borderDistance);
   color = mix(color, uBlockBandColor.rgb, sameBlockHit * uBlockBandAlpha);
+  color = mix(color, uTileBoundaryColor.rgb, tileBoundaryHit * uTileBoundaryAlpha);
   color = mix(color, uBlockLineColor.rgb, boundaryHit * uBlockLineAlpha);
-  color = mix(color, uSelectionColor.rgb, lineHit * uSelectionAlpha);
-  color = mix(color, uSelectionColor.rgb, cellHit * uSelectionCellAlpha);
-  color = mix(color, uSelectionColor.rgb, selectedCellOutline * uSelectionOutlineAlpha);
+  color = mix(color, uSelectionRowColor.rgb, rowOnlyHit * uSelectionRowAlpha);
+  color = mix(color, uSelectionColumnColor.rgb, columnOnlyHit * uSelectionColumnAlpha);
+  color = mix(color, uSelectionColor.rgb, lineHit * uSelectionAlpha * 0.2);
+  color = mix(color, uSelectionCellColor.rgb, cellHit * uSelectionCellAlpha);
+  color = mix(color, uSelectionCellColor.rgb, selectedCellOutline * uSelectionOutlineAlpha);
   color = mix(color, uBlockLineColor.rgb, borderHit * uOuterBorderAlpha);
+  alpha = max(alpha, tileBoundaryHit * uTileBoundaryColor.a * uTileBoundaryAlpha * uAlpha);
   alpha = max(alpha, boundaryHit * uBlockLineColor.a * uBlockLineAlpha * uAlpha);
   alpha = max(alpha, borderHit * uBlockLineColor.a * uOuterBorderAlpha * uAlpha);
   alpha = max(alpha, (lineHit * 0.44 + cellHit * 0.36 + selectedCellOutline * 0.72) * uAlpha);

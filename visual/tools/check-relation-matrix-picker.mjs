@@ -204,8 +204,20 @@ const layerDescriptor = createRelationMatrixLayerDescriptor(nativeTexture, {
 });
 assert.equal(layerDescriptor.material.alpha, 1);
 assert.equal(layerDescriptor.material.smoothingCellPixels, 4.25);
+assert.equal(layerDescriptor.material.lodSmoothingStrength, 0.46);
 assert.equal(layerDescriptor.material.blockBandAlpha, 0.055);
+assert.equal(layerDescriptor.material.tileSize, 32);
+assert.equal(layerDescriptor.picking.mode, "semantic-matrix-picker");
+assert.equal(layerDescriptor.picking.preservesNativePairIdentity, true);
+assert.equal(layerDescriptor.picking.domFallback, false);
+assert.equal(layerDescriptor.picking.svgFallback, false);
+assert.equal(layerDescriptor.metadata.readability.kind, "relation-matrix-readability-profile");
+assert.equal(layerDescriptor.metadata.readability.renderer.webglOnly, true);
+assert.equal(layerDescriptor.metadata.readability.renderer.semanticPicker, "relation-matrix-picking");
+assert.equal(layerDescriptor.metadata.readability.lod.denseCellSmoothing.kernel, "weighted-3x3");
+assert.equal(layerDescriptor.metadata.readability.tiles.kind, "relation-matrix-logical-tile-grid");
 assert.deepEqual(layerDescriptor.metadata.selectionModel.selectedFeatures, ["row", "column", "cell"]);
+assert.deepEqual(layerDescriptor.metadata.selectionModel.selectedFeatureSemantics.selectedFeatures, ["row", "column", "cell"]);
 assert.deepEqual(layerDescriptor.metadata.selectionModel.respondsTo, ["record", "pair"]);
 
 const matrixView = RelationMatrixView.fromVisualSpace(nativeDocument, {

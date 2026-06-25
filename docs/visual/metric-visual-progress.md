@@ -29,7 +29,9 @@ node visual/tools/check-grae10-golden.mjs
 node visual/tools/check-views.mjs
 node visual/tools/check-view-reference-contract.mjs
 node visual/tools/check-relation-matrix-picker.mjs
+node visual/tools/check-relation-matrix-readability.mjs
 node visual/tools/check-runtime-picking-preview.mjs
+node visual/tools/check-record-preview-payloads.mjs
 node visual/tools/check-hero-grammar-contract.mjs
 node visual/tools/check-single-render-pipeline.mjs
 node visual/tools/check-public-gallery-evidence.mjs
@@ -65,10 +67,13 @@ passing when the package is unavailable.
 | Shared semantic views | checked headlessly | `visual/tools/check-views.mjs` verifies the current semantic views produce renderable descriptors. |
 | View reference validation | checked headlessly | `visual/tools/check-view-reference-contract.mjs` verifies explicit coordinate, relation and property IDs fail hard instead of falling back to unrelated defaults; it also verifies `MappingView` emits labels from an exported label property. |
 | Runtime inspection and picking | checked headlessly and in browser | `MetricVisualRuntime.pickAt()` and `inspectAt()` now use one engine path for GPU picking on stock point, glyph, ground-projection, heat-field, relation-edge, curve-ribbon and curve-tube layers, relation-matrix picking, graph-edge picking and deterministic projected-record fallback. `visual/tools/check-runtime-picking-preview.mjs` verifies record selection, pair selection, runtime state and preview resolution; `visual/tools/check-visual-regression-public-examples.mjs` verifies public examples stay renderable, interactive and report `gpu-picking` hits with record IDs or edge IDs where a pickable record, field, graph-edge or ribbon-trajectory layer is present. Tube-curve picking is verified against the native engine probe page. |
-| Relation matrix picking | checked headlessly and in browser | `visual/src/relational/matrix-picking.js` maps pointer positions to exported dense-matrix cells; `visual/tools/check-relation-matrix-picker.mjs` verifies relation id/name, pair key, native pair evidence and layer selection. Public regression verifies relation-matrix interaction updates selected pair state from native evidence. |
+| Relation matrix picking | checked headlessly and in browser | `visual/src/relational/matrix-picking.js` maps pointer positions to exported dense-matrix cells; `visual/tools/check-relation-matrix-picker.mjs` verifies relation id/name, pair key, native pair evidence, semantic picker metadata and layer selection. Public regression verifies relation-matrix interaction updates selected pair state from native evidence. |
+| Relation matrix readability | checked headlessly | `visual/src/relational/matrix-readability.js` builds block, tile and LOD readability metadata from exported dense matrix evidence. `RelationMatrixLayer` consumes that metadata for weighted dense-cell smoothing, logical tile boundaries and separate row/column/cell selection focus. `visual/tools/check-relation-matrix-readability.mjs` verifies block boundaries, dense-cell smoothing/LOD metadata, selected row/column/cell semantics, native pair identity and no DOM/SVG fallback. |
 | Engine pair preview | checked headlessly and in browser | Matrix cells preserve native pair evidence and optional pair properties for the engine picker. `RecordPreviewPanel` can attach to runtime inspection and resolve record or pair previews from `metric.visual.v1` evidence instead of page-local DOM logic. |
+| Record and pair payload preview | checked headlessly and in browser | `RecordPreviewPanel` now resolves record payload families, record properties, linked coordinate/view memberships, row/column record context, relation-independent pair properties and symmetric native pair values from `metric.visual.v1` evidence. `visual/tools/check-record-preview-payloads.mjs` proves the resolver against native mixed-record, cross-space and relation-matrix fixtures; `visual/tools/check-runtime-picking-preview.mjs` verifies selected-record and selected-pair runtime state exposes the same native preview payloads. |
 | Relation matrix linked selection | checked headlessly and in browser | `MetricVisualRuntime.selectPair()` stores selected pair identity and pick source, `RelationMatrixLayer.setSelection()` highlights the selected row, column and cell, and the runtime state exposes selected pair data for shared preview/selection UI. |
 | Relation native graph grammar | checked headlessly and in browser | `NeighborhoodGraphView` resolves `graphs[].edge_relation_id` and `createRelationGraphEdgeLayerDescriptor()` preserves native `graphs[].edges` as a `native-neighborhood-graph` instead of deriving top-k edges in JavaScript. Graph descriptors expose the same native relation selection model as the matrix picker. |
+| Dynamics timeline controls | checked headlessly | `visual/tools/check-dynamics-timeline-control.mjs` verifies user-facing timeline-control descriptors, start/middle/end exported state selection, and changing ground/field state from exported timeline-step properties without JavaScript recomputation of diffusion or Redif inverse-dynamics values. |
 | Grammar contract | checked headlessly | `visual/tools/check-hero-grammar-contract.mjs` rejects collapsing unrelated hero concepts into one point-cloud-only grammar. |
 | Single runtime path | checked headlessly | `visual/tools/check-single-render-pipeline.mjs` protects the one-runtime pipeline rule. |
 | Public gallery evidence gate | checked headlessly | `visual/tools/check-public-gallery-evidence.mjs` blocks synthetic hero fixtures from the public site and protects the GRAE10 reference hash. |
@@ -87,8 +92,22 @@ layers now expose `renderPicking()` implementations. The browser
 public-regression gate requires native preview examples with pickable record,
 field, graph-edge or ribbon-trajectory layers to return `source: gpu-picking`
 and a concrete record or edge ID. Tube-curve picking is verified on the native
-engine probe page. Remaining picking work is specialized matrix GPU picking
-and matrix readability where semantic pickers are not enough.
+engine probe page. Remaining picking work is specialized matrix GPU picking only
+if the semantic picker becomes insufficient at larger tiled scales, plus final
+screenshot review for matrix hero acceptance.
+
+### Preview/Inspection Payload Slice - 2026-06-25
+
+The shared record/pair preview resolver now formats exported evidence instead
+of only showing minimal IDs. Record previews include payload-family summaries
+for strings, vectors, time series, histograms, image references and composed
+records; exported record properties; and linked coordinate/view memberships for
+records that appear in multiple views. Pair previews include relation metadata,
+native pair values, row/column record summaries, exported record properties and
+relation-independent pair properties. Symmetric relations with upper-triangle
+native values can resolve the reverse selected direction without computing a
+new value. The focused native check is
+`visual/tools/check-record-preview-payloads.mjs`.
 
 ### Relation Matrix Readability Note - 2026-06-25
 
@@ -102,6 +121,14 @@ native pair ids/keys where exported, and pair properties for the existing runtim
 inspection path. This is still preview status: it is not a hero-acceptance claim
 until screenshot review and the broader public regression gates pass.
 
+The next readability slice adds a reusable engine profile for relation matrix
+readability. Descriptors now carry logical tile grids, tile summaries, LOD
+thresholds, explicit semantic-picker/no-DOM fallback metadata and row/column/cell
+selection semantics. `RelationMatrixLayer` uses that profile for weighted 3x3
+dense-cell smoothing when cell footprints collapse, subtle tile boundary cues
+and separate row, column and cell focus colors. The semantic picker remains the
+matrix picking path and continues to preserve native pair identity.
+
 ### Semantic View Extraction Note - 2026-06-25
 
 The command layer no longer owns the mixed-record or cross-space render
@@ -110,9 +137,12 @@ emits typed-glyph descriptors and cross-type relation-edge evidence.
 `showCrossSpace()` delegates to `CrossSpaceView`, which emits paired side-space
 descriptors plus an exported dependence bridge with linked-selection metadata.
 `DynamicsView` now emits timeline state/control metadata and deterministic
-start/middle/end samples from exported timeline evidence. These are
-engine-contract milestones, not hero acceptance milestones: all affected public
-pages remain preview-only until screenshot review accepts their visual results.
+start/middle/end samples from exported timeline evidence. The timeline control
+descriptor now also carries user-facing scrubber/playback/reset metadata, and
+`DynamicsView` exposes active ground/field state through reusable descriptors
+backed by exported timeline-step properties. These are engine-contract
+milestones, not hero acceptance milestones: all affected public pages remain
+preview-only until screenshot review accepts their visual results.
 
 The schema gate was also tightened. `validateVisualDocument()` now rejects
 broken dense relation shapes, relation value endpoints outside

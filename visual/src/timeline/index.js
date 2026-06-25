@@ -4,6 +4,7 @@ export const TIMELINE_INTERPOLATION_SCHEMA = "metric.visual.timeline_interpolati
 export const TIMELINE_ANIMATION_SCHEMA = "metric.visual.timeline_animation.v1";
 export const TIMELINE_STATE_SAMPLE_SCHEMA = "metric.visual.timeline_state_sample.v1";
 export const TIMELINE_CONTROL_SCHEMA = "metric.visual.timeline_control.v1";
+export const TIMELINE_PROPERTY_SAMPLE_SCHEMA = "metric.visual.timeline_property_sample.v1";
 
 export class TimelineModel {
   constructor(source = {}, options = {}) {
@@ -12,6 +13,7 @@ export class TimelineModel {
     this.id = this.timeline?.id ?? options.id ?? null;
     this.datasetId = this.timeline?.dataset_id ?? this.timeline?.datasetId ?? options.datasetId ?? options.dataset_id ?? null;
     this.steps = normalizeTimelineSteps(this.timeline?.steps || []);
+    this.propertySamples = normalizeTimelinePropertySamples(resolveTimelineProperties(source, this.timeline, options), this.steps, this.id);
     this.events = normalizeTimelineEvents(resolveEvents(source, this.timeline, options), this.steps);
     this.duration = resolveDuration(this.steps, options.duration ?? options.durationMs);
     this.currentTime = clampTime(Number(options.currentTime ?? options.time ?? 0), this.duration);
@@ -312,6 +314,43 @@ export function normalizeTimelineEvents(events, steps = []) {
   return out;
 }
 
+export function normalizeTimelinePropertySamples(properties, steps = [], timelineId = null) {
+  if (!Array.isArray(properties) || !steps.length) return [];
+  const out = [];
+  for (const property of properties) {
+    const values = Array.isArray(property?.values)
+      ? property.values
+      : Array.isArray(property?.timeline_values)
+        ? property.timeline_values
+        : [];
+    if (!values.length) continue;
+    const entries = values
+      .map((entry, order) => normalizeTimelinePropertyEntry(entry, order, steps, timelineId))
+      .filter(Boolean);
+    if (!entries.length) continue;
+    const domain = inferNumericDomain(entries.map((entry) => entry.value));
+    for (const entry of entries) {
+      out.push({
+        schema: TIMELINE_PROPERTY_SAMPLE_SCHEMA,
+        propertyId: property.id ?? null,
+        propertyName: property.name ?? property.label ?? property.id ?? null,
+        valueType: property.value_type ?? property.valueType ?? null,
+        timelineId: entry.timelineId ?? timelineId,
+        stepId: entry.stepId,
+        stepIndex: entry.stepIndex,
+        stepOrder: entry.stepOrder,
+        value: entry.value,
+        domain,
+        source: "exported-property",
+        selection: "active-exported-step",
+        algorithmicComputation: false,
+      });
+    }
+  }
+  out.sort(comparePropertySamples);
+  return out;
+}
+
 export function currentStepInterpolation(timeline, time) {
   const model = timeline instanceof TimelineModel
     ? timeline
@@ -328,7 +367,7 @@ export function sampleTimelineState(source = {}, options = {}) {
     : new TimelineModel(source, options);
   const normalized = resolveNormalizedTimelinePosition(model, options);
   const time = model.duration > 0 ? normalized * model.duration : 0;
-  const sampleModel = new TimelineModel(model.timeline || {}, {
+  const sampleModel = new TimelineModel(model.document || model.timeline || {}, {
     ...options,
     id: model.id,
     timelineId: model.id,
@@ -341,6 +380,18 @@ export function sampleTimelineState(source = {}, options = {}) {
   });
   const interpolation = sampleModel.currentInterpolation();
   const active = selectSampledStep(sampleModel.steps, interpolation);
+  const activePropertySamples = active
+    ? selectTimelinePropertySamples(sampleModel.propertySamples, active, options)
+    : [];
+  const activePropertyBinding = active?.propertyId
+    ? {
+      propertyId: active.propertyId,
+      source: "timeline-step-property-ref",
+      selection: "active-exported-step",
+      algorithmicComputation: false,
+    }
+    : null;
+  const activePropertyId = active?.propertyId ?? activePropertySamples[0]?.propertyId ?? null;
 
   return {
     schema: TIMELINE_STATE_SAMPLE_SCHEMA,
@@ -357,9 +408,12 @@ export function sampleTimelineState(source = {}, options = {}) {
     activeStepOrder: active ? active.order : -1,
     activeStepId: active?.source?.id ?? null,
     activeCoordinateId: active?.coordinateId ?? null,
-    activePropertyId: active?.propertyId ?? null,
+    activePropertyId,
     activeRelationId: active?.relationId ?? null,
     activeLabel: active?.label ?? null,
+    activePropertyBinding,
+    activePropertySamples,
+    activePropertySample: activePropertySamples[0] ?? null,
     fromStepIndex: interpolation.from.index,
     fromStepOrder: interpolation.from.order,
     toStepIndex: interpolation.to.index,
@@ -376,7 +430,10 @@ export function createTimelineControlDescriptor(source = {}, options = {}) {
   const state = sampleTimelineState(model, options);
   const stepCount = model.steps.length;
   const step = stepCount > 1 ? 1 / (stepCount - 1) : 1;
-  const samples = defaultTimelineSampleStops().map((sample) => sampleTimelineState(model, sample));
+  const samples = defaultTimelineSampleStops().map((sample) => sampleTimelineState(model, { ...options, ...sample }));
+  const marks = samples.map((sample) => createTimelineControlMark(sample));
+  const label = options.label || model.timeline?.name || "Timeline";
+  const valueLabel = timelineValueLabel(state);
 
   return {
     schema: TIMELINE_CONTROL_SCHEMA,
@@ -391,19 +448,59 @@ export function createTimelineControlDescriptor(source = {}, options = {}) {
       max: 1,
       step,
     },
+    label,
+    valueLabel,
+    userFacing: true,
+    presentation: {
+      kind: "timeline-scrubber",
+      density: options.density || "compact",
+      showPlayToggle: options.showPlayToggle !== false,
+      showStepMarks: options.showStepMarks !== false,
+      showReadout: options.showReadout !== false,
+      readout: valueLabel,
+    },
     duration: model.duration,
     stepCount,
     controls: [{
       id: options.controlId || `${model.id || "timeline"}:normalized-position`,
       kind: "range",
       role: "timeline-state",
-      label: options.label || "Timeline",
+      label,
+      ariaLabel: options.ariaLabel || `${label} position`,
       value: state.normalized,
       min: 0,
       max: 1,
       step,
       target: "timeline.normalized",
       stateSchema: TIMELINE_STATE_SAMPLE_SCHEMA,
+      display: {
+        kind: "scrubber",
+        valueLabel,
+        marks,
+      },
+      binding: {
+        timelineId: model.id,
+        stateTarget: "timeline.state",
+        selection: "nearest-exported-step",
+        source: "exported-timeline",
+        algorithmicComputation: false,
+      },
+    }, {
+      id: options.playControlId || `${model.id || "timeline"}:playback`,
+      kind: "toggle",
+      role: "timeline-playback",
+      label: "Play",
+      value: Boolean(options.playing ?? model.playing),
+      target: "timeline.playing",
+      icon: "play-pause",
+    }, {
+      id: options.resetControlId || `${model.id || "timeline"}:reset`,
+      kind: "button",
+      role: "timeline-reset",
+      label: "Reset",
+      target: "timeline.normalized",
+      value: 0,
+      icon: "skip-back",
     }],
     playback: {
       clock: options.clock || "render-loop",
@@ -413,6 +510,17 @@ export function createTimelineControlDescriptor(source = {}, options = {}) {
     },
     state,
     samples,
+    marks,
+    readout: {
+      label: valueLabel,
+      activeStepOrder: state.activeStepOrder,
+      activeStepIndex: state.activeStepIndex,
+      activeStepId: state.activeStepId,
+      activeLabel: state.activeLabel,
+      activeCoordinateId: state.activeCoordinateId,
+      activePropertyId: state.activePropertyId,
+      activePropertySamples: state.activePropertySamples,
+    },
     evidence: {
       source: "exported-timeline",
       selection: "nearest-exported-step",
@@ -487,6 +595,44 @@ function resolveTimeline(source, options) {
     if (found) return found;
   }
   return timelines[0] || null;
+}
+
+function resolveTimelineProperties(source, timeline, options = {}) {
+  const explicit = options.timelineProperties ?? options.timeline_properties;
+  const all = Array.isArray(explicit)
+    ? explicit
+    : Array.isArray(options.properties)
+      ? options.properties
+      : Array.isArray(source?.properties)
+        ? source.properties
+        : [];
+  if (!all.length) return [];
+  const timelineId = timeline?.id ?? options.timelineId ?? options.timeline_id ?? options.id;
+  const preferredIds = new Set(normalizePropertyIdList(
+    options.timelinePropertyIds
+    ?? options.timelinePropertyId
+    ?? options.timeline_property_ids
+    ?? options.timeline_property_id,
+  ));
+  const stepIds = new Set((timeline?.steps || [])
+    .map((step) => step?.id)
+    .filter((id) => id != null)
+    .map(String));
+  const stepIndexes = new Set((timeline?.steps || [])
+    .map((step, order) => step?.index ?? step?.step_index ?? step?.step ?? order)
+    .filter((index) => Number.isFinite(Number(index)))
+    .map((index) => String(Number(index))));
+
+  return all.filter((property) => {
+    if (!property) return false;
+    if (preferredIds.size && !preferredIds.has(String(property.id))) return false;
+    const values = Array.isArray(property.values)
+      ? property.values
+      : Array.isArray(property.timeline_values)
+        ? property.timeline_values
+        : [];
+    return values.some((entry) => isTimelinePropertyEntry(entry, timelineId, stepIds, stepIndexes));
+  });
 }
 
 function resolveEvents(source, timeline, options) {
@@ -689,6 +835,24 @@ function selectSampledStep(steps, interpolation) {
   return interpolation.progress >= 0.5 ? to : from;
 }
 
+function selectTimelinePropertySamples(samples, active, options = {}) {
+  if (!active || !Array.isArray(samples) || !samples.length) return [];
+  const matches = samples.filter((sample) => sampleMatchesStep(sample, active));
+  if (!matches.length) return [];
+  const preferred = normalizePropertyIdList(
+    options.timelinePropertyIds
+    ?? options.timelinePropertyId
+    ?? options.timelineFieldPropertyId
+    ?? options.timelineFieldProperty
+    ?? options.timeline_property_ids
+    ?? options.timeline_property_id,
+  );
+  if (!preferred.length) return matches;
+  const preferredSet = new Set(preferred);
+  const filtered = matches.filter((sample) => preferredSet.has(String(sample.propertyId)));
+  return filtered.length ? filtered : matches;
+}
+
 function stepByOrderOrIndex(steps, order, index) {
   return steps.find((step) => step.order === order)
     || steps.find((step) => step.index === index)
@@ -737,6 +901,122 @@ function defaultTimelineSampleStops() {
     { id: "middle", label: "Middle", normalized: 0.5 },
     { id: "end", label: "End", normalized: 1 },
   ];
+}
+
+function createTimelineControlMark(sample) {
+  return {
+    id: sample.sampleId || sample.activeStepId || `step-${sample.activeStepOrder}`,
+    label: sample.label || sample.activeLabel || `Step ${sample.activeStepOrder}`,
+    normalized: sample.normalized,
+    value: sample.normalized,
+    time: sample.time,
+    activeStepOrder: sample.activeStepOrder,
+    activeStepIndex: sample.activeStepIndex,
+    activeStepId: sample.activeStepId,
+    activeCoordinateId: sample.activeCoordinateId,
+    activePropertyId: sample.activePropertyId,
+    activePropertySample: sample.activePropertySample,
+    selection: sample.selection,
+    algorithmicComputation: false,
+  };
+}
+
+function timelineValueLabel(state) {
+  const step = Number.isFinite(Number(state?.activeStepOrder))
+    ? `Step ${state.activeStepOrder}`
+    : "Step";
+  const name = state?.activeLabel ? String(state.activeLabel) : "";
+  const property = state?.activePropertySample;
+  const propertyText = property && Number.isFinite(Number(property.value))
+    ? `${property.propertyName || property.propertyId}: ${formatNumber(property.value)}`
+    : property?.propertyName || property?.propertyId || "";
+  return [step, name, propertyText].filter(Boolean).join(" - ");
+}
+
+function normalizeTimelinePropertyEntry(entry, order, steps, timelineId) {
+  if (!entry || typeof entry !== "object") return null;
+  const entryTimelineId = entry.timeline_id ?? entry.timelineId;
+  if (entryTimelineId != null && timelineId != null && String(entryTimelineId) !== String(timelineId)) return null;
+  if (entry.record_id != null || entry.recordId != null) return null;
+  const explicitStepId = entry.step_id ?? entry.stepId ?? entry.target_step_id ?? entry.targetStepId;
+  const explicitIndex = entry.index ?? entry.step_index ?? entry.stepIndex ?? entry.step;
+  const step = findPropertyStep(steps, explicitStepId, explicitIndex, order);
+  if (!step) return null;
+  const value = entry.value ?? entry.scalar ?? entry.metric ?? entry.score;
+  return {
+    timelineId: entryTimelineId ?? timelineId,
+    stepId: step.source?.id ?? explicitStepId ?? null,
+    stepIndex: step.index,
+    stepOrder: step.order,
+    value,
+  };
+}
+
+function findPropertyStep(steps, stepId, stepIndex, fallbackOrder) {
+  if (stepId != null) {
+    const found = steps.find((step) => String(step.source?.id ?? step.id) === String(stepId));
+    if (found) return found;
+  }
+  if (Number.isFinite(Number(stepIndex))) {
+    const index = Number(stepIndex);
+    const found = steps.find((step) => Number(step.index) === index)
+      || steps.find((step) => Number(step.order) === index);
+    if (found) return found;
+  }
+  return steps[fallbackOrder] || null;
+}
+
+function isTimelinePropertyEntry(entry, timelineId, stepIds, stepIndexes) {
+  if (!entry || typeof entry !== "object") return false;
+  if (entry.record_id != null || entry.recordId != null) return false;
+  const entryTimelineId = entry.timeline_id ?? entry.timelineId;
+  if (entryTimelineId != null && timelineId != null && String(entryTimelineId) !== String(timelineId)) return false;
+  if (entryTimelineId != null) return true;
+  const stepId = entry.step_id ?? entry.stepId ?? entry.target_step_id ?? entry.targetStepId;
+  if (stepId != null && stepIds.has(String(stepId))) return true;
+  const stepIndex = entry.index ?? entry.step_index ?? entry.stepIndex ?? entry.step;
+  if (Number.isFinite(Number(stepIndex)) && stepIndexes.has(String(Number(stepIndex)))) return true;
+  return false;
+}
+
+function sampleMatchesStep(sample, step) {
+  if (sample.stepId != null && step.source?.id != null && String(sample.stepId) === String(step.source.id)) return true;
+  if (Number.isFinite(Number(sample.stepOrder)) && Number(sample.stepOrder) === Number(step.order)) return true;
+  if (Number.isFinite(Number(sample.stepIndex)) && Number(sample.stepIndex) === Number(step.index)) return true;
+  return false;
+}
+
+function normalizePropertyIdList(value) {
+  if (value == null) return [];
+  if (Array.isArray(value)) return value.filter((entry) => entry != null).map(String);
+  return [String(value)];
+}
+
+function inferNumericDomain(values) {
+  let min = Infinity;
+  let max = -Infinity;
+  for (const raw of values || []) {
+    const value = Number(raw);
+    if (!Number.isFinite(value)) continue;
+    min = Math.min(min, value);
+    max = Math.max(max, value);
+  }
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return { min: 0, max: 1 };
+  return { min, max };
+}
+
+function comparePropertySamples(a, b) {
+  return numericCompare(a.stepOrder, b.stepOrder)
+    || String(a.propertyId || "").localeCompare(String(b.propertyId || ""));
+}
+
+function formatNumber(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return String(value);
+  if (Math.abs(number) >= 100) return number.toFixed(0);
+  if (Math.abs(number) >= 10) return number.toFixed(1);
+  if (Math.abs(number) >= 1) return number.toFixed(3);
+  return number.toPrecision(3);
 }
 
 function compareSteps(a, b) {

@@ -35,6 +35,11 @@ export {
 } from "./matrix-texture.js";
 
 export {
+  createRelationMatrixReadabilityProfile,
+  summarizeMatrixTiles,
+} from "./matrix-readability.js";
+
+export {
   buildGraphEdgeChannels,
   buildNativeNeighborhoodGraph,
   buildRelationNeighborhoodGraph,

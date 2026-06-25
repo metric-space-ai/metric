@@ -53,25 +53,25 @@ interaction probes, and meets performance diagnostics.
 Regression report:
 
 - Path: `output/visual/check-visual-regression-public-examples/results.json`
-- Generated: `2026-06-25T06:00:32.210Z`
+- Generated: `2026-06-25T06:27:19.750Z`
 - Result: 7 checked, 0 failed
 
 | Preview | Classification | Native evidence | Runtime layers | Draw calls |
 | --- | --- | --- | ---: | ---: |
-| `grae10-metric-engine` | hero-accepted | protected GRAE10 dataset | n/a | 104 |
-| `condition-monitoring-hero` | public-preview-only | native `metric.visual.v1` | 6 | 453 |
-| `mixed-record-hero` | public-preview-only | native `metric.visual.v1` | 5 | 328 |
-| `cross-space-dependency-hero` | public-preview-only | native `metric.visual.v1` | 4 | 333 |
-| `relation-matrix-neighborhood` | public-preview-only | native `metric.visual.v1` | 3 | 289 |
-| `dynamics-noise-hero` | public-preview-only | native `metric.visual.v1` | 3 | 351 |
-| `mapping-dimensionality-hero` | public-preview-only | native `metric.visual.v1` | 5 | 336 |
+| `grae10-metric-engine` | hero-accepted | protected GRAE10 dataset | n/a | 208 |
+| `condition-monitoring-hero` | public-preview-only | native `metric.visual.v1` | 6 | 432 |
+| `mixed-record-hero` | public-preview-only | native `metric.visual.v1` | 5 | 348 |
+| `cross-space-dependency-hero` | public-preview-only | native `metric.visual.v1` | 4 | 390 |
+| `relation-matrix-neighborhood` | public-preview-only | native `metric.visual.v1` | 3 | 325 |
+| `dynamics-noise-hero` | public-preview-only | native `metric.visual.v1` | 4 | 364 |
+| `mapping-dimensionality-hero` | public-preview-only | native `metric.visual.v1` | 5 | 356 |
 
 ## Performance Evidence
 
 Performance report:
 
 - Path: `output/visual/check-visual-performance-large-scenes/results.json`
-- Generated: `2026-06-25T05:55:27.093Z`
+- Generated: `2026-06-25T06:26:39.259Z`
 - Result: pass
 - Browser: headless Chrome using the available WebGL backend
 - Budget: median frame <= 150 ms, at least 10 sampled frames, at least one
@@ -81,20 +81,20 @@ Performance report:
 
 | Records | Result | Median frame | Frames sampled | Runtime layers | Buffer bytes | Draw calls |
 | ---: | --- | ---: | ---: | ---: | ---: | ---: |
-| 1,000 | pass | 8.3 ms | 421 | 1 | 52,096 | 512 |
+| 1,000 | pass | 8.3 ms | 421 | 1 | 52,096 | 524 |
 | 10,000 | pass | 8.3 ms | 421 | 1 | 520,096 | 524 |
-| 60,000 | pass | 8.3 ms | 421 | 1 | 3,120,096 | 479 |
+| 60,000 | pass | 8.3 ms | 421 | 1 | 3,120,096 | 526 |
 
 ### Grammar Diagnostics
 
 | Preview | Grammar | Required primitives | Records | Descriptors | Runtime layers | Median frame | GPU buffer bytes | Draw calls |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `condition-monitoring-hero` | field | `HeatFieldLayer`, `CurveRibbonLayer` | 15 | 6 | 6 | 8.3 ms | 5,544 | 2,241 |
-| `mixed-record-hero` | glyph | `InstancedGlyphLayer`, `RelationEdgeLayer` | 20 | 5 | 5 | 8.3 ms | 4,136 | 3,835 |
-| `relation-matrix-neighborhood` | matrix+graph | `RelationMatrixLayer`, `RelationEdgeLayer` | 130 | 3 | 3 | 8.3 ms | 43,384 | 2,589 |
-| `dynamics-noise-hero` | dynamics | `CurveRibbonLayer`, `HeatFieldLayer`, `InstancedPointLayer` | 28 | 3 | 3 | 8.3 ms | 379,088 | 6,981 |
-| `mapping-dimensionality-hero` | mapping | `InstancedPointLayer`, `GroundProjectionLayer` | 15 | 5 | 5 | 8.3 ms | 3,912 | 3,175 |
-| `cross-space-dependency-hero` | graph | `RelationEdgeLayer`, `InstancedGlyphLayer` | 48 | 4 | 4 | 8.3 ms | 10,680 | 1,516 |
+| `condition-monitoring-hero` | field | `HeatFieldLayer`, `CurveRibbonLayer` | 15 | 6 | 6 | 8.3 ms | 5,544 | 1,128 |
+| `mixed-record-hero` | glyph | `InstancedGlyphLayer`, `RelationEdgeLayer` | 20 | 5 | 5 | 8.3 ms | 4,136 | 1,015 |
+| `relation-matrix-neighborhood` | matrix+graph | `RelationMatrixLayer`, `RelationEdgeLayer` | 130 | 3 | 3 | 8.3 ms | 43,384 | 969 |
+| `dynamics-noise-hero` | dynamics | `CurveRibbonLayer`, `HeatFieldLayer`, `InstancedPointLayer` | 28 | 4 | 4 | 8.3 ms | 380,208 | 984 |
+| `mapping-dimensionality-hero` | mapping | `InstancedPointLayer`, `GroundProjectionLayer` | 15 | 5 | 5 | 8.3 ms | 3,912 | 1,015 |
+| `cross-space-dependency-hero` | graph | `RelationEdgeLayer`, `InstancedGlyphLayer` | 48 | 4 | 4 | 8.3 ms | 10,680 | 1,022 |
 
 The grammar rows explicitly set `classification: "public-preview-only"` and
 `heroAccepted: false`; render/load/performance evidence does not promote them.

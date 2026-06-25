@@ -1,5 +1,6 @@
 import { BaseView } from "./BaseView.js";
 import { PointCloudView } from "./PointCloudView.js";
+import { VisualLayer } from "./VisualLayer.js";
 import { createTrajectoryBundleLayerDescriptor } from "../curves/index.js";
 import {
   createTimelineAnimationDescriptor,
@@ -9,8 +10,14 @@ import {
 } from "../timeline/index.js";
 import { applyPositionFit, computePositionFit } from "./scene-fit.js";
 import {
+  colorChannelFrom,
+  createChannel,
+  createStringChannel,
   extractCoordinatePositions,
   extractPropertyValues,
+  flattenValues,
+  flattenVectors,
+  inferScalarDomain,
   recordsFor,
   resolveCollectionItem,
 } from "./view-utils.js";
@@ -30,6 +37,7 @@ export class DynamicsView extends BaseView {
     this.timelineId = options.timelineId || options.timeline_id || options.metadata?.timelineId || null;
     this.timelineState = options.timelineState || null;
     this.timelineControl = options.timelineControl || null;
+    this.timelineFieldState = options.timelineFieldState || selectTimelineFieldState(this.timelineState, options);
     const sampledStep = Number.isFinite(Number(this.timelineState?.activeStepOrder))
       ? Number(this.timelineState.activeStepOrder)
       : 0;
@@ -50,6 +58,32 @@ export class DynamicsView extends BaseView {
       : null;
     this.pathWidth = Number.isFinite(Number(options.pathWidth)) ? Number(options.pathWidth) : 3.2;
     this.pathAlpha = Number.isFinite(Number(options.pathAlpha)) ? Number(options.pathAlpha) : 0.66;
+    this.fieldEnabled = options.field !== false
+      && options.propertyField !== false
+      && options.groundField !== false
+      && Boolean(
+        options.field === true
+        || options.propertyField
+        || options.groundField
+        || options.scalarProperty
+        || this.timelineFieldState
+        || this.stepStates.some((state) => state?.scalarValues),
+      );
+    this.fieldMode = options.fieldMode || options.fieldGrammar || "ground";
+    this.fieldAlpha = Number.isFinite(Number(options.fieldAlpha ?? options.alpha))
+      ? Number(options.fieldAlpha ?? options.alpha)
+      : 0.3;
+    this.fieldRadius = Number.isFinite(Number(options.fieldRadius ?? options.radius))
+      ? Number(options.fieldRadius ?? options.radius)
+      : 0.22;
+    this.fieldLift = Number.isFinite(Number(options.fieldLift)) ? Number(options.fieldLift) : 0.24;
+    this.fieldMaterial = options.fieldMaterial || options.material || {};
+    this.fieldPropertyId = options.fieldPropertyId
+      || options.propertyField
+      || options.groundField
+      || options.scalarProperty
+      || options.scalarPropertyId
+      || null;
 
     // Shared fit across all steps so trajectories stay registered.
     const combined = combinePositions(this.stepStates, this.recordIds);
@@ -65,18 +99,20 @@ export class DynamicsView extends BaseView {
   static fromVisualSpace(document, options = {}) {
     const timeline = resolveCollectionItem(document, "timelines", options.timeline || options.timelineId)
       || firstTimeline(document);
+    const timelinePropertySampling = resolveTimelinePropertySamplingOptions(options);
     const timelineModel = timeline
       ? createTimelineModel(document, {
         timelineId: timeline.id,
         loop: options.loop ?? true,
         playbackRate: options.playbackRate,
         easing: options.easing,
+        ...timelinePropertySampling,
       })
       : null;
     const steps = timelineModel?.steps?.length
       ? timelineModel.steps
       : (Array.isArray(timeline?.steps) ? timeline.steps : []);
-    const timelineSampling = timelineModel ? resolveTimelineSamplingOptions(options) : {};
+    const timelineSampling = timelineModel ? { ...resolveTimelineSamplingOptions(options), ...timelinePropertySampling } : {};
     const timelineState = timelineModel ? sampleTimelineState(timelineModel, timelineSampling) : null;
     const timelineControl = timelineModel
       ? createTimelineControlDescriptor(timelineModel, {
@@ -87,6 +123,12 @@ export class DynamicsView extends BaseView {
       : null;
     const datasetId = options.datasetId ?? timeline?.dataset_id;
     const records = recordsFor(document, { ...options, datasetId });
+    const explicitFieldPropertyRef = options.fieldPropertyId
+      || options.propertyField
+      || options.groundField
+      || options.scalarProperty
+      || options.scalarPropertyId
+      || null;
 
     let recordIds = options.recordIds || [];
     const stepStates = steps.map((step) => {
@@ -94,7 +136,8 @@ export class DynamicsView extends BaseView {
       const coordinateId = step.coordinateId ?? sourceStep.coordinate_id ?? sourceStep.coordinateId;
       const propertyId = step.propertyId ?? sourceStep.property_id ?? sourceStep.propertyId;
       const coordinate = resolveCollectionItem(document, "coordinates", coordinateId);
-      const property = resolveCollectionItem(document, "properties", propertyId);
+      const fieldPropertyId = propertyId || explicitFieldPropertyRef;
+      const property = resolveCollectionItem(document, "properties", fieldPropertyId);
       const positions = extractCoordinatePositions(coordinate, { records, recordIds: recordIds.length ? recordIds : undefined });
       if (!recordIds.length) recordIds = positions.ids;
       return {
@@ -104,6 +147,7 @@ export class DynamicsView extends BaseView {
         time: step.time ?? sourceStep.time ?? sourceStep.t ?? null,
         coordinateId: coordinate?.id,
         propertyId: property?.id,
+        fieldPropertySource: propertyId ? "timeline-step-property" : (property ? "selected-property" : null),
         positions: positions.positions,
         scalarValues: property ? extractPropertyValues(property, { records, recordIds: positions.ids }) : null,
       };
@@ -121,6 +165,8 @@ export class DynamicsView extends BaseView {
       timelineId: timeline?.id,
       timelineState,
       timelineControl,
+      timelineFieldState: selectTimelineFieldState(timelineState, options),
+      fieldPropertyId: explicitFieldPropertyRef,
       timelineAnimation: timelineModel
         ? createTimelineAnimationDescriptor(timelineModel, {
           mode: "timeline-coordinate-morph",
@@ -148,6 +194,8 @@ export class DynamicsView extends BaseView {
     if (this.showTrajectory && this.fittedStates.length > 1) {
       descriptors.push(this.trajectoryDescriptor());
     }
+    const field = this.fieldDescriptor();
+    if (field) descriptors.push(field);
     const active = this.fittedStates[this.activeStep];
     if (active) {
       const target = this.motionTargetPositions();
@@ -170,6 +218,9 @@ export class DynamicsView extends BaseView {
           step: this.activeStep,
           activeCoordinateId: active.coordinateId,
           sampledCoordinateId: this.timelineState?.activeCoordinateId ?? active.coordinateId,
+          activePropertyId: active.propertyId ?? this.timelineState?.activePropertyId ?? null,
+          activeFieldPropertyId: this.activeFieldPropertyId(active),
+          timelineFieldState: this.timelineFieldState,
           targetCoordinateId: target ? this.fittedStates[this.motionTargetStep]?.coordinateId : null,
         },
       });
@@ -186,7 +237,113 @@ export class DynamicsView extends BaseView {
       timelineState: this.timelineState,
       timelineControl: this.timelineControl,
       timelineSamples: this.timelineControl?.samples || [],
+      timelineFieldState: this.timelineFieldState,
     };
+  }
+
+  fieldDescriptor() {
+    if (!this.fieldEnabled || !this.recordIds.length) return null;
+    const active = this.fittedStates[this.activeStep];
+    if (!active?.positions) return null;
+    const ids = this.recordIds;
+    const sourcePositions = flattenVectors(active.positions, ids, 3);
+    const timelineScalarValue = Number(this.timelineFieldState?.value);
+    const timelineScalar = Number.isFinite(timelineScalarValue)
+      ? timelineScalarValue
+      : 0;
+    const scalarValues = active.scalarValues || scalarMapFromValue(ids, timelineScalar);
+    const rawScalar = flattenValues(scalarValues, ids, timelineScalar);
+    const domain = active.scalarValues
+      ? inferScalarDomain(Array.from(rawScalar))
+      : (this.timelineFieldState?.domain || inferScalarDomain(Array.from(rawScalar)));
+    const fieldPositions = timelineFieldPositions(sourcePositions, rawScalar, domain, {
+      mode: this.fieldMode,
+      groundY: this.groundY,
+      lift: this.fieldLift,
+    });
+    const timelineScalarChannel = new Float32Array(ids.length).fill(timelineScalar);
+    const radius = new Float32Array(ids.length).fill(this.fieldRadius);
+    const alpha = new Float32Array(ids.length).fill(this.fieldAlpha);
+    const fieldStateSource = active.scalarValues ? active.fieldPropertySource || "selected-property" : "timeline-step-property";
+
+    return new VisualLayer({
+      id: `${this.id}:timeline-field`,
+      kind: "timeline-property-field",
+      primitive: "HeatFieldLayer",
+      order: -3,
+      source: {
+        viewId: this.id,
+        viewKind: "dynamics",
+        role: "timeline-ground-field",
+        timelineId: this.timelineId,
+        coordinateId: active.coordinateId,
+        propertyId: this.activeFieldPropertyId(active),
+        scalarSource: fieldStateSource,
+      },
+      channels: {
+        recordId: createStringChannel(ids, "record-id"),
+        sourcePosition: createChannel(sourcePositions, 3, "source-position"),
+        position: createChannel(fieldPositions, 3, "timeline-field-position"),
+        scalar: createChannel(rawScalar, 1, "property-scalar", { domain }),
+        timelineScalar: createChannel(timelineScalarChannel, 1, "timeline-step-scalar", {
+          domain: this.timelineFieldState?.domain || { min: timelineScalar, max: timelineScalar },
+        }),
+        color: colorChannelFrom({
+          ids,
+          scalarValues,
+          alpha: this.fieldAlpha,
+          scalarDomain: domain,
+        }),
+        radius: createChannel(radius, 1, "influence-radius"),
+        alpha: createChannel(alpha, 1, "alpha"),
+      },
+      geometry: {
+        mode: this.fieldMode === "lifted" ? "lifted-timeline-field" : "ground-timeline-field",
+        plane: "xz",
+        groundY: this.groundY,
+        sampleCount: ids.length,
+        interpolation: "renderer-defined",
+        radius: this.fieldRadius,
+      },
+      material: {
+        lighting: "field",
+        diffuse: "scalar-ramp",
+        alphaMode: "blend",
+        alpha: this.fieldAlpha,
+        contour: 0.12,
+        glow: 0.08,
+        depthWrite: false,
+        ...(this.fieldMaterial || {}),
+      },
+      animation: {
+        mode: "timeline-field-state",
+        clock: this.timelineAnimation?.clock || "render-loop",
+        timelineId: this.timelineId,
+        control: this.timelineControl || undefined,
+        state: this.timelineState || undefined,
+      },
+      picking: {
+        mode: "record-id",
+        channel: "recordId",
+      },
+      metadata: {
+        ...this.metadata,
+        ...this.timelineDescriptorMetadata(),
+        role: "property-field",
+        evidenceRole: "timeline-ground-field",
+        fieldStateRole: "changing-ground-field-state",
+        activeStep: this.activeStep,
+        activeCoordinateId: active.coordinateId,
+        activePropertyId: active.propertyId ?? this.timelineState?.activePropertyId ?? null,
+        activeFieldPropertyId: this.activeFieldPropertyId(active),
+        timelineFieldState: this.timelineFieldState,
+        scalarDomain: domain,
+        recordCount: ids.length,
+        fieldMode: this.fieldMode === "lifted" ? "lifted" : "ground",
+        fieldStateSource,
+        algorithmicComputation: false,
+      },
+    }).toDescriptor();
   }
 
   trajectoryDescriptor() {
@@ -252,6 +409,7 @@ export class DynamicsView extends BaseView {
       pathCount: paths.length,
       stepCount: this.fittedStates.length,
       timelineId: this.timelineId,
+      timelineFieldState: this.timelineFieldState,
       coordinateIds: this.fittedStates.map((state) => state.coordinateId).filter(Boolean),
       algorithmicComputation: false,
     };
@@ -261,6 +419,14 @@ export class DynamicsView extends BaseView {
   setActiveStep(step) {
     this.activeStep = clampInt(step, 0, Math.max(0, this.fittedStates.length - 1));
     return this;
+  }
+
+  activeFieldPropertyId(active = this.fittedStates[this.activeStep]) {
+    return active?.propertyId
+      ?? this.fieldPropertyId
+      ?? this.timelineFieldState?.propertyId
+      ?? this.timelineState?.activePropertyId
+      ?? null;
   }
 
   motionTargetPositions() {
@@ -344,6 +510,76 @@ function resolveTimelineSamplingOptions(options = {}) {
   const time = options.timelineTime ?? options.timelineCurrentTime;
   if (time != null) out.time = time;
   return out;
+}
+
+function resolveTimelinePropertySamplingOptions(options = {}) {
+  const out = {};
+  const propertyId = options.timelinePropertyId
+    ?? options.timelineProperty
+    ?? options.timelineFieldPropertyId
+    ?? options.timelineFieldProperty
+    ?? options.fieldTimelinePropertyId
+    ?? options.fieldTimelineProperty;
+  if (propertyId != null) out.timelinePropertyId = propertyId;
+  return out;
+}
+
+function selectTimelineFieldState(timelineState, options = {}) {
+  const samples = Array.isArray(timelineState?.activePropertySamples)
+    ? timelineState.activePropertySamples.slice()
+    : [];
+  if (!samples.length) return null;
+  const preferred = [
+    options.timelineFieldPropertyId,
+    options.timelineFieldProperty,
+    options.fieldTimelinePropertyId,
+    options.fieldTimelineProperty,
+    options.timelinePropertyId,
+    options.timelineProperty,
+  ].filter((value) => value != null).map(String);
+  if (preferred.length) {
+    const preferredSet = new Set(preferred);
+    const explicit = samples.find((sample) => preferredSet.has(String(sample.propertyId)));
+    if (explicit) return explicit;
+  }
+  samples.sort((a, b) => timelineFieldPriority(a) - timelineFieldPriority(b)
+    || String(a.propertyId || "").localeCompare(String(b.propertyId || "")));
+  return samples[0] || null;
+}
+
+function timelineFieldPriority(sample) {
+  const text = `${sample?.propertyId || ""} ${sample?.propertyName || ""}`.toLowerCase();
+  if (/mse|error|residual|loss|reconstruction|noise/.test(text)) return 0;
+  if (/density|entropy|uncertainty|anomaly|outlier/.test(text)) return 1;
+  if (/energy|dirichlet|objective|cost/.test(text)) return 2;
+  return 3;
+}
+
+function scalarMapFromValue(ids, value) {
+  const out = new Map();
+  const scalar = Number.isFinite(Number(value)) ? Number(value) : 0;
+  for (const id of ids) out.set(String(id), scalar);
+  return out;
+}
+
+function timelineFieldPositions(sourcePositions, scalarValues, domain, options = {}) {
+  const positions = new Float32Array(sourcePositions);
+  const mode = options.mode === "lifted" ? "lifted" : "ground";
+  const groundY = Number.isFinite(Number(options.groundY)) ? Number(options.groundY) : 0;
+  const lift = Number.isFinite(Number(options.lift)) ? Number(options.lift) : 0;
+  for (let index = 0; index < scalarValues.length; index += 1) {
+    const offset = index * 3;
+    const t = normalizeScalar(scalarValues[index], domain);
+    positions[offset + 1] = mode === "lifted" ? sourcePositions[offset + 1] + t * lift : groundY;
+  }
+  return positions;
+}
+
+function normalizeScalar(value, domain) {
+  const min = Number.isFinite(Number(domain?.min)) ? Number(domain.min) : 0;
+  const max = Number.isFinite(Number(domain?.max)) ? Number(domain.max) : 1;
+  const span = Math.max(0.000001, max - min);
+  return Math.max(0, Math.min(1, (Number(value) - min) / span));
 }
 
 function mixColor(a, b, t) {
