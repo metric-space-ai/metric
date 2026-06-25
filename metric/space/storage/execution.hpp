@@ -599,6 +599,8 @@ inline auto should_use_automatic_landmark_search(policy runtime_policy, const st
 		   query_count > 1 && supports_landmark_search_metric<Metric>();
 }
 
+inline constexpr std::size_t default_automatic_context_query_count = 256;
+
 inline auto estimate_landmark_search_distance_evaluations(std::size_t record_count, std::size_t query_count,
 														  policy runtime_policy) -> std::size_t
 {
@@ -628,6 +630,50 @@ inline auto estimate_landmark_search_distance_evaluations(std::size_t record_cou
 			"landmark search distance-evaluation estimate exceeds size_t capacity"),
 		calibration,
 		"landmark search distance-evaluation estimate exceeds size_t capacity");
+}
+
+struct approximate_search_provider_choice {
+	bool use_landmark{false};
+	std::string representation{"sampled_metric_space"};
+	std::size_t estimated_distance_evaluations{};
+	std::size_t memory_bytes_estimate{};
+	std::size_t landmark_count{};
+	std::size_t candidate_limit{};
+};
+
+template <typename Metric, typename Distance>
+inline auto choose_approximate_search_provider(std::size_t record_count, const std::string &intent,
+											   std::size_t query_count, policy runtime_policy)
+	-> approximate_search_provider_choice
+{
+	approximate_search_provider_choice choice;
+	const auto sampled_estimate = estimate_approximate_search_distance_evaluations(record_count, query_count);
+	choice.estimated_distance_evaluations = sampled_estimate;
+
+	const auto explicit_landmark = runtime_policy.representation_mode() == representation::landmark_index;
+	const auto automatic_landmark =
+		should_use_automatic_landmark_search<Metric>(runtime_policy, intent, query_count);
+	if (!explicit_landmark && !automatic_landmark) {
+		return choice;
+	}
+
+	const auto landmark_estimate =
+		estimate_landmark_search_distance_evaluations(record_count, query_count, runtime_policy);
+	if (!explicit_landmark && landmark_estimate > sampled_estimate) {
+		return choice;
+	}
+
+	choice.use_landmark = true;
+	choice.representation = "landmark_index";
+	choice.estimated_distance_evaluations = landmark_estimate;
+	choice.landmark_count = landmark_index_landmark_count(record_count, runtime_policy, query_count);
+	choice.candidate_limit = landmark_index_candidate_limit(record_count, runtime_policy, false, 0, query_count);
+	choice.memory_bytes_estimate = detail::checked_distance_table_size_product(
+		record_count,
+		detail::checked_distance_table_size_product(
+			choice.landmark_count, sizeof(Distance), "landmark search memory estimate exceeds size_t capacity"),
+		"landmark search memory estimate exceeds size_t capacity");
+	return choice;
 }
 
 inline auto estimate_approximate_structural_distance_evaluations(std::size_t record_count) -> std::size_t
@@ -660,6 +706,16 @@ inline auto sampled_fallback_representation_for_intent(const std::string &intent
 inline auto chunked_workflow_intent_supported(const std::string &intent) -> bool
 {
 	return intent == "workflow" || intent == "workflow_context";
+}
+
+inline auto chunked_approximate_modify_intent_supported(const std::string &intent) -> bool
+{
+	return intent == "compress";
+}
+
+inline auto chunked_approximate_compare_intent_supported(const std::string &intent) -> bool
+{
+	return intent == "compare";
 }
 
 inline auto chunked_search_intent_supported(const std::string &intent) -> bool
@@ -708,6 +764,47 @@ inline auto estimate_chunked_search_refinement_distance_evaluations(
 	return detail::checked_distance_table_size_product(
 		candidate_chunk_pairs_upper, per_chunk_pair_upper,
 		"chunked search refinement distance-evaluation estimate exceeds size_t capacity");
+}
+
+inline auto estimate_chunked_modify_distance_evaluations(
+	const mtrc::space::chunked_work_diagnostics &diagnostics) -> std::size_t
+{
+	const auto assignment_evaluations = detail::checked_distance_table_size_product(
+		diagnostics.record_count, diagnostics.representative_count,
+		"chunked modify distance-evaluation estimate exceeds size_t capacity");
+	return detail::checked_distance_table_size_sum(
+		diagnostics.bounded_pair_distance_evaluations, assignment_evaluations,
+		"chunked modify distance-evaluation estimate exceeds size_t capacity");
+}
+
+inline constexpr std::size_t default_chunked_compare_sample_count = 250;
+
+inline auto chunked_compare_sample_count(const mtrc::space::chunked_work_diagnostics &diagnostics,
+										 const resource_budget &budget,
+										 std::size_t requested_count = default_chunked_compare_sample_count)
+	-> std::size_t
+{
+	if (diagnostics.record_count == 0 || diagnostics.representative_count == 0) {
+		return 0;
+	}
+	auto sample_count = std::min(diagnostics.record_count, diagnostics.representative_count);
+	sample_count = std::min(sample_count, requested_count == 0 ? default_chunked_compare_sample_count : requested_count);
+	if (budget.max_dense_records > 0) {
+		sample_count = std::min(sample_count, budget.max_dense_records);
+	}
+	if (diagnostics.record_count >= 2 && sample_count < 2) {
+		sample_count = 2;
+	}
+	return sample_count;
+}
+
+inline auto estimate_chunked_compare_distance_evaluations(
+	const mtrc::space::chunked_work_diagnostics &diagnostics, const resource_budget &budget) -> std::size_t
+{
+	const auto sample_count = chunked_compare_sample_count(diagnostics, budget);
+	const auto sample_pair_count = detail::distance_table_dense_slot_count(sample_count);
+	return detail::checked_distance_table_size_product(
+		sample_pair_count, 2, "chunked compare distance-evaluation estimate exceeds size_t capacity");
 }
 
 template <typename Distance>
@@ -943,6 +1040,7 @@ inline auto estimate_cost(const Space &space, std::string intent, policy runtime
 			chunk_size_for_chunked_plan<typename Space::distance_type>(plan.record_count, runtime_policy, budget),
 			representation);
 		apply_chunked_plan_diagnostics(plan, diagnostics, use_bounded_work_as_estimate);
+		return diagnostics;
 	};
 	const auto apply_chunked_search_plan = [&] {
 		const auto representation = std::string("chunked_space_view");
@@ -959,31 +1057,12 @@ inline auto estimate_cost(const Space &space, std::string intent, policy runtime
 			plan.estimated_distance_evaluations =
 				estimate_approximate_compare_distance_evaluations(plan.record_count);
 		} else if (plan.intent == "neighbors" || plan.intent == "range") {
-			const auto explicit_landmark =
-				runtime_policy.representation_mode() == representation::landmark_index;
-			const auto automatic_landmark =
-				should_use_automatic_landmark_search<typename Space::metric_type>(
-					runtime_policy, plan.intent, plan.query_count);
-			const auto landmark_estimate = (explicit_landmark || automatic_landmark)
-											   ? estimate_landmark_search_distance_evaluations(
-													 plan.record_count, plan.query_count, runtime_policy)
-											   : std::size_t{};
-			const auto sampled_estimate =
-				estimate_approximate_search_distance_evaluations(plan.record_count, plan.query_count);
-			if (explicit_landmark || (automatic_landmark && landmark_estimate <= sampled_estimate)) {
-				plan.representation = "landmark_index";
-				plan.estimated_distance_evaluations = landmark_estimate;
-				plan.memory_bytes_estimate = detail::checked_distance_table_size_product(
-					plan.record_count,
-					detail::checked_distance_table_size_product(
-						landmark_index_landmark_count(plan.record_count, runtime_policy, plan.query_count),
-						sizeof(typename Space::distance_type),
-						"landmark search memory estimate exceeds size_t capacity"),
-					"landmark search memory estimate exceeds size_t capacity");
-			} else {
-				plan.representation = "sampled_metric_space";
-				plan.estimated_distance_evaluations = sampled_estimate;
-			}
+			const auto choice = choose_approximate_search_provider<typename Space::metric_type,
+																   typename Space::distance_type>(
+				plan.record_count, plan.intent, plan.query_count, runtime_policy);
+			plan.representation = choice.representation;
+			plan.estimated_distance_evaluations = choice.estimated_distance_evaluations;
+			plan.memory_bytes_estimate = choice.memory_bytes_estimate;
 		} else if (plan.intent == "groups" || plan.intent == "outliers" || plan.intent == "density_filter" ||
 				   plan.intent == "compress") {
 			plan.representation = "sampled_metric_space";
@@ -1020,6 +1099,22 @@ inline auto estimate_cost(const Space &space, std::string intent, policy runtime
 				apply_budget_downgrade(plan, "chunked_space_view", reason,
 									   "use chunked search refinement, a sampled representation, or raise the resource_budget");
 				apply_chunked_search_plan();
+			} else if (budget.allow_chunking && budget.allow_approximate &&
+					   chunked_approximate_compare_intent_supported(plan.intent)) {
+				plan.exact = false;
+				apply_budget_downgrade(plan, "chunked_space_view", reason,
+									   "use chunked compare estimation, a sampled representation, or raise the resource_budget");
+				const auto diagnostics = apply_chunked_plan("chunked_space_view", false);
+				plan.estimated_distance_evaluations = estimate_chunked_compare_distance_evaluations(diagnostics, budget);
+				plan.exactness = "approximate_chunked";
+			} else if (budget.allow_chunking && budget.allow_approximate &&
+					   chunked_approximate_modify_intent_supported(plan.intent)) {
+				plan.exact = false;
+				apply_budget_downgrade(plan, "chunked_space_view", reason,
+									   "use chunked approximate modification, a sampled representation, or raise the resource_budget");
+				const auto diagnostics = apply_chunked_plan("chunked_space_view", true);
+				plan.estimated_distance_evaluations = estimate_chunked_modify_distance_evaluations(diagnostics);
+				plan.exactness = "approximate_chunked";
 			} else if (budget.allow_chunking) {
 				const auto workflow_plan = chunked_workflow_intent_supported(plan.intent);
 				const auto representation = workflow_plan ? "chunked_workflow_plan" : "chunked_distance_table";
@@ -1046,6 +1141,22 @@ inline auto estimate_cost(const Space &space, std::string intent, policy runtime
 				apply_budget_downgrade(plan, "chunked_space_view", reason,
 									   "use chunked search refinement, a sampled representation, or raise the resource_budget");
 				apply_chunked_search_plan();
+			} else if (budget.allow_chunking && budget.allow_approximate &&
+					   chunked_approximate_compare_intent_supported(plan.intent)) {
+				plan.exact = false;
+				apply_budget_downgrade(plan, "chunked_space_view", reason,
+									   "use chunked compare estimation, a sampled representation, or raise the resource_budget");
+				const auto diagnostics = apply_chunked_plan("chunked_space_view", false);
+				plan.estimated_distance_evaluations = estimate_chunked_compare_distance_evaluations(diagnostics, budget);
+				plan.exactness = "approximate_chunked";
+			} else if (budget.allow_chunking && budget.allow_approximate &&
+					   chunked_approximate_modify_intent_supported(plan.intent)) {
+				plan.exact = false;
+				apply_budget_downgrade(plan, "chunked_space_view", reason,
+									   "use chunked approximate modification, a sampled representation, or raise the resource_budget");
+				const auto diagnostics = apply_chunked_plan("chunked_space_view", true);
+				plan.estimated_distance_evaluations = estimate_chunked_modify_distance_evaluations(diagnostics);
+				plan.exactness = "approximate_chunked";
 			} else if (budget.allow_chunking) {
 				const auto workflow_plan = chunked_workflow_intent_supported(plan.intent);
 				const auto representation = workflow_plan ? "chunked_workflow_plan" : "chunked_distance_table";
@@ -1091,6 +1202,54 @@ inline auto estimate_cost(const Space &space, std::string intent, policy runtime
 				apply_budget_downgrade(
 					plan, representation, reason,
 					"use chunked search refinement to bound candidate work, or raise the resource_budget");
+			} else {
+				plan.exact = false;
+				plan.exactness = "approximate";
+				apply_budget_downgrade(plan, sampled_fallback_representation_for_intent(plan.intent), reason,
+									   "use an approximate or sampled representation, or raise the resource_budget");
+			}
+		} else if (budget.allow_chunking && budget.allow_approximate &&
+				   chunked_approximate_compare_intent_supported(plan.intent)) {
+			const auto representation = std::string("chunked_space_view");
+			const auto diagnostics = mtrc::space::chunked_plan_diagnostics_for_count(
+				plan.record_count,
+				chunk_size_for_chunked_plan<typename Space::distance_type>(
+					plan.record_count, runtime_policy, budget),
+				representation);
+			apply_chunked_plan_diagnostics(plan, diagnostics, false);
+			const auto chunked_compare_evaluations =
+				estimate_chunked_compare_distance_evaluations(diagnostics, budget);
+			if (chunked_compare_evaluations <= budget.max_distance_evaluations) {
+				plan.exact = false;
+				apply_budget_downgrade(
+					plan, representation, reason,
+					"use chunked compare estimation to bound paired sample work, or raise the resource_budget");
+				plan.estimated_distance_evaluations = chunked_compare_evaluations;
+				plan.exactness = "approximate_chunked";
+			} else {
+				plan.exact = false;
+				plan.exactness = "approximate";
+				apply_budget_downgrade(plan, sampled_fallback_representation_for_intent(plan.intent), reason,
+									   "use an approximate or sampled representation, or raise the resource_budget");
+			}
+		} else if (budget.allow_chunking && budget.allow_approximate &&
+				   chunked_approximate_modify_intent_supported(plan.intent)) {
+			const auto representation = std::string("chunked_space_view");
+			const auto diagnostics = mtrc::space::chunked_plan_diagnostics_for_count(
+				plan.record_count,
+				chunk_size_for_chunked_plan<typename Space::distance_type>(
+					plan.record_count, runtime_policy, budget),
+				representation);
+			apply_chunked_plan_diagnostics(plan, diagnostics, false);
+			const auto chunked_modify_evaluations = estimate_chunked_modify_distance_evaluations(diagnostics);
+			if (chunked_modify_evaluations <= budget.max_distance_evaluations) {
+				plan.exact = false;
+				apply_budget_downgrade(
+					plan, representation, reason,
+					"use chunked approximate modification to bound local pair work, or raise the resource_budget");
+				apply_chunked_plan_diagnostics(plan, diagnostics, true);
+				plan.estimated_distance_evaluations = chunked_modify_evaluations;
+				plan.exactness = "approximate_chunked";
 			} else {
 				plan.exact = false;
 				plan.exactness = "approximate";

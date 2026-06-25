@@ -168,6 +168,68 @@ int main()
 	assert(*left_metric_calls > 0);
 	assert(*right_metric_calls > 0);
 
+	std::vector<double> chunked_left_records;
+	std::vector<double> chunked_right_records;
+	chunked_left_records.reserve(64);
+	chunked_right_records.reserve(64);
+	for (std::size_t index = 0; index < 64; ++index) {
+		const auto value = static_cast<double>(index);
+		chunked_left_records.push_back(value);
+		chunked_right_records.push_back(value * value + 3.0);
+	}
+	auto chunked_left_calls = std::make_shared<std::size_t>(0);
+	auto chunked_right_calls = std::make_shared<std::size_t>(0);
+	const auto chunked_left_space = mtrc::make_space(
+		chunked_left_records, CountingAbsoluteDistance(chunked_left_calls));
+	const auto chunked_right_space = mtrc::make_space(
+		chunked_right_records, CountingAbsoluteDistance(chunked_right_calls));
+	auto chunked_compare_policy = mtrc::space::storage::using_distance_table();
+	chunked_compare_policy = mtrc::space::storage::with_distance_table_budget(chunked_compare_policy, 8, 0);
+	chunked_compare_policy = mtrc::space::storage::allow_approximate_fallback(chunked_compare_policy);
+	chunked_compare_policy = mtrc::space::storage::allow_chunking_fallback(chunked_compare_policy);
+	const auto chunked_left_plan =
+		mtrc::space::storage::estimate_cost(chunked_left_space, "compare", chunked_compare_policy);
+	assert(chunked_left_plan.allowed);
+	assert(chunked_left_plan.downgraded);
+	assert(!chunked_left_plan.exact);
+	assert(chunked_left_plan.exactness == "approximate_chunked");
+	assert(chunked_left_plan.representation == "chunked_space_view");
+	assert(chunked_left_plan.chunked_plan);
+	assert(chunked_left_plan.chunk_size == 8);
+	assert(chunked_left_plan.chunk_count == 8);
+	assert(chunked_left_plan.representative_count == 8);
+	assert(chunked_left_plan.estimated_distance_evaluations == 2 * ((8 * 7) / 2));
+	assert(chunked_left_plan.estimated_distance_evaluations <
+		   chunked_left_space.size() * (chunked_left_space.size() - 1));
+
+	const auto chunked_compared = mtrc::compare(chunked_left_space, chunked_right_space, chunked_compare_policy);
+	assert(!chunked_compared.exact);
+	assert(chunked_compared.algorithm == "chunked_mgc_estimate");
+	assert(chunked_compared.left_representation == "chunked_space_view");
+	assert(chunked_compared.right_representation == "chunked_space_view");
+	assert(chunked_compared.left_record_count == chunked_left_space.size());
+	assert(chunked_compared.right_record_count == chunked_right_space.size());
+	assert(chunked_compared.sample_count == 8);
+	assert(chunked_compared.sample_iterations == 1);
+	assert(chunked_compared.approximation_reason.find("chunk_size=8") != std::string::npos);
+	assert(std::isfinite(chunked_compared.value));
+	assert(chunked_compared.value >= -1.0);
+	assert(chunked_compared.value <= 1.0);
+	assert(*chunked_left_calls + *chunked_right_calls == chunked_left_plan.estimated_distance_evaluations);
+
+	*chunked_left_calls = 0;
+	*chunked_right_calls = 0;
+	const auto chunked_correlated =
+		mtrc::correlate(chunked_left_space, chunked_right_space, mtrc::stats::correlate::mgc_options{},
+						chunked_compare_policy);
+	assert(!chunked_correlated.exact);
+	assert(chunked_correlated.algorithm == "chunked_mgc_estimate");
+	assert(chunked_correlated.left_representation == "chunked_space_view");
+	assert(chunked_correlated.right_representation == "chunked_space_view");
+	assert(chunked_correlated.sample_count == chunked_compared.sample_count);
+	assert(close(chunked_correlated.value, chunked_compared.value));
+	assert(*chunked_left_calls + *chunked_right_calls == chunked_left_plan.estimated_distance_evaluations);
+
 	mtrc::stats::correlate::mgc_options approximate_options;
 	approximate_options.sample_count = 10;
 	approximate_options.max_iterations = 3;

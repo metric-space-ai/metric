@@ -73,10 +73,10 @@ template <typename Space> class basic_execution_context {
 		storage::require_parallel_metric<typename space_type::metric_type>(runtime_policy_);
 		if (runtime_policy_.is_approximate()) {
 			require_supported_approximate_context();
-			if (uses_landmark_context()) {
+			const auto provider_choice = approximate_provider_choice();
+			if (provider_choice.use_landmark) {
 				landmark_provider_.emplace(
-					space, storage::default_landmark_index_landmarks,
-					stats::search::detail::landmark_candidate_count(space.size(), runtime_policy_),
+					space, provider_choice.landmark_count, provider_choice.candidate_limit,
 					storage::runtime_guard(runtime_policy_));
 				provider_build_count_ = 1;
 			}
@@ -134,7 +134,8 @@ template <typename Space> class basic_execution_context {
 		}
 
 		execution_context_diagnostics result;
-		const auto query_count = landmark_provider_ ? std::size_t{2} : std::size_t{0};
+		const auto query_count = landmark_provider_ ? storage::default_automatic_context_query_count
+													: std::size_t{0};
 		result.runtime = storage::diagnostics_for_space(*space_, runtime_policy_, provider_representation(),
 														std::move(runtime_intent), query_count);
 		result.runtime.materialized = shared_provider();
@@ -339,13 +340,15 @@ template <typename Space> class basic_execution_context {
 			space_->size(), requested_count, runtime_policy_, true);
 	}
 
-	auto uses_landmark_context() const noexcept -> bool
+	auto uses_landmark_context() const -> bool
 	{
-		if (runtime_policy_.representation_mode() == storage::representation::landmark_index) {
-			return true;
-		}
-		return runtime_policy_.representation_mode() == storage::representation::automatic &&
-			   storage::supports_landmark_search_metric<typename space_type::metric_type>();
+		return approximate_provider_choice().use_landmark;
+	}
+
+	auto approximate_provider_choice() const -> storage::approximate_search_provider_choice
+	{
+		return storage::choose_approximate_search_provider<typename space_type::metric_type, distance_type>(
+			space_->size(), "workflow_context", storage::default_automatic_context_query_count, runtime_policy_);
 	}
 
 	auto cached_sample_plan_for(std::size_t query_position, std::size_t candidate_count) const

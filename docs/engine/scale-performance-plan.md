@@ -22,13 +22,13 @@ disk-spill mode for evicted blocks with an optional hard spill-byte quota.
 Materialized search/range, for both
 `RecordId` and free query objects, can now dispatch bounded `chunked_space_view`
 refinement when both chunking and approximate fallback are allowed.
-Higher-quality ANN variants, broader automatic provider tuning, advanced
-out-of-core placement/tuning beyond the conservative spill-byte quota, and a
-broader wall-clock benchmark suite remain roadmap extensions rather than
-prerequisites for avoiding `O(n^2)` crashes. Confidence diagnostics now cover
-sampled distribution/local-volume paths and chunked local-volume/profile
-fallbacks, though provider-specific calibrated intervals remain a quality
-extension.
+Higher-quality ANN variants, automatic provider tuning beyond the current
+sampled/Landmark selector, advanced out-of-core placement/tuning beyond the
+conservative spill-byte quota, and a broader wall-clock benchmark suite remain
+roadmap extensions rather than prerequisites for avoiding `O(n^2)` crashes.
+Confidence diagnostics now cover sampled distribution/local-volume paths and
+chunked local-volume/profile fallbacks, though provider-specific calibrated
+intervals remain a quality extension.
 
 | Area | Status | Evidence |
 | --- | --- | --- |
@@ -37,12 +37,12 @@ extension.
 | RecordId lookup | Implemented | Metric spaces, distance tables, and snapshots use indexed RecordId lookup. |
 | Position hot loops | Implemented for promoted hot paths | Live/table providers, matrix export, describe sampling, k-NN/range provider paths, k-medoids, DBSCAN, DBSCAN outlier scoring, and nearest-neighbor outlier scoring use position-based distance access when the provider exposes it, with ID-based fallback for generic providers. |
 | k-NN selection | Implemented for core path | `take_nearest_neighbors` uses a direct min scan for `k == 1` and `nth_element` for small prefixes. |
-| Workflow reuse | Implemented for current providers | `space::execution_context` shares live, dense, symmetric materialized, blocked materialized, or Landmark/Pivot providers across operators. A reusable `RegularSamplePlan` centralizes deterministic sampled-candidate routing for search/compress, approximate sampled contexts cache the keyed sample plan across `neighbors()` and `range()` calls, and landmark contexts build the `O(n * p)` provider once for repeated `neighbors()`/`range()` calls. |
+| Workflow reuse | Implemented for current providers | `space::execution_context` shares live, dense, symmetric materialized, blocked materialized, or Landmark/Pivot providers across operators. A reusable `RegularSamplePlan` centralizes deterministic sampled-candidate routing for search/compress, approximate sampled contexts cache the keyed sample plan across `neighbors()` and `range()` calls, and landmark contexts build the `O(n * p)` provider once for repeated `neighbors()`/`range()` calls. The approximate context now uses the same sampled-vs-Landmark selector as `estimate_cost`, with a reuse-oriented query horizon, so small metric spaces stay sampled while large repeated metric search reuses Landmark/Pivot. |
 | Safer exact storage | Implemented for dense, blocked, and explicit spill-capable exact providers | `SymmetricDistanceTable` stores only triangular off-diagonal slots for admitted symmetric metrics and is used by `execution_context`. `BlockedDistanceTable` provides lazy block-pair materialization, optional LRU block spill to disk, optional hard spill-byte quota enforcement, and is planner-selected for materialized search/range/compare, workflow contexts, and structural/modify operators that opt into exact chunking fallback. |
 | Index/graph naming | Implemented for current fallbacks | Exact cover-tree and k-NN graph policies keep their index representation names. Budget downgrades that actually execute sampled search now report `sampled_metric_space` or `metric_space_sample`, not a placeholder index name. |
 | Large-data defaults | Implemented for promoted defaults plus guarded matrix export | Default `find_groups(space, ...)`, `find_outliers(space, ...)`, `nearest_neighbor_outliers(space, ...)`, `density_filter(space, ...)`, `compress(space, ...)`, `compare(space, space)`, `correlate(space, space)`, `distance_distribution(space, ...)`, `local_volume(space, ...)`, `local_volume_profile(space, ...)`, `profile(...include_local_volume...)`, direct low-level clustering APIs, diffusion/diffusion-coordinate target helpers, explicit `space::distances::pairs(...)` collection, low-level dense matrix conversion helpers, dense matrix export helpers, and `intrinsic_dimension(space)` now avoid the worst unbounded exact paths. Dense-only MGC significance refuses large default `MetricSpace` inputs before metric calls. |
 | Approximation | Implemented with sampled, landmark, and chunked quality diagnostics | `describe_structure`, `diagnose_space`, `compare`, `find_neighbors`, `range`, `find_groups`, `find_outliers`, `nearest_neighbor_outliers`, `density_filter`, `compress`, `distance_distribution`, and `local_volume` have explicit non-exact sampled fallbacks where appropriate. Default large `compare`/`correlate` uses bounded `mgc_estimate` instead of dense exact MGC; `mgc_significance` still requires dense exact pairwise distances and therefore preflight-refuses large `MetricSpace` defaults rather than pretending a sampled p-value is calibrated. C++ `find_neighbors`/`range` can opt into `using_landmark_index(...)`, which stores landmark distances, uses triangle-inequality lower bounds for bounded candidates, and reports non-exact Landmark diagnostics with bounded holdout recall calibration. Search exposes sampled candidate diagnostics and bounded recall calibration in C++ and Python when budget permits, including recall standard error and 95% confidence radius; distribution, sampled local-volume, and chunked local-volume/profile fallbacks report diagnostic standard error and 95% confidence radius; sampled kNN outliers report sample/candidate/evaluation diagnostics. Higher-quality ANN and provider-specific calibrated intervals remain future improvements. |
-| Divide and conquer | Explicit chunked execution plus bounded search/distribution/local-volume paths implemented | `chunked_view` preserves RecordIds, exposes bounded local pair iteration, per-chunk representatives, representative-pair iteration, and plan diagnostics that compare local chunk work against dense all-pairs work. It executes local chunk kNN/range, representative kNN, representative candidate generation, and bounded representative-refined kNN/range through explicit APIs. `estimate_cost`/runtime diagnostics surface a `chunked_workflow_plan` for workflow intents that opt into chunking fallback, including dense-pair baseline and bounded local-plus-representative work. Materialized `find_neighbors`/`range` requests with both `allow_chunking` and `allow_approximate` can now dispatch bounded `chunked_space_view` refinement instead of building a dense table; `RecordId` search uses representative-refined chunk pairs, while free query objects rank representatives and refine only selected chunks. `chunked_distance_distribution(...)`, `chunked_local_volume(...)`, and `chunked_local_volume_profile(...)` provide explicit bounded diagnostics over local chunk pairs plus representative pairs; chunked local-volume/profile include diagnostic standard error and 95% confidence radius, and the profile route reuses one bounded pair traversal for multiple radii. Exact-only chunking still uses blocked exact fallback. Broader automatic placement for compare/modify remains future work. |
+| Divide and conquer | Explicit chunked execution plus bounded search/distribution/local-volume/compare/compress paths implemented | `chunked_view` preserves RecordIds, exposes bounded local pair iteration, per-chunk representatives, representative-pair iteration, and plan diagnostics that compare local chunk work against dense all-pairs work. It executes local chunk kNN/range, representative kNN, representative candidate generation, and bounded representative-refined kNN/range through explicit APIs. `estimate_cost`/runtime diagnostics surface a `chunked_workflow_plan` for workflow intents that opt into chunking fallback, including dense-pair baseline and bounded local-plus-representative work. Materialized `find_neighbors`/`range` requests with both `allow_chunking` and `allow_approximate` can now dispatch bounded `chunked_space_view` refinement instead of building a dense table; `RecordId` search uses representative-refined chunk pairs, while free query objects rank representatives and refine only selected chunks. `chunked_distance_distribution(...)`, `chunked_local_volume(...)`, and `chunked_local_volume_profile(...)` provide explicit bounded diagnostics over local chunk pairs plus representative pairs; chunked local-volume/profile include diagnostic standard error and 95% confidence radius, and the profile route reuses one bounded pair traversal for multiple radii. Materialized `compare(..., policy)` can now downgrade to a bounded non-exact `chunked_space_view` MGC estimate, and materialized `compress(..., farthest_first, policy)` can downgrade to non-exact `chunked_space_view` when both chunking and approximation are enabled. Exact-only chunking still uses blocked exact fallback. Broader automatic placement for additional modify strategies remains future work. |
 | Streaming construction | Append API plus conservative Landmark and kNN graph refresh implemented | `space::streaming::append_batch` appends records directly to a live `MetricSpace`, keeps RecordIds monotonic/stable across erases, reports versions/progress/cancellation, and explicitly records zero distance evaluations and no dense all-pairs materialization. `LandmarkIndex::refresh_after_append(...)` can extend an append-only snapshot by projecting only appended records onto the existing landmark set. `KnnGraphIndex::refresh_after_append(...)` integrates appended records by updating old rows only against appended candidates and building rows for the appended records, so the refresh does `O(delta * n)` directed distance work instead of a hidden dense rebuild. Both providers return rebuild-required diagnostics when the source space is no longer append-only. Exact tables, blocked providers, and caches remain explicit rebuild/refresh steps. |
 | Benchmarks | Smoke-level targets/trends/guardrails implemented | Benchmark reports include distance-evaluation and memory fields plus automated target, trend, scale-guardrail, out-of-core readiness, and optional wall-clock trend tables. `benchmark_report_smoke` runs under CTest and exercises one-off kNN, batch kNN, repeated provider reuse, lazy sparse cache hit/miss, sampled describe, chunked workflow, sampled distance-distribution rows, spill-disabled refusal evidence with observed `CountingMetric` budgets, one explicitly synthetic wall-clock metadata row, and one small measured `std::chrono` wall-clock row with no performance threshold. Disk-spill execution is covered in the blocked-table storage smoke. A broader multi-platform wall-clock trend/perf benchmark suite remains future work. |
 | Python UX | Implemented for sampled safe defaults plus explicit and automatic Landmark routing | `Space.plan(...)`, `Space.describe_plan(...)`, dense materialization preflight, sampled over-budget `describe()` with diagnostics, neighbor/range query-budget guards, `exact=False` sampled neighbor/range routing, sampled candidate diagnostics, bounded recall calibration, and Landmark/Pivot search exist. `exact=False, representation="landmark"` forces Landmark/Pivot search, while repeated or batch source-metric Python search (`query_count > 1`) now auto-selects `landmark_index` when budgets and record count admit bounded candidates. The Python Landmark route builds in `O(n * p)`, refines bounded lower-bound candidates, marks results non-exact, and reports `landmark_index` diagnostics/provenance, including bounded recall calibration against a larger lower-bound reference window when the post-refinement budget permits it. Broader ANN tuning remains future work. |
@@ -77,12 +77,13 @@ Remaining risk posture and roadmap:
   `max_distance_evaluations` and `max_dense_records`, so constructor validation
   can refuse before the first metric call on large inputs.
 - Sampled distribution, nearest-neighbor outliers, compare/correlate, sampled
-  local-volume defaults, and chunked local-volume/profile now expose bounded
-  diagnostics; MGC estimate and provider-specific ANN routes still report
-  coarser quality than search recall calibration.
+  local-volume defaults, chunked local-volume/profile, and chunked compress now
+  expose bounded diagnostics/routes; MGC estimate and provider-specific ANN
+  routes still report coarser quality than search recall calibration.
 - Remaining roadmap items are quality/performance extensions: higher-quality ANN
-  backends, broader automatic provider tuning, broader chunked workflow
-  placement, advanced out-of-core placement/tuning beyond the current hard
+  backends, automatic provider tuning beyond the current sampled/Landmark
+  selector, broader chunked workflow placement for additional modify
+  strategies, advanced out-of-core placement/tuning beyond the current hard
   spill-byte quota, and a broader real wall-clock trend benchmark suite.
 
 ## Goals
@@ -455,8 +456,9 @@ sampling reports sample fraction, diagnostic standard error, and a 95%
 confidence radius; sampled nearest-neighbor outliers report sample size,
 candidate universe, and observed distance evaluations; sampled local-volume and
 chunked local-volume/profile report candidate/sample fractions plus diagnostic
-standard-error and 95% confidence-radius estimates. Search and compression share a deterministic
-`RegularSamplePlan` for sampled candidate routing, and `execution_context` reuses
+standard-error and 95% confidence-radius estimates. Search and compression share
+a deterministic `RegularSamplePlan` for sampled candidate routing, and
+`execution_context` reuses
 the same plan across compatible approximate search calls. C++ search can also
 use `using_landmark_index(...)` to build an `O(n * p)` landmark snapshot, rank
 candidates by triangle-inequality lower bounds, and refine only the bounded
@@ -516,8 +518,15 @@ diagnostics have matching explicit `chunked_local_volume(...)` and
 `chunked_local_volume_profile(...)` routes that count exact local chunk pairs
 plus representative pairs, report the dense baseline and bounded evaluation
 fraction, and reuse one bounded pair traversal across multiple profile radii.
-Remaining work is broader automatic chunked workflow placement beyond the
-current search, distribution, and local-volume paths.
+Materialized `compare(..., policy)` can downgrade to a bounded non-exact
+`chunked_space_view` MGC estimate when dense materialization exceeds budget and
+the policy explicitly allows both chunking and approximation. Materialized
+`compress(..., farthest_first, policy)` can also downgrade to non-exact
+`chunked_space_view` under the same guard, with bounded chunk work plus a
+conservative assignment estimate. Remaining work is broader automatic chunked
+workflow placement beyond the current search, distribution, local-volume,
+compare, and farthest-first compression paths, especially additional modify
+strategies.
 
 ### P5.2 Pivot And Landmark Distances
 
@@ -547,10 +556,11 @@ candidate evaluations, matched/reference counts, and recall estimate without
 building a dense all-pairs table. If calibration is skipped, the result reason
 states the guard, such as `k=0`, an empty reference window, or
 `max_distance_evaluations`. `space::execution_context` reuses the same landmark
-provider across repeated search calls, and automatic approximate contexts select
-this provider for admitted metrics. Multi-query `estimate_cost(...,
-query_count, approximate())` also plans `landmark_index` for admitted metrics
-only when the calibrated Landmark estimate is no worse than sampled search.
+provider across repeated search calls, and automatic approximate contexts use
+the same sampled-vs-Landmark selector as `estimate_cost` with a reuse-oriented
+query horizon. Multi-query `estimate_cost(..., query_count, approximate())` also
+plans `landmark_index` for admitted metrics only when the calibrated Landmark
+estimate is no worse than sampled search.
 Implicit Landmark candidate and landmark counts are derived conservatively from
 `n`, query count, and budget while explicit `using_landmark_index(...)`
 candidate limits are preserved. A conservative append-only maintenance surface,
@@ -623,8 +633,9 @@ the post-refinement distance budget allows it. Exact
 `Space.describe()` over budget refuses before metric calls, while the default
 budget-aware describe path returns sampled non-exact structure diagnostics with
 sample size, pair fraction, distance evaluations, and average-distance standard
-error where available. `cache="auto"` no longer eagerly materializes. Broader
-ANN provider tuning remains future work.
+error where available. `cache="auto"` no longer eagerly materializes. Higher
+quality ANN backends and cross-language provider tuning beyond the current
+sampled/Landmark defaults remain future work.
 
 ### P6.2 User-Facing Plan Reports
 

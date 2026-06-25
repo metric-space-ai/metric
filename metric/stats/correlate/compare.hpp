@@ -7,12 +7,15 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <vector>
 
 #include <metric/core/concepts.hpp>
 #include <metric/core/result.hpp>
 #include <metric/stats/correlate/correlation.hpp>
+#include <metric/space/chunked.hpp>
 #include <metric/space/storage/distance_table.hpp>
 #include <metric/space/storage/execution.hpp>
 #include <metric/stats/correlate/options.hpp>
@@ -58,6 +61,11 @@ inline auto uses_sampled_compare_fallback(const space::storage::execution_plan &
 	return plan.allowed && plan.downgraded && !plan.exact && plan.representation == "metric_space_sample";
 }
 
+inline auto uses_chunked_compare_fallback(const space::storage::execution_plan &plan) -> bool
+{
+	return plan.allowed && plan.downgraded && !plan.exact && plan.representation == "chunked_space_view";
+}
+
 inline auto ensure_supported_materialized_plan(const space::storage::execution_plan &plan) -> void
 {
 	if (plan.refused) {
@@ -65,7 +73,7 @@ inline auto ensure_supported_materialized_plan(const space::storage::execution_p
 			plan, "use space::storage::using_implicit(), an approximate policy, or raise the resource_budget"));
 	}
 	if (plan.downgraded && !space::storage::uses_blocked_exact_fallback(plan) &&
-		!uses_sampled_compare_fallback(plan)) {
+		!uses_sampled_compare_fallback(plan) && !uses_chunked_compare_fallback(plan)) {
 		auto message = plan_failure_message(plan, "use a sampled MGC estimate or raise the resource_budget");
 		message += "; executor integration for this downgraded route is not implemented";
 		throw RepresentationError(message);
@@ -93,6 +101,130 @@ inline auto compare_fallback_reason(const space::storage::execution_plan &left_p
 	return "default compare guard selected subsampled MGC before dense all-pairs execution";
 }
 
+inline auto add_unique_sample_position(std::vector<std::size_t> &positions, std::size_t position,
+									   std::size_t record_count) -> void
+{
+	if (record_count == 0) {
+		return;
+	}
+	position = std::min(position, record_count - 1);
+	if (std::find(positions.begin(), positions.end(), position) == positions.end()) {
+		positions.push_back(position);
+	}
+}
+
+inline auto chunked_compare_sample_positions(std::size_t record_count, std::size_t chunk_size,
+											 std::size_t sample_count) -> std::vector<std::size_t>
+{
+	std::vector<std::size_t> positions;
+	if (record_count == 0 || sample_count == 0) {
+		return positions;
+	}
+
+	chunk_size = chunk_size == 0 ? std::size_t{1} : chunk_size;
+	sample_count = std::min(sample_count, record_count);
+	const auto chunk_count = (record_count + chunk_size - 1) / chunk_size;
+	const auto representative_samples = std::min(sample_count, chunk_count);
+	positions.reserve(sample_count);
+	for (std::size_t sample = 0; sample < representative_samples; ++sample) {
+		const auto chunk_index = (sample * chunk_count) / representative_samples;
+		add_unique_sample_position(positions, chunk_index * chunk_size, record_count);
+	}
+	for (std::size_t sample = 0; positions.size() < sample_count && sample < sample_count; ++sample) {
+		add_unique_sample_position(positions, (sample * record_count) / sample_count, record_count);
+	}
+	for (std::size_t position = 0; positions.size() < sample_count && position < record_count; ++position) {
+		add_unique_sample_position(positions, position, record_count);
+	}
+	std::sort(positions.begin(), positions.end());
+	return positions;
+}
+
+inline auto chunked_compare_sample_count_from_plan(const space::storage::execution_plan &plan,
+												   stats::correlate::mgc_options strategy) -> std::size_t
+{
+	if (strategy.sample_count == 0) {
+		throw std::invalid_argument("chunked MGC estimate sample_count must be >= 1");
+	}
+	mtrc::space::chunked_work_diagnostics diagnostics;
+	diagnostics.record_count = plan.record_count;
+	diagnostics.representative_count = plan.representative_count == 0 ? plan.chunk_count : plan.representative_count;
+	return space::storage::chunked_compare_sample_count(diagnostics, plan.budget, strategy.sample_count);
+}
+
+inline auto chunked_compare_chunk_size(const space::storage::execution_plan &left_plan,
+									   const space::storage::execution_plan &right_plan) -> std::size_t
+{
+	if (left_plan.chunk_size == 0) {
+		return right_plan.chunk_size == 0 ? std::size_t{1} : right_plan.chunk_size;
+	}
+	if (right_plan.chunk_size == 0) {
+		return left_plan.chunk_size;
+	}
+	return std::min(left_plan.chunk_size, right_plan.chunk_size);
+}
+
+template <typename LeftSpace, typename RightSpace>
+auto chunked_mgc_estimate(const LeftSpace &left_space, const RightSpace &right_space,
+						  stats::correlate::mgc_options strategy,
+						  const space::storage::execution_plan &left_plan,
+						  const space::storage::execution_plan &right_plan) -> CorrelationResult<double>
+{
+	if (left_space.size() != right_space.size()) {
+		throw std::invalid_argument("chunked MGC estimate requires spaces with the same record count");
+	}
+	if (left_space.size() < 2) {
+		throw std::invalid_argument("chunked MGC estimate requires at least two paired records");
+	}
+
+	const auto left_sample_count = uses_chunked_compare_fallback(left_plan)
+									   ? chunked_compare_sample_count_from_plan(left_plan, strategy)
+									   : left_space.size();
+	const auto right_sample_count = uses_chunked_compare_fallback(right_plan)
+										? chunked_compare_sample_count_from_plan(right_plan, strategy)
+										: right_space.size();
+	const auto sample_count = std::min(left_sample_count, right_sample_count);
+	const auto positions = chunked_compare_sample_positions(
+		left_space.size(), chunked_compare_chunk_size(left_plan, right_plan), sample_count);
+	if (positions.size() < 2) {
+		throw std::invalid_argument("chunked MGC estimate requires at least two sampled records");
+	}
+
+	std::vector<typename LeftSpace::record_type> left_records;
+	std::vector<typename RightSpace::record_type> right_records;
+	left_records.reserve(positions.size());
+	right_records.reserve(positions.size());
+	const auto &left_all_records = left_space.records();
+	const auto &right_all_records = right_space.records();
+	for (const auto position : positions) {
+		left_records.push_back(left_all_records[position]);
+		right_records.push_back(right_all_records[position]);
+	}
+
+	auto result = stats::correlate::mgc(left_records, left_space.metric(), right_records, right_space.metric());
+	result.left_record_count = left_space.size();
+	result.right_record_count = right_space.size();
+	result.exact = false;
+	result.algorithm = "chunked_mgc_estimate";
+	result.left_representation = "chunked_space_view";
+	result.right_representation = "chunked_space_view";
+	result.sample_count = positions.size();
+	result.sample_iterations = 1;
+	const auto chunk_count = std::max(left_plan.chunk_count, right_plan.chunk_count);
+	const auto bounded_pair_distance_evaluations =
+		std::max(left_plan.bounded_pair_distance_evaluations, right_plan.bounded_pair_distance_evaluations);
+	const auto dense_pair_distance_evaluations =
+		std::max(left_plan.dense_pair_distance_evaluations, right_plan.dense_pair_distance_evaluations);
+	result.approximation_reason =
+		"chunked compare fallback selected a bounded paired representative sample before dense all-pairs MGC; "
+		"chunk_size=" + std::to_string(chunked_compare_chunk_size(left_plan, right_plan)) +
+		" chunk_count=" + std::to_string(chunk_count) +
+		" sample_count=" + std::to_string(positions.size()) +
+		" bounded_pair_distance_evaluations=" + std::to_string(bounded_pair_distance_evaluations) +
+		" dense_pair_distance_evaluations=" + std::to_string(dense_pair_distance_evaluations);
+	return result;
+}
+
 template <typename LeftSpace, typename RightSpace>
 auto should_use_default_mgc_estimate(const LeftSpace &left_space, const RightSpace &right_space) -> bool
 {
@@ -117,6 +249,10 @@ auto compare_with_materialized_providers(const LeftSpace &left_space, const Righ
 	const auto right_plan = estimate_materialized_compare_plan(right_space, runtime_policy);
 	ensure_supported_materialized_plan(left_plan);
 	ensure_supported_materialized_plan(right_plan);
+
+	if (uses_chunked_compare_fallback(left_plan) || uses_chunked_compare_fallback(right_plan)) {
+		return chunked_mgc_estimate(left_space, right_space, strategy, left_plan, right_plan);
+	}
 
 	if (uses_sampled_compare_fallback(left_plan) || uses_sampled_compare_fallback(right_plan)) {
 		auto result = stats::correlate::mgc_estimate(

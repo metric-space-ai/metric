@@ -340,6 +340,42 @@ int main()
 	assert_weight_mass(bounded_approximate.representative_multiplicities,
 					   bounded_approximate.representative_weights, bounded_approximate.source_record_count);
 
+	std::vector<int> chunked_records;
+	chunked_records.reserve(64);
+	for (int value = 0; value < 64; ++value) {
+		chunked_records.push_back(value);
+	}
+	auto chunked_calls = std::make_shared<std::size_t>(0);
+	const auto chunked_line = mtrc::make_space(chunked_records, CountingAbsoluteDistance{chunked_calls});
+	auto chunked_compress_policy = mtrc::space::storage::using_distance_table();
+	chunked_compress_policy = mtrc::space::storage::with_distance_table_budget(chunked_compress_policy, 8, 0);
+	chunked_compress_policy = mtrc::space::storage::allow_approximate_fallback(chunked_compress_policy);
+	chunked_compress_policy = mtrc::space::storage::allow_chunking_fallback(chunked_compress_policy);
+	const auto chunked_plan = mtrc::space::storage::estimate_cost(chunked_line, "compress", chunked_compress_policy);
+	assert(chunked_plan.allowed);
+	assert(chunked_plan.downgraded);
+	assert(!chunked_plan.exact);
+	assert(chunked_plan.exactness == "approximate_chunked");
+	assert(chunked_plan.representation == "chunked_space_view");
+	assert(chunked_plan.chunked_plan);
+	assert(chunked_plan.estimated_distance_evaluations >= chunked_plan.bounded_pair_distance_evaluations);
+	assert(chunked_plan.estimated_distance_evaluations < chunked_line.size() * (chunked_line.size() - 1) / 2);
+
+	const auto chunked_compressed =
+		mtrc::compress(chunked_line, 4, mtrc::space::select::farthest_first{}, chunked_compress_policy);
+	assert(!chunked_compressed.exact);
+	assert(chunked_compressed.representation == "chunked_space_view");
+	assert(chunked_compressed.strategy == "chunked_farthest_first");
+	assert(chunked_compressed.source_record_count == chunked_line.size());
+	assert(chunked_compressed.compressed_record_count == 4);
+	assert(chunked_compressed.assignments.size() == chunked_line.size());
+	assert(chunked_compressed.nearest_representative_distances.size() == chunked_line.size());
+	assert(chunked_compressed.representative_multiplicities.size() == chunked_compressed.compressed_record_count);
+	assert(chunked_compressed.representative_weights.size() == chunked_compressed.compressed_record_count);
+	assert_weight_mass(chunked_compressed.representative_multiplicities,
+					   chunked_compressed.representative_weights, chunked_compressed.source_record_count);
+	assert(*chunked_calls < chunked_line.size() * (chunked_line.size() - 1) / 2);
+
 	auto high_target_calls = std::make_shared<std::size_t>(0);
 	const auto high_target_line = mtrc::make_space(large_records, CountingAbsoluteDistance{high_target_calls});
 	const auto high_target_compress = mtrc::compress(high_target_line, 3000);

@@ -16,6 +16,7 @@
 #include <metric/core/concepts.hpp>
 #include <metric/core/metric_space.hpp>
 #include <metric/core/result.hpp>
+#include <metric/space/chunked.hpp>
 #include <metric/space/sample_plan.hpp>
 #include <metric/space/storage/implicit.hpp>
 #include <metric/space/storage/distance_table.hpp>
@@ -179,6 +180,93 @@ auto sampled_farthest_first_representatives(const Provider &provider, std::size_
 	return core::make_representative_set(std::move(representatives), std::move(nearest_representative_distances),
 										 provider.record_count(), count, "sampled_farthest_first",
 										 "sampled_metric_space", false);
+}
+
+template <typename Space>
+auto chunked_farthest_first_representatives(const Space &space, std::size_t count,
+											space::select::farthest_first strategy,
+											const space::storage::execution_plan &plan)
+	-> RepresentativeSet<typename Space::distance_type>
+{
+	using distance_type = typename Space::distance_type;
+
+	if (count == 0) {
+		return core::make_representative_set(std::vector<RecordId>{}, std::vector<distance_type>{},
+											 space.size(), count, "chunked_farthest_first",
+											 "chunked_space_view", false);
+	}
+	if (space.empty()) {
+		throw std::invalid_argument("cannot select representatives from an empty metric space");
+	}
+	if (count > space.size()) {
+		throw std::invalid_argument("representative count cannot exceed the number of records");
+	}
+	if (strategy.seed_index >= space.size()) {
+		throw std::out_of_range("seed_index is outside the metric space");
+	}
+
+	const auto chunks = ::mtrc::space::chunked_view(space, plan.chunk_size == 0 ? std::size_t{1} : plan.chunk_size);
+	::mtrc::space::storage::LiveDistances<Space> provider(space);
+	std::vector<RecordId> candidate_ids;
+	candidate_ids.reserve(std::min(space.size(), std::max(count, chunks.representative_count() + std::size_t{1})));
+	auto add_candidate = [&candidate_ids](RecordId id) {
+		if (!contains_candidate_record_id(candidate_ids, id)) {
+			candidate_ids.push_back(id);
+		}
+	};
+
+	const auto seed_id = space.id(strategy.seed_index);
+	add_candidate(seed_id);
+	for (const auto representative_id : chunks.representative_ids()) {
+		add_candidate(representative_id);
+	}
+
+	const auto target_candidate_count = std::min(space.size(), std::max(count, candidate_ids.size()));
+	if (candidate_ids.size() < target_candidate_count) {
+		const auto positions = ::mtrc::space::regular_sample_positions(space.size(), target_candidate_count).positions;
+		for (const auto position : positions) {
+			add_candidate(space.id(position));
+			if (candidate_ids.size() == target_candidate_count) {
+				break;
+			}
+		}
+	}
+	for (std::size_t position = 0; candidate_ids.size() < count && position < space.size(); ++position) {
+		add_candidate(space.id(position));
+	}
+
+	std::vector<RecordId> representatives;
+	representatives.reserve(count);
+	representatives.push_back(seed_id);
+	std::vector<bool> selected(candidate_ids.size(), false);
+	const auto seed_position = static_cast<std::size_t>(
+		std::find(candidate_ids.begin(), candidate_ids.end(), seed_id) - candidate_ids.begin());
+	selected[seed_position] = true;
+
+	std::vector<distance_type> nearest_candidate_distances;
+	nearest_candidate_distances.reserve(candidate_ids.size());
+	for (const auto candidate_id : candidate_ids) {
+		nearest_candidate_distances.push_back(provider.distance(candidate_id, seed_id));
+	}
+
+	while (representatives.size() < count) {
+		const auto next_index = core::farthest_unselected_position(
+			nearest_candidate_distances, selected, "candidate selection count does not match distance count",
+			"failed to select the next chunked representative");
+		const auto next_id = candidate_ids[next_index];
+		representatives.push_back(next_id);
+		selected[next_index] = true;
+		for (std::size_t candidate_index = 0; candidate_index < candidate_ids.size(); ++candidate_index) {
+			const auto distance = provider.distance(candidate_ids[candidate_index], next_id);
+			if (distance < nearest_candidate_distances[candidate_index]) {
+				nearest_candidate_distances[candidate_index] = distance;
+			}
+		}
+	}
+
+	return core::make_representative_set(std::move(representatives), std::vector<distance_type>{},
+										 space.size(), count, "chunked_farthest_first",
+										 "chunked_space_view", false);
 }
 
 template <typename Provider>
@@ -393,6 +481,21 @@ auto compress(const Space &space, std::size_t count, space::select::farthest_fir
 
 	space::storage::require_exact_compress(runtime_policy);
 	if (runtime_policy.uses_materialization()) {
+		auto plan = space::storage::estimate_cost(space, "compress", runtime_policy);
+		if (!plan.refused && !space::storage::uses_distance_table_materialization(runtime_policy)) {
+			plan = space::storage::estimate_cost(space, "compress", space::storage::using_distance_table(runtime_policy));
+		}
+		if (plan.allowed && plan.downgraded && !plan.exact && plan.representation == "chunked_space_view") {
+			space::storage::LiveDistances<Space> provider(space);
+			auto representatives = detail::chunked_farthest_first_representatives(space, count, strategy, plan);
+			return detail::compress_from_representatives(space, provider, representatives);
+		}
+		if (plan.allowed && plan.downgraded && !plan.exact && plan.representation == "sampled_metric_space") {
+			space::storage::LiveDistances<Space> provider(space);
+			auto representatives =
+				detail::sampled_farthest_first_representatives(provider, count, strategy, runtime_policy);
+			return detail::compress_from_representatives(space, provider, representatives);
+		}
 		return space::storage::with_materialized_distance_provider(
 			space, runtime_policy, "compress", [&](const auto &provider, const auto &plan) {
 				auto representatives = find_representatives(provider, count, strategy);

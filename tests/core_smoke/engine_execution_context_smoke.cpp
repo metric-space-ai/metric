@@ -206,6 +206,19 @@ int main()
 	assert(approximate_ctx.sample_plan_build_count() == 1);
 	assert(*approximate_calls == calls_after_approximate_neighbors + expected_plan.size());
 
+	const auto small_automatic_calls = std::make_shared<std::size_t>(0);
+	auto small_automatic_space = mtrc::make_space(
+		std::vector<int>{0, 2, 5, 9}, CountingAbsoluteDistance(small_automatic_calls));
+	auto small_automatic_ctx = mtrc::space::execution_context(
+		small_automatic_space, mtrc::space::storage::approximate());
+	assert(!small_automatic_ctx.shared_provider());
+	assert(small_automatic_ctx.provider_build_count() == 0);
+	assert(small_automatic_ctx.provider_representation() == "sampled_metric_space");
+	assert(*small_automatic_calls == 0);
+	const auto small_automatic_status = small_automatic_ctx.diagnostics();
+	assert(small_automatic_status.runtime.representation == "sampled_metric_space");
+	assert(small_automatic_status.sample_plan_policy == "regular_sample");
+
 	const auto automatic_calls = std::make_shared<std::size_t>(0);
 	auto automatic_space = mtrc::make_space(
 		approximate_records, CountingAbsoluteDistance(automatic_calls));
