@@ -56,6 +56,11 @@ const EXPECTED_GRAMMAR = {
     label: "condition metric-space with density/anomaly/trajectory grammar",
     sourcePattern: /\.showConditionMonitoring\(/,
   },
+  "process-curve-external-hero": {
+    status: "public-preview-only",
+    label: "external UCR process-curve recovery grammar",
+    sourcePattern: /\.showProcessCurves\(/,
+  },
   "mixed-record-hero": {
     status: "public-preview-only",
     label: "mixed-record typed glyph and cross-type relation grammar",
@@ -91,6 +96,10 @@ const INTERNAL_ENGINE_EXAMPLES = {
     requiresGpuCurvePicking: true,
   },
 };
+
+const EXPLICIT_NATIVE_PREVIEW_EXAMPLES = [
+  "process-curve-external-hero",
+];
 
 const GPU_DIAGNOSTICS_SCRIPT = String.raw`
 (() => {
@@ -484,18 +493,19 @@ const PAGE_PROBE_SCRIPT = String.raw`
       const candidates = curveLayers
         .flatMap((layer) => layer.pickProbePoints.map((point) => ({ ...point, layerId: point.layerId || layer.id })))
         .slice(0, 240);
+      const curveLayerIds = new Set(curveLayers.map((layer) => layer.id).filter(Boolean));
       const misses = [];
       for (const point of candidates) {
         const pixel = runtime.camera?.projectToPixel?.(point.position, {});
         if (!pixel || pixel.visible === false || !Number.isFinite(pixel.x) || !Number.isFinite(pixel.y)) continue;
-        const result = runtime.pickAt({ x: pixel.x, y: pixel.y }, {
+        const result = withOnlyGpuLayers(runtime, curveLayerIds, () => runtime.pickAt({ x: pixel.x, y: pixel.y }, {
           gpu: true,
           relationMatrix: false,
           graph: false,
           cpuFallback: false,
           gpuRadiusPx: 12,
           source: "gpu-curve-contract-probe",
-        });
+        }));
         const sample = {
           source: result?.source || null,
           kind: result?.kind || null,
@@ -539,6 +549,21 @@ const PAGE_PROBE_SCRIPT = String.raw`
     }
     return { available: false, hit: false, source: "no-gpu-pickable-curve-runtime" };
   }
+  function withOnlyGpuLayers(runtime, keepLayerIds, callback) {
+    const changed = [];
+    for (const layer of runtime.layers || []) {
+      if (!layer || keepLayerIds.has(layer.id) || layer.visible === false) continue;
+      changed.push([layer, layer.visible]);
+      layer.visible = false;
+    }
+    try {
+      return callback();
+    } finally {
+      for (const [layer, visible] of changed) {
+        layer.visible = visible;
+      }
+    }
+  }
   const canvases = canvasSummaries();
   const handles = runtimeHandles();
   const largestCanvas = canvases[0] || null;
@@ -563,7 +588,7 @@ const PAGE_PROBE_SCRIPT = String.raw`
     ready: Boolean(largestCanvas?.visible) && (
       Boolean(runtimeState?.runtimeLayerCount)
       || Boolean(data.metricGrae10Engine)
-      || Boolean(data.metricConditionHero || data.metricMixedHero || data.metricCrossSpaceHero || data.metricRelationHero || data.metricDynamicsHero || data.metricMappingHero)
+      || Boolean(data.metricConditionHero || data.metricProcessCurveExternalHero || data.metricMixedHero || data.metricCrossSpaceHero || data.metricRelationHero || data.metricDynamicsHero || data.metricMappingHero)
     ),
   };
 })();
@@ -1023,7 +1048,7 @@ async function discoverPublicExamples() {
     : null;
   const matches = [...site.matchAll(/(?:src|href)="[^"]*visual\/examples\/([^/]+)\/index\.html"/g)].map((match) => match[1]);
   const internal = internalLimit ? [...internalLimit].filter((name) => INTERNAL_ENGINE_EXAMPLES[name]) : [];
-  const deduped = [...new Set([...matches, ...internal])];
+  const deduped = [...new Set([...matches, ...EXPLICIT_NATIVE_PREVIEW_EXAMPLES, ...internal])];
   const existing = [];
   for (const name of deduped) {
     if (limit && !limit.has(name) && !internalLimit?.has(name)) continue;

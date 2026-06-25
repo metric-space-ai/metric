@@ -89,7 +89,7 @@ passing when the package is unavailable.
 | Grammar contract | checked headlessly | `visual/tools/check-hero-grammar-contract.mjs` rejects collapsing unrelated hero concepts into one point-cloud-only grammar. |
 | Single runtime path | checked headlessly | `visual/tools/check-single-render-pipeline.mjs` protects the one-runtime pipeline rule. |
 | Public gallery evidence gate | checked headlessly | `visual/tools/check-public-gallery-evidence.mjs` blocks synthetic hero fixtures from the public site and protects the GRAE10 reference hash. |
-| Public visual regression gate | checked in browser | `visual/tools/check-visual-regression-public-examples.mjs` verifies the protected GRAE10 60k reference plus six native preview examples load, render nonblank canvases, use native evidence and keep their declared grammar/status. |
+| Public visual regression gate | checked in browser | `visual/tools/check-visual-regression-public-examples.mjs` verifies the protected GRAE10 60k reference plus seven native preview examples load, render nonblank canvases, use native evidence and keep their declared grammar/status. The current gate covers eight public pages total. |
 | Hero screenshot review gate | checked from browser artifacts | `visual/tools/check-hero-screenshot-review.mjs` consumes the public browser regression report and screenshot files, keeps GRAE10 accepted by protected reference, and leaves the other public previews in explicit review-pending status until a review manifest accepts them. |
 | Large-scene performance gate | checked in browser | `visual/tools/check-visual-performance-large-scenes.mjs` verifies 1k, 10k and 60k point-cloud workloads with a real browser WebGL backend. `visual/tools/perf-matrix.mjs` separately records the headless software-renderer floor. |
 
@@ -107,7 +107,7 @@ rather than computing dynamics in JavaScript.
 The screenshot-review gate records which examples have screenshot artifacts and
 which examples are explicitly accepted. Current rule: GRAE10 remains the only
 accepted hero because it is protected by the native 60k reference and golden
-hash. The six native preview pages remain review-pending.
+hash. The seven native preview pages remain review-pending.
 
 ### Grammar Integration Slice - 2026-06-25
 
@@ -205,7 +205,7 @@ pair-property endpoints. The negative cases are covered by
 | Hero | Public status | Reason |
 | --- | --- | --- |
 | MNIST dimension reduction | live | Full 60k visual reference exists and is protected by C++ integrity plus hash checks. |
-| UCR process curves | live | Real dataset, native C++ export, and checked public assets exist. |
+| UCR process curves | public preview, not hero-accepted | Real dataset, native C++ export, checked public assets and a command-backed process-curve visual page exist. Screenshot acceptance and final hero composition are still pending. |
 | Mixed records | public preview, not hero-accepted | Native `metric.visual.v1` evidence exists, the page loads it, and the project page links it. Screenshot acceptance and larger public data are still pending. |
 | Cross-space dependence | public preview, not hero-accepted | Native `metric.visual.v1` evidence exists, the page loads it, and the project page links it. Screenshot acceptance and stronger visual curation are still pending. |
 | Condition monitoring | public preview, not hero-accepted | Native `metric.visual.v1` evidence exists, the page loads it, and the project page links it. Screenshot acceptance and a curated proof that does not regress the existing UCR proof are still pending. |

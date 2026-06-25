@@ -29,7 +29,7 @@ No synthetic fixture data, JavaScript metric computation, page-local Canvas rend
 
 - Example page: `visual/examples/process-curve-external-hero/index.html`
 - Visual Engine API: `createMetricVisual(...)`
-- Command/view: `showRelationMatrixNeighborhood(...)`
+- Command/view: `showProcessCurves(...)`
 - Declared document view: `process-curve-external-relation-neighborhood-view`
 - Relation: `process-curve-external-aligned-metric`
 - Coordinate state: `process-curve-external-landmark-3d`
@@ -99,3 +99,22 @@ Ready for screenshot review as a native Visual Engine preview. It is not marked 
   - `node visual/tools/check-hero-screenshot-review.mjs`: passed.
 - Status remains preview-only. This is now a command-backed process-curve
   grammar candidate, not an accepted public hero.
+
+## Public Regression Integration
+
+- `process-curve-external-hero` is now an explicit native public-preview row in
+  `visual/tools/check-visual-regression-public-examples.mjs`; it does not rely
+  on the project-page link set to be covered by the browser gate.
+- The public browser regression now covers eight pages total: protected GRAE10
+  plus seven native preview pages.
+- The process-curve page passed the browser gate with
+  `selectedViewKind: process-curves`, native `metric.visual.v1` evidence,
+  `HeatFieldLayer`, `GroundProjectionLayer`, `CurveTubeMeshLayer`,
+  `InstancedBoxLayer`, `InstancedPointLayer`, `RelationEdgeLayer` and
+  `RelationMatrixLayer`.
+- The gate now verifies the process-curve `CurveTubeMeshLayer` GPU-picking path
+  with a layer-isolated curve probe, because the rendered page may legitimately
+  contain overlapping heat-field and projection evidence over the same screen
+  pixels.
+- Screenshot review remains preview-only: GRAE10 is still the only accepted
+  hero.

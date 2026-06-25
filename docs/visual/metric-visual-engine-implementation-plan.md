@@ -80,11 +80,14 @@ This plan is authoritative only with the following current-state constraints:
 - Browser load success means only `loads` or `renders`; it never means
   `hero-ready`.
 
-The current accepted public heroes are therefore limited to:
+The current accepted public hero set is therefore limited to:
 
 - MNIST dimension reduction: protected 60k GRAE10 reference plus native
   integrity check.
-- UCR process curves: real dataset plus native C++ export assets.
+
+The UCR process-curve evidence is real, native and public, but its current
+Visual Engine page is still a review-pending preview rather than an accepted
+hero screenshot.
 
 The other planned hero families are currently public previews, not accepted
 heroes. They load native `docs/examples/assets/*/metric.visual.json` evidence
@@ -904,11 +907,12 @@ Current status:
 - `visual/cpp/mtrc_visual.hpp` is the header-only C++17 writer foundation.
 - `visual/tools/check-cpp-export.mjs` compiles and validates the standalone
   helper example.
-- The six native visual exporters are schema-valid and CTest-integrated.
-- All six native visual exporters now use the shared `mtrc::visual` writer path
-  for common JSON/document/file writing. Domain-specific evidence is still
-  composed explicitly with `visual::object(...)` where a generic helper would
-  hide semantics.
+- The six foundation native visual exporters are schema-valid and
+  CTest-integrated.
+- All six foundation native visual exporters now use the shared
+  `mtrc::visual` writer path for common JSON/document/file writing.
+  Domain-specific evidence is still composed explicitly with
+  `visual::object(...)` where a generic helper would hide semantics.
 
 Execution contract:
 

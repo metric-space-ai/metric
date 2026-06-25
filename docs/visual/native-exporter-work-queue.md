@@ -76,8 +76,8 @@ Current status:
 
 - `visual/cpp/mtrc_visual.hpp` provides the header-only C++17 writer foundation.
 - `visual/tools/check-cpp-export.mjs` validates the standalone C++ helper path.
-- All six native visual exporters now route common JSON/document/file writing
-  through `mtrc::visual`.
+- All six foundation native visual exporters now route common
+  JSON/document/file writing through `mtrc::visual`.
 - Exporters may still use raw `visual::object(...)` composition for
   domain-specific evidence shapes that should not be flattened into generic
   helper methods.
