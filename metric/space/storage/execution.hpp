@@ -400,6 +400,10 @@ inline auto estimate_live_distance_evaluations(std::size_t record_count, const s
 			detail::distance_table_dense_slot_count(record_count), 2,
 			"compare distance-evaluation estimate exceeds size_t capacity");
 	}
+	if (intent == "resample") {
+		return detail::checked_distance_table_size_product(
+			record_count, record_count, "resample distance-evaluation estimate exceeds size_t capacity");
+	}
 	if (intent == "groups" || intent == "outliers" || intent == "density_filter" ||
 		intent == "describe" ||
 		intent == "workflow" || intent == "workflow_context") {
@@ -692,7 +696,7 @@ inline auto approximate_runtime_intent_supported(const std::string &intent) -> b
 {
 	return intent == "compare" || intent == "neighbors" || intent == "range" ||
 		   intent == "groups" || intent == "outliers" || intent == "density_filter" ||
-		   intent == "compress";
+		   intent == "compress" || intent == "resample";
 }
 
 inline auto sampled_fallback_representation_for_intent(const std::string &intent) -> std::string
@@ -710,7 +714,7 @@ inline auto chunked_workflow_intent_supported(const std::string &intent) -> bool
 
 inline auto chunked_approximate_modify_intent_supported(const std::string &intent) -> bool
 {
-	return intent == "compress";
+	return intent == "compress" || intent == "resample";
 }
 
 inline auto chunked_approximate_compare_intent_supported(const std::string &intent) -> bool
@@ -1064,7 +1068,7 @@ inline auto estimate_cost(const Space &space, std::string intent, policy runtime
 			plan.estimated_distance_evaluations = choice.estimated_distance_evaluations;
 			plan.memory_bytes_estimate = choice.memory_bytes_estimate;
 		} else if (plan.intent == "groups" || plan.intent == "outliers" || plan.intent == "density_filter" ||
-				   plan.intent == "compress") {
+				   plan.intent == "compress" || plan.intent == "resample") {
 			plan.representation = "sampled_metric_space";
 			plan.estimated_distance_evaluations =
 				estimate_approximate_structural_distance_evaluations(plan.record_count);

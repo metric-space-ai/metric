@@ -13,6 +13,14 @@ import {
   valueForId,
 } from "./view-utils.js";
 
+export const DEFAULT_MAPPING_MOTION_TIMING = Object.freeze({
+  profile: "source-hold-quick-transition-target-hold",
+  sourceHoldMs: 1600,
+  transitionMs: 720,
+  targetHoldMs: 1700,
+  resetHoldMs: 360,
+});
+
 /**
  * MappingView treats a mapping as a transformation between two exported
  * coordinate states (source -> target, e.g. 2D -> 3D, or PHATE/AE/PCFA target).
@@ -35,6 +43,7 @@ export class MappingView extends BaseView {
     this.residualVectorWidth = Number.isFinite(Number(options.residualVectorWidth))
       ? Number(options.residualVectorWidth)
       : 1;
+    this.motionTiming = normalizeMappingMotionTiming(options.motionTiming || options.mappingMotionTiming || options.morphTiming, options);
     this.space = new MetricSpaceView({
       ...options,
       id: `${this.id}:space`,
@@ -43,6 +52,7 @@ export class MappingView extends BaseView {
       ground: options.ground !== false,
       groundProjection: options.groundProjection !== false,
       loop: options.loop ?? true,
+      durationMs: this.motionTiming.totalMs,
     });
   }
 
@@ -111,7 +121,8 @@ export class MappingView extends BaseView {
 
   toLayerDescriptors() {
     const mappingEvidence = this.mappingMotionEvidenceDescriptor();
-    const descriptors = this.space.toLayerDescriptors().map((descriptor) => {
+    const descriptors = this.space.toLayerDescriptors().map((rawDescriptor) => {
+      const descriptor = this.withMappingMotionTiming(rawDescriptor);
       if (descriptor.primitive !== "InstancedPointLayer" && descriptor.primitive !== "InstancedGlyphLayer") return descriptor;
       return {
         ...descriptor,
@@ -128,6 +139,7 @@ export class MappingView extends BaseView {
           evidenceRole: "mapping-source-target-morph",
           motionGrammar: "mapping-coordinate-morph",
           mappingEvidence,
+          mappingMotionTiming: this.motionTiming,
           sourceCoordinateId: this.sourceCoordinateId,
           targetCoordinateId: this.targetCoordinateId,
           residualPropertyId: this.propertyId,
@@ -138,6 +150,26 @@ export class MappingView extends BaseView {
     const residual = this.residualVectorDescriptor();
     if (residual) descriptors.push(residual);
     return descriptors;
+  }
+
+  withMappingMotionTiming(descriptor) {
+    const animation = descriptor.animation || { mode: "none" };
+    const isMorph = String(animation.mode || "").includes("morph") || animation.channel === "targetPosition";
+    return {
+      ...descriptor,
+      animation: isMorph
+        ? {
+          ...animation,
+          durationMs: this.motionTiming.totalMs,
+          timingProfile: this.motionTiming.profile,
+          timingPhases: this.motionTiming.phases,
+        }
+        : animation,
+      metadata: {
+        ...descriptor.metadata,
+        mappingMotionTiming: this.motionTiming,
+      },
+    };
   }
 
   residualVectorDescriptor() {
@@ -202,6 +234,7 @@ export class MappingView extends BaseView {
         diagnosticLayer: true,
         motionGrammar: "mapping-residual-error-scene",
         mappingEvidence,
+        mappingMotionTiming: this.motionTiming,
         recordCount: count,
         sourceCoordinateId: this.sourceCoordinateId,
         targetCoordinateId: this.targetCoordinateId,
@@ -227,8 +260,11 @@ export class MappingView extends BaseView {
         mode: "coordinate-morph",
         channel: "targetPosition",
         residualLayer: this.showResidualVectors ? `${this.id}:residual-vectors` : null,
+        timingProfile: this.motionTiming.profile,
+        timingPhases: this.motionTiming.phases,
         controlledBy: "descriptor-animation",
       },
+      motionTiming: this.motionTiming,
       preservationSummary: this.preservationSummary(),
       algorithmicComputation: false,
       ...extra,
@@ -260,8 +296,69 @@ export function createMappingView(options) {
   return new MappingView(options);
 }
 
+export function normalizeMappingMotionTiming(timing = {}, options = {}) {
+  const sourceHoldMs = positiveNumber(timing.sourceHoldMs ?? options.sourceHoldMs, DEFAULT_MAPPING_MOTION_TIMING.sourceHoldMs);
+  const transitionMs = positiveNumber(timing.transitionMs ?? options.transitionMs, DEFAULT_MAPPING_MOTION_TIMING.transitionMs);
+  const targetHoldMs = positiveNumber(timing.targetHoldMs ?? options.targetHoldMs, DEFAULT_MAPPING_MOTION_TIMING.targetHoldMs);
+  const resetHoldMs = positiveNumber(timing.resetHoldMs ?? options.resetHoldMs, DEFAULT_MAPPING_MOTION_TIMING.resetHoldMs);
+  const explicitTotal = positiveNumber(timing.totalMs ?? options.totalMs ?? options.durationMs, 0);
+  const totalMs = explicitTotal > 0
+    ? explicitTotal
+    : sourceHoldMs + transitionMs + targetHoldMs + resetHoldMs;
+  const normalized = {
+    profile: timing.profile || DEFAULT_MAPPING_MOTION_TIMING.profile,
+    sourceHoldMs,
+    transitionMs,
+    targetHoldMs,
+    resetHoldMs,
+    totalMs,
+  };
+  normalized.phases = mappingMotionPhases(normalized);
+  normalized.transitionShare = transitionMs / Math.max(1, totalMs);
+  return normalized;
+}
+
+export function mappingMotionProgressAt(elapsedMs, timing = DEFAULT_MAPPING_MOTION_TIMING) {
+  const normalized = timing?.phases ? timing : normalizeMappingMotionTiming(timing);
+  const totalMs = Math.max(1, Number(normalized.totalMs) || 1);
+  const phaseMs = ((Number(elapsedMs) || 0) % totalMs + totalMs) % totalMs;
+  const sourceEnd = normalized.phases.sourceHold.endMs;
+  const transitionEnd = normalized.phases.quickTransition.endMs;
+  const targetEnd = normalized.phases.targetHold.endMs;
+  if (phaseMs <= sourceEnd) return { progress: 0, phase: "source-hold", elapsedMs: phaseMs };
+  if (phaseMs <= transitionEnd) {
+    const local = (phaseMs - sourceEnd) / Math.max(1, normalized.transitionMs);
+    return { progress: smoothstep(clamp01(local)), phase: "quick-transition", elapsedMs: phaseMs };
+  }
+  if (phaseMs <= targetEnd) return { progress: 1, phase: "target-hold", elapsedMs: phaseMs };
+  return { progress: 0, phase: "source-reset-hold", elapsedMs: phaseMs };
+}
+
 function positionFor(map, id) {
   return map?.get?.(id) || map?.get?.(String(id)) || null;
+}
+
+function mappingMotionPhases(timing) {
+  const sourceEnd = timing.sourceHoldMs;
+  const transitionEnd = sourceEnd + timing.transitionMs;
+  const targetEnd = transitionEnd + timing.targetHoldMs;
+  const resetEnd = Math.max(timing.totalMs, targetEnd + timing.resetHoldMs);
+  return {
+    sourceHold: { startMs: 0, endMs: sourceEnd, progress: 0 },
+    quickTransition: { startMs: sourceEnd, endMs: transitionEnd, progress: [0, 1] },
+    targetHold: { startMs: transitionEnd, endMs: targetEnd, progress: 1 },
+    resetHold: { startMs: targetEnd, endMs: resetEnd, progress: 0 },
+  };
+}
+
+function positiveNumber(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : fallback;
+}
+
+function smoothstep(value) {
+  const t = clamp01(value);
+  return t * t * (3 - 2 * t);
 }
 
 function normalizeRgba(color, fallbackAlpha) {

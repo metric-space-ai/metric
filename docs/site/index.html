@@ -5,22 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="METRIC is the native C++ framework for finite metric spaces: experimentation, data analysis, research, products, and visual evidence over records and metrics."
+      content="METRIC is a native C++ framework for finite metric spaces and visual evidence over records, metrics, relations, mappings and dynamics."
     />
     <link rel="icon" href="data:," />
     <title>METRIC | Finite Metric Spaces</title>
     <style>
       :root {
         color-scheme: light;
-        --ink: oklch(0.21 0.026 230);
-        --text: oklch(0.34 0.024 230);
+        --ink: oklch(0.20 0.026 230);
+        --text: oklch(0.34 0.026 228);
         --muted: oklch(0.50 0.020 220);
-        --line: oklch(0.84 0.022 210);
-        --paper: oklch(0.95 0.024 94);
-        --wash: oklch(0.91 0.030 138);
+        --line: oklch(0.84 0.020 210);
+        --paper: oklch(0.955 0.020 96);
+        --field: oklch(0.91 0.030 138);
         --panel: oklch(0.985 0.010 96);
-        --accent: oklch(0.48 0.105 205);
-        --warm: oklch(0.70 0.115 62);
+        --accent: oklch(0.46 0.100 205);
+        --green: oklch(0.55 0.085 155);
+        --warm: oklch(0.66 0.120 58);
         font-family:
           Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
           "Segoe UI", sans-serif;
@@ -36,7 +37,11 @@
 
       body {
         margin: 0;
-        background: var(--paper);
+        background:
+          linear-gradient(oklch(0.88 0.006 230 / 0.34) 1px, transparent 1px),
+          linear-gradient(90deg, oklch(0.88 0.006 230 / 0.34) 1px, transparent 1px),
+          var(--paper);
+        background-size: 64px 64px;
         color: var(--ink);
       }
 
@@ -54,12 +59,12 @@
         inset: 0 0 auto;
         z-index: 20;
         border-bottom: 1px solid color-mix(in oklch, var(--ink), transparent 86%);
-        background: color-mix(in oklch, var(--paper), transparent 14%);
+        background: color-mix(in oklch, var(--paper), transparent 10%);
         backdrop-filter: blur(14px);
       }
 
       .wrap {
-        width: min(1320px, calc(100% - 44px));
+        width: min(1440px, calc(100% - 44px));
         margin: 0 auto;
       }
 
@@ -110,83 +115,77 @@
       .hero {
         min-height: 100svh;
         padding-top: 64px;
-        background:
-          radial-gradient(circle at 75% 20%, oklch(0.98 0.045 92 / 0.94), transparent 34%),
-          linear-gradient(125deg, oklch(0.97 0.012 210), var(--wash));
         overflow: hidden;
       }
 
-      .hero-grid {
+      .hero-stage {
         display: grid;
         min-height: calc(100svh - 64px);
-        grid-template-columns: minmax(310px, 0.44fr) minmax(0, 0.86fr);
-        gap: clamp(28px, 4vw, 56px);
-        align-items: center;
-        padding: clamp(28px, 5svh, 64px) 0;
+        grid-template-rows: auto minmax(560px, 1fr);
+        gap: 22px;
+        padding: clamp(26px, 4svh, 54px) 0 38px;
+      }
+
+      .hero-copy {
+        display: grid;
+        grid-template-columns: minmax(280px, 0.62fr) minmax(260px, 0.38fr);
+        gap: 30px;
+        align-items: end;
       }
 
       .eyebrow {
-        margin: 0 0 18px;
+        margin: 0 0 14px;
         color: var(--muted);
-        font-size: 13px;
-        font-weight: 820;
-        letter-spacing: 0.12em;
+        font-size: 12px;
+        font-weight: 850;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
       }
 
-      h1 {
+      h1,
+      h2,
+      h3 {
         margin: 0;
-        font-size: clamp(76px, 13vw, 176px);
-        line-height: 0.82;
         letter-spacing: 0;
       }
 
-      .lead {
-        max-width: 560px;
-        margin: 30px 0 0;
-        color: var(--text);
-        font-size: clamp(20px, 2.1vw, 30px);
-        line-height: 1.33;
+      h1 {
+        max-width: 1000px;
+        font-size: clamp(58px, 9vw, 132px);
+        line-height: 0.86;
       }
 
-      .hero-actions {
+      .lead {
+        max-width: 590px;
+        margin: 0;
+        color: var(--text);
+        font-size: clamp(20px, 2.2vw, 31px);
+        line-height: 1.28;
+      }
+
+      .hero-actions,
+      .links {
         display: flex;
         flex-wrap: wrap;
         gap: 12px;
-        margin-top: 32px;
       }
 
-      .hero-links {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 16px;
-        margin-top: 22px;
+      .hero-actions {
+        margin-top: 24px;
       }
 
-      .hero-links a {
-        color: var(--accent);
-        font-size: 14px;
-        font-weight: 820;
-        text-decoration: none;
-      }
-
-      .hero-visual {
+      .hero-visual,
+      .visual {
         position: relative;
-        min-height: min(76svh, 760px);
         overflow: hidden;
-        border: 1px solid color-mix(in oklch, var(--ink), transparent 82%);
+        border: 1px solid color-mix(in oklch, var(--ink), transparent 80%);
         background: oklch(0.85 0.025 136);
-        box-shadow: 0 30px 100px oklch(0.27 0.030 145 / 0.18);
+        box-shadow: 0 28px 90px oklch(0.24 0.028 145 / 0.16);
       }
 
-      iframe,
-      img {
+      iframe {
         display: block;
         width: 100%;
-      }
-
-      .hero-visual iframe,
-      .visual iframe {
         height: 100%;
         min-height: inherit;
         border: 0;
@@ -202,214 +201,128 @@
 
       .section-head {
         display: grid;
-        grid-template-columns: minmax(0, 0.72fr) minmax(260px, 0.38fr);
-        gap: 38px;
+        grid-template-columns: minmax(0, 0.68fr) minmax(280px, 0.32fr);
+        gap: 36px;
         align-items: end;
+        margin-bottom: 34px;
       }
 
       h2 {
         max-width: 900px;
-        margin: 0;
-        font-size: clamp(38px, 5vw, 74px);
-        line-height: 0.98;
-        letter-spacing: 0;
+        font-size: clamp(40px, 5.4vw, 82px);
+        line-height: 0.96;
       }
 
       .section-head p,
-      .concept p,
-      .example-copy p,
-      .planned p {
+      .card p,
+      .concept p {
         margin: 0;
         color: var(--muted);
         font-size: 16px;
-        line-height: 1.54;
+        line-height: 1.52;
       }
 
       .gallery {
         display: grid;
-        gap: 46px;
-        margin-top: 40px;
+        gap: 18px;
       }
 
-      .example {
+      .card {
         display: grid;
-        grid-template-columns: minmax(0, 0.9fr) minmax(380px, 0.62fr);
-        gap: 24px;
-        align-items: stretch;
+        grid-template-columns: minmax(460px, 0.63fr) minmax(320px, 0.37fr);
+        min-height: 520px;
+        border: 1px solid color-mix(in oklch, var(--ink), transparent 84%);
+        background: color-mix(in oklch, var(--panel), transparent 3%);
       }
 
-      .example:nth-child(even) {
-        grid-template-columns: minmax(380px, 0.62fr) minmax(0, 0.9fr);
-      }
-
-      .example:nth-child(even) .visual {
-        order: 2;
+      .card.accepted {
+        min-height: 680px;
+        grid-template-columns: minmax(560px, 0.72fr) minmax(330px, 0.28fr);
       }
 
       .visual {
-        min-height: 500px;
-        overflow: hidden;
-        border: 1px solid color-mix(in oklch, var(--ink), transparent 82%);
-        background: oklch(0.88 0.020 130);
+        min-height: 100%;
+        border: 0;
+        box-shadow: none;
       }
 
-      .visual.static {
-        background: oklch(0.98 0.008 215);
-      }
-
-      .visual.static img {
-        height: 100%;
-        min-height: inherit;
-        object-fit: contain;
-        background: oklch(0.98 0.008 215);
-      }
-
-      .example-copy {
+      .card-body {
         display: grid;
         align-content: start;
-        gap: 20px;
+        gap: 18px;
+        padding: clamp(22px, 3vw, 34px);
+        border-left: 1px solid color-mix(in oklch, var(--ink), transparent 86%);
       }
 
-      .example-copy.tight {
-        max-width: 740px;
+      .status {
+        width: fit-content;
+        border: 1px solid color-mix(in oklch, var(--ink), transparent 78%);
+        padding: 5px 9px;
+        color: var(--text);
+        font-size: 11px;
+        font-weight: 850;
+        letter-spacing: 0.10em;
+        text-transform: uppercase;
       }
 
-      .example-copy h3 {
-        margin: 0;
-        font-size: clamp(32px, 4.2vw, 58px);
+      .status.accepted {
+        border-color: color-mix(in oklch, var(--green), var(--ink) 20%);
+        color: color-mix(in oklch, var(--green), var(--ink) 35%);
+      }
+
+      .card h3 {
+        font-size: clamp(30px, 3.4vw, 52px);
         line-height: 0.98;
-      }
-
-      .facts {
-        display: grid;
-        gap: 1px;
-        border: 1px solid color-mix(in oklch, var(--ink), transparent 84%);
-        background: color-mix(in oklch, var(--ink), transparent 86%);
-      }
-
-      .facts div {
-        display: grid;
-        grid-template-columns: 132px minmax(0, 1fr);
-        gap: 16px;
-        padding: 13px 15px;
-        background: color-mix(in oklch, var(--panel), transparent 5%);
-      }
-
-      .facts b {
-        color: var(--ink);
-        font-size: 13px;
-      }
-
-      .facts span {
-        color: var(--muted);
-        font-size: 13px;
-        line-height: 1.4;
-      }
-
-      pre {
-        margin: 0;
-        overflow: auto;
-        padding: 18px;
-        background: oklch(0.18 0.018 230);
-        color: oklch(0.95 0.012 225);
-        font-size: 12px;
-        line-height: 1.58;
-      }
-
-      .links {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 16px;
       }
 
       .links a {
         color: var(--accent);
         font-size: 14px;
-        font-weight: 800;
+        font-weight: 830;
         text-decoration: none;
       }
 
-      .portfolio-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 18px;
-      }
-
-      .portfolio-item {
-        overflow: hidden;
+      details {
         border: 1px solid color-mix(in oklch, var(--ink), transparent 84%);
-        background: color-mix(in oklch, var(--panel), transparent 4%);
+        background: color-mix(in oklch, var(--paper), transparent 14%);
       }
 
-      .portfolio-frame {
-        aspect-ratio: 16 / 10;
-        min-height: 280px;
-        overflow: hidden;
-        background: oklch(0.88 0.020 130);
+      summary {
+        cursor: pointer;
+        padding: 12px 14px;
+        color: var(--text);
+        font-size: 13px;
+        font-weight: 850;
       }
 
-      .portfolio-frame iframe {
-        height: 100%;
-        min-height: 100%;
-        border: 0;
-      }
-
-      .portfolio-copy {
-        display: grid;
-        gap: 12px;
-        padding: 18px;
-      }
-
-      .portfolio-copy h3 {
+      pre {
         margin: 0;
-        font-size: clamp(22px, 2.4vw, 34px);
-        line-height: 1;
+        overflow: auto;
+        padding: 0 14px 14px;
+        color: var(--text);
+        font-size: 12px;
+        line-height: 1.55;
+        white-space: pre-wrap;
       }
 
-      .portfolio-copy p {
-        margin: 0;
-        color: var(--muted);
-        font-size: 14px;
-        line-height: 1.45;
-      }
-
-      .portfolio-copy pre {
-        padding: 14px;
-        font-size: 11px;
-      }
-
-      .concept-grid,
-      .planned-grid {
+      .concept-grid {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 1px;
-        margin-top: 34px;
         border: 1px solid var(--line);
         background: var(--line);
       }
 
-      .concept,
-      .planned {
-        min-height: 180px;
+      .concept {
+        min-height: 190px;
         padding: 24px;
         background: color-mix(in oklch, var(--panel), transparent 5%);
       }
 
-      .concept strong,
-      .planned strong {
+      .concept strong {
         display: block;
         margin-bottom: 12px;
         font-size: 20px;
-      }
-
-      .planned small {
-        display: inline-flex;
-        margin-bottom: 16px;
-        color: color-mix(in oklch, var(--ink), var(--warm) 48%);
-        font-size: 11px;
-        font-weight: 850;
-        letter-spacing: 0.10em;
-        text-transform: uppercase;
       }
 
       footer {
@@ -418,36 +331,34 @@
         font-size: 14px;
       }
 
-      @media (max-width: 980px) {
-        .hero-grid,
+      @media (max-width: 1020px) {
+        .hero-copy,
         .section-head,
-        .example,
-        .example:nth-child(even),
-        .portfolio-grid,
-        .concept-grid,
-        .planned-grid {
+        .card,
+        .card.accepted,
+        .concept-grid {
           grid-template-columns: 1fr;
         }
 
-        .example:nth-child(even) .visual {
-          order: 0;
+        .card-body {
+          border-left: 0;
+          border-top: 1px solid color-mix(in oklch, var(--ink), transparent 86%);
         }
 
-        .hero-visual,
-        .visual {
-          min-height: 430px;
+        .hero-stage {
+          grid-template-rows: auto 520px;
         }
       }
 
       @media (max-width: 720px) {
+        .top {
+          position: static;
+        }
+
         .top .wrap,
         nav {
           align-items: flex-start;
           flex-direction: column;
-        }
-
-        .top {
-          position: static;
         }
 
         .hero {
@@ -455,12 +366,11 @@
         }
 
         h1 {
-          font-size: 56px;
+          font-size: 54px;
         }
 
-        .facts div {
-          grid-template-columns: 1fr;
-          gap: 4px;
+        .hero-stage {
+          grid-template-rows: auto 420px;
         }
       }
     </style>
@@ -470,10 +380,8 @@
       <div class="wrap">
         <div class="brand">METRIC</div>
         <nav aria-label="Primary navigation">
-          <a href="#analysis">Analysis</a>
           <a href="#gallery">Gallery</a>
           <a href="#concept">Concept</a>
-          <a href="#next">Direction</a>
           <a href="docs.html">Docs</a>
           <a class="button primary" href="https://github.com/metric-space-ai/metric">GitHub</a>
         </nav>
@@ -482,24 +390,33 @@
 
     <main>
       <section class="hero" aria-label="METRIC hero">
-        <div class="wrap hero-grid">
-          <div>
-            <p class="eyebrow">Finite Metric Spaces</p>
-            <h1>METRIC</h1>
-            <p class="lead">
-              The framework for finite metric spaces. Use records and metrics
-              directly to experiment, analyze data, build research evidence, and
-              ship products with native data geometry preserved.
-            </p>
-            <div class="hero-actions">
-              <a class="button primary" href="#analysis">See analysis workflow</a>
-              <a class="button" href="#gallery">Explore evidence</a>
+        <div class="wrap hero-stage">
+          <div class="hero-copy">
+            <div>
+              <p class="eyebrow">Finite metric-space computing</p>
+              <h1>METRIC</h1>
             </div>
-            <div class="hero-links">
-              <a href="../../examples/engine/mnist_grae10_integrity.cpp">C++ evidence path</a>
-              <a href="../../docs/examples/mnist-grae10-gallery.md">MNIST notes</a>
+            <div>
+              <p class="lead">
+                Compare records directly, build the finite metric space, then
+                inspect the relations, fields, mappings and dynamics that follow.
+              </p>
+              <div class="hero-actions">
+                <a class="button primary" href="#gallery">Explore visuals</a>
+                <a class="button" href="../../README.md">Read README</a>
+              </div>
+              <div class="links" style="margin-top: 16px">
+                <a href="../../examples/engine/mnist_grae10_integrity.cpp">C++ integrity check</a>
+                <a href="../../docs/examples/mnist-grae10-gallery.md">MNIST notes</a>
+              </div>
+              <details style="margin-top: 16px">
+                <summary>C++ check</summary>
+                <pre>cmake --build build/core --target engine_mnist_grae10_integrity
+build/core/examples/engine/engine_mnist_grae10_integrity</pre>
+              </details>
             </div>
           </div>
+
           <div class="hero-visual">
             <iframe
               title="MNIST dimension reduction, 60k GRAE10 metric-space view"
@@ -509,193 +426,223 @@
         </div>
       </section>
 
-      <section id="analysis" class="section">
-        <div class="wrap">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Data analysis</p>
-              <h2>Analyze by similarity, structure, and change.</h2>
-            </div>
-            <p>
-              Start with the records as they are: curves, text, distributions,
-              graphs, vectors, mixed rows, or domain objects. Define the metric,
-              then analyze the finite space it creates.
-            </p>
-          </div>
-          <div class="concept-grid">
-            <div class="concept">
-              <strong>Find similar cases</strong>
-              <p>Search process windows, documents, customers, images, graphs, event sequences or mixed records with the metric that matches the domain.</p>
-            </div>
-            <div class="concept">
-              <strong>Select real representatives</strong>
-              <p>Choose real exemplar records, coverage sets, samples and reduced spaces from source data for review, monitoring and smaller datasets.</p>
-            </div>
-            <div class="concept">
-              <strong>Review anomalies</strong>
-              <p>Inspect records with sparse neighborhoods, nearest-neighbor gaps, unusual local density or extreme distance profiles.</p>
-            </div>
-            <div class="concept">
-              <strong>Compare cohorts</strong>
-              <p>Compare sites, time periods, experiments or system states through distances, neighborhoods, representatives and density structure.</p>
-            </div>
-            <div class="concept">
-              <strong>Connect modalities</strong>
-              <p>Relate event logs to sensor curves, text to behavior, or distributions to structured records without requiring one shared coordinate table first.</p>
-            </div>
-            <div class="concept">
-              <strong>Build evidence</strong>
-              <p>Export finite-space evidence and inspect records, pair relations, neighborhoods, trajectories and derived views in the visual pipeline.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section id="gallery" class="section">
         <div class="wrap">
           <div class="section-head">
             <div>
-              <p class="eyebrow">Gallery</p>
-              <h2>Examples</h2>
+              <p class="eyebrow">Visual gallery</p>
+              <h2>Native evidence, rendered live.</h2>
             </div>
             <p>
-              Concrete finite-space analyses and visual evidence. The native
-              engine computes records, relations, properties, dynamics and
-              derived spaces; the browser inspects exported evidence.
+              Each view loads exported METRIC evidence. C++ computes records,
+              relations, properties, mappings and dynamics; the browser renders
+              and inspects the exported document.
             </p>
           </div>
 
           <div class="gallery">
-            <article class="example">
-              <div class="visual static">
-                <img
-                  src="../examples/assets/process-curve-external/hero-overview.svg"
-                  alt="UCR process-curve finite metric-space evidence"
-                  loading="lazy" />
+            <article class="card">
+              <div class="visual">
+                <iframe
+                  title="Condition monitoring native preview"
+                  src="../../visual/examples/condition-monitoring-hero/index.html"
+                  loading="lazy"></iframe>
               </div>
-              <div class="example-copy">
-                <h3>UCR process curves</h3>
+              <div class="card-body">
+                <span class="status">native preview</span>
+                <h3>Condition monitoring</h3>
                 <p>
-                  Real process windows stay as curves. The alignment metric recovers
-                  the expected operating role for all queries; the padded-vector
-                  baseline misses all of them.
+                  Process windows become a finite metric space with operating
+                  regimes, anomaly evidence, density structure and trajectory
+                  context.
                 </p>
-                <div class="facts">
-                  <div><b>data</b><span>UCR Time Series Anomaly Detection, CC BY 4.0</span></div>
-                  <div><b>result</b><span>16/16 metric-space matches, 16/16 padded-vector misses</span></div>
-                  <div><b>export</b><span>CSV tables, heatmaps, query winners, and SVG figures</span></div>
-                </div>
                 <div class="links">
-                  <a href="../../docs/examples/process-curve-external-gallery.md">evidence</a>
-                  <a href="../../examples/engine/process_curve_external_gallery.cpp">C++ source</a>
-                  <a href="../examples/assets/process-curve-external/summary.csv">summary.csv</a>
+                  <a href="../../visual/examples/condition-monitoring-hero/index.html">open visual</a>
+                  <a href="../../examples/engine/condition_monitoring_visual_export.cpp">C++ source</a>
+                  <a href="../../docs/examples/assets/condition-monitoring/metric.visual.json">evidence</a>
                 </div>
+                <details>
+                  <summary>C++ export</summary>
+                  <pre>cmake --build build/core --target engine_condition_monitoring_visual_export
+build/core/examples/engine/engine_condition_monitoring_visual_export \
+  --export-dir docs/examples/assets/condition-monitoring</pre>
+                </details>
               </div>
             </article>
 
-            <div class="portfolio-grid" aria-label="Native visual portfolio">
-              <article class="portfolio-item">
-                <div class="portfolio-frame">
-                  <iframe
-                    title="Condition-monitoring native visual"
-                    src="../../visual/examples/condition-monitoring-hero/index.html"
-                    loading="lazy"></iframe>
+            <article class="card">
+              <div class="visual">
+                <iframe
+                  title="Mixed records native preview"
+                  src="../../visual/examples/mixed-record-hero/index.html"
+                  loading="lazy"></iframe>
+              </div>
+              <div class="card-body">
+                <span class="status">native preview</span>
+                <h3>Mixed records</h3>
+                <p>
+                  Typed records keep their source form while relation evidence
+                  connects strings, curves, distributions and structured rows
+                  in one finite-space workflow.
+                </p>
+                <div class="links">
+                  <a href="../../visual/examples/mixed-record-hero/index.html">open visual</a>
+                  <a href="../../examples/engine/mixed_finite_records_visual_export.cpp">C++ source</a>
+                  <a href="../../docs/examples/assets/mixed-records/metric.visual.json">evidence</a>
                 </div>
-                <div class="portfolio-copy">
-                  <h3>Condition monitoring</h3>
-                  <p>Analyze process windows as time-series records, then inspect operating-state neighborhoods, anomaly severity, local density and diagnosis labels.</p>
-                  <div class="links">
-                    <a href="../../visual/examples/condition-monitoring-hero/index.html">open visual</a>
-                    <a href="../../examples/engine/condition_monitoring_visual_export.cpp">C++ source</a>
-                  </div>
-                </div>
-              </article>
+                <details>
+                  <summary>C++ export</summary>
+                  <pre>cmake --build build/core --target engine_mixed_finite_records_visual_export
+build/core/examples/engine/engine_mixed_finite_records_visual_export \
+  --export-dir docs/examples/assets/mixed-records</pre>
+                </details>
+              </div>
+            </article>
 
-              <article class="portfolio-item">
-                <div class="portfolio-frame">
-                  <iframe
-                    title="Mixed-record native visual"
-                    src="../../visual/examples/mixed-record-hero/index.html"
-                    loading="lazy"></iframe>
+            <article class="card">
+              <div class="visual">
+                <iframe
+                  title="Cross-space dependency native preview"
+                  src="../../visual/examples/cross-space-dependency-hero/index.html"
+                  loading="lazy"></iframe>
+              </div>
+              <div class="card-body">
+                <span class="status">native preview</span>
+                <h3>Cross-space dependency</h3>
+                <p>
+                  Two paired metric spaces stay separate while linked selection
+                  and dependence evidence show how their record relations move
+                  together.
+                </p>
+                <div class="links">
+                  <a href="../../visual/examples/cross-space-dependency-hero/index.html">open visual</a>
+                  <a href="../../examples/engine/cross_space_dependency_visual_export.cpp">C++ source</a>
+                  <a href="../../docs/examples/assets/cross-space-dependency/metric.visual.json">evidence</a>
                 </div>
-                <div class="portfolio-copy">
-                  <h3>Mixed records</h3>
-                  <p>Analyze rows with categories, text, distributions, state and numeric fields through one composed metric, then inspect typed records and neighbor relations.</p>
-                  <div class="links">
-                    <a href="../../visual/examples/mixed-record-hero/index.html">open visual</a>
-                    <a href="../../examples/engine/mixed_finite_records_visual_export.cpp">C++ source</a>
-                  </div>
-                </div>
-              </article>
+                <details>
+                  <summary>C++ export</summary>
+                  <pre>cmake --build build/core --target engine_cross_space_dependency_visual_export
+build/core/examples/engine/engine_cross_space_dependency_visual_export \
+  --export-dir docs/examples/assets/cross-space-dependency</pre>
+                </details>
+              </div>
+            </article>
 
-              <article class="portfolio-item">
-                <div class="portfolio-frame">
-                  <iframe
-                    title="Cross-space dependence native visual"
-                    src="../../visual/examples/cross-space-dependency-hero/index.html"
-                    loading="lazy"></iframe>
+            <article class="card">
+              <div class="visual">
+                <iframe
+                  title="Mapping and dimensionality native preview"
+                  src="../../visual/examples/mapping-dimensionality-hero/index.html"
+                  loading="lazy"></iframe>
+              </div>
+              <div class="card-body">
+                <span class="status">native preview</span>
+                <h3>Mapping and dimensionality</h3>
+                <p>
+                  A coordinate view is treated as a derived state of a source
+                  metric space, with morph timing and residual evidence showing
+                  what is preserved or distorted.
+                </p>
+                <div class="links">
+                  <a href="../../visual/examples/mapping-dimensionality-hero/index.html">open visual</a>
+                  <a href="../../examples/engine/mapping_dimensionality_visual_export.cpp">C++ source</a>
+                  <a href="../../docs/examples/assets/mapping-dimensionality/metric.visual.json">evidence</a>
                 </div>
-                <div class="portfolio-copy">
-                  <h3>Cross-space dependence</h3>
-                  <p>Compare event strings and process curves as paired metric spaces, with local dependence contribution and bridge evidence.</p>
-                  <div class="links">
-                    <a href="../../visual/examples/cross-space-dependency-hero/index.html">open visual</a>
-                    <a href="../../examples/engine/cross_space_dependency_visual_export.cpp">C++ source</a>
-                  </div>
-                </div>
-              </article>
+                <details>
+                  <summary>C++ export</summary>
+                  <pre>cmake --build build/core --target engine_mapping_dimensionality_visual_export
+build/core/examples/engine/engine_mapping_dimensionality_visual_export \
+  --export-dir docs/examples/assets/mapping-dimensionality</pre>
+                </details>
+              </div>
+            </article>
 
-              <article class="portfolio-item">
-                <div class="portfolio-frame">
-                  <iframe
-                    title="Relation matrix native visual"
-                    src="../../visual/examples/relation-matrix-neighborhood/index.html"
-                    loading="lazy"></iframe>
+            <article class="card">
+              <div class="visual">
+                <iframe
+                  title="Dynamics native preview"
+                  src="../../visual/examples/dynamics-noise-hero/index.html"
+                  loading="lazy"></iframe>
+              </div>
+              <div class="card-body">
+                <span class="status">native preview</span>
+                <h3>Finite dynamics</h3>
+                <p>
+                  Timeline states, transition structure and path evidence make
+                  diffusion and reverse reconstruction visible over the finite
+                  metric space.
+                </p>
+                <div class="links">
+                  <a href="../../visual/examples/dynamics-noise-hero/index.html">open visual</a>
+                  <a href="../../examples/engine/finite_metric_dynamics_visual_export.cpp">C++ source</a>
+                  <a href="../../docs/examples/assets/dynamics-noise/metric.visual.json">evidence</a>
                 </div>
-                <div class="portfolio-copy">
-                  <h3>Relation matrix</h3>
-                  <p>Inspect the pair relation itself as a matrix and a linked neighborhood graph, keeping record and pair identity visible.</p>
-                  <div class="links">
-                    <a href="../../visual/examples/relation-matrix-neighborhood/index.html">open visual</a>
-                    <a href="../../examples/engine/relation_matrix_visual_export.cpp">C++ source</a>
-                  </div>
-                </div>
-              </article>
+                <details>
+                  <summary>C++ export</summary>
+                  <pre>cmake --build build/core --target engine_finite_metric_dynamics_visual_export
+build/core/examples/engine/engine_finite_metric_dynamics_visual_export \
+  --export-dir docs/examples/assets/dynamics-noise</pre>
+                </details>
+              </div>
+            </article>
 
-              <article class="portfolio-item">
-                <div class="portfolio-frame">
-                  <iframe
-                    title="Dynamics native visual"
-                    src="../../visual/examples/dynamics-noise-hero/index.html"
-                    loading="lazy"></iframe>
+            <article class="card">
+              <div class="visual">
+                <iframe
+                  title="Relation matrix native preview"
+                  src="../../visual/examples/relation-matrix-neighborhood/index.html"
+                  loading="lazy"></iframe>
+              </div>
+              <div class="card-body">
+                <span class="status">native preview</span>
+                <h3>Relation matrix</h3>
+                <p>
+                  Pair values are evidence in their own right: blocks,
+                  neighborhoods and selected cells connect the matrix back to
+                  records and pair previews.
+                </p>
+                <div class="links">
+                  <a href="../../visual/examples/relation-matrix-neighborhood/index.html">open visual</a>
+                  <a href="../../examples/engine/relation_matrix_visual_export.cpp">C++ source</a>
+                  <a href="../../docs/examples/assets/relation-matrix/metric.visual.json">evidence</a>
                 </div>
-                <div class="portfolio-copy">
-                  <h3>Dynamics</h3>
-                  <p>Study how measures move across a finite space through forward diffusion and reverse reconstruction states.</p>
-                  <div class="links">
-                    <a href="../../visual/examples/dynamics-noise-hero/index.html">open visual</a>
-                    <a href="../../examples/engine/finite_metric_dynamics_visual_export.cpp">C++ source</a>
-                  </div>
-                </div>
-              </article>
+                <details>
+                  <summary>C++ export</summary>
+                  <pre>cmake --build build/core --target engine_relation_matrix_visual_export
+build/core/examples/engine/engine_relation_matrix_visual_export \
+  --export-dir docs/examples/assets/relation-matrix</pre>
+                </details>
+              </div>
+            </article>
 
-              <article class="portfolio-item">
-                <div class="portfolio-frame">
-                  <iframe
-                    title="Mapping and dimensionality native visual"
-                    src="../../visual/examples/mapping-dimensionality-hero/index.html"
-                    loading="lazy"></iframe>
+            <article class="card">
+              <div class="visual">
+                <iframe
+                  title="External process-curve native preview"
+                  src="../../visual/examples/process-curve-external-hero/index.html"
+                  loading="lazy"></iframe>
+              </div>
+              <div class="card-body">
+                <span class="status">native preview</span>
+                <h3>UCR process curves</h3>
+                <p>
+                  Real process-curve windows are compared as curves. The current
+                  public slice is kept honest as a native preview until the
+                  source-record count is large enough for hero status.
+                </p>
+                <div class="links">
+                  <a href="../../visual/examples/process-curve-external-hero/index.html">open visual</a>
+                  <a href="../../examples/engine/process_curve_external_visual_export.cpp">C++ source</a>
+                  <a href="../../docs/examples/assets/process-curve-external/metric.visual.json">evidence</a>
                 </div>
-                <div class="portfolio-copy">
-                  <h3>Mapping</h3>
-                  <p>Derive coordinate views from the source metric space and inspect local distortion instead of treating coordinates as the starting point.</p>
-                  <div class="links">
-                    <a href="../../visual/examples/mapping-dimensionality-hero/index.html">open visual</a>
-                    <a href="../../examples/engine/mapping_dimensionality_visual_export.cpp">C++ source</a>
-                  </div>
-                </div>
-              </article>
-            </div>
+                <details>
+                  <summary>C++ export</summary>
+                  <pre>cmake --build build/core --target engine_process_curve_external_visual_export
+build/core/examples/engine/engine_process_curve_external_visual_export \
+  --export-dir docs/examples/assets/process-curve-external</pre>
+                </details>
+              </div>
+            </article>
           </div>
         </div>
       </section>
@@ -705,59 +652,31 @@
           <div class="section-head">
             <div>
               <p class="eyebrow">Concept</p>
-              <h2>A finite metric space starts with records.</h2>
+              <h2>Records first. Metrics make them computable.</h2>
             </div>
             <p>
-              METRIC does not require one universal coordinate artifact. It requires a
-              metric for record pairs. Once pair values exist, the framework can
-              build and operate the finite space.
+              METRIC starts from finite records and true pair metrics. Coordinate
+              views, embeddings, graphs, fields and dynamics are derived views
+              over that finite relation structure.
             </p>
           </div>
           <div class="concept-grid">
             <div class="concept">
               <strong>Records</strong>
-              <p>Observations enter the computer as finite records: images, time windows, text, distributions, graphs, vectors, or structured rows.</p>
+              <p>Images, strings, curves, distributions, graphs, vectors and structured rows enter as finite records.</p>
             </div>
             <div class="concept">
               <strong>Metric</strong>
-              <p>A true metric assigns one value to each record pair. In applications that value can be read as minimal recoding effort.</p>
+              <p>A true metric assigns one pair value. In applications this can be read as minimal recoding effort between records.</p>
             </div>
             <div class="concept">
               <strong>Space</strong>
-              <p>The record set plus the metric becomes a computable finite space for search, entropy, correlation, mapping, and monitoring.</p>
+              <p>Records plus metric become a finite space for search, entropy, correlation, mapping, monitoring and dynamics.</p>
             </div>
             <div class="concept">
-              <strong>Coordinate methods</strong>
-              <p>Coordinate tables and vector-style analysis are special cases of finite metric spaces.</p>
+              <strong>Visual evidence</strong>
+              <p>The browser renders exported evidence. It does not recompute METRIC algorithms or invent missing results.</p>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="next" class="section">
-        <div class="wrap">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Direction</p>
-              <h2>The project contract.</h2>
-            </div>
-            <p>
-              METRIC is built around finite metric spaces. Public features
-              should preserve the source metric, report lineage, expose cost
-              and exactness, and keep implementation authority in native C++.
-            </p>
-          </div>
-          <div class="planned-grid">
-            <div class="planned"><small>contract</small><strong>Metric first</strong><p>Records keep their native form. A documented true metric defines the finite-space geometry before any coordinate view is introduced.</p></div>
-            <div class="planned"><small>contract</small><strong>Native evidence</strong><p>C++ owns metric values, derived states, diagnostics, solver outputs, and export artifacts. Presentation layers inspect evidence.</p></div>
-            <div class="planned"><small>contract</small><strong>Lineage</strong><p>Represented, reduced, mapped, and modified spaces must carry source identities, provenance, metric status, and validity notes.</p></div>
-            <div class="planned"><small>contract</small><strong>Scale aware</strong><p>Execution should expose distance-evaluation cost, memory pressure, exactness, approximation, and refusal reasons before expensive work.</p></div>
-            <div class="planned"><small>contract</small><strong>Derived spaces</strong><p>Coordinate views, diffusion coordinates, dynamics, and quotient spaces are explicit products of a source metric space, not hidden preprocessing.</p></div>
-            <div class="planned"><small>contract</small><strong>Bindings</strong><p>Language bindings adapt user data to the native engine surface and report availability instead of reimplementing METRIC algorithms.</p></div>
-          </div>
-          <div class="hero-actions">
-            <a class="button" href="../../docs/engine/metric-space-modification-plan.md">Read roadmap</a>
-            <a class="button" href="../../docs/visual/metric-visual-engine-implementation-plan.md">Visual engine plan</a>
           </div>
         </div>
       </section>

@@ -78,9 +78,9 @@ async function main() {
     ["timeline marks carry exported property samples", control.marks.every((mark) => mark.activePropertySample?.propertyId === "reverse-mse-to-clean" && mark.activePropertySample.algorithmicComputation === false), control.marks],
     ["timeline states select exported property samples", states.every((state) => state.activePropertySample?.propertyId === "reverse-mse-to-clean" && state.activePropertySample.source === "exported-property"), states],
     ["dynamics sampled views select exported start/middle/end coordinates", sampledViews.map((sample) => sample.pointCoordinateId).join(",") === "coord-reverse-00,coord-reverse-20,coord-reverse-40", sampledViews],
-    ["dynamics field descriptors are reusable HeatFieldLayer descriptors", sampledViews.every((sample) => sample.fieldPrimitive === "HeatFieldLayer" && sample.recordCount === 28), sampledViews],
-    ["dynamics field state follows exported reverse MSE samples", roughly(fieldValues[0], 0.0175987) && roughly(fieldValues[1], 0.0190614) && roughly(fieldValues[2], 0.0375194), fieldValues],
-    ["dynamics field scalar channel changes with timeline state", sampledViews.map((sample) => Number(sample.timelineScalar).toFixed(7)).join(",") === "0.0175987,0.0190614,0.0375194", sampledViews],
+    ["dynamics field descriptors are reusable HeatFieldLayer descriptors", sampledViews.every((sample) => sample.fieldPrimitive === "HeatFieldLayer" && sample.recordCount === 512), sampledViews],
+    ["dynamics field state follows exported reverse MSE samples", roughly(fieldValues[0], 0.0153362) && roughly(fieldValues[1], 0.0050846) && roughly(fieldValues[2], 0.0103288), fieldValues],
+    ["dynamics field scalar channel changes with timeline state", sampledViews.map((sample) => Number(sample.timelineScalar).toFixed(7)).join(",") === "0.0153362,0.0050846,0.0103288", sampledViews],
     ["dynamics field uses selected exported record property without recomputing dynamics", sampledViews.every((sample) => sample.activeFieldPropertyId === "best-reconstruction-error" && sample.algorithmicComputation === false), sampledViews],
     ["dynamics field state is exported property evidence", sampledViews.every((sample) => sample.fieldState?.source === "exported-property" && sample.fieldState?.algorithmicComputation === false), sampledViews],
   ];

@@ -17,13 +17,15 @@ surface never surprises you.
 - **Search:** exact k-NN, nearest, and range queries.
 - **Structure / stats:** `describe_structure`, `profile`, `entropy`,
   `intrinsic_dimension`, `regular_sample`, distance distribution.
-- **Grouping:** `kmedoids`, `dbscan`, `affinity_propagation` — and only these.
-- **Singular-record scoring:** DBSCAN density-residual records and
-  k-NN-distance scoring — and only these.
+- **Grouping:** `find_groups` / `Space.groups(...)` over finite metric spaces,
+  with representative, radius-density, and affinity-propagation strategies behind
+  that surface.
+- **Singular-record scoring:** density-unassigned records and k-NN-distance
+  scoring — and only these.
 - **Representatives / reduction / compression / thinning:** farthest-first,
-  coverage/k-center, radius coverage, k-medoids, distribution-preserving
-  thinning, uniform-density radius nets, equalization by uniform-density radius
-  nets.
+  coverage/k-center, radius coverage, medoid representatives,
+  distribution-preserving thinning, uniform-density radius nets, equalization by
+  uniform-density radius nets.
 - **Dependence:** MGC significance between aligned spaces (a dependence test,
   never a metric).
 - **Derived coordinate spaces (maps):** PCFA (linear), solver-backed
@@ -41,8 +43,8 @@ These are deliberately absent; do not expect them in the supported surface:
 
 - Neighbor-graph manifold embeddings (UMAP / t-SNE / Isomap / LLE). Only PCFA,
   the parametric coordinate solver, parametric diffusion coordinate, and classical MDS exist.
-- Broad grouping families beyond the three above (no k-means, GMM, spectral, or
-  hierarchical clustering in the promoted surface).
+- Broad grouping families beyond the promoted finite-space strategies (no
+  k-means, GMM, spectral, or hierarchical clustering in the promoted surface).
 - Classification and regression surfaces. METRIC is not a supervised or
   unsupervised ML collection; it is a library for computing with finite metric
   spaces. A classifier can be built on top of a metric-space search surface, but

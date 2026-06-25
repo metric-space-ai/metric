@@ -65,7 +65,6 @@ from .operators import (
     compress_space,
     compare_spaces,
     correlate_spaces,
-    dbscan,
     density_filter_space,
     describe_structure,
     distribution_sample_space,
@@ -82,7 +81,6 @@ from .operators import (
     graph_degree_diagnostics,
     graph_stretch_diagnostics,
     intrinsic_dimension,
-    kmedoids,
     map_space,
     medoid,
     medoid_index,
@@ -106,9 +104,12 @@ from .spaces import FiniteMetricSpace, MatrixSpace, RecordId, Space
 # They are implementation detail, not part of the documented top-level adapter
 # surface, so keep them out of __all__.
 _PRIVATE_NATIVE_NAMES = {"CompressedMatrix", "DynamicMatrix"}
+_ROOT_HIDDEN_NATIVE_NAMES = {"dbscan", "kmedoids"}
+for _name in _ROOT_HIDDEN_NATIVE_NAMES:
+    globals().pop(_name, None)
 
 __all__ = sorted(
     name
     for name in globals()
-    if not name.startswith("_") and name not in {"annotations"} | _PRIVATE_NATIVE_NAMES
+    if not name.startswith("_") and name not in {"annotations"} | _PRIVATE_NATIVE_NAMES | _ROOT_HIDDEN_NATIVE_NAMES
 )

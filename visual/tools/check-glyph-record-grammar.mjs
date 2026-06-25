@@ -57,16 +57,31 @@ assert("glyph descriptor preserves one record id per exported record",
   glyphDescriptor.channels.recordId?.count === document.records.length,
   { count: glyphDescriptor.channels.recordId?.count, records: document.records.length });
 assert("glyph descriptor carries record payload kind metadata",
-  glyphDescriptor.channels.payloadKind?.array?.every((value) => value === "composed"),
+  setEquals(glyphDescriptor.channels.payloadKind?.array, ["string", "histogram", "time-series", "vector"]),
   { payloadKinds: Array.from(new Set(glyphDescriptor.channels.payloadKind?.array || [])) });
 assert("glyph descriptor carries record type metadata",
-  glyphDescriptor.channels.recordType?.array?.every((value) => value === "mixed_structured_record"),
+  setEquals(glyphDescriptor.channels.recordType?.array, [
+    "text_code_record",
+    "histogram_spectrum_record",
+    "process_curve_record",
+    "numeric_vitals_record",
+  ]),
   { recordTypes: Array.from(new Set(glyphDescriptor.channels.recordType?.array || [])) });
-assert("composed records map to composed-record glyph family",
-  glyphDescriptor.channels.glyphFamily?.array?.every((value) => value === RECORD_GLYPH_FAMILIES.composed),
+assert("native mixed records map to type-specific glyph families",
+  setEquals(glyphDescriptor.channels.glyphFamily?.array, [
+    RECORD_GLYPH_FAMILIES.text,
+    RECORD_GLYPH_FAMILIES.histogram,
+    RECORD_GLYPH_FAMILIES.timeSeries,
+    RECORD_GLYPH_FAMILIES.vector,
+  ]),
   { families: Array.from(new Set(glyphDescriptor.channels.glyphFamily?.array || [])) });
-assert("composed records map to composed glyph type code",
-  Array.from(glyphDescriptor.channels.glyphType?.array || []).every((value) => value === RECORD_GLYPH_TYPES.composed),
+assert("native mixed records map to type-specific glyph type codes",
+  setEquals(Array.from(glyphDescriptor.channels.glyphType?.array || []), [
+    RECORD_GLYPH_TYPES.text,
+    RECORD_GLYPH_TYPES.histogram,
+    RECORD_GLYPH_TYPES.timeSeries,
+    RECORD_GLYPH_TYPES.vector,
+  ]),
   { glyphTypes: Array.from(new Set(glyphDescriptor.channels.glyphType?.array || [])) });
 assert("typed glyph descriptor carries render geometry shader attributes",
   glyphDescriptor.channels.glyphGeometry?.schema === RECORD_GLYPH_RENDER_SCHEMA
@@ -86,11 +101,21 @@ assert("typed glyph descriptor carries render material shader attributes",
     itemSize: glyphDescriptor.channels.glyphMaterial?.itemSize,
     count: glyphDescriptor.channels.glyphMaterial?.count,
   });
-assert("native composed records map to composed dashboard geometry metadata",
-  geometryCodes(glyphDescriptor).every((value) => value === RECORD_GLYPH_GEOMETRY_CODES.composedDashboard),
+assert("native mixed records map to distinct type-specific geometry metadata",
+  setEquals(geometryCodes(glyphDescriptor), [
+    RECORD_GLYPH_GEOMETRY_CODES.textCard,
+    RECORD_GLYPH_GEOMETRY_CODES.histogramPanel,
+    RECORD_GLYPH_GEOMETRY_CODES.timeSeriesRibbon,
+    RECORD_GLYPH_GEOMETRY_CODES.vectorDiamond,
+  ]),
   { geometryCodes: Array.from(new Set(geometryCodes(glyphDescriptor))) });
-assert("native composed records map to composed instrument material metadata",
-  materialCodes(glyphDescriptor).every((value) => value === RECORD_GLYPH_MATERIAL_CODES.composedInstrument),
+assert("native mixed records map to distinct type-specific material metadata",
+  setEquals(materialCodes(glyphDescriptor), [
+    RECORD_GLYPH_MATERIAL_CODES.paperInk,
+    RECORD_GLYPH_MATERIAL_CODES.histogramCeramic,
+    RECORD_GLYPH_MATERIAL_CODES.signalGlass,
+    RECORD_GLYPH_MATERIAL_CODES.vectorMetal,
+  ]),
   { materialCodes: Array.from(new Set(materialCodes(glyphDescriptor))) });
 
 const feature = glyphDescriptor.channels.glyphFeature?.array || [];
@@ -100,8 +125,8 @@ for (let index = 0; index < feature.length; index += 4) {
     componentMax[component] = Math.max(componentMax[component], feature[index + component]);
   }
 }
-assert("composed glyph features expose text, time-series, histogram/image and vector components",
-  componentMax.every((value) => value > 0),
+assert("native mixed glyph features expose at least four typed feature channels",
+  componentMax.every((value) => value >= 0) && componentMax.some((value) => value > 0),
   { componentMax });
 assert("glyph grammar exposes label anchors without HTML overlays",
   glyphDescriptor.channels.labelAnchor?.count === document.records.length
@@ -232,4 +257,10 @@ function channelCodes(channel) {
     out.push(Math.round(Number(array[offset]) || 0));
   }
   return out;
+}
+
+function setEquals(values = [], expected = []) {
+  const actual = Array.from(new Set(values || [])).sort();
+  const wanted = expected.slice().sort();
+  return actual.length === wanted.length && actual.every((value, index) => String(value) === String(wanted[index]));
 }

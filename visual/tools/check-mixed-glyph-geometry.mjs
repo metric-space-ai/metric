@@ -65,6 +65,8 @@ class FakeRuntime {
 }
 
 const document = JSON.parse(await readFile(MIXED_ASSET, "utf8"));
+const nativeRecordTypes = recordTypeCounts(document.records);
+const nativePayloadKinds = payloadKindCounts(document.records);
 const runtime = new FakeRuntime();
 const surface = new MetricVisualSurface({
   document,
@@ -86,9 +88,10 @@ const surface = new MetricVisualSurface({
 
 surface.showMixedRecords({
   coordinateId: "mixed-finite-records-family-severity-3d",
-  glyphBy: "family",
-  labels: "family",
+  glyphBy: "record_type",
+  labels: "record_type",
   relationId: "mixed-finite-records-composite-metric",
+  crossTypeProperty: "record_type",
   topK: 5,
   preview: false,
 });
@@ -121,18 +124,55 @@ assert("mixed glyph descriptor exposes render geometry and material channels",
     glyphGeometry: summarizeChannel(glyphDescriptor.channels.glyphGeometry),
     glyphMaterial: summarizeChannel(glyphDescriptor.channels.glyphMaterial),
   });
-assert("native composed payloads render as composed dashboard/instrument instances",
-  uniqueCodes(glyphDescriptor.channels.glyphGeometry).length === 1
-    && uniqueCodes(glyphDescriptor.channels.glyphGeometry)[0] === RECORD_GLYPH_GEOMETRY_CODES.composedDashboard
-    && uniqueCodes(glyphDescriptor.channels.glyphMaterial).length === 1
-    && uniqueCodes(glyphDescriptor.channels.glyphMaterial)[0] === RECORD_GLYPH_MATERIAL_CODES.composedInstrument,
+assert("native mixed asset exposes four honest exported record types",
+  nativeRecordTypes.text_code_record === 500
+    && nativeRecordTypes.histogram_spectrum_record === 500
+    && nativeRecordTypes.process_curve_record === 500
+    && nativeRecordTypes.numeric_vitals_record === 500,
+  { nativeRecordTypes });
+assert("native mixed asset exposes four typed payload families",
+  nativePayloadKinds.string === 500
+    && nativePayloadKinds.histogram === 500
+    && nativePayloadKinds["time-series"] === 500
+    && nativePayloadKinds.vector === 500,
+  { nativePayloadKinds });
+assert("native top-level payloads render as distinct typed glyph geometry/material instances",
+  uniqueCodes(glyphDescriptor.channels.glyphGeometry).join(",") === [
+    RECORD_GLYPH_GEOMETRY_CODES.textCard,
+    RECORD_GLYPH_GEOMETRY_CODES.timeSeriesRibbon,
+    RECORD_GLYPH_GEOMETRY_CODES.histogramPanel,
+    RECORD_GLYPH_GEOMETRY_CODES.vectorDiamond,
+  ].join(",")
+    && uniqueCodes(glyphDescriptor.channels.glyphMaterial).join(",") === [
+      RECORD_GLYPH_MATERIAL_CODES.paperInk,
+      RECORD_GLYPH_MATERIAL_CODES.signalGlass,
+      RECORD_GLYPH_MATERIAL_CODES.histogramCeramic,
+      RECORD_GLYPH_MATERIAL_CODES.vectorMetal,
+    ].join(","),
   {
     geometryCodes: uniqueCodes(glyphDescriptor.channels.glyphGeometry),
     materialCodes: uniqueCodes(glyphDescriptor.channels.glyphMaterial),
   });
-assert("native composed payloads still expose component slots for typed sub-geometry",
-  componentMax(glyphDescriptor.channels.glyphFeature?.array).every((value) => value > 0),
-  { componentMax: componentMax(glyphDescriptor.channels.glyphFeature?.array) });
+assert("native typed glyph descriptor carries exported record type and payload metadata",
+  setEquals(glyphDescriptor.channels.recordType?.array, Object.keys(nativeRecordTypes))
+    && setEquals(glyphDescriptor.channels.payloadKind?.array, Object.keys(nativePayloadKinds)),
+  {
+    recordTypes: Array.from(new Set(glyphDescriptor.channels.recordType?.array || [])).sort(),
+    payloadKinds: Array.from(new Set(glyphDescriptor.channels.payloadKind?.array || [])).sort(),
+  });
+
+const edgeDescriptor = descriptors.find((descriptor) => descriptor.primitive === "RelationEdgeLayer");
+assert("native mixed graph emits selectable cross-type relation edges",
+  edgeDescriptor?.metadata?.primaryGrammar === "cross-type-relation-edges"
+    && edgeDescriptor?.metadata?.crossTypeRelations === true
+    && edgeDescriptor?.metadata?.graph?.native === true
+    && edgeDescriptor?.metadata?.graph?.edgeCount === 6000
+    && edgeDescriptor?.primitive === "RelationEdgeLayer"
+    && edgeDescriptor?.metadata?.selectionModel?.pairSource === "native-graph-evidence",
+  {
+    source: edgeDescriptor?.source,
+    metadata: edgeDescriptor?.metadata,
+  });
 
 const direct = createRecordGlyphGrammar([
   { id: "text", record_type: "text_note", payload: { kind: "text", text: "operator note" } },
@@ -209,10 +249,13 @@ console.log(JSON.stringify({
   ok: true,
   asset: "docs/examples/assets/mixed-records/metric.visual.json",
   records: document.records.length,
+  nativeRecordTypes,
+  nativePayloadKinds,
   runtimeSetCalls: runtime.setCalls,
   descriptorCount: descriptors.length,
   nativeGeometryCodes: uniqueCodes(glyphDescriptor.channels.glyphGeometry),
   nativeMaterialCodes: uniqueCodes(glyphDescriptor.channels.glyphMaterial),
+  nativeEdgeCount: edgeDescriptor?.metadata?.graph?.edgeCount || 0,
   directGeometryCodes,
   directMaterialCodes,
   shaderAttributes: ["aGlyphGeometry", "aGlyphMaterial"],
@@ -252,4 +295,36 @@ function componentMax(array = []) {
     }
   }
   return out;
+}
+
+function recordTypeCounts(records = []) {
+  const out = {};
+  for (const record of records) {
+    const key = String(record?.record_type || record?.type || "");
+    if (!key) continue;
+    out[key] = (out[key] || 0) + 1;
+  }
+  return out;
+}
+
+function payloadKindCounts(records = []) {
+  const out = {};
+  for (const record of records) {
+    const key = normalizePayloadKind(record?.payload?.kind || record?.payload?.type || "");
+    if (!key) continue;
+    out[key] = (out[key] || 0) + 1;
+  }
+  return out;
+}
+
+function normalizePayloadKind(value) {
+  const text = String(value || "").trim().replace(/_/g, "-");
+  if (text === "time_series" || text === "timeseries") return "time-series";
+  return text;
+}
+
+function setEquals(values = [], expected = []) {
+  const actual = Array.from(new Set(values || [])).sort();
+  const wanted = expected.slice().sort();
+  return actual.length === wanted.length && actual.every((value, index) => value === wanted[index]);
 }

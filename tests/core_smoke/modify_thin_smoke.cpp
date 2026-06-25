@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -10,6 +11,16 @@
 
 struct AbsoluteDistance {
 	auto operator()(int lhs, int rhs) const -> int { return lhs > rhs ? lhs - rhs : rhs - lhs; }
+};
+
+struct CountingAbsoluteDistance {
+	std::shared_ptr<std::size_t> calls;
+
+	auto operator()(int lhs, int rhs) const -> int
+	{
+		++*calls;
+		return lhs > rhs ? lhs - rhs : rhs - lhs;
+	}
 };
 
 struct EditDistance {
@@ -76,6 +87,16 @@ struct CustomerDistance {
 };
 
 auto close(double lhs, double rhs) -> bool { return std::abs(lhs - rhs) < 1.0e-9; }
+
+auto line_records(std::size_t count) -> std::vector<int>
+{
+	std::vector<int> records;
+	records.reserve(count);
+	for (std::size_t index = 0; index < count; ++index) {
+		records.push_back(static_cast<int>(index));
+	}
+	return records;
+}
 
 #define REQUIRE(condition)                                                                                              \
 	do {                                                                                                                \
@@ -181,6 +202,64 @@ int main()
 	REQUIRE(equalized.diagnostics.populated);
 	REQUIRE(equalized.diagnostics.target_record_count == equalized.space.size());
 	REQUIRE(close(equalized.diagnostics.local_volume_density_drift, -1.0 / 12.0));
+
+	const auto chunked_records = line_records(48);
+	auto chunked_calls = std::make_shared<std::size_t>(0);
+	const auto chunked_space = mtrc::make_space(chunked_records, CountingAbsoluteDistance{chunked_calls});
+	auto chunked_policy = mtrc::space::storage::using_distance_table();
+	chunked_policy = mtrc::space::storage::with_distance_table_budget(chunked_policy, 8, 0);
+	chunked_policy = mtrc::space::storage::allow_approximate_fallback(chunked_policy);
+	chunked_policy = mtrc::space::storage::allow_chunking_fallback(chunked_policy);
+	const auto chunked_plan = mtrc::space::storage::estimate_cost(chunked_space, "resample", chunked_policy);
+	REQUIRE(chunked_plan.allowed);
+	REQUIRE(chunked_plan.downgraded);
+	REQUIRE(!chunked_plan.exact);
+	REQUIRE(chunked_plan.representation == "chunked_space_view");
+	const auto chunked_uniform = mtrc::thin(chunked_space, mtrc::uniform_density(8), chunked_policy);
+	REQUIRE(chunked_uniform.mapping == "thin");
+	REQUIRE(chunked_uniform.strategy == "chunked_uniform_density_radius_net");
+	REQUIRE(chunked_uniform.representation == "chunked_space_view");
+	REQUIRE(chunked_uniform.source_record_count == chunked_space.size());
+	REQUIRE(chunked_uniform.has_assignment_summary);
+	REQUIRE(chunked_uniform.assignments.size() == chunked_space.size());
+	REQUIRE(chunked_uniform.diagnostics.populated);
+	REQUIRE(chunked_uniform.diagnostics.policy == "chunked_radius_net");
+	REQUIRE(*chunked_calls < chunked_space.size() * (chunked_space.size() - 1) / 2);
+
+	const auto sampled_records = line_records(80);
+	auto sampled_calls = std::make_shared<std::size_t>(0);
+	const auto sampled_space = mtrc::make_space(sampled_records, CountingAbsoluteDistance{sampled_calls});
+	auto sampled_policy = mtrc::space::storage::using_knn_graph(16);
+	sampled_policy = mtrc::space::storage::with_distance_table_budget(sampled_policy, 8, 0);
+	sampled_policy = mtrc::space::storage::allow_approximate_fallback(sampled_policy);
+	const auto sampled_plan = mtrc::space::storage::estimate_cost(
+		sampled_space, "resample", mtrc::space::storage::using_distance_table(sampled_policy));
+	REQUIRE(sampled_plan.allowed);
+	REQUIRE(sampled_plan.downgraded);
+	REQUIRE(!sampled_plan.exact);
+	REQUIRE(sampled_plan.representation == "sampled_metric_space");
+	const auto sampled_uniform = mtrc::equalize(sampled_space, mtrc::uniform_density(8), sampled_policy);
+	REQUIRE(sampled_uniform.mapping == "equalize");
+	REQUIRE(sampled_uniform.strategy == "sampled_uniform_density_radius_net");
+	REQUIRE(sampled_uniform.representation == "sampled_metric_space");
+	REQUIRE(sampled_uniform.source_record_count == sampled_space.size());
+	REQUIRE(sampled_uniform.has_assignment_summary);
+	REQUIRE(sampled_uniform.assignments.size() == sampled_space.size());
+	REQUIRE(sampled_uniform.diagnostics.populated);
+	REQUIRE(sampled_uniform.diagnostics.policy == "sampled_radius_net");
+	REQUIRE(*sampled_calls < sampled_space.size() * (sampled_space.size() - 1) / 2);
+
+	const auto large_records = line_records(4097);
+	auto large_calls = std::make_shared<std::size_t>(0);
+	const auto large_space = mtrc::make_space(large_records, CountingAbsoluteDistance{large_calls});
+	const auto large_uniform = mtrc::uniform_density_sample(large_space, mtrc::uniform_density(128));
+	REQUIRE(large_uniform.strategy == "sampled_uniform_density_radius_net");
+	REQUIRE(large_uniform.representation == "sampled_metric_space");
+	REQUIRE(large_uniform.source_record_count == large_space.size());
+	REQUIRE(large_uniform.has_assignment_summary);
+	REQUIRE(large_uniform.assignments.size() == large_space.size());
+	REQUIRE(large_uniform.diagnostics.policy == "sampled_radius_net");
+	REQUIRE(*large_calls < large_space.size() * (large_space.size() - 1) / 2);
 
 	const auto empty_thinned = mtrc::thin(space, 0);
 	REQUIRE(empty_thinned.empty());

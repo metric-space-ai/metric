@@ -87,7 +87,8 @@ async function main() {
     });
     surface.timelineControlWidget.setValue(0.5, { source: "check-surface-scrub", dispatch: true });
     const surfacePoint = surface.descriptors.find((descriptor) => descriptor.primitive === "InstancedPointLayer");
-    const surfaceField = surface.descriptors.find((descriptor) => descriptor.metadata?.evidenceRole === "timeline-ground-field");
+    const surfaceField = surface.descriptors.find((descriptor) => descriptor.primitive === "HeatFieldLayer"
+      && descriptor.source?.viewClass === "PropertyFieldView");
 
     checks.push(
       ["widget discovers timeline-control descriptor from DynamicsView descriptors", control?.schema === "metric.visual.timeline_control.v1", control],
@@ -100,7 +101,7 @@ async function main() {
       ["widget reset pauses playback and returns to exported start", resetState?.playing === false && resetState?.normalized === 0 && resetState?.activeCoordinateId === "coord-reverse-00", resetState],
       ["surface attaches runtime timeline widget for dynamics", surface.timelineControlWidget instanceof TimelineControlWidget && surfaceRoot.children.includes(surface.timelineControlWidget.element), surfaceRoot.children.length],
       ["surface scrub rebuilds dynamics through exported timeline progress", surface.views[0]?.activeStep === 20 && surfacePoint?.metadata?.activeCoordinateId === "coord-reverse-20", surfacePoint?.metadata],
-      ["surface field follows exported timeline property after widget scrub", surfaceField?.metadata?.timelineFieldState?.source === "exported-property" && Number(surfaceField?.channels?.timelineScalar?.array?.[0]).toFixed(7) === "0.0190614", surfaceField?.metadata?.timelineFieldState],
+      ["surface field follows exported timeline property after widget scrub", surfaceField?.source?.coordinateId === "coord-reverse-20" && surfaceField?.source?.propertyId === "best-reconstruction-error" && surfacePoint?.metadata?.timelineFieldState?.source === "exported-property" && Number(surfacePoint?.metadata?.timelineFieldState?.value).toFixed(7) === "0.0050846", { field: surfaceField?.source, timelineFieldState: surfacePoint?.metadata?.timelineFieldState }],
       ["widget source does not compute removed dynamics algorithms", !/\b(?:diffusion|Redif|redif|denoise)\b/.test(widgetSource), null],
     );
 

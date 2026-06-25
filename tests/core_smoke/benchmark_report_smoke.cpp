@@ -756,6 +756,90 @@ int main()
 	chunked_guardrail.notes = "CountingMetric proves m*O(b^2) local work plus representative merge";
 	report.add_scale_guardrail(chunked_guardrail);
 
+	auto chunked_compare_left_metric = mtrc::benchmarks::make_counting_metric(AbsoluteDistance{});
+	auto chunked_compare_right_metric = mtrc::benchmarks::make_counting_metric(AbsoluteDistance{});
+	const auto chunked_compare_left_counter = chunked_compare_left_metric.counter();
+	const auto chunked_compare_right_counter = chunked_compare_right_metric.counter();
+	auto chunked_compare_right_records = chunked_records;
+	for (auto &value : chunked_compare_right_records) {
+		value = value * value + 3;
+	}
+	auto chunked_compare_left_space = mtrc::make_space(chunked_records, chunked_compare_left_metric);
+	auto chunked_compare_right_space = mtrc::make_space(chunked_compare_right_records, chunked_compare_right_metric);
+	auto chunked_compare_policy = mtrc::space::storage::using_distance_table();
+	chunked_compare_policy =
+		mtrc::space::storage::with_distance_table_budget(chunked_compare_policy, chunked_chunk_size, 0);
+	chunked_compare_policy = mtrc::space::storage::allow_approximate_fallback(chunked_compare_policy);
+	chunked_compare_policy = mtrc::space::storage::allow_chunking_fallback(chunked_compare_policy);
+	const auto chunked_compare_plan =
+		mtrc::space::storage::estimate_cost(chunked_compare_left_space, "compare", chunked_compare_policy);
+	assert(chunked_compare_plan.allowed);
+	assert(chunked_compare_plan.downgraded);
+	assert(!chunked_compare_plan.exact);
+	assert(chunked_compare_plan.representation == "chunked_space_view");
+
+	const auto chunked_compared =
+		mtrc::compare(chunked_compare_left_space, chunked_compare_right_space, chunked_compare_policy);
+	const auto chunked_compare_observed =
+		*chunked_compare_left_counter + *chunked_compare_right_counter;
+	const auto dense_compare_evaluations = chunked_record_count * (chunked_record_count - 1);
+	assert(!chunked_compared.exact);
+	assert(chunked_compared.algorithm == "chunked_mgc_estimate");
+	assert(chunked_compared.left_representation == "chunked_space_view");
+	assert(chunked_compared.right_representation == "chunked_space_view");
+	assert(chunked_compared.sample_iterations == 1);
+	assert(chunked_compared.value >= -1.0);
+	assert(chunked_compared.value <= 1.0);
+	assert(chunked_compare_observed <= chunked_compare_plan.estimated_distance_evaluations);
+	assert(chunked_compare_observed < dense_compare_evaluations);
+
+	mtrc::benchmarks::BenchmarkTargetRow chunked_compare_target;
+	chunked_compare_target.benchmark = "chunked compare target";
+	chunked_compare_target.workload = "paired MGC over chunked representative sample";
+	chunked_compare_target.record_count = chunked_record_count;
+	chunked_compare_target.query_count = 0;
+	chunked_compare_target.target = "bounded chunked MGC estimate below dense compare work";
+	chunked_compare_target.max_distance_evaluations = chunked_compare_observed;
+	chunked_compare_target.max_dense_slots = chunked_record_count * chunked_record_count;
+	chunked_compare_target.expected_representation = chunked_compared.left_representation;
+	chunked_compare_target.exact = chunked_compared.exact;
+	chunked_compare_target.automated = true;
+	chunked_compare_target.notes = "CountingMetric covers deterministic chunked compare sample";
+	report.add_benchmark_target(chunked_compare_target);
+
+	mtrc::benchmarks::BenchmarkTrendRow chunked_compare_trend;
+	chunked_compare_trend.benchmark = "chunked compare trend";
+	chunked_compare_trend.workload = "paired MGC over chunked representative sample";
+	chunked_compare_trend.record_count = chunked_record_count;
+	chunked_compare_trend.query_count = 0;
+	chunked_compare_trend.baseline_distance_evaluations = dense_compare_evaluations;
+	chunked_compare_trend.observed_distance_evaluations = chunked_compare_observed;
+	chunked_compare_trend.cached_distances = 0;
+	chunked_compare_trend.dense_distance_slots = chunked_record_count * chunked_record_count;
+	chunked_compare_trend.representation = chunked_compared.left_representation;
+	chunked_compare_trend.exact = chunked_compared.exact;
+	chunked_compare_trend.passed = chunked_compare_observed < dense_compare_evaluations;
+	chunked_compare_trend.notes = "chunked compare avoids dense paired all-pairs MGC";
+	report.add_benchmark_trend(chunked_compare_trend);
+
+	mtrc::benchmarks::ScaleGuardrailRow chunked_compare_guardrail;
+	chunked_compare_guardrail.benchmark = "chunked compare guardrail";
+	chunked_compare_guardrail.workload = "paired MGC over chunked representative sample";
+	chunked_compare_guardrail.record_count = chunked_record_count;
+	chunked_compare_guardrail.shared_operations = chunks.chunk_count();
+	chunked_compare_guardrail.exact_plan_distance_evaluations = dense_compare_evaluations;
+	chunked_compare_guardrail.naive_workflow_distance_evaluations = dense_compare_evaluations;
+	chunked_compare_guardrail.dense_distance_slots = chunked_record_count * chunked_record_count;
+	chunked_compare_guardrail.max_distance_evaluations = chunked_compare_observed;
+	chunked_compare_guardrail.expected_distance_evaluations = chunked_compare_observed;
+	chunked_compare_guardrail.observed_distance_evaluations = chunked_compare_observed;
+	chunked_compare_guardrail.decision = "chunked_mgc_estimate";
+	chunked_compare_guardrail.representation = chunked_compared.left_representation;
+	chunked_compare_guardrail.exact = chunked_compared.exact;
+	chunked_compare_guardrail.passed = chunked_compare_observed < dense_compare_evaluations;
+	chunked_compare_guardrail.notes = "CountingMetric proves bounded chunked compare work";
+	report.add_scale_guardrail(chunked_compare_guardrail);
+
 	chunked_metric.reset();
 	const auto chunked_volume = mtrc::chunked_local_volume(chunks, 4);
 	assert(*chunked_counter == chunked_plan.bounded_pair_distance_evaluations);
@@ -820,8 +904,8 @@ int main()
 	assert(report.representation_costs().size() == 2);
 	assert(report.workflow_evidence().size() == 2);
 	assert(report.performance_rows().size() == 1);
-	assert(report.benchmark_targets().size() == 8);
-	assert(report.benchmark_trends().size() == 10);
+	assert(report.benchmark_targets().size() == 9);
+	assert(report.benchmark_trends().size() == 11);
 	assert(report.wall_clock_trends().size() == 2);
 	assert(report.wall_clock_trends().front().elapsed_ns > 0);
 	assert(report.wall_clock_trends().back().benchmark == "measured wall-clock smoke");
@@ -829,7 +913,7 @@ int main()
 	assert(report.wall_clock_trends().back().distance_evaluations ==
 		   measured_wall_clock_record_count * measured_wall_clock_record_count);
 	assert(report.wall_clock_trends().back().memory_bytes_estimate > 0);
-	assert(report.scale_guardrails().size() == 6);
+	assert(report.scale_guardrails().size() == 7);
 	assert(report.out_of_core_readiness().size() == 1);
 	assert(report.run_metadata().suite == "smoke suite");
 
@@ -874,6 +958,11 @@ int main()
 	assert(markdown.find("| chunked workflow target | local exact pairs plus representative merge pairs | 48 | 0 | "
 						 "bounded chunk work below dense all-pairs | 183 | 2304 | chunked_space_view | yes | yes |") !=
 		   std::string::npos);
+	const auto chunked_compare_target_row =
+		std::string("| chunked compare target | paired MGC over chunked representative sample | 48 | 0 | "
+					"bounded chunked MGC estimate below dense compare work | ") +
+		std::to_string(chunked_compare_observed) + " | 2304 | chunked_space_view | no | yes |";
+	assert(markdown.find(chunked_compare_target_row) != std::string::npos);
 	assert(markdown.find("| chunked local-volume target | local-volume over chunked view | 48 | 0 | "
 						 "local plus representative volume work below dense directed scan | 183 | 2304 | "
 						 "chunked_space_view | no | yes |") != std::string::npos);
@@ -905,6 +994,10 @@ int main()
 		   std::string::npos);
 	assert(markdown.find("| chunked workflow trend | local exact pairs plus representative merge pairs | 48 | 0 | "
 						 "1128 | 183 | 0 | 2304 | chunked_space_view | yes | yes |") != std::string::npos);
+	const auto chunked_compare_trend_row =
+		std::string("| chunked compare trend | paired MGC over chunked representative sample | 48 | 0 | 2256 | ") +
+		std::to_string(chunked_compare_observed) + " | 0 | 2304 | chunked_space_view | no | yes |";
+	assert(markdown.find(chunked_compare_trend_row) != std::string::npos);
 	assert(markdown.find("| chunked local-volume trend | local-volume over chunked view | 48 | 0 | "
 						 "2304 | 183 | 0 | 2304 | chunked_space_view | no | yes |") != std::string::npos);
 	assert(markdown.find("## Wall-clock Trends") != std::string::npos);
@@ -938,6 +1031,13 @@ int main()
 	assert(markdown.find("| chunked workflow guardrail | local exact pairs plus representative merge pairs | 48 | "
 						 "6 | 1128 | 1128 | 2304 | 183 | 183 | 183 | chunked_local_representatives | "
 						 "chunked_space_view | yes | yes |") != std::string::npos);
+	const auto chunked_compare_guardrail_row =
+		std::string("| chunked compare guardrail | paired MGC over chunked representative sample | 48 | 6 | "
+					"2256 | 2256 | 2304 | ") +
+		std::to_string(chunked_compare_observed) + " | " + std::to_string(chunked_compare_observed) + " | " +
+		std::to_string(chunked_compare_observed) +
+		" | chunked_mgc_estimate | chunked_space_view | no | yes |";
+	assert(markdown.find(chunked_compare_guardrail_row) != std::string::npos);
 	assert(markdown.find("| chunked local-volume guardrail | local-volume over chunked view | 48 | 6 | "
 						 "2304 | 2304 | 2304 | 183 | 183 | 183 | chunked_local_volume | chunked_space_view | "
 						 "no | yes |") != std::string::npos);

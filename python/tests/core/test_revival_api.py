@@ -283,8 +283,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.describe_structure, describe_structure)
         self.assertIs(metric.find_representatives, find_representatives)
         self.assertIs(metric.reduce_space, reduce_space)
-        self.assertIs(metric.kmedoids, kmedoids)
-        self.assertIs(metric.dbscan, dbscan)
+        self.assertFalse(hasattr(metric, "kmedoids"))
+        self.assertFalse(hasattr(metric, "dbscan"))
         for strategy_name in (
             "ClassicMDS",
             "DBSCAN",
@@ -298,6 +298,10 @@ class RevivalApiTest(unittest.TestCase):
             self.assertFalse(hasattr(metric, strategy_name), strategy_name)
         with self.assertRaises(ImportError):
             exec("from metric import KMedoids", {})
+        with self.assertRaises(ImportError):
+            exec("from metric import kmedoids", {})
+        with self.assertRaises(ImportError):
+            exec("from metric import dbscan", {})
         self.assertIs(metric.CorrelationResult, CorrelationResult)
         self.assertIs(metric.compare_spaces, compare_spaces)
         self.assertIs(metric.correlate_spaces, correlate_spaces)
@@ -374,8 +378,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("find_representatives", metric.__all__)
         self.assertIn("reduce_space", metric.__all__)
         self.assertIn("compress_space", metric.__all__)
-        self.assertIn("kmedoids", metric.__all__)
-        self.assertIn("dbscan", metric.__all__)
+        self.assertNotIn("kmedoids", metric.__all__)
+        self.assertNotIn("dbscan", metric.__all__)
         for strategy_name in (
             "ClassicMDS",
             "DBSCAN",

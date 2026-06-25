@@ -32,22 +32,22 @@ The current core examples cover:
 
 These examples are release-gate examples. A failure here is a core regression.
 
-## Historical and Extended Examples
+## Extended Examples
 
-The other example folders preserve broader project history:
+The other example folders that still ship in this tree are:
 
 - `correlation_examples/`
 - `distance_examples/`
-- `dnn_examples/`
-- `energies_examples/`
-- `ensemble_examples/`
 - `laplacians_example/`
-- `mapping_examples/`
 - `space_examples/`
 - `transform_examples/`
 - `utils_examples/`
 
-Those folders are not first-page API promises and are not revival release gates. They should be promoted one area at a time only after they have deterministic expected output, clear docs, and CI coverage.
+Those folders are not first-page API promises and are not revival release gates.
+They should be promoted one area at a time only after they have deterministic
+expected output, clear docs, and CI coverage. Historical mapping, ensemble,
+energy, and standalone DNN example trees were removed from the shipped source
+surface during the finite metric-space cleanup.
 
 ## Optional, example-only third-party dependencies
 
@@ -61,12 +61,12 @@ The METRIC C++ core is header-only and dependency-free, and so are the examples 
 
 Notes:
 
-- Historical mapping examples based on the removed legacy mapping tree are no
-  longer shipped. Engine examples use the promoted finite metric-space surface.
+- Historical mapping, ensemble, energy, and standalone DNN examples based on
+  removed legacy or application-specific surfaces are no longer shipped. Engine
+  examples use the promoted finite metric-space surface.
 - Engine MNIST examples read raw MNIST IDX data via a small example-only reader
   under [`engine/assets/mnist/`](engine/assets/mnist/) (`mnist_reader.hpp`,
   Baptiste Wicht, MIT). This is not part of the METRIC core.
-- `dnn_examples/` is disabled in [CMakeLists.txt](CMakeLists.txt): it ships a stale ~47 MB `data.cereal` MNIST archive the core can no longer read.
 - A few orphaned third-party artifacts remain under `assets/` trees and are not compiled by any target: `transform_examples/assets/AudioFile.h` (Adam Stark, **GPL-3.0** — a license island in this MPL-2.0 tree) and `space_examples/assets/3dparty/serialize/archive.h` (home-grown serialize header, no consumer).
 
 The support status for each area is tracked in [../docs/stability.md](../docs/stability.md). The CI boundary is documented in [../docs/testing-and-ci.md](../docs/testing-and-ci.md).

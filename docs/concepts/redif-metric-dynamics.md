@@ -33,29 +33,43 @@ ell_ij = D^(t)_ij  if j in N_k(i) or i in N_k(j)
 ell_ij = 0         otherwise
 ```
 
-Redif then derives its weighted local affinity from this sparse relation:
+Redif then derives a local scale and a weighted affinity from this sparse
+relation. For each atom, let
 
 ```text
-r_i   = 1 / sum_j ell_ij                      fallback: 1 when the row is zero
-A_ij  = r_i ell_ij r_j / n
-q_i   = sum_j A_ij                            fallback: 1/n when isolated
+sigma_i = mean({ell_ij : ell_ij > 0})     fallback: 1 when the row has no edge
+```
+
+The Redif affinity is the self-tuned heat kernel on the local metric relation:
+
+```text
+K_ij  = exp(- ell_ij^2 / (sigma_i sigma_j))   when ell_ij > 0
+K_ij  = 0                                      otherwise
+q_i   = sum_j K_ij
 Q     = diag(q_i)
-L     = Q - A
+L     = Q - K
 ```
 
 `L` is the Redif graph Laplacian for the current finite metric geometry. It is
-derived only from distances and deterministic neighbourhood order.
+derived only from distances and deterministic neighbourhood order. Large
+distances therefore never become large affinities; they contribute weakly to the
+transition relation after the local scale is accounted for.
+
+Degenerate isolated atoms receive an identity transition row. Algebraically this
+is represented as a unit self-affinity for that atom, so the row remains a valid
+probability transition and the Laplacian contribution is zero.
 
 The same construction also defines the row-stochastic Redif transition
 
 ```text
-P_ij = A_ij / q_i
+P_ij = K_ij / q_i
 ```
 
 with an identity row for a degenerate isolated atom. The C++ API exposes this
 inspectable source operator as `redif_operator(space, options)`. The returned
-`RedifOperator` contains `local_distances`, `affinity`, `degree`, `laplacian`,
-`transition`, `stationary`, and compact diagnostics for row sums and symmetry.
+`RedifOperator` contains `local_distances`, `local_scale`, `affinity`,
+`degree`, `laplacian`, `transition`, `stationary`, and compact diagnostics for
+row sums and symmetry.
 
 ## Inverse Redif Step
 

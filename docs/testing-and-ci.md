@@ -327,7 +327,9 @@ Known historical exclusions in the current tree:
 - `tests/correlation_tests/correlation_tests.cpp` is not added by `tests/correlation_tests/CMakeLists.txt`.
 - `Connected_Components_Test.cpp` is listed but disabled in `tests/correlation_tests/CMakeLists.txt`.
 - `tests/transform_test/hog_tests.cpp` is listed but disabled in `tests/transform_test/CMakeLists.txt`.
-- `examples/dnn_examples` is not added by `examples/CMakeLists.txt`.
+- Historical `examples/dnn_examples`, `examples/ensemble_examples`,
+  `examples/energies_examples`, and `examples/mapping_examples` are no longer
+  shipped in the revived source tree.
 - `examples/correlation_examples` is not added by `examples/CMakeLists.txt`.
 - `examples/distance_examples/earth_mover_distance_2_example.cpp` is skipped by its local `CMakeLists.txt`.
 

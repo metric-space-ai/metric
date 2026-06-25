@@ -28,8 +28,8 @@
 <body>
   <main>
     <canvas id="scene" aria-label="Paired metric spaces with dependence bridge"></canvas>
-    <div class="tag a">space A</div>
-    <div class="tag b">space B</div>
+    <div class="tag a">event-log space</div>
+    <div class="tag b">process-curve space</div>
     <section class="hud">
       <h1>Cross-space dependency</h1>
       <p>Two native metric spaces over the same paired records are compared as spaces, not forced into one shared coordinate system. Color is exported local dependence contribution. <span class="stat" id="stat"></span></p>
@@ -56,16 +56,31 @@
         profileId: "cross-space-dependency-profile",
       });
       visual.showCrossSpace({
+        viewId: "cross-space-paired-view",
         coordinateA: "event-log-landmark-3d",
         coordinateB: "process-curve-landmark-3d",
         dependenceProperty: "local-dependence-contribution",
+        bridgeRelationId: "cross-space-dependence-bridge-relation",
+        bridgeGraphId: "cross-space-dependence-bridges",
         linkedBrushing: true,
         preview: "paired records",
       });
 
-      const global = document_.diagnostics?.find((entry) => entry.id === "cross-space-mgc-coupled")?.values?.mgc_statistic
+      const globalDiagnostic = document_.diagnostics?.find((entry) => entry.id === "cross-space-mgc-coupled");
+      const global = globalDiagnostic?.compare_statistic
+        ?? globalDiagnostic?.compareStatistic
+        ?? globalDiagnostic?.values?.mgc_statistic
+        ?? globalDiagnostic?.report?.statistic
         ?? document_.diagnostics?.[0]?.value;
-      stat.textContent = global != null ? `global dependence ${Number(global).toFixed(3)}` : "";
+      if (global != null && Number.isFinite(Number(global))) {
+        const alpha = globalDiagnostic?.alpha != null && Number.isFinite(Number(globalDiagnostic.alpha))
+          ? `, alpha ${Number(globalDiagnostic.alpha).toFixed(2)}`
+          : "";
+        stat.textContent = `global MGC ${Number(global).toFixed(3)}${alpha}`;
+        document.documentElement.dataset.metricGlobalDependence = Number(global).toFixed(6);
+      } else {
+        stat.textContent = "";
+      }
 
       document.documentElement.dataset.metricCrossSpaceHero = "ready";
       const crossSpace = visual.views[0];

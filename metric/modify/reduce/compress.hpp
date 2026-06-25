@@ -32,6 +32,19 @@ namespace detail {
 constexpr std::size_t default_approximate_compression_sample_count = 512;
 constexpr std::size_t max_default_exact_compression_records = 4096;
 
+inline auto relabel_compression_strategy(std::string &strategy, const std::string &exact_name,
+										 const std::string &sampled_name,
+										 const std::string &chunked_name) -> void
+{
+	if (strategy == "farthest_first") {
+		strategy = exact_name;
+	} else if (strategy == "sampled_farthest_first" || strategy == "sampled_regular") {
+		strategy = sampled_name;
+	} else if (strategy == "chunked_farthest_first") {
+		strategy = chunked_name;
+	}
+}
+
 inline auto approximate_compression_sample_count(std::size_t record_count, std::size_t requested_count,
 												 space::storage::policy runtime_policy) -> std::size_t
 {
@@ -48,6 +61,80 @@ inline auto approximate_compression_sample_count(std::size_t record_count, std::
 inline auto contains_candidate_record_id(const std::vector<RecordId> &ids, RecordId id) -> bool
 {
 	return std::find(ids.begin(), ids.end(), id) != ids.end();
+}
+
+template <typename Provider, typename Radius>
+auto radius_coverage_from_candidates(const Provider &provider, const std::vector<RecordId> &candidate_ids,
+									 Radius radius, std::string strategy, std::string representation)
+	-> RepresentativeSet<typename Provider::distance_type>
+{
+	using distance_type = typename Provider::distance_type;
+
+	if (radius < Radius{}) {
+		throw std::invalid_argument("coverage radius must be non-negative");
+	}
+	if (candidate_ids.empty()) {
+		throw std::invalid_argument("sampled radius coverage requires at least one candidate record");
+	}
+
+	const auto threshold = static_cast<distance_type>(radius);
+	std::vector<RecordId> representatives;
+	std::vector<bool> covered(candidate_ids.size(), false);
+	std::size_t covered_count = 0;
+	while (covered_count < candidate_ids.size()) {
+		auto seed_index = std::size_t{0};
+		while (seed_index < covered.size() && covered[seed_index]) {
+			++seed_index;
+		}
+		if (seed_index == covered.size()) {
+			break;
+		}
+		const auto seed_id = candidate_ids[seed_index];
+		representatives.push_back(seed_id);
+		for (std::size_t candidate_index = 0; candidate_index < candidate_ids.size(); ++candidate_index) {
+			if (covered[candidate_index]) {
+				continue;
+			}
+			if (provider.distance(seed_id, candidate_ids[candidate_index]) <= threshold) {
+				covered[candidate_index] = true;
+				++covered_count;
+			}
+		}
+	}
+
+	const auto representative_count = representatives.size();
+	return core::make_representative_set(
+		std::move(representatives), std::vector<distance_type>{}, provider.record_count(), representative_count,
+		std::move(strategy), std::move(representation), false);
+}
+
+template <typename Space, typename Radius>
+auto sampled_radius_coverage_representatives(const Space &space, space::select::radius_coverage<Radius> strategy,
+											 space::storage::policy runtime_policy)
+	-> RepresentativeSet<typename Space::distance_type>
+{
+	space::storage::LiveDistances<Space> provider(space);
+	const auto sample_count = approximate_compression_sample_count(provider.record_count(), 0, runtime_policy);
+	const auto positions = ::mtrc::space::regular_sample_positions(provider.record_count(), sample_count).positions;
+	std::vector<RecordId> candidate_ids;
+	candidate_ids.reserve(positions.size());
+	for (const auto position : positions) {
+		candidate_ids.push_back(provider.id(position));
+	}
+	return radius_coverage_from_candidates(
+		provider, candidate_ids, strategy.radius, "sampled_radius_coverage", "sampled_metric_space");
+}
+
+template <typename Space, typename Radius>
+auto chunked_radius_coverage_representatives(const Space &space, space::select::radius_coverage<Radius> strategy,
+											 const space::storage::execution_plan &plan)
+	-> RepresentativeSet<typename Space::distance_type>
+{
+	space::storage::LiveDistances<Space> provider(space);
+	const auto chunk_size = plan.chunk_size == 0 ? std::size_t{1} : plan.chunk_size;
+	const auto chunks = ::mtrc::space::chunked_view(space, chunk_size);
+	return radius_coverage_from_candidates(
+		provider, chunks.representative_ids(), strategy.radius, "chunked_radius_coverage", "chunked_space_view");
 }
 
 template <typename Provider>
@@ -351,6 +438,30 @@ auto compress_from_representatives(const Space &space, const Provider &provider,
 			  "the source metric; each source record maps to its nearest representative; not dimension reduction");
 }
 
+template <typename Space, typename Provider, typename Groups>
+auto compress_from_medoid_groups(const Space &space, const Provider &provider, const Groups &groups,
+								 std::string representation)
+	-> CompressionResult<MetricSpace<typename Space::record_type, typename Space::metric_type>>
+{
+	using target_space_type = MetricSpace<typename Space::record_type, typename Space::metric_type>;
+
+	auto assignment = core::assign_records_to_representatives(provider, groups.medoids,
+															  "k-medoids compression requires medoids",
+															  "k-medoids medoid id is outside provider");
+	auto records = core::records_for_record_ids(space, groups.medoids);
+	target_space_type compressed_space(std::move(records), space.metric());
+	return core::make_compression_result(
+		std::move(compressed_space), groups.medoids, std::move(assignment.assignments),
+		std::move(assignment.nearest_distances), space.size(), "representatives",
+		groups.exact ? "k_medoids" : "sampled_k_medoids", std::move(representation), groups.exact, true, false,
+		core::metric_traits<typename Space::metric_type>::law,
+		groups.exact
+			? "record-set cardinality reduction using exact k-medoids; kept records are medoids under the source "
+			  "metric; each source record maps to its nearest medoid; not dimension reduction"
+			: "record-set cardinality reduction using sampled k-medoids; kept records are medoids under the source "
+			  "metric; assignment is exact to the sampled medoids; not dimension reduction");
+}
+
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto identity_compression(const Space &space)
 	-> CompressionResult<MetricSpace<typename Space::record_type, typename Space::metric_type>>
@@ -410,11 +521,7 @@ auto compress(const Space &space, std::size_t count, space::select::coverage str
 	-> CompressionResult<MetricSpace<typename Space::record_type, typename Space::metric_type>>
 {
 	auto result = compress(space, count, space::select::farthest_first{strategy.seed_index});
-	if (result.strategy == "farthest_first") {
-		result.strategy = "coverage";
-	} else if (result.strategy == "sampled_farthest_first") {
-		result.strategy = "sampled_coverage";
-	}
+	detail::relabel_compression_strategy(result.strategy, "coverage", "sampled_coverage", "chunked_coverage");
 	return result;
 }
 
@@ -423,11 +530,7 @@ auto compress(const Space &space, std::size_t count, space::select::k_center str
 	-> CompressionResult<MetricSpace<typename Space::record_type, typename Space::metric_type>>
 {
 	auto result = compress(space, count, space::select::farthest_first{strategy.seed_index});
-	if (result.strategy == "farthest_first") {
-		result.strategy = "k_center";
-	} else if (result.strategy == "sampled_farthest_first") {
-		result.strategy = "sampled_k_center";
-	}
+	detail::relabel_compression_strategy(result.strategy, "k_center", "sampled_k_center", "chunked_k_center");
 	return result;
 }
 
@@ -454,13 +557,7 @@ auto compress(const Space &space, stats::structural_analysis::k_medoids_options 
 	}
 	const auto groups = stats::structural_analysis::find_groups(space, strategy);
 	space::storage::LiveDistances<Space> provider(space);
-	auto assignment = core::assign_records_to_representatives(provider, groups.medoids,
-															  "k-medoids compression requires medoids",
-															  "k-medoids medoid id is outside provider");
-	auto representatives = core::make_representative_set(
-		groups.medoids, std::move(assignment.nearest_distances), space.size(), groups.medoids.size(), "k_medoids",
-		groups.representation, groups.algorithm == "kmedoids");
-	return detail::compress_from_representatives(space, provider, representatives);
+	return detail::compress_from_medoid_groups(space, provider, groups, groups.representation);
 }
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
@@ -515,11 +612,7 @@ auto compress(const Space &space, std::size_t count, space::select::coverage str
 	-> CompressionResult<MetricSpace<typename Space::record_type, typename Space::metric_type>>
 {
 	auto result = compress(space, count, space::select::farthest_first{strategy.seed_index}, runtime_policy);
-	if (result.strategy == "farthest_first") {
-		result.strategy = "coverage";
-	} else if (result.strategy == "sampled_farthest_first") {
-		result.strategy = "sampled_coverage";
-	}
+	detail::relabel_compression_strategy(result.strategy, "coverage", "sampled_coverage", "chunked_coverage");
 	return result;
 }
 
@@ -529,11 +622,7 @@ auto compress(const Space &space, std::size_t count, space::select::k_center str
 	-> CompressionResult<MetricSpace<typename Space::record_type, typename Space::metric_type>>
 {
 	auto result = compress(space, count, space::select::farthest_first{strategy.seed_index}, runtime_policy);
-	if (result.strategy == "farthest_first") {
-		result.strategy = "k_center";
-	} else if (result.strategy == "sampled_farthest_first") {
-		result.strategy = "sampled_k_center";
-	}
+	detail::relabel_compression_strategy(result.strategy, "k_center", "sampled_k_center", "chunked_k_center");
 	return result;
 }
 
@@ -545,9 +634,29 @@ auto compress(const Space &space, space::select::radius_coverage<Radius> strateg
 	if (space.empty()) {
 		throw std::invalid_argument("cannot compress an empty metric space");
 	}
-	space::storage::require_exact_compress(runtime_policy);
 	space::storage::require_parallel_metric<typename Space::metric_type>(runtime_policy);
+	if (runtime_policy.is_approximate()) {
+		space::storage::LiveDistances<Space> provider(space);
+		auto representatives = detail::sampled_radius_coverage_representatives(space, strategy, runtime_policy);
+		return detail::compress_from_representatives(space, provider, representatives);
+	}
+
+	space::storage::require_exact_compress(runtime_policy);
 	if (runtime_policy.uses_materialization()) {
+		auto plan = space::storage::estimate_cost(space, "compress", runtime_policy);
+		if (!plan.refused && !space::storage::uses_distance_table_materialization(runtime_policy)) {
+			plan = space::storage::estimate_cost(space, "compress", space::storage::using_distance_table(runtime_policy));
+		}
+		if (plan.allowed && plan.downgraded && !plan.exact && plan.representation == "chunked_space_view") {
+			space::storage::LiveDistances<Space> provider(space);
+			auto representatives = detail::chunked_radius_coverage_representatives(space, strategy, plan);
+			return detail::compress_from_representatives(space, provider, representatives);
+		}
+		if (plan.allowed && plan.downgraded && !plan.exact && plan.representation == "sampled_metric_space") {
+			space::storage::LiveDistances<Space> provider(space);
+			auto representatives = detail::sampled_radius_coverage_representatives(space, strategy, runtime_policy);
+			return detail::compress_from_representatives(space, provider, representatives);
+		}
 		return space::storage::with_materialized_distance_provider(
 			space, runtime_policy, "compress", [&](const auto &provider, const auto &plan) {
 				auto representatives = find_representatives(provider, strategy);
@@ -570,29 +679,31 @@ auto compress(const Space &space, stats::structural_analysis::k_medoids_options 
 		throw std::invalid_argument("cannot compress an empty metric space");
 	}
 	space::storage::require_parallel_metric<typename Space::metric_type>(runtime_policy);
-	const auto groups = stats::structural_analysis::find_groups(space, strategy, runtime_policy);
 	if (runtime_policy.uses_materialization()) {
+		auto plan = space::storage::estimate_cost(space, "compress", runtime_policy);
+		if (!plan.refused && !space::storage::uses_distance_table_materialization(runtime_policy)) {
+			plan = space::storage::estimate_cost(space, "compress", space::storage::using_distance_table(runtime_policy));
+		}
+		if (plan.allowed && plan.downgraded && !plan.exact &&
+			(plan.representation == "sampled_metric_space" || plan.representation == "chunked_space_view")) {
+			space::storage::LiveDistances<Space> provider(space);
+			const auto groups =
+				stats::structural_analysis::find_groups(space, strategy, space::storage::approximate());
+			return detail::compress_from_medoid_groups(space, provider, groups, groups.representation);
+		}
+		const auto groups = stats::structural_analysis::find_groups(space, strategy, runtime_policy);
 		return space::storage::with_materialized_distance_provider(
 			space, runtime_policy, "compress", [&](const auto &provider, const auto &plan) {
-				auto assignment = core::assign_records_to_representatives(provider, groups.medoids,
-																		  "k-medoids compression requires medoids",
-																		  "k-medoids medoid id is outside provider");
-				auto representatives = core::make_representative_set(
-					groups.medoids, std::move(assignment.nearest_distances), space.size(), groups.medoids.size(),
-					"k_medoids", space::storage::materialized_operator_representation(plan),
-					groups.algorithm == "kmedoids");
-				return detail::compress_from_representatives(space, provider, representatives);
+				return detail::compress_from_medoid_groups(
+					space, provider, groups, space::storage::materialized_operator_representation(plan));
 			});
 	}
 
+	const auto groups = stats::structural_analysis::find_groups(space, strategy, runtime_policy);
 	space::storage::LiveDistances<Space> provider(space);
-	auto assignment = core::assign_records_to_representatives(provider, groups.medoids,
-															  "k-medoids compression requires medoids",
-															  "k-medoids medoid id is outside provider");
-	auto representatives = core::make_representative_set(
-		groups.medoids, std::move(assignment.nearest_distances), space.size(), groups.medoids.size(), "k_medoids",
-		space::storage::compression_representation(runtime_policy), groups.algorithm == "kmedoids");
-	return detail::compress_from_representatives(space, provider, representatives);
+	const auto representation =
+		groups.exact ? space::storage::compression_representation(runtime_policy) : groups.representation;
+	return detail::compress_from_medoid_groups(space, provider, groups, representation);
 }
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>

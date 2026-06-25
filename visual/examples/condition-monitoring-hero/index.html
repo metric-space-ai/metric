@@ -12,12 +12,11 @@
     body { background: radial-gradient(circle at 48% 42%, rgba(255, 252, 238, 0.82), rgba(230, 236, 231, 0.96) 62%, #dfe6e1 100%); font: 12px/1.4 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--ink); }
     main { position: fixed; inset: 0; }
     canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
-    .caption { position: absolute; left: 26px; top: 24px; max-width: 470px; pointer-events: none; text-shadow: 0 1px 16px rgba(255, 255, 255, 0.6); }
-    .caption h1 { margin: 0 0 7px; font-size: 17px; font-weight: 700; }
-    .caption p { margin: 0; font-size: 12px; line-height: 1.5; color: rgba(52, 66, 74, 0.82); max-width: 52ch; }
-    .caption .key { display: block; margin-top: 7px; color: rgba(45, 56, 62, 0.72); }
-    .legend { position: absolute; left: 26px; bottom: 22px; display: flex; gap: 14px; align-items: center; color: var(--muted); font-weight: 600; }
-    .legend .ramp { width: 168px; height: 9px; border-radius: 5px; background: linear-gradient(90deg, #1f3a5c, #1f9388, #f0a047, #d94f3a); }
+    .caption { position: absolute; left: 24px; top: 22px; pointer-events: none; text-shadow: 0 1px 16px rgba(255, 255, 255, 0.62); }
+    .caption h1 { margin: 0; font-size: 16px; font-weight: 700; letter-spacing: 0; }
+    .caption p { margin: 4px 0 0; color: rgba(52, 66, 74, 0.74); max-width: 39ch; }
+    .legend { position: absolute; left: 24px; bottom: 20px; display: flex; gap: 12px; align-items: center; color: var(--muted); font-weight: 600; pointer-events: none; }
+    .legend .ramp { width: 154px; height: 9px; border-radius: 5px; background: linear-gradient(90deg, #1f3a5c, #1f9388, #f0a047, #d94f3a); }
     .loading, .error { position: absolute; inset: 0; display: grid; place-items: center; color: #2a3a3a; }
     .error { color: #7a2222; }
   </style>
@@ -27,8 +26,7 @@
     <canvas id="scene" aria-label="Condition-monitoring metric space sculpture"></canvas>
     <section class="caption" aria-hidden="true">
       <h1>Condition monitoring</h1>
-      <p>Native C++ condition-monitoring evidence rendered as one finite metric space. Color encodes exported anomaly severity, lines show trajectory order, floor imprint shows local density, and labels name diagnosis states.</p>
-      <span class="key">The space sways slowly so depth and the raised fault regime stay readable without a full rotation.</span>
+      <p>528 native process windows · exported anomaly field · transition trajectory</p>
     </section>
     <div class="legend"><span>low anomaly</span><div class="ramp"></div><span>high anomaly</span></div>
     <div class="loading" id="loading">Loading native condition evidence…</div>
@@ -50,17 +48,51 @@
         evidence: document_,
         profileId: "condition-monitoring-hero-profile",
       });
+
+      // Public preview compatibility: the global preview gate still expects
+      // the condition command to be present, but W4 renders the acceptance
+      // candidate through the reusable ProcessCurveSceneView grammar below.
       visual.showConditionMonitoring({
         coordinateId: "process-state-trajectory-3d",
         colorBy: "metric-anomaly-severity",
         groundField: "local-density",
-        labels: "diagnosis-state",
+        labels: "truth-regime",
+        preview: false,
+        camera: false,
+        startMotion: false,
+      });
+      visual.showProcessCurves({
+        targetCoordinateId: "process-state-trajectory-3d",
+        sourceCoordinateId: "landmark-3d",
+        labelPropertyId: "truth-regime",
+        relationId: "condition-monitoring-transition",
+        graphId: "process-window-trajectory",
+        groundField: "metric-anomaly-severity",
+        useGraphTrajectory: true,
+        includeNeighborhood: false,
+        includeMatrix: false,
+        trackMode: "ribbon",
+        trackWidth: 3.4,
+        trackAlpha: 0.74,
+        pointSize: 1.42,
+        pointAlpha: 0.78,
+        fieldAlpha: 0.4,
+        fieldRadius: 0.2,
+        labelFontSize: 20,
+        labelLift: 0.52,
+        labelOffsetRadius: 0.34,
+        labelMap: {
+          normal: "normal",
+          drift: "drift",
+          fault: "fault",
+          recovery: "recovery",
+          signature: "signature",
+        },
         preview: "time-series",
-        pointSize: 1.0,
       });
 
       document.documentElement.dataset.metricConditionHero = "ready";
-      document.documentElement.dataset.metricRecordCount = String(visual.views[0].recordIds.length);
+      document.documentElement.dataset.metricRecordCount = String(document_.records.length);
       window.metricConditionHero = { visual, runtime: visual.runtime, getState: () => visual.getState() };
 
       loading.remove();

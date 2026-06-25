@@ -200,6 +200,16 @@ int main()
 	assert(materialized_radius.representative_multiplicities == radius_coverage.representative_multiplicities);
 	assert_weights_close(materialized_radius.representative_weights, radius_coverage.representative_weights);
 
+	const auto approximate_radius =
+		mtrc::compress(line, mtrc::space::select::radius_coverage{1}, mtrc::space::storage::approximate());
+	assert(!approximate_radius.exact);
+	assert(approximate_radius.strategy == "sampled_radius_coverage");
+	assert(approximate_radius.representation == "sampled_metric_space");
+	assert(approximate_radius.source_record_count == line.size());
+	assert(approximate_radius.assignments.size() == line.size());
+	assert_weight_mass(approximate_radius.representative_multiplicities,
+					   approximate_radius.representative_weights, approximate_radius.source_record_count);
+
 	const auto medoid_compressed = mtrc::compress(line, mtrc::k_medoids_options(2));
 	assert(medoid_compressed.strategy == "k_medoids");
 	assert(medoid_compressed.representation == "metric_space");
@@ -217,6 +227,17 @@ int main()
 	assert(materialized_medoids.assignments == medoid_compressed.assignments);
 	assert(materialized_medoids.representative_multiplicities == medoid_compressed.representative_multiplicities);
 	assert_weights_close(materialized_medoids.representative_weights, medoid_compressed.representative_weights);
+
+	const auto approximate_medoids =
+		mtrc::compress(line, mtrc::k_medoids_options(2), mtrc::space::storage::approximate());
+	assert(!approximate_medoids.exact);
+	assert(approximate_medoids.strategy == "sampled_k_medoids");
+	assert(approximate_medoids.representation == "sampled_metric_space");
+	assert(approximate_medoids.source_record_count == line.size());
+	assert(approximate_medoids.compressed_record_count == 2);
+	assert(approximate_medoids.assignments.size() == line.size());
+	assert_weight_mass(approximate_medoids.representative_multiplicities,
+					   approximate_medoids.representative_weights, approximate_medoids.source_record_count);
 
 	const auto seeded = mtrc::compress(line, 2, mtrc::space::select::farthest_first(2));
 	assert((seeded.source_record_ids == std::vector<mtrc::RecordId>{line.id(2), line.id(0)}));
@@ -376,6 +397,44 @@ int main()
 					   chunked_compressed.representative_weights, chunked_compressed.source_record_count);
 	assert(*chunked_calls < chunked_line.size() * (chunked_line.size() - 1) / 2);
 
+	*chunked_calls = 0;
+	const auto chunked_coverage =
+		mtrc::compress(chunked_line, 4, mtrc::space::select::coverage{}, chunked_compress_policy);
+	assert(!chunked_coverage.exact);
+	assert(chunked_coverage.representation == "chunked_space_view");
+	assert(chunked_coverage.strategy == "chunked_coverage");
+	assert(chunked_coverage.source_record_count == chunked_line.size());
+	assert(chunked_coverage.compressed_record_count == 4);
+	assert(chunked_coverage.assignments.size() == chunked_line.size());
+	assert_weight_mass(chunked_coverage.representative_multiplicities,
+					   chunked_coverage.representative_weights, chunked_coverage.source_record_count);
+	assert(*chunked_calls < chunked_line.size() * (chunked_line.size() - 1) / 2);
+
+	*chunked_calls = 0;
+	const auto chunked_k_center =
+		mtrc::compress(chunked_line, 4, mtrc::space::select::k_center{}, chunked_compress_policy);
+	assert(!chunked_k_center.exact);
+	assert(chunked_k_center.representation == "chunked_space_view");
+	assert(chunked_k_center.strategy == "chunked_k_center");
+	assert(chunked_k_center.source_record_count == chunked_line.size());
+	assert(chunked_k_center.compressed_record_count == 4);
+	assert(chunked_k_center.assignments.size() == chunked_line.size());
+	assert_weight_mass(chunked_k_center.representative_multiplicities,
+					   chunked_k_center.representative_weights, chunked_k_center.source_record_count);
+	assert(*chunked_calls < chunked_line.size() * (chunked_line.size() - 1) / 2);
+
+	*chunked_calls = 0;
+	const auto chunked_radius =
+		mtrc::compress(chunked_line, mtrc::space::select::radius_coverage{8}, chunked_compress_policy);
+	assert(!chunked_radius.exact);
+	assert(chunked_radius.representation == "chunked_space_view");
+	assert(chunked_radius.strategy == "chunked_radius_coverage");
+	assert(chunked_radius.source_record_count == chunked_line.size());
+	assert(chunked_radius.assignments.size() == chunked_line.size());
+	assert_weight_mass(chunked_radius.representative_multiplicities,
+					   chunked_radius.representative_weights, chunked_radius.source_record_count);
+	assert(*chunked_calls < chunked_line.size() * (chunked_line.size() - 1) / 2);
+
 	auto high_target_calls = std::make_shared<std::size_t>(0);
 	const auto high_target_line = mtrc::make_space(large_records, CountingAbsoluteDistance{high_target_calls});
 	const auto high_target_compress = mtrc::compress(high_target_line, 3000);
@@ -393,6 +452,61 @@ int main()
 					   high_target_compress.representative_weights, high_target_compress.source_record_count);
 	assert(*high_target_calls <= high_target_line.size() * 512);
 	assert(*high_target_calls < high_target_line.size() * high_target_compress.compressed_record_count / 2);
+
+	*high_target_calls = 0;
+	const auto high_target_coverage =
+		mtrc::compress(high_target_line, 3000, mtrc::space::select::coverage{});
+	assert(!high_target_coverage.exact);
+	assert(high_target_coverage.representation == "sampled_metric_space");
+	assert(high_target_coverage.strategy == "sampled_coverage");
+	assert(high_target_coverage.source_record_count == high_target_line.size());
+	assert(high_target_coverage.compressed_record_count == 3000);
+	assert(high_target_coverage.assignments.size() == high_target_line.size());
+	assert_weight_mass(high_target_coverage.representative_multiplicities,
+					   high_target_coverage.representative_weights, high_target_coverage.source_record_count);
+	assert(*high_target_calls <= high_target_line.size() * 512);
+	assert(*high_target_calls < high_target_line.size() * high_target_coverage.compressed_record_count / 2);
+
+	auto radius_fallback_calls = std::make_shared<std::size_t>(0);
+	const auto radius_fallback_line =
+		mtrc::make_space(chunked_records, CountingAbsoluteDistance{radius_fallback_calls});
+	auto radius_fallback_policy = mtrc::space::storage::using_distance_table();
+	radius_fallback_policy = mtrc::space::storage::with_distance_table_budget(radius_fallback_policy, 8, 0);
+	radius_fallback_policy = mtrc::space::storage::allow_approximate_fallback(radius_fallback_policy);
+	const auto radius_fallback =
+		mtrc::compress(radius_fallback_line, mtrc::space::select::radius_coverage{8}, radius_fallback_policy);
+	assert(!radius_fallback.exact);
+	assert(radius_fallback.strategy == "sampled_radius_coverage");
+	assert(radius_fallback.representation == "sampled_metric_space");
+	assert(radius_fallback.source_record_count == radius_fallback_line.size());
+	assert(radius_fallback.assignments.size() == radius_fallback_line.size());
+	assert_weight_mass(radius_fallback.representative_multiplicities,
+					   radius_fallback.representative_weights, radius_fallback.source_record_count);
+	assert(*radius_fallback_calls < radius_fallback_line.size() * (radius_fallback_line.size() - 1) / 2);
+
+	auto medoid_fallback_calls = std::make_shared<std::size_t>(0);
+	const auto medoid_fallback_line =
+		mtrc::make_space(chunked_records, CountingAbsoluteDistance{medoid_fallback_calls});
+	auto medoid_fallback_policy = mtrc::space::storage::using_distance_table();
+	medoid_fallback_policy = mtrc::space::storage::with_distance_table_budget(medoid_fallback_policy, 8, 0);
+	medoid_fallback_policy = mtrc::space::storage::allow_approximate_fallback(medoid_fallback_policy);
+	const auto medoid_fallback_plan =
+		mtrc::space::storage::estimate_cost(medoid_fallback_line, "compress", medoid_fallback_policy);
+	assert(medoid_fallback_plan.allowed);
+	assert(medoid_fallback_plan.downgraded);
+	assert(!medoid_fallback_plan.exact);
+	assert(medoid_fallback_plan.representation == "sampled_metric_space");
+	const auto medoid_fallback =
+		mtrc::compress(medoid_fallback_line, mtrc::k_medoids_options(4, 8), medoid_fallback_policy);
+	assert(!medoid_fallback.exact);
+	assert(medoid_fallback.strategy == "sampled_k_medoids");
+	assert(medoid_fallback.representation == "sampled_metric_space");
+	assert(medoid_fallback.source_record_count == medoid_fallback_line.size());
+	assert(medoid_fallback.compressed_record_count == 4);
+	assert(medoid_fallback.assignments.size() == medoid_fallback_line.size());
+	assert_weight_mass(medoid_fallback.representative_multiplicities,
+					   medoid_fallback.representative_weights, medoid_fallback.source_record_count);
+	assert(*medoid_fallback_calls < medoid_fallback_line.size() * (medoid_fallback_line.size() - 1) / 2);
 
 	return 0;
 }

@@ -15,7 +15,7 @@
     .caption { position: absolute; left: 26px; top: 24px; max-width: 430px; pointer-events: none; text-shadow: 0 1px 16px rgba(255, 255, 255, 0.6); }
     .caption h1 { margin: 0 0 7px; font-size: 17px; font-weight: 700; }
     .caption p { margin: 0; font-size: 12px; line-height: 1.5; color: rgba(52, 66, 74, 0.82); max-width: 50ch; }
-    .legend { position: absolute; left: 26px; bottom: 22px; display: flex; flex-wrap: wrap; gap: 13px; color: var(--muted); }
+    .legend { position: absolute; left: 26px; bottom: 22px; display: flex; flex-wrap: wrap; gap: 13px; color: var(--muted); font-weight: 600; }
     .legend span { display: inline-flex; align-items: center; gap: 6px; }
     .legend i { width: 11px; height: 11px; border-radius: 3px; }
     .loading, .error { position: absolute; inset: 0; display: grid; place-items: center; color: #2a3a3a; }
@@ -27,7 +27,7 @@
     <canvas id="scene" aria-label="Mixed-record metric space"></canvas>
     <section class="caption" aria-hidden="true">
       <h1>Mixed-record metric space</h1>
-      <p>Composed native fixture records are compared in one finite metric space through type-appropriate metrics. Glyph color is the exported record family; edges are selected from the same composite metric relation.</p>
+      <p>Native text-code, histogram-spectrum, process-curve and numeric-vitals records share one finite metric workflow. Glyph shape follows exported record type; edges are exported cross-type metric neighbors.</p>
     </section>
     <div class="legend" id="legend"></div>
     <div class="loading" id="loading">Loading mixed-record evidence…</div>
@@ -37,20 +37,27 @@
     import { createMetricVisual } from "../../src/index.js";
 
     const EVIDENCE_URL = "../../../docs/examples/assets/mixed-records/metric.visual.json";
-    const PALETTE = ["#3389c6", "#1aab99", "#f28a2e", "#765ab8", "#e0474f", "#8a9a2a"];
-    let FAMILY_COLORS = {};
-    let FAMILIES = [];
+    const RECORD_TYPE_PROPERTY = "record_type";
+    const RECORD_TYPE_LABELS = {
+      text_code_record: "text code",
+      histogram_spectrum_record: "histogram spectrum",
+      process_curve_record: "process curve",
+      numeric_vitals_record: "numeric vitals",
+    };
+    const PALETTE = ["#3389c6", "#f28a2e", "#765ab8", "#1aab99", "#e0474f", "#8a9a2a"];
+    let TYPE_COLORS = {};
+    let RECORD_TYPES = [];
 
     const canvas = document.getElementById("scene");
     const loading = document.getElementById("loading");
     const legend = document.getElementById("legend");
-    const familyById = new Map();
+    const typeById = new Map();
 
     function buildLegend() {
-      legend.replaceChildren(...FAMILIES.map((name) => {
+      legend.replaceChildren(...RECORD_TYPES.map((name) => {
         const span = document.createElement("span");
-        const i = document.createElement("i"); i.style.background = FAMILY_COLORS[name];
-        span.append(i, document.createTextNode(name));
+        const i = document.createElement("i"); i.style.background = TYPE_COLORS[name];
+        span.append(i, document.createTextNode(RECORD_TYPE_LABELS[name] || name.replace(/_/g, " ")));
         return span;
       }));
     }
@@ -62,12 +69,12 @@
       if (!response.ok) throw new Error(`evidence ${response.status}`);
       const document_ = await response.json();
       for (const p of document_.properties) {
-        if (p.id === "family") {
-          for (const v of p.values) familyById.set(String(v.record_id), v.value);
+        if (p.id === RECORD_TYPE_PROPERTY) {
+          for (const v of p.values) typeById.set(String(v.record_id), v.value);
         }
       }
-      FAMILIES = Array.from(new Set(familyById.values())).sort();
-      FAMILY_COLORS = Object.fromEntries(FAMILIES.map((name, index) => [name, PALETTE[index % PALETTE.length]]));
+      RECORD_TYPES = Array.from(new Set(typeById.values())).sort();
+      TYPE_COLORS = Object.fromEntries(RECORD_TYPES.map((name, index) => [name, PALETTE[index % PALETTE.length]]));
       buildLegend();
 
       const visual = await createMetricVisual({
@@ -77,17 +84,27 @@
       });
       visual.showMixedRecords({
         coordinateId: "mixed-finite-records-family-severity-3d",
-        glyphBy: "family",
-        labels: "family",
+        glyphBy: RECORD_TYPE_PROPERTY,
+        labels: "channel",
         relationId: "mixed-finite-records-composite-metric",
+        crossTypeProperty: RECORD_TYPE_PROPERTY,
         crossTypeRelations: true,
-        topK: 5,
+        topK: 8,
         preview: "text image curve table",
-        pointSize: 1.4,
+        pointSize: 1.8,
+        edgeAlpha: 0.30,
+        edgeWidth: 0.82,
+        material: {
+          pointPixelScale: 18,
+          minPointSize: 7,
+          maxPointSize: 50,
+        },
       });
 
       document.documentElement.dataset.metricMixedHero = "ready";
       document.documentElement.dataset.metricRecordCount = String(visual.views[0].recordIds.length);
+      document.documentElement.dataset.metricRecordTypes = RECORD_TYPES.join(",");
+      document.documentElement.dataset.metricPrimaryGrammar = "MixedRecordView";
       window.metricMixedHero = { visual, runtime: visual.runtime, getState: () => visual.getState() };
 
       loading.remove();

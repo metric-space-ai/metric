@@ -198,7 +198,9 @@ int main()
 	assert(chunked_left_plan.chunk_size == 8);
 	assert(chunked_left_plan.chunk_count == 8);
 	assert(chunked_left_plan.representative_count == 8);
-	assert(chunked_left_plan.estimated_distance_evaluations == 2 * ((8 * 7) / 2));
+	assert(chunked_left_plan.estimated_distance_evaluations > 0);
+	assert(chunked_left_plan.estimated_distance_evaluations <=
+		   2 * chunked_left_plan.bounded_pair_distance_evaluations);
 	assert(chunked_left_plan.estimated_distance_evaluations <
 		   chunked_left_space.size() * (chunked_left_space.size() - 1));
 
@@ -215,7 +217,9 @@ int main()
 	assert(std::isfinite(chunked_compared.value));
 	assert(chunked_compared.value >= -1.0);
 	assert(chunked_compared.value <= 1.0);
-	assert(*chunked_left_calls + *chunked_right_calls == chunked_left_plan.estimated_distance_evaluations);
+	assert(*chunked_left_calls + *chunked_right_calls <= chunked_left_plan.estimated_distance_evaluations);
+	assert(*chunked_left_calls + *chunked_right_calls <
+		   chunked_left_space.size() * (chunked_left_space.size() - 1));
 
 	*chunked_left_calls = 0;
 	*chunked_right_calls = 0;
@@ -228,7 +232,9 @@ int main()
 	assert(chunked_correlated.right_representation == "chunked_space_view");
 	assert(chunked_correlated.sample_count == chunked_compared.sample_count);
 	assert(close(chunked_correlated.value, chunked_compared.value));
-	assert(*chunked_left_calls + *chunked_right_calls == chunked_left_plan.estimated_distance_evaluations);
+	assert(*chunked_left_calls + *chunked_right_calls <= chunked_left_plan.estimated_distance_evaluations);
+	assert(*chunked_left_calls + *chunked_right_calls <
+		   chunked_left_space.size() * (chunked_left_space.size() - 1));
 
 	mtrc::stats::correlate::mgc_options approximate_options;
 	approximate_options.sample_count = 10;

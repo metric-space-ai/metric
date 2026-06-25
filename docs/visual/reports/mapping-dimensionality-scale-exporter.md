@@ -13,7 +13,9 @@ Branch: `codex/visual-engine-evidence-exporters`
 
 - Records: 1,000
 - Relations: 2
-- Relation values: 500,500 upper-triangle entries per relation
+- Relation values: two `1000 x 1000` dense numeric matrices; the source asset
+  stays under GitHub's 50 MB warning threshold while preserving the 1,000-record
+  native scale evidence
 - Coordinates: 3, each with 1,000 record positions
 - Timelines: 1 coordinate-morph timeline with 3 exported steps
 - Properties: 9

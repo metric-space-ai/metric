@@ -8,6 +8,7 @@ import { CrossSpaceView } from "../src/views/index.js";
 
 const document = JSON.parse(readFileSync(new URL("../../docs/examples/assets/cross-space-dependency/metric.visual.json", import.meta.url), "utf8"));
 const visualSpace = VisualSpace.fromDocument(document);
+const SELECTED_ID = "obs-000";
 const view = CrossSpaceView.fromVisualSpace(document, {
   id: "linked-selection-check",
   leftCoordinateId: "event-log-landmark-3d",
@@ -44,9 +45,9 @@ runtime.disposed = false;
 runtime.emit = () => runtime;
 runtime.requestRender = () => runtime;
 
-runtime.selectRecord("obs-00", { source: "linked-selection-record", focus: false });
+runtime.selectRecord(SELECTED_ID, { source: "linked-selection-record", focus: false });
 let state = runtime.getState();
-assert.equal(state.selectedRecordId, "obs-00");
+assert.equal(state.selectedRecordId, SELECTED_ID);
 assert.equal(state.selectionPresentation.kind, "record");
 assert.equal(state.selectionPresentation.recordFeatures.length, 2);
 assert.deepEqual(
@@ -54,21 +55,21 @@ assert.deepEqual(
   ["source-space", "target-space"],
 );
 assert.equal(state.selectionPresentation.pairedSpaceBridges.length, 1);
-assert.equal(state.selectionPresentation.pairedSpaceBridges[0].rowId, "obs-00");
-assert.equal(state.selectionPresentation.pairedSpaceBridges[0].columnId, "obs-00");
+assert.equal(state.selectionPresentation.pairedSpaceBridges[0].rowId, SELECTED_ID);
+assert.equal(state.selectionPresentation.pairedSpaceBridges[0].columnId, SELECTED_ID);
 assert.equal(state.selectionPresentation.pairedSpaceBridges[0].selectionMatch.kind, "record-endpoint");
 assert.equal(state.selectionPresentation.pairedSpaceBridges[0].pairSetId, "linked-selection-check:linked-pairs");
 assert.equal(state.selectionPresentation.graphEdges.length, 0);
 
 runtime.selectPair({
-  relationId: null,
+  relationId: "cross-space-dependence-bridge-relation",
   pairSetId: "linked-selection-check:linked-pairs",
-  rowId: "obs-00",
-  columnId: "obs-00",
+  rowId: SELECTED_ID,
+  columnId: SELECTED_ID,
 }, { source: "linked-selection-pair" });
 state = runtime.getState();
-assert.equal(state.selectedPair.rowId, "obs-00");
-assert.equal(state.selectedPair.columnId, "obs-00");
+assert.equal(state.selectedPair.rowId, SELECTED_ID);
+assert.equal(state.selectedPair.columnId, SELECTED_ID);
 assert.equal(state.selectionPresentation.kind, "pair");
 assert.equal(state.selectionPresentation.records.length, 1);
 assert.deepEqual(state.selectionPresentation.records[0].roles, ["row", "source", "column", "target"]);

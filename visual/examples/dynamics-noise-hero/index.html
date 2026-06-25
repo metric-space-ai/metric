@@ -16,11 +16,18 @@
     .caption { position: absolute; left: 26px; top: 24px; max-width: 440px; pointer-events: none; text-shadow: 0 1px 16px rgba(255, 255, 255, 0.6); }
     .caption h1 { margin: 0 0 7px; font-size: 17px; font-weight: 700; }
     .caption p { margin: 0; font-size: 12px; line-height: 1.5; color: rgba(52, 66, 74, 0.82); max-width: 52ch; }
-    .legend { position: absolute; left: 26px; bottom: 22px; display: flex; gap: 14px; align-items: center; color: var(--muted); }
+    .legend { position: absolute; left: 26px; bottom: 128px; display: flex; gap: 14px; align-items: center; color: var(--muted); }
     .legend .ramp { width: 168px; height: 9px; border-radius: 5px; background: linear-gradient(90deg, #1f3a5c, #1f9388, #f0a047, #d94f3a); }
-    .phase { position: absolute; right: 24px; bottom: 22px; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; font-size: 10.5px; }
+    .phase { position: absolute; right: 24px; bottom: 128px; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; font-size: 10.5px; }
     .loading, .error { position: absolute; inset: 0; display: grid; place-items: center; color: #2a3a3a; }
     .error { color: #7a2222; }
+    .mtrc-timeline-control { bottom: 18px; }
+    @media (max-width: 720px) {
+      .caption { left: 18px; top: 18px; max-width: calc(100% - 36px); }
+      .legend { left: 18px; right: 18px; bottom: 126px; gap: 10px; }
+      .legend .ramp { flex: 1; min-width: 92px; }
+      .phase { right: 18px; bottom: 96px; }
+    }
   </style>
 </head>
 <body>
@@ -62,7 +69,10 @@
         preview: "state-history",
         loop: staticFlow == null,
         progress: staticFlow ?? undefined,
+        timelineProgress: staticFlow ?? undefined,
         timelineDurationMs: 14400,
+        timelineFieldPropertyId: "reverse-mse-to-clean",
+        timelineControl: { root: canvas.parentElement },
         pathWidth: 3.4,
         pathAlpha: 0.68,
         pointSize: 1.7,

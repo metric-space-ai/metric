@@ -103,7 +103,7 @@ budgets before invoking the metric.
 - `MatrixSpace`: explicit matrix-space representation name for `FiniteMetricSpace`
 - `intent`: intent-level helper aliases for promoted finite-space operations
 - `representations`: explicit representation helpers for matrix materialization, exact tree-style neighbor indexing, and exact kNN graph indexing
-- `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, exact graph results and edges, graph connectivity diagnostics, graph degree diagnostics, graph stretch diagnostics, graph pruning, grouping, embedding, outlier detection, DBSCAN density filtering, distribution-preserving thinning, representative selection, representative reduction, representative compression, deterministic mapping, cross-space comparison, medoids, separated representatives, and intrinsic-dimension diagnostics
+- `operators`: adapter helpers for pairwise distances, nearest neighbors, range neighbors, exact graph results and edges, graph connectivity diagnostics, graph degree diagnostics, graph stretch diagnostics, graph pruning, grouping, embedding, outlier detection, density filtering, distribution-preserving thinning, representative selection, representative reduction, representative compression, deterministic mapping, cross-space comparison, medoids, separated representatives, and intrinsic-dimension diagnostics. Concrete procedure helpers such as `operators.dbscan(...)` and `operators.kmedoids(...)` are available here, not at the package root.
 - `runtime`: runtime policy objects for exactness, cache materialization preferences, and serial/parallel execution preferences
 - `strategies`: strategy objects for finite-space methods. `KMedoids`,
   `DBSCAN`, `FarthestFirst`, `Coverage`, `KCenter`, `RadiusCoverage`,
@@ -295,7 +295,6 @@ from metric.operators import (
     compress_space,
     compare_spaces,
     correlate_spaces,
-    dbscan,
     density_filter_space,
     describe_structure,
     distribution_sample_space,
@@ -312,7 +311,6 @@ from metric.operators import (
     graph_degree_diagnostics,
     graph_stretch_diagnostics,
     intrinsic_dimension,
-    kmedoids,
     map_space,
     medoid,
     medoid_index,
@@ -397,7 +395,7 @@ Use `count` for count-based nearest-neighbor calls.
 Use `NeighborResult.to_dict()` for structured Python data, `to_numpy()` for the
 numeric distance array, and `to_pandas()` when pandas is installed.
 
-`find_groups`, `kmedoids`, `dbscan`, and `Space.groups(...)` run through native C++ bindings. `KMedoids` gives deterministic representative grouping; `DBSCAN` gives deterministic radius-density grouping over the finite metric space. `ClusteringResult` carries source-record assignments, medoid record IDs, cluster sizes, optional DBSCAN core and unassigned records, iteration metadata, algorithm metadata, and representation metadata.
+`find_groups` and `Space.groups(...)` are the preferred finite-space grouping entry points and run through native C++ bindings. Concrete procedure helpers remain available as `metric.operators.kmedoids(...)` and `metric.operators.dbscan(...)` for expert code, but they are intentionally not exported from the package root. `KMedoids` gives deterministic representative grouping; `DBSCAN` gives deterministic radius-density grouping over the finite metric space. `ClusteringResult` carries source-record assignments, medoid record IDs, cluster sizes, optional DBSCAN core and unassigned records, iteration metadata, algorithm metadata, and representation metadata.
 
 `find_outliers` and `Space.outliers(...)` run through native C++ bindings. Passing a `DBSCAN` strategy reports DBSCAN-unassigned density outliers; the strategy-free `Space.outliers(count=...)` path uses native nearest-neighbor isolation scores. `OutlierResult` contains ordered `Outlier` records with source record IDs and scores.
 

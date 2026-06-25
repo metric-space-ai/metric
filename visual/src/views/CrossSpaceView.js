@@ -32,6 +32,10 @@ export class CrossSpaceView extends BaseView {
     this.ground = options.ground !== false;
     this.pairSetId = options.pairSetId || `${this.id}:linked-pairs`;
     this.dependencePropertyId = options.dependencePropertyId || options.scalarProperty || null;
+    this.bridgeRelationId = options.bridgeRelationId || options.bridgeRelation || null;
+    this.bridgeRelationName = options.bridgeRelationName || null;
+    this.bridgeRelationType = options.bridgeRelationType || null;
+    this.bridgeGraphId = options.bridgeGraphId || options.graphId || this.pairSetId;
     this.globalDependence = options.globalDependence || null;
     this.pairRecords = normalizePairRecords(options.pairRecords || options.pairs, this.left, this.right);
     if (!this.pairRecords.length) this.pairRecords = sharedRecordIdPairs(this.left, this.right);
@@ -44,19 +48,26 @@ export class CrossSpaceView extends BaseView {
   }
 
   static fromVisualSpace(document, options = {}) {
+    const pairedView = findCrossSpaceViewDeclaration(document, options.viewId || options.view);
     const leftCoordinateId = options.leftCoordinateId
       || options.coordinateA
       || options.coordinate_a
       || options.sourceCoordinateId
+      || pairedView?.leftCoordinateId
+      || pairedView?.left_coordinate_id
       || "space-a-3d";
     const rightCoordinateId = options.rightCoordinateId
       || options.coordinateB
       || options.coordinate_b
       || options.targetCoordinateId
+      || pairedView?.rightCoordinateId
+      || pairedView?.right_coordinate_id
       || "space-b-3d";
     const scalarProperty = options.scalarProperty
       || options.dependenceProperty
       || options.dependencePropertyId
+      || pairedView?.propertyId
+      || pairedView?.property_id
       || "local-dependence";
 
     const leftCoordinate = resolveCollectionItem(document, "coordinates", leftCoordinateId, {
@@ -67,8 +78,24 @@ export class CrossSpaceView extends BaseView {
       required: rightCoordinateId != null,
       label: "right cross-space coordinate",
     });
-    const leftSpaceId = options.leftSpaceId || options.spaceA || leftCoordinate?.space_id || leftCoordinate?.spaceId;
-    const rightSpaceId = options.rightSpaceId || options.spaceB || rightCoordinate?.space_id || rightCoordinate?.spaceId;
+    const leftSpaceId = options.leftSpaceId || options.spaceA || pairedView?.leftSpaceId || pairedView?.left_space_id || leftCoordinate?.space_id || leftCoordinate?.spaceId;
+    const rightSpaceId = options.rightSpaceId || options.spaceB || pairedView?.rightSpaceId || pairedView?.right_space_id || rightCoordinate?.space_id || rightCoordinate?.spaceId;
+    const bridgeRelationId = options.bridgeRelationId
+      || options.bridgeRelation
+      || pairedView?.bridgeRelationId
+      || pairedView?.bridge_relation_id
+      || null;
+    const bridgeGraphId = options.bridgeGraphId
+      || options.bridgeGraph
+      || pairedView?.bridgeGraphId
+      || pairedView?.bridge_graph_id
+      || null;
+    const bridgeRelation = bridgeRelationId
+      ? resolveCollectionItem(document, "relations", bridgeRelationId, {
+        required: false,
+        label: "cross-space bridge relation",
+      })
+      : null;
 
     const left = MetricSpaceView.fromVisualSpace(document, {
       ...options,
@@ -116,7 +143,12 @@ export class CrossSpaceView extends BaseView {
       left,
       right,
       dependencePropertyId: scalarProperty,
-      globalDependence: options.globalDependence || findCrossSpaceDependenceDiagnostic(document, left.spaceId, right.spaceId),
+      bridgeRelationId,
+      bridgeGraphId,
+      bridgeRelationName: bridgeRelation?.name || null,
+      bridgeRelationType: bridgeRelation?.relation_type || bridgeRelation?.relationType || null,
+      globalDependence: options.globalDependence
+        || findCrossSpaceDependenceDiagnostic(document, left.spaceId, right.spaceId, pairedView?.diagnosticId || pairedView?.diagnostic_id),
     });
   }
 
@@ -144,6 +176,8 @@ export class CrossSpaceView extends BaseView {
       dependence: {
         propertyId: this.dependencePropertyId,
         global: this.globalDependence,
+        bridgeRelationId: this.bridgeRelationId,
+        bridgeGraphId: this.bridgeGraphId,
       },
     };
   }
@@ -301,15 +335,20 @@ export class CrossSpaceView extends BaseView {
 
     const graph = {
       kind: "paired-space-linked-pairs",
-      id: this.pairSetId,
+      id: this.bridgeGraphId || this.pairSetId,
       native: true,
-      relationId: null,
+      relationId: this.bridgeRelationId,
+      relationName: this.bridgeRelationName,
+      relationType: this.bridgeRelationType,
+      edge_relation_id: this.bridgeRelationId,
       recordIds: pairs.map((pair) => pair.sourceRecordId),
       edges: graphEdges,
       diagnostics: {
         pairCount: pairs.length,
         pairModel: "exported-paired-record-ids",
         dependencePropertyId: this.dependencePropertyId,
+        bridgeRelationId: this.bridgeRelationId,
+        bridgeGraphId: this.bridgeGraphId,
       },
     };
 
@@ -323,7 +362,8 @@ export class CrossSpaceView extends BaseView {
         viewKind: this.kind,
         role: "dependence bridge",
         graph,
-        graphId: this.pairSetId,
+        graphId: this.bridgeGraphId || this.pairSetId,
+        relationId: this.bridgeRelationId,
         pairSetId: this.pairSetId,
       },
       channels: {
@@ -347,6 +387,9 @@ export class CrossSpaceView extends BaseView {
         primaryGrammar: "paired-space",
         edgeCount: pairs.length,
         linkedBrushing: true,
+        relationId: this.bridgeRelationId,
+        relationName: this.bridgeRelationName,
+        relationType: this.bridgeRelationType,
         graph,
         pairedSpaceContract: this.semanticContract(),
         selectionModel: {
@@ -504,8 +547,24 @@ function pairProperties(propertyId, value) {
   return [{ id: propertyId, label: propertyId, value: Number(value) }];
 }
 
-function findCrossSpaceDependenceDiagnostic(document, leftSpaceId, rightSpaceId) {
+function findCrossSpaceViewDeclaration(document, viewId = null) {
+  const views = Array.isArray(document?.views) ? document.views : [];
+  if (viewId != null) {
+    const direct = views.find((view) => String(view?.id ?? view?.name) === String(viewId));
+    if (direct) return direct;
+  }
+  return views.find((view) => {
+    const kind = String(view?.kind || view?.view_kind || "").toLowerCase();
+    return kind === "paired-space" || kind === "cross-space" || kind === "cross_space";
+  }) || null;
+}
+
+function findCrossSpaceDependenceDiagnostic(document, leftSpaceId, rightSpaceId, diagnosticId = null) {
   const diagnostics = Array.isArray(document?.diagnostics) ? document.diagnostics : [];
+  if (diagnosticId != null) {
+    const direct = diagnostics.find((diagnostic) => String(diagnostic?.id ?? diagnostic?.name) === String(diagnosticId));
+    if (direct) return normalizeCrossSpaceDependenceDiagnostic(direct);
+  }
   for (const diagnostic of diagnostics) {
     if (diagnostic?.kind !== "cross_space_dependence") continue;
     const spaceIds = (diagnostic.space_ids || diagnostic.spaceIds || []).map(String);
@@ -513,16 +572,21 @@ function findCrossSpaceDependenceDiagnostic(document, leftSpaceId, rightSpaceId)
       const hasBoth = spaceIds.includes(String(leftSpaceId)) && spaceIds.includes(String(rightSpaceId));
       if (!hasBoth) continue;
     }
-    return {
-      id: diagnostic.id || null,
-      kind: diagnostic.kind,
-      statistic: finiteOrNull(diagnostic.compare_statistic ?? diagnostic.compareStatistic ?? diagnostic.report?.statistic),
-      alpha: finiteOrNull(diagnostic.alpha),
-      report: diagnostic.report || null,
-      relationIds: diagnostic.relation_ids || diagnostic.relationIds || null,
-    };
+    return normalizeCrossSpaceDependenceDiagnostic(diagnostic);
   }
   return null;
+}
+
+function normalizeCrossSpaceDependenceDiagnostic(diagnostic) {
+  if (!diagnostic) return null;
+  return {
+    id: diagnostic.id || null,
+    kind: diagnostic.kind,
+    statistic: finiteOrNull(diagnostic.compare_statistic ?? diagnostic.compareStatistic ?? diagnostic.values?.mgc_statistic ?? diagnostic.report?.statistic),
+    alpha: finiteOrNull(diagnostic.alpha),
+    report: diagnostic.report || null,
+    relationIds: diagnostic.relation_ids || diagnostic.relationIds || null,
+  };
 }
 
 function vector3(value, fallback) {

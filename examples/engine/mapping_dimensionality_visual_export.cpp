@@ -389,19 +389,14 @@ auto metric_law_json(const MetricLawDiagnostics &law, const std::string &operato
 						{"triangle_triplets", json_size(law.triangle_triplets)}});
 }
 
-auto relation_values_json(const std::vector<std::string> &ids, const std::vector<std::vector<double>> &distances)
-	-> std::string
+auto relation_values_json(const std::vector<std::vector<double>> &distances) -> std::string
 {
-	std::vector<std::string> values;
-	values.reserve((ids.size() * (ids.size() + 1)) / 2);
-	for (std::size_t row = 0; row < ids.size(); ++row) {
-		for (std::size_t column = row; column < ids.size(); ++column) {
-			values.push_back(json_object({{"row_id", visual::quote(ids[row])},
-										  {"column_id", visual::quote(ids[column])},
-										  {"value", visual::num(distances[row][column])}}));
-		}
+	std::vector<std::string> rows;
+	rows.reserve(distances.size());
+	for (const auto &row : distances) {
+		rows.push_back(visual::number_array(row));
 	}
-	return visual::array_of(values);
+	return visual::array_of(rows);
 }
 
 auto relation_json(const std::string &id, const std::string &name, const std::string &relation_type,
@@ -415,7 +410,7 @@ auto relation_json(const std::string &id, const std::string &name, const std::st
 						{"value_type", visual::quote("scalar")},
 						{"record_ids", visual::string_array(ids)},
 						{"storage", visual::quote("symmetric_dense_matrix")},
-						{"values", relation_values_json(ids, distances)},
+						{"values", relation_values_json(distances)},
 						{"metadata", metadata}});
 }
 
@@ -1187,14 +1182,14 @@ auto build_visual_document() -> std::string
 		kSourceRelationId, "aligned process-curve metric", "metric", ids, source_distances,
 		json_object({{"symmetric", json_bool(true)},
 					 {"complete", json_bool(true)},
-					 {"storage_note", visual::quote("upper-triangle entries for symmetric dense matrix rendering")},
+					 {"storage_note", visual::quote("dense numeric matrix for symmetric metric rendering")},
 					 {"source", visual::quote("AlignedCurveDistance over deterministic native process curves")},
 					 {"law_check", metric_law_json(source_law, "AlignedCurveDistance")}})));
 	relations.push_back(relation_json(
 		kLatentRelationId, "latent Euclidean metric after parametric diffusion coordinate", "metric", ids, latent_distances,
 		json_object({{"symmetric", json_bool(true)},
 					 {"complete", json_bool(true)},
-					 {"storage_note", visual::quote("upper-triangle entries for symmetric dense matrix rendering")},
+					 {"storage_note", visual::quote("dense numeric matrix for symmetric metric rendering")},
 					 {"source", visual::quote("Euclidean metric on native mapped coordinates")},
 					 {"mapping", visual::quote(linear_map.mapping)},
 					 {"strategy", visual::quote(linear_map.strategy)},
@@ -1325,7 +1320,7 @@ auto build_visual_document() -> std::string
 								 {"target_method", visual::quote(targets.method)},
 								 {"target_dimensions", json_size(linear_map.output_dimensions)},
 								 {"record_count", json_size(records.size())},
-								 {"relation_storage", visual::quote("symmetric_dense_matrix upper triangle")},
+								 {"relation_storage", visual::quote("symmetric_dense_matrix dense numeric matrix")},
 								 {"dense_distance_evaluations", json_size(targets.dense_distance_evaluations)}})}
 	}));
 	diagnostics.push_back(json_object({

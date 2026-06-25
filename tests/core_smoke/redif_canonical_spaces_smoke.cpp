@@ -46,15 +46,32 @@ int main()
 	assert(op.size() == 2);
 	assert(op.neighbors == 1);
 	assert(close_to(op.local_distances[0][1], 1.0));
-	assert(close_to(op.affinity[0][1], 0.5));
-	assert(close_to(op.degree[0], 0.5));
-	assert(close_to(op.laplacian[0][0], 0.5));
-	assert(close_to(op.laplacian[0][1], -0.5));
+	assert(op.affinity_kernel == "redif_self_tuned_heat_kernel");
+	assert(close_to(op.local_scale[0], 1.0));
+	assert(close_to(op.local_scale[1], 1.0));
+	const auto two_point_affinity = std::exp(-1.0);
+	assert(close_to(op.affinity[0][1], two_point_affinity));
+	assert(close_to(op.degree[0], two_point_affinity));
+	assert(close_to(op.laplacian[0][0], two_point_affinity));
+	assert(close_to(op.laplacian[0][1], -two_point_affinity));
 	assert(close_to(op.transition[0][0], 0.0));
 	assert(close_to(op.transition[0][1], 1.0));
 	assert(close_to(op.stationary[0], 0.5));
 	assert(close_to(op.transition_row_sum(0), 1.0));
 	assert(op.diagnostics.reversible);
+
+	auto three_point = mtrc::make_space(std::vector<int>{0, 1, 5}, AbsoluteDistance{});
+	auto full_options = options;
+	full_options.neighbors = 2;
+	const auto full_op = mtrc::redif_operator(three_point, full_options);
+	assert(close_to(full_op.local_scale[0], 3.0));
+	assert(close_to(full_op.local_scale[1], 2.5));
+	assert(close_to(full_op.local_scale[2], 4.5));
+	assert(full_op.affinity[0][1] > full_op.affinity[1][2]);
+	assert(full_op.affinity[1][2] > full_op.affinity[0][2]);
+	assert(full_op.affinity[0][1] < 1.0);
+	assert(full_op.affinity[0][2] > 0.0);
+	assert(full_op.diagnostics.reversible);
 
 	const std::vector<std::vector<double>> identity{{1.0, 0.0}, {0.0, 1.0}};
 	const auto forward_step = mtrc::redif_forward_noise_step(op, identity, options.euler_step);

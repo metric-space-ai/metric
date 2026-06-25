@@ -8,6 +8,7 @@ import { DenseFieldView } from "./DenseFieldView.js";
 import { GroundProjectionView } from "./GroundProjectionView.js";
 import { MorphView } from "./MorphView.js";
 import { NeighborhoodGraphView } from "./NeighborhoodGraphView.js";
+import { PropertyFieldView } from "./PropertyFieldView.js";
 import { RelationMatrixView } from "./RelationMatrixView.js";
 import { TrajectoryPathView } from "./TrajectoryPathView.js";
 import { createChannel } from "./view-utils.js";
@@ -397,9 +398,11 @@ function createProcessCurveLayerDescriptors(document, inputs, options = {}) {
   const morph = createProcessCurveMorphDescriptor(document, inputs, options);
   const projection = createProcessCurveProjectionDescriptor(document, inputs, { ...options, groundY: groundY + 0.04 });
   const skyline = createProcessCurveSkylineDescriptor(document, inputs, { ...options, groundY });
-  const field = createProcessCurveStateFieldDescriptor(document, inputs, { ...options, groundY: groundY + 0.03 });
+  const field = createProcessCurvePropertyFieldDescriptor(document, inputs, { ...options, groundY: groundY + 0.03 })
+    || createProcessCurveStateFieldDescriptor(document, inputs, { ...options, groundY: groundY + 0.03 });
   const track = createProcessCurveTrackDescriptor(document, inputs, { ...options, groundY: groundY + 0.06 });
-  return [field, projection, track, skyline, morph].filter(Boolean);
+  const labels = createProcessCurveLabelDescriptor(document, inputs, { ...options, groundY });
+  return [field, projection, track, skyline, morph, labels].filter(Boolean);
 }
 
 export function createProcessCurveMiniatureSceneBundle(document, options = {}) {
@@ -478,6 +481,54 @@ function createProcessCurveProjectionDescriptor(document, inputs, options) {
   return descriptor;
 }
 
+function createProcessCurvePropertyFieldDescriptor(document, inputs, options) {
+  const property = resolveProcessCurveScalarProperty(document, inputs.datasetId, options);
+  if (!property) return null;
+  const view = PropertyFieldView.fromVisualSpace(document, {
+    datasetId: inputs.datasetId,
+    coordinateId: inputs.targetCoordinate.id,
+    propertyId: property.id,
+    groundY: finiteNumber(options.groundY, -0.53),
+    alpha: finiteNumber(options.propertyFieldAlpha, options.fieldAlpha, 0.34),
+    radius: finiteNumber(options.propertyFieldRadius, options.fieldRadius, 0.22),
+    fieldMode: options.propertyFieldMode || options.fieldMode || "ground",
+    order: -22,
+    material: {
+      contour: 0.14,
+      glow: 0.08,
+      depthWrite: false,
+      ...(options.propertyFieldMaterial || options.fieldMaterial || {}),
+    },
+    metadata: {
+      role: "semantic-ground-field",
+      visualGrammar: "process-curves",
+      processCurveField: {
+        source: "PropertyFieldView",
+        propertyId: property.id,
+      },
+    },
+  });
+  const descriptor = view.toLayerDescriptors()[0];
+  if (!descriptor) return null;
+  descriptor.order = -22;
+  descriptor.source = {
+    ...(descriptor.source || {}),
+    processCurveViewClass: "ProcessCurveSceneView",
+    processCurveFieldPropertyId: property.id,
+  };
+  descriptor.metadata = {
+    ...(descriptor.metadata || {}),
+    role: "property-field",
+    processCurveField: {
+      source: "PropertyFieldView",
+      propertyId: property.id,
+      propertyName: property.name || property.id,
+    },
+    visualGrammar: "process-curves",
+  };
+  return descriptor;
+}
+
 function createProcessCurveStateFieldDescriptor(document, inputs, options) {
   const records = inputs.records;
   const positionsByRecord = new Map((inputs.targetCoordinate.record_positions || []).map((entry) => [entry.record_id, entry.position || []]));
@@ -530,6 +581,9 @@ function createProcessCurveStateFieldDescriptor(document, inputs, options) {
 }
 
 function createProcessCurveTrackDescriptor(document, inputs, options) {
+  const graphTrack = createProcessCurveGraphTrackDescriptor(document, inputs, options);
+  if (graphTrack) return graphTrack;
+
   const records = inputs.records
     .slice()
     .sort((a, b) => Number(a.payload?.source_index ?? 0) - Number(b.payload?.source_index ?? 0));
@@ -612,6 +666,116 @@ function createProcessCurveTrackDescriptor(document, inputs, options) {
     },
   });
   return view.toLayerDescriptors()[0];
+}
+
+function createProcessCurveGraphTrackDescriptor(document, inputs, options) {
+  if (options.useGraphTrajectory !== true && options.preferGraphTrajectory !== true) return null;
+  const relation = resolveProcessCurveRelation(document, inputs.datasetId, options);
+  const graph = resolveProcessCurveGraph(document, inputs.datasetId, relation, options);
+  if (!graph && !relation) return null;
+  const view = TrajectoryPathView.fromVisualSpace(document, {
+    datasetId: inputs.datasetId,
+    coordinateId: inputs.targetCoordinate.id,
+    relationId: relation?.id,
+    graphId: graph?.id,
+    preferGraph: true,
+    pathSource: graph ? "graph" : "transition",
+    id: `track:${inputs.datasetId}:graph-trajectory`,
+    kind: "record-track",
+    descriptorKind: "record-track",
+    sourceViewKind: "record-track",
+    mode: options.trackMode || "ribbon",
+    width: finiteNumber(options.trackWidth, 3.15),
+    alpha: finiteNumber(options.trackAlpha, 0.72),
+    color: options.trackColor || [0.12, 0.36, 0.42, finiteNumber(options.trackAlpha, 0.72)],
+    order: -8,
+    edgeMode: options.trackEdgeMode || "auto",
+    curveOptions: {
+      radius: finiteNumber(options.trackRadius, 0.018),
+      radialSegments: Math.max(3, Math.floor(finiteNumber(options.trackRadialSegments, 8))),
+      useWidthsAsRadius: options.trackUseWidthsAsRadius === true,
+      emission: finiteNumber(options.trackEmission, 0.14),
+      rimLight: finiteNumber(options.trackRimLight, 0.36),
+      coreGlow: finiteNumber(options.trackCoreGlow, 0.2),
+      flowStrength: finiteNumber(options.trackFlowStrength, 0.1),
+      depthWrite: options.trackMode === "tube" ? true : false,
+      resample: false,
+      ...(options.trackCurveOptions || {}),
+    },
+    metadata: {
+      visualGrammar: "process-curves",
+    },
+  });
+  return view.toLayerDescriptors()[0];
+}
+
+function createProcessCurveLabelDescriptor(document, inputs, options) {
+  if (options.labels === false || options.showLabels === false) return null;
+  const positionsByRecord = new Map((inputs.targetCoordinate.record_positions || []).map((entry) => [entry.record_id, entry.position || []]));
+  const labelsByRecord = new Map((inputs.labelProperty.values || []).map((entry) => [entry.record_id, entry.value]));
+  const groups = new Map();
+  for (const record of inputs.records) {
+    const position = positionsByRecord.get(record.id);
+    if (!position) continue;
+    const label = labelsByRecord.get(record.id) ?? record.label;
+    const key = String(label || "").trim();
+    if (!key) continue;
+    if (!groups.has(key)) groups.set(key, { count: 0, x: 0, y: 0, z: 0 });
+    const group = groups.get(key);
+    group.count += 1;
+    group.x += Number(position[0]) || 0;
+    group.y += Number(position[1]) || 0;
+    group.z += Number(position[2] ?? position[1]) || 0;
+  }
+  const labelEntries = Array.from(groups.entries())
+    .filter(([, group]) => group.count > 0)
+    .sort(([a], [b]) => String(a).localeCompare(String(b)));
+  if (!labelEntries.length) return null;
+  const labelLift = finiteNumber(options.labelLift, 0.42);
+  const fontSize = Math.max(14, Math.floor(finiteNumber(options.labelFontSize, 22)));
+  const color = options.labelColor || [0.12, 0.16, 0.18, 0.92];
+  const labels = labelEntries.map(([category, group], index) => {
+    const offset = labelOffset(index, labelEntries.length, finiteNumber(options.labelOffsetRadius, 0.14));
+    return {
+      id: `label:${inputs.datasetId}:${category}`,
+      text: labelText(category, options.labelMap),
+      position: [
+        group.x / group.count + offset[0],
+        group.y / group.count + labelLift,
+        group.z / group.count + offset[1],
+      ],
+      color,
+      background: options.labelBackground || [1, 1, 1, 0.72],
+      border: options.labelBorder || [0.1, 0.14, 0.16, 0.12],
+      size: finiteNumber(options.labelSize, 0.2),
+    };
+  });
+  return {
+    schema: "metric.visual.layer_descriptor.v1",
+    id: `labels:${inputs.datasetId}:regimes`,
+    kind: "labels",
+    primitive: "BillboardLabelLayer",
+    visible: true,
+    order: 62,
+    labels,
+    geometry: { fontSize },
+    material: { fontSize },
+    source: {
+      viewKind: "process-curves",
+      viewClass: "ProcessCurveSceneView",
+      datasetId: inputs.datasetId,
+      coordinateId: inputs.targetCoordinate.id,
+      propertyId: inputs.labelProperty.id,
+    },
+    metadata: {
+      role: "region-labels",
+      visualGrammar: "process-curves",
+      viewClass: "ProcessCurveSceneView",
+      labelCount: labels.length,
+      propertyId: inputs.labelProperty.id,
+      algorithmicComputation: false,
+    },
+  };
 }
 
 function createProcessCurveSkylineDescriptor(document, inputs, options) {
@@ -749,6 +913,39 @@ function resolveProcessCurveGraph(document, datasetId, relation, options = {}) {
   )) || graphs.find((entry) => matchesDataset(entry, datasetId)) || null;
 }
 
+function resolveProcessCurveScalarProperty(document, datasetId, options = {}) {
+  const propertyRef = options.propertyFieldId
+    || options.fieldPropertyId
+    || options.scalarPropertyId
+    || options.scalarProperty
+    || (typeof options.propertyField === "string" ? options.propertyField : null)
+    || (typeof options.groundField === "string" ? options.groundField : null)
+    || null;
+  const properties = Array.isArray(document?.properties) ? document.properties : [];
+  const isScalar = (entry) => {
+    const valueType = entry?.value_type ?? entry?.valueType;
+    return valueType === "scalar" || valueType === "rank" || valueType === "number";
+  };
+  if (propertyRef) {
+    const property = properties.find((entry) => (
+      String(entry.id ?? entry.name) === String(propertyRef) ||
+      String(entry.name ?? entry.id) === String(propertyRef)
+    ));
+    if (!property || !isScalar(property)) return null;
+    return property;
+  }
+  const preferred = ["local-density", "density", "metric-anomaly-severity", "anomaly", "entropy"];
+  for (const needle of preferred) {
+    const property = properties.find((entry) => (
+      matchesDataset(entry, datasetId) &&
+      isScalar(entry) &&
+      `${entry.id || ""} ${entry.name || ""}`.toLowerCase().includes(needle)
+    ));
+    if (property) return property;
+  }
+  return properties.find((entry) => matchesDataset(entry, datasetId) && isScalar(entry)) || null;
+}
+
 function matchesDataset(entry, datasetId) {
   if (datasetId == null) return true;
   const entryDataset = entry?.dataset_id ?? entry?.datasetId;
@@ -763,6 +960,19 @@ function trackColor(index) {
     [0.52, 0.42, 0.62, 0.68],
   ];
   return colors[Math.abs(index) % colors.length];
+}
+
+function labelText(category, labelMap) {
+  if (labelMap && typeof labelMap === "object" && Object.prototype.hasOwnProperty.call(labelMap, category)) {
+    return String(labelMap[category]);
+  }
+  return String(category);
+}
+
+function labelOffset(index, count, radius) {
+  if (!radius || count <= 1) return [0, 0];
+  const angle = (index / Math.max(1, count)) * Math.PI * 2;
+  return [Math.cos(angle) * radius, Math.sin(angle) * radius];
 }
 
 function labelValue(label) {

@@ -16,6 +16,7 @@
     .caption { position: absolute; left: 26px; top: 24px; max-width: 440px; pointer-events: none; text-shadow: 0 1px 16px rgba(255, 255, 255, 0.6); }
     .caption h1 { margin: 0 0 7px; font-size: 17px; font-weight: 700; }
     .caption p { margin: 0; font-size: 12px; line-height: 1.5; color: rgba(52, 66, 74, 0.82); max-width: 52ch; }
+    .caption .status { display: block; margin-bottom: 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(60, 80, 86, 0.78); }
     .legend { position: absolute; left: 26px; bottom: 22px; display: flex; gap: 14px; align-items: center; color: var(--muted); }
     .legend .ramp { width: 168px; height: 9px; border-radius: 5px; background: linear-gradient(90deg, #1f3a5c, #1f9388, #f0a047, #d94f3a); }
     .phase { position: absolute; right: 24px; bottom: 22px; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; font-size: 10.5px; }
@@ -25,30 +26,62 @@
 </head>
 <body>
   <main>
-    <canvas id="scene" aria-label="Mapping morph: 2D projection lifting into a 3D metric space"></canvas>
+    <canvas id="scene" aria-label="Mapping morph: native 3D source state compressing into a parametric 2D target"></canvas>
     <section class="caption" aria-hidden="true">
+      <span class="status">Review-pending engine candidate</span>
       <h1>Mapping &amp; dimensionality</h1>
-      <p>Native mapping evidence rendered as a coordinate-state morph. The 2D parametric coordinate state lifts into the 3D source-space view; color is the exported local mapping distortion.</p>
+      <p>Native mapping evidence rendered as a source-to-target coordinate morph. The 3D source state compresses into the parametric 2D target; color and vectors are exported local mapping distortion.</p>
     </section>
     <div class="legend"><span>preserved</span><div class="ramp"></div><span>distorted</span></div>
-    <div class="phase" id="phase">2D ⇄ 3D morph</div>
+    <div class="phase" id="phase">source hold</div>
     <div class="loading" id="loading">Loading mapping evidence…</div>
   </main>
 
   <script type="module">
     import { createMetricVisual } from "../../src/index.js";
+    import { mappingMotionProgressAt } from "../../src/views/MappingView.js";
 
     const canvas = document.getElementById("scene");
     const loading = document.getElementById("loading");
     const phaseEl = document.getElementById("phase");
     const params = new URLSearchParams(location.search);
+    const SOURCE_COORDINATE_ID = "source-coordinate-layout-3d";
+    const TARGET_COORDINATE_ID = "parametric-coordinate-latent-2d";
+    const RESIDUAL_PROPERTY_ID = "local-mapping-distortion";
+    const LABEL_PROPERTY_ID = "process-family";
+    const MAPPING_MOTION_TIMING = Object.freeze({
+      profile: "source-hold-quick-transition-target-hold",
+      sourceHoldMs: 1600,
+      transitionMs: 720,
+      targetHoldMs: 1700,
+      resetHoldMs: 360,
+      totalMs: 5200,
+    });
+    const FRAME_PROGRESS = new Map([
+      ["source", 0],
+      ["source-hold", 0],
+      ["transition", 0.5],
+      ["quick-transition", 0.5],
+      ["target", 1],
+      ["target-hold", 1],
+    ]);
+    const frameParam = params.get("frame");
     const morphParam = params.get("morph");
-    const staticMorph = morphParam == null ? null : Math.max(0, Math.min(1, Number(morphParam)));
+    const verifyMode = params.has("verify");
+    const parsedMorph = morphParam == null ? null : Number(morphParam);
+    const staticMorph = FRAME_PROGRESS.has(frameParam)
+      ? FRAME_PROGRESS.get(frameParam)
+      : Number.isFinite(parsedMorph)
+        ? Math.max(0, Math.min(1, parsedMorph))
+        : verifyMode
+          ? 0.5
+          : null;
 
     try {
       const response = await fetch("../../../docs/examples/assets/mapping-dimensionality/metric.visual.json");
       if (!response.ok) throw new Error(`evidence ${response.status}`);
-      const document_ = await response.json();
+      const nativeDocument = await response.json();
+      const document_ = createMappingRuntimeDocument(nativeDocument);
 
       const visual = await createMetricVisual({
         canvas,
@@ -56,28 +89,41 @@
         profileId: "mapping-dimensionality-hero-profile",
       });
       visual.showMapping({
-        sourceCoordinateId: "parametric-coordinate-latent-2d",
-        targetCoordinateId: "source-coordinate-layout-3d",
-        residualProperty: "local-mapping-distortion",
-        labels: "process-family",
-        loop: staticMorph == null,
+        sourceCoordinateId: SOURCE_COORDINATE_ID,
+        targetCoordinateId: TARGET_COORDINATE_ID,
+        residualProperty: RESIDUAL_PROPERTY_ID,
+        labels: LABEL_PROPERTY_ID,
+        loop: false,
         progress: staticMorph ?? 0,
-        morphDurationMs: 6400,
-        pointSize: 1.6,
+        morphDurationMs: MAPPING_MOTION_TIMING.totalMs,
+        motionTiming: MAPPING_MOTION_TIMING,
+        targetRadius: 1.72,
+        groundScale: 2.0,
+        pointSize: 1.8,
+        labelLift: 0.58,
+        labelOffsetRadius: 0.12,
         preview: "record",
       });
       const state = visual.getState();
       const layerIds = state.descriptors.map((descriptor) => descriptor.id);
       const residualLayers = state.descriptors.filter((descriptor) => descriptor.metadata?.role === "residual/error");
-      if (staticMorph != null) phaseEl.textContent = staticMorph < 0.2 ? "source (2D)" : staticMorph > 0.8 ? "target (3D)" : "transition";
+      if (staticMorph == null) {
+        startMappingMotionLoop(visual, phaseEl, MAPPING_MOTION_TIMING);
+      } else {
+        applyMappingMorphProgress(visual, staticMorph);
+        phaseEl.textContent = phaseLabel(staticMorph);
+      }
 
       document.documentElement.dataset.metricMappingHero = "ready";
       document.documentElement.dataset.metricRecordCount = String(visual.views[0].recordIds.length);
-      document.documentElement.dataset.metricCoordinateIds = "parametric-coordinate-latent-2d,source-coordinate-layout-3d";
-      document.documentElement.dataset.metricTimelineIds = "";
+      document.documentElement.dataset.metricCoordinateIds = `${SOURCE_COORDINATE_ID},${TARGET_COORDINATE_ID}`;
+      document.documentElement.dataset.metricTimelineIds = "mapping-coordinate-morph";
       document.documentElement.dataset.metricLayerIds = layerIds.join(",");
       document.documentElement.dataset.metricResidualLayers = residualLayers.map((descriptor) => descriptor.id).join(",");
-      document.documentElement.dataset.metricMorph = staticMorph == null ? "coordinate-morph-loop" : `static-${staticMorph}`;
+      document.documentElement.dataset.metricResidualProperty = RESIDUAL_PROPERTY_ID;
+      document.documentElement.dataset.metricRuntimeEvidenceProjection = "native-mapping-fields-only";
+      document.documentElement.dataset.metricMorphTiming = `${MAPPING_MOTION_TIMING.sourceHoldMs}:${MAPPING_MOTION_TIMING.transitionMs}:${MAPPING_MOTION_TIMING.targetHoldMs}`;
+      document.documentElement.dataset.metricMorph = staticMorph == null ? MAPPING_MOTION_TIMING.profile : `static-${staticMorph}`;
       window.metricMappingHero = { visual, runtime: visual.runtime, getState: () => visual.getState() };
 
       loading.remove();
@@ -86,6 +132,53 @@
       console.error(error);
       loading.className = "loading error";
       loading.textContent = error instanceof Error ? error.message : String(error);
+    }
+
+    function createMappingRuntimeDocument(document_) {
+      return {
+        ...document_,
+        relations: (document_.relations || []).map((relation) => ({
+          ...relation,
+          storage: "mapping_runtime_reference",
+          values: [],
+          metadata: {
+            ...(relation.metadata || {}),
+            native_storage: relation.storage,
+            native_value_count: Array.isArray(relation.values) ? relation.values.length : 0,
+            omitted_for_view: "mapping-dimensionality-hero",
+          },
+        })),
+      };
+    }
+
+    function startMappingMotionLoop(visual, phaseElement, timing) {
+      const startedAt = performance.now();
+      const tick = () => {
+        const frame = mappingMotionProgressAt(performance.now() - startedAt, timing);
+        applyMappingMorphProgress(visual, frame.progress);
+        phaseElement.textContent = frame.phase.replaceAll("-", " ");
+        document.documentElement.dataset.metricMorphPhase = frame.phase;
+        requestAnimationFrame(tick);
+      };
+      tick();
+    }
+
+    function applyMappingMorphProgress(visual, progress) {
+      const next = Math.max(0, Math.min(1, Number(progress) || 0));
+      for (const layer of visual.runtime?.layers || []) {
+        const animation = layer?.animation;
+        if (!animation) continue;
+        if (String(animation.mode || "").includes("morph") || animation.channel === "targetPosition") {
+          animation.progress = next;
+        }
+      }
+      document.documentElement.dataset.metricMorphProgress = next.toFixed(3);
+    }
+
+    function phaseLabel(progress) {
+      if (progress <= 0.05) return "source hold";
+      if (progress >= 0.95) return "target hold";
+      return "quick transition";
     }
   </script>
 </body>

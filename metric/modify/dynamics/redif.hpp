@@ -52,7 +52,9 @@ struct RedifOperatorDiagnostics {
 struct RedifOperator {
 	std::size_t node_count{};
 	std::size_t neighbors{};
+	std::string affinity_kernel{"redif_self_tuned_heat_kernel"};
 	std::vector<std::vector<double>> local_distances;
+	std::vector<double> local_scale;
 	std::vector<std::vector<double>> affinity;
 	std::vector<double> degree;
 	std::vector<std::vector<double>> laplacian;
@@ -156,6 +158,16 @@ inline auto local_knn_distance_matrix(const std::vector<std::vector<double>> &di
 	-> std::vector<std::vector<double>>
 {
 	const std::size_t n = distances.size();
+	for (const auto &row : distances) {
+		if (row.size() != n) {
+			throw std::invalid_argument("Redif distance matrix must be square");
+		}
+		for (const auto value : row) {
+			if (!std::isfinite(value) || value < 0.0) {
+				throw std::invalid_argument("Redif distance matrix entries must be finite and nonnegative");
+			}
+		}
+	}
 	const std::size_t k = std::min(neighbors, n > 0 ? n - 1 : 0);
 	std::vector<std::vector<double>> local(n, std::vector<double>(n, 0.0));
 
@@ -186,6 +198,40 @@ inline auto local_knn_distance_matrix(const std::vector<std::vector<double>> &di
 		}
 	}
 	return local;
+}
+
+inline auto redif_local_scales(const std::vector<std::vector<double>> &local_distances) -> std::vector<double>
+{
+	const std::size_t n = local_distances.size();
+	std::vector<double> scales(n, 1.0);
+	for (std::size_t i = 0; i < n; ++i) {
+		double total = 0.0;
+		std::size_t count = 0;
+		for (std::size_t j = 0; j < n; ++j) {
+			const auto distance = local_distances[i][j];
+			if (distance > 0.0) {
+				total += distance;
+				++count;
+			}
+		}
+		if (count > 0) {
+			scales[i] = total / static_cast<double>(count);
+		}
+	}
+	return scales;
+}
+
+inline auto redif_heat_affinity(double distance, double source_scale, double target_scale) -> double
+{
+	if (!(distance > 0.0)) {
+		return 0.0;
+	}
+	if (!(source_scale > 0.0) || !(target_scale > 0.0) || !std::isfinite(source_scale) ||
+		!std::isfinite(target_scale)) {
+		throw std::invalid_argument("Redif local scales must be finite and positive");
+	}
+	const auto scale_product = source_scale * target_scale;
+	return std::exp(-(distance * distance) / scale_product);
 }
 
 inline auto summarize_redif_operator(const RedifOperator &op) -> RedifOperatorDiagnostics
@@ -221,27 +267,16 @@ inline auto redif_operator_from_local_distances(std::vector<std::vector<double>>
 												std::size_t neighbors) -> RedifOperator
 {
 	const std::size_t n = local_distances.size();
-	std::vector<double> inv_degree(n, 1.0);
-	for (std::size_t i = 0; i < n; ++i) {
-		double row_sum = 0.0;
-		for (std::size_t j = 0; j < n; ++j) {
-			row_sum += local_distances[i][j];
-		}
-		if (row_sum == 0.0) {
-			row_sum = 1.0;
-		}
-		inv_degree[i] = 1.0 / row_sum;
-	}
-
 	RedifOperator op;
 	op.node_count = n;
 	op.neighbors = neighbors;
 	op.local_distances = std::move(local_distances);
+	op.local_scale = redif_local_scales(op.local_distances);
 	op.affinity.assign(n, std::vector<double>(n, 0.0));
 	for (std::size_t i = 0; i < n; ++i) {
 		for (std::size_t j = 0; j < n; ++j) {
-			op.affinity[i][j] = inv_degree[i] * op.local_distances[i][j] * inv_degree[j] /
-								 static_cast<double>(n);
+			op.affinity[i][j] = redif_heat_affinity(op.local_distances[i][j], op.local_scale[i],
+													op.local_scale[j]);
 		}
 	}
 
@@ -255,7 +290,8 @@ inline auto redif_operator_from_local_distances(std::vector<std::vector<double>>
 			weighted_degree += op.affinity[i][j];
 		}
 		if (weighted_degree == 0.0) {
-			weighted_degree = 1.0 / static_cast<double>(n);
+			op.affinity[i][i] = 1.0;
+			weighted_degree = 1.0;
 		}
 		op.degree[i] = weighted_degree;
 		degree_total += weighted_degree;

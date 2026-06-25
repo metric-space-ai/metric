@@ -68,6 +68,8 @@ function checkViewContract(label, view, descriptors) {
   });
   assert(`${label}: contract exposes linked selection`, view?.metadata?.contract?.linkedSelection?.kind === "paired-space-linked-selection", view?.metadata);
   assert(`${label}: contract exposes dependence property`, view?.metadata?.contract?.dependence?.propertyId === options.dependenceProperty, view?.metadata?.contract);
+  assert(`${label}: contract exposes native bridge relation`, view?.metadata?.contract?.dependence?.bridgeRelationId === "cross-space-dependence-bridge-relation", view?.metadata?.contract?.dependence);
+  assert(`${label}: contract exposes native bridge graph`, view?.metadata?.contract?.dependence?.bridgeGraphId === "cross-space-dependence-bridges", view?.metadata?.contract?.dependence);
   assert(`${label}: contract carries native global dependence`, Number.isFinite(Number(view?.metadata?.contract?.dependence?.global?.statistic)), view?.metadata?.contract?.dependence);
 
   const leftPoint = descriptors.find((descriptor) => descriptor.source?.pairedSpaceRole === "source-space" && descriptor.channels?.recordId);
@@ -82,6 +84,9 @@ function checkViewContract(label, view, descriptors) {
 
   assert(`${label}: bridge uses runtime edge primitive`, bridge.primitive === "RelationEdgeLayer", bridge);
   assert(`${label}: bridge is paired-space dependence`, bridge.kind === "paired-space-dependence", bridge);
+  assert(`${label}: bridge source names native bridge relation`, bridge.source?.relationId === "cross-space-dependence-bridge-relation", bridge.source);
+  assert(`${label}: bridge source names native bridge graph`, bridge.source?.graphId === "cross-space-dependence-bridges", bridge.source);
+  assert(`${label}: bridge graph names native bridge relation`, bridge.metadata?.graph?.relationId === "cross-space-dependence-bridge-relation", bridge.metadata?.graph);
   assert(`${label}: bridge responds to record and pair selection`, sameMembers(bridge.metadata?.selectionModel?.respondsTo, ["record", "pair"]), bridge.metadata?.selectionModel);
   assert(`${label}: bridge exposes source/target id channels`, hasChannels(bridge, ["recordId", "sourceId", "targetId", "rowId", "columnId", "edgeId"]), Object.keys(bridge.channels || {}));
   assert(`${label}: bridge source ids align with target ids for this native pairing`, sameArray(bridge.channels.sourceId.array, bridge.channels.targetId.array), {
@@ -121,6 +126,8 @@ function describeBridge(descriptors) {
     pairCount: bridge.channels?.recordId?.count || 0,
     channelNames: Object.keys(bridge.channels || {}),
     selectionModel: bridge.metadata?.selectionModel || null,
+    relationId: bridge.source?.relationId || bridge.metadata?.graph?.relationId || null,
+    graphId: bridge.source?.graphId || bridge.metadata?.graph?.id || null,
   };
 }
 
