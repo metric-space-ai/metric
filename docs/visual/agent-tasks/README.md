@@ -27,6 +27,7 @@ set, and one validation path.
 | `visual-api-hardening.md` | public JS API and checks | integrated |
 | `condition-monitoring-exporter.md` | native condition-monitoring visual exporter | integrated |
 | `mapping-dimensionality-exporter.md` | native mapping/dimensionality visual exporter | integrated |
+| `process-curve-external-visual-exporter.md` | native external UCR process-curve visual exporter and preview | integrated; preview-only |
 | `exporter-quality-audit.md` | read-only/patch-light audit of native exporters | ready to assign |
 | `visual-command-api-gallery-workstream.md` | public command API and gallery wiring | ready to assign |
 | `relation-matrix-graph-grammar-workstream.md` | relation matrix, graph and pair-selection grammar | ready to assign |
@@ -46,6 +47,8 @@ starts from reusable engine capabilities, visual grammars and gallery assets,
 not from synthetic data or one-off pages:
 
 - harden the public command API so examples call semantic commands
+- continue the process-curve preview from the `showProcessCurves` command,
+  not from generic matrix/point-cloud fallback code
 - consolidate native exporter writer code through `visual/cpp/mtrc_visual.hpp`
 - make relation, glyph/field and mapping/dynamics grammars first-class engine
   capabilities

@@ -76,3 +76,25 @@ Ready for screenshot review as a native Visual Engine preview. It is not marked 
 - Screenshot review status remains preview-only. The current relation
   matrix/neighborhood composition is evidence-bearing, but it is not a polished
   hero screenshot and is not added to the public accepted-hero set.
+
+## Parent Integration Review: Command Grammar
+
+- Added `showProcessCurves()` as a semantic Visual Engine command backed by
+  `ProcessCurveSceneView`.
+- Updated `visual/examples/process-curve-external-hero/index.html` to call
+  `createMetricVisual(...)` plus `visual.showProcessCurves(...)`; the page no
+  longer uses the generic relation-matrix command as its primary process-curve
+  grammar.
+- Updated `ProcessCurveSceneView` to accept native process-curve exports with a
+  single 3D coordinate state and `time_series.series` payloads.
+- Checks run:
+  - `node visual/tools/check-process-curve-external-visual.mjs`: passed.
+  - `node visual/tools/check-visual-command-api.mjs`: passed.
+  - `METRIC_VISUAL_EXAMPLES=process-curve-external-hero METRIC_VISUAL_OUT=/tmp/metric-process-curve-external-visual-command node visual/tools/check-visual-examples.mjs`: passed.
+  - `node visual/tools/check-single-render-pipeline.mjs`: passed.
+  - `node visual/tools/check-grae10-golden.mjs`: passed.
+  - `node visual/tools/check-hero-grammar-contract.mjs`: passed.
+  - `node visual/tools/check-public-gallery-evidence.mjs`: passed.
+  - `node visual/tools/check-hero-screenshot-review.mjs`: passed.
+- Status remains preview-only. This is now a command-backed process-curve
+  grammar candidate, not an accepted public hero.

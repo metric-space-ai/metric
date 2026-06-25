@@ -22,6 +22,7 @@ import {
   showMapping,
   showDynamics,
   showConditionMonitoring,
+  showProcessCurves,
   showMixedRecords,
   showCrossSpace,
   showRelationMatrixNeighborhood,
@@ -41,6 +42,7 @@ const COMMANDS = [
   "showMapping",
   "showDynamics",
   "showConditionMonitoring",
+  "showProcessCurves",
   "showMixedRecords",
   "showCrossSpace",
   "showRelationMatrixNeighborhood",
@@ -56,6 +58,7 @@ const EXPORTED_COMMANDS = {
   showMapping,
   showDynamics,
   showConditionMonitoring,
+  showProcessCurves,
   showMixedRecords,
   showCrossSpace,
   showRelationMatrixNeighborhood,
@@ -69,6 +72,7 @@ const PUBLIC_REFERENCE_EXEMPTIONS = new Set([
 
 const PUBLIC_EXAMPLE_EXPECTED_COMMANDS = new Map([
   ["condition-monitoring-hero", "showConditionMonitoring"],
+  ["process-curve-external-hero", "showProcessCurves"],
   ["mixed-record-hero", "showMixedRecords"],
   ["cross-space-dependency-hero", "showCrossSpace"],
   ["relation-matrix-neighborhood", "showRelationMatrixNeighborhood"],
@@ -130,6 +134,7 @@ function checkExportSurface(failures) {
 async function checkCommandDiagnostics(failures) {
   const metricFixture = await readJson("visual/examples/fixtures/metric-space.visual.json");
   const nativeCondition = await readJson("docs/examples/assets/condition-monitoring/metric.visual.json");
+  const nativeProcessExternal = await readJson("docs/examples/assets/process-curve-external/metric.visual.json");
   const nativeMixed = await readJson("docs/examples/assets/mixed-records/metric.visual.json");
   const nativeCrossSpace = await readJson("docs/examples/assets/cross-space-dependency/metric.visual.json");
   const nativeRelation = await readJson("docs/examples/assets/relation-matrix/metric.visual.json");
@@ -144,6 +149,10 @@ async function checkCommandDiagnostics(failures) {
   const conditionScalar = findPropertyId(nativeCondition, { targetType: "record", valueType: "scalar", prefer: /anomaly|severity/i });
   const conditionField = findPropertyId(nativeCondition, { targetType: "record", valueType: "scalar", prefer: /density/i });
   const conditionLabel = findPropertyId(nativeCondition, { targetType: "record", valueType: "categorical", prefer: /diagnosis|state|regime/i });
+  const processCoordinate = findCoordinateId(nativeProcessExternal, { dimension: 3, prefer: /process|landmark/i });
+  const processRelation = findRelationId(nativeProcessExternal, { prefer: /aligned|metric/i });
+  const processGraph = findGraphId(nativeProcessExternal, { prefer: /knn|neighbor/i });
+  const processLabel = findPropertyId(nativeProcessExternal, { targetType: "record", valueType: "categorical", prefer: /role|state|regime/i });
   const mixedCoordinate = findCoordinateId(nativeMixed, { dimension: 3, prefer: /family|severity|mixed/i });
   const mixedRelation = findRelationId(nativeMixed, { prefer: /composite|metric/i });
   const mixedLabel = findPropertyId(nativeMixed, { targetType: "record", valueType: "categorical", prefer: /family|type/i });
@@ -219,6 +228,20 @@ async function checkCommandDiagnostics(failures) {
         colorBy: conditionScalar,
         groundField: conditionField,
         labels: conditionLabel,
+        preview: false,
+      },
+    },
+    {
+      command: "showProcessCurves",
+      viewKind: "process-curves",
+      evidenceKind: "native",
+      document: nativeProcessExternal,
+      options: {
+        coordinateId: processCoordinate,
+        relationId: processRelation,
+        graphId: processGraph,
+        labelPropertyId: processLabel,
+        includeMatrix: true,
         preview: false,
       },
     },
@@ -449,6 +472,10 @@ function findCoordinateId(document, options = {}) {
 
 function findRelationId(document, options = {}) {
   return findItemId(document?.relations, options);
+}
+
+function findGraphId(document, options = {}) {
+  return findItemId(document?.graphs, options);
 }
 
 function findTimelineId(document, options = {}) {

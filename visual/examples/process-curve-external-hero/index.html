@@ -57,8 +57,8 @@
   <main>
     <canvas id="scene" aria-label="External process-curve aligned metric relation"></canvas>
     <section class="caption" aria-hidden="true">
-      <h1>External process curves</h1>
-      <p>Native C++ UCR process-window evidence rendered by the reusable relation matrix and neighborhood command. The dense matrix and graph read the same exported aligned-curve metric relation.</p>
+      <h1>Process curve recovery</h1>
+      <p>Aligned curve relations recover the matching operating state where a padded-vector baseline follows the wrong window.</p>
     </section>
     <div class="matrix-label" id="matrix-label">aligned metric matrix</div>
     <div class="loading" id="loading">Loading process-curve evidence...</div>
@@ -81,14 +81,14 @@
         evidence: document_,
         profileId: "process-curve-external-hero-profile",
       });
-      visual.showRelationMatrixNeighborhood({
+      visual.showProcessCurves({
         coordinateId: "process-curve-external-landmark-3d",
         relationId: "process-curve-external-aligned-metric",
         graphId: "process-curve-external-knn",
+        labelPropertyId: "process-role",
+        includeMatrix: true,
         matrixRect: [0.61, 0.25, 0.35, 0.50],
         symmetric: true,
-        colorProperty: "process-role",
-        labels: "process-role",
         preview: "pair",
         topK: 4,
         pointSize: 1.55,
@@ -99,9 +99,9 @@
       matrixLabel.textContent = matrixData ? `aligned metric matrix · ${matrixData.size}²` : "aligned metric matrix";
 
       document.documentElement.dataset.metricProcessCurveExternalHero = "ready";
-      document.documentElement.dataset.metricRecordCount = String(visual.views.find((view) => view.kind === "neighborhood-graph")?.recordIds.length || 0);
+      document.documentElement.dataset.metricRecordCount = String(document_.records.filter((record) => record.record_type === "process_curve_source").length);
       document.documentElement.dataset.metricRelationId = "process-curve-external-aligned-metric";
-      document.documentElement.dataset.metricCommand = "showRelationMatrixNeighborhood";
+      document.documentElement.dataset.metricCommand = "showProcessCurves";
       window.metricProcessCurveExternalHero = { visual, runtime: visual.runtime, getState: () => visual.getState() };
 
       loading.remove();

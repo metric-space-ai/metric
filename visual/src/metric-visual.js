@@ -13,6 +13,7 @@ import {
   MetricSpaceView,
   MixedRecordView,
   NeighborhoodGraphView,
+  createProcessCurveMiniatureLayerDescriptors,
   RelationMatrixView,
   SolverTraceView,
   SpacePropertiesView,
@@ -93,6 +94,11 @@ export async function showDynamics(evidence, options = {}) {
 export async function showConditionMonitoring(evidence, options = {}) {
   const visual = await createMetricVisual({ ...options, evidence });
   return visual.showConditionMonitoring(options);
+}
+
+export async function showProcessCurves(evidence, options = {}) {
+  const visual = await createMetricVisual({ ...options, evidence });
+  return visual.showProcessCurves(options);
 }
 
 export async function showMixedRecords(evidence, options = {}) {
@@ -181,6 +187,7 @@ export class MetricVisualSurface {
     if (normalized === "mapping") return this.showMapping(options);
     if (normalized === "dynamics") return this.showDynamics(options);
     if (normalized === "condition-monitoring") return this.showConditionMonitoring(options);
+    if (normalized === "process-curves" || normalized === "process-curve" || normalized === "external-process-curves") return this.showProcessCurves(options);
     if (normalized === "mixed-records") return this.showMixedRecords(options);
     if (normalized === "cross-space") return this.showCrossSpace(options);
     if (normalized === "relation-matrix-neighborhood") return this.showRelationMatrixNeighborhood(options);
@@ -376,6 +383,70 @@ export class MetricVisualSurface {
     }
     this.setMotion(options.motion ?? conditionMonitoringMotion(), { start: options.startMotion !== false });
     return this.configurePreview({ ...options, preview: options.preview ?? "time-series" });
+  }
+
+  showProcessCurves(options = {}) {
+    const normalized = {
+      targetCoordinateId: options.targetCoordinateId || options.coordinateId || options.coordinate,
+      sourceCoordinateId: options.sourceCoordinateId || options.sourceCoordinate,
+      labelPropertyId: options.labelPropertyId || options.labelProperty || options.colorProperty || options.labels || "process-role",
+      pointSize: options.pointSize ?? 1.55,
+      pointAlpha: options.pointAlpha ?? 0.76,
+      trackMode: options.trackMode || "tube",
+      trackAlpha: options.trackAlpha ?? 0.68,
+      morphProgress: options.morphProgress ?? 1,
+      ...options,
+    };
+    const scene = createProcessCurveMiniatureLayerDescriptors(this.document, normalized);
+    const descriptors = scene.descriptors.slice();
+    const relationId = options.relationId || options.relation || firstVisualRelationId(this.document);
+    const coordinateId = normalized.targetCoordinateId || scene.inputs?.targetCoordinate?.id;
+    if (options.includeNeighborhood !== false && relationId && coordinateId) {
+      const graph = NeighborhoodGraphView.fromVisualSpace(this.document, normalizeGraphOptions(this.document, {
+        coordinateId,
+        relationId,
+        graphId: options.graphId || options.graph,
+        colorProperty: normalized.labelPropertyId,
+        topK: options.topK ?? 4,
+        size: options.neighborhoodPointSize ?? 1.0,
+      }));
+      descriptors.push(...graph.toLayerDescriptors().map((descriptor) => ({
+        ...descriptor,
+        id: `${descriptor.id || "process-curve-neighborhood"}:support`,
+        order: Math.max(Number(descriptor.order ?? 0), 36),
+        metadata: {
+          ...(descriptor.metadata || {}),
+          role: "process-curve-neighborhood-support",
+          visualGrammar: "process-curves",
+        },
+      })));
+    }
+    if (options.includeMatrix === true && relationId) {
+      const matrix = RelationMatrixView.fromVisualSpace(this.document, normalizeRelationOptions(this.document, {
+        relationId,
+        rect: options.matrixRect || [0.61, 0.25, 0.35, 0.50],
+        palette: options.palette || "metric",
+        symmetric: options.symmetric ?? true,
+        missingAlpha: 0,
+        materialAlpha: 0.96,
+      }));
+      descriptors.push(...matrix.toLayerDescriptors().map((descriptor) => ({
+        ...descriptor,
+        order: Math.max(Number(descriptor.order ?? 0), 220),
+        metadata: {
+          ...(descriptor.metadata || {}),
+          role: "process-curve-relation-matrix-support",
+          visualGrammar: "process-curves",
+        },
+      })));
+    }
+    this.views = [];
+    this.setLayerDescriptors(descriptors, { source: "showProcessCurves", viewKind: "process-curves" });
+    if (options.camera !== false) {
+      this.setCamera(options.camera || processCurveCamera());
+    }
+    this.setMotion(options.motion ?? "studio-drift", { start: options.startMotion !== false });
+    return this.configurePreview({ ...options, preview: options.preview ?? "record" });
   }
 
   showMixedRecords(options = {}) {
@@ -1067,6 +1138,22 @@ function conditionMonitoringCamera() {
     pitch: 0.25,
     radius: 8.2,
   };
+}
+
+function processCurveCamera() {
+  return {
+    fov: 34,
+    target: [0.02, -0.08, 0.04],
+    yaw: -0.46,
+    pitch: 0.34,
+    radius: 7.35,
+  };
+}
+
+function firstVisualRelationId(document) {
+  return document?.relations?.find((relation) => relation?.relation_type === "metric")?.id
+    || document?.relations?.[0]?.id
+    || null;
 }
 
 async function resolveMetricVisualInput(input, options = {}) {

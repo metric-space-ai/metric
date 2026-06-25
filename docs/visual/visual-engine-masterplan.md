@@ -176,9 +176,9 @@ Known gaps:
 
 - first full-frame capture path exists; no polished multi-algorithm hero
   application/gallery yet
-- the next real public hero candidate is the existing UCR/process-curve
-  evidence; it still needs a native `metric.visual.v1` export and reusable
-  Visual Engine view before it can enter screenshot review
+- the existing UCR/process-curve evidence now has a native `metric.visual.v1`
+  export and command-backed preview page; it remains preview-only until
+  screenshot review accepts the visual grammar and composition
 - no full visual gallery for every METRIC algorithm family yet
 - relation matrix has native exported evidence and a reusable WebGL readability
   pass with block bands, tile/LOD metadata, block boundaries, row/column/cell

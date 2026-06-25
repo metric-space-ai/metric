@@ -105,10 +105,11 @@ for (const query of queryRecords) {
 
 const view = document_.views.find((entry) => entry.id === "process-curve-external-relation-neighborhood-view");
 requireTruthy(view, "missing reusable semantic view definition");
-requireEqual(view.command, "showRelationMatrixNeighborhood", "view must map to Visual Engine command");
+requireEqual(view.command, "showRelationMatrixNeighborhood", "native view hint must preserve relation-neighborhood evidence");
 
 requireTruthy(pageText.includes("createMetricVisual"), "example page must create a Visual Engine surface");
-requireTruthy(pageText.includes("showRelationMatrixNeighborhood"), "example page must call the Visual Engine command");
+requireTruthy(pageText.includes("showProcessCurves"), "example page must call the process-curve Visual Engine command");
+requireTruthy(!pageText.includes(".showRelationMatrixNeighborhood("), "example page must not use the generic relation-matrix command as its primary process-curve view");
 requireTruthy(pageText.includes("docs/examples/assets/process-curve-external/metric.visual.json"), "example page must load the native metric.visual asset");
 for (const forbidden of ["createElementNS", "<svg", ".getContext(", "new Path2D", "arc(", "fillRect("]) {
   requireTruthy(!pageText.includes(forbidden), `example page contains forbidden page-local renderer token: ${forbidden}`);
@@ -124,5 +125,6 @@ console.log(JSON.stringify({
   relationPairs: relation.values.length,
   coordinates: coordinate.record_positions.length,
   graphEdges: graph.edges.length,
-  command: view.command,
+  viewHintCommand: view.command,
+  pageCommand: "showProcessCurves",
 }, null, 2));

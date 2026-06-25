@@ -1,11 +1,14 @@
 # Agent Task: Process-Curve External Visual Exporter
 
+Status: integrated in CMake/CTest, native preview only. See
+`docs/visual/reports/process-curve-external-visual-exporter.md`.
+
 ## Purpose
 
 Turn the existing UCR process-curve gallery evidence into a native
-`metric.visual.v1` engine payload. This is the next real public hero candidate
-after GRAE10 because the records and query outcomes already come from the
-process-curve C++ example and existing CSV evidence, not from JavaScript
+`metric.visual.v1` engine payload. This remains a preview-only public hero
+candidate after GRAE10 because the records and query outcomes already come from
+the process-curve C++ example and existing CSV evidence, not from JavaScript
 decoration.
 
 The output must be useful to the reusable Visual Engine. Do not build a custom

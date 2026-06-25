@@ -14,7 +14,7 @@ export function resolveProcessCurveSceneInputs(document, options = {}) {
   const coordinates = document?.coordinates || [];
   const properties = document?.properties || [];
   const coordinateName = (entry) => String(entry?.name || entry?.id || "").toLowerCase();
-  const sourceCoordinate = resolveByIdOrPredicate(
+  let sourceCoordinate = resolveByIdOrPredicate(
     coordinates,
     options.sourceCoordinateId || options.sourceCoordinate,
     (entry) => entry.dataset_id === datasetId && coordinateName(entry).includes(options.sourceCoordinateName || "landmark2"),
@@ -29,8 +29,8 @@ export function resolveProcessCurveSceneInputs(document, options = {}) {
     options.labelPropertyId || options.propertyId || options.labelProperty,
     (entry) => entry.dataset_id === datasetId && String(entry.id || "").endsWith(":record_label"),
   );
+  if (!sourceCoordinate) sourceCoordinate = targetCoordinate;
   if (!datasetId) throw new Error("Process-curve scene requires a dataset id.");
-  if (!sourceCoordinate) throw new Error(`Process-curve scene could not find source coordinate for ${datasetId}.`);
   if (!targetCoordinate) throw new Error(`Process-curve scene could not find target coordinate for ${datasetId}.`);
   if (!labelProperty) throw new Error(`Process-curve scene could not find label property for ${datasetId}.`);
   return {
@@ -365,7 +365,7 @@ function createProcessCurveSkylineDescriptor(document, inputs, options) {
 
   for (const record of records) {
     const position = positionsByRecord.get(record.id);
-    const values = Array.isArray(record.payload?.values) ? record.payload.values : [];
+    const values = curveValues(record);
     if (!position || values.length < 2) continue;
     entries.push({
       id: record.id,
@@ -484,6 +484,13 @@ function curveEnergy(values) {
     if (Number.isFinite(delta)) total += delta * delta;
   }
   return Math.sqrt(total / Math.max(1, values.length - 1));
+}
+
+function curveValues(record) {
+  if (Array.isArray(record?.payload?.values)) return record.payload.values;
+  if (Array.isArray(record?.payload?.series)) return record.payload.series;
+  if (Array.isArray(record?.values)) return record.values;
+  return [];
 }
 
 function curveAmplitude(values) {

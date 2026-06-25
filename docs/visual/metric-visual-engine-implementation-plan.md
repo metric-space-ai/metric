@@ -108,8 +108,9 @@ visualization:
 - show solver traces and optimization evidence without reimplementing solvers
 - provide a reusable photographic miniature style for all hero applications
 - expose high-level commands for common visual tasks, such as `showMetricSpace`,
-  `showRelations`, `showProperties`, `showMapping`, `showDynamics`,
-  `showPreview` and `captureHeroFrame`
+  `showRelationMatrix`, `showNeighborhoodGraph`, `showSpaceProperties`,
+  `showProcessCurves`, `showMapping`, `showDynamics`, `showPreview` and
+  `captureHeroFrame`
 
 Every hero application must have a hero visualization. Plan each hero
 backwards from the visual proof it must produce:
@@ -175,6 +176,7 @@ showMetricSpace(evidence, options)
 showRelationMatrix(evidence, options)
 showNeighborhoodGraph(evidence, options)
 showSpaceProperties(evidence, options)
+showProcessCurves(evidence, options)
 showMapping(evidence, options)
 showDynamics(evidence, options)
 showSolverTrace(evidence, options)
@@ -2064,7 +2066,7 @@ Implemented:
 - Added the public command surface in `visual/src/metric-visual.js`:
   `createMetricVisual`, `showMetricSpace`, `showRelationMatrix`,
   `showNeighborhoodGraph`, `showSpaceProperties`, `showMapping`,
-  `showDynamics`, `showSolverTrace`, `showPreview` and the
+  `showDynamics`, `showProcessCurves`, `showSolverTrace`, `showPreview` and the
   `MetricVisualSurface` command object.
 - Rewired the current hero fixtures so page code calls engine commands instead
   of owning renderer construction.
@@ -2146,13 +2148,13 @@ Not visually accepted yet:
 
 Next mandatory engine work:
 
-1. Build the existing UCR/process-curve evidence into a native
-   `metric.visual.v1` Visual Engine export and page. This is the next real hero
-   candidate because the data and query outcomes already exist outside the
-   browser renderer.
-2. Add an explicit hero-acceptance manifest so screenshot review can distinguish
-   accepted heroes from native preview pages without auto-promoting smoke-test
-   success.
+1. Promote the native UCR/process-curve export from command-backed preview into
+   a polished hero-specific visual grammar only after screenshot review proves
+   the composition. The native exporter and preview page exist; the visual is
+   not accepted yet.
+2. Keep the explicit hero-acceptance manifest as the only path from native
+   preview to accepted hero, so screenshot review distinguishes accepted heroes
+   from load/render success.
 3. Promote native preview exports into polished hero-specific visual grammars
    only after screenshot review.
 4. Extend layer-specific matrix picking to a GPU/tiled strategy only where the
@@ -2360,4 +2362,5 @@ Corrected status:
   relation-matrix/neighborhood, dynamics and mapping remain native
   `public-preview-only` examples pending screenshot acceptance.
 - The next public hero candidate is the existing real UCR/process-curve
-  evidence, which still needs a native `metric.visual.v1` Visual Engine export.
+  evidence. It now has a native `metric.visual.v1` export and command-backed
+  preview, but still needs screenshot-reviewed visual polish before promotion.
