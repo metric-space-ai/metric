@@ -384,7 +384,7 @@ export function createProcessCurveMiniatureStage(options = {}) {
   });
 }
 
-export function createProcessCurveMiniatureLayerDescriptors(document, options = {}) {
+function createProcessCurveMiniatureLayerDescriptors(document, options = {}) {
   const inputs = resolveProcessCurveSceneInputs(document, options);
   return {
     inputs,

@@ -10,7 +10,6 @@ export * as interaction from "./interaction/index.js";
 export * as layers from "./layers/index.js";
 export * as materials from "./materials/index.js";
 export * as math from "./math/index.js";
-export * as miniatureField from "./miniature-field/index.js";
 export * as miniatureEngine from "./miniature-engine/index.js";
 export * as picking from "./picking/index.js";
 export * as postprocess from "./native-postprocess/index.js";

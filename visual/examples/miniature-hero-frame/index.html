@@ -107,13 +107,8 @@
 
   <script type="module">
     import {
-      MetricVisualRuntime,
-      adaptMetricEvidenceV1,
       attachMiniatureRigReporter,
-      createLayerFromDescriptor,
-      createMiniatureHeroRuntimeOptions,
-      createMiniatureHeroSceneBundle,
-      createProcessCurveMiniatureLayerDescriptors,
+      createMetricVisual,
     } from "../../src/index.js";
 
     const canvas = document.getElementById("metric-canvas");
@@ -123,81 +118,65 @@
       document.body.classList.add("metric-inspect");
     }
 
-    const setup = createMiniatureHeroRuntimeOptions({
-      canvas,
-      layerFactory: createLayerFromDescriptor,
-      profileOptions: {
-        id: "process-curve-miniature-hero-frame-profile",
-        styleMotion: {
-          camera: {
-            yawAmplitude: 0.014,
-            pitchAmplitude: 0.005,
-          },
-          focus: {
-            yAmplitude: 0.01,
-            radiusAmplitude: 0.018,
-          },
-        },
-      },
-	      controls: {
-	        enabled: true,
-	        rotateSpeed: 0.0045,
-	      },
-	      hoverFocus: {
-	        enabled: true,
-	        thresholdPx: 54,
-	        throttleMs: 28,
-	        clearOnLeave: false,
-	        clearOnMiss: false,
-	        positionChannels: ["position", "targetPosition"],
-	      },
-	    });
-
-	    const runtime = new MetricVisualRuntime(setup.runtimeOptions);
-	    setup.style.attachRuntime(runtime);
+    let visual = null;
+    let rigReporter = null;
     let currentScene = null;
-
-    window.metricHeroFrame = {
-      runtime,
-      style: setup.style,
-      profile: setup.profile,
-      stage: setup.stage,
-      scene: null,
-    };
-
-    const rigReporter = attachMiniatureRigReporter({
-      target: document.documentElement,
-      resolve: () => ({
-        runtime,
-        style: setup.style,
-        stage: setup.stage,
-        bundle: currentScene,
-      }),
-    });
 
     function writeStatus(lines) {
       status.innerHTML = lines.map((line) => `<div>${escapeHtml(line)}</div>`).join("");
     }
 
     function fitCanvas() {
+      if (!visual) return;
       const rect = canvas.getBoundingClientRect();
-      runtime.resize(Math.max(1, Math.floor(rect.width)), Math.max(1, Math.floor(rect.height)));
+      visual.runtime.resize(Math.max(1, Math.floor(rect.width)), Math.max(1, Math.floor(rect.height)));
     }
 
     try {
-      const response = await fetch("/docs/examples/assets/process-curve-external/evidence.json");
+      const response = await fetch("/docs/examples/assets/process-curve-external/metric.visual.json");
       if (!response.ok) throw new Error(`evidence ${response.status}`);
-      const evidence = await response.json();
-      const document = adaptMetricEvidenceV1(evidence);
-      const datasetId = "power_demand";
+      const document_ = await response.json();
+      const datasetId = "process-curve-external";
 
-      runtime.setDocument(document, { views: false });
+      visual = await createMetricVisual({
+        canvas,
+        evidence: document_,
+        profileId: "process-curve-miniature-hero-frame-profile",
+        profileOptions: {
+          styleMotion: {
+            camera: {
+              yawAmplitude: 0.014,
+              pitchAmplitude: 0.005,
+            },
+            focus: {
+              yAmplitude: 0.01,
+              radiusAmplitude: 0.018,
+            },
+          },
+        },
+        controls: {
+          enabled: true,
+          rotateSpeed: 0.0045,
+        },
+        hoverFocus: {
+          enabled: true,
+          thresholdPx: 54,
+          throttleMs: 28,
+          clearOnLeave: false,
+          clearOnMiss: false,
+          positionChannels: ["position", "targetPosition"],
+        },
+      });
       fitCanvas();
 
-      const sceneInput = createProcessCurveMiniatureLayerDescriptors(document, {
+      visual.showProcessCurves({
         datasetId,
-        stage: setup.stage,
-        groundY: setup.stage.grounding?.groundY,
+        sourceCoordinateId: "process-curve-external-landmark-2d",
+        coordinateId: "process-curve-external-landmark-3d",
+        relationId: "process-curve-external-aligned-metric",
+        graphId: "process-curve-external-knn",
+        labelPropertyId: "process-role",
+        groundY: visual.setup.stage?.grounding?.groundY,
         morphLoop: true,
         pointSize: 1.85,
         projectionSize: 2.85,
@@ -205,59 +184,65 @@
         trackRadius: 0.012,
         trackRadialSegments: 8,
         trackAlpha: 0.92,
+        preview: false,
       });
-      const scene = createMiniatureHeroSceneBundle(sceneInput.descriptors, {
-        stage: setup.stage,
-        fit: { targetSpan: 2.74 },
-        ground: {
-          groundY: setup.stage.grounding?.groundY,
-          padding: 0.66,
-        },
-        contacts: {
-          includeSamples: false,
-        },
-        motion: "miniature",
+
+      const inputs = visual.views[0]?.inputs || {};
+      const focusRecord = inputs.records?.[Math.floor((inputs.records?.length || 0) * 0.58)];
+      const focusPosition = focusPointForRecord(inputs, visual.setup.stage?.grounding?.groundY, focusRecord?.id);
+      if (focusPosition) {
+        visual.runtime.setFocusTarget({
+          type: "point",
+          source: "miniature-hero-frame-record",
+          recordId: focusRecord.id,
+          coordinateId: inputs.targetCoordinate?.id,
+          position: focusPosition,
+        });
+      }
+
+      currentScene = {
+        schema: "metric.visual.public_command_scene_state.v1",
+        stage: visual.setup.stage,
+        layers: visual.descriptors,
         metadata: {
           example: "process-curve-miniature-hero-frame",
           datasetId,
+          command: "showProcessCurves",
         },
-	      });
-	
-	      setup.style.applyBundle(runtime, scene, { source: "miniature-hero-frame" });
-	      const focusRecord = sceneInput.inputs.records[Math.floor(sceneInput.inputs.records.length * 0.58)];
-	      const focusPosition = focusPointForRecord(sceneInput.inputs, scene.fit, focusRecord?.id);
-	      if (focusPosition) {
-	        runtime.setFocusTarget({
-	          type: "point",
-	          source: "miniature-hero-frame-record",
-	          recordId: focusRecord.id,
-	          coordinateId: sceneInput.inputs.targetCoordinate.id,
-	          position: focusPosition,
-	        });
-	      }
-	      currentScene = scene;
-	      runtime.start();
-	      runtime.renderOnce();
-	
-	      window.metricHeroFrame = {
-	        runtime,
-        style: setup.style,
-        profile: setup.style.toProfile({ includeDiagnostics: true }),
-	        stage: setup.stage,
-	        scene,
-	        inputs: sceneInput.inputs,
-	        focusRecordId: focusRecord?.id || null,
-	        focusPosition,
-	        rigReporter,
-	      };
-	      rigReporter.publish();
-	      requestAnimationFrame(rigReporter.publish);
+      };
+      rigReporter = attachMiniatureRigReporter({
+        target: document.documentElement,
+        resolve: () => ({
+          runtime: visual.runtime,
+          style: visual.setup.style,
+          stage: visual.setup.stage,
+          bundle: currentScene,
+          descriptors: visual.descriptors,
+        }),
+      });
+      visual.runtime.renderOnce();
+
+      window.metricHeroFrame = {
+        visual,
+        runtime: visual.runtime,
+        style: visual.setup.style,
+        profile: visual.setup.style.toProfile({ includeDiagnostics: true }),
+        stage: visual.setup.stage,
+        scene: currentScene,
+        inputs,
+        focusRecordId: focusRecord?.id || null,
+        focusPosition,
+        rigReporter,
+        getState: () => visual.getState(),
+      };
+      rigReporter.publish();
+      requestAnimationFrame(rigReporter.publish);
 
       writeStatus([
-        `schema: ${document.schema}`,
-        `records: ${sceneInput.inputs.records.length}`,
-        `layers: ${runtime.getState().layerInstanceCount}`,
-        `state: ${runtime.getState().layerState.status}`,
+        `schema: ${document_.schema}`,
+        `records: ${inputs.records?.length || 0}`,
+        `layers: ${visual.runtime.getState().layerInstanceCount}`,
+        `state: ${visual.runtime.getState().layerState?.status || "ready"}`,
       ]);
     } catch (error) {
       console.error(error);
@@ -271,25 +256,24 @@
       }
     });
 
-	    function escapeHtml(value) {
-	      return String(value)
-	        .replaceAll("&", "&amp;")
-	        .replaceAll("<", "&lt;")
-	        .replaceAll(">", "&gt;")
-	        .replaceAll('"', "&quot;");
-	    }
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
 
-	    function focusPointForRecord(inputs, fit, recordId) {
-	      const entry = (inputs.targetCoordinate.record_positions || []).find((position) => position.record_id === recordId);
-	      const values = entry?.position || [];
-	      if (!entry || values.length < 2) return null;
-	      const rawX = Number(values[0]) || 0;
-	      const rawZ = Number(values[2] ?? values[1]) || 0;
-	      const x = fit ? (rawX - fit.center.x) * fit.scale : rawX;
-	      const z = fit ? (rawZ - fit.center.z) * fit.scale : rawZ;
-	      const y = fit?.sameRoomMorph?.flatY ?? -0.49;
-	      return [x, y, z];
-	    }
-	  </script>
+    function focusPointForRecord(inputs, groundY, recordId) {
+      const entry = (inputs.targetCoordinate?.record_positions || []).find((position) => position.record_id === recordId);
+      const values = entry?.position || [];
+      if (!entry || values.length < 2) return null;
+      return [
+        Number(values[0]) || 0,
+        Number.isFinite(Number(groundY)) ? Number(groundY) + 0.06 : -0.52,
+        Number(values[2] ?? values[1]) || 0,
+      ];
+    }
+  </script>
 </body>
 </html>

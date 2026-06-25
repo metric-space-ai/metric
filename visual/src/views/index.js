@@ -21,7 +21,6 @@ export { SolverTraceView, createSolverTraceView } from "./SolverTraceView.js";
 export { TrajectoryPathView, createTrajectoryPathView } from "./TrajectoryPathView.js";
 export {
   ProcessCurveSceneView,
-  createProcessCurveMiniatureLayerDescriptors,
   createProcessCurveMiniatureSceneBundle,
   createProcessCurveMiniatureStage,
   resolveProcessCurveSceneInputs,

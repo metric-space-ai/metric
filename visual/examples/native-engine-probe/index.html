@@ -1,10 +1,12 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-metric-visual-surface="internal-diagnostic-harness" data-metric-visual-public-gallery="false" data-metric-visual-direct-runtime="allowed-dev-probe">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="metric-visual-surface" content="internal-diagnostic-harness">
+  <meta name="metric-visual-public-gallery" content="false">
   <link rel="icon" href="data:,">
-  <title>METRIC Visual Native Engine Probe</title>
+  <title>METRIC Visual Internal Native Engine Probe</title>
   <style>
     :root {
       color-scheme: dark;
@@ -90,10 +92,10 @@
 </head>
 <body>
   <main>
-    <canvas id="metric-canvas" aria-label="METRIC native WebGL visualization"></canvas>
+    <canvas id="metric-canvas" aria-label="METRIC internal native WebGL diagnostic visualization"></canvas>
     <section class="hud" aria-hidden="true">
-      <h1>METRIC Visual Native Engine</h1>
-      <p>Real process-curve evidence rendered as a finite metric-space coordinate morph with semantic ground projection.</p>
+      <h1>METRIC Visual Internal Diagnostic</h1>
+      <p>Dev-only direct-runtime probe for process-curve miniature rendering, GPU picking, and style diagnostics.</p>
     </section>
     <output class="status" id="status">booting</output>
   </main>
@@ -111,6 +113,14 @@
 
     const canvas = document.getElementById("metric-canvas");
     const status = document.getElementById("status");
+    const probeMetadata = Object.freeze({
+      id: "native-engine-probe",
+      surface: "internal-diagnostic-harness",
+      publicGallery: false,
+      directRuntime: "allowed-dev-probe",
+      reason: "Exercises MetricVisualRuntime/style internals without presenting a public METRIC Visual API example.",
+    });
+    window.metricVisualProbeMetadata = probeMetadata;
 
     function writeStatus(lines) {
       status.innerHTML = lines.map((line) => `<div>${line}</div>`).join("");

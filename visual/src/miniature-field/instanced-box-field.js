@@ -1,10 +1,12 @@
 /*
- * Native instanced box field renderer.
+ * Internal native instanced box field renderer.
  *
  * This module keeps the core renderer ideas from the reference instancing scene - a perspective
  * camera at y=-20,z=10, a 25x25 box field, per-instance color, and per-frame
  * noise-driven transforms - but exposes them as data channels for a
- * dependency-free METRIC visualization engine.
+ * dependency-free METRIC visualization engine. It is retained for diagnostics
+ * only; public METRIC Visual callers should use createMetricVisual() and
+ * semantic show*() commands.
  */
 
 const DEFAULT_OPTIONS = {

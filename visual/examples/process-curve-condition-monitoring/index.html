@@ -15,305 +15,248 @@
         color: #14221d;
       }
 
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
       body {
+        width: 100%;
+        height: 100%;
         margin: 0;
+        overflow: hidden;
+      }
+
+      body {
+        background: #dfe8e3;
       }
 
       main {
-        width: min(1480px, calc(100% - 32px));
-        margin: 0 auto;
-        padding: 22px 0 34px;
+        position: fixed;
+        inset: 0;
       }
 
-      header {
-        display: flex;
-        align-items: end;
-        justify-content: space-between;
-        gap: 18px;
-        margin-bottom: 14px;
+      canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        touch-action: none;
+        cursor: crosshair;
+      }
+
+      .caption {
+        position: absolute;
+        left: clamp(18px, 2.6vw, 32px);
+        top: clamp(18px, 2.8vw, 32px);
+        max-width: min(470px, calc(100vw - 36px));
+        pointer-events: none;
+        text-shadow: 0 1px 18px rgba(248, 250, 246, 0.78);
       }
 
       h1 {
-        margin: 0;
-        font-size: 28px;
+        margin: 0 0 7px;
+        font-size: clamp(18px, 2vw, 24px);
+        line-height: 1.15;
         letter-spacing: 0;
       }
 
       p {
-        max-width: 850px;
-        margin: 8px 0 0;
-        color: #51645d;
+        max-width: 58ch;
+        margin: 0;
+        color: rgba(50, 70, 61, 0.86);
+        font-size: 13px;
         line-height: 1.45;
       }
 
-      select,
-      button {
-        min-height: 38px;
-        border: 1px solid #a8b8af;
-        background: #f8faf6;
-        color: #14221d;
-        padding: 0 12px;
-      }
-
-      button {
-        cursor: pointer;
-      }
-
-      input[type="range"] {
-        accent-color: #1f8f67;
-        width: 150px;
-      }
-
       .controls {
+        position: absolute;
+        right: clamp(16px, 2.4vw, 30px);
+        top: clamp(16px, 2.6vw, 30px);
         display: flex;
         align-items: end;
-        gap: 12px;
+        gap: 10px;
         flex-wrap: wrap;
         justify-content: end;
+        max-width: min(430px, calc(100vw - 32px));
       }
 
       .control {
         display: grid;
         gap: 6px;
+        color: rgba(43, 62, 54, 0.82);
         font-size: 12px;
-        color: #51645d;
+        font-weight: 650;
       }
 
-      .grid {
+      input[type="range"] {
+        width: min(180px, 44vw);
+        accent-color: #1f8f67;
+      }
+
+      button {
+        min-height: 36px;
+        border: 1px solid rgba(96, 120, 108, 0.44);
+        background: rgba(248, 250, 246, 0.74);
+        color: #14221d;
+        padding: 0 12px;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .matrix-label,
+      .loading {
+        position: absolute;
+        color: rgba(43, 62, 54, 0.78);
+        font-size: 12px;
+        font-weight: 700;
+        pointer-events: none;
+        text-shadow: 0 1px 14px rgba(248, 250, 246, 0.74);
+      }
+
+      .matrix-label {
+        right: clamp(16px, 2.4vw, 30px);
+        bottom: clamp(18px, 2.6vw, 32px);
+      }
+
+      .loading {
+        inset: 0;
         display: grid;
-        grid-template-columns: minmax(420px, 1.2fr) minmax(360px, 0.8fr);
-        gap: 14px;
+        place-items: center;
+        color: #2b3b40;
+        font-size: 14px;
       }
 
-      .panel {
-        border: 1px solid #b7c5bd;
-        background: #f8faf6;
+      .error {
+        color: #7a2222;
       }
 
-      canvas {
-        display: block;
-        width: 100%;
-      }
-
-      #scene {
-        min-height: 520px;
-      }
-
-      #gallery,
-      #query {
-        min-height: 250px;
-      }
-
-      #metric-heatmap,
-      #baseline-heatmap {
-        min-height: 390px;
-      }
-
-      .stack {
-        display: grid;
-        gap: 14px;
-      }
-
-      .wide {
-        grid-column: 1 / -1;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 14px;
-      }
-
-      @media (max-width: 980px) {
-        .grid,
-        .wide {
-          grid-template-columns: 1fr;
+      @media (max-width: 760px) {
+        .controls {
+          left: 18px;
+          right: 18px;
+          top: auto;
+          bottom: 18px;
+          justify-content: start;
         }
 
-        header {
-          align-items: start;
-          flex-direction: column;
+        .matrix-label {
+          display: none;
         }
       }
     </style>
   </head>
   <body>
     <main>
-      <header>
-        <div>
-          <h1>METRIC process-curve visualization</h1>
-          <p>
-            Native METRIC Canvas/WebGL rendering over C++ evidence:
-            isometric miniature space, semantic ground projection, 2D/3D
-            morph, record curves, query recovery, and pair-value fields.
-          </p>
-        </div>
-        <div class="controls">
-          <label class="control">
-            Domain
-            <select id="domain"></select>
-          </label>
-          <label class="control">
-            2D/3D morph
-            <input id="morph" type="range" min="0" max="1" step="0.001" value="1" />
-          </label>
-          <button id="morph-toggle" type="button">Pause morph</button>
-        </div>
-      </header>
-
-      <section class="grid">
-        <div class="panel">
-          <canvas id="scene"></canvas>
-        </div>
-        <div class="stack">
-          <div class="panel">
-            <canvas id="query"></canvas>
-          </div>
-          <div class="panel">
-            <canvas id="gallery"></canvas>
-          </div>
-        </div>
-        <div class="wide">
-          <div class="panel">
-            <canvas id="metric-heatmap"></canvas>
-          </div>
-          <div class="panel">
-            <canvas id="baseline-heatmap"></canvas>
-          </div>
-        </div>
+      <canvas id="scene" aria-label="METRIC process-curve visual"></canvas>
+      <section class="caption" aria-hidden="true">
+        <h1>METRIC process curves</h1>
+        <p>
+          Native visual evidence rendered through the public command surface:
+          metric space, record tracks, ground field, relation matrix, and
+          runtime preview.
+        </p>
       </section>
+      <div class="controls" aria-label="Process curve controls">
+        <label class="control">
+          2D/3D morph
+          <input id="morph" type="range" min="0" max="1" step="0.001" value="1" />
+        </label>
+        <button id="morph-toggle" type="button">Animate morph</button>
+      </div>
+      <div class="matrix-label" id="matrix-label">aligned metric matrix</div>
+      <div class="loading" id="loading">Loading process-curve visual...</div>
     </main>
 
     <script type="module">
-      import {
-        MetricVisualRuntime,
-        adaptMetricEvidenceV1,
-        createLayerFromDescriptor,
-        createMiniaturePhotographicStyle,
-        createMiniatureStyleProfile,
-        createProcessCurveMiniatureSceneBundle,
-        createProcessCurveMiniatureStage,
-      } from "../../src/index.js";
-      import {
-        MetricHeatmap,
-        MetricQueryInspector,
-        MetricRecordGallery,
-        MetricSelection,
-        loadMetricEvidence,
-      } from "../../src/metric-visual.js?v=panels-1";
+      import { createMetricVisual } from "../../src/index.js";
+
+      const VISUAL_EVIDENCE_URL = "../../../docs/examples/assets/process-curve-external/metric.visual.json";
+      const PROCESS_CURVE_OPTIONS = {
+        coordinateId: "process-curve-external-landmark-3d",
+        relationId: "process-curve-external-aligned-metric",
+        graphId: "process-curve-external-knn",
+        labelPropertyId: "process-role",
+        includeMatrix: true,
+        includeNeighborhood: true,
+        matrixRect: [0.61, 0.25, 0.35, 0.5],
+        symmetric: true,
+        preview: "pair",
+        topK: 4,
+        pointSize: 1.55,
+        trackMode: "tube",
+        trackAlpha: 0.9,
+        trackRadius: 0.012,
+        trackRadialSegments: 8,
+      };
 
       const elements = {
-        scene: document.getElementById("scene"),
-        gallery: document.getElementById("gallery"),
-        query: document.getElementById("query"),
-        metricHeatmap: document.getElementById("metric-heatmap"),
-        baselineHeatmap: document.getElementById("baseline-heatmap"),
-        domainSelect: document.getElementById("domain"),
-        morphSlider: document.getElementById("morph"),
+        canvas: document.getElementById("scene"),
+        loading: document.getElementById("loading"),
+        matrixLabel: document.getElementById("matrix-label"),
+        morph: document.getElementById("morph"),
         morphToggle: document.getElementById("morph-toggle"),
       };
 
-      const miniatureProfile = createMiniatureStyleProfile({
-        id: "process-curve-condition-monitoring-miniature-profile",
-        stage: createProcessCurveMiniatureStage(),
-      });
-      const style = createMiniaturePhotographicStyle({
-        profile: miniatureProfile,
-        layerFactory: createLayerFromDescriptor,
-      });
-      const runtimeSetup = style.createRuntimeOptions({ canvas: elements.scene });
-      const runtime = new MetricVisualRuntime(runtimeSetup.runtimeOptions);
-      style.attachRuntime(runtime);
-
-      const panelSelection = new MetricSelection();
-      const gallery = new MetricRecordGallery(elements.gallery, panelSelection);
-      const query = new MetricQueryInspector(elements.query, panelSelection);
-      const metricHeatmap = new MetricHeatmap(elements.metricHeatmap, panelSelection, {
-        title: "finite metric-space pair values",
-        space: "metric_space",
-      });
-      const baselineHeatmap = new MetricHeatmap(elements.baselineHeatmap, panelSelection, {
-        title: "padded-vector baseline pair values",
-        space: "padded_vector_baseline",
-      });
-
-      const evidence = await loadMetricEvidence("../../../docs/examples/assets/process-curve-external/evidence.json");
-      const visualDocument = adaptMetricEvidenceV1(evidence);
-      runtime.setDocument(visualDocument, { views: false });
-
-      let currentScene = null;
+      let visual = null;
       let morphLoop = false;
 
-      const domains = [...new Set(evidence.records.map((record) => record.domain))];
-      elements.domainSelect.replaceChildren(...domains.map((domain) => {
-        const option = document.createElement("option");
-        option.value = domain;
-        option.textContent = domain.replaceAll("_", " ");
-        return option;
-      }));
-
-      elements.domainSelect.addEventListener("change", () => {
-        renderDomain(elements.domainSelect.value);
-      });
-      elements.morphSlider.addEventListener("input", () => {
-        morphLoop = false;
-        updateMorphToggle();
-        setRuntimeMorphProgress(Number(elements.morphSlider.value));
-      });
-      elements.morphToggle.addEventListener("click", () => {
-        morphLoop = !morphLoop;
-        updateMorphToggle();
-        renderDomain(elements.domainSelect.value);
-      });
-
-      updateMorphToggle();
-      renderDomain(domains[0]);
-      runtime.start();
-      window.metricProcessCurve = {
-        runtime,
-        style,
-        profile: style.toProfile({ includeDiagnostics: true }),
-        evidence,
-        visualDocument,
-      };
-
-      function renderDomain(domain) {
-        if (!domain) return;
-        currentScene = createProcessCurveMiniatureSceneBundle(visualDocument, {
-          datasetId: domain,
-          stage: style.stage,
-          morphLoop,
-          morphProgress: morphLoop ? undefined : Number(elements.morphSlider.value),
-          trackMode: "tube",
-          trackRadius: 0.012,
-          trackRadialSegments: 8,
-          trackAlpha: 0.9,
-        });
-        style.applyBundle(runtime, currentScene.bundle, {
-          source: "process-curve-condition-monitoring",
-        });
-
-        const records = evidence.records.filter((record) => record.domain === domain);
-        const metricPairs = evidence.pair_values.filter((entry) => entry.domain === domain && entry.space === "metric_space");
-        const baselinePairs = evidence.pair_values.filter((entry) => entry.domain === domain && entry.space === "padded_vector_baseline");
-        gallery.setRecords(records);
-        metricHeatmap.setData(records, metricPairs);
-        baselineHeatmap.setData(records, baselinePairs);
-        query.setEvidence(evidence, domain);
-        if (window.metricProcessCurve) {
-          window.metricProcessCurve.profile = style.toProfile({ includeDiagnostics: true });
+      try {
+        const response = await fetch(VISUAL_EVIDENCE_URL);
+        if (!response.ok) throw new Error(`visual evidence ${response.status}`);
+        const visualDocument = await response.json();
+        if (visualDocument?.schema !== "metric.visual.v1") {
+          throw new Error(`Unsupported visual schema: ${visualDocument?.schema || "unknown"}`);
         }
+
+        visual = await createMetricVisual({
+          canvas: elements.canvas,
+          evidence: visualDocument,
+          profileId: "process-curve-condition-monitoring-profile",
+        });
+        renderProcessCurves();
+
+        elements.morph.addEventListener("input", () => {
+          morphLoop = false;
+          updateMorphToggle();
+          renderProcessCurves();
+        });
+        elements.morphToggle.addEventListener("click", () => {
+          morphLoop = !morphLoop;
+          updateMorphToggle();
+          renderProcessCurves();
+        });
+
+        const matrixDescriptor = visual.descriptors.find((descriptor) => descriptor.primitive === "RelationMatrixLayer");
+        const matrixData = matrixDescriptor?.metadata?.matrix;
+        elements.matrixLabel.textContent = matrixData
+          ? `aligned metric matrix ${matrixData.size}x${matrixData.size}`
+          : "aligned metric matrix";
+
+        document.documentElement.dataset.metricProcessCurveConditionMonitoring = "ready";
+        document.documentElement.dataset.metricRecordCount = String(visualDocument.records?.length || 0);
+        document.documentElement.dataset.metricRelationId = PROCESS_CURVE_OPTIONS.relationId;
+        document.documentElement.dataset.metricCommand = "showProcessCurves";
+        window.metricProcessCurveConditionMonitoring = {
+          visual,
+          visualDocument,
+          getState: () => visual.getState(),
+        };
+        elements.loading.remove();
+      } catch (error) {
+        console.error(error);
+        elements.loading.classList.add("error");
+        elements.loading.textContent = error instanceof Error ? error.message : String(error);
       }
 
-      function setRuntimeMorphProgress(progress) {
-        const next = Math.max(0, Math.min(1, Number(progress) || 0));
-        for (const layer of runtime.layers || []) {
-          if (layer.animation?.mode !== "coordinate-morph") continue;
-          layer.animation.loop = false;
-          layer.animation.progress = next;
-          if (layer.descriptor?.animation) {
-            layer.descriptor.animation.loop = false;
-            layer.descriptor.animation.progress = next;
-          }
-        }
-        runtime.requestRender();
+      function renderProcessCurves() {
+        if (!visual) return;
+        visual.showProcessCurves({
+          ...PROCESS_CURVE_OPTIONS,
+          morphLoop,
+          morphProgress: Number(elements.morph.value),
+        });
       }
 
       function updateMorphToggle() {

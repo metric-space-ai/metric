@@ -162,13 +162,12 @@
   <script type="module">
     import {
       MetricVisualRuntime,
-      adaptMetricEvidenceV1,
+      ProcessCurveSceneView,
       attachMiniatureRigReporter,
       createLayerFromDescriptor,
       createMiniatureLookSceneAtlas,
       createMiniaturePhotographicStyle,
       createMiniatureStyleMotionAtlas,
-      createProcessCurveMiniatureLayerDescriptors,
     } from "../../src/index.js";
 
     const gallery = document.getElementById("gallery");
@@ -177,14 +176,20 @@
     const summaryLayers = document.getElementById("summary-layers");
     const summaryMotion = document.getElementById("summary-motion");
 
-    const response = await fetch("/docs/examples/assets/process-curve-external/evidence.json");
+    const response = await fetch("/docs/examples/assets/process-curve-external/metric.visual.json");
     if (!response.ok) throw new Error(`evidence ${response.status}`);
 
-    const evidence = await response.json();
-    const visualDocument = adaptMetricEvidenceV1(evidence);
-    const datasetId = "power_demand";
-    const sceneInput = createProcessCurveMiniatureLayerDescriptors(visualDocument, {
+    const visualDocument = await response.json();
+    const datasetId = "process-curve-external";
+    const sceneView = ProcessCurveSceneView.fromVisualSpace(visualDocument, {
       datasetId,
+      sourceCoordinateId: "process-curve-external-landmark-2d",
+      coordinateId: "process-curve-external-landmark-3d",
+      relationId: "process-curve-external-aligned-metric",
+      graphId: "process-curve-external-knn",
+      labelPropertyId: "process-role",
+      includeNeighborhood: false,
+      includeMatrix: false,
       morphLoop: true,
       pointSize: 1.72,
       projectionSize: 2.7,
@@ -193,7 +198,13 @@
       trackRadialSegments: 8,
       trackAlpha: 0.9,
     });
-    const atlas = createMiniatureLookSceneAtlas(sceneInput.descriptors, {
+    const descriptors = sceneView.toLayerDescriptors();
+    const sceneInput = {
+      view: sceneView,
+      inputs: sceneView.inputs,
+      descriptors,
+    };
+    const atlas = createMiniatureLookSceneAtlas(descriptors, {
       contacts: { includeSamples: false },
       fit: { targetSpan: 2.58 },
       metadata: {
@@ -261,8 +272,8 @@
     window.metricMiniatureLookGallery = {
       atlas,
       motionAtlas,
-      evidence,
       visualDocument,
+      sceneView,
       sceneInput,
       runtimes,
       styles,
