@@ -5,6 +5,7 @@ export const TIMELINE_ANIMATION_SCHEMA = "metric.visual.timeline_animation.v1";
 export const TIMELINE_STATE_SAMPLE_SCHEMA = "metric.visual.timeline_state_sample.v1";
 export const TIMELINE_CONTROL_SCHEMA = "metric.visual.timeline_control.v1";
 export const TIMELINE_PROPERTY_SAMPLE_SCHEMA = "metric.visual.timeline_property_sample.v1";
+export const TIMELINE_EVIDENCE_SCHEMA = "metric.visual.timeline_evidence.v1";
 
 export class TimelineModel {
   constructor(source = {}, options = {}) {
@@ -560,6 +561,62 @@ export function createTimelineAnimationDescriptor(source = {}, options = {}) {
   };
 }
 
+export function createTimelineEvidenceDescriptor(source = {}, options = {}) {
+  const model = source instanceof TimelineModel
+    ? source
+    : new TimelineModel(source, options);
+  const state = options.state || sampleTimelineState(model, options);
+  const control = options.control || createTimelineControlDescriptor(model, options);
+  const animation = options.animation || createTimelineAnimationDescriptor(model, options);
+  const propertyTracks = summarizeTimelinePropertyTracks(model.propertySamples);
+  const coordinateIds = uniqueStrings(model.steps.map((step) => step.coordinateId));
+  const relationIds = uniqueStrings(model.steps.map((step) => step.relationId));
+
+  return {
+    schema: TIMELINE_EVIDENCE_SCHEMA,
+    timelineId: model.id,
+    datasetId: model.datasetId,
+    source: "exported-timeline",
+    selection: "nearest-exported-step",
+    motionContract: {
+      schema: TIMELINE_ANIMATION_SCHEMA,
+      mode: animation.mode,
+      clock: animation.clock,
+      durationMs: animation.durationMs,
+      loop: animation.loop,
+      direction: animation.direction,
+      easing: animation.easing,
+      controlledBy: TIMELINE_CONTROL_SCHEMA,
+    },
+    stepCount: model.steps.length,
+    duration: model.duration,
+    coordinateIds,
+    propertyIds: propertyTracks.map((track) => track.propertyId),
+    relationIds,
+    steps: model.steps.map((step) => ({
+      order: step.order,
+      index: step.index,
+      time: step.time,
+      stepId: step.source?.id ?? null,
+      label: step.label,
+      coordinateId: step.coordinateId,
+      propertyId: step.propertyId,
+      relationId: step.relationId,
+    })),
+    propertyTracks,
+    state,
+    control,
+    animation,
+    evidence: {
+      source: "exported-timeline",
+      coordinateSelection: "exported-coordinate-refs",
+      propertySelection: "exported-timeline-step-properties",
+      algorithmicComputation: false,
+    },
+    algorithmicComputation: false,
+  };
+}
+
 export function resolveTimelineAnimationDurationMs(source = {}, options = {}) {
   if (Number.isFinite(Number(options.durationMs))) return Math.max(1, Number(options.durationMs));
   const model = source instanceof TimelineModel
@@ -990,6 +1047,44 @@ function normalizePropertyIdList(value) {
   if (value == null) return [];
   if (Array.isArray(value)) return value.filter((entry) => entry != null).map(String);
   return [String(value)];
+}
+
+function summarizeTimelinePropertyTracks(samples = []) {
+  const tracks = new Map();
+  for (const sample of samples || []) {
+    const key = String(sample.propertyId ?? "");
+    if (!key) continue;
+    if (!tracks.has(key)) {
+      tracks.set(key, {
+        propertyId: sample.propertyId,
+        propertyName: sample.propertyName,
+        valueType: sample.valueType,
+        timelineId: sample.timelineId,
+        domain: sample.domain,
+        sampleCount: 0,
+        stepOrders: [],
+        source: "exported-property",
+        algorithmicComputation: false,
+      });
+    }
+    const track = tracks.get(key);
+    track.sampleCount += 1;
+    track.stepOrders.push(sample.stepOrder);
+  }
+  return Array.from(tracks.values());
+}
+
+function uniqueStrings(values) {
+  const out = [];
+  const seen = new Set();
+  for (const value of values || []) {
+    if (value == null) continue;
+    const key = String(value);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(key);
+  }
+  return out;
 }
 
 function inferNumericDomain(values) {

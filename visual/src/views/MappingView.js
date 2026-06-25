@@ -3,6 +3,7 @@ import { MetricSpaceView, defaultCoordinateId } from "./MetricSpaceView.js";
 import { VisualLayer } from "./VisualLayer.js";
 import {
   createChannel,
+  createStringChannel,
   extractCoordinatePositions,
   extractPropertyValues,
   inferScalarDomain,
@@ -109,7 +110,31 @@ export class MappingView extends BaseView {
   }
 
   toLayerDescriptors() {
-    const descriptors = this.space.toLayerDescriptors();
+    const mappingEvidence = this.mappingMotionEvidenceDescriptor();
+    const descriptors = this.space.toLayerDescriptors().map((descriptor) => {
+      if (descriptor.primitive !== "InstancedPointLayer" && descriptor.primitive !== "InstancedGlyphLayer") return descriptor;
+      return {
+        ...descriptor,
+        source: {
+          ...descriptor.source,
+          viewKind: "mapping",
+          sourceCoordinateId: this.sourceCoordinateId,
+          targetCoordinateId: this.targetCoordinateId,
+          residualPropertyId: this.propertyId,
+        },
+        metadata: {
+          ...descriptor.metadata,
+          role: "mapping-coordinate-morph",
+          evidenceRole: "mapping-source-target-morph",
+          motionGrammar: "mapping-coordinate-morph",
+          mappingEvidence,
+          sourceCoordinateId: this.sourceCoordinateId,
+          targetCoordinateId: this.targetCoordinateId,
+          residualPropertyId: this.propertyId,
+          algorithmicComputation: false,
+        },
+      };
+    });
     const residual = this.residualVectorDescriptor();
     if (residual) descriptors.push(residual);
     return descriptors;
@@ -121,6 +146,8 @@ export class MappingView extends BaseView {
     const sourcePosition = new Float32Array(ids.length * 3);
     const targetPosition = new Float32Array(ids.length * 3);
     const color = new Float32Array(ids.length * 4);
+    const residualMagnitude = new Float32Array(ids.length);
+    const residualRecordIds = [];
     const finiteResiduals = ids
       .map((id, index) => Number(valueForId(this.residualValues, id, index)))
       .filter((value) => Number.isFinite(value));
@@ -140,9 +167,12 @@ export class MappingView extends BaseView {
           ? scalarColor(residual, domain, this.residualVectorAlpha)
           : [0.8, 0.22, 0.12, this.residualVectorAlpha];
       color.set(nextColor, count * 4);
+      residualMagnitude[count] = Number.isFinite(residual) ? residual : 0;
+      residualRecordIds.push(String(id));
       count += 1;
     }
     if (!count) return null;
+    const mappingEvidence = this.mappingMotionEvidenceDescriptor({ residualVectorCount: count });
     return new VisualLayer({
       id: `${this.id}:residual-vectors`,
       kind: "residual/error-vectors",
@@ -157,8 +187,10 @@ export class MappingView extends BaseView {
         propertyId: this.propertyId,
       },
       channels: {
+        recordId: createStringChannel(residualRecordIds, "record-id"),
         sourcePosition: createChannel(sourcePosition.subarray(0, count * 3), 3, "source-position"),
         targetPosition: createChannel(targetPosition.subarray(0, count * 3), 3, "target-position"),
+        residual: createChannel(residualMagnitude.subarray(0, count), 1, "residual-magnitude", { domain }),
         color: createChannel(color.subarray(0, count * 4), 4, "rgba"),
       },
       geometry: { width: this.residualVectorWidth },
@@ -167,13 +199,40 @@ export class MappingView extends BaseView {
         ...this.metadata,
         role: "residual/error",
         evidenceRole: "mapping-residual-vectors",
+        diagnosticLayer: true,
+        motionGrammar: "mapping-residual-error-scene",
+        mappingEvidence,
         recordCount: count,
         sourceCoordinateId: this.sourceCoordinateId,
         targetCoordinateId: this.targetCoordinateId,
         residualPropertyId: this.propertyId,
+        residualDomain: domain,
         algorithmicComputation: false,
       },
     }).toDescriptor();
+  }
+
+  mappingMotionEvidenceDescriptor(extra = {}) {
+    return {
+      schema: "metric.visual.mapping_motion_evidence.v1",
+      source: "exported-coordinate-and-property-evidence",
+      viewId: this.id,
+      datasetId: this.datasetId,
+      spaceId: this.spaceId,
+      recordCount: this.recordIds.length,
+      sourceCoordinateId: this.sourceCoordinateId,
+      targetCoordinateId: this.targetCoordinateId,
+      residualPropertyId: this.propertyId,
+      motionContract: {
+        mode: "coordinate-morph",
+        channel: "targetPosition",
+        residualLayer: this.showResidualVectors ? `${this.id}:residual-vectors` : null,
+        controlledBy: "descriptor-animation",
+      },
+      preservationSummary: this.preservationSummary(),
+      algorithmicComputation: false,
+      ...extra,
+    };
   }
 
   /**

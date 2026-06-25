@@ -5,6 +5,7 @@ import { createTrajectoryBundleLayerDescriptor } from "../curves/index.js";
 import {
   createTimelineAnimationDescriptor,
   createTimelineControlDescriptor,
+  createTimelineEvidenceDescriptor,
   createTimelineModel,
   sampleTimelineState,
 } from "../timeline/index.js";
@@ -48,6 +49,7 @@ export class DynamicsView extends BaseView {
     this.showTrajectory = options.trajectory !== false;
     this.colorValues = options.colorValues;
     this.timelineAnimation = options.timelineAnimation || null;
+    this.timelineEvidence = options.timelineEvidence || null;
     this.motionTargetStep = clampInt(
       options.motionTargetStep ?? options.targetStep ?? Math.max(0, this.stepStates.length - 1),
       0,
@@ -121,6 +123,27 @@ export class DynamicsView extends BaseView {
         direction: options.direction || "alternate",
       })
       : null;
+    const timelineAnimation = timelineModel
+      ? createTimelineAnimationDescriptor(timelineModel, {
+        mode: "timeline-coordinate-morph",
+        loop: options.loop ?? true,
+        direction: options.direction || "alternate",
+        durationMs: options.timelineDurationMs ?? options.durationMs,
+        stepDurationMs: options.stepDurationMs ?? 360,
+        minDurationMs: options.minDurationMs ?? 6800,
+        maxDurationMs: options.maxDurationMs ?? 18000,
+      })
+      : null;
+    const timelineEvidence = timelineModel
+      ? createTimelineEvidenceDescriptor(timelineModel, {
+        ...timelineSampling,
+        loop: options.loop ?? true,
+        direction: options.direction || "alternate",
+        state: timelineState,
+        control: timelineControl,
+        animation: timelineAnimation,
+      })
+      : null;
     const datasetId = options.datasetId ?? timeline?.dataset_id;
     const records = recordsFor(document, { ...options, datasetId });
     const explicitFieldPropertyRef = options.fieldPropertyId
@@ -167,17 +190,8 @@ export class DynamicsView extends BaseView {
       timelineControl,
       timelineFieldState: selectTimelineFieldState(timelineState, options),
       fieldPropertyId: explicitFieldPropertyRef,
-      timelineAnimation: timelineModel
-        ? createTimelineAnimationDescriptor(timelineModel, {
-          mode: "timeline-coordinate-morph",
-          loop: options.loop ?? true,
-          direction: options.direction || "alternate",
-          durationMs: options.timelineDurationMs ?? options.durationMs,
-          stepDurationMs: options.stepDurationMs ?? 360,
-          minDurationMs: options.minDurationMs ?? 6800,
-          maxDurationMs: options.maxDurationMs ?? 18000,
-        })
-        : null,
+      timelineAnimation,
+      timelineEvidence,
       metadata: {
         ...(options.metadata || {}),
         timelineId: timeline?.id,
@@ -185,6 +199,7 @@ export class DynamicsView extends BaseView {
         coordinateIds: stepStates.map((state) => state.coordinateId).filter(Boolean),
         timelineControl,
         timelineState,
+        timelineEvidence,
       },
     });
   }
@@ -232,6 +247,8 @@ export class DynamicsView extends BaseView {
   timelineDescriptorMetadata() {
     return {
       timelineId: this.timelineId,
+      timelineEvidenceSchema: this.timelineEvidence?.schema || null,
+      timelineEvidence: this.timelineEvidence,
       timelineStateSchema: this.timelineState?.schema || null,
       timelineControlSchema: this.timelineControl?.schema || null,
       timelineState: this.timelineState,
@@ -319,6 +336,7 @@ export class DynamicsView extends BaseView {
         mode: "timeline-field-state",
         clock: this.timelineAnimation?.clock || "render-loop",
         timelineId: this.timelineId,
+        evidence: this.timelineEvidence || undefined,
         control: this.timelineControl || undefined,
         state: this.timelineState || undefined,
       },
@@ -406,6 +424,7 @@ export class DynamicsView extends BaseView {
       role: "trajectory",
       evidenceRole: "trajectory/path",
       stateHistoryRole: "timeline-state-history",
+      motionGrammar: "timeline-trajectory-state-history",
       pathCount: paths.length,
       stepCount: this.fittedStates.length,
       timelineId: this.timelineId,
@@ -451,6 +470,7 @@ export class DynamicsView extends BaseView {
       channel: "targetPosition",
       requiresChannels: ["position", "targetPosition"],
     };
+    if (this.timelineEvidence) animation.evidence = this.timelineEvidence;
     if (this.timelineControl) animation.control = this.timelineControl;
     if (this.timelineState) animation.state = this.timelineState;
     if (this.motionProgress != null) {

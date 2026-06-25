@@ -80,6 +80,10 @@ const PUBLIC_EXAMPLE_FORBIDDEN = [
   ["new MetricVisualRuntime", /\bnew\s+MetricVisualRuntime\b/],
   ["runtime factory", /\bcreate(?:MetricVisual|VisualEngine)Runtime\b/],
   ["layer factory", /\bcreateLayerFromDescriptor\b/],
+  ["manual VisualLayer construction", /\bnew\s+VisualLayer\b/],
+  ["manual layer primitive descriptor", /\bprimitive\s*:\s*["'][A-Za-z0-9_-]+Layer["']/],
+  ["manual channel descriptor", /\bchannels\s*:\s*\{/],
+  ["manual descriptor serialization", /\.toDescriptor\s*\(/],
   ["manual descriptor conversion", /\.toLayerDescriptors\s*\(/],
   ["manual descriptor installation", /\.(?:set|add)LayerDescriptors\s*\(/],
   ["manual WebGL renderer", /\bWebGLRenderer\b|\bEffectComposer\b|\bnew\s+MGL\.(?:Scene|PerspectiveCamera|WebGLRenderer)\b/],
@@ -131,6 +135,24 @@ async function checkCommandDiagnostics(failures) {
   const nativeRelation = await readJson("docs/examples/assets/relation-matrix/metric.visual.json");
   const nativeDynamics = await readJson("docs/examples/assets/dynamics-noise/metric.visual.json");
   const nativeMapping = await readJson("docs/examples/assets/mapping-dimensionality/metric.visual.json");
+  const mappingSourceCoordinate = findCoordinateId(nativeMapping, { dimension: 2, prefer: /target|latent|diffusion/i });
+  const mappingTargetCoordinate = findCoordinateId(nativeMapping, { dimension: 3, prefer: /source|layout|feature/i });
+  const mappingResidualProperty = findPropertyId(nativeMapping, { valueType: "scalar", prefer: /distortion|residual|error/i });
+  const dynamicsTimeline = findTimelineId(nativeDynamics, { prefer: /reverse|reconstruction/i });
+  const dynamicsProperty = findPropertyId(nativeDynamics, { targetType: "record", valueType: "scalar", prefer: /reconstruction|error/i });
+  const conditionCoordinate = findCoordinateId(nativeCondition, { dimension: 3, prefer: /process|trajectory|state/i });
+  const conditionScalar = findPropertyId(nativeCondition, { targetType: "record", valueType: "scalar", prefer: /anomaly|severity/i });
+  const conditionField = findPropertyId(nativeCondition, { targetType: "record", valueType: "scalar", prefer: /density/i });
+  const conditionLabel = findPropertyId(nativeCondition, { targetType: "record", valueType: "categorical", prefer: /diagnosis|state|regime/i });
+  const mixedCoordinate = findCoordinateId(nativeMixed, { dimension: 3, prefer: /family|severity|mixed/i });
+  const mixedRelation = findRelationId(nativeMixed, { prefer: /composite|metric/i });
+  const mixedLabel = findPropertyId(nativeMixed, { targetType: "record", valueType: "categorical", prefer: /family|type/i });
+  const crossLeftCoordinate = findCoordinateId(nativeCrossSpace, { dimension: 3, prefer: /event|left|space-a/i });
+  const crossRightCoordinate = findCoordinateId(nativeCrossSpace, { dimension: 3, prefer: /process|right|space-b/i, exclude: crossLeftCoordinate });
+  const crossProperty = findPropertyId(nativeCrossSpace, { targetType: "record", valueType: "scalar", prefer: /dependence|alignment/i });
+  const relationCoordinate = findCoordinateId(nativeRelation, { dimension: 3, prefer: /block|layout|process/i });
+  const relationId = findRelationId(nativeRelation, { prefer: /metric|aligned/i });
+  const relationColor = findPropertyId(nativeRelation, { targetType: "record", valueType: "categorical", prefer: /family|block|group/i });
 
   const cases = [
     {
@@ -167,10 +189,10 @@ async function checkCommandDiagnostics(failures) {
       evidenceKind: "native",
       document: nativeMapping,
       options: {
-        sourceCoordinateId: "phate-target-2d",
-        targetCoordinateId: "source-feature-layout-3d",
-        residualProperty: "local-mapping-distortion",
-        labels: "process-family",
+        sourceCoordinateId: mappingSourceCoordinate,
+        targetCoordinateId: mappingTargetCoordinate,
+        residualProperty: mappingResidualProperty,
+        labels: findPropertyId(nativeMapping, { targetType: "record", valueType: "categorical", prefer: /family|class|label/i }),
         loop: false,
         progress: 0.4,
         preview: false,
@@ -182,8 +204,8 @@ async function checkCommandDiagnostics(failures) {
       evidenceKind: "native",
       document: nativeDynamics,
       options: {
-        timelineId: "reverse-reconstruction",
-        propertyField: "best-reconstruction-error",
+        timelineId: dynamicsTimeline,
+        propertyField: dynamicsProperty,
         preview: false,
       },
     },
@@ -193,10 +215,10 @@ async function checkCommandDiagnostics(failures) {
       evidenceKind: "native",
       document: nativeCondition,
       options: {
-        coordinateId: "process-state-trajectory-3d",
-        colorBy: "metric-anomaly-severity",
-        groundField: "local-density",
-        labels: "diagnosis-state",
+        coordinateId: conditionCoordinate,
+        colorBy: conditionScalar,
+        groundField: conditionField,
+        labels: conditionLabel,
         preview: false,
       },
     },
@@ -206,10 +228,10 @@ async function checkCommandDiagnostics(failures) {
       evidenceKind: "native",
       document: nativeMixed,
       options: {
-        coordinateId: "mixed-finite-records-family-severity-3d",
-        glyphBy: "family",
-        labels: "family",
-        relationId: "mixed-finite-records-composite-metric",
+        coordinateId: mixedCoordinate,
+        glyphBy: mixedLabel,
+        labels: mixedLabel,
+        relationId: mixedRelation,
         topK: 5,
         preview: false,
       },
@@ -220,9 +242,9 @@ async function checkCommandDiagnostics(failures) {
       evidenceKind: "native",
       document: nativeCrossSpace,
       options: {
-        coordinateA: "event-log-landmark-3d",
-        coordinateB: "process-curve-landmark-3d",
-        dependenceProperty: "local-dependence-contribution",
+        coordinateA: crossLeftCoordinate,
+        coordinateB: crossRightCoordinate,
+        dependenceProperty: crossProperty,
         preview: false,
       },
     },
@@ -232,9 +254,9 @@ async function checkCommandDiagnostics(failures) {
       evidenceKind: "native",
       document: nativeRelation,
       options: {
-        coordinateId: "process-curve-block-layout-3d",
-        relationId: "process-curve-aligned-metric",
-        colorProperty: "process-family",
+        coordinateId: relationCoordinate,
+        relationId,
+        colorProperty: relationColor,
         matrixRect: [0.635, 0.30, 0.33, 0.44],
         preview: false,
       },
@@ -290,8 +312,15 @@ async function checkCommandDiagnostics(failures) {
     assert(failures, `${testCase.command}: descriptor count is reported`, Number.isInteger(command?.descriptorCount) && command.descriptorCount > 0, command);
     assert(failures, `${testCase.command}: runtime layer count tracks descriptors`, command?.runtimeLayerCount === command?.descriptorCount, command);
     assert(failures, `${testCase.command}: evidence kind is classified`, command?.evidenceKind === testCase.evidenceKind, command);
+    assert(failures, `${testCase.command}: evidence kind signals are reported`, Array.isArray(command?.evidenceKindSignals) && command.evidenceKindSignals.length > 0, command);
+    assert(failures, `${testCase.command}: evidence report is attached`, command?.evidenceReport?.schema === "metric.visual.public_evidence_report.v1", command);
+    assert(failures, `${testCase.command}: evidence report mirrors record count`, command?.evidenceReport?.recordCount === command?.recordCount, command);
+    assert(failures, `${testCase.command}: evidence report mirrors kind`, command?.evidenceReport?.kind === testCase.evidenceKind, command);
+    assert(failures, `${testCase.command}: evidence report exposes relation count`, Number.isInteger(command?.evidenceReport?.relationCount), command);
+    assert(failures, `${testCase.command}: descriptor kinds are reported`, command?.descriptorKinds && Object.keys(command.descriptorKinds.primitives || {}).length > 0, command);
     assert(failures, `${testCase.command}: diagnostics snapshot mirrors selected command`, diagnostics.selectedCommand === testCase.command, diagnostics);
     assert(failures, `${testCase.command}: diagnostics snapshot mirrors evidence kind`, diagnostics.evidenceKind === testCase.evidenceKind, diagnostics);
+    assert(failures, `${testCase.command}: diagnostics snapshot includes evidence report`, diagnostics.evidenceReport?.kind === testCase.evidenceKind, diagnostics);
   }
   return results;
 }
@@ -306,12 +335,21 @@ async function checkPublicExamples(failures) {
     const expectedCommand = PUBLIC_EXAMPLE_EXPECTED_COMMANDS.get(name);
     const commandCalls = COMMANDS.filter((command) => commandCallPattern(command).test(text));
     const canvasCount = (text.match(/<canvas\b/gi) || []).length;
+    const createVariables = createMetricVisualVariables(text);
 
     assert(failures, `${relativePath}: uses createMetricVisual`, /\bcreateMetricVisual\s*\(/.test(text), { commandCalls });
+    assert(failures, `${relativePath}: stores createMetricVisual surface`, createVariables.length > 0, { createVariables });
     assert(failures, `${relativePath}: calls a semantic command`, commandCalls.length > 0, { commandCalls });
     if (expectedCommand) {
       assert(failures, `${relativePath}: calls ${expectedCommand}`, commandCalls.includes(expectedCommand), { commandCalls });
+      assert(
+        failures,
+        `${relativePath}: calls ${expectedCommand} on the createMetricVisual surface`,
+        createVariables.some((name) => surfaceCommandPattern(name, expectedCommand).test(text)),
+        { createVariables, commandCalls },
+      );
     }
+    assert(failures, `${relativePath}: createMetricVisual is not used as a view-only renderer`, !createMetricVisualViewOptionPattern().test(text));
     assert(failures, `${relativePath}: owns at most one render canvas`, canvasCount <= 1, { canvasCount });
 
     for (const [label, pattern] of PUBLIC_EXAMPLE_FORBIDDEN) {
@@ -380,10 +418,68 @@ function commandCallPattern(command) {
   return new RegExp(`(?:\\.|\\b)${command}\\s*\\(`);
 }
 
+function createMetricVisualVariables(text) {
+  return Array.from(
+    text.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*await\s+createMetricVisual\s*\(/g),
+    (match) => match[1],
+  );
+}
+
+function surfaceCommandPattern(variableName, command) {
+  return new RegExp(`\\b${escapeRegExp(variableName)}\\s*\\.\\s*${command}\\s*\\(`);
+}
+
+function createMetricVisualViewOptionPattern() {
+  return /\bcreateMetricVisual\s*\(\s*\{[\s\S]*?\bview\s*:/;
+}
+
 function extractPublicExampleNames(text) {
   return Array.from(
     new Set(Array.from(text.matchAll(/visual\/examples\/([^/"']+)\/index\.html/g), (match) => match[1])),
   ).sort();
+}
+
+function findCoordinateId(document, options = {}) {
+  return findItemId(document?.coordinates, {
+    ...options,
+    dimension: options.dimension == null ? null : Number(options.dimension),
+    matches: (coordinate) => options.dimension == null || Number(coordinate?.dimension) === Number(options.dimension),
+  });
+}
+
+function findRelationId(document, options = {}) {
+  return findItemId(document?.relations, options);
+}
+
+function findTimelineId(document, options = {}) {
+  return findItemId(document?.timelines, options);
+}
+
+function findPropertyId(document, options = {}) {
+  return findItemId(document?.properties, {
+    ...options,
+    matches: (property) => {
+      if (options.targetType && (property?.target_type || "record") !== options.targetType) return false;
+      if (options.valueType && property?.value_type !== options.valueType) return false;
+      return true;
+    },
+  });
+}
+
+function findItemId(items = [], options = {}) {
+  const matches = (items || []).filter((item) => {
+    if (!item?.id || item.id === options.exclude) return false;
+    return options.matches ? options.matches(item) : true;
+  });
+  if (!matches.length) return null;
+  const preferred = options.prefer
+    ? matches.find((item) => options.prefer.test(`${item.id} ${item.name || ""} ${item.kind || ""}`))
+    : null;
+  return (preferred || matches[0]).id;
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 async function readJson(path) {

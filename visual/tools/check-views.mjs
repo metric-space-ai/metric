@@ -161,7 +161,9 @@ async function main() {
     const descriptors = view.toLayerDescriptors();
     checkRenderable(checks, "SolverTraceView", descriptors);
     const [trace] = descriptors;
-    assert(checks, "SolverTraceView: polyline has n-1 segments", instanceCount(trace) === series.length - 1, { segments: instanceCount(trace) });
+    assert(checks, "SolverTraceView: emits reusable curve grammar", trace?.primitive === "CurveRibbonLayer", { primitive: trace?.primitive });
+    assert(checks, "SolverTraceView: timeline curve has n-1 segments", trace?.metadata?.segmentCount === series.length - 1, { segments: trace?.metadata?.segmentCount });
+    assert(checks, "SolverTraceView: trace evidence descriptor present", trace?.metadata?.traceEvidence?.schema === "metric.visual.solver_trace_evidence.v1", { evidence: trace?.metadata?.traceEvidence });
     const summary = view.summary();
     assert(checks, "SolverTraceView: reports convergence", summary.converged === true, { final: summary.final, reduction: summary.reduction });
   }

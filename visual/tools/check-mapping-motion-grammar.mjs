@@ -15,8 +15,8 @@ async function main() {
     "utf8",
   ));
   const view = MappingView.fromVisualSpace(document, {
-    sourceCoordinateId: "phate-target-2d",
-    targetCoordinateId: "source-feature-layout-3d",
+    sourceCoordinateId: "parametric-coordinate-latent-2d",
+    targetCoordinateId: "source-coordinate-layout-3d",
     residualProperty: "local-mapping-distortion",
     labels: "process-family",
     morphDurationMs: 6400,
@@ -26,14 +26,18 @@ async function main() {
   const residual = descriptors.find((descriptor) => descriptor.metadata?.role === "residual/error");
   const labels = descriptors.find((descriptor) => descriptor.primitive === "BillboardLabelLayer");
   const checks = [
-    ["mapping consumes source coordinate", view.sourceCoordinateId === "phate-target-2d", view.sourceCoordinateId],
-    ["mapping consumes target coordinate", view.targetCoordinateId === "source-feature-layout-3d", view.targetCoordinateId],
+    ["mapping consumes source coordinate", view.sourceCoordinateId === "parametric-coordinate-latent-2d", view.sourceCoordinateId],
+    ["mapping consumes target coordinate", view.targetCoordinateId === "source-coordinate-layout-3d", view.targetCoordinateId],
     ["mapping consumes residual property", view.propertyId === "local-mapping-distortion", view.propertyId],
     ["mapping has one record per exported source point", view.recordIds.length === 15, view.recordIds.length],
     ["mapping declares coordinate morph", point?.animation?.mode === "coordinate-morph", point?.animation],
     ["mapping point layer carries targetPosition", point?.channels?.targetPosition?.count === 15, point?.channels?.targetPosition?.count],
     ["mapping renders residual/error vectors", residual?.primitive === "RelationEdgeLayer", residual?.primitive],
     ["mapping residual vector count matches records", residual?.metadata?.recordCount === 15, residual?.metadata],
+    ["mapping residual vector layer carries record ids", residual?.channels?.recordId?.count === 15, residual?.channels?.recordId],
+    ["mapping residual vector layer carries residual magnitudes", residual?.channels?.residual?.count === 15 && residual?.channels?.residual?.semantic === "residual-magnitude", residual?.channels?.residual],
+    ["mapping residual layer declares motion evidence", residual?.metadata?.mappingEvidence?.schema === "metric.visual.mapping_motion_evidence.v1" && residual?.metadata?.diagnosticLayer === true, residual?.metadata?.mappingEvidence],
+    ["mapping morph layer declares mapping grammar", point?.metadata?.mappingEvidence?.schema === "metric.visual.mapping_motion_evidence.v1" && point?.metadata?.motionGrammar === "mapping-coordinate-morph", point?.metadata],
     ["mapping renders exported label property", Boolean(labels), descriptors.map((descriptor) => descriptor.primitive)],
   ];
   report(checks);

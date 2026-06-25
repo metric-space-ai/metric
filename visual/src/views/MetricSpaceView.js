@@ -290,6 +290,17 @@ export class MetricSpaceView extends BaseView {
           payloadKinds: grammar.payloadKinds,
           recordCount: grammar.recordCount,
           labelAnchors: true,
+          diagnostics: grammar.diagnostics,
+        },
+        typedGlyphSemantics: {
+          recordIdentity: "recordId",
+          glyphType: "glyphType",
+          glyphFamily: "glyphFamily",
+          recordType: "recordType",
+          payloadKind: "payloadKind",
+          payloadFeatures: "glyphFeature",
+          payloadComplexity: "payloadComplexity",
+          label: "labelText",
         },
       },
     };

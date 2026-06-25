@@ -242,6 +242,7 @@ const GRAMMAR_PROBE_SCRIPT = String.raw`
       layerDescriptorCount: Number(diagnostics.layerDescriptorCount ?? runtime.layerDescriptorCount ?? descriptors.length) || 0,
       runtimeLayerCount: Number(diagnostics.runtimeLayerCount ?? runtime.layerInstanceCount) || 0,
       runtimeLayerState: runtime.layerState?.status || null,
+      layerDiagnostics: runtime.layerDiagnostics || [],
       running: runtime.running ?? null,
       warnings: (diagnostics.warnings || runtime.warnings || []).map((warning) => warning?.code || String(warning)),
     };
@@ -503,6 +504,7 @@ async function checkGrammarCase(browser, url, grammarCase) {
   const softwareRenderer = /swiftshader|software|llvmpipe/.test(rendererText);
   const primitives = runtime.descriptorPrimitives || [];
   const missingPrimitives = grammarCase.expectedPrimitives.filter((primitive) => !primitives.includes(primitive));
+  const layerDiagnostics = Array.isArray(runtime.layerDiagnostics) ? runtime.layerDiagnostics : [];
 
   if (!probe?.ready) issues.push({ code: "grammar-preview-not-ready" });
   if ((runtime.recordCount || 0) < 1) issues.push({ code: "missing-record-count", actual: runtime.recordCount ?? null });
@@ -513,6 +515,13 @@ async function checkGrammarCase(browser, url, grammarCase) {
     issues.push({ code: "insufficient-runtime-layer-count", min: grammarCase.minRuntimeLayers, actual: runtime.runtimeLayerCount || 0 });
   }
   if (missingPrimitives.length) issues.push({ code: "missing-grammar-primitives", expected: grammarCase.expectedPrimitives, missing: missingPrimitives, actual: primitives });
+  if (grammarCase.id === "relation-matrix-neighborhood") {
+    const matrixDiagnostics = layerDiagnostics.find((entry) => entry?.primitive === "RelationMatrixLayer");
+    const tileSummary = matrixDiagnostics?.readability?.tileSummary;
+    if (tileSummary?.source !== "exported-relation-texture-downsample") {
+      issues.push({ code: "missing-relation-matrix-tile-summary-diagnostics", tileSummary: tileSummary || null });
+    }
+  }
   if ((frameTiming?.frames || 0) < DEFAULT_MIN_FRAMES) {
     issues.push({ code: "insufficient-frame-sample", min: DEFAULT_MIN_FRAMES, actual: frameTiming?.frames || 0 });
   }
@@ -538,6 +547,7 @@ async function checkGrammarCase(browser, url, grammarCase) {
     viewKinds: runtime.viewKinds || [],
     selectedViewKind: runtime.selectedViewKind || null,
     descriptorPrimitives: primitives,
+    layerDiagnostics,
     expectedPrimitives: grammarCase.expectedPrimitives,
     frameTimingSample: frameTiming,
     renderer: {

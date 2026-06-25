@@ -183,6 +183,24 @@ export class HeatFieldLayer extends BaseLayer {
     return this.setSelection({ recordId: null });
   }
 
+  getGrammarDiagnostics() {
+    const grammar = this.metadata?.propertyFieldGrammar || {};
+    const diagnostics = grammar.diagnostics || this.metadata?.fieldDiagnostics || {};
+    return {
+      ...diagnostics,
+      primitive: "HeatFieldLayer",
+      layerId: this.id,
+      recordCount: diagnostics.recordCount ?? this.channels?.recordId?.count ?? this.count,
+      scalarChannel: "scalar",
+      positionChannel: "position",
+      recordIdChannel: "recordId",
+      pickingMode: this.picking?.mode || "none",
+      rampMode: heatFieldRampMode(this.material?.ramp || this.geometry?.ramp || this.metadata?.propertySemantic),
+      propertySemantic: this.metadata?.propertySemantic,
+      selectionLinked: this.picking?.mode === "record-id" && Boolean(this.channels?.selection),
+    };
+  }
+
   selectionFocusData() {
     const focus = new Float32Array(this.baseFocus.length || this.count);
     if (this.baseFocus.length) focus.set(this.baseFocus);
@@ -244,6 +262,10 @@ function normalizeScalarChannel(values, channel) {
     out[index] = Math.max(0, Math.min(1, (values[index] - min) / span));
   }
   return out;
+}
+
+export function heatFieldRampMode(value) {
+  return rampMode(value);
 }
 
 function recordIdsForChannels(channels, count) {

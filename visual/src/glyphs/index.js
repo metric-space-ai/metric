@@ -5,6 +5,7 @@ import {
 
 export const GLYPH_SCHEMA = "metric.visual.glyph_registry.v1";
 export const RECORD_GLYPH_GRAMMAR_SCHEMA = "metric.visual.record_glyph_grammar.v1";
+export const RECORD_GLYPH_DIAGNOSTICS_SCHEMA = "metric.visual.record_glyph_diagnostics.v1";
 export const RECORD_GLYPH_RENDER_SCHEMA = "metric.visual.record_glyph_render_semantics.v1";
 
 export const RECORD_GLYPH_TYPES = Object.freeze({
@@ -490,6 +491,14 @@ export function createRecordGlyphGrammar(records = [], recordIds = null, options
 
   const familyList = Array.from(families);
   const payloadKindList = Array.from(payloadKinds);
+  const diagnostics = createRecordGlyphDiagnostics({
+    ids,
+    familyValues,
+    recordTypeValues,
+    payloadKindValues,
+    geometryKinds: Array.from(geometryKinds),
+    materialKinds: Array.from(materialKinds),
+  });
   return {
     schema: RECORD_GLYPH_GRAMMAR_SCHEMA,
     recordCount: ids.length,
@@ -498,6 +507,7 @@ export function createRecordGlyphGrammar(records = [], recordIds = null, options
     geometryKinds: Array.from(geometryKinds),
     materialKinds: Array.from(materialKinds),
     renderSemantics: createRecordGlyphRenderAtlas(familyList, payloadKindList),
+    diagnostics,
     channels: {
       glyphType: numericChannel(glyphType, 1, "record-glyph-type", {
         grammar: RECORD_GLYPH_GRAMMAR_SCHEMA,
@@ -519,6 +529,54 @@ export function createRecordGlyphGrammar(records = [], recordIds = null, options
       payloadKind: stringChannel(payloadKindValues, "record-payload-kind"),
       labelText: stringChannel(labelValues, "record-label"),
     },
+  };
+}
+
+export function createRecordGlyphDiagnostics(options = {}) {
+  const familyValues = (options.familyValues || []).map((value) => String(value || ""));
+  const payloadKindValues = (options.payloadKindValues || []).map((value) => String(value || ""));
+  const recordTypeValues = (options.recordTypeValues || []).map((value) => String(value || ""));
+  const geometryKinds = uniqueStrings(options.geometryKinds || []);
+  const materialKinds = uniqueStrings(options.materialKinds || []);
+  const recordCount = Number.isFinite(Number(options.ids?.length))
+    ? Number(options.ids.length)
+    : familyValues.length;
+  const fallbackRecordCount = familyValues.filter((family) => family === RECORD_GLYPH_FAMILIES.neutral).length;
+  return {
+    schema: RECORD_GLYPH_DIAGNOSTICS_SCHEMA,
+    grammar: RECORD_GLYPH_GRAMMAR_SCHEMA,
+    recordCount,
+    familyCounts: countStrings(familyValues),
+    payloadKindCounts: countStrings(payloadKindValues),
+    recordTypeCounts: countStrings(recordTypeValues),
+    fallbackRecordCount,
+    typedRecordCount: Math.max(0, recordCount - fallbackRecordCount),
+    distinctFamilyCount: countDistinct(familyValues),
+    distinctPayloadKindCount: countDistinct(payloadKindValues),
+    distinctGeometryCount: geometryKinds.length,
+    distinctMaterialCount: materialKinds.length,
+    identityContract: {
+      recordIdChannel: "recordId",
+      fallbackPreservesRecordIdentity: true,
+      pickingMode: "record-id",
+    },
+    renderContract: {
+      geometryChannel: "glyphGeometry",
+      materialChannel: "glyphMaterial",
+      featureChannel: "glyphFeature",
+      labelChannel: "labelText",
+      geometryShaderAttribute: "aGlyphGeometry",
+      materialShaderAttribute: "aGlyphMaterial",
+      renderSchema: RECORD_GLYPH_RENDER_SCHEMA,
+      geometryKinds,
+      materialKinds,
+    },
+    labelContract: {
+      textChannel: "labelText",
+      anchorChannel: "labelAnchor",
+      htmlOverlayRequired: false,
+    },
+    supportedFamilies: { ...RECORD_GLYPH_FAMILIES },
   };
 }
 
@@ -824,6 +882,19 @@ function uniqueStrings(values) {
     out.push(text);
   }
   return out;
+}
+
+function countStrings(values) {
+  const counts = {};
+  for (const value of values || []) {
+    const key = String(value || "unknown");
+    counts[key] = (counts[key] || 0) + 1;
+  }
+  return counts;
+}
+
+function countDistinct(values) {
+  return new Set((values || []).map((value) => String(value || ""))).size;
 }
 
 function renderAtlasEntry({ family, payloadKind, definition }) {

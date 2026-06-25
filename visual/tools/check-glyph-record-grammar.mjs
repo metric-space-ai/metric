@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   RECORD_GLYPH_GEOMETRY_CODES,
+  RECORD_GLYPH_DIAGNOSTICS_SCHEMA,
   RECORD_GLYPH_FAMILIES,
   RECORD_GLYPH_MATERIAL_CODES,
   RECORD_GLYPH_RENDER_SCHEMA,
@@ -192,6 +193,17 @@ assert("render atlas declares geometry metadata for glyph families and payload k
     && familyGrammar.renderSemantics?.shaderAttributes?.glyphGeometry?.components?.includes("geometryCode")
     && familyGrammar.renderSemantics?.shaderAttributes?.glyphMaterial?.components?.includes("materialCode"),
   { renderSemantics: familyGrammar.renderSemantics });
+assert("record glyph grammar exposes typed diagnostics and material contracts",
+  familyGrammar.diagnostics?.schema === RECORD_GLYPH_DIAGNOSTICS_SCHEMA
+    && familyGrammar.diagnostics?.typedRecordCount === 6
+    && familyGrammar.diagnostics?.fallbackRecordCount === 0
+    && familyGrammar.diagnostics?.distinctGeometryCount >= 6
+    && familyGrammar.diagnostics?.distinctMaterialCount >= 6
+    && familyGrammar.diagnostics?.identityContract?.fallbackPreservesRecordIdentity === true
+    && familyGrammar.diagnostics?.renderContract?.geometryShaderAttribute === "aGlyphGeometry"
+    && familyGrammar.diagnostics?.renderContract?.materialShaderAttribute === "aGlyphMaterial"
+    && familyGrammar.diagnostics?.labelContract?.htmlOverlayRequired === false,
+  { diagnostics: familyGrammar.diagnostics });
 
 console.log(JSON.stringify({
   ok: true,

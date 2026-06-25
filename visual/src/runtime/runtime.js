@@ -1291,6 +1291,7 @@ export class MetricVisualRuntime {
       layerDescriptorCount: this.layerDescriptors.length,
       layerInstanceCount: this.layers.length,
       layerState: { ...this.layerState },
+      layerDiagnostics: collectRuntimeLayerDiagnostics(this.layers),
       postprocess: this.postprocess?.getState?.() || null,
       warnings: this.warnings.slice(),
     };
@@ -2764,6 +2765,44 @@ function inspectionDetailFromPickResult(result, options = {}, runtime = null) {
     numericId: result.numericId ?? 0,
     distance: Number.isFinite(result.distance) ? result.distance : null,
   };
+}
+
+function collectRuntimeLayerDiagnostics(layers = []) {
+  const diagnostics = [];
+  for (const layer of layers || []) {
+    if (!layer) continue;
+    const entry = {
+      id: layer.id || null,
+      kind: layer.kind || null,
+      primitive: layer.primitive || layer.descriptor?.primitive || layer.descriptor?.kind || null,
+      visible: layer.visible !== false,
+      enabled: layer.enabled !== false,
+      resourceCount: Array.isArray(layer.resources) ? layer.resources.length : 0,
+    };
+    try {
+      if (typeof layer.getGrammarDiagnostics === "function") {
+        entry.grammar = clonePlainObject(layer.getGrammarDiagnostics());
+      }
+    } catch (error) {
+      entry.grammarError = error instanceof Error ? error.message : String(error);
+    }
+    try {
+      if (typeof layer.describeReadability === "function") {
+        entry.readability = clonePlainObject(layer.describeReadability());
+      }
+    } catch (error) {
+      entry.readabilityError = error instanceof Error ? error.message : String(error);
+    }
+    try {
+      if (typeof layer.getDiagnostics === "function") {
+        entry.diagnostics = clonePlainObject(layer.getDiagnostics());
+      }
+    } catch (error) {
+      entry.diagnosticsError = error instanceof Error ? error.message : String(error);
+    }
+    diagnostics.push(entry);
+  }
+  return diagnostics;
 }
 
 function clonePlainObject(value) {

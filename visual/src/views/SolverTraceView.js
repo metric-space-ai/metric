@@ -1,6 +1,6 @@
 import { BaseView } from "./BaseView.js";
-import { VisualLayer } from "./VisualLayer.js";
-import { createChannel, descriptorSource, resolveCollectionItem } from "./view-utils.js";
+import { createTrajectoryBundleLayerDescriptor } from "../curves/index.js";
+import { resolveCollectionItem } from "./view-utils.js";
 
 const TRACE_KEYS = ["residual", "objective", "loss", "value", "error", "mse", "mse_to_clean", "dirichlet_energy", "energy", "cost"];
 
@@ -67,7 +67,6 @@ export class SolverTraceView extends BaseView {
   toLayerDescriptors() {
     if (this.series.length < 2) return [];
     const summary = this.summary();
-    const span = summary.domain.max - summary.domain.min || 1;
     const lastIteration = this.series[this.series.length - 1].iteration || this.series.length - 1;
     const xFor = (iteration) => -this.width / 2 + (iteration / Math.max(1, lastIteration)) * this.width;
     const yFor = (value) => {
@@ -78,48 +77,93 @@ export class SolverTraceView extends BaseView {
       return this.groundY + ((scaled - min) / denom) * this.height;
     };
 
-    const edgeCount = this.series.length - 1;
-    const sourcePosition = new Float32Array(edgeCount * 3);
-    const targetPosition = new Float32Array(edgeCount * 3);
-    const color = new Float32Array(edgeCount * 4);
-    for (let index = 0; index < edgeCount; index += 1) {
-      const a = this.series[index];
-      const b = this.series[index + 1];
-      sourcePosition.set([xFor(a.iteration), yFor(a.value), 0], index * 3);
-      targetPosition.set([xFor(b.iteration), yFor(b.value), 0], index * 3);
-      color.set(this.color, index * 4);
+    const pointCount = this.series.length;
+    const points = new Float32Array(pointCount * 3);
+    const colors = new Float32Array(pointCount * 4);
+    const widths = new Float32Array(pointCount);
+    const times = new Float32Array(pointCount);
+    for (let index = 0; index < pointCount; index += 1) {
+      const entry = this.series[index];
+      points.set([xFor(entry.iteration), yFor(entry.value), 0], index * 3);
+      colors.set(this.color, index * 4);
+      widths[index] = 2.4;
+      times[index] = entry.iteration;
     }
 
-    return [new VisualLayer({
+    const descriptor = createTrajectoryBundleLayerDescriptor({
+      paths: [{
+        id: `${this.id}:trace-path`,
+        points,
+        colors,
+        widths,
+        times,
+        count: pointCount,
+        evidenceType: "solver-history",
+        metadata: {
+          traceLabel: this.label,
+          timelineId: this.timelineId,
+          tracePropertyId: this.tracePropertyId,
+          summary,
+        },
+      }],
+    }, {
       id: `${this.id}:trace`,
-      kind: "solver-trace",
-      primitive: "RelationEdgeLayer",
       order: 4,
-      source: descriptorSource(this, {
+      defaultWidth: 2.4,
+      alpha: this.color[3] ?? 1,
+      flowStrength: 0.08,
+      flowScale: 1.4,
+      flowSpeed: 0.12,
+      ambient: 0.54,
+      pointLight: 0.36,
+      coreGlow: 0.1,
+      depthWrite: false,
+      evidenceRole: "timeline-residual-objective",
+    });
+    descriptor.kind = "solver-trace";
+    descriptor.source = {
+      ...descriptor.source,
+      viewId: this.id,
+      viewKind: "solver-trace",
+      datasetId: this.datasetId,
+      spaceId: this.spaceId,
+      coordinateId: this.coordinateId,
+      propertyId: this.propertyId,
+      relationId: this.relationId,
+      traceLabel: this.label,
+      timelineId: this.timelineId,
+      tracePropertyId: this.tracePropertyId,
+    };
+    descriptor.metadata = {
+      ...descriptor.metadata,
+      ...this.metadata,
+      role: "solver-trace",
+      evidenceRole: "timeline-residual-objective",
+      motionGrammar: "solver-objective-timeline-curve",
+      traceEvidence: {
+        schema: "metric.visual.solver_trace_evidence.v1",
+        source: this.tracePropertyId ? "exported-timeline-step-property" : "provided-series",
         viewKind: "solver-trace",
         traceLabel: this.label,
         timelineId: this.timelineId,
         tracePropertyId: this.tracePropertyId,
-      }),
-      channels: {
-        sourcePosition: createChannel(sourcePosition, 3, "source-position"),
-        targetPosition: createChannel(targetPosition, 3, "target-position"),
-        color: createChannel(color, 4, "rgba"),
-      },
-      geometry: { width: 2 },
-      material: { alpha: 1, transparent: true, depthWrite: false },
-      metadata: {
-        ...this.metadata,
-        role: "solver-trace",
-        evidenceRole: "timeline-residual-objective",
-        points: this.series.length,
-        summary,
-        logScale: this.logScale,
-        timelineId: this.timelineId,
-        tracePropertyId: this.tracePropertyId,
+        seriesCount: this.series.length,
+        iterationDomain: {
+          min: this.series[0]?.iteration ?? 0,
+          max: this.series[this.series.length - 1]?.iteration ?? 0,
+        },
+        valueDomain: summary.domain,
         algorithmicComputation: false,
       },
-    }).toDescriptor()];
+      points: this.series.length,
+      segmentCount: this.series.length - 1,
+      summary,
+      logScale: this.logScale,
+      timelineId: this.timelineId,
+      tracePropertyId: this.tracePropertyId,
+      algorithmicComputation: false,
+    };
+    return [descriptor];
   }
 
   /** Convergence summary for panels. */

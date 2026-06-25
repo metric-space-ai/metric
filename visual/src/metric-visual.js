@@ -129,10 +129,21 @@ export function createMetricVisualDocumentDiagnostics(document, options = {}) {
     evidenceSchema: document?.schema || null,
     loadedSchema: document?.schema || null,
     recordCount: countVisualRecords(document),
+    datasetCount: countVisualCollection(document, "datasets"),
+    spaceCount: countVisualCollection(document, "spaces"),
+    coordinateCount: countVisualCollection(document, "coordinates"),
+    relationCount: countVisualCollection(document, "relations"),
+    propertyCount: countVisualCollection(document, "properties"),
+    graphCount: countVisualCollection(document, "graphs"),
+    timelineCount: countVisualCollection(document, "timelines"),
+    declaredViewCount: countVisualCollection(document, "views"),
     evidenceKind: evidence.kind,
     evidenceNative: evidence.native,
     evidenceDocumentedReference: evidence.documentedReference,
     evidenceSyntheticFixture: evidence.syntheticFixture,
+    evidenceKindSignals: evidence.signals.slice(),
+    evidenceProvenance: { ...evidence.provenance },
+    evidenceReport: createMetricVisualEvidenceReport(document, evidence),
     synthetic: document?.provenance?.synthetic === true,
     context,
     warnings,
@@ -459,15 +470,27 @@ export class MetricVisualSurface {
       evidenceSchema: this.documentDiagnostics.evidenceSchema,
       loadedSchema: this.documentDiagnostics.loadedSchema,
       recordCount: this.documentDiagnostics.recordCount,
+      datasetCount: this.documentDiagnostics.datasetCount,
+      spaceCount: this.documentDiagnostics.spaceCount,
+      coordinateCount: this.documentDiagnostics.coordinateCount,
+      relationCount: this.documentDiagnostics.relationCount,
+      propertyCount: this.documentDiagnostics.propertyCount,
+      graphCount: this.documentDiagnostics.graphCount,
+      timelineCount: this.documentDiagnostics.timelineCount,
+      declaredViewCount: this.documentDiagnostics.declaredViewCount,
       evidenceKind: evidence.kind,
       evidenceNative: evidence.native,
       evidenceDocumentedReference: evidence.documentedReference,
       evidenceSyntheticFixture: evidence.syntheticFixture,
+      evidenceKindSignals: evidence.signals.slice(),
+      evidenceProvenance: { ...evidence.provenance },
+      evidenceReport: cloneDiagnosticValue(this.documentDiagnostics.evidenceReport),
       selectedViewKind: options.viewKind ?? inferMetricVisualViewKind(this.views),
       descriptorCount: this.descriptors.length,
       layerDescriptorCount: this.descriptors.length,
       runtimeLayerCount: runtimeState.layerInstanceCount ?? countRuntimeLayers(this.runtime),
       runtimeLayerState: runtimeState.layerState ? { ...runtimeState.layerState } : null,
+      descriptorKinds: describeLayerDescriptors(this.descriptors),
     };
     if (options.append === true) entry.append = true;
     this.lastCommandDiagnostics = entry;
@@ -483,15 +506,27 @@ export class MetricVisualSurface {
       evidenceSchema: this.documentDiagnostics.evidenceSchema,
       loadedSchema: this.documentDiagnostics.loadedSchema,
       recordCount: this.documentDiagnostics.recordCount,
+      datasetCount: this.documentDiagnostics.datasetCount,
+      spaceCount: this.documentDiagnostics.spaceCount,
+      coordinateCount: this.documentDiagnostics.coordinateCount,
+      relationCount: this.documentDiagnostics.relationCount,
+      propertyCount: this.documentDiagnostics.propertyCount,
+      graphCount: this.documentDiagnostics.graphCount,
+      timelineCount: this.documentDiagnostics.timelineCount,
+      declaredViewCount: this.documentDiagnostics.declaredViewCount,
       evidenceKind: this.documentDiagnostics.evidenceKind,
       evidenceNative: this.documentDiagnostics.evidenceNative,
       evidenceDocumentedReference: this.documentDiagnostics.evidenceDocumentedReference,
       evidenceSyntheticFixture: this.documentDiagnostics.evidenceSyntheticFixture,
+      evidenceKindSignals: this.documentDiagnostics.evidenceKindSignals.slice(),
+      evidenceProvenance: { ...this.documentDiagnostics.evidenceProvenance },
+      evidenceReport: cloneDiagnosticValue(this.documentDiagnostics.evidenceReport),
       selectedViewKind: current?.selectedViewKind ?? inferMetricVisualViewKind(this.views),
       selectedCommand: current?.selectedCommand ?? current?.command ?? null,
       descriptorCount: current?.descriptorCount ?? this.descriptors.length,
       layerDescriptorCount: current?.layerDescriptorCount ?? this.descriptors.length,
       runtimeLayerCount: current?.runtimeLayerCount ?? runtimeState.layerInstanceCount ?? countRuntimeLayers(this.runtime),
+      descriptorKinds: cloneDiagnosticValue(current?.descriptorKinds ?? describeLayerDescriptors(this.descriptors)),
       warnings: cloneDiagnosticEntries(this.documentDiagnostics.warnings),
       commands: cloneDiagnosticEntries(this.commandDiagnostics),
     };
@@ -814,18 +849,34 @@ function createMetricVisualDocumentWarnings(document, context = {}) {
 export function classifyMetricVisualEvidence(document) {
   const provenance = document?.provenance || {};
   const provenanceText = JSON.stringify(provenance).toLowerCase();
+  const signals = [];
   const syntheticFixture = provenance.synthetic === true || provenance.synthetic_fixture === true;
+  if (provenance.synthetic === true) signals.push("provenance.synthetic");
+  if (provenance.synthetic_fixture === true) signals.push("provenance.synthetic_fixture");
   const native = !syntheticFixture && (
     provenance.native_export === true
     || provenance.native === true
     || /\bnative[-_\s]*(c\+\+|cpp|metric)\b/.test(provenanceText)
     || /\b(c\+\+|cpp|c\+\+17)\b/.test(provenanceText)
   );
+  if (native) {
+    if (provenance.native_export === true) signals.push("provenance.native_export");
+    if (provenance.native === true) signals.push("provenance.native");
+    if (/\bnative[-_\s]*(c\+\+|cpp|metric)\b/.test(provenanceText)) signals.push("provenance.native_text");
+    if (/\b(c\+\+|cpp|c\+\+17)\b/.test(provenanceText)) signals.push("provenance.cpp_text");
+  }
   const documentedReference = !syntheticFixture && !native && (
     provenance.documented_reference === true
     || provenance.reference === true
     || Boolean(provenance.reference_url || provenance.documentation || provenance.source_document)
   );
+  if (documentedReference) {
+    if (provenance.documented_reference === true) signals.push("provenance.documented_reference");
+    if (provenance.reference === true) signals.push("provenance.reference");
+    if (provenance.reference_url) signals.push("provenance.reference_url");
+    if (provenance.documentation) signals.push("provenance.documentation");
+    if (provenance.source_document) signals.push("provenance.source_document");
+  }
   const kind = syntheticFixture
     ? "synthetic_fixture"
     : native
@@ -833,11 +884,54 @@ export function classifyMetricVisualEvidence(document) {
       : documentedReference
         ? "documented_reference"
         : "unknown";
+  if (!signals.length) signals.push("no_evidence_kind_signal");
   return {
     kind,
     native,
     documentedReference,
     syntheticFixture,
+    signals,
+    provenance: summarizeMetricVisualProvenance(provenance),
+  };
+}
+
+function createMetricVisualEvidenceReport(document, evidence = classifyMetricVisualEvidence(document)) {
+  return {
+    schema: "metric.visual.public_evidence_report.v1",
+    evidenceSchema: document?.schema || null,
+    kind: evidence.kind,
+    native: evidence.native,
+    documentedReference: evidence.documentedReference,
+    syntheticFixture: evidence.syntheticFixture,
+    signals: evidence.signals.slice(),
+    provenance: { ...evidence.provenance },
+    recordCount: countVisualRecords(document),
+    datasetCount: countVisualCollection(document, "datasets"),
+    spaceCount: countVisualCollection(document, "spaces"),
+    coordinateCount: countVisualCollection(document, "coordinates"),
+    relationCount: countVisualCollection(document, "relations"),
+    propertyCount: countVisualCollection(document, "properties"),
+    graphCount: countVisualCollection(document, "graphs"),
+    timelineCount: countVisualCollection(document, "timelines"),
+    declaredViewCount: countVisualCollection(document, "views"),
+    coordinateDimensions: summarizeVisualCoordinates(document),
+    relationStorage: summarizeVisualRelations(document),
+    propertyTargets: summarizeVisualProperties(document),
+    declaredViewKinds: summarizeVisualViews(document),
+  };
+}
+
+function summarizeMetricVisualProvenance(provenance = {}) {
+  return {
+    generator: provenance.generator || provenance.writer || null,
+    runtime: provenance.runtime || provenance.computation || null,
+    source: provenance.source || provenance.source_example || provenance.source_document || null,
+    status: provenance.status || null,
+    nativeExport: provenance.native_export === true || provenance.native === true,
+    synthetic: provenance.synthetic === true || provenance.synthetic_fixture === true,
+    syntheticJs: provenance.synthetic_js === true,
+    publicHeroReady: provenance.public_hero_ready === true,
+    nativeChecksPass: provenance.native_checks_pass === true,
   };
 }
 
@@ -850,6 +944,10 @@ function inferMetricVisualViewKind(views) {
 
 function countVisualRecords(document) {
   return Array.isArray(document?.records) ? document.records.length : null;
+}
+
+function countVisualCollection(document, key) {
+  return Array.isArray(document?.[key]) ? document[key].length : 0;
 }
 
 function countRuntimeLayers(runtime) {
@@ -869,15 +967,68 @@ function datasetBoolean(value) {
 }
 
 function cloneMetricVisualDiagnostics(diagnostics) {
-  return {
-    ...diagnostics,
-    warnings: cloneDiagnosticEntries(diagnostics?.warnings),
-    commands: cloneDiagnosticEntries(diagnostics?.commands),
-  };
+  return cloneDiagnosticValue(diagnostics);
 }
 
 function cloneDiagnosticEntries(entries) {
-  return Array.isArray(entries) ? entries.map((entry) => ({ ...entry })) : [];
+  return Array.isArray(entries) ? entries.map((entry) => cloneDiagnosticValue(entry)) : [];
+}
+
+function cloneDiagnosticValue(value) {
+  if (Array.isArray(value)) return value.map((entry) => cloneDiagnosticValue(entry));
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, cloneDiagnosticValue(entry)]));
+}
+
+function describeLayerDescriptors(descriptors = []) {
+  const primitiveCounts = new Map();
+  const viewKindCounts = new Map();
+  for (const descriptor of descriptors || []) {
+    const primitive = descriptor?.primitive || descriptor?.kind || "unknown";
+    const viewKind = descriptor?.source?.viewKind || descriptor?.metadata?.viewKind || descriptor?.kind || "unknown";
+    primitiveCounts.set(primitive, (primitiveCounts.get(primitive) || 0) + 1);
+    viewKindCounts.set(viewKind, (viewKindCounts.get(viewKind) || 0) + 1);
+  }
+  return {
+    primitives: Object.fromEntries(primitiveCounts),
+    viewKinds: Object.fromEntries(viewKindCounts),
+  };
+}
+
+function summarizeVisualCoordinates(document) {
+  const counts = new Map();
+  for (const coordinate of document?.coordinates || []) {
+    const dimension = Number.isFinite(Number(coordinate?.dimension)) ? String(Number(coordinate.dimension)) : "unknown";
+    counts.set(dimension, (counts.get(dimension) || 0) + 1);
+  }
+  return Object.fromEntries(counts);
+}
+
+function summarizeVisualRelations(document) {
+  const counts = new Map();
+  for (const relation of document?.relations || []) {
+    const key = relation?.storage || relation?.relation_type || "unknown";
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  return Object.fromEntries(counts);
+}
+
+function summarizeVisualProperties(document) {
+  const counts = new Map();
+  for (const property of document?.properties || []) {
+    const key = `${property?.target_type || "record"}:${property?.value_type || "unknown"}`;
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  return Object.fromEntries(counts);
+}
+
+function summarizeVisualViews(document) {
+  const counts = new Map();
+  for (const view of document?.views || []) {
+    const key = view?.kind || "unknown";
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  return Object.fromEntries(counts);
 }
 
 function conditionMonitoringMotion() {

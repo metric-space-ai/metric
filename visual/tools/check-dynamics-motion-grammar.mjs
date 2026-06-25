@@ -59,8 +59,12 @@ async function main() {
     ["dynamics animation is restrained", animation.durationMs >= 6800 && animation.durationMs <= 18000, animation.durationMs],
     ["dynamics point descriptor carries timeline state schema", point?.metadata?.timelineStateSchema === "metric.visual.timeline_state_sample.v1", point?.metadata],
     ["dynamics point descriptor carries timeline control schema", point?.metadata?.timelineControlSchema === "metric.visual.timeline_control.v1", point?.metadata?.timelineControl],
+    ["dynamics point descriptor carries timeline evidence schema", point?.metadata?.timelineEvidenceSchema === "metric.visual.timeline_evidence.v1", point?.metadata?.timelineEvidence],
+    ["dynamics timeline evidence carries exported coordinate ids", point?.metadata?.timelineEvidence?.coordinateIds?.length === 41, point?.metadata?.timelineEvidence?.coordinateIds],
     ["dynamics trajectory descriptor carries timeline control schema", trajectory?.metadata?.timelineControlSchema === "metric.visual.timeline_control.v1", trajectory?.metadata?.timelineControl],
+    ["dynamics trajectory declares state-history motion grammar", trajectory?.metadata?.motionGrammar === "timeline-trajectory-state-history" && trajectory?.metadata?.timelineEvidence?.schema === "metric.visual.timeline_evidence.v1", trajectory?.metadata],
     ["dynamics animation carries stateful timeline control", animation.control?.schema === "metric.visual.timeline_control.v1" && animation.state?.schema === "metric.visual.timeline_state_sample.v1", animation],
+    ["dynamics animation carries timeline evidence contract", animation.evidence?.schema === "metric.visual.timeline_evidence.v1" && animation.evidence?.motionContract?.controlledBy === "metric.visual.timeline_control.v1", animation.evidence],
     ["dynamics descriptor samples start/middle/end states", timelineSamples.map((sample) => sample.activeCoordinateId).join(",") === "coord-reverse-00,coord-reverse-20,coord-reverse-40", timelineSamples],
     ["dynamics start/middle/end active states are deterministic", sampledStates.every((sample) => (
       sample.activeStep === sample.expectedStepOrder

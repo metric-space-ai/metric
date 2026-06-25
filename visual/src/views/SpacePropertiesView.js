@@ -15,6 +15,9 @@ import {
   resolveCollectionItem,
 } from "./view-utils.js";
 
+export const PROPERTY_FIELD_GRAMMAR_SCHEMA = "metric.visual.property_field_grammar.v1";
+export const PROPERTY_FIELD_DIAGNOSTICS_SCHEMA = "metric.visual.property_field_diagnostics.v1";
+
 /**
  * SpacePropertiesView overlays an exported per-record scalar property (entropy,
  * density, anomaly, outlier score, residual, ...) on the metric space. It draws
@@ -94,6 +97,17 @@ export class SpacePropertiesView extends BaseView {
     const alpha = new Float32Array(this.recordIds.length).fill(this.fieldAlpha);
     const selection = new Float32Array(this.recordIds.length);
     const semantic = propertyFieldSemantic(this.propertyId, this.propertyName);
+    const fieldMode = this.fieldMode === "lifted" ? "lifted" : "ground";
+    const grammar = createPropertyFieldGrammar({
+      propertyId: this.propertyId,
+      propertyName: this.propertyName,
+      propertySemantic: semantic,
+      fieldMode,
+      recordIds: this.recordIds,
+      scalarValues: rawScalar,
+      scalarDomain: domain,
+      source: "exported-scalar-property",
+    });
 
     return new VisualLayer({
       id: `${this.id}:property-field`,
@@ -103,6 +117,7 @@ export class SpacePropertiesView extends BaseView {
       source: descriptorSource(this, {
         propertyField: true,
         scalarSource: "exported-property",
+        propertyFieldGrammar: PROPERTY_FIELD_GRAMMAR_SCHEMA,
       }),
       channels: {
         recordId: createStringChannel(this.recordIds, "record-id"),
@@ -119,16 +134,21 @@ export class SpacePropertiesView extends BaseView {
         selection: createChannel(selection, 1, "selection-state"),
       },
       geometry: {
-        mode: this.fieldMode === "lifted" ? "lifted-property-field" : "ground-property-field",
+        mode: fieldMode === "lifted" ? "lifted-property-field" : "ground-property-field",
         plane: "xz",
         sampleCount: this.recordIds.length,
         interpolation: "renderer-defined",
         radius: this.fieldRadius,
+        grammar: PROPERTY_FIELD_GRAMMAR_SCHEMA,
+        propertySemantic: semantic,
+        fieldKind: grammar.fieldKind,
       },
       material: {
         lighting: "field",
         diffuse: "scalar-ramp",
         ramp: semantic,
+        rampMode: grammar.styleContract.rampMode,
+        fieldStyle: grammar.styleContract,
         alphaMode: "blend",
         alpha: this.fieldAlpha,
         contour: 0.14,
@@ -149,8 +169,11 @@ export class SpacePropertiesView extends BaseView {
         propertySemantic: semantic,
         scalarDomain: domain,
         recordCount: this.recordIds.length,
-        fieldMode: this.fieldMode === "lifted" ? "lifted" : "ground",
+        fieldMode,
         source: "exported-scalar-property",
+        primaryGrammar: `property-field:${semantic}`,
+        propertyFieldGrammar: grammar,
+        fieldDiagnostics: grammar.diagnostics,
       },
     }).toDescriptor();
   }
@@ -200,7 +223,56 @@ export function createSpacePropertiesView(options) {
 
 function firstScalarProperty(document) {
   const properties = Array.isArray(document?.properties) ? document.properties : [];
-  return properties.find((property) => property.value_type === "scalar") || properties[0] || null;
+  return properties.find((property) => (property.value_type ?? property.valueType) === "scalar") || properties[0] || null;
+}
+
+export function createPropertyFieldGrammar(options = {}) {
+  const semantic = propertyFieldSemantic(options.propertyId, options.propertyName || options.propertySemantic);
+  const fieldMode = options.fieldMode === "lifted" ? "lifted" : "ground";
+  const scalarValues = Array.from(options.scalarValues || []);
+  const finiteScalarCount = scalarValues.filter((value) => Number.isFinite(Number(value))).length;
+  const recordCount = Array.isArray(options.recordIds) ? options.recordIds.length : scalarValues.length;
+  const scalarDomain = normalizeDomain(options.scalarDomain, scalarValues);
+  const styleContract = propertyFieldStyleContract(semantic);
+  const diagnostics = {
+    schema: PROPERTY_FIELD_DIAGNOSTICS_SCHEMA,
+    grammar: PROPERTY_FIELD_GRAMMAR_SCHEMA,
+    recordCount,
+    finiteScalarCount,
+    missingScalarCount: Math.max(0, recordCount - finiteScalarCount),
+    scalarDomain,
+    zeroSpan: Math.abs(scalarDomain.max - scalarDomain.min) <= 0.000001,
+    source: options.source || "exported-scalar-property",
+    notGenericPointCloud: true,
+    selectionLinked: true,
+    previewLinked: true,
+    semantic,
+    fieldKind: propertyFieldKind(semantic),
+    fieldMode,
+    styleRamp: styleContract.ramp,
+  };
+  return {
+    schema: PROPERTY_FIELD_GRAMMAR_SCHEMA,
+    grammar: "scalar-property-field",
+    propertyId: options.propertyId,
+    propertyName: options.propertyName,
+    propertySemantic: semantic,
+    fieldKind: propertyFieldKind(semantic),
+    fieldMode,
+    recordCount,
+    scalarDomain,
+    source: options.source || "exported-scalar-property",
+    layerContract: {
+      primitive: "HeatFieldLayer",
+      scalarChannel: "scalar",
+      positionChannel: "position",
+      recordIdChannel: "recordId",
+      selectionChannel: "selection",
+      pickingMode: "record-id",
+    },
+    styleContract,
+    diagnostics,
+  };
 }
 
 function propertyFieldPositions(sourcePositions, scalarValues, domain, options = {}) {
@@ -223,12 +295,100 @@ function normalizeScalar(value, domain) {
   return Math.max(0, Math.min(1, (Number(value) - min) / span));
 }
 
-function propertyFieldSemantic(propertyId, propertyName) {
+export function propertyFieldSemantic(propertyId, propertyName) {
   const text = `${propertyId || ""} ${propertyName || ""}`.toLowerCase();
-  if (/density/.test(text)) return "density";
   if (/outlier/.test(text)) return "outlier";
   if (/anomaly|noise|fault/.test(text)) return "anomaly";
+  if (/density/.test(text)) return "density";
   if (/entropy|uncertainty/.test(text)) return "entropy";
   if (/residual|error/.test(text)) return "residual";
   return "scalar";
+}
+
+function propertyFieldKind(semantic) {
+  if (semantic === "density") return "density-field";
+  if (semantic === "entropy") return "entropy-field";
+  if (semantic === "anomaly") return "anomaly-field";
+  if (semantic === "outlier") return "outlier-field";
+  if (semantic === "residual") return "residual-error-field";
+  return "scalar-property-field";
+}
+
+function propertyFieldStyleContract(semantic) {
+  const base = {
+    ramp: semantic,
+    rampMode: semantic,
+    scalarEncoding: "normalized-exported-property",
+    alphaPolicy: "field-alpha-channel",
+    contour: "scalar-isoline-relief",
+    selection: "record-linked-highlight",
+  };
+  if (semantic === "density") {
+    return {
+      ...base,
+      lowLabel: "sparse",
+      midLabel: "local support",
+      highLabel: "dense basin",
+      interpretation: "larger scalar means higher local metric density",
+    };
+  }
+  if (semantic === "entropy") {
+    return {
+      ...base,
+      lowLabel: "stable",
+      midLabel: "mixed neighborhood",
+      highLabel: "high uncertainty",
+      interpretation: "larger scalar means higher local entropy or uncertainty",
+    };
+  }
+  if (semantic === "anomaly") {
+    return {
+      ...base,
+      lowLabel: "nominal",
+      midLabel: "transition",
+      highLabel: "anomalous",
+      interpretation: "larger scalar means stronger exported anomaly evidence",
+    };
+  }
+  if (semantic === "outlier") {
+    return {
+      ...base,
+      lowLabel: "inlier",
+      midLabel: "border",
+      highLabel: "outlier",
+      interpretation: "larger scalar means stronger exported outlier evidence",
+    };
+  }
+  if (semantic === "residual") {
+    return {
+      ...base,
+      lowLabel: "preserved",
+      midLabel: "distorted",
+      highLabel: "large error",
+      interpretation: "larger scalar means stronger residual or error evidence",
+    };
+  }
+  return {
+    ...base,
+    lowLabel: "low",
+    midLabel: "middle",
+    highLabel: "high",
+    interpretation: "larger scalar means larger exported property value",
+  };
+}
+
+function normalizeDomain(domain, values) {
+  if (Number.isFinite(Number(domain?.min)) && Number.isFinite(Number(domain?.max))) {
+    return { min: Number(domain.min), max: Number(domain.max) };
+  }
+  let min = Infinity;
+  let max = -Infinity;
+  for (const value of values || []) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) continue;
+    min = Math.min(min, number);
+    max = Math.max(max, number);
+  }
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return { min: 0, max: 0 };
+  return { min, max };
 }

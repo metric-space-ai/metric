@@ -28,7 +28,7 @@
     <canvas id="scene" aria-label="Mapping morph: 2D projection lifting into a 3D metric space"></canvas>
     <section class="caption" aria-hidden="true">
       <h1>Mapping &amp; dimensionality</h1>
-      <p>Native mapping evidence rendered as a coordinate-state morph. The 2D PHATE target lifts into the 3D source-space view; color is the exported local mapping distortion.</p>
+      <p>Native mapping evidence rendered as a coordinate-state morph. The 2D parametric coordinate state lifts into the 3D source-space view; color is the exported local mapping distortion.</p>
     </section>
     <div class="legend"><span>preserved</span><div class="ramp"></div><span>distorted</span></div>
     <div class="phase" id="phase">2D ⇄ 3D morph</div>
@@ -56,8 +56,8 @@
         profileId: "mapping-dimensionality-hero-profile",
       });
       visual.showMapping({
-        sourceCoordinateId: "phate-target-2d",
-        targetCoordinateId: "source-feature-layout-3d",
+        sourceCoordinateId: "parametric-coordinate-latent-2d",
+        targetCoordinateId: "source-coordinate-layout-3d",
         residualProperty: "local-mapping-distortion",
         residualVectors: false,
         labels: "process-family",
@@ -74,7 +74,7 @@
 
       document.documentElement.dataset.metricMappingHero = "ready";
       document.documentElement.dataset.metricRecordCount = String(visual.views[0].recordIds.length);
-      document.documentElement.dataset.metricCoordinateIds = "phate-target-2d,source-feature-layout-3d";
+      document.documentElement.dataset.metricCoordinateIds = "parametric-coordinate-latent-2d,source-coordinate-layout-3d";
       document.documentElement.dataset.metricTimelineIds = "";
       document.documentElement.dataset.metricLayerIds = layerIds.join(",");
       document.documentElement.dataset.metricResidualLayers = residualLayers.map((descriptor) => descriptor.id).join(",");
