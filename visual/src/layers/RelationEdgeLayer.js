@@ -25,6 +25,10 @@ export class RelationEdgeLayer extends BaseLayer {
     this.vertexCount = 0;
     this.buffers = {};
     this.program = null;
+    this.pickProgram = null;
+    this.edgeEntries = [];
+    this.pickColorRegistry = null;
+    this.pickColorRegistrySize = -1;
   }
 
   ensureResources() {
@@ -42,6 +46,9 @@ export class RelationEdgeLayer extends BaseLayer {
     const colors = buildEdgeColors(this.channels, edgeCount);
     this.edgeCount = edgeCount;
     this.vertexCount = edgeCount * 2;
+    this.edgeEntries = buildEdgeEntries(this.channels, edgeCount, this.descriptor);
+    this.pickColorRegistry = null;
+    this.pickColorRegistrySize = -1;
     this.replaceBuffer("position", positions);
     this.replaceBuffer("color", colors);
     this.needsUpload = false;
@@ -69,6 +76,61 @@ export class RelationEdgeLayer extends BaseLayer {
     return this;
   }
 
+  renderPicking(context = {}) {
+    if (this.disposed || this.visible === false || !this.ensureResources() || this.vertexCount <= 0) return this;
+    if (!context.registry || !this.edgeEntries.length) return this;
+    const gl = this.gl;
+    const material = this.material || {};
+    const pickWidth = numberOption(material.pickWidth, this.geometry.pickWidth, this.geometry.width, material.width, 1);
+
+    if (!this.pickProgram) {
+      this.pickProgram = this.track(createProgram(gl, "RelationEdgeLayerPicking", EDGE_PICK_VERTEX_SHADER, EDGE_PICK_FRAGMENT_SHADER));
+    }
+    this.updatePickColorBuffer(context);
+
+    configureDrawState(gl, { depthWrite: true, alphaMode: "opaque" }, {
+      blend: false,
+      cullFace: false,
+      depthWrite: true,
+    });
+    safeLineWidth(gl, pickWidth);
+
+    this.pickProgram.use();
+    setCameraUniforms(this.pickProgram, context, this.renderer);
+    bindAttribute(gl, this.pickProgram, this.capabilities, "aPosition", this.buffers.position, 3);
+    bindAttribute(gl, this.pickProgram, this.capabilities, "aPickColor", this.buffers.pickColor, 4);
+    gl.drawArrays(gl.LINES, 0, this.vertexCount);
+    restoreDepthWrite(gl);
+    return this;
+  }
+
+  updatePickColorBuffer(context = {}) {
+    const registry = context.registry;
+    const registrySize = registry?.size ?? -1;
+    if (this.buffers.pickColor && this.pickColorRegistry === registry && this.pickColorRegistrySize === registrySize) {
+      return this;
+    }
+    const encode = context.encodePickIdRGBAFloat || encodePickIdRGBAFloatLocal;
+    const colors = new Float32Array(this.vertexCount * 4);
+    const scope = this.descriptor?.id || this.id || this.descriptor?.primitive || null;
+    for (let index = 0; index < this.edgeCount; index += 1) {
+      const entry = this.edgeEntries[index] || fallbackEdgeEntry(index, this.descriptor);
+      const numericId = registry.registerEdge(String(entry.edgeId), {
+        scope,
+        layerId: this.id,
+        index,
+        descriptor: this.descriptor,
+        payload: entry,
+      });
+      encode(numericId, colors, index * 8);
+      encode(numericId, colors, index * 8 + 4);
+    }
+    this.replaceBuffer("pickColor", colors);
+    this.pickColorRegistry = registry;
+    this.pickColorRegistrySize = registry?.size ?? registrySize;
+    return this;
+  }
+
   replaceBuffer(name, data) {
     const gl = this.gl;
     if (this.buffers[name]) {
@@ -82,6 +144,7 @@ export class RelationEdgeLayer extends BaseLayer {
   dispose() {
     this.buffers = {};
     this.program = null;
+    this.pickProgram = null;
     super.dispose();
   }
 }
@@ -142,6 +205,64 @@ function buildEdgeColors(channels, edgeCount) {
   return out;
 }
 
+function buildEdgeEntries(channels, edgeCount, descriptor = {}) {
+  const graph = descriptor.metadata?.graph || descriptor.source?.graph || null;
+  const graphEdges = Array.isArray(graph?.edges) ? graph.edges : [];
+  const values = getChannelArray(getChannel(channels, ["relationValue", "value", "weight"]));
+  const edgeIds = getChannelArray(getChannel(channels, ["edgeId", "edge_id", "id"]));
+  const sourceIds = getChannelArray(getChannel(channels, ["sourceId", "source_id", "rowId", "row_id"]));
+  const targetIds = getChannelArray(getChannel(channels, ["targetId", "target_id", "columnId", "column_id"]));
+  const relationId = descriptor.source?.relationId || graph?.relationId || graph?.edge_relation_id || descriptor.metadata?.relationId || null;
+  const graphId = descriptor.source?.graphId || graph?.id || descriptor.metadata?.graphId || null;
+  const entries = new Array(edgeCount);
+
+  for (let index = 0; index < edgeCount; index += 1) {
+    const edge = graphEdges[index] || {};
+    const rowId = edge.source ?? edge.rowId ?? edge.row_id ?? edge.source_id ?? edge.a ?? sourceIds?.[index] ?? null;
+    const columnId = edge.target ?? edge.columnId ?? edge.column_id ?? edge.target_id ?? edge.b ?? targetIds?.[index] ?? null;
+    const edgeId = edgeIds?.[index]
+      ?? edge.id
+      ?? edge.edgeId
+      ?? edge.edge_id
+      ?? (rowId != null && columnId != null
+        ? `${relationId || graphId || descriptor.id || "edge"}:${rowId}:${columnId}:${index}`
+        : `${descriptor.id || descriptor.primitive || "edge"}:${index}`);
+    entries[index] = {
+      relationId,
+      graphId,
+      edgeId: String(edgeId),
+      rowId: rowId == null ? null : String(rowId),
+      columnId: columnId == null ? null : String(columnId),
+      sourceId: rowId == null ? null : String(rowId),
+      targetId: columnId == null ? null : String(columnId),
+      value: edge.value ?? values?.[index] ?? null,
+      present: edge.present !== false,
+      layerId: descriptor.id || null,
+      index,
+    };
+  }
+
+  return entries;
+}
+
+function fallbackEdgeEntry(index, descriptor = {}) {
+  return {
+    edgeId: `${descriptor.id || descriptor.primitive || "edge"}:${index}`,
+    layerId: descriptor.id || null,
+    index,
+    present: true,
+  };
+}
+
+function encodePickIdRGBAFloatLocal(id, out = [0, 0, 0, 0], offset = 0) {
+  const numericId = Math.max(0, Math.floor(Number(id) || 0));
+  out[offset] = (numericId % 256) / 255;
+  out[offset + 1] = (Math.floor(numericId / 256) % 256) / 255;
+  out[offset + 2] = (Math.floor(numericId / 65536) % 256) / 255;
+  out[offset + 3] = (Math.floor(numericId / 16777216) % 256) / 255;
+  return out;
+}
+
 function numberOption(...values) {
   for (const value of values) {
     const number = Number(value);
@@ -164,6 +285,30 @@ void main() {
 }
 `;
 
+const EDGE_PICK_VERTEX_SHADER = `
+attribute vec3 aPosition;
+attribute vec4 aPickColor;
+
+uniform mat4 uViewProjectionMatrix;
+
+varying vec4 vPickColor;
+
+void main() {
+  gl_Position = uViewProjectionMatrix * vec4(aPosition, 1.0);
+  vPickColor = aPickColor;
+}
+`;
+
+const EDGE_PICK_FRAGMENT_SHADER = `
+precision mediump float;
+
+varying vec4 vPickColor;
+
+void main() {
+  gl_FragColor = vPickColor;
+}
+`;
+
 const EDGE_FRAGMENT_SHADER = `
 precision mediump float;
 
@@ -174,4 +319,3 @@ void main() {
   gl_FragColor = vec4(vColor.rgb, vColor.a * uGlobalAlpha);
 }
 `;
-

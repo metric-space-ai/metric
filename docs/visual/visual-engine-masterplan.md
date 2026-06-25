@@ -159,11 +159,12 @@ Known gaps:
   visual quality still needs stronger floor projection, curated hero
   composition and stricter screenshot baselines against accepted photographic
   reference captures
-- runtime GPU picking is active for stock point, glyph and ground-projection
-  record layers; the public regression gate now requires real `gpu-picking`
-  hits with record IDs for the native preview examples that expose pickable
-  record layers. Remaining layer-specific GPU work is edge/field/curve/matrix
-  picking where semantic CPU pickers are not sufficient.
+- runtime GPU picking is active for stock point, glyph, ground-projection
+  record layers and relation-edge layers; the public regression gate now
+  requires real `gpu-picking` hits with record IDs and edge IDs for native
+  preview examples that expose pickable records or graph edges. Remaining
+  layer-specific GPU work is field/curve/matrix picking where semantic CPU
+  pickers are not sufficient.
 - performance gates exist for large point-cloud workloads; matrix, graph,
   field, glyph, dynamics and mapping grammars still need their own budget rows
 
