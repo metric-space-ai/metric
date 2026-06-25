@@ -2,6 +2,7 @@ import { BaseLayer } from "./BaseLayer.js";
 import {
   colorChannel,
   getChannel,
+  getChannelArray,
   inferInstanceCount,
   positionChannel,
   scalarChannel,
@@ -26,8 +27,12 @@ export class GroundProjectionLayer extends BaseLayer {
     this.buffers = {};
     this.spriteProgram = null;
     this.footprintProgram = null;
+    this.pickProgram = null;
     this.pointSizeLimits = [1, 64];
     this.renderMode = "sprites";
+    this.recordIds = [];
+    this.pickColorRegistry = null;
+    this.pickColorRegistrySize = -1;
   }
 
   ensureResources() {
@@ -64,6 +69,9 @@ export class GroundProjectionLayer extends BaseLayer {
     const targetHeight = heightChannel(rawTargets, this.count, this.geometry);
     const colors = colorChannel(this.channels, this.count, { defaultColor: [0.12, 0.20, 0.24, 0.36] });
     const size = scalarChannel(this.channels, ["size", "radius"], this.count, defaultSize(this.geometry));
+    this.recordIds = recordIdsForChannels(this.channels, this.count);
+    this.pickColorRegistry = null;
+    this.pickColorRegistrySize = -1;
 
     this.replaceBuffer("position", positions);
     this.replaceBuffer("targetPosition", targetPositions);
@@ -155,6 +163,69 @@ export class GroundProjectionLayer extends BaseLayer {
     return this;
   }
 
+  renderPicking(context = {}) {
+    if (this.disposed || this.visible === false || !this.ensureResources()) return this;
+    if (this.renderMode !== "sprites" || this.count <= 0 || !context.registry || !this.recordIds.length) return this;
+    const gl = this.gl;
+    const material = this.material || {};
+    const geometry = this.geometry || {};
+    const morph = animationProgress(this.animation || {}, context);
+
+    if (!this.pickProgram) {
+      this.pickProgram = this.track(createProgram(gl, "GroundProjectionLayerPicking", PROJECTION_PICK_VERTEX_SHADER, PROJECTION_PICK_FRAGMENT_SHADER));
+    }
+    this.updatePickColorBuffer(context);
+
+    configureDrawState(gl, { depthWrite: true, alphaMode: "opaque" }, {
+      blend: false,
+      cullFace: false,
+      depthWrite: true,
+    });
+
+    this.pickProgram.use();
+    setCameraUniforms(this.pickProgram, context, this.renderer);
+    this.pickProgram.setUniform("uMorph", morph);
+    this.pickProgram.setUniform("uPointPixelScale", numberOption(material.pointPixelScale, geometry.pointPixelScale, this.options.pointPixelScale, 12));
+    this.pickProgram.setUniform("uMinPointSize", numberOption(material.minPointSize, geometry.minPointSize, 1));
+    this.pickProgram.setUniform("uMaxPointSize", numberOption(material.maxPointSize, geometry.maxPointSize, this.pointSizeLimits[1] || 128));
+    this.pickProgram.setUniform("uHeightShadowScale", numberOption(material.heightShadowScale, geometry.heightShadowScale, 0.22));
+
+    bindAttribute(gl, this.pickProgram, this.capabilities, "aPosition", this.buffers.position, 3);
+    bindAttribute(gl, this.pickProgram, this.capabilities, "aTargetPosition", this.buffers.targetPosition, 3);
+    bindAttribute(gl, this.pickProgram, this.capabilities, "aSourceHeight", this.buffers.sourceHeight, 1);
+    bindAttribute(gl, this.pickProgram, this.capabilities, "aTargetHeight", this.buffers.targetHeight, 1);
+    bindAttribute(gl, this.pickProgram, this.capabilities, "aSize", this.buffers.size, 1);
+    bindAttribute(gl, this.pickProgram, this.capabilities, "aPickColor", this.buffers.pickColor, 4);
+    gl.drawArrays(gl.POINTS, 0, this.count);
+    restoreDepthWrite(gl);
+    return this;
+  }
+
+  updatePickColorBuffer(context = {}) {
+    const registry = context.registry;
+    const registrySize = registry?.size ?? -1;
+    if (this.buffers.pickColor && this.pickColorRegistry === registry && this.pickColorRegistrySize === registrySize) {
+      return this;
+    }
+    const encode = context.encodePickIdRGBAFloat || encodePickIdRGBAFloatLocal;
+    const colors = new Float32Array(this.count * 4);
+    const scope = this.descriptor?.id || this.id || this.descriptor?.primitive || null;
+    for (let index = 0; index < this.count; index += 1) {
+      const recordId = this.recordIds[index] ?? String(index);
+      const numericId = registry.registerRecord(String(recordId), {
+        scope,
+        layerId: this.id,
+        index,
+        descriptor: this.descriptor,
+      });
+      encode(numericId, colors, index * 4);
+    }
+    this.replaceBuffer("pickColor", colors);
+    this.pickColorRegistry = registry;
+    this.pickColorRegistrySize = registry?.size ?? registrySize;
+    return this;
+  }
+
   replaceBuffer(name, data) {
     const gl = this.gl;
     if (this.buffers[name]) {
@@ -169,8 +240,16 @@ export class GroundProjectionLayer extends BaseLayer {
     this.buffers = {};
     this.spriteProgram = null;
     this.footprintProgram = null;
+    this.pickProgram = null;
     super.dispose();
   }
+}
+
+function recordIdsForChannels(channels, count) {
+  const recordChannel = getChannel(channels, ["recordId", "record_id", "id", "cellId"]);
+  const ids = getChannelArray(recordChannel);
+  if (!ids) return Array.from({ length: count }, (_, index) => String(index));
+  return Array.from({ length: count }, (_, index) => String(ids[index] ?? index));
 }
 
 function defaultSize(geometry = {}) {
@@ -272,6 +351,15 @@ function clamp01(value) {
   return Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0));
 }
 
+function encodePickIdRGBAFloatLocal(id, out = [0, 0, 0, 0], offset = 0) {
+  const numericId = Math.max(0, Math.floor(Number(id) || 0));
+  out[offset] = (numericId % 256) / 255;
+  out[offset + 1] = (Math.floor(numericId / 256) % 256) / 255;
+  out[offset + 2] = (Math.floor(numericId / 65536) % 256) / 255;
+  out[offset + 3] = (Math.floor(numericId / 16777216) % 256) / 255;
+  return out;
+}
+
 const PROJECTION_VERTEX_SHADER = `
 attribute vec3 aPosition;
 attribute vec3 aTargetPosition;
@@ -358,6 +446,45 @@ void main() {
   shadowColor = mix(shadowColor, vec3(1.0), clamp(uSurfaceLift, 0.0, 1.0) * (1.0 - contact) * (1.0 - tailAlpha));
   float density = clamp(uShadowDensity, 0.0, 4.0);
   gl_FragColor = vec4(shadowColor, vColor.a * alpha * uGlobalAlpha * density);
+}
+`;
+
+const PROJECTION_PICK_VERTEX_SHADER = `
+attribute vec3 aPosition;
+attribute vec3 aTargetPosition;
+attribute float aSize;
+attribute float aSourceHeight;
+attribute float aTargetHeight;
+attribute vec4 aPickColor;
+
+uniform mat4 uViewProjectionMatrix;
+uniform float uMorph;
+uniform float uPointPixelScale;
+uniform float uMinPointSize;
+uniform float uMaxPointSize;
+uniform float uHeightShadowScale;
+
+varying vec4 vPickColor;
+
+void main() {
+  vec3 position = mix(aPosition, aTargetPosition, clamp(uMorph, 0.0, 1.0));
+  float height = mix(aSourceHeight, aTargetHeight, clamp(uMorph, 0.0, 1.0));
+  float heightScale = 1.0 + clamp(height * uHeightShadowScale, 0.0, 1.8);
+  gl_Position = uViewProjectionMatrix * vec4(position, 1.0);
+  gl_PointSize = clamp(max(aSize, 0.001) * uPointPixelScale * heightScale, uMinPointSize, uMaxPointSize);
+  vPickColor = aPickColor;
+}
+`;
+
+const PROJECTION_PICK_FRAGMENT_SHADER = `
+precision mediump float;
+
+varying vec4 vPickColor;
+
+void main() {
+  vec2 p = gl_PointCoord * 2.0 - 1.0;
+  if (dot(p, p) > 1.0) discard;
+  gl_FragColor = vPickColor;
 }
 `;
 

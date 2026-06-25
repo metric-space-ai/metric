@@ -84,6 +84,7 @@ export const DEFAULT_RUNTIME_OPTIONS = Object.freeze({
     graph: true,
     cpuFallback: true,
     thresholdPx: 34,
+    gpuRadiusPx: 6,
     edgeThresholdPx: 7,
     clearOnMiss: false,
     selectOnClick: true,
@@ -893,6 +894,8 @@ export class MetricVisualRuntime {
 
   pickGpu(request, options = {}) {
     if (!this.renderer?.gl || this.pickingIndex.gpuLayerCount <= 0) return null;
+    this.lastGpuPickingDebug = null;
+    const gl = this.renderer.gl;
     const size = this.renderer.size || {};
     const width = Math.max(1, Math.floor(size.drawingBufferWidth || 1));
     const height = Math.max(1, Math.floor(size.drawingBufferHeight || 1));
@@ -903,8 +906,8 @@ export class MetricVisualRuntime {
           width,
           height,
           depth: true,
-          minFilter: this.renderer.gl.NEAREST,
-          magFilter: this.renderer.gl.NEAREST,
+          minFilter: gl.NEAREST,
+          magFilter: gl.NEAREST,
         });
       } else if (this.pickingTarget.width !== width || this.pickingTarget.height !== height) {
         this.pickingTarget.setSize(width, height);
@@ -925,26 +928,37 @@ export class MetricVisualRuntime {
         ...this.renderer.context,
         runtime: this,
         renderer: this.renderer,
-        gl: this.renderer.gl,
+        gl,
         scene: this.scene,
         camera: this.camera,
         size,
       }, this.layers);
-      const numericId = readPickIdFromFramebuffer(this.renderer.gl, request.x, request.y, {
+      const pickSample = readPickIdNearFramebuffer(gl, request.x, request.y, {
         width,
         height,
         yOrigin: "top",
+        radius: gpuPickRadiusPixels(this, options),
       });
-      this.renderer.gl.bindFramebuffer(this.renderer.gl.FRAMEBUFFER, null);
+      if (options.debugGpuScan === "always" || (!pickSample.numericId && options.debugGpuScan === true)) {
+        this.lastGpuPickingDebug = scanPickFramebuffer(gl, {
+          width,
+          height,
+          yOrigin: "top",
+          step: options.debugGpuScanStep,
+        });
+      }
+      const numericId = pickSample.numericId;
       if (!numericId) return null;
       return pickResultFromNumericId(numericId, this.pickingRegistry, {
         request,
         source: "gpu-picking",
-        raw: { numericId },
+        raw: pickSample,
       });
     } catch (error) {
       this.warn("gpu-picking-failed", "GPU picking failed; runtime will use deterministic fallback picking.", { error });
       return null;
+    } finally {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
   }
 
@@ -1796,6 +1810,7 @@ function normalizeInspectionOptions(value, fallback = DEFAULT_RUNTIME_OPTIONS.in
     graph: source.graph !== false && source.graphPicking !== false && base.graph !== false,
     cpuFallback: source.cpuFallback !== false && source.cpu !== false && base.cpuFallback !== false,
     thresholdPx: positiveRuntimeNumber(source.thresholdPx, source.radiusPx, base.thresholdPx, 34),
+    gpuRadiusPx: Math.max(0, finiteRuntimeNumber(source.gpuRadiusPx, source.gpuRadius, base.gpuRadiusPx, 6)),
     edgeThresholdPx: positiveRuntimeNumber(source.edgeThresholdPx, source.edgeRadiusPx, base.edgeThresholdPx, 7),
     maxCandidates: Math.max(1, Math.floor(numberOr(source.maxCandidates, base.maxCandidates ?? 20000))),
     clearOnMiss: source.clearOnMiss ?? base.clearOnMiss ?? false,
@@ -2030,7 +2045,7 @@ function nearestDescriptorFocusTarget(runtime, pointer, options = {}) {
     const recordChannel = getChannel(channels, recordNames);
     const recordIds = getChannelArray(recordChannel);
     if (!recordIds?.length) continue;
-    const positionInfo = descriptorFocusPositionInfo(descriptor, positionNames);
+    const positionInfo = descriptorFocusPositionInfo(descriptor, positionNames, runtime);
     if (!positionInfo) continue;
     const count = Math.min(recordIds.length, positionInfo.count);
     for (let index = 0; index < count; index += 1) {
@@ -2070,11 +2085,11 @@ function nearestDescriptorFocusTarget(runtime, pointer, options = {}) {
   };
 }
 
-function descriptorFocusPositionInfo(descriptor, positionNames) {
+function descriptorFocusPositionInfo(descriptor, positionNames, runtime = null) {
   const channels = descriptor?.channels || {};
   const position = getChannel(channels, "position");
   const target = getChannel(channels, "targetPosition");
-  if (position && target && descriptor?.animation?.mode === "coordinate-morph") {
+  if (position && target && descriptorUsesTargetPositionMorph(descriptor)) {
     const sourceArray = getChannelArray(position);
     const targetArray = getChannelArray(target);
     if (sourceArray && targetArray) {
@@ -2086,7 +2101,7 @@ function descriptorFocusPositionInfo(descriptor, positionNames) {
         sourceItemSize: getChannelItemSize(position, 3),
         targetItemSize: getChannelItemSize(target, 3),
         count: Math.min(getChannelCount(position, 3), getChannelCount(target, 3)),
-        morph: animationProgressForDescriptor(descriptor.animation),
+        morph: animationProgressForDescriptor(descriptor.animation, runtime),
         itemSize,
       };
     }
@@ -2104,6 +2119,15 @@ function descriptorFocusPositionInfo(descriptor, positionNames) {
     };
   }
   return null;
+}
+
+function descriptorUsesTargetPositionMorph(descriptor) {
+  const animation = descriptor?.animation || {};
+  const mode = String(animation.mode || "").toLowerCase();
+  if (mode.includes("morph")) return true;
+  if (animation.channel === "targetPosition") return true;
+  if (Array.isArray(animation.requiresChannels) && animation.requiresChannels.includes("targetPosition")) return true;
+  return false;
 }
 
 function positionAt(info, index) {
@@ -2127,11 +2151,12 @@ function positionAt(info, index) {
   return Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z) ? [x, y, z] : null;
 }
 
-function animationProgressForDescriptor(animation = {}) {
+function animationProgressForDescriptor(animation = {}, runtime = null) {
   if (Number.isFinite(Number(animation.progress))) return clampRuntimeNumber(Number(animation.progress), 0, 1);
   if (!animation.loop || !Number.isFinite(Number(animation.durationMs))) return 0;
   const duration = Math.max(1, Number(animation.durationMs));
-  const t = (performanceNow() % duration) / duration;
+  const timeMs = finiteRuntimeNumber(runtime?.renderer?.loop?.time?.elapsedMs, performanceNow());
+  const t = (timeMs % duration) / duration;
   if (animation.direction === "alternate") return t < 0.5 ? t * 2 : 2 - t * 2;
   return t;
 }
@@ -2362,13 +2387,73 @@ function createRuntimePickRequest(runtime, input = {}, options = {}) {
   return request;
 }
 
+function gpuPickRadiusPixels(runtime, options = {}) {
+  const pixelRatio = positiveRuntimeNumber(runtime?.renderer?.size?.pixelRatio, 1);
+  const radiusCss = Math.max(0, finiteRuntimeNumber(
+    options.gpuRadiusPx,
+    options.gpuRadius,
+    runtime?.inspectionOptions?.gpuRadiusPx,
+    DEFAULT_RUNTIME_OPTIONS.inspection.gpuRadiusPx,
+    0,
+  ));
+  return Math.round(radiusCss * pixelRatio);
+}
+
+function readPickIdNearFramebuffer(gl, x, y, options = {}) {
+  const radius = Math.max(0, Math.floor(finiteRuntimeNumber(options.radius, 0)));
+  const center = readPickIdFromFramebuffer(gl, x, y, options);
+  if (center) return { numericId: center, x, y, dx: 0, dy: 0, samples: 1 };
+  let samples = 1;
+  for (let ring = 1; ring <= radius; ring += 1) {
+    const offsets = [
+      [ring, 0],
+      [-ring, 0],
+      [0, ring],
+      [0, -ring],
+      [ring, ring],
+      [ring, -ring],
+      [-ring, ring],
+      [-ring, -ring],
+    ];
+    for (const [dx, dy] of offsets) {
+      samples += 1;
+      const numericId = readPickIdFromFramebuffer(gl, x + dx, y + dy, options);
+      if (numericId) return { numericId, x: x + dx, y: y + dy, dx, dy, samples };
+    }
+  }
+  return { numericId: 0, x, y, dx: 0, dy: 0, samples };
+}
+
+function scanPickFramebuffer(gl, options = {}) {
+  const width = Math.max(1, Math.floor(finiteRuntimeNumber(options.width, gl?.drawingBufferWidth, 1)));
+  const height = Math.max(1, Math.floor(finiteRuntimeNumber(options.height, gl?.drawingBufferHeight, 1)));
+  const step = Math.max(1, Math.floor(finiteRuntimeNumber(options.step, 8)));
+  let sampled = 0;
+  let nonZero = 0;
+  let first = null;
+  for (let y = 0; y < height; y += step) {
+    for (let x = 0; x < width; x += step) {
+      sampled += 1;
+      const numericId = readPickIdFromFramebuffer(gl, x, y, {
+        width,
+        height,
+        yOrigin: options.yOrigin || "top",
+      });
+      if (!numericId) continue;
+      nonZero += 1;
+      if (!first) first = { x, y, numericId };
+    }
+  }
+  return { width, height, step, sampled, nonZero, first };
+}
+
 function collectDescriptorRecordPickPoints(out, registry, descriptor, runtime) {
   if (!descriptor || descriptor.visible === false) return out;
   const channels = descriptor.channels || {};
   const recordChannel = getChannel(channels, ["recordId", "record_id", "id", "cellId"]);
   const recordIds = getChannelArray(recordChannel);
   if (!recordIds?.length) return out;
-  const positionInfo = descriptorFocusPositionInfo(descriptor, DEFAULT_RUNTIME_OPTIONS.inspection.positionChannels);
+  const positionInfo = descriptorFocusPositionInfo(descriptor, DEFAULT_RUNTIME_OPTIONS.inspection.positionChannels, runtime);
   if (!positionInfo) return out;
   const count = Math.min(recordIds.length, positionInfo.count, runtime.inspectionOptions.maxCandidates);
   for (let index = 0; index < count; index += 1) {

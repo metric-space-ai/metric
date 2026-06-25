@@ -210,6 +210,7 @@ const PAGE_PROBE_SCRIPT = String.raw`
       warnings: (diagnostics?.warnings || runtime?.warnings || []).map((warning) => warning?.code || String(warning)),
       selectedRecordId: runtime?.selectedRecordId || null,
       selectedPair: runtime?.selectedPair || null,
+      inspection: runtime?.inspection || null,
     };
   }
   function runtimeHandles() {
@@ -230,6 +231,91 @@ const PAGE_PROBE_SCRIPT = String.raw`
       })
       .filter(Boolean);
   }
+  function runtimeObjects() {
+    return Object.keys(window)
+      .filter((key) => /^metric/i.test(key))
+      .map((key) => {
+        const handle = window[key];
+        const runtime = handle?.runtime || handle?.visual?.runtime || (typeof handle?.pickAt === "function" ? handle : null);
+        return runtime ? { key, runtime } : null;
+      })
+      .filter(Boolean);
+  }
+  function gpuPickingProbe() {
+    for (const entry of runtimeObjects()) {
+      const runtime = entry.runtime;
+      if (typeof runtime.refreshPickingIndex !== "function" || typeof runtime.pickAt !== "function") continue;
+      runtime.refreshPickingIndex();
+      const index = runtime.pickingIndex || {};
+      if (!(index.gpuLayerCount > 0) || !Array.isArray(index.recordPoints) || !index.recordPoints.length) continue;
+      const pickableLayerIds = new Set((runtime.layers || [])
+        .filter((layer) => layer && layer.visible !== false && (typeof layer.renderPicking === "function" || typeof layer.renderPickIds === "function"))
+        .map((layer) => layer.id)
+        .filter(Boolean));
+      const pickableRecordPoints = index.recordPoints.filter((point) => pickableLayerIds.has(point.layerId));
+      const candidates = (pickableRecordPoints.length ? pickableRecordPoints : index.recordPoints).slice(0, 160);
+      const misses = [];
+      for (const point of candidates) {
+        const pixel = runtime.camera?.projectToPixel?.(point.position, {});
+        if (!pixel || pixel.visible === false || !Number.isFinite(pixel.x) || !Number.isFinite(pixel.y)) continue;
+        const result = runtime.pickAt({ x: pixel.x, y: pixel.y }, {
+          gpu: true,
+          relationMatrix: false,
+          graph: false,
+          cpuFallback: false,
+          source: "gpu-contract-probe",
+        });
+        const sample = {
+          source: result?.source || null,
+          recordId: result?.recordId ?? null,
+          expectedRecordId: point.recordId ?? null,
+          layerId: point.layerId ?? null,
+          x: Math.round(pixel.x),
+          y: Math.round(pixel.y),
+        };
+        if (result?.source === "gpu-picking" && result?.hit === true) {
+          return {
+            key: entry.key,
+            available: true,
+            hit: true,
+            source: "gpu-picking",
+            recordId: result?.recordId ?? null,
+            expectedRecordId: point.recordId ?? null,
+            layerId: point.layerId ?? null,
+            layerCount: index.gpuLayerCount,
+            candidateCount: index.recordPoints.length,
+            pickableCandidateCount: pickableRecordPoints.length,
+            testedCandidates: misses.length + 1,
+          };
+        }
+        if (misses.length < 8) misses.push(sample);
+      }
+      if (candidates.length) {
+        runtime.pickAt({ x: 0, y: 0 }, {
+          gpu: true,
+          relationMatrix: false,
+          graph: false,
+          cpuFallback: false,
+          gpuRadiusPx: 0,
+          debugGpuScan: "always",
+          source: "gpu-contract-debug-scan",
+        });
+      }
+      return {
+        key: entry.key,
+        available: true,
+        hit: false,
+        source: "no-gpu-hit-for-visible-record-candidates",
+        layerCount: index.gpuLayerCount,
+        candidateCount: index.recordPoints.length,
+        pickableCandidateCount: pickableRecordPoints.length,
+        testedCandidates: candidates.length,
+        misses,
+        debug: runtime.lastGpuPickingDebug || null,
+      };
+    }
+    return { available: false, hit: false, source: "no-gpu-pickable-runtime" };
+  }
   const canvases = canvasSummaries();
   const handles = runtimeHandles();
   const largestCanvas = canvases[0] || null;
@@ -245,6 +331,7 @@ const PAGE_PROBE_SCRIPT = String.raw`
     largestCanvas,
     runtimeHandles: handles,
     runtimeState,
+    gpuPickingProbe: gpuPickingProbe(),
     gpuDiagnostics: window.__metricVisualGpuDiagnostics || null,
     loadingText: Array.from(document.querySelectorAll(".loading")).map((node) => node.textContent.trim()).join(" | "),
     ready: Boolean(largestCanvas?.visible) && (
@@ -421,6 +508,20 @@ async function checkExample(browser, baseUrl, name) {
   if (!evidence.usesNativeEvidence && name !== "grae10-metric-engine") issues.push({ code: "missing-native-evidence" });
   if (!grammar.ok) issues.push({ code: "grammar-contract-missing", expected: expected.label });
   if (!interaction?.ok) issues.push({ code: "interaction-contract-failed", reason: interaction?.reason || "not-run" });
+  if (requiresGpuPicking(runtime.state) && runtime.state?.inspection?.gpuPicking?.available !== true) {
+    issues.push({
+      code: "gpu-picking-not-active",
+      primitives: runtime.state?.descriptorPrimitives || [],
+      inspection: runtime.state?.inspection || null,
+    });
+  }
+  if (requiresGpuPicking(runtime.state) && probe?.gpuPickingProbe?.source !== "gpu-picking") {
+    issues.push({
+      code: "gpu-picking-probe-failed",
+      primitives: runtime.state?.descriptorPrimitives || [],
+      probe: probe?.gpuPickingProbe || null,
+    });
+  }
   if (name === "grae10-metric-engine" && !evidence.protectedGrae10?.ok) {
     issues.push({ code: "grae10-protection-failed", details: evidence.protectedGrae10 });
   }
@@ -435,8 +536,16 @@ async function checkExample(browser, baseUrl, name) {
     grammar,
     interaction,
     runtime,
+    gpuPickingProbe: probe?.gpuPickingProbe || null,
     issues,
   };
+}
+
+function requiresGpuPicking(runtimeState) {
+  const primitives = runtimeState?.descriptorPrimitives || [];
+  return primitives.includes("InstancedPointLayer") ||
+    primitives.includes("InstancedGlyphLayer") ||
+    primitives.includes("GroundProjectionLayer");
 }
 
 function classifyStatus(name, evidence, grammar) {
