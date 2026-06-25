@@ -24,6 +24,15 @@ target_compile_definitions(engine_process_curve_external_gallery
         METRIC_PROCESS_CURVE_INTERNAL_BLEEDING_CSV="${CMAKE_CURRENT_SOURCE_DIR}/assets/process_curve_internal_bleeding_gallery.csv"
 )
 
+add_executable(engine_process_curve_external_visual_export process_curve_external_visual_export.cpp)
+target_link_libraries(engine_process_curve_external_visual_export PRIVATE ${METRIC_TARGET_NAME})
+target_include_directories(engine_process_curve_external_visual_export PRIVATE ${CMAKE_SOURCE_DIR}/visual/cpp)
+target_compile_definitions(engine_process_curve_external_visual_export
+    PRIVATE
+        METRIC_PROCESS_CURVE_POWER_DEMAND_CSV="${CMAKE_CURRENT_SOURCE_DIR}/assets/process_curve_power_demand_gallery.csv"
+        METRIC_PROCESS_CURVE_INTERNAL_BLEEDING_CSV="${CMAKE_CURRENT_SOURCE_DIR}/assets/process_curve_internal_bleeding_gallery.csv"
+)
+
 add_executable(engine_mnist_phate_autoencoder_smoke mnist_phate_autoencoder_smoke.cpp)
 target_link_libraries(engine_mnist_phate_autoencoder_smoke PRIVATE ${METRIC_TARGET_NAME})
 target_compile_definitions(engine_mnist_phate_autoencoder_smoke
@@ -139,6 +148,10 @@ if (BUILD_TESTING)
     add_test(NAME example_engine_strings_edit_space COMMAND engine_strings_edit_space)
     add_test(NAME example_engine_process_curves_space COMMAND engine_process_curves_space)
     add_test(NAME example_engine_process_curve_external_gallery COMMAND engine_process_curve_external_gallery)
+    add_test(NAME example_engine_process_curve_external_visual_export
+        COMMAND engine_process_curve_external_visual_export
+            --export-dir ${CMAKE_CURRENT_BINARY_DIR}/visual_exports/process_curve_external
+    )
     add_test(NAME example_engine_mnist_phate_autoencoder_smoke COMMAND engine_mnist_phate_autoencoder_smoke --per-class 6 --epochs 4)
     add_test(NAME example_engine_mnist_phate_autoencoder_gallery COMMAND engine_mnist_phate_autoencoder_gallery --per-class 3 --epochs 2)
     add_test(NAME example_engine_mnist_grae10_integrity COMMAND engine_mnist_grae10_integrity)
@@ -216,6 +229,11 @@ if (BUILD_TESTING)
                 ${CMAKE_SOURCE_DIR}/visual/tools/check-visual-document.mjs
                 ${CMAKE_CURRENT_BINARY_DIR}/visual_exports/mapping_dimensionality/metric.visual.json
         )
+        add_test(NAME example_engine_process_curve_external_visual_validate
+            COMMAND ${METRIC_NODE_EXECUTABLE}
+                ${CMAKE_SOURCE_DIR}/visual/tools/check-visual-document.mjs
+                ${CMAKE_CURRENT_BINARY_DIR}/visual_exports/process_curve_external/metric.visual.json
+        )
 
         set_tests_properties(
             example_engine_condition_monitoring_visual_validate
@@ -241,12 +259,17 @@ if (BUILD_TESTING)
             example_engine_mapping_dimensionality_visual_validate
             PROPERTIES DEPENDS example_engine_mapping_dimensionality_visual_export
         )
+        set_tests_properties(
+            example_engine_process_curve_external_visual_validate
+            PROPERTIES DEPENDS example_engine_process_curve_external_visual_export
+        )
     endif ()
 
     set_tests_properties(
         example_engine_strings_edit_space
         example_engine_process_curves_space
         example_engine_process_curve_external_gallery
+        example_engine_process_curve_external_visual_export
         example_engine_mnist_grae10_integrity
         example_engine_histogram_transport_space
         example_engine_distribution_image_recoding
@@ -274,6 +297,7 @@ if (BUILD_TESTING)
             example_engine_finite_metric_dynamics_visual_validate
             example_engine_relation_matrix_visual_validate
             example_engine_mapping_dimensionality_visual_validate
+            example_engine_process_curve_external_visual_validate
             PROPERTIES LABELS "metric_application_evidence;metric_visual_export"
         )
     endif ()

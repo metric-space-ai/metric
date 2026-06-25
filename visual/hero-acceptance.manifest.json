@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "acceptedHeroes": [
+    {
+      "exampleId": "grae10-metric-engine",
+      "requiresNativeEvidence": true,
+      "expectedPrimaryVisualGrammar": "protected GRAE10 60k metric-engine reference",
+      "screenshot": {
+        "generatedReport": "output/visual/check-visual-regression-public-examples/results.json",
+        "requiresPageScreenshot": true,
+        "requiresCanvasScreenshot": true
+      },
+      "humanAcceptance": {
+        "status": "accepted",
+        "date": "2026-06-25"
+      },
+      "acceptanceReason": "Protected 60k GRAE10 golden reference is the only approved public hero; the existing hash gate and native dataset contract must remain intact."
+    }
+  ]
+}
