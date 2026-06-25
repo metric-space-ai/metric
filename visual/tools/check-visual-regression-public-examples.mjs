@@ -228,8 +228,28 @@ const PAGE_PROBE_SCRIPT = String.raw`
       warnings: (diagnostics?.warnings || runtime?.warnings || []).map((warning) => warning?.code || String(warning)),
       selectedRecordId: runtime?.selectedRecordId || null,
       selectedPair: runtime?.selectedPair || null,
+      relationMatrixReadability: summarizeRelationMatrixReadability(descriptors),
       inspection: runtime?.inspection || null,
     };
+  }
+  function summarizeRelationMatrixReadability(descriptors) {
+    return descriptors
+      .filter((descriptor) => (descriptor?.primitive || descriptor?.kind) === "RelationMatrixLayer")
+      .map((descriptor) => {
+        const matrixReadability = descriptor?.metadata?.readabilityDiagnostics
+          || descriptor?.metadata?.diagnostics?.matrixReadability
+          || null;
+        return {
+          id: descriptor?.id || null,
+          relationId: descriptor?.source?.relationId || descriptor?.metadata?.relationId || matrixReadability?.relationId || null,
+          blockCount: Number(matrixReadability?.blockCount ?? matrixReadability?.blocks?.count) || 0,
+          blockLabelCount: Number(matrixReadability?.blockLabelCount ?? matrixReadability?.blocks?.labeledCount) || 0,
+          blockLabels: Array.isArray(matrixReadability?.blocks?.labels) ? matrixReadability.blocks.labels : [],
+          blockCoverageState: matrixReadability?.blocks?.coverage?.state || null,
+          tileCount: Number(matrixReadability?.tileCount) || 0,
+          tileSummarySource: matrixReadability?.tileSummarySource || null,
+        };
+      });
   }
   function runtimeHandles() {
     return Object.keys(window)
@@ -761,6 +781,12 @@ async function checkExample(browser, baseUrl, name) {
   }
   if (!grammar.ok) issues.push({ code: "grammar-contract-missing", expected: expected.label });
   if (!interaction?.ok) issues.push({ code: "interaction-contract-failed", reason: interaction?.reason || "not-run" });
+  if (name === "relation-matrix-neighborhood" && !hasReadableRelationMatrixBlocks(runtime.state)) {
+    issues.push({
+      code: "relation-matrix-block-readability-missing",
+      readability: runtime.state?.relationMatrixReadability || [],
+    });
+  }
   if (requiresGpuPicking(runtime.state) && runtime.state?.inspection?.gpuPicking?.available !== true) {
     issues.push({
       code: "gpu-picking-not-active",
@@ -831,6 +857,18 @@ function requiresGpuPicking(runtimeState) {
     primitives.includes("InstancedGlyphLayer") ||
     primitives.includes("GroundProjectionLayer") ||
     primitives.includes("HeatFieldLayer");
+}
+
+function hasReadableRelationMatrixBlocks(runtimeState) {
+  const matrices = runtimeState?.relationMatrixReadability || [];
+  return matrices.some((matrix) => (
+    matrix.blockCount >= 2 &&
+    matrix.blockLabelCount >= 2 &&
+    matrix.blockLabels.every((label) => typeof label === "string" && label.trim().length > 0) &&
+    matrix.blockCoverageState === "full" &&
+    matrix.tileCount > 0 &&
+    matrix.tileSummarySource === "exported-relation-texture-downsample"
+  ));
 }
 
 function requiresGpuEdgePicking(runtimeState) {

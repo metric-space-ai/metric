@@ -2155,6 +2155,10 @@ Not visually accepted yet:
   metadata for weighted dense-cell smoothing, logical tile boundaries and
   explicit no-DOM fallback diagnostics. It is still not hero-accepted until
   screenshot review proves readability at the public target scale.
+- Relation-matrix readability diagnostics now also carry the exported block
+  labels and full block-coverage state. The public browser regression for
+  `relation-matrix-neighborhood` fails if those named block diagnostics or the
+  tile-summary LOD source disappear from runtime state.
 - The large-scene performance gate now covers the point-cloud stress rows and
   current public preview grammar rows for field, glyph, relation-matrix/graph,
   dynamics, mapping and cross-space scenes. These rows prove runtime mechanics,
@@ -2175,7 +2179,8 @@ Next mandatory engine work:
    semantic matrix picker is not sufficient at larger scales.
 5. Continue `RelationMatrixLayer` readability toward hero acceptance:
    streamed/tiled large-matrix rendering if needed, screenshot review,
-   row/column focus under dense matrices and no moire-like artifacts.
+   row/column focus under dense matrices, no moire-like artifacts and a
+   composition that makes the named blocks legible without page-local overlays.
 6. Add mesh-backed relation/bridge edges only if screenshot review proves
    color/alpha emphasis is not enough under browser line-width limits.
 7. Re-run browser screenshots and only then decide which hero is allowed to
@@ -2348,8 +2353,8 @@ Implemented:
   user-facing debug badges in the hover panel.
 - Relation-matrix descriptors and runtime layers expose
   `metric.visual.relation_matrix_readability_diagnostics.v1` with matrix
-  dimensions, block/tile counts, tile-summary source, missing-value count and
-  selected row/column/cell state.
+  dimensions, named block ranges, block coverage, tile counts, tile-summary
+  source, missing-value count and selected row/column/cell state.
 - The task registry marks preview presentation, relation-matrix readability and
   visual acceptance gates as integrated after local rerun.
 

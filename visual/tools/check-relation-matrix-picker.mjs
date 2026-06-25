@@ -235,8 +235,24 @@ assert.equal(layerDescriptor.picking.svgFallback, false);
 assert.equal(layerDescriptor.metadata.readability.kind, "relation-matrix-readability-profile");
 assert.equal(layerDescriptor.metadata.readability.renderer.webglOnly, true);
 assert.equal(layerDescriptor.metadata.readability.renderer.semanticPicker, "relation-matrix-picking");
+assert.deepEqual(layerDescriptor.metadata.readability.blocks.labels, [
+  "normal reference",
+  "flat hold",
+  "late ramp",
+  "spike",
+  "early ramp",
+]);
+assert.equal(layerDescriptor.metadata.readability.blocks.coverage.state, "full");
 assert.equal(layerDescriptor.metadata.readability.lod.denseCellSmoothing.kernel, "weighted-3x3");
 assert.equal(layerDescriptor.metadata.readability.tiles.kind, "relation-matrix-logical-tile-grid");
+assert.equal(layerDescriptor.metadata.readabilityDiagnostics.blockLabelCount, 5);
+assert.deepEqual(layerDescriptor.metadata.readabilityDiagnostics.blocks.labels, [
+  "normal reference",
+  "flat hold",
+  "late ramp",
+  "spike",
+  "early ramp",
+]);
 assert.deepEqual(layerDescriptor.metadata.selectionModel.selectedFeatures, ["row", "column", "cell"]);
 assert.deepEqual(layerDescriptor.metadata.selectionModel.selectedFeatureSemantics.selectedFeatures, ["row", "column", "cell"]);
 assert.deepEqual(layerDescriptor.metadata.selectionModel.respondsTo, ["record", "pair"]);

@@ -19,6 +19,7 @@ export function createRelationMatrixReadabilityProfile(matrix, options = {}) {
   const presentValueCount = countPresentValues(matrix, cellCount);
   const density = cellCount > 0 ? presentValueCount / cellCount : 0;
   const blockRanges = normalizeBlockRanges(matrix?.blockRanges, size);
+  const blockCoverage = describeBlockCoverage(blockRanges, size);
   const tileSize = resolveTileSize(options, size);
   const tiles = summarizeMatrixTiles(matrix, tileSize, options);
   const smoothingCellPixels = finiteOption(options.smoothingCellPixels ?? options.readabilityCellPixels, 4.25);
@@ -51,6 +52,9 @@ export function createRelationMatrixReadabilityProfile(matrix, options = {}) {
       kind: "relation-matrix-block-ranges",
       ranges: blockRanges,
       boundaries: blockBoundaries(blockRanges, size),
+      labels: blockRanges.map((range) => range.label).filter(Boolean),
+      labeledCount: blockRanges.filter((range) => range.label).length,
+      coverage: blockCoverage,
       shaderRangeLimit: 16,
       shaderBoundaryLimit: 16,
     },
@@ -243,6 +247,43 @@ function blockBoundaries(ranges, size) {
     addBoundary(boundaries, seen, range.endExclusive, size);
   }
   return boundaries;
+}
+
+function describeBlockCoverage(ranges, size) {
+  if (!ranges.length || size <= 0) {
+    return {
+      state: "empty",
+      coveredRecords: 0,
+      uncoveredRecords: Math.max(0, size),
+      contiguous: false,
+      startsAtZero: false,
+      endsAtSize: false,
+    };
+  }
+
+  let coveredRecords = 0;
+  let cursor = 0;
+  let contiguous = ranges[0].start === 0;
+
+  for (const range of ranges) {
+    if (range.start !== cursor) contiguous = false;
+    const width = Math.max(0, Math.min(size, range.endExclusive) - Math.max(0, range.start));
+    coveredRecords += width;
+    cursor = Math.max(cursor, range.endExclusive);
+  }
+
+  const startsAtZero = ranges[0].start === 0;
+  const endsAtSize = ranges[ranges.length - 1].endExclusive === size;
+  const full = contiguous && startsAtZero && endsAtSize && coveredRecords === size;
+
+  return {
+    state: full ? "full" : "partial",
+    coveredRecords,
+    uncoveredRecords: Math.max(0, size - coveredRecords),
+    contiguous,
+    startsAtZero,
+    endsAtSize,
+  };
 }
 
 function tileBoundaries(size, tileSize) {

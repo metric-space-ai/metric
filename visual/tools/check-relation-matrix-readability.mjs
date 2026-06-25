@@ -45,6 +45,22 @@ assert.deepEqual(
   [0.2, 0.4, 0.6, 0.8],
 );
 assert.equal(readability.blocks.ranges.length, 5);
+assert.deepEqual(readability.blocks.labels, [
+  "normal reference",
+  "flat hold",
+  "late ramp",
+  "spike",
+  "early ramp",
+]);
+assert.equal(readability.blocks.labeledCount, 5);
+assert.deepEqual(readability.blocks.coverage, {
+  state: "full",
+  coveredRecords: 130,
+  uncoveredRecords: 0,
+  contiguous: true,
+  startsAtZero: true,
+  endsAtSize: true,
+});
 assert.equal(readability.blocks.shaderBoundaryLimit, 16);
 
 assert.equal(readability.tiles.kind, "relation-matrix-logical-tile-grid");
@@ -83,6 +99,32 @@ assert.equal(descriptor.metadata.selectionModel.picker, "semantic-matrix-picker"
 assert.equal(descriptor.metadata.readabilityDiagnostics.schema, RELATION_MATRIX_READABILITY_DIAGNOSTICS_SCHEMA);
 assert.deepEqual(descriptor.metadata.readabilityDiagnostics.matrixDimensions, { width: 130, height: 130, size: 130 });
 assert.equal(descriptor.metadata.readabilityDiagnostics.blockCount, 5);
+assert.equal(descriptor.metadata.readabilityDiagnostics.blockLabelCount, 5);
+assert.deepEqual(descriptor.metadata.readabilityDiagnostics.blocks.labels, [
+  "normal reference",
+  "flat hold",
+  "late ramp",
+  "spike",
+  "early ramp",
+]);
+assert.deepEqual(
+  descriptor.metadata.readabilityDiagnostics.blocks.ranges.map((range) => ({
+    label: range.label,
+    start: range.start,
+    endExclusive: range.endExclusive,
+    size: range.size,
+    unitStart: Number(range.unitStart.toFixed(3)),
+    unitEnd: Number(range.unitEnd.toFixed(3)),
+  })),
+  [
+    { label: "normal reference", start: 0, endExclusive: 26, size: 26, unitStart: 0, unitEnd: 0.2 },
+    { label: "flat hold", start: 26, endExclusive: 52, size: 26, unitStart: 0.2, unitEnd: 0.4 },
+    { label: "late ramp", start: 52, endExclusive: 78, size: 26, unitStart: 0.4, unitEnd: 0.6 },
+    { label: "spike", start: 78, endExclusive: 104, size: 26, unitStart: 0.6, unitEnd: 0.8 },
+    { label: "early ramp", start: 104, endExclusive: 130, size: 26, unitStart: 0.8, unitEnd: 1 },
+  ],
+);
+assert.equal(descriptor.metadata.readabilityDiagnostics.blocks.coverage.state, "full");
 assert.equal(descriptor.metadata.readabilityDiagnostics.tileCount, 25);
 assert.equal(descriptor.metadata.readabilityDiagnostics.tileSummarySource, "exported-relation-texture-downsample");
 assert.equal(descriptor.metadata.readabilityDiagnostics.missingValueCount, 0);
@@ -124,6 +166,15 @@ assert.deepEqual(layer.selection, {
 });
 assert.deepEqual(layer.getDiagnostics().matrixDimensions, { width: 130, height: 130, size: 130 });
 assert.equal(layer.getDiagnostics().blockCount, 5);
+assert.equal(layer.getDiagnostics().blockLabelCount, 5);
+assert.deepEqual(layer.getDiagnostics().blocks.labels, [
+  "normal reference",
+  "flat hold",
+  "late ramp",
+  "spike",
+  "early ramp",
+]);
+assert.equal(layer.getDiagnostics().blocks.coverage.state, "full");
 assert.equal(layer.getDiagnostics().tileCount, 25);
 assert.equal(layer.getDiagnostics().tileSummarySource, "exported-relation-texture-downsample");
 assert.equal(layer.getDiagnostics().missingValueCount, 0);

@@ -176,6 +176,7 @@ export function createRelationMatrixDiagnostics(input = {}) {
   const tileSummarySource = input.tileSummary?.source
     ?? readability?.lod?.tileSummaryLod?.source
     ?? null;
+  const blocks = blockDiagnostics(matrix, readability, dimensions);
 
   return {
     schema: RELATION_MATRIX_READABILITY_DIAGNOSTICS_SCHEMA,
@@ -183,8 +184,10 @@ export function createRelationMatrixDiagnostics(input = {}) {
     relationId,
     relationName,
     matrixDimensions: dimensions,
-    blockCount: blockCount(matrix, readability),
+    blockCount: blocks.count,
+    blockLabelCount: blocks.labeledCount,
     blockBoundaryCount: Array.isArray(readability?.blocks?.boundaries) ? readability.blocks.boundaries.length : null,
+    blocks,
     tileCount: integerOrNull(readability?.tiles?.count),
     tileSize: integerOrNull(readability?.tiles?.tileSize ?? input.tileSummary?.tileSize),
     tileSummarySource,
@@ -229,10 +232,75 @@ function matrixDimensions(matrix) {
   return { width, height, size };
 }
 
-function blockCount(matrix, readability) {
-  if (Array.isArray(readability?.blocks?.ranges)) return readability.blocks.ranges.length;
-  if (Array.isArray(matrix?.blockRanges)) return matrix.blockRanges.length;
-  return integerOrNull(matrix?.diagnostics?.blockCount);
+function blockDiagnostics(matrix, readability, dimensions) {
+  const rawRanges = Array.isArray(readability?.blocks?.ranges)
+    ? readability.blocks.ranges
+    : Array.isArray(matrix?.blockRanges)
+      ? matrix.blockRanges
+      : [];
+  const size = integerOrNull(dimensions?.size) ?? integerOrNull(matrix?.size) ?? 0;
+  const ranges = rawRanges.map((range) => normalizeBlockRange(range, size)).filter(Boolean);
+  const labels = ranges.map((range) => range.label).filter(Boolean);
+  const coverage = readability?.blocks?.coverage ?? describeBlockCoverage(ranges, size);
+
+  return {
+    kind: "relation-matrix-block-diagnostics",
+    count: ranges.length,
+    labeledCount: labels.length,
+    labels,
+    coverage,
+    ranges,
+  };
+}
+
+function normalizeBlockRange(range, size) {
+  if (!range || typeof range !== "object" || Array.isArray(range)) return null;
+  const start = integerOrNull(range.start);
+  const end = integerOrNull(range.endExclusive ?? range.end_exclusive ?? range.end ?? range.stop);
+  if (start == null || end == null || start < 0 || end <= start || (size > 0 && end > size)) return null;
+  const label = String(range.label ?? range.block_label ?? range.blockLabel ?? range.family ?? "").trim();
+  return {
+    start,
+    endExclusive: end,
+    size: end - start,
+    unitStart: size > 0 ? start / size : null,
+    unitEnd: size > 0 ? end / size : null,
+    label,
+  };
+}
+
+function describeBlockCoverage(ranges, size) {
+  if (!ranges.length || size <= 0) {
+    return {
+      state: "empty",
+      coveredRecords: 0,
+      uncoveredRecords: Math.max(0, size),
+      contiguous: false,
+      startsAtZero: false,
+      endsAtSize: false,
+    };
+  }
+
+  let coveredRecords = 0;
+  let cursor = 0;
+  let contiguous = ranges[0].start === 0;
+  for (const range of ranges) {
+    if (range.start !== cursor) contiguous = false;
+    coveredRecords += range.size;
+    cursor = Math.max(cursor, range.endExclusive);
+  }
+
+  const startsAtZero = ranges[0].start === 0;
+  const endsAtSize = ranges[ranges.length - 1].endExclusive === size;
+  const full = contiguous && startsAtZero && endsAtSize && coveredRecords === size;
+  return {
+    state: full ? "full" : "partial",
+    coveredRecords,
+    uncoveredRecords: Math.max(0, size - coveredRecords),
+    contiguous,
+    startsAtZero,
+    endsAtSize,
+  };
 }
 
 function normalizeSelectionState(selection = {}, dimensions = {}) {
