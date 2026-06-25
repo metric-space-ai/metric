@@ -1217,6 +1217,7 @@ Before writing page code, the agent must add a preflight section to its report:
 - visual claim in one sentence
 - evidence fields available
 - record count and relation count
+- record-type diversity where the brief requires typed records
 - viewport composition sketch in words
 - layer stack
 - interaction plan
@@ -1229,9 +1230,12 @@ building the visual.
 
 For public preview work, the preflight must also be reflected in
 `visual/hero-visual-briefs.manifest.json` and pass
+`node visual/tools/check-native-hero-evidence-scale.mjs` and
 `node visual/tools/check-hero-visual-briefs.mjs`. A preview with insufficient
 record count must explicitly carry the `record-count-below-hero-minimum`
-blocker instead of being presented as an accepted hero candidate.
+blocker. A typed-record preview with insufficient type diversity must carry
+`record-type-count-below-hero-minimum`. Neither case may be presented as an
+accepted hero candidate.
 
 ### Global Stop Rules
 
@@ -2093,6 +2097,10 @@ Implemented:
 - Added `visual/tools/check-public-gallery-evidence.mjs` to prevent synthetic
   visual fixtures from being published as real heroes and to protect the GRAE10
   reference hash.
+- Added `visual/tools/check-native-hero-evidence-scale.mjs` to compare public
+  preview briefs against native assets before browser rendering. The gate
+  enforces native provenance plus record-count, relation-count and record-type
+  blocker consistency.
 
 Verified:
 
@@ -2101,6 +2109,7 @@ Verified:
 - `node visual/tools/check-views.mjs`
 - `node visual/tools/check-grae10-golden.mjs`
 - `node visual/tools/check-public-gallery-evidence.mjs`
+- `node visual/tools/check-native-hero-evidence-scale.mjs`
 - `node visual/tools/check-visual-regression-public-examples.mjs`
 - `node visual/tools/check-visual-performance-large-scenes.mjs`
 - `METRIC_PERF_COUNTS=1000,10000,60000 node visual/tools/perf-matrix.mjs`

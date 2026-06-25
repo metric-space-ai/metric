@@ -163,6 +163,11 @@ Implemented native slices:
 - browser-backed public regression gate for the accepted GRAE10 reference and
   native preview examples:
   `visual/tools/check-visual-regression-public-examples.mjs`
+- native hero evidence scale gate that compares public visual briefs with
+  native `metric.visual.v1` assets before browser rendering and enforces
+  native provenance plus record-count, relation-count and record-type blocker
+  consistency:
+  `visual/tools/check-native-hero-evidence-scale.mjs`
 - explicit screenshot-review gate that keeps GRAE10 as the only accepted hero
   and classifies all other native public examples as review-pending previews
   until a separate acceptance decision exists:
@@ -179,6 +184,9 @@ Known gaps:
 - the existing UCR/process-curve evidence now has a native `metric.visual.v1`
   export and command-backed preview page; it remains preview-only until
   screenshot review accepts the visual grammar and composition
+- only `relation-matrix-neighborhood` currently meets its native hero evidence
+  scale threshold; the other public previews remain explicitly blocked by
+  record count, and `mixed-record-hero` is also blocked by record-type diversity
 - no full visual gallery for every METRIC algorithm family yet
 - relation matrix has native exported evidence and a reusable WebGL readability
   pass with block bands, tile/LOD metadata, block boundaries, row/column/cell

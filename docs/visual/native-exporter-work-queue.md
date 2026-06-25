@@ -16,13 +16,14 @@ files.
 
 ```bash
 node visual/tools/check-public-gallery-evidence.mjs
+node visual/tools/check-native-hero-evidence-scale.mjs
 node visual/tools/check-grae10-golden.mjs
 node visual/tools/check-views.mjs
 node visual/tools/check-visual-regression-public-examples.mjs
 node visual/tools/check-visual-performance-large-scenes.mjs
 node visual/tools/check-visual-document.mjs <exported metric.visual.json>
 ctest --test-dir build/core -R 'visual_(export|validate)' --output-on-failure
-ctest --test-dir build/core -L 'metric_application_evidence|metric_phate_pipeline|metric_mnist|metric_visual_integrity|metric_benchmark_report' --output-on-failure
+ctest --test-dir build/core -L 'metric_application_evidence|metric_diffusion_coordinate_pipeline|metric_mnist|metric_visual_integrity|metric_benchmark_report' --output-on-failure
 ```
 
 ## Parallel Work Slots
@@ -54,6 +55,16 @@ hero visualization is finished.
 Integrated native exporter coverage now includes mixed records, cross-space
 dependency, finite metric dynamics, relation matrix, condition monitoring,
 mapping/dimensionality evidence, and the external UCR process-curve evidence.
+
+`visual/tools/check-native-hero-evidence-scale.mjs` now checks those native
+assets directly against the public visual briefs before browser screenshot
+review. It verifies native provenance, reports which previews meet native scale
+requirements and enforces that missing record-count or record-type diversity is
+represented by explicit acceptance blockers rather than silently passing as a
+hero candidate. Current state: only `relation-matrix-neighborhood` meets its
+native scale threshold; the other six public previews are correctly blocked by
+record count, and `mixed-record-hero` is additionally blocked by record-type
+diversity.
 
 The UCR process-curve export is the next public hero candidate because the
 records, query outcomes and baseline comparison already exist outside the

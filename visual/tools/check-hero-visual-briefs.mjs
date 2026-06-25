@@ -127,6 +127,7 @@ function validateBriefAgainstResult(result, brief) {
   const nativeEvidence = result.evidence?.nativeEvidence || [];
   const recordCount = maxNumber(nativeEvidence.map((entry) => entry.recordCount));
   const relationCount = maxNumber(nativeEvidence.map((entry) => entry.relationCount));
+  const recordTypeCount = maxNumber(nativeEvidence.map((entry) => entry.recordTypeCount));
 
   if (!brief) {
     return {
@@ -185,6 +186,23 @@ function validateBriefAgainstResult(result, brief) {
       minRelationCount,
     });
   }
+  const minRecordTypes = numberField(brief.minimumEvidence?.minRecordTypesForHero);
+  if (minRecordTypes != null && recordTypeCount < minRecordTypes && !blockers.includes("record-type-count-below-hero-minimum")) {
+    issues.push({
+      code: "brief-missing-record-type-count-blocker",
+      example: name,
+      recordTypeCount,
+      minRecordTypesForHero: minRecordTypes,
+    });
+  }
+  if (minRecordTypes != null && recordTypeCount >= minRecordTypes && blockers.includes("record-type-count-below-hero-minimum")) {
+    issues.push({
+      code: "brief-stale-record-type-count-blocker",
+      example: name,
+      recordTypeCount,
+      minRecordTypesForHero: minRecordTypes,
+    });
+  }
   if (!blockers.includes("visual-composition-not-human-accepted")) {
     issues.push({ code: "brief-missing-human-composition-blocker", example: name });
   }
@@ -198,7 +216,9 @@ function validateBriefAgainstResult(result, brief) {
     primaryVisualGrammar: brief.primaryVisualGrammar,
     recordCount,
     relationCount,
+    recordTypeCount,
     minRecordCountForHero: minRecordCount,
+    minRecordTypesForHero: minRecordTypes,
     primitives,
     requiredPrimitives: brief.requiredPrimitives || [],
     blockers,

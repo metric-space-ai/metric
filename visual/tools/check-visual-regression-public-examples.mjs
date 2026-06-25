@@ -972,6 +972,7 @@ async function summarizeEvidence(name, indexSource) {
         const provenance = document?.provenance || {};
         entry.schema = document?.schema || null;
         entry.recordCount = Array.isArray(document?.records) ? document.records.length : null;
+        entry.recordTypeCount = Array.isArray(document?.records) ? countRecordTypes(document.records) : null;
         entry.relationCount = Array.isArray(document?.relations) ? document.relations.length : null;
         entry.coordinateCount = Array.isArray(document?.coordinates) ? document.coordinates.length : null;
         entry.viewKinds = (document?.views || []).map((view) => view?.kind).filter(Boolean);
@@ -1047,6 +1048,15 @@ function isNativeMetricVisualDocument(document) {
   if (provenance.native_export === true || provenance.synthetic_js === false) return true;
   const provenanceText = Object.values(provenance).flat().join(" ");
   return /\bnative\b|C\+\+|examples\/engine|\.cpp\b/i.test(provenanceText);
+}
+
+function countRecordTypes(records) {
+  const types = new Set();
+  for (const record of records || []) {
+    const type = record?.type ?? record?.record_type ?? record?.payload?.kind ?? null;
+    if (type != null && String(type).trim()) types.add(String(type));
+  }
+  return types.size;
 }
 
 function summarizeProvenance(provenance) {
