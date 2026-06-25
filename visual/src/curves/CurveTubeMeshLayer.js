@@ -29,6 +29,12 @@ export class CurveTubeMeshLayer extends BaseLayer {
     this.indexType = null;
     this.buffers = {};
     this.program = null;
+    this.pickProgram = null;
+    this.pickVertexCount = 0;
+    this.pickEntries = [];
+    this.pickProbePoints = [];
+    this.pickColorRegistry = null;
+    this.pickColorRegistrySize = -1;
   }
 
   ensureResources() {
@@ -44,6 +50,7 @@ export class CurveTubeMeshLayer extends BaseLayer {
     const gl = this.gl;
     const buffers = this.resolveBuffers();
     this.vertexCount = buffers.vertexCount;
+    let indices = null;
 
     this.replaceArrayBuffer("position", buffers.positions);
     this.replaceArrayBuffer("normal", buffers.normals);
@@ -52,7 +59,7 @@ export class CurveTubeMeshLayer extends BaseLayer {
     this.replaceArrayBuffer("pathIndex", buffers.pathIndices);
 
     if (buffers.indices) {
-      const indices = normalizeIndices(gl, buffers.indices, buffers.vertexCount, this.capabilities);
+      indices = normalizeIndices(gl, buffers.indices, buffers.vertexCount, this.capabilities);
       this.replaceIndexBuffer(indices);
       this.indexCount = indices.length;
       this.indexType = indexTypeFor(gl, indices);
@@ -61,6 +68,21 @@ export class CurveTubeMeshLayer extends BaseLayer {
       this.indexCount = 0;
       this.indexType = null;
     }
+    const pickData = buildPickGeometry({
+      descriptor: this.descriptor,
+      evidence: buffers.evidence,
+      positions: buffers.positions,
+      distances: buffers.distances,
+      pathIndices: buffers.pathIndices,
+      indices,
+      vertexCount: buffers.vertexCount,
+    });
+    this.pickEntries = pickData.entries;
+    this.pickProbePoints = pickData.probePoints;
+    this.pickVertexCount = pickData.vertexCount;
+    this.pickColorRegistry = null;
+    this.pickColorRegistrySize = -1;
+    this.replaceArrayBuffer("pickPosition", pickData.positions);
 
     this.needsUpload = false;
   }
@@ -76,6 +98,7 @@ export class CurveTubeMeshLayer extends BaseLayer {
         distances: scalarChannel(this.channels, "distance", positionCount, 0),
         pathIndices: scalarChannel(this.channels, "pathIndex", positionCount, 0),
         indices: this.geometry?.indices || this.source?.geometry?.indices || null,
+        evidence: this.source?.evidence || this.source?.geometry?.evidence || this.descriptor?.evidence || null,
       };
     }
 
@@ -92,6 +115,9 @@ export class CurveTubeMeshLayer extends BaseLayer {
       distances: geometry.distances,
       pathIndices: geometry.pathIndices,
       indices: geometry.indices,
+      evidence: geometry.evidence,
+      ranges: geometry.ranges,
+      radialSegments: geometry.radialSegments,
     };
   }
 
@@ -149,6 +175,57 @@ export class CurveTubeMeshLayer extends BaseLayer {
     return this;
   }
 
+  renderPicking(context = {}) {
+    if (this.disposed || this.visible === false || !this.ensureResources() || this.pickVertexCount <= 0) return this;
+    if (!context.registry || !this.pickEntries.length) return this;
+    const gl = this.gl;
+
+    if (!this.pickProgram) {
+      this.pickProgram = this.track(createProgram(gl, "CurveTubeMeshLayerPicking", TUBE_PICK_VERTEX_SHADER, TUBE_PICK_FRAGMENT_SHADER));
+    }
+    this.updatePickColorBuffer(context);
+
+    configureDrawState(gl, { depthWrite: true, alphaMode: "opaque" }, {
+      blend: false,
+      cullFace: false,
+      depthWrite: true,
+    });
+
+    this.pickProgram.use();
+    setCameraUniforms(this.pickProgram, context, this.renderer);
+    bindAttribute(gl, this.pickProgram, this.capabilities, "aPosition", this.buffers.pickPosition, 3);
+    bindAttribute(gl, this.pickProgram, this.capabilities, "aPickColor", this.buffers.pickColor, 4);
+    gl.drawArrays(gl.TRIANGLES, 0, this.pickVertexCount);
+    restoreDepthWrite(gl);
+    return this;
+  }
+
+  updatePickColorBuffer(context = {}) {
+    const registry = context.registry;
+    const registrySize = registry?.size ?? -1;
+    if (this.buffers.pickColor && this.pickColorRegistry === registry && this.pickColorRegistrySize === registrySize) {
+      return this;
+    }
+    const encode = context.encodePickIdRGBAFloat || encodePickIdRGBAFloatLocal;
+    const colors = new Float32Array(this.pickVertexCount * 4);
+    const scope = this.descriptor?.id || this.id || this.descriptor?.primitive || null;
+    for (let index = 0; index < this.pickVertexCount; index += 1) {
+      const entry = this.pickEntries[index] || fallbackPickEntry(index, this.descriptor);
+      const numericId = registry.registerEdge(String(entry.edgeId), {
+        scope,
+        layerId: this.id,
+        index,
+        descriptor: this.descriptor,
+        payload: entry,
+      });
+      encode(numericId, colors, index * 4);
+    }
+    this.replaceArrayBuffer("pickColor", colors);
+    this.pickColorRegistry = registry;
+    this.pickColorRegistrySize = registry?.size ?? registrySize;
+    return this;
+  }
+
   replaceArrayBuffer(name, data) {
     const gl = this.gl;
     this.deleteBuffer(name);
@@ -173,8 +250,144 @@ export class CurveTubeMeshLayer extends BaseLayer {
   dispose() {
     this.buffers = {};
     this.program = null;
+    this.pickProgram = null;
     super.dispose();
   }
+}
+
+function buildPickGeometry({ descriptor = {}, evidence = null, positions, distances, pathIndices, indices, vertexCount }) {
+  const sourceIndices = indices && indices.length ? indices : identityIndices(vertexCount);
+  const pickVertexCount = Math.floor(sourceIndices.length / 3) * 3;
+  const pickPositions = new Float32Array(pickVertexCount * 3);
+  const entries = new Array(pickVertexCount);
+  const layerId = descriptor.id || descriptor.primitive || "curve-tube";
+  const evidencePaths = Array.isArray(evidence?.paths) ? evidence.paths : [];
+
+  for (let face = 0; face < pickVertexCount / 3; face += 1) {
+    const triangleOffset = face * 3;
+    const vertexA = safeIndex(sourceIndices[triangleOffset], vertexCount);
+    const vertexB = safeIndex(sourceIndices[triangleOffset + 1], vertexCount);
+    const vertexC = safeIndex(sourceIndices[triangleOffset + 2], vertexCount);
+    const pathIndex = dominantPathIndex(pathIndices, vertexA, vertexB, vertexC);
+    const path = evidencePaths[pathIndex] || {};
+    const pathId = String(path.id ?? path.pathId ?? path.trajectoryId ?? `${layerId}:path:${pathIndex}`);
+    const distance = averageDistance(distances, vertexA, vertexB, vertexC);
+    const edgeId = `${pathId}:face:${face}`;
+    const entry = {
+      edgeId,
+      pathId,
+      pathIndex,
+      faceIndex: face,
+      segmentIndex: face,
+      sourceId: pathId,
+      targetId: pathId,
+      rowId: pathId,
+      columnId: pathId,
+      sourcePosition: readPosition(positions, vertexA),
+      targetPosition: readPosition(positions, vertexC),
+      midpoint: midpoint3(positions, vertexA, vertexB, vertexC),
+      distance,
+      layerId,
+      relationId: descriptor.source?.relationId || descriptor.metadata?.relationId || null,
+      graphId: descriptor.source?.graphId || descriptor.metadata?.graphId || null,
+      curve: true,
+      tube: true,
+      evidenceRole: descriptor.metadata?.evidenceRole || descriptor.source?.evidenceRole || null,
+    };
+    for (let corner = 0; corner < 3; corner += 1) {
+      const sourceIndex = safeIndex(sourceIndices[triangleOffset + corner], vertexCount);
+      const target = (triangleOffset + corner) * 3;
+      const source = sourceIndex * 3;
+      pickPositions[target] = numberOption(positions[source], 0);
+      pickPositions[target + 1] = numberOption(positions[source + 1], 0);
+      pickPositions[target + 2] = numberOption(positions[source + 2], 0);
+      entries[triangleOffset + corner] = entry;
+    }
+  }
+
+  return {
+    positions: pickPositions,
+    entries,
+    probePoints: buildPickProbePoints(entries),
+    vertexCount: pickVertexCount,
+  };
+}
+
+function identityIndices(count) {
+  return Array.from({ length: Math.max(0, Math.floor(count)) }, (_, index) => index);
+}
+
+function safeIndex(index, count) {
+  const value = Math.floor(Number(index) || 0);
+  return Math.max(0, Math.min(Math.max(0, count - 1), value));
+}
+
+function dominantPathIndex(pathIndices, a, b, c) {
+  const values = [pathIndices?.[a], pathIndices?.[b], pathIndices?.[c]]
+    .map((value) => Math.max(0, Math.floor(Number(value) || 0)));
+  const counts = new Map();
+  for (const value of values) counts.set(value, (counts.get(value) || 0) + 1);
+  return values.slice().sort((left, right) => (counts.get(right) - counts.get(left)) || left - right)[0] || 0;
+}
+
+function averageDistance(distances, a, b, c) {
+  return (numberOption(distances?.[a], 0) + numberOption(distances?.[b], 0) + numberOption(distances?.[c], 0)) / 3;
+}
+
+function readPosition(positions, index) {
+  const offset = safeIndex(index, Math.floor((positions?.length || 0) / 3)) * 3;
+  return [
+    numberOption(positions?.[offset], 0),
+    numberOption(positions?.[offset + 1], 0),
+    numberOption(positions?.[offset + 2], 0),
+  ];
+}
+
+function midpoint3(positions, a, b, c) {
+  const pa = readPosition(positions, a);
+  const pb = readPosition(positions, b);
+  const pc = readPosition(positions, c);
+  return [
+    (pa[0] + pb[0] + pc[0]) / 3,
+    (pa[1] + pb[1] + pc[1]) / 3,
+    (pa[2] + pb[2] + pc[2]) / 3,
+  ];
+}
+
+function buildPickProbePoints(entries = []) {
+  const probes = [];
+  const seen = new Set();
+  for (const entry of entries) {
+    if (!entry || seen.has(entry.edgeId)) continue;
+    seen.add(entry.edgeId);
+    probes.push({
+      edgeId: entry.edgeId,
+      pathId: entry.pathId,
+      pathIndex: entry.pathIndex,
+      segmentIndex: entry.segmentIndex,
+      faceIndex: entry.faceIndex,
+      layerId: entry.layerId,
+      position: entry.midpoint || entry.sourcePosition || [0, 0, 0],
+    });
+    if (probes.length >= 512) break;
+  }
+  return probes;
+}
+
+function fallbackPickEntry(index, descriptor = {}) {
+  const layerId = descriptor.id || descriptor.primitive || "curve-tube";
+  return {
+    edgeId: `${layerId}:face:${index}`,
+    pathId: `${layerId}:path:0`,
+    pathIndex: 0,
+    faceIndex: index,
+    segmentIndex: index,
+    sourceId: `${layerId}:path:0`,
+    targetId: `${layerId}:path:0`,
+    layerId,
+    curve: true,
+    tube: true,
+  };
 }
 
 function numberOption(...values) {
@@ -266,6 +479,15 @@ function readVec3(source, index, fallback) {
 function readScalar(source, index, fallback) {
   if (!source) return fallback;
   return numberOption(source[index], fallback);
+}
+
+function encodePickIdRGBAFloatLocal(id, out = [0, 0, 0, 0], offset = 0) {
+  const numericId = Math.max(0, Math.floor(Number(id) || 0));
+  out[offset] = (numericId % 256) / 255;
+  out[offset + 1] = (Math.floor(numericId / 256) % 256) / 255;
+  out[offset + 2] = (Math.floor(numericId / 65536) % 256) / 255;
+  out[offset + 3] = (Math.floor(numericId / 16777216) % 256) / 255;
+  return out;
 }
 
 const TUBE_VERTEX_SHADER = `
@@ -368,5 +590,31 @@ void main() {
   lit += uHighlightColor * (rim + core * 0.28 + flow);
 
   gl_FragColor = vec4(pow(max(lit, vec3(0.0)), vec3(1.0 / 2.2)), vColor.a * uGlobalAlpha);
+}
+`;
+
+const TUBE_PICK_VERTEX_SHADER = `
+precision mediump float;
+
+attribute vec3 aPosition;
+attribute vec4 aPickColor;
+
+uniform mat4 uViewProjectionMatrix;
+
+varying vec4 vPickColor;
+
+void main() {
+  vPickColor = aPickColor;
+  gl_Position = uViewProjectionMatrix * vec4(aPosition, 1.0);
+}
+`;
+
+const TUBE_PICK_FRAGMENT_SHADER = `
+precision mediump float;
+
+varying vec4 vPickColor;
+
+void main() {
+  gl_FragColor = vPickColor;
 }
 `;

@@ -83,6 +83,15 @@ const EXPECTED_GRAMMAR = {
   },
 };
 
+const INTERNAL_ENGINE_EXAMPLES = {
+  "native-engine-probe": {
+    status: "engine-internal",
+    label: "native process-curve tube miniature probe",
+    sourcePattern: /createProcessCurveMiniatureSceneBundle\(|trackMode:\s*"tube"/,
+    requiresGpuCurvePicking: true,
+  },
+};
+
 const GPU_DIAGNOSTICS_SCRIPT = String.raw`
 (() => {
   if (window.__metricVisualGpuDiagnostics) return;
@@ -646,7 +655,7 @@ async function main() {
 async function checkExample(browser, baseUrl, name) {
   const indexPath = resolve(EXAMPLES_DIR, name, "index.html");
   const indexSource = await maybeRead(indexPath);
-  const expected = EXPECTED_GRAMMAR[name] || {
+  const expected = EXPECTED_GRAMMAR[name] || INTERNAL_ENGINE_EXAMPLES[name] || {
     status: "public-preview-only",
     label: "unclassified public visual preview",
     sourcePattern: /./,
@@ -711,7 +720,7 @@ async function checkExample(browser, baseUrl, name) {
     gpuDiagnostics: probe?.gpuDiagnostics || null,
     frameTiming,
   };
-  const status = classifyStatus(name, evidence, grammar);
+  const status = classifyStatus(name, evidence, grammar, expected);
   if (status.heroAccepted && name !== "grae10-metric-engine") {
     issues.push({
       code: "hero-acceptance-from-preview-gate",
@@ -722,7 +731,9 @@ async function checkExample(browser, baseUrl, name) {
   if (load.consoleErrors.length) issues.push({ code: "console-errors", count: load.consoleErrors.length });
   if (load.pageErrors.length) issues.push({ code: "page-errors", count: load.pageErrors.length });
   if (!render.ok) issues.push({ code: "render-not-proven" });
-  if (!evidence.usesNativeEvidence && name !== "grae10-metric-engine") issues.push({ code: "missing-native-evidence" });
+  if (!evidence.usesNativeEvidence && name !== "grae10-metric-engine" && expected.status !== "engine-internal") {
+    issues.push({ code: "missing-native-evidence" });
+  }
   if (!grammar.ok) issues.push({ code: "grammar-contract-missing", expected: expected.label });
   if (!interaction?.ok) issues.push({ code: "interaction-contract-failed", reason: interaction?.reason || "not-run" });
   if (requiresGpuPicking(runtime.state) && runtime.state?.inspection?.gpuPicking?.available !== true) {
@@ -757,6 +768,13 @@ async function checkExample(browser, baseUrl, name) {
     issues.push({
       code: "gpu-curve-picking-probe-failed",
       primitives: runtime.state?.descriptorPrimitives || [],
+      probe: probe?.gpuCurvePickingProbe || null,
+    });
+  }
+  if (expected.requiresGpuCurvePicking === true && probe?.gpuCurvePickingProbe?.source !== "gpu-picking") {
+    issues.push({
+      code: "required-gpu-curve-picking-probe-failed",
+      expected: expected.label,
       probe: probe?.gpuCurvePickingProbe || null,
     });
   }
@@ -805,7 +823,7 @@ function requiresGpuCurvePicking(runtimeState) {
   return primitives.includes("CurveRibbonLayer") || primitives.includes("CurveTubeMeshLayer");
 }
 
-function classifyStatus(name, evidence, grammar) {
+function classifyStatus(name, evidence, grammar, expected = {}) {
   if (name === "grae10-metric-engine") {
     return {
       category: evidence.protectedGrae10?.ok ? "hero-accepted" : "blocked-by-missing-native-evidence",
@@ -815,7 +833,17 @@ function classifyStatus(name, evidence, grammar) {
       blockedByMissingNativeEvidence: evidence.protectedGrae10?.ok !== true,
       reason: evidence.protectedGrae10?.ok
         ? "Protected 60k GRAE10 reference hash and dataset shape are intact."
-        : "Protected 60k GRAE10 reference is not intact.",
+      : "Protected 60k GRAE10 reference is not intact.",
+    };
+  }
+  if (expected.status === "engine-internal" && grammar.ok) {
+    return {
+      category: "engine-internal",
+      heroAccepted: false,
+      publicPreviewOnly: false,
+      syntheticDevelopmentFixture: false,
+      blockedByMissingNativeEvidence: false,
+      reason: "Internal engine probe is checked as a reusable engine contract, not a public hero.",
     };
   }
   if (evidence.usesNativeEvidence && grammar.ok) {
@@ -990,11 +1018,15 @@ async function discoverPublicExamples() {
   const limit = process.env.METRIC_VISUAL_EXAMPLES
     ? new Set(process.env.METRIC_VISUAL_EXAMPLES.split(",").map((name) => name.trim()).filter(Boolean))
     : null;
+  const internalLimit = process.env.METRIC_VISUAL_INTERNAL_EXAMPLES
+    ? new Set(process.env.METRIC_VISUAL_INTERNAL_EXAMPLES.split(",").map((name) => name.trim()).filter(Boolean))
+    : null;
   const matches = [...site.matchAll(/(?:src|href)="[^"]*visual\/examples\/([^/]+)\/index\.html"/g)].map((match) => match[1]);
-  const deduped = [...new Set(matches)];
+  const internal = internalLimit ? [...internalLimit].filter((name) => INTERNAL_ENGINE_EXAMPLES[name]) : [];
+  const deduped = [...new Set([...matches, ...internal])];
   const existing = [];
   for (const name of deduped) {
-    if (limit && !limit.has(name)) continue;
+    if (limit && !limit.has(name) && !internalLimit?.has(name)) continue;
     if (existsSync(resolve(EXAMPLES_DIR, name, "index.html"))) existing.push(name);
   }
   return existing;

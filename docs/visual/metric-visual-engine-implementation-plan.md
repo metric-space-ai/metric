@@ -63,10 +63,12 @@ This plan is authoritative only with the following current-state constraints:
 - Runtime inspection now routes record picking, relation-matrix picking,
   graph-edge picking, linked selection and record/pair preview through
   reusable engine modules. Stock point, glyph, ground-projection and heat-field
-  record layers plus relation-edge and curve-ribbon layers expose GPU picking
-  hooks, and the public browser gate verifies `gpu-picking` hits with record
-  IDs or edge IDs for the native preview examples that use pickable record,
-  field, graph-edge or ribbon-trajectory layers.
+  record layers plus relation-edge, curve-ribbon and curve-tube layers expose
+  GPU picking hooks, and the public browser gate verifies `gpu-picking` hits
+  with record IDs or edge IDs for the native preview examples that use pickable
+  record, field, graph-edge or ribbon-trajectory layers. Tube-curve picking is
+  verified on the native engine probe because it is an internal engine example,
+  not a public hero gate.
 - The next production step is to harden each native public preview into an
   accepted hero through larger evidence where required, grammar-specific
   performance budgets and screenshot review, not more hand-written hero HTML
@@ -2118,8 +2120,8 @@ Next mandatory engine work:
    grammars only after screenshot review.
 2. Implement reusable pair preview contracts.
 3. Extend layer-specific picking beyond point, glyph, ground projection,
-   heat fields, relation edges and curve ribbons to tube-curve and matrix
-   cases where the semantic CPU pickers are not sufficient.
+   heat fields, relation edges, curve ribbons and tube curves to matrix cases
+   where the semantic CPU pickers are not sufficient.
 4. Improve `RelationMatrixLayer` readability: block ordering, mip/LOD strategy,
    explicit row/column focus, and no moire-like artifacts.
 5. Replace placeholder glyph rendering with true type-specific glyph geometry
