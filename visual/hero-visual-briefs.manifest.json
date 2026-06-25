@@ -26,7 +26,6 @@
         "original time-series preview payload"
       ],
       "acceptanceBlockers": [
-        "record-count-below-hero-minimum",
         "visual-composition-not-human-accepted"
       ]
     },
@@ -55,8 +54,6 @@
         "family or type labels"
       ],
       "acceptanceBlockers": [
-        "record-count-below-hero-minimum",
-        "record-type-count-below-hero-minimum",
         "visual-composition-not-human-accepted"
       ]
     },
@@ -83,7 +80,6 @@
         "bridge or edge evidence"
       ],
       "acceptanceBlockers": [
-        "record-count-below-hero-minimum",
         "visual-composition-not-human-accepted"
       ]
     },
@@ -139,7 +135,6 @@
         "state-history preview data"
       ],
       "acceptanceBlockers": [
-        "record-count-below-hero-minimum",
         "visual-composition-not-human-accepted"
       ]
     },
@@ -167,7 +162,6 @@
         "record preview payloads"
       ],
       "acceptanceBlockers": [
-        "record-count-below-hero-minimum",
         "visual-composition-not-human-accepted"
       ]
     },

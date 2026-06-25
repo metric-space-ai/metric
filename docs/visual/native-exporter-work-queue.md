@@ -61,10 +61,12 @@ assets directly against the public visual briefs before browser screenshot
 review. It verifies native provenance, reports which previews meet native scale
 requirements and enforces that missing record-count or record-type diversity is
 represented by explicit acceptance blockers rather than silently passing as a
-hero candidate. Current state: only `relation-matrix-neighborhood` meets its
-native scale threshold; the other six public previews are correctly blocked by
-record count, and `mixed-record-hero` is additionally blocked by record-type
-diversity.
+hero candidate. Current state: condition monitoring, mixed records,
+cross-space dependency, finite dynamics/noise, relation matrix and
+mapping/dimensionality all meet their native scale thresholds. They remain
+preview-only until screenshot review accepts the visual grammar and
+composition. The external UCR process-curve preview is the only current native
+exporter still blocked by source-record count.
 
 The UCR process-curve export has real native evidence, query outcomes and
 baseline comparison outside the browser renderer, but it is not yet a scale

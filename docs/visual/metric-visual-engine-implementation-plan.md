@@ -2138,22 +2138,27 @@ Verified:
 
 Corrected status:
 
-- The six synthetic hero fixtures load as engine development examples only.
-- They are not accepted as public heroes.
-- They are not evidence that METRIC has solved those application cases.
+- The six former public preview families now have native `metric.visual.v1`
+  evidence at their configured scale thresholds: condition monitoring, mixed
+  records, cross-space dependency, relation-matrix/neighborhood, dynamics and
+  mapping.
+- They are still not accepted as public heroes until screenshot review accepts
+  the visual grammar and composition.
+- They prove native export coverage and scale only; they are not evidence that
+  the public gallery presentation is finished.
 - Browser load success is not a substitute for native evidence and visual
   acceptance.
 
 Not visually accepted yet:
 
-- `RelationMatrixLayer` still needs a legibility pass. The current matrix can
-  show high-frequency diagonal artifacts and is not acceptable as a final hero
-  asset.
+- `RelationMatrixLayer` has a reusable readability pass with block/tile
+  diagnostics and selection focus. It remains pending human screenshot
+  acceptance as a final hero asset.
 - `MixedRecordView` is now a reusable semantic view with typed-glyph
   descriptors and cross-type relation-edge evidence. The shared glyph layer now
   carries type-specific geometry and material channels for silhouettes,
-  material response and picking masks. It still needs public-scale mixed-record
-  evidence and accepted screenshot quality.
+  material response and picking masks. It now has public-scale mixed-record
+  evidence and still needs accepted screenshot quality.
 - `CrossSpaceView` is now a reusable paired-space semantic view with side
   spaces, exported pair bridge descriptors and linked-selection metadata.
   Runtime inspection now carries linked-selection presentation payloads for
@@ -2405,6 +2410,7 @@ Corrected status:
 - Condition monitoring, mixed records, cross-space dependency,
   relation-matrix/neighborhood, dynamics and mapping remain native
   `public-preview-only` examples pending screenshot acceptance.
-- The next public hero candidate is the existing real UCR/process-curve
-  evidence. It now has a native `metric.visual.v1` export and command-backed
-  preview, but still needs screenshot-reviewed visual polish before promotion.
+- The external UCR/process-curve preview has a native `metric.visual.v1` export
+  and command-backed preview, but remains explicitly blocked by source-record
+  count until more real licensed source windows are available. It must not be
+  promoted by synthetic padding.

@@ -126,6 +126,11 @@ Implemented native slices:
 - native `metric.visual.v1` exporter assets for condition monitoring, mixed
   records, cross-space dependency, dynamics/noise, relation matrix and
   mapping/dimensionality under `docs/examples/assets/*/metric.visual.json`
+- native hero-scale evidence for condition monitoring, mixed records,
+  cross-space dependency, finite dynamics/noise, relation matrix and
+  mapping/dimensionality; the external UCR process-curve preview remains below
+  the hero-scale source-record threshold because the checked-in licensed slice
+  contains only 48 real source windows plus query records
 - header-only C++ writer foundation under `visual/cpp/mtrc_visual.hpp`
 - runtime inspection with shared picking and preview state for records,
   relation-matrix cells, graph edges and deterministic projected-record
@@ -187,9 +192,12 @@ Known gaps:
 - the existing UCR/process-curve evidence now has a native `metric.visual.v1`
   export and command-backed preview page; it remains preview-only until
   screenshot review accepts the visual grammar and composition
-- only `relation-matrix-neighborhood` currently meets its native hero evidence
-  scale threshold; the other public previews remain explicitly blocked by
-  record count, and `mixed-record-hero` is also blocked by record-type diversity
+- six public preview families now meet their native hero evidence scale
+  thresholds: condition monitoring, mixed records, cross-space dependency,
+  relation matrix, finite dynamics/noise and mapping/dimensionality. They remain
+  review-pending previews until screenshot review accepts the visual grammar and
+  composition. The external UCR process-curve preview remains explicitly blocked
+  by source-record count and must not be inflated with synthetic windows.
 - no full visual gallery for every METRIC algorithm family yet
 - relation matrix has native exported evidence and a reusable WebGL readability
   pass with block bands, tile/LOD metadata, block boundaries, row/column/cell
