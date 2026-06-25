@@ -54,23 +54,23 @@ interaction probes, and meets performance diagnostics.
 Regression report:
 
 - Path: `output/visual/check-visual-regression-public-examples/results.json`
-- Generated: `2026-06-25T07:17:34.390Z`
+- Generated: `2026-06-25T07:43:53.505Z`
 - Result: 7 checked, 0 failed
 
 | Preview | Classification | Native evidence | Runtime layers | Draw calls |
 | --- | --- | --- | ---: | ---: |
-| `grae10-metric-engine` | hero-accepted | protected GRAE10 dataset | n/a | 260 |
-| `condition-monitoring-hero` | public-preview-only | native `metric.visual.v1` | 6 | 474 |
-| `mixed-record-hero` | public-preview-only | native `metric.visual.v1` | 5 | 368 |
-| `cross-space-dependency-hero` | public-preview-only | native `metric.visual.v1` | 4 | 374 |
-| `relation-matrix-neighborhood` | public-preview-only | native `metric.visual.v1` | 3 | 327 |
+| `grae10-metric-engine` | hero-accepted | protected GRAE10 dataset | n/a | 156 |
+| `condition-monitoring-hero` | public-preview-only | native `metric.visual.v1` | 6 | 390 |
+| `mixed-record-hero` | public-preview-only | native `metric.visual.v1` | 5 | 328 |
+| `cross-space-dependency-hero` | public-preview-only | native `metric.visual.v1` | 4 | 355 |
+| `relation-matrix-neighborhood` | public-preview-only | native `metric.visual.v1` | 3 | 309 |
 | `dynamics-noise-hero` | public-preview-only | native `metric.visual.v1` | 4 | 383 |
-| `mapping-dimensionality-hero` | public-preview-only | native `metric.visual.v1` | 5 | 316 |
+| `mapping-dimensionality-hero` | public-preview-only | native `metric.visual.v1` | 5 | 356 |
 
 Screenshot review report:
 
 - Path: `output/visual/check-hero-screenshot-review/results.json`
-- Generated: `2026-06-25T07:17:53.308Z`
+- Generated: `2026-06-25T07:44:12.871Z`
 - Result: pass
 - Accepted heroes: 1
 - Review-pending previews: 6
@@ -80,7 +80,7 @@ Screenshot review report:
 Performance report:
 
 - Path: `output/visual/check-visual-performance-large-scenes/results.json`
-- Generated: `2026-06-25T07:17:53.189Z`
+- Generated: `2026-06-25T07:44:12.747Z`
 - Result: pass
 - Browser: headless Chrome using the available WebGL backend
 - Budget: median frame <= 150 ms, at least 10 sampled frames, at least one
@@ -90,20 +90,20 @@ Performance report:
 
 | Records | Result | Median frame | Frames sampled | Runtime layers | Buffer bytes | Draw calls |
 | ---: | --- | ---: | ---: | ---: | ---: | ---: |
-| 1,000 | pass | 8.3 ms | 421 | 1 | 52,096 | 514 |
-| 10,000 | pass | 8.3 ms | 421 | 1 | 520,096 | 513 |
-| 60,000 | pass | 8.3 ms | 421 | 1 | 3,120,096 | 511 |
+| 1,000 | pass | 8.3 ms | 421 | 1 | 52,096 | 519 |
+| 10,000 | pass | 8.3 ms | 421 | 1 | 520,096 | 518 |
+| 60,000 | pass | 8.3 ms | 420 | 1 | 3,120,096 | 517 |
 
 ### Grammar Diagnostics
 
 | Preview | Grammar | Required primitives | Records | Descriptors | Runtime layers | Median frame | GPU buffer bytes | Draw calls |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | `condition-monitoring-hero` | field | `HeatFieldLayer`, `CurveRibbonLayer` | 15 | 6 | 6 | 8.3 ms | 5,544 | 1,128 |
-| `mixed-record-hero` | glyph | `InstancedGlyphLayer`, `RelationEdgeLayer` | 20 | 5 | 5 | 8.3 ms | 4,776 | 1,015 |
-| `relation-matrix-neighborhood` | matrix+graph | `RelationMatrixLayer`, `RelationEdgeLayer` | 130 | 3 | 3 | 8.3 ms | 43,384 | 951 |
-| `dynamics-noise-hero` | dynamics | `CurveRibbonLayer`, `HeatFieldLayer`, `InstancedPointLayer` | 28 | 4 | 4 | 8.3 ms | 380,208 | 1,117 |
-| `mapping-dimensionality-hero` | mapping | `InstancedPointLayer`, `GroundProjectionLayer` | 15 | 5 | 5 | 8.3 ms | 3,912 | 1,015 |
-| `cross-space-dependency-hero` | graph | `RelationEdgeLayer`, `InstancedGlyphLayer` | 48 | 4 | 4 | 8.3 ms | 13,752 | 965 |
+| `mixed-record-hero` | glyph | `InstancedGlyphLayer`, `RelationEdgeLayer` | 20 | 5 | 5 | 8.3 ms | 4,808 | 1,015 |
+| `relation-matrix-neighborhood` | matrix+graph | `RelationMatrixLayer`, `RelationEdgeLayer` | 130 | 3 | 3 | 8.3 ms | 48,584 | 1,257 |
+| `dynamics-noise-hero` | dynamics | `CurveRibbonLayer`, `HeatFieldLayer`, `InstancedPointLayer` | 28 | 4 | 4 | 8.3 ms | 380,208 | 1,193 |
+| `mapping-dimensionality-hero` | mapping | `InstancedPointLayer`, `GroundProjectionLayer` | 15 | 5 | 5 | 8.3 ms | 4,032 | 1,075 |
+| `cross-space-dependency-hero` | graph | `RelationEdgeLayer`, `InstancedGlyphLayer` | 48 | 4 | 4 | 8.3 ms | 14,136 | 1,003 |
 
 The grammar rows explicitly set `classification: "public-preview-only"` and
 `heroAccepted: false`; render/load/performance evidence does not promote them.

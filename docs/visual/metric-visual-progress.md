@@ -34,6 +34,7 @@ node visual/tools/check-runtime-picking-preview.mjs
 node visual/tools/check-record-preview-payloads.mjs
 node visual/tools/check-mixed-glyph-geometry.mjs
 node visual/tools/check-linked-selection-presentation.mjs
+node visual/tools/check-linked-edge-emphasis.mjs
 node visual/tools/check-hero-grammar-contract.mjs
 node visual/tools/check-single-render-pipeline.mjs
 node visual/tools/check-public-gallery-evidence.mjs
@@ -80,6 +81,7 @@ passing when the package is unavailable.
 | Runtime timeline widget | checked headlessly | `TimelineControlWidget` consumes `metric.visual.timeline_control.v1` descriptors, exposes scrub/play/reset UI state, and feeds normalized exported timeline selection back through `MetricVisualSurface.showDynamics()`. `visual/tools/check-timeline-control-widget.mjs` verifies descriptor-driven state updates and no renderer-side dynamics computation. |
 | Mixed-record glyph geometry | checked headlessly and in browser | `createRecordGlyphGrammar()` emits typed glyph geometry and material channels, and `InstancedGlyphLayer` binds `aGlyphGeometry` and `aGlyphMaterial` for distinct silhouettes, material response and picking masks. `visual/tools/check-mixed-glyph-geometry.mjs` verifies the public mixed-record command path still uses one semantic view/runtime descriptor set. |
 | Linked selection presentation | checked headlessly and in browser | Runtime record and pair inspection carries `metric.visual.linked_selection_presentation.v1` payloads for metric records, relation-matrix row/column/cell context, graph edges and paired-space bridges. `visual/tools/check-linked-selection-presentation.mjs` verifies the presentation contract on native cross-space evidence. |
+| Relation edge selection emphasis | checked headlessly | `RelationEdgeLayer.setSelection()` consumes runtime selection plus linked-selection presentation payloads and updates a per-edge emphasis attribute for graph edges and paired-space bridges without changing topology or picking masks. `visual/tools/check-linked-edge-emphasis.mjs` verifies pair, record-endpoint and bridge emphasis. |
 | Grammar contract | checked headlessly | `visual/tools/check-hero-grammar-contract.mjs` rejects collapsing unrelated hero concepts into one point-cloud-only grammar. |
 | Single runtime path | checked headlessly | `visual/tools/check-single-render-pipeline.mjs` protects the one-runtime pipeline rule. |
 | Public gallery evidence gate | checked headlessly | `visual/tools/check-public-gallery-evidence.mjs` blocks synthetic hero fixtures from the public site and protects the GRAE10 reference hash. |
@@ -89,13 +91,14 @@ passing when the package is unavailable.
 
 ### Engine Interaction Slices - 2026-06-25
 
-Three reusable engine slices were added without promoting any preview to hero
+Four reusable engine slices were added without promoting any preview to hero
 status. Mixed records now carry type-specific glyph geometry and material
 channels through the existing `InstancedGlyphLayer`. Runtime inspection now
 adds linked-selection presentation payloads for records, pairs, matrix cells,
-graph edges and paired-space bridges. Dynamics pages can attach a descriptor-
-driven timeline widget that scrubs exported timeline states rather than
-computing dynamics in JavaScript.
+graph edges and paired-space bridges. `RelationEdgeLayer` consumes those
+payloads to emphasize selected graph and bridge edges. Dynamics pages can
+attach a descriptor-driven timeline widget that scrubs exported timeline states
+rather than computing dynamics in JavaScript.
 
 The screenshot-review gate records which examples have screenshot artifacts and
 which examples are explicitly accepted. Current rule: GRAE10 remains the only

@@ -2113,6 +2113,8 @@ Not visually accepted yet:
   spaces, exported pair bridge descriptors and linked-selection metadata.
   Runtime inspection now carries linked-selection presentation payloads for
   metric-space records, matrix cells, graph edges and paired-space bridges.
+  `RelationEdgeLayer` now consumes that payload to visually emphasize selected
+  graph edges and paired-space bridges through the shared runtime layer path.
 - `DynamicsView` now emits timeline state/control descriptors, user-facing
   scrubber/playback/reset metadata, deterministic timeline samples and active
   ground/field state from exported timeline-step properties. The browser
@@ -2148,10 +2150,38 @@ Next mandatory engine work:
 4. Continue `RelationMatrixLayer` readability toward hero acceptance:
    streamed/tiled large-matrix rendering if needed, screenshot review,
    row/column focus under dense matrices and no moire-like artifacts.
-5. Add shader-level edge emphasis for relation graph and paired-space bridge
-   selections using the runtime linked-selection presentation payload.
+5. Add mesh-backed relation/bridge edges only if screenshot review proves
+   color/alpha emphasis is not enough under browser line-width limits.
 6. Re-run browser screenshots and only then decide which hero is allowed to
    become the first visual quality bar.
+
+## Implementation Checkpoint: Relation Edge Emphasis
+
+Status date: 2026-06-25
+
+Implemented:
+
+- `RelationEdgeLayer` now implements `setSelection(selection)` and receives
+  runtime selection state through the existing `applySelectionToLayers()` path.
+- Graph-edge and paired-space bridge matches are resolved from selected pair
+  identity, selected record endpoints, edge ids and
+  `metric.visual.linked_selection_presentation.v1` features.
+- The normal edge shader consumes a per-vertex `aEdgeEmphasis` attribute to
+  boost selected or related edges and dim unrelated edges during an active
+  selection. The picking pass stays on the existing position/pick-color path.
+
+Verified:
+
+- `node visual/tools/check-linked-edge-emphasis.mjs`
+- `node visual/tools/check-linked-selection-presentation.mjs`
+- `node visual/tools/check-runtime-picking-preview.mjs`
+- `node visual/tools/check-single-render-pipeline.mjs`
+
+Corrected status:
+
+- This is a reusable runtime/layer capability, not a hero acceptance.
+- Edge emphasis is color/alpha based. Per-edge thickness remains limited by
+  browser/WebGL line-width behavior until a future mesh-backed edge layer exists.
 
 ## Implementation Checkpoint: Glyphs, Selection Presentation And Screenshot Gate
 

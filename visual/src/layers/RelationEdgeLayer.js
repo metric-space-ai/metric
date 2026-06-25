@@ -1,6 +1,7 @@
 import { BaseLayer } from "./BaseLayer.js";
 import {
   colorChannel,
+  combineScalarChannels,
   getChannel,
   getChannelArray,
   getChannelCount,
@@ -27,6 +28,10 @@ export class RelationEdgeLayer extends BaseLayer {
     this.program = null;
     this.pickProgram = null;
     this.edgeEntries = [];
+    this.baseEmphasis = new Float32Array();
+    this.edgeEmphasis = new Float32Array();
+    this.selection = null;
+    this.selectionActive = false;
     this.pickColorRegistry = null;
     this.pickColorRegistrySize = -1;
   }
@@ -47,10 +52,14 @@ export class RelationEdgeLayer extends BaseLayer {
     this.edgeCount = edgeCount;
     this.vertexCount = edgeCount * 2;
     this.edgeEntries = buildEdgeEntries(this.channels, edgeCount, this.descriptor);
+    this.baseEmphasis = buildBaseEdgeEmphasis(this.channels, edgeCount);
+    this.edgeEmphasis = this.selectionEmphasisData();
+    const emphasis = buildVertexEdgeEmphasis(this.edgeEmphasis);
     this.pickColorRegistry = null;
     this.pickColorRegistrySize = -1;
     this.replaceBuffer("position", positions);
     this.replaceBuffer("color", colors);
+    this.replaceBuffer("emphasis", emphasis);
     this.needsUpload = false;
   }
 
@@ -69,8 +78,11 @@ export class RelationEdgeLayer extends BaseLayer {
     this.program.use();
     setCameraUniforms(this.program, context, this.renderer);
     this.program.setUniform("uGlobalAlpha", numberOption(material.alpha, 1));
+    this.program.setUniform("uSelectionActive", this.selectionActive ? 1 : 0);
+    this.program.setUniform("uEmphasisStrength", numberOption(material.emphasisStrength, 0.42));
     bindAttribute(gl, this.program, this.capabilities, "aPosition", this.buffers.position, 3);
     bindAttribute(gl, this.program, this.capabilities, "aColor", this.buffers.color, 4);
+    bindAttribute(gl, this.program, this.capabilities, "aEdgeEmphasis", this.buffers.emphasis, 1);
     gl.drawArrays(gl.LINES, 0, this.vertexCount);
     restoreDepthWrite(gl);
     return this;
@@ -128,6 +140,40 @@ export class RelationEdgeLayer extends BaseLayer {
     this.replaceBuffer("pickColor", colors);
     this.pickColorRegistry = registry;
     this.pickColorRegistrySize = registry?.size ?? registrySize;
+    return this;
+  }
+
+  setSelection(selection = {}) {
+    this.selection = selection || null;
+    this.updateEmphasisBuffer();
+    return this;
+  }
+
+  clearSelection() {
+    return this.setSelection(null);
+  }
+
+  selectionEmphasisData() {
+    const emphasis = new Float32Array(this.edgeCount);
+    if (this.baseEmphasis.length) emphasis.set(this.baseEmphasis.subarray(0, this.edgeCount));
+    const matcher = createSelectionMatcher(this.selection, this.descriptor);
+    this.selectionActive = matcher.active;
+    if (!matcher.active || !this.edgeEntries.length) return emphasis;
+
+    for (let index = 0; index < Math.min(this.edgeEntries.length, emphasis.length); index += 1) {
+      const score = edgeSelectionEmphasis(this.edgeEntries[index], matcher, this.descriptor);
+      if (score > emphasis[index]) emphasis[index] = score;
+    }
+    return emphasis;
+  }
+
+  updateEmphasisBuffer() {
+    this.edgeEmphasis = this.selectionEmphasisData();
+    if (!this.gl || !this.buffers.emphasis || this.needsUpload) {
+      this.needsUpload = true;
+      return this;
+    }
+    this.replaceBuffer("emphasis", buildVertexEdgeEmphasis(this.edgeEmphasis));
     return this;
   }
 
@@ -205,6 +251,20 @@ function buildEdgeColors(channels, edgeCount) {
   return out;
 }
 
+function buildBaseEdgeEmphasis(channels, edgeCount) {
+  return combineScalarChannels(channels, ["edgeEmphasis", "emphasis", "focusWeight", "focus", "selection"], edgeCount, 0);
+}
+
+function buildVertexEdgeEmphasis(perEdge) {
+  const out = new Float32Array(perEdge.length * 2);
+  for (let index = 0; index < perEdge.length; index += 1) {
+    const value = clamp01(perEdge[index]);
+    out[index * 2] = value;
+    out[index * 2 + 1] = value;
+  }
+  return out;
+}
+
 function buildEdgeEntries(channels, edgeCount, descriptor = {}) {
   const graph = descriptor.metadata?.graph || descriptor.source?.graph || null;
   const graphEdges = Array.isArray(graph?.edges) ? graph.edges : [];
@@ -214,6 +274,8 @@ function buildEdgeEntries(channels, edgeCount, descriptor = {}) {
   const targetIds = getChannelArray(getChannel(channels, ["targetId", "target_id", "columnId", "column_id"]));
   const relationId = descriptor.source?.relationId || graph?.relationId || graph?.edge_relation_id || descriptor.metadata?.relationId || null;
   const graphId = descriptor.source?.graphId || graph?.id || descriptor.metadata?.graphId || null;
+  const pairSetId = descriptor.source?.pairSetId || descriptor.metadata?.selectionModel?.pairSetId || graph?.id || null;
+  const isBridge = isPairedSpaceBridgeDescriptor(descriptor, graph);
   const entries = new Array(edgeCount);
 
   for (let index = 0; index < edgeCount; index += 1) {
@@ -239,6 +301,15 @@ function buildEdgeEntries(channels, edgeCount, descriptor = {}) {
       present: edge.present !== false,
       layerId: descriptor.id || null,
       index,
+      row: integerOrNull(edge.sourceIndex ?? edge.row),
+      column: integerOrNull(edge.targetIndex ?? edge.column),
+      pairId: edge.pairId ?? edge.pair_id ?? null,
+      pairSetId,
+      sourceSpaceId: edge.sourceSpaceId ?? edge.source_space_id ?? null,
+      targetSpaceId: edge.targetSpaceId ?? edge.target_space_id ?? null,
+      sourceCoordinateId: edge.sourceCoordinateId ?? edge.source_coordinate_id ?? null,
+      targetCoordinateId: edge.targetCoordinateId ?? edge.target_coordinate_id ?? null,
+      isBridge,
     };
   }
 
@@ -252,6 +323,150 @@ function fallbackEdgeEntry(index, descriptor = {}) {
     index,
     present: true,
   };
+}
+
+function createSelectionMatcher(selection = null, descriptor = {}) {
+  const pair = normalizeSelectionPair(selection?.pair || selection);
+  const selectedRecordId = stringOrNull(selection?.recordId ?? selection?.record_id ?? selection?.selectedRecordId ?? selection?.selected_record_id);
+  const edgeId = stringOrNull(selection?.edgeId ?? selection?.edge_id);
+  const rowId = stringOrNull(selection?.rowId ?? selection?.row_id ?? selection?.sourceId ?? selection?.source_id);
+  const columnId = stringOrNull(selection?.columnId ?? selection?.column_id ?? selection?.targetId ?? selection?.target_id);
+  const presentation = selection?.presentation || null;
+  const features = collectPresentationEdgeFeatures(presentation, descriptor);
+  const highlightedEdgeIds = new Set([
+    ...toStringArray(presentation?.highlight?.graphEdgeIds),
+    ...toStringArray(presentation?.highlight?.pairedSpaceBridgeIds),
+  ]);
+  const active = Boolean(
+    selectedRecordId
+    || edgeId
+    || rowId
+    || columnId
+    || pair
+    || features.length
+    || highlightedEdgeIds.size,
+  );
+  return { active, pair, selectedRecordId, edgeId, rowId, columnId, features, highlightedEdgeIds };
+}
+
+function collectPresentationEdgeFeatures(presentation, descriptor = {}) {
+  const out = [];
+  for (const feature of [
+    ...toArray(presentation?.graphEdges),
+    ...toArray(presentation?.pairedSpaceBridges),
+    ...toArray(presentation?.features).filter((entry) => entry?.feature === "graph-edge" || entry?.feature === "paired-space-bridge"),
+  ]) {
+    if (!feature || !featureMatchesLayer(feature, descriptor)) continue;
+    out.push(feature);
+  }
+  return out;
+}
+
+function edgeSelectionEmphasis(edge, matcher, descriptor = {}) {
+  if (!edge) return 0;
+  let score = 0;
+  if (matcher.edgeId && matcher.edgeId === stringOrNull(edge.edgeId)) score = Math.max(score, 1);
+  if (matcher.pair && pairMatchesEdge(matcher.pair, edge)) score = Math.max(score, 1);
+  if (matcher.rowId && matcher.columnId && idsMatchPair(matcher.rowId, matcher.columnId, edge)) score = Math.max(score, 1);
+  if (matcher.selectedRecordId && idMatchesAny(matcher.selectedRecordId, edge.rowId, edge.columnId, edge.sourceId, edge.targetId)) {
+    score = Math.max(score, 0.68);
+  }
+
+  for (const feature of matcher.features) {
+    if (!featureMatchesEdge(feature, edge, descriptor)) continue;
+    const kind = feature.selectionMatch?.kind || feature.selection_match?.kind;
+    score = Math.max(score, kind === "pair" ? 1 : kind === "record-endpoint" ? 0.68 : 0.86);
+  }
+
+  if (score === 0 && matcher.highlightedEdgeIds.has(stringOrNull(edge.edgeId))) score = 0.86;
+  return score;
+}
+
+function featureMatchesLayer(feature, descriptor = {}) {
+  const layerId = stringOrNull(feature.layerId ?? feature.layer_id ?? feature.descriptorId ?? feature.descriptor_id);
+  if (!layerId) return true;
+  return layerId === stringOrNull(descriptor.id);
+}
+
+function featureMatchesEdge(feature, edge, descriptor = {}) {
+  if (!featureMatchesLayer(feature, descriptor)) return false;
+  if (feature.index != null && integerOrNull(feature.index) === edge.index) return true;
+  const featureEdgeId = stringOrNull(feature.edgeId ?? feature.edge_id);
+  if (featureEdgeId && featureEdgeId === stringOrNull(edge.edgeId)) return true;
+  const featurePairId = stringOrNull(feature.pairId ?? feature.pair_id);
+  if (featurePairId && featurePairId === stringOrNull(edge.pairId)) return true;
+  const rowId = stringOrNull(feature.rowId ?? feature.row_id ?? feature.sourceId ?? feature.source_id);
+  const columnId = stringOrNull(feature.columnId ?? feature.column_id ?? feature.targetId ?? feature.target_id);
+  if (rowId && columnId && idsMatchPair(rowId, columnId, edge)) return true;
+  return false;
+}
+
+function normalizeSelectionPair(pair) {
+  if (!pair || typeof pair !== "object") return null;
+  const rowId = stringOrNull(pair.rowId ?? pair.row_id ?? pair.sourceId ?? pair.source_id);
+  const columnId = stringOrNull(pair.columnId ?? pair.column_id ?? pair.targetId ?? pair.target_id);
+  const edgeId = stringOrNull(pair.edgeId ?? pair.edge_id);
+  const pairId = stringOrNull(pair.pairId ?? pair.pair_id);
+  if (!rowId && !columnId && !edgeId && !pairId) return null;
+  return {
+    relationId: stringOrNull(pair.relationId ?? pair.relation_id),
+    graphId: stringOrNull(pair.graphId ?? pair.graph_id),
+    pairSetId: stringOrNull(pair.pairSetId ?? pair.pair_set_id),
+    edgeId,
+    pairId,
+    rowId,
+    columnId,
+  };
+}
+
+function pairMatchesEdge(pair, edge) {
+  if (pair.edgeId && pair.edgeId === stringOrNull(edge.edgeId)) return true;
+  if (pair.pairId && pair.pairId === stringOrNull(edge.pairId)) return true;
+  if (pair.graphId && edge.graphId != null && pair.graphId !== stringOrNull(edge.graphId)) return false;
+  if (pair.pairSetId && edge.pairSetId != null && pair.pairSetId !== stringOrNull(edge.pairSetId)) return false;
+  if (pair.relationId && edge.relationId != null && pair.relationId !== stringOrNull(edge.relationId)) return false;
+  return Boolean(pair.rowId && pair.columnId && idsMatchPair(pair.rowId, pair.columnId, edge));
+}
+
+function idsMatchPair(rowId, columnId, edge) {
+  const row = stringOrNull(edge.rowId ?? edge.sourceId);
+  const column = stringOrNull(edge.columnId ?? edge.targetId);
+  return (rowId === row && columnId === column) || (rowId === column && columnId === row);
+}
+
+function idMatchesAny(id, ...values) {
+  const key = stringOrNull(id);
+  return Boolean(key && values.some((value) => stringOrNull(value) === key));
+}
+
+function isPairedSpaceBridgeDescriptor(descriptor, graph) {
+  const model = descriptor.metadata?.selectionModel || {};
+  return graph?.kind === "paired-space-linked-pairs"
+    || descriptor.metadata?.primaryGrammar === "paired-space"
+    || model.kind === "paired-space-linked-selection"
+    || descriptor.source?.role === "dependence bridge"
+    || descriptor.metadata?.role === "dependence bridge";
+}
+
+function integerOrNull(value) {
+  const number = Number(value);
+  return Number.isInteger(number) ? number : null;
+}
+
+function stringOrNull(value) {
+  return value == null ? null : String(value);
+}
+
+function toArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function toStringArray(value) {
+  return toArray(value).map((entry) => stringOrNull(entry)).filter((entry) => entry != null);
+}
+
+function clamp01(value) {
+  return Math.max(0, Math.min(1, Number(value) || 0));
 }
 
 function encodePickIdRGBAFloatLocal(id, out = [0, 0, 0, 0], offset = 0) {
@@ -274,14 +489,17 @@ function numberOption(...values) {
 const EDGE_VERTEX_SHADER = `
 attribute vec3 aPosition;
 attribute vec4 aColor;
+attribute float aEdgeEmphasis;
 
 uniform mat4 uViewProjectionMatrix;
 
 varying vec4 vColor;
+varying float vEdgeEmphasis;
 
 void main() {
   gl_Position = uViewProjectionMatrix * vec4(aPosition, 1.0);
   vColor = aColor;
+  vEdgeEmphasis = clamp(aEdgeEmphasis, 0.0, 1.0);
 }
 `;
 
@@ -313,9 +531,16 @@ const EDGE_FRAGMENT_SHADER = `
 precision mediump float;
 
 uniform float uGlobalAlpha;
+uniform float uSelectionActive;
+uniform float uEmphasisStrength;
 varying vec4 vColor;
+varying float vEdgeEmphasis;
 
 void main() {
-  gl_FragColor = vec4(vColor.rgb, vColor.a * uGlobalAlpha);
+  float emphasis = clamp(vEdgeEmphasis, 0.0, 1.0);
+  float dim = mix(1.0, 0.38, uSelectionActive * (1.0 - emphasis));
+  vec3 color = min(vec3(1.0), vColor.rgb * (1.0 + emphasis * uEmphasisStrength) + vec3(0.10 * emphasis));
+  float alpha = clamp(vColor.a * uGlobalAlpha * mix(dim, 1.18, emphasis), 0.0, 1.0);
+  gl_FragColor = vec4(color, alpha);
 }
 `;
