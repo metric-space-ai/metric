@@ -40,6 +40,7 @@ node visual/tools/check-single-render-pipeline.mjs
 node visual/tools/check-public-gallery-evidence.mjs
 node visual/tools/check-visual-regression-public-examples.mjs
 node visual/tools/check-visual-performance-large-scenes.mjs
+node visual/tools/check-hero-visual-briefs.mjs
 node visual/tools/check-hero-screenshot-review.mjs
 ctest --test-dir build/core -L 'metric_application_evidence|metric_phate_pipeline|metric_mnist|metric_visual_integrity|metric_benchmark_report' --output-on-failure
 ```
@@ -90,6 +91,7 @@ passing when the package is unavailable.
 | Single runtime path | checked headlessly | `visual/tools/check-single-render-pipeline.mjs` protects the one-runtime pipeline rule. |
 | Public gallery evidence gate | checked headlessly | `visual/tools/check-public-gallery-evidence.mjs` blocks synthetic hero fixtures from the public site and protects the GRAE10 reference hash. |
 | Public visual regression gate | checked in browser | `visual/tools/check-visual-regression-public-examples.mjs` verifies the protected GRAE10 60k reference plus seven native preview examples load, render nonblank canvases, use native evidence and keep their declared grammar/status. The current gate covers eight public pages total. |
+| Hero visual briefs gate | checked from browser artifacts | `visual/tools/check-hero-visual-briefs.mjs` requires every `public-preview-only` example in the browser regression report to have a visual claim, expected grammar, required primitives, minimum evidence target and explicit acceptance blockers. |
 | Hero screenshot review gate | checked from browser artifacts | `visual/tools/check-hero-screenshot-review.mjs` consumes the public browser regression report and screenshot files, keeps GRAE10 accepted by protected reference, and leaves the other public previews in explicit review-pending status until a review manifest accepts them. |
 | Large-scene performance gate | checked in browser | `visual/tools/check-visual-performance-large-scenes.mjs` verifies 1k, 10k and 60k point-cloud workloads with a real browser WebGL backend. `visual/tools/perf-matrix.mjs` separately records the headless software-renderer floor. |
 
@@ -108,6 +110,12 @@ The screenshot-review gate records which examples have screenshot artifacts and
 which examples are explicitly accepted. Current rule: GRAE10 remains the only
 accepted hero because it is protected by the native 60k reference and golden
 hash. The seven native preview pages remain review-pending.
+
+The hero visual-brief gate now records the visual claim and blocker state for
+all seven review-pending previews. Six previews are explicitly blocked by
+record count below the hero minimum. `relation-matrix-neighborhood` satisfies
+the current matrix evidence-size target but remains blocked by human visual
+composition and matrix readability acceptance.
 
 ### Grammar Integration Slice - 2026-06-25
 

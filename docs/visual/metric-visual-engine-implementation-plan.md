@@ -79,6 +79,10 @@ This plan is authoritative only with the following current-state constraints:
   and not more synthetic fixture scenes.
 - Browser load success means only `loads` or `renders`; it never means
   `hero-ready`.
+- Every public preview must have a checked visual brief in
+  `visual/hero-visual-briefs.manifest.json`; the brief states the visual claim,
+  expected primary grammar, minimum evidence target, required primitives and
+  explicit blockers that prevent hero acceptance.
 
 The current accepted public hero set is therefore limited to:
 
@@ -1222,6 +1226,12 @@ Before writing page code, the agent must add a preflight section to its report:
 Implementation may start only after this preflight is filled in. If the agent
 does not have enough evidence fields or record count, it must stop before
 building the visual.
+
+For public preview work, the preflight must also be reflected in
+`visual/hero-visual-briefs.manifest.json` and pass
+`node visual/tools/check-hero-visual-briefs.mjs`. A preview with insufficient
+record count must explicitly carry the `record-count-below-hero-minimum`
+blocker instead of being presented as an accepted hero candidate.
 
 ### Global Stop Rules
 

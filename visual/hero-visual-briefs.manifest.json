@@ -1,0 +1,205 @@
+{
+  "schemaVersion": 1,
+  "previewBriefs": [
+    {
+      "exampleId": "condition-monitoring-hero",
+      "reviewStatus": "review-pending",
+      "requiresNativeEvidence": true,
+      "expectedPrimaryVisualGrammar": "condition metric-space with density/anomaly/trajectory grammar",
+      "visualClaim": "Process windows become a finite metric space whose density, entropy and trajectory structure expose abnormal operating states before a raw curve plot makes failure obvious.",
+      "primaryVisualGrammar": "property field plus process trajectory",
+      "minimumEvidence": {
+        "minRecordCountForHero": 500,
+        "minRelationCount": 1
+      },
+      "requiredPrimitives": [
+        "GroundProjectionLayer",
+        "HeatFieldLayer",
+        "CurveRibbonLayer",
+        "InstancedPointLayer"
+      ],
+      "requiredEvidence": [
+        "windowed process records",
+        "native metric relation or neighborhood graph",
+        "density or entropy property",
+        "anomaly or regime property",
+        "original time-series preview payload"
+      ],
+      "acceptanceBlockers": [
+        "record-count-below-hero-minimum",
+        "visual-composition-not-human-accepted"
+      ]
+    },
+    {
+      "exampleId": "mixed-record-hero",
+      "reviewStatus": "review-pending",
+      "requiresNativeEvidence": true,
+      "expectedPrimaryVisualGrammar": "mixed-record typed glyph and cross-type relation grammar",
+      "visualClaim": "Heterogeneous record types can be inspected in one finite metric space while each record keeps type-specific structure and preview payloads.",
+      "primaryVisualGrammar": "typed glyph scene plus cross-type relation edges",
+      "minimumEvidence": {
+        "minRecordCountForHero": 2000,
+        "minRelationCount": 1,
+        "minRecordTypesForHero": 4
+      },
+      "requiredPrimitives": [
+        "InstancedGlyphLayer",
+        "RelationEdgeLayer",
+        "GroundProjectionLayer"
+      ],
+      "requiredEvidence": [
+        "typed records",
+        "type-specific preview payloads",
+        "native metric relation",
+        "cross-type nearest-neighbor edges",
+        "family or type labels"
+      ],
+      "acceptanceBlockers": [
+        "record-count-below-hero-minimum",
+        "visual-composition-not-human-accepted"
+      ]
+    },
+    {
+      "exampleId": "cross-space-dependency-hero",
+      "reviewStatus": "review-pending",
+      "requiresNativeEvidence": true,
+      "expectedPrimaryVisualGrammar": "paired cross-space dependence grammar",
+      "visualClaim": "Two finite metric spaces over paired observations can reveal dependence without forcing both record types into one vector representation.",
+      "primaryVisualGrammar": "paired-space scene plus dependence bridges",
+      "minimumEvidence": {
+        "minRecordCountForHero": 500,
+        "minRelationCount": 2
+      },
+      "requiredPrimitives": [
+        "InstancedGlyphLayer",
+        "RelationEdgeLayer"
+      ],
+      "requiredEvidence": [
+        "two native metric spaces",
+        "paired records",
+        "cross-space dependence diagnostics",
+        "linked selection metadata",
+        "bridge or edge evidence"
+      ],
+      "acceptanceBlockers": [
+        "record-count-below-hero-minimum",
+        "visual-composition-not-human-accepted"
+      ]
+    },
+    {
+      "exampleId": "relation-matrix-neighborhood",
+      "reviewStatus": "review-pending",
+      "requiresNativeEvidence": true,
+      "expectedPrimaryVisualGrammar": "relation-matrix plus neighborhood graph grammar",
+      "visualClaim": "A finite metric relation can be read as both an ordered matrix and a local neighborhood graph, with pair previews linking matrix cells back to records.",
+      "primaryVisualGrammar": "relation matrix plus sparse neighborhood graph",
+      "minimumEvidence": {
+        "minRecordCountForHero": 128,
+        "minRelationCount": 1
+      },
+      "requiredPrimitives": [
+        "RelationMatrixLayer",
+        "RelationEdgeLayer",
+        "InstancedPointLayer"
+      ],
+      "requiredEvidence": [
+        "native dense relation",
+        "ordered matrix rows and columns",
+        "native neighborhood graph",
+        "pair preview evidence",
+        "block or tile readability metadata"
+      ],
+      "acceptanceBlockers": [
+        "visual-composition-not-human-accepted",
+        "matrix-readability-not-human-accepted"
+      ]
+    },
+    {
+      "exampleId": "dynamics-noise-hero",
+      "reviewStatus": "review-pending",
+      "requiresNativeEvidence": true,
+      "expectedPrimaryVisualGrammar": "finite-dynamics trajectory grammar",
+      "visualClaim": "Finite metric dynamics can show state evolution, propagation and reverse-flow structure as metric-space movement rather than as generic noise.",
+      "primaryVisualGrammar": "trajectory path plus propagation field",
+      "minimumEvidence": {
+        "minRecordCountForHero": 500,
+        "minRelationCount": 1
+      },
+      "requiredPrimitives": [
+        "CurveRibbonLayer",
+        "HeatFieldLayer",
+        "InstancedPointLayer"
+      ],
+      "requiredEvidence": [
+        "timeline states",
+        "native transition or dynamics relation",
+        "propagation field",
+        "trajectory records",
+        "state-history preview data"
+      ],
+      "acceptanceBlockers": [
+        "record-count-below-hero-minimum",
+        "visual-composition-not-human-accepted"
+      ]
+    },
+    {
+      "exampleId": "mapping-dimensionality-hero",
+      "reviewStatus": "review-pending",
+      "requiresNativeEvidence": true,
+      "expectedPrimaryVisualGrammar": "mapping coordinate-morph grammar",
+      "visualClaim": "Mapping evidence should expose how a finite metric space changes across coordinate states, including residual or preservation error rather than just another point cloud.",
+      "primaryVisualGrammar": "coordinate morph plus residual/error evidence",
+      "minimumEvidence": {
+        "minRecordCountForHero": 1000,
+        "minRelationCount": 1
+      },
+      "requiredPrimitives": [
+        "InstancedPointLayer",
+        "RelationEdgeLayer",
+        "GroundProjectionLayer"
+      ],
+      "requiredEvidence": [
+        "source coordinate state",
+        "target coordinate state",
+        "mapping diagnostics",
+        "residual or preservation-error property",
+        "record preview payloads"
+      ],
+      "acceptanceBlockers": [
+        "record-count-below-hero-minimum",
+        "residual-error-grammar-not-yet-visible",
+        "visual-composition-not-human-accepted"
+      ]
+    },
+    {
+      "exampleId": "process-curve-external-hero",
+      "reviewStatus": "review-pending",
+      "requiresNativeEvidence": true,
+      "expectedPrimaryVisualGrammar": "external UCR process-curve recovery grammar",
+      "visualClaim": "Aligned process-curve relations recover the matching operating state where a padded-vector baseline follows the wrong window.",
+      "primaryVisualGrammar": "process trajectory plus relation matrix and curve preview",
+      "minimumEvidence": {
+        "minRecordCountForHero": 500,
+        "minRelationCount": 1
+      },
+      "requiredPrimitives": [
+        "HeatFieldLayer",
+        "CurveTubeMeshLayer",
+        "InstancedBoxLayer",
+        "RelationEdgeLayer",
+        "RelationMatrixLayer"
+      ],
+      "requiredEvidence": [
+        "real UCR process-curve records",
+        "native aligned metric relation",
+        "metric-space winner evidence",
+        "baseline mismatch evidence",
+        "original time-series preview payloads"
+      ],
+      "acceptanceBlockers": [
+        "record-count-below-hero-minimum",
+        "visual-composition-not-human-accepted"
+      ]
+    }
+  ]
+}
