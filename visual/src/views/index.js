@@ -9,6 +9,8 @@ export { MorphView, createMorphView } from "./MorphView.js";
 export { ClusterView, createClusterView } from "./ClusterView.js";
 export { computePositionFit, applyPositionFit } from "./scene-fit.js";
 export { MetricSpaceView, createMetricSpaceView, defaultCoordinateId } from "./MetricSpaceView.js";
+export { CrossSpaceView, createCrossSpaceView } from "./CrossSpaceView.js";
+export { MixedRecordView, createMixedRecordView } from "./MixedRecordView.js";
 export { RelationMatrixView, createRelationMatrixView } from "./RelationMatrixView.js";
 export { NeighborhoodGraphView, createNeighborhoodGraphView } from "./NeighborhoodGraphView.js";
 export { SpacePropertiesView, createSpacePropertiesView } from "./SpacePropertiesView.js";

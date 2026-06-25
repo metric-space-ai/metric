@@ -68,7 +68,11 @@
       stat.textContent = global != null ? `global dependence ${Number(global).toFixed(3)}` : "";
 
       document.documentElement.dataset.metricCrossSpaceHero = "ready";
-      document.documentElement.dataset.metricRecordCount = String(visual.views[0].recordIds.length);
+      const crossSpace = visual.views[0];
+      const recordCount = crossSpace?.pairRecords?.length
+        ?? crossSpace?.metadata?.contract?.pairCount
+        ?? document_.records.length;
+      document.documentElement.dataset.metricRecordCount = String(recordCount);
       window.metricCrossSpaceHero = { visual, runtime: visual.runtime, getState: () => visual.getState() };
 
       loading.remove();

@@ -2,6 +2,8 @@ import { clamp01, resolveEasing } from "../animation/index.js";
 
 export const TIMELINE_INTERPOLATION_SCHEMA = "metric.visual.timeline_interpolation.v1";
 export const TIMELINE_ANIMATION_SCHEMA = "metric.visual.timeline_animation.v1";
+export const TIMELINE_STATE_SAMPLE_SCHEMA = "metric.visual.timeline_state_sample.v1";
+export const TIMELINE_CONTROL_SCHEMA = "metric.visual.timeline_control.v1";
 
 export class TimelineModel {
   constructor(source = {}, options = {}) {
@@ -320,6 +322,105 @@ export function currentStepInterpolation(timeline, time) {
   return model.currentInterpolation();
 }
 
+export function sampleTimelineState(source = {}, options = {}) {
+  const model = source instanceof TimelineModel
+    ? source
+    : new TimelineModel(source, options);
+  const normalized = resolveNormalizedTimelinePosition(model, options);
+  const time = model.duration > 0 ? normalized * model.duration : 0;
+  const sampleModel = new TimelineModel(model.timeline || {}, {
+    ...options,
+    id: model.id,
+    timelineId: model.id,
+    datasetId: model.datasetId,
+    dataset_id: model.datasetId,
+    currentTime: time,
+    loop: model.loop,
+    playbackRate: model.playbackRate,
+    easing: model.defaultEasing,
+  });
+  const interpolation = sampleModel.currentInterpolation();
+  const active = selectSampledStep(sampleModel.steps, interpolation);
+
+  return {
+    schema: TIMELINE_STATE_SAMPLE_SCHEMA,
+    selection: "nearest-exported-step",
+    timelineId: sampleModel.id,
+    datasetId: sampleModel.datasetId,
+    sampleId: options.id ?? null,
+    label: options.label ?? null,
+    normalized,
+    time: sampleModel.currentTime,
+    duration: sampleModel.duration,
+    stepCount: sampleModel.steps.length,
+    activeStepIndex: active ? active.index : -1,
+    activeStepOrder: active ? active.order : -1,
+    activeStepId: active?.source?.id ?? null,
+    activeCoordinateId: active?.coordinateId ?? null,
+    activePropertyId: active?.propertyId ?? null,
+    activeRelationId: active?.relationId ?? null,
+    activeLabel: active?.label ?? null,
+    fromStepIndex: interpolation.from.index,
+    fromStepOrder: interpolation.from.order,
+    toStepIndex: interpolation.to.index,
+    toStepOrder: interpolation.to.order,
+    interpolation: summarizeInterpolationDescriptor(interpolation),
+    algorithmicComputation: false,
+  };
+}
+
+export function createTimelineControlDescriptor(source = {}, options = {}) {
+  const model = source instanceof TimelineModel
+    ? source
+    : new TimelineModel(source, options);
+  const state = sampleTimelineState(model, options);
+  const stepCount = model.steps.length;
+  const step = stepCount > 1 ? 1 / (stepCount - 1) : 1;
+  const samples = defaultTimelineSampleStops().map((sample) => sampleTimelineState(model, sample));
+
+  return {
+    schema: TIMELINE_CONTROL_SCHEMA,
+    kind: "timeline-control",
+    timelineId: model.id,
+    datasetId: model.datasetId,
+    stateful: true,
+    valueType: "normalized-time",
+    value: state.normalized,
+    range: {
+      min: 0,
+      max: 1,
+      step,
+    },
+    duration: model.duration,
+    stepCount,
+    controls: [{
+      id: options.controlId || `${model.id || "timeline"}:normalized-position`,
+      kind: "range",
+      role: "timeline-state",
+      label: options.label || "Timeline",
+      value: state.normalized,
+      min: 0,
+      max: 1,
+      step,
+      target: "timeline.normalized",
+      stateSchema: TIMELINE_STATE_SAMPLE_SCHEMA,
+    }],
+    playback: {
+      clock: options.clock || "render-loop",
+      loop: Boolean(options.loop ?? model.loop),
+      direction: options.direction || "alternate",
+      playbackRate: model.playbackRate,
+    },
+    state,
+    samples,
+    evidence: {
+      source: "exported-timeline",
+      selection: "nearest-exported-step",
+      algorithmicComputation: false,
+    },
+  };
+}
+
 export function createTimelineAnimationDescriptor(source = {}, options = {}) {
   const model = source instanceof TimelineModel
     ? source
@@ -562,6 +663,80 @@ function writeChannelRef(target, kind, fromId, toId, progress, easedProgress = p
   } else {
     target.mode = "interpolate";
   }
+}
+
+function resolveNormalizedTimelinePosition(model, options = {}) {
+  const explicit = options.normalized
+    ?? options.normalizedTime
+    ?? options.timelinePosition
+    ?? options.timelineProgress
+    ?? options.value;
+  if (Number.isFinite(Number(explicit))) return clamp01(Number(explicit));
+  const explicitTime = options.time ?? options.currentTime;
+  if (Number.isFinite(Number(explicitTime)) && model.duration > 0) {
+    return clamp01(Number(explicitTime) / model.duration);
+  }
+  if (model.duration > 0) return clamp01(model.currentTime / model.duration);
+  return 0;
+}
+
+function selectSampledStep(steps, interpolation) {
+  if (!steps.length) return null;
+  if (interpolation.empty) return null;
+  const from = stepByOrderOrIndex(steps, interpolation.from.order, interpolation.from.index) || steps[0];
+  const to = stepByOrderOrIndex(steps, interpolation.to.order, interpolation.to.index) || from;
+  if (interpolation.mode === "constant" || from === to) return from;
+  return interpolation.progress >= 0.5 ? to : from;
+}
+
+function stepByOrderOrIndex(steps, order, index) {
+  return steps.find((step) => step.order === order)
+    || steps.find((step) => step.index === index)
+    || null;
+}
+
+function summarizeInterpolationDescriptor(interpolation) {
+  return {
+    schema: interpolation.schema,
+    timelineId: interpolation.timelineId,
+    datasetId: interpolation.datasetId,
+    empty: interpolation.empty,
+    mode: interpolation.mode,
+    time: interpolation.time,
+    previousTime: interpolation.previousTime,
+    duration: interpolation.duration,
+    progress: interpolation.progress,
+    easedProgress: interpolation.easedProgress,
+    fromStepIndex: interpolation.fromStepIndex,
+    toStepIndex: interpolation.toStepIndex,
+    from: summarizeStepRef(interpolation.from),
+    to: summarizeStepRef(interpolation.to),
+    coordinate: { ...interpolation.coordinate },
+    property: { ...interpolation.property },
+    relation: { ...interpolation.relation },
+  };
+}
+
+function summarizeStepRef(step) {
+  return {
+    index: step.index,
+    order: step.order,
+    time: step.time,
+    coordinateId: step.coordinateId,
+    propertyId: step.propertyId,
+    relationId: step.relationId,
+    eventId: step.eventId,
+    label: step.label,
+    id: step.source?.id ?? null,
+  };
+}
+
+function defaultTimelineSampleStops() {
+  return [
+    { id: "start", label: "Start", normalized: 0 },
+    { id: "middle", label: "Middle", normalized: 0.5 },
+    { id: "end", label: "End", normalized: 1 },
+  ];
 }
 
 function compareSteps(a, b) {

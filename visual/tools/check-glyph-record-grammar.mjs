@@ -9,7 +9,7 @@ import {
   RECORD_GLYPH_TYPES,
   createRecordGlyphGrammar,
 } from "../src/glyphs/index.js";
-import { MetricSpaceView } from "../src/views/index.js";
+import { MixedRecordView } from "../src/views/index.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..", "..");
@@ -25,18 +25,27 @@ function assert(message, ok, details = {}) {
 }
 
 const document = JSON.parse(await readFile(MIXED_ASSET, "utf8"));
-const view = MetricSpaceView.fromVisualSpace(document, {
+const view = MixedRecordView.fromVisualSpace(document, {
   coordinateId: "mixed-finite-records-family-severity-3d",
   colorProperty: "family",
   labelProperty: "family",
   pointSize: 1.4,
+  relationId: "mixed-finite-records-composite-metric",
+  crossTypeRelations: true,
+  topK: 5,
 });
 const descriptors = view.toLayerDescriptors();
 const glyphDescriptor = descriptors.find((descriptor) => descriptor.primitive === "InstancedGlyphLayer");
+const edgeDescriptor = descriptors.find((descriptor) => descriptor.primitive === "RelationEdgeLayer");
 
 assert("mixed record view emits a primary typed glyph descriptor", Boolean(glyphDescriptor), {
   primitives: descriptors.map((descriptor) => descriptor.primitive || descriptor.kind),
 });
+assert("mixed record grammar is owned by MixedRecordView",
+  view.kind === "mixed-records"
+    && glyphDescriptor.source?.viewKind === "mixed-records"
+    && glyphDescriptor.source?.viewId === view.id,
+  { viewKind: view.kind, source: glyphDescriptor.source });
 assert("mixed record view does not reduce composed records to a primary point cloud",
   !descriptors.some((descriptor) => descriptor.primitive === "InstancedPointLayer"),
   { primitives: descriptors.map((descriptor) => descriptor.primitive || descriptor.kind) });
@@ -80,6 +89,24 @@ assert("typed glyph descriptor declares typed record glyphs as primary grammar",
   glyphDescriptor.metadata?.primaryGrammar === "typed-record-glyphs"
     && glyphDescriptor.metadata?.role === "typed-glyphs",
   { metadata: glyphDescriptor.metadata });
+assert("typed glyph descriptor declares type-specific semantic channels",
+  glyphDescriptor.metadata?.typedGlyphSemantics?.recordIdentity === "recordId"
+    && glyphDescriptor.metadata?.typedGlyphSemantics?.glyphType === "glyphType"
+    && glyphDescriptor.metadata?.typedGlyphSemantics?.glyphFamily === "glyphFamily"
+    && glyphDescriptor.metadata?.typedGlyphSemantics?.payloadKind === "payloadKind",
+  { semantics: glyphDescriptor.metadata?.typedGlyphSemantics });
+assert("mixed record view emits cross-type relation edges from native relation evidence",
+  edgeDescriptor?.primitive === "RelationEdgeLayer"
+    && edgeDescriptor.source?.viewKind === "mixed-records"
+    && edgeDescriptor.source?.relationId === "mixed-finite-records-composite-metric"
+    && edgeDescriptor.metadata?.primaryGrammar === "cross-type-relation-edges"
+    && edgeDescriptor.metadata?.graph?.native === true
+    && edgeDescriptor.metadata?.graph?.edgeCount > 0,
+  {
+    primitive: edgeDescriptor?.primitive,
+    source: edgeDescriptor?.source,
+    metadata: edgeDescriptor?.metadata,
+  });
 
 const familyGrammar = createRecordGlyphGrammar([
   { id: "text", record_type: "text_note", payload: { kind: "text", text: "operator note" } },
@@ -113,5 +140,6 @@ console.log(JSON.stringify({
   records: document.records.length,
   glyphFamilies: Array.from(new Set(glyphDescriptor.channels.glyphFamily.array)),
   payloadKinds: Array.from(new Set(glyphDescriptor.channels.payloadKind.array)),
+  edgeCount: edgeDescriptor.metadata.graph.edgeCount,
   primitive: "InstancedGlyphLayer",
 }, null, 2));

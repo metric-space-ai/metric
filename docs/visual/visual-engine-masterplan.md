@@ -133,6 +133,17 @@ Implemented native slices:
 - reusable record/pair preview panel resolution from `metric.visual.v1`
   evidence, including runtime selection state for selected record previews,
   selected pair previews and inspection payloads
+- reusable `MixedRecordView` semantic grammar for heterogeneous records,
+  typed glyph descriptors and cross-type relation-edge evidence without
+  page-local render helpers
+- reusable `CrossSpaceView` semantic grammar for paired metric spaces,
+  side-by-side space descriptors, exported pair bridges and linked-selection
+  metadata through the same runtime
+- reusable timeline state/control descriptors for `DynamicsView`, including
+  sampled exported timeline state, deterministic start/middle/end samples and
+  animation-control metadata
+- stricter `metric.visual.v1` validation for dense relation shapes, relation
+  value endpoints, coordinate-position dimensions and pair-property endpoints
 - browser-backed public regression gate for the accepted GRAE10 reference and
   native preview examples:
   `visual/tools/check-visual-regression-public-examples.mjs`
@@ -205,7 +216,7 @@ C++ is the source of truth for:
 - entropy, density, intrinsic dimension, local volume
 - clustering, groups, outliers, representatives
 - MGC and paired-space dependence evidence
-- diffusion, reverse diffusion, dynamics, denoise and resampling results
+- diffusion, reverse diffusion, dynamics, Redif inverse-dynamics and resampling results
 - mapping outputs such as PHATE, PCFA, SOM/KOC, AE latent spaces
 - solver traces, DNN losses, graph solver residuals
 - metric-law checks and admission/quarantine status
@@ -496,7 +507,7 @@ Examples:
 - 2D to 3D morph
 - diffusion steps
 - reverse diffusion steps
-- denoise before/after
+- Redif inverse-dynamics before/after
 - resampling before/after
 - mapping training epochs
 - graph solver iterations
@@ -553,7 +564,7 @@ WebGL is shader-based. The engine should use METRIC-owned shaders for:
 - coordinate morphs between 2D, 3D, PHATE, AE, PCFA, SOM/KOC, graph layouts,
   and solver layouts
 - trails and temporal fades for diffusion, reverse diffusion, resampling,
-  denoise, and iterative solvers
+  Redif inverse-dynamics, and iterative solvers
 - picking passes that keep selection accurate for dense point and graph scenes
 - optional postprocessing for glow, depth haze, high-contrast selection, and
   publication-quality screenshots
@@ -791,7 +802,7 @@ For:
 - diffusion
 - reverse diffusion
 - finite metric dynamics
-- denoise
+- Redif inverse-dynamics
 - resampling
 - transition processes
 
@@ -1068,7 +1079,7 @@ Deliverables:
 
 Acceptance:
 
-- PHATE/AE, PCFA, SOM/KOC, diffusion, denoise, and resampling evidence share
+- PHATE/AE, PCFA, SOM/KOC, diffusion, Redif inverse-dynamics, and resampling evidence share
   the same coordinate/timeline primitives
 
 ### Track 6: Solver And Numeric Views

@@ -102,6 +102,24 @@ native pair ids/keys where exported, and pair properties for the existing runtim
 inspection path. This is still preview status: it is not a hero-acceptance claim
 until screenshot review and the broader public regression gates pass.
 
+### Semantic View Extraction Note - 2026-06-25
+
+The command layer no longer owns the mixed-record or cross-space render
+composition inline. `showMixedRecords()` delegates to `MixedRecordView`, which
+emits typed-glyph descriptors and cross-type relation-edge evidence.
+`showCrossSpace()` delegates to `CrossSpaceView`, which emits paired side-space
+descriptors plus an exported dependence bridge with linked-selection metadata.
+`DynamicsView` now emits timeline state/control metadata and deterministic
+start/middle/end samples from exported timeline evidence. These are
+engine-contract milestones, not hero acceptance milestones: all affected public
+pages remain preview-only until screenshot review accepts their visual results.
+
+The schema gate was also tightened. `validateVisualDocument()` now rejects
+broken dense relation shapes, relation value endpoints outside
+`relation.record_ids`, invalid coordinate-position dimensions/values and invalid
+pair-property endpoints. The negative cases are covered by
+`visual/tools/check-schema-fixtures.mjs`.
+
 ## Public Gallery Status
 
 | Hero | Public status | Reason |

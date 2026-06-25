@@ -319,7 +319,7 @@ C++ exports:
 - neighborhoods, representatives, clusters and outliers
 - entropy, density, intrinsic dimension and other space properties
 - cross-space dependence/correlation evidence
-- dynamics, sampling, denoise, diffusion and reverse-flow evidence
+- dynamics, sampling, Redif inverse-dynamics, diffusion and reverse-flow evidence
 - solver traces, residuals, objectives and convergence states
 
 JavaScript owns:
@@ -787,7 +787,7 @@ Reusable components needed:
 
 Visual claim:
 
-Noise, diffusion, denoise and reverse flow can be viewed as dynamics over a
+Disorder, diffusion, Redif inverse-dynamics and reverse flow can be viewed as dynamics over a
 finite metric space, not only as random perturbation in a vector coordinate
 system.
 
@@ -1972,7 +1972,7 @@ Browser check:
 
 Goal:
 
-Show diffusion, denoise or reverse-flow evidence as dynamics over a finite
+Show diffusion, Redif inverse-dynamics or reverse-flow evidence as dynamics over a finite
 metric space.
 
 Work type:
@@ -2104,13 +2104,16 @@ Not visually accepted yet:
 - `RelationMatrixLayer` still needs a legibility pass. The current matrix can
   show high-frequency diagonal artifacts and is not acceptable as a final hero
   asset.
-- `MixedRecordView` currently uses the glyph layer through the point-material
-  path. It proves the grammar split but still needs stronger type-specific
-  glyph geometry.
-- `CrossSpaceView` now uses one runtime and a paired-space bridge, but linked
-  brushing and pair preview still need to become first-class interactions.
-- `DynamicsView` shows trajectory and current state, but it still lacks a
-  state-controlled animation timeline and changing ground field.
+- `MixedRecordView` is now a reusable semantic view with typed-glyph
+  descriptors and cross-type relation-edge evidence. It proves the grammar
+  split but still needs stronger type-specific glyph geometry and accepted
+  screenshot quality.
+- `CrossSpaceView` is now a reusable paired-space semantic view with side
+  spaces, exported pair bridge descriptors and linked-selection metadata. It
+  still needs richer runtime linked brushing and pair preview presentation.
+- `DynamicsView` now emits timeline state/control descriptors and deterministic
+  timeline samples. It still needs user-facing timeline controls and changing
+  ground/field state during playback.
 - Record and pair preview now share the runtime inspection path. The remaining
   preview work is richer payload renderers and linked multi-view presentation,
   not basic GPU record picking.
@@ -2138,8 +2141,52 @@ Next mandatory engine work:
    matrices and no moire-like artifacts.
 5. Replace placeholder glyph rendering with true type-specific glyph geometry
    for mixed records.
-6. Add stateful timeline controls to `DynamicsView`.
-7. Add linked selection between relation matrix, graph, paired-space bridge and
-   metric-space records.
+6. Build user-facing timeline controls for `DynamicsView` on top of the new
+   timeline-control descriptor, including changing ground/field state.
+7. Complete linked selection presentation between relation matrix, graph,
+   paired-space bridge and metric-space records.
 8. Re-run browser screenshots and only then decide which hero is allowed to
    become the first visual quality bar.
+
+## Implementation Checkpoint: Semantic View Extraction And Schema Gates
+
+Status date: 2026-06-25
+
+Implemented:
+
+- `MixedRecordView` under `visual/src/views/` owns the heterogeneous-record
+  grammar. `showMixedRecords()` now delegates to that semantic view instead of
+  mutating a metric-space point-cloud descriptor inside the command.
+- `CrossSpaceView` under `visual/src/views/` owns the paired-space grammar.
+  `showCrossSpace()` now delegates to that semantic view instead of composing
+  two metric-space views and a bridge inline in the command.
+- `DynamicsView` now carries exported timeline state/control metadata through
+  descriptors, including deterministic start/middle/end timeline samples.
+- `metric.visual.v1` validation now rejects malformed dense relation shapes,
+  relation values whose endpoints are outside `relation.record_ids`, invalid
+  coordinate-position dimensions/values and invalid pair-property endpoints.
+- `visual/examples/cross-space-dependency-hero/index.html` reads record count
+  from the paired-space contract instead of assuming the first view is a
+  metric-space point cloud.
+
+Verified:
+
+- `node visual/tools/check-schema-fixtures.mjs`
+- `node visual/tools/check-visual-document.mjs docs/examples/assets/cross-space-dependency/metric.visual.json`
+- `node visual/tools/check-glyph-record-grammar.mjs`
+- `node visual/tools/check-cross-space-linked-selection.mjs`
+- `node visual/tools/check-dynamics-motion-grammar.mjs`
+- `node visual/tools/check-timeline-motion-contract.mjs`
+- `node visual/tools/check-visual-command-api.mjs`
+- `node visual/tools/check-views.mjs`
+- `node visual/tools/check-single-render-pipeline.mjs`
+- `node visual/tools/check-grae10-golden.mjs`
+- `node visual/tools/check-public-gallery-evidence.mjs`
+- `node visual/tools/check-hero-grammar-contract.mjs`
+
+Corrected status:
+
+- These changes are engine capability progress, not hero acceptance.
+- `MixedRecordView`, `CrossSpaceView` and `DynamicsView` now have clearer
+  semantic contracts, but their public pages remain preview-only until
+  screenshot review accepts the visual result.

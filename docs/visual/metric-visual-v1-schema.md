@@ -63,6 +63,10 @@ renders text, numbers, arrays and sparkline series.
 - `values`: pair entries. Accepted endpoint keys include
   `{ row_id, column_id, value }`, `{ source, target, value }`,
   `{ from, to, value }`, `{ i, j, value }` and `[source, target, value]`.
+- For dense relation storage, `values` must match the exported `record_ids`
+  shape: either an `N x N` array or a flat array of length `N * N`.
+- Object-form relation values must reference existing records, and those
+  endpoints must also be present in the relation's own `record_ids` list.
 - For `relation_type: "metric"`, also export law diagnostics (e.g. under
   `metadata.law_check`). The visual library displays them; it does not prove
   them.
@@ -82,6 +86,10 @@ absence is a warning).
   `distribution`.
 - For `target_type: "record"`, each `values` entry is `{ record_id, value }`
   and `record_id` must reference a record.
+- For `target_type: "pair"`, each value entry must reference existing row and
+  column records. `relation_id` is optional because some pair properties are
+  relation-independent, but when present it must resolve to an exported
+  relation.
 Examples: entropy, density, local volume, intrinsic dimension, outlier score,
 cluster id, representative assignment, reconstruction error, mapping residual.
 
@@ -94,16 +102,17 @@ sparsified, component, custom.
 ### `coordinates`
 `id`, `dataset_id`, `space_id`, `name`, `dimension`, `record_positions`.
 `space_id` references a space; `dimension` is a positive number; each
-`record_positions` entry is `{ record_id, position: [...] }` and `record_id`
-must reference a record. Coordinate states are derived display states (landmark
-2D/3D, PHATE, AE latent, PCFA, SOM/KOC grid, graph layout), not the metric space
-itself.
+`record_positions` entry is `{ record_id, position: [...] }`, `record_id`
+must reference a record, and `position` must contain numeric entries with at
+least `dimension` values. Coordinate states are derived display states
+(landmark 2D/3D, PHATE, AE latent, PCFA, SOM/KOC grid, graph layout), not the
+metric space itself.
 
 ### `timelines`
 `id`, `dataset_id`, `name`, `steps`. Each step may carry `coordinate_id`,
 `property_id` and/or `relation_id`; when present they must resolve. Timelines
 describe state changes over existing records (2D→3D morph, diffusion / reverse
-diffusion steps, denoise before/after, training epochs, solver iterations). They
+diffusion steps, Redif inverse-dynamics before/after, training epochs, solver iterations). They
 reference exported states; they do not ask JavaScript to recompute them.
 
 ### `views`, `events`, `diagnostics`
@@ -170,8 +179,16 @@ The validator rejects, with actionable `path`/`code`/`message` errors:
 - a relation/space/graph/coordinate reference to an unknown record
   (`record_ref`), relation (`relation_ref`), space (`space_ref`) or coordinate
   (`coordinate_ref`),
+- a dense relation whose `values` shape does not match `record_ids`
+  (`relation_dense_shape`),
+- a relation value endpoint that is not listed in the relation's own
+  `record_ids` (`relation_record_ref`),
+- a pair property whose row/column endpoint cannot be resolved (`record_ref`)
+  or whose optional relation id cannot be resolved (`relation_ref`),
 - duplicate IDs within a collection (`duplicate_id`),
-- a non-positive coordinate `dimension` (`coordinate_dimension`).
+- a non-positive coordinate `dimension` (`coordinate_dimension`),
+- a coordinate position with too few numeric entries
+  (`coordinate_position_dimension`, `coordinate_position_value`).
 
 See [`visual/tools/check-schema-fixtures.mjs`](../../visual/tools/check-schema-fixtures.mjs)
 for the valid/invalid fixture smoke test.

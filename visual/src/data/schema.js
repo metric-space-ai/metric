@@ -153,6 +153,7 @@ function validateReferences(document, ctx) {
         expectId(recordIds, recordId, `$.relations[${index}].record_ids[${recordIndex}]`, "record_ref", ctx);
       });
     }
+    validateRelationValues(relation, index, recordIds, ctx);
   }
 
   for (let index = 0; index < document.spaces.length; index += 1) {
@@ -202,6 +203,7 @@ function validateReferences(document, ctx) {
       coordinate.record_positions.forEach((entry, entryIndex) => {
         const recordId = entry && (entry.record_id ?? entry.id);
         expectId(recordIds, recordId, `$.coordinates[${index}].record_positions[${entryIndex}].record_id`, "record_ref", ctx);
+        validateCoordinatePosition(entry, index, entryIndex, Number(coordinate.dimension), ctx);
       });
     }
   }
@@ -227,6 +229,72 @@ function validateReferences(document, ctx) {
   }
 }
 
+function validateRelationValues(relation, relationIndex, recordIds, ctx) {
+  const path = `$.relations[${relationIndex}]`;
+  if (!Array.isArray(relation.values)) {
+    ctx.error(`${path}.values`, "relation_values_type", "Relation values must be an array");
+    return;
+  }
+  const relationRecordIds = Array.isArray(relation.record_ids) ? relation.record_ids : [];
+  const relationRecordSet = new Set(relationRecordIds);
+  const storage = String(relation.storage || "");
+  if (storage === "dense_matrix" || storage === "symmetric_dense_matrix") {
+    validateDenseRelationValues(relation, relationIndex, ctx);
+  }
+  for (let valueIndex = 0; valueIndex < relation.values.length; valueIndex += 1) {
+    const entry = relation.values[valueIndex];
+    if (!isPlainObject(entry)) continue;
+    const valuePath = `${path}.values[${valueIndex}]`;
+    const rowIndex = numberIndex(entry.row ?? entry.i);
+    const columnIndex = numberIndex(entry.column ?? entry.j);
+    const rowId = entry.row_id ?? entry.source_id ?? entry.source ?? entry.from_id ?? entry.from
+      ?? (rowIndex != null ? relationRecordIds[rowIndex] : undefined);
+    const columnId = entry.column_id ?? entry.target_id ?? entry.target ?? entry.to_id ?? entry.to
+      ?? (columnIndex != null ? relationRecordIds[columnIndex] : undefined);
+    if (rowIndex != null && (rowIndex < 0 || rowIndex >= relationRecordIds.length)) {
+      ctx.error(`${valuePath}.row`, "relation_value_index", `Relation row index out of range: ${rowIndex}`);
+    }
+    if (columnIndex != null && (columnIndex < 0 || columnIndex >= relationRecordIds.length)) {
+      ctx.error(`${valuePath}.column`, "relation_value_index", `Relation column index out of range: ${columnIndex}`);
+    }
+    expectRelationEndpoint(recordIds, relationRecordSet, rowId, `${valuePath}.row_id`, ctx);
+    expectRelationEndpoint(recordIds, relationRecordSet, columnId, `${valuePath}.column_id`, ctx);
+    if (entry.value === undefined) {
+      ctx.error(`${valuePath}.value`, "relation_value_missing", "Relation value entry must include a value");
+    }
+  }
+}
+
+function validateDenseRelationValues(relation, relationIndex, ctx) {
+  const recordCount = Array.isArray(relation.record_ids) ? relation.record_ids.length : 0;
+  const values = relation.values || [];
+  const path = `$.relations[${relationIndex}].values`;
+  if (!recordCount) return;
+  if (values.length === 0) {
+    ctx.error(path, "relation_dense_shape", "Dense relation values must not be empty");
+    return;
+  }
+  if (Array.isArray(values[0])) {
+    if (values.length !== recordCount) {
+      ctx.error(path, "relation_dense_shape", `Dense matrix row count must equal record_ids length (${recordCount})`);
+    }
+    values.forEach((row, rowIndex) => {
+      if (!Array.isArray(row)) {
+        ctx.error(`${path}[${rowIndex}]`, "relation_dense_shape", "Dense matrix row must be an array");
+      } else if (row.length !== recordCount) {
+        ctx.error(`${path}[${rowIndex}]`, "relation_dense_shape", `Dense matrix row length must equal record_ids length (${recordCount})`);
+      }
+    });
+    return;
+  }
+  if (values.every((value) => typeof value !== "object")) {
+    const expected = recordCount * recordCount;
+    if (values.length !== expected) {
+      ctx.error(path, "relation_dense_shape", `Flat dense matrix length must equal record_ids length squared (${expected})`);
+    }
+  }
+}
+
 function validatePropertyTargets(property, propertyIndex, refs, ctx) {
   if (!Array.isArray(property.values)) return;
   for (let valueIndex = 0; valueIndex < property.values.length; valueIndex += 1) {
@@ -235,6 +303,13 @@ function validatePropertyTargets(property, propertyIndex, refs, ctx) {
     const path = `$.properties[${propertyIndex}].values[${valueIndex}]`;
     if (property.target_type === "record") {
       expectId(refs.recordIds, entry.record_id ?? entry.target_id ?? entry.id, `${path}.record_id`, "record_ref", ctx);
+    } else if (property.target_type === "pair") {
+      const relationId = entry.relation_id ?? property.relation_id;
+      if (relationId !== undefined && relationId !== null && relationId !== "") {
+        expectId(refs.relationIds, relationId, `${path}.relation_id`, "relation_ref", ctx);
+      }
+      expectId(refs.recordIds, entry.row_id ?? entry.source_id ?? entry.a, `${path}.row_id`, "record_ref", ctx);
+      expectId(refs.recordIds, entry.column_id ?? entry.target_id ?? entry.b, `${path}.column_id`, "record_ref", ctx);
     } else if (property.target_type === "relation") {
       expectId(refs.relationIds, entry.relation_id ?? entry.target_id ?? property.relation_id, `${path}.relation_id`, "relation_ref", ctx);
     } else if (property.target_type === "space") {
@@ -245,6 +320,23 @@ function validatePropertyTargets(property, propertyIndex, refs, ctx) {
   }
 }
 
+function validateCoordinatePosition(entry, coordinateIndex, entryIndex, dimension, ctx) {
+  const path = `$.coordinates[${coordinateIndex}].record_positions[${entryIndex}]`;
+  const values = entry && (entry.position ?? entry.values ?? entry.coordinates);
+  if (!Array.isArray(values)) {
+    ctx.error(`${path}.position`, "coordinate_position_type", "Coordinate position must be an array");
+    return;
+  }
+  if (Number.isFinite(dimension) && dimension > 0 && values.length < dimension) {
+    ctx.error(`${path}.position`, "coordinate_position_dimension", `Coordinate position length must be at least dimension (${dimension})`);
+  }
+  values.forEach((value, valueIndex) => {
+    if (!Number.isFinite(Number(value))) {
+      ctx.error(`${path}.position[${valueIndex}]`, "coordinate_position_value", "Coordinate position entries must be numeric");
+    }
+  });
+}
+
 function expectId(ids, id, path, code, ctx) {
   if (id === undefined || id === null || id === "") {
     ctx.error(path, code, "Missing referenced id");
@@ -253,6 +345,18 @@ function expectId(ids, id, path, code, ctx) {
   if (!ids.has(id)) {
     ctx.error(path, code, `Unknown referenced id: ${id}`);
   }
+}
+
+function expectRelationEndpoint(recordIds, relationRecordIds, id, path, ctx) {
+  expectId(recordIds, id, path, "record_ref", ctx);
+  if (id !== undefined && id !== null && id !== "" && !relationRecordIds.has(id)) {
+    ctx.error(path, "relation_record_ref", `Relation value endpoint is not listed in relation.record_ids: ${id}`);
+  }
+}
+
+function numberIndex(value) {
+  if (!Number.isInteger(Number(value))) return null;
+  return Number(value);
 }
 
 function idSet(items = []) {

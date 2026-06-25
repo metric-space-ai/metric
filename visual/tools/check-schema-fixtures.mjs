@@ -76,9 +76,100 @@ async function main() {
     });
   }
 
+  const negativeCases = buildInMemoryNegativeCases(await loadFixture("metric-space.visual.json"));
+  for (const testCase of negativeCases) {
+    const result = validateVisualDocument(testCase.document);
+    const codes = result.errors.map((error) => error.code);
+    const ok = !result.ok && codes.includes(testCase.expectedCode);
+    if (!ok) failures += 1;
+    results.push({
+      name: testCase.name,
+      kind: "invalid-in-memory",
+      ok,
+      expectedCode: testCase.expectedCode,
+      sawCodes: codes.slice(0, 8),
+      errorCount: result.errors.length,
+    });
+  }
+
   const ok = failures === 0 && files.length > 0;
   console.log(JSON.stringify({ ok, fixtureDir: FIXTURE_DIR, count: files.length, failures, results }, null, 2));
   if (!ok) process.exitCode = 1;
+}
+
+function buildInMemoryNegativeCases(baseDocument) {
+  const firstRecord = baseDocument.records[0]?.id;
+  const secondRecord = baseDocument.records[1]?.id;
+  const firstRelation = baseDocument.relations[0];
+  const outsider = {
+    ...baseDocument.records[0],
+    id: "schema-outsider-record",
+    label: "schema outsider record",
+  };
+  return [
+    {
+      name: "invalid-dense-relation-length",
+      expectedCode: "relation_dense_shape",
+      document: mutate(baseDocument, (document) => {
+        document.relations[0] = {
+          ...firstRelation,
+          storage: "dense_matrix",
+          values: [0, 1, 1],
+        };
+      }),
+    },
+    {
+      name: "invalid-relation-value-endpoint-not-in-relation-records",
+      expectedCode: "relation_record_ref",
+      document: mutate(baseDocument, (document) => {
+        document.records.push(outsider);
+        document.relations[0].values.push({
+          row_id: outsider.id,
+          column_id: firstRecord,
+          value: 0.42,
+        });
+      }),
+    },
+    {
+      name: "invalid-pair-property-endpoint",
+      expectedCode: "record_ref",
+      document: mutate(baseDocument, (document) => {
+        document.properties.push({
+          id: "broken-pair-property",
+          dataset_id: document.datasets[0].id,
+          target_type: "pair",
+          value_type: "scalar",
+          values: [{
+            relation_id: firstRelation.id,
+            row_id: firstRecord,
+            column_id: "missing-record",
+            value: 1,
+          }],
+        });
+      }),
+    },
+    {
+      name: "invalid-coordinate-position-dimension",
+      expectedCode: "coordinate_position_dimension",
+      document: mutate(baseDocument, (document) => {
+        document.coordinates[0].dimension = 3;
+        document.coordinates[0].record_positions[0].position = [1, 2];
+      }),
+    },
+    {
+      name: "invalid-coordinate-position-value",
+      expectedCode: "coordinate_position_value",
+      document: mutate(baseDocument, (document) => {
+        document.coordinates[0].record_positions[0].position = [1, "not-a-number", 3];
+      }),
+    },
+  ].filter((testCase) => firstRecord && secondRecord && firstRelation && testCase.document);
+}
+
+function mutate(document, fn) {
+  const copy = JSON.parse(JSON.stringify(document));
+  fn(copy);
+  return copy;
 }
 
 main().catch((error) => {

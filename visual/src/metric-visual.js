@@ -6,10 +6,12 @@ import { createTubeRibbonPathLayerDescriptor } from "./curves/index.js";
 import { RecordPreviewPanel } from "./interaction/index.js";
 import { createRelationMatrixPicker } from "./relational/index.js";
 import {
+  CrossSpaceView,
   DenseFieldView,
   DynamicsView,
   MappingView,
   MetricSpaceView,
+  MixedRecordView,
   NeighborhoodGraphView,
   RelationMatrixView,
   SolverTraceView,
@@ -358,63 +360,32 @@ export class MetricVisualSurface {
 
   showMixedRecords(options = {}) {
     const normalized = normalizeMetricViewOptions(this.document, {
-      coordinateId: options.coordinateId || options.coordinate || "layout-3d",
       colorProperty: options.colorProperty || options.glyphBy || options.recordType || "family",
       labelProperty: options.labelProperty || options.labels || "family",
       pointSize: options.pointSize ?? 1.15,
+      relationId: options.relationId || options.relation,
+      crossTypeRelations: options.crossTypeRelations ?? true,
+      topK: options.topK ?? 4,
       ...options,
     });
-    const space = MetricSpaceView.fromVisualSpace(this.document, normalized);
-    this.views = [space];
-    const descriptors = space.toLayerDescriptors().map((descriptor) => (
-      descriptor.primitive === "InstancedPointLayer"
-        ? {
-          ...descriptor,
-          kind: "typed-glyph-scene",
-          primitive: "InstancedGlyphLayer",
-          metadata: { ...descriptor.metadata, role: "typed-glyphs", glyphBy: normalized.colorProperty || "record_type" },
-        }
-        : descriptor
-    ));
-    const graph = NeighborhoodGraphView.fromVisualSpace(this.document, {
-      coordinateId: normalized.coordinateId,
-      relationId: options.relationId || options.relation || "cross-metric",
-      colorProperty: normalized.colorProperty,
-      nodes: false,
-      topK: options.topK ?? 4,
-    });
-    descriptors.push(...graph.toLayerDescriptors());
-    this.setLayerDescriptors(descriptors, { source: "showMixedRecords", viewKind: "mixed-records" });
+    const view = MixedRecordView.fromVisualSpace(this.document, normalized);
+    this.views = [view];
+    this.setViews([view], { source: "showMixedRecords", viewKind: "mixed-records" });
     return this.configurePreview({ ...options, preview: options.preview ?? "record" });
   }
 
   showCrossSpace(options = {}) {
-    const left = MetricSpaceView.fromVisualSpace(this.document, normalizeMetricViewOptions(this.document, {
-      coordinateId: options.leftCoordinateId || options.coordinateA || "space-a-3d",
+    const view = CrossSpaceView.fromVisualSpace(this.document, {
+      id: options.id || "cross-space",
+      leftCoordinateId: options.leftCoordinateId || options.coordinateA || "space-a-3d",
+      rightCoordinateId: options.rightCoordinateId || options.coordinateB || "space-b-3d",
       scalarProperty: options.scalarProperty || options.dependenceProperty || "local-dependence",
-      ground: false,
-      groundProjection: false,
-      labels: false,
-      targetRadius: 1.05,
-    }));
-    const right = MetricSpaceView.fromVisualSpace(this.document, normalizeMetricViewOptions(this.document, {
-      coordinateId: options.rightCoordinateId || options.coordinateB || "space-b-3d",
-      scalarProperty: options.scalarProperty || options.dependenceProperty || "local-dependence",
-      ground: false,
-      groundProjection: false,
-      labels: false,
-      targetRadius: 1.05,
-    }));
-    offsetPositionMap(left.positions, [-1.18, 0, 0]);
-    offsetPositionMap(right.positions, [1.18, 0, 0]);
-    this.views = [left, right];
-    const descriptors = [
-      sharedGroundDescriptor("cross-space:ground", { y: this.setup.stage?.grounding?.groundY ?? -0.58, width: 5.2, depth: 3.2 }),
-      ...left.toLayerDescriptors(),
-      ...right.toLayerDescriptors(),
-    ];
-    const bridge = pairedRecordBridgeDescriptor(left, right, options);
-    if (bridge) descriptors.push(bridge);
+      groundY: this.setup.stage?.grounding?.groundY ?? -0.58,
+      targetRadius: options.targetRadius ?? 1.05,
+      ...options,
+    });
+    this.views = [view];
+    const descriptors = view.toLayerDescriptors();
     this.setLayerDescriptors(descriptors, { source: "showCrossSpace", viewKind: "cross-space" });
     return this.configurePreview({ ...options, preview: options.preview ?? "paired records" });
   }

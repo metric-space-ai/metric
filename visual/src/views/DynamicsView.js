@@ -3,7 +3,9 @@ import { PointCloudView } from "./PointCloudView.js";
 import { createTrajectoryBundleLayerDescriptor } from "../curves/index.js";
 import {
   createTimelineAnimationDescriptor,
+  createTimelineControlDescriptor,
   createTimelineModel,
+  sampleTimelineState,
 } from "../timeline/index.js";
 import { applyPositionFit, computePositionFit } from "./scene-fit.js";
 import {
@@ -25,13 +27,18 @@ export class DynamicsView extends BaseView {
     super({ ...options, kind: "dynamics" });
     this.recordIds = options.recordIds || [];
     this.stepStates = options.stepStates || []; // [{ name, positions: Map, scalarValues?: Map }]
-    this.activeStep = clampInt(options.activeStep, 0, Math.max(0, this.stepStates.length - 1));
+    this.timelineId = options.timelineId || options.timeline_id || options.metadata?.timelineId || null;
+    this.timelineState = options.timelineState || null;
+    this.timelineControl = options.timelineControl || null;
+    const sampledStep = Number.isFinite(Number(this.timelineState?.activeStepOrder))
+      ? Number(this.timelineState.activeStepOrder)
+      : 0;
+    this.activeStep = clampInt(options.activeStep ?? options.stateStep ?? sampledStep, 0, Math.max(0, this.stepStates.length - 1));
     this.groundY = Number.isFinite(Number(options.groundY)) ? Number(options.groundY) : 0;
     this.targetRadius = Number.isFinite(Number(options.targetRadius)) ? Number(options.targetRadius) : 1.6;
     this.size = Number.isFinite(Number(options.size)) ? Number(options.size) : 1;
     this.showTrajectory = options.trajectory !== false;
     this.colorValues = options.colorValues;
-    this.timelineId = options.timelineId || options.timeline_id || options.metadata?.timelineId || null;
     this.timelineAnimation = options.timelineAnimation || null;
     this.motionTargetStep = clampInt(
       options.motionTargetStep ?? options.targetStep ?? Math.max(0, this.stepStates.length - 1),
@@ -69,6 +76,15 @@ export class DynamicsView extends BaseView {
     const steps = timelineModel?.steps?.length
       ? timelineModel.steps
       : (Array.isArray(timeline?.steps) ? timeline.steps : []);
+    const timelineSampling = timelineModel ? resolveTimelineSamplingOptions(options) : {};
+    const timelineState = timelineModel ? sampleTimelineState(timelineModel, timelineSampling) : null;
+    const timelineControl = timelineModel
+      ? createTimelineControlDescriptor(timelineModel, {
+        ...timelineSampling,
+        loop: options.loop ?? true,
+        direction: options.direction || "alternate",
+      })
+      : null;
     const datasetId = options.datasetId ?? timeline?.dataset_id;
     const records = recordsFor(document, { ...options, datasetId });
 
@@ -98,10 +114,13 @@ export class DynamicsView extends BaseView {
       records,
       recordIds,
       stepStates,
+      activeStep: options.activeStep ?? timelineState?.activeStepOrder,
       datasetId,
       spaceId: options.spaceId ?? timeline?.space_id,
       name: options.name || timeline?.name,
       timelineId: timeline?.id,
+      timelineState,
+      timelineControl,
       timelineAnimation: timelineModel
         ? createTimelineAnimationDescriptor(timelineModel, {
           mode: "timeline-coordinate-morph",
@@ -118,6 +137,8 @@ export class DynamicsView extends BaseView {
         timelineId: timeline?.id,
         stepCount: stepStates.length,
         coordinateIds: stepStates.map((state) => state.coordinateId).filter(Boolean),
+        timelineControl,
+        timelineState,
       },
     });
   }
@@ -145,14 +166,27 @@ export class DynamicsView extends BaseView {
         animation: target ? this.stateAnimationDescriptor() : { mode: "none" },
         metadata: {
           ...this.metadata,
+          ...this.timelineDescriptorMetadata(),
           step: this.activeStep,
           activeCoordinateId: active.coordinateId,
+          sampledCoordinateId: this.timelineState?.activeCoordinateId ?? active.coordinateId,
           targetCoordinateId: target ? this.fittedStates[this.motionTargetStep]?.coordinateId : null,
         },
       });
       descriptors.push(...point.toLayerDescriptors());
     }
     return descriptors;
+  }
+
+  timelineDescriptorMetadata() {
+    return {
+      timelineId: this.timelineId,
+      timelineStateSchema: this.timelineState?.schema || null,
+      timelineControlSchema: this.timelineControl?.schema || null,
+      timelineState: this.timelineState,
+      timelineControl: this.timelineControl,
+      timelineSamples: this.timelineControl?.samples || [],
+    };
   }
 
   trajectoryDescriptor() {
@@ -211,6 +245,7 @@ export class DynamicsView extends BaseView {
     descriptor.metadata = {
       ...descriptor.metadata,
       ...this.metadata,
+      ...this.timelineDescriptorMetadata(),
       role: "trajectory",
       evidenceRole: "trajectory/path",
       stateHistoryRole: "timeline-state-history",
@@ -250,6 +285,8 @@ export class DynamicsView extends BaseView {
       channel: "targetPosition",
       requiresChannels: ["position", "targetPosition"],
     };
+    if (this.timelineControl) animation.control = this.timelineControl;
+    if (this.timelineState) animation.state = this.timelineState;
     if (this.motionProgress != null) {
       animation.loop = false;
       animation.progress = this.motionProgress;
@@ -295,6 +332,18 @@ function timelinePathColor(stepIndex, stepCount, alpha) {
     ? mixColor(low, mid, t / 0.58)
     : mixColor(mid, high, (t - 0.58) / 0.42);
   return [color[0], color[1], color[2], alpha];
+}
+
+function resolveTimelineSamplingOptions(options = {}) {
+  const out = {};
+  const normalized = options.timelinePosition
+    ?? options.timelineProgress
+    ?? options.normalizedTimelineTime
+    ?? options.normalizedTimelinePosition;
+  if (normalized != null) out.normalized = normalized;
+  const time = options.timelineTime ?? options.timelineCurrentTime;
+  if (time != null) out.time = time;
+  return out;
 }
 
 function mixColor(a, b, t) {
