@@ -39,6 +39,9 @@ set, and one validation path.
 | `preview-panel-presentation-workstream.md` | bounded record/pair preview presentation for exported payloads | integrated |
 | `relation-matrix-readability-workstream.md` | matrix readability, row/column/cell focus and large-matrix diagnostics | integrated |
 | `visual-acceptance-gates-workstream.md` | regression, performance and screenshot gates that cannot promote smoke tests to heroes | integrated |
+| `process-curve-scene-view-consolidation.md` | process-curve command/view consolidation into one semantic engine view | ready to assign |
+| `native-hero-scale-evidence-upgrade-plan.md` | concrete native evidence scale upgrade plan per preview | ready to assign |
+| `render-path-inventory-and-deletion-map.md` | read-only inventory of remaining noncanonical render paths | ready to assign |
 
 ## Next Slots
 
