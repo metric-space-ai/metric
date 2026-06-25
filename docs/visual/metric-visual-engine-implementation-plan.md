@@ -73,6 +73,10 @@ This plan is authoritative only with the following current-state constraints:
   WebGL tile-summary LOD texture derived from already exported matrix texture
   values. This reduces dense-matrix aliasing without adding DOM/SVG fallbacks,
   page-local canvas renderers or JavaScript relation computation.
+- The mapping grammar must render residual/error evidence through
+  `MappingView` descriptors. `MetricVisualSurface.showMapping()` must not add
+  page-level residual fallbacks that can hide missing native residual
+  properties.
 - The next production step is to harden each native public preview into an
   accepted hero through larger evidence where required, grammar-specific
   performance budgets and screenshot review, not more hand-written hero HTML

@@ -293,8 +293,6 @@ export class MetricVisualSurface {
     const view = MappingView.fromVisualSpace(this.document, normalizeMappingOptions(this.document, options));
     this.views = [view];
     const descriptors = view.toLayerDescriptors();
-    const residual = residualVectorDescriptor(view, options);
-    if (residual) descriptors.push(residual);
     this.setLayerDescriptors(descriptors, { source: "showMapping", viewKind: "mapping" });
     return this.configurePreview(options);
   }
@@ -1404,41 +1402,6 @@ function recordTrajectoryDescriptor(space, options = {}) {
   });
   descriptor.metadata = { ...descriptor.metadata, role: "trajectory/path" };
   return descriptor;
-}
-
-function residualVectorDescriptor(mapping, options = {}) {
-  const space = mapping?.space;
-  if (!space?.targetPositions) return null;
-  const ids = space.recordIds || [];
-  const sourcePosition = new Float32Array(ids.length * 3);
-  const targetPosition = new Float32Array(ids.length * 3);
-  const color = new Float32Array(ids.length * 4);
-  let count = 0;
-  for (const id of ids) {
-    const source = getPosition(space.positions, id);
-    const target = getPosition(space.targetPositions, id);
-    if (!source || !target) continue;
-    sourcePosition.set(source, count * 3);
-    targetPosition.set(target, count * 3);
-    color.set(options.color || [0.8, 0.22, 0.12, 0.42], count * 4);
-    count += 1;
-  }
-  if (!count) return null;
-  return new VisualLayer({
-    id: options.residualVectorId || `${mapping.id}:residual-vectors`,
-    kind: "residual/error-vectors",
-    primitive: "RelationEdgeLayer",
-    order: 36,
-    source: { viewId: mapping.id, viewKind: "mapping", role: "residual/error" },
-    channels: {
-      sourcePosition: createChannel(sourcePosition.subarray(0, count * 3), 3, "source-position"),
-      targetPosition: createChannel(targetPosition.subarray(0, count * 3), 3, "target-position"),
-      color: createChannel(color.subarray(0, count * 4), 4, "rgba"),
-    },
-    geometry: { width: options.width ?? 1 },
-    material: { alpha: options.alpha ?? 0.62, transparent: true, depthWrite: false },
-    metadata: { role: "residual/error", edgeCount: count },
-  }).toDescriptor();
 }
 
 function pairedRecordBridgeDescriptor(left, right, options = {}) {

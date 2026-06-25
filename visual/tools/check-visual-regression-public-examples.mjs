@@ -221,6 +221,8 @@ const PAGE_PROBE_SCRIPT = String.raw`
       selectedViewKind: diagnostics?.selectedViewKind || null,
       viewKinds: views.map((view) => view?.kind).filter(Boolean),
       descriptorPrimitives: descriptors.map((descriptor) => descriptor?.primitive || descriptor?.kind).filter(Boolean),
+      descriptorRoles: descriptors.map((descriptor) => descriptor?.metadata?.role || descriptor?.source?.role || null).filter(Boolean),
+      mappingResidualLayers: summarizeMappingResidualLayers(descriptors),
       layerDescriptorCount: Number(diagnostics?.layerDescriptorCount ?? runtime?.layerDescriptorCount ?? descriptors.length) || 0,
       runtimeLayerCount: Number(diagnostics?.runtimeLayerCount ?? runtime?.layerInstanceCount) || 0,
       runtimeLayerState: runtime?.layerState?.status || null,
@@ -231,6 +233,19 @@ const PAGE_PROBE_SCRIPT = String.raw`
       relationMatrixReadability: summarizeRelationMatrixReadability(descriptors),
       inspection: runtime?.inspection || null,
     };
+  }
+  function summarizeMappingResidualLayers(descriptors) {
+    return descriptors
+      .filter((descriptor) => descriptor?.metadata?.role === "residual/error" || descriptor?.source?.role === "residual/error")
+      .map((descriptor) => ({
+        id: descriptor?.id || null,
+        primitive: descriptor?.primitive || descriptor?.kind || null,
+        evidenceRole: descriptor?.metadata?.evidenceRole || null,
+        recordCount: Number(descriptor?.metadata?.recordCount ?? descriptor?.channels?.recordId?.count) || 0,
+        residualPropertyId: descriptor?.metadata?.residualPropertyId || descriptor?.source?.propertyId || null,
+        residualChannelCount: Number(descriptor?.channels?.residual?.count) || 0,
+        mappingEvidenceSchema: descriptor?.metadata?.mappingEvidence?.schema || null,
+      }));
   }
   function summarizeRelationMatrixReadability(descriptors) {
     return descriptors
@@ -787,6 +802,13 @@ async function checkExample(browser, baseUrl, name) {
       readability: runtime.state?.relationMatrixReadability || [],
     });
   }
+  if (name === "mapping-dimensionality-hero" && !hasNativeMappingResidualLayer(runtime.state)) {
+    issues.push({
+      code: "mapping-residual-error-grammar-missing",
+      residualLayers: runtime.state?.mappingResidualLayers || [],
+      roles: runtime.state?.descriptorRoles || [],
+    });
+  }
   if (requiresGpuPicking(runtime.state) && runtime.state?.inspection?.gpuPicking?.available !== true) {
     issues.push({
       code: "gpu-picking-not-active",
@@ -868,6 +890,18 @@ function hasReadableRelationMatrixBlocks(runtimeState) {
     matrix.blockCoverageState === "full" &&
     matrix.tileCount > 0 &&
     matrix.tileSummarySource === "exported-relation-texture-downsample"
+  ));
+}
+
+function hasNativeMappingResidualLayer(runtimeState) {
+  return (runtimeState?.mappingResidualLayers || []).some((layer) => (
+    layer.primitive === "RelationEdgeLayer" &&
+    layer.evidenceRole === "mapping-residual-vectors" &&
+    layer.mappingEvidenceSchema === "metric.visual.mapping_motion_evidence.v1" &&
+    layer.residualChannelCount > 0 &&
+    layer.recordCount > 0 &&
+    typeof layer.residualPropertyId === "string" &&
+    layer.residualPropertyId.trim().length > 0
   ));
 }
 

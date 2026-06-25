@@ -168,7 +168,6 @@
       ],
       "acceptanceBlockers": [
         "record-count-below-hero-minimum",
-        "residual-error-grammar-not-yet-visible",
         "visual-composition-not-human-accepted"
       ]
     },

@@ -149,6 +149,9 @@ Implemented native slices:
 - reusable timeline state/control descriptors for `DynamicsView`, including
   sampled exported timeline state, deterministic start/middle/end samples and
   animation-control metadata
+- `MappingView` owns mapping residual/error descriptors; `showMapping()` no
+  longer adds a page-level residual fallback, and public browser regression
+  requires residual magnitudes from native mapping evidence
 - user-facing timeline-control metadata for scrubber/playback/reset controls
   plus active ground/field state descriptors from exported timeline-step
   properties
