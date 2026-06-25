@@ -48,3 +48,9 @@ Passing smoke, render, screenshot, native evidence, or performance checks does
 not promote a preview. A second hero requires a new manifest entry with human
 acceptance status, date, reason, native evidence requirement, expected grammar,
 and screenshot/report contract.
+
+If a public preview still exists in
+`visual/hero-visual-briefs.manifest.json`, all `acceptanceBlockers` must be
+removed before it can be accepted. The screenshot-review gate rejects an
+acceptance manifest entry that still has open visual-brief blockers or
+`reviewStatus: "review-pending"`.

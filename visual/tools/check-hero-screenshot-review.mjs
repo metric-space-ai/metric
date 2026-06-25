@@ -20,6 +20,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..", "..");
 const DEFAULT_REGRESSION_REPORT = resolve(ROOT, "output", "visual", "check-visual-regression-public-examples", "results.json");
 const REVIEW_MANIFEST = resolve(ROOT, "visual", "hero-acceptance.manifest.json");
+const BRIEF_MANIFEST = resolve(ROOT, "visual", "hero-visual-briefs.manifest.json");
 const OUT_DIR = resolve(process.env.METRIC_VISUAL_HERO_REVIEW_OUT || join(ROOT, "output", "visual", "check-hero-screenshot-review"));
 const REGRESSION_REPORT = resolve(process.env.METRIC_VISUAL_REGRESSION_REPORT || DEFAULT_REGRESSION_REPORT);
 
@@ -33,8 +34,10 @@ const PROTECTED_ACCEPTED = new Map([
 async function main() {
   const regression = JSON.parse(await readFile(REGRESSION_REPORT, "utf8"));
   const manifest = await loadOptionalManifest(REVIEW_MANIFEST);
+  const briefManifest = await loadOptionalManifest(BRIEF_MANIFEST);
   const manifestValidation = validateManifest(manifest);
   const accepted = acceptedMap(manifest, manifestValidation.issues);
+  const visualBriefs = previewBriefMap(briefManifest);
   const resultsByName = new Map((regression.results || []).map((result) => [result.name, result]));
   const issues = [];
   const rows = [];
@@ -64,7 +67,7 @@ async function main() {
       });
       continue;
     }
-    issues.push(...await validateManifestContract(entry, result));
+    issues.push(...await validateManifestContract(entry, result, visualBriefs));
   }
 
   const unexpectedAccepted = rows.filter((row) => row.heroAccepted && !row.acceptedByReview);
@@ -90,6 +93,7 @@ async function main() {
     regressionReport: REGRESSION_REPORT,
     regressionGeneratedAt: regression.generatedAt ?? null,
     manifest: existsSync(REVIEW_MANIFEST) ? REVIEW_MANIFEST : null,
+    visualBriefManifest: existsSync(BRIEF_MANIFEST) ? BRIEF_MANIFEST : null,
     manifestSchemaVersion: manifest?.schemaVersion ?? null,
     manifestIssueCount: manifestValidation.issues.length,
     acceptedHeroes: rows.filter((row) => row.acceptedByReview).map((row) => row.name),
@@ -176,6 +180,15 @@ function acceptedMap(manifest, issues) {
   return out;
 }
 
+function previewBriefMap(manifest) {
+  const out = new Map();
+  for (const entry of manifest?.previewBriefs || []) {
+    if (!entry || typeof entry !== "object" || !entry.exampleId) continue;
+    out.set(String(entry.exampleId), entry);
+  }
+  return out;
+}
+
 async function loadOptionalManifest(path) {
   if (!existsSync(path)) return null;
   return JSON.parse(await readFile(path, "utf8"));
@@ -247,7 +260,7 @@ function validateManifest(manifest) {
   return { issues };
 }
 
-async function validateManifestContract(acceptance, result) {
+async function validateManifestContract(acceptance, result, visualBriefs = new Map()) {
   const entry = acceptance.entry;
   const issues = [];
   const render = result.render || {};
@@ -311,6 +324,24 @@ async function validateManifestContract(acceptance, result) {
   const protectedGrae10Ok = evidence.protectedGrae10?.ok === true && result.status?.heroAccepted === true;
   if (example === "grae10-metric-engine" && !protectedGrae10Ok) {
     issues.push({ code: "manifest-grae10-protected-contract-mismatch", example });
+  }
+  const brief = visualBriefs.get(example);
+  const blockers = Array.isArray(brief?.acceptanceBlockers)
+    ? brief.acceptanceBlockers.filter(nonEmptyString)
+    : [];
+  if (example !== "grae10-metric-engine" && blockers.length > 0) {
+    issues.push({
+      code: "manifest-accepts-open-visual-brief-blockers",
+      example,
+      blockers,
+    });
+  }
+  if (example !== "grae10-metric-engine" && brief?.reviewStatus === "review-pending") {
+    issues.push({
+      code: "manifest-accepts-review-pending-visual-brief",
+      example,
+      reviewStatus: brief.reviewStatus,
+    });
   }
   return issues;
 }

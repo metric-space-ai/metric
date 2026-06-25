@@ -44,3 +44,7 @@ and matrix readability acceptance.
 Future public preview work cannot rely on a green render check alone. Each
 preview has to keep a visible evidence target and blocker state in the manifest
 until it is accepted through the separate hero acceptance manifest.
+
+Parent integration tightened the acceptance path: `check-hero-screenshot-review.mjs`
+now reads the visual-brief manifest and rejects any non-GRAE10 acceptance entry
+that still has open `acceptanceBlockers` or `reviewStatus: "review-pending"`.
