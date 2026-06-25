@@ -89,7 +89,8 @@ Ready for screenshot review as a native Visual Engine preview. It is not marked 
   single 3D coordinate state and `time_series.series` payloads.
 - Checks run:
   - `node visual/tools/check-process-curve-external-visual.mjs`: passed.
-  - `node visual/tools/check-visual-command-api.mjs`: passed.
+  - `node visual/tools/check-visual-command-api.mjs`: passed, including
+    required grammar primitives for `showProcessCurves`.
   - `METRIC_VISUAL_EXAMPLES=process-curve-external-hero METRIC_VISUAL_OUT=/tmp/metric-process-curve-external-visual-command node visual/tools/check-visual-examples.mjs`: passed.
   - `node visual/tools/check-single-render-pipeline.mjs`: passed.
   - `node visual/tools/check-grae10-golden.mjs`: passed.

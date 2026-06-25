@@ -197,6 +197,7 @@ async function checkCommandDiagnostics(failures) {
       viewKind: "mapping",
       evidenceKind: "native",
       document: nativeMapping,
+      requiredPrimitives: ["InstancedPointLayer", "RelationEdgeLayer"],
       options: {
         sourceCoordinateId: mappingSourceCoordinate,
         targetCoordinateId: mappingTargetCoordinate,
@@ -212,6 +213,7 @@ async function checkCommandDiagnostics(failures) {
       viewKind: "dynamics",
       evidenceKind: "native",
       document: nativeDynamics,
+      requiredPrimitives: ["HeatFieldLayer", "CurveRibbonLayer", "InstancedPointLayer"],
       options: {
         timelineId: dynamicsTimeline,
         propertyField: dynamicsProperty,
@@ -223,6 +225,7 @@ async function checkCommandDiagnostics(failures) {
       viewKind: "condition-monitoring",
       evidenceKind: "native",
       document: nativeCondition,
+      requiredPrimitives: ["HeatFieldLayer", "CurveRibbonLayer", "InstancedPointLayer"],
       options: {
         coordinateId: conditionCoordinate,
         colorBy: conditionScalar,
@@ -236,6 +239,8 @@ async function checkCommandDiagnostics(failures) {
       viewKind: "process-curves",
       evidenceKind: "native",
       document: nativeProcessExternal,
+      requiredPrimitives: ["HeatFieldLayer", "CurveTubeMeshLayer", "InstancedBoxLayer", "RelationMatrixLayer"],
+      requiredViewKinds: ["record-track", "record-skyline", "relation-matrix"],
       options: {
         coordinateId: processCoordinate,
         relationId: processRelation,
@@ -250,6 +255,7 @@ async function checkCommandDiagnostics(failures) {
       viewKind: "mixed-records",
       evidenceKind: "native",
       document: nativeMixed,
+      requiredPrimitives: ["InstancedGlyphLayer", "RelationEdgeLayer"],
       options: {
         coordinateId: mixedCoordinate,
         glyphBy: mixedLabel,
@@ -264,6 +270,7 @@ async function checkCommandDiagnostics(failures) {
       viewKind: "cross-space",
       evidenceKind: "native",
       document: nativeCrossSpace,
+      requiredPrimitives: ["InstancedGlyphLayer", "RelationEdgeLayer"],
       options: {
         coordinateA: crossLeftCoordinate,
         coordinateB: crossRightCoordinate,
@@ -276,6 +283,8 @@ async function checkCommandDiagnostics(failures) {
       viewKind: "relation-matrix-neighborhood",
       evidenceKind: "native",
       document: nativeRelation,
+      requiredPrimitives: ["InstancedPointLayer", "RelationEdgeLayer", "RelationMatrixLayer"],
+      requiredViewKinds: ["neighborhood-graph", "relation-matrix"],
       options: {
         coordinateId: relationCoordinate,
         relationId,
@@ -341,6 +350,22 @@ async function checkCommandDiagnostics(failures) {
     assert(failures, `${testCase.command}: evidence report mirrors kind`, command?.evidenceReport?.kind === testCase.evidenceKind, command);
     assert(failures, `${testCase.command}: evidence report exposes relation count`, Number.isInteger(command?.evidenceReport?.relationCount), command);
     assert(failures, `${testCase.command}: descriptor kinds are reported`, command?.descriptorKinds && Object.keys(command.descriptorKinds.primitives || {}).length > 0, command);
+    for (const primitive of testCase.requiredPrimitives || []) {
+      assert(
+        failures,
+        `${testCase.command}: required primitive ${primitive} is present`,
+        Number(command?.descriptorKinds?.primitives?.[primitive] || 0) > 0,
+        command,
+      );
+    }
+    for (const viewKind of testCase.requiredViewKinds || []) {
+      assert(
+        failures,
+        `${testCase.command}: required view kind ${viewKind} is present`,
+        Number(command?.descriptorKinds?.viewKinds?.[viewKind] || 0) > 0,
+        command,
+      );
+    }
     assert(failures, `${testCase.command}: diagnostics snapshot mirrors selected command`, diagnostics.selectedCommand === testCase.command, diagnostics);
     assert(failures, `${testCase.command}: diagnostics snapshot mirrors evidence kind`, diagnostics.evidenceKind === testCase.evidenceKind, diagnostics);
     assert(failures, `${testCase.command}: diagnostics snapshot includes evidence report`, diagnostics.evidenceReport?.kind === testCase.evidenceKind, diagnostics);
