@@ -137,6 +137,7 @@ function validateReferences(document, ctx) {
   const propertyIds = idSet(document.properties);
   const coordinateIds = idSet(document.coordinates);
   const graphIds = idSet(document.graphs);
+  const relationsById = mapById(document.relations);
 
   for (let index = 0; index < document.records.length; index += 1) {
     const record = document.records[index];
@@ -188,6 +189,7 @@ function validateReferences(document, ctx) {
         expectId(recordIds, recordId, `$.graphs[${index}].node_record_ids[${recordIndex}]`, "record_ref", ctx);
       });
     }
+    validateGraphEdges(graph, index, recordIds, relationsById.get(graph.edge_relation_id), ctx);
   }
 
   for (let index = 0; index < document.coordinates.length; index += 1) {
@@ -224,6 +226,9 @@ function validateReferences(document, ctx) {
       }
       if (step.relation_id !== undefined) {
         expectId(relationIds, step.relation_id, `$.timelines[${index}].steps[${stepIndex}].relation_id`, "relation_ref", ctx);
+      }
+      if (step.graph_id !== undefined) {
+        expectId(graphIds, step.graph_id, `$.timelines[${index}].steps[${stepIndex}].graph_id`, "graph_ref", ctx);
       }
     });
   }
@@ -320,6 +325,30 @@ function validatePropertyTargets(property, propertyIndex, refs, ctx) {
   }
 }
 
+function validateGraphEdges(graph, graphIndex, recordIds, relation, ctx) {
+  const path = `$.graphs[${graphIndex}]`;
+  if (!Array.isArray(graph.edges)) {
+    ctx.error(`${path}.edges`, "graph_edges_type", "Graph edges must be an array");
+    return;
+  }
+  const graphRecordIds = Array.isArray(graph.node_record_ids) ? graph.node_record_ids.map(String) : [];
+  const graphRecordSet = new Set(graphRecordIds);
+  const relationRecordIds = Array.isArray(relation?.record_ids) ? relation.record_ids.map(String) : [];
+  const relationRecordSet = new Set(relationRecordIds);
+  for (let edgeIndex = 0; edgeIndex < graph.edges.length; edgeIndex += 1) {
+    const edge = graph.edges[edgeIndex];
+    const edgePath = `${path}.edges[${edgeIndex}]`;
+    if (!isPlainObject(edge) && !Array.isArray(edge)) {
+      ctx.error(edgePath, "graph_edge_type", "Graph edge must be an object or endpoint tuple");
+      continue;
+    }
+    const source = graphEndpointId(edge, "source", graphRecordIds);
+    const target = graphEndpointId(edge, "target", graphRecordIds);
+    expectGraphEndpoint(recordIds, graphRecordSet, relationRecordSet, source, `${edgePath}.source`, ctx);
+    expectGraphEndpoint(recordIds, graphRecordSet, relationRecordSet, target, `${edgePath}.target`, ctx);
+  }
+}
+
 function validateCoordinatePosition(entry, coordinateIndex, entryIndex, dimension, ctx) {
   const path = `$.coordinates[${coordinateIndex}].record_positions[${entryIndex}]`;
   const values = entry && (entry.position ?? entry.values ?? entry.coordinates);
@@ -354,9 +383,50 @@ function expectRelationEndpoint(recordIds, relationRecordIds, id, path, ctx) {
   }
 }
 
+function expectGraphEndpoint(recordIds, graphRecordIds, relationRecordIds, id, path, ctx) {
+  expectId(recordIds, id, path, "record_ref", ctx);
+  if (id !== undefined && id !== null && id !== "" && !graphRecordIds.has(String(id))) {
+    ctx.error(path, "graph_node_ref", `Graph edge endpoint is not listed in graph.node_record_ids: ${id}`);
+  }
+  if (
+    id !== undefined
+    && id !== null
+    && id !== ""
+    && relationRecordIds.size > 0
+    && !relationRecordIds.has(String(id))
+  ) {
+    ctx.error(path, "graph_relation_record_ref", `Graph edge endpoint is not listed in edge relation record_ids: ${id}`);
+  }
+}
+
+function graphEndpointId(edge, side, recordIds) {
+  if (Array.isArray(edge)) {
+    const index = side === "source" ? 0 : 1;
+    const value = edge[index];
+    return Number.isInteger(Number(value)) && recordIds[Number(value)] != null
+      ? recordIds[Number(value)]
+      : value;
+  }
+  if (!edge || typeof edge !== "object") return null;
+  const value = side === "source"
+    ? edge.source_id ?? edge.sourceId ?? edge.source ?? edge.from_id ?? edge.from ?? edge.row_id ?? edge.rowId ?? edge.a ?? edge.i
+    : edge.target_id ?? edge.targetId ?? edge.target ?? edge.to_id ?? edge.to ?? edge.column_id ?? edge.columnId ?? edge.b ?? edge.j;
+  return Number.isInteger(Number(value)) && recordIds[Number(value)] != null
+    ? recordIds[Number(value)]
+    : value;
+}
+
 function numberIndex(value) {
   if (!Number.isInteger(Number(value))) return null;
   return Number(value);
+}
+
+function mapById(items = []) {
+  const out = new Map();
+  for (const item of items || []) {
+    if (item?.id !== undefined && item?.id !== null && item.id !== "") out.set(item.id, item);
+  }
+  return out;
 }
 
 function idSet(items = []) {

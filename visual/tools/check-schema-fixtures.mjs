@@ -163,6 +163,43 @@ function buildInMemoryNegativeCases(baseDocument) {
         document.coordinates[0].record_positions[0].position = [1, "not-a-number", 3];
       }),
     },
+    {
+      name: "invalid-graph-edge-endpoint-not-in-graph-nodes",
+      expectedCode: "graph_node_ref",
+      document: mutate(baseDocument, (document) => {
+        document.records.push(outsider);
+        if (!document.graphs?.length) {
+          document.graphs = [{
+            id: "schema-test-graph",
+            dataset_id: document.datasets[0].id,
+            node_record_ids: [firstRecord, secondRecord],
+            edge_relation_id: firstRelation.id,
+            graph_type: "schema-test",
+            edges: [],
+          }];
+        }
+        document.graphs[0].edges.push({
+          source: firstRecord,
+          target: outsider.id,
+          value: 1,
+        });
+      }),
+    },
+    {
+      name: "invalid-timeline-graph-reference",
+      expectedCode: "graph_ref",
+      document: mutate(baseDocument, (document) => {
+        document.timelines.push({
+          id: "broken-timeline-graph-ref",
+          dataset_id: document.datasets[0].id,
+          name: "broken timeline graph ref",
+          steps: [{
+            id: "broken-step",
+            graph_id: "missing-graph",
+          }],
+        });
+      }),
+    },
   ].filter((testCase) => firstRecord && secondRecord && firstRelation && testCase.document);
 }
 

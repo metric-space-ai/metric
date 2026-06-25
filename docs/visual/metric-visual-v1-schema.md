@@ -96,8 +96,10 @@ cluster id, representative assignment, reconstruction error, mapping residual.
 ### `graphs`
 `id`, `dataset_id`, `node_record_ids`, `edge_relation_id`, `graph_type`,
 `edges`. `edge_relation_id` references a relation; every node id references a
-record. `graph_type`: k-nearest, radius, transition, diffusion, solver,
-sparsified, component, custom.
+record. Edge endpoints must reference existing records, must be listed in
+`node_record_ids`, and must also be compatible with the edge relation's
+`record_ids` when that relation is exported. `graph_type`: k-nearest, radius,
+transition, diffusion, solver, sparsified, component, custom.
 
 ### `coordinates`
 `id`, `dataset_id`, `space_id`, `name`, `dimension`, `record_positions`.
@@ -110,10 +112,11 @@ metric space itself.
 
 ### `timelines`
 `id`, `dataset_id`, `name`, `steps`. Each step may carry `coordinate_id`,
-`property_id` and/or `relation_id`; when present they must resolve. Timelines
-describe state changes over existing records (2D→3D morph, diffusion / reverse
-diffusion steps, Redif inverse-dynamics before/after, training epochs, solver iterations). They
-reference exported states; they do not ask JavaScript to recompute them.
+`property_id`, `relation_id` and/or `graph_id`; when present they must resolve.
+Timelines describe state changes over existing records (2D→3D morph, diffusion
+/ reverse diffusion steps, Redif inverse-dynamics before/after, training
+epochs, solver iterations). They reference exported states; they do not ask
+JavaScript to recompute them.
 
 ### `views`, `events`, `diagnostics`
 Optional. `views` are producer hints for an initial workspace (e.g.
@@ -185,6 +188,9 @@ The validator rejects, with actionable `path`/`code`/`message` errors:
   `record_ids` (`relation_record_ref`),
 - a pair property whose row/column endpoint cannot be resolved (`record_ref`)
   or whose optional relation id cannot be resolved (`relation_ref`),
+- a graph edge endpoint outside `node_record_ids` (`graph_node_ref`) or outside
+  the edge relation's record set (`graph_relation_record_ref`),
+- a timeline step `graph_id` that cannot be resolved (`graph_ref`),
 - duplicate IDs within a collection (`duplicate_id`),
 - a non-positive coordinate `dimension` (`coordinate_dimension`),
 - a coordinate position with too few numeric entries
