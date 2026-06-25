@@ -90,6 +90,18 @@ and a concrete record or edge ID. Tube-curve picking is verified on the native
 engine probe page. Remaining picking work is specialized matrix GPU picking
 and matrix readability where semantic pickers are not enough.
 
+### Relation Matrix Readability Note - 2026-06-25
+
+The first relation-matrix grammar milestone keeps the single `RelationMatrixLayer`
+WebGL path and improves it instead of adding a table, SVG, or page-local canvas.
+The matrix layer now renders block ranges as subtle same-block bands plus
+explicit block boundaries, uses pixel-footprint smoothing for dense public-scale
+matrices, and distinguishes selected row, selected column, and selected cell
+overlays. Matrix hits now carry stable relation/row/column pair identity,
+native pair ids/keys where exported, and pair properties for the existing runtime
+inspection path. This is still preview status: it is not a hero-acceptance claim
+until screenshot review and the broader public regression gates pass.
+
 ## Public Gallery Status
 
 | Hero | Public status | Reason |

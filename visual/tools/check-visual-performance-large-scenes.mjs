@@ -2,10 +2,10 @@
 /*
  * Browser-backed large-scene performance gate.
  *
- * Uses the existing visual/tools/perf-harness.html with a dependency-free CDP
- * runner. It records record count, descriptor count, runtime layer count, frame
- * timing, and GPU buffer/draw diagnostics. Missing Chrome is a failed missing
- * gate, not a pass.
+ * Uses the existing visual/tools/perf-harness.html and the public visual
+ * preview pages with a dependency-free CDP runner. It records record count,
+ * descriptor count, runtime layer count, frame timing, and GPU buffer/draw
+ * diagnostics. Missing Chrome is a failed missing gate, not a pass.
  *
  * Artifacts:
  *   output/visual/check-visual-performance-large-scenes/results.json
@@ -27,7 +27,66 @@ const VIEWPORT = parseViewport(process.env.METRIC_VISUAL_PERF_VIEWPORT || "1000x
 const READY_TIMEOUT_MS = Number(process.env.METRIC_VISUAL_PERF_READY_TIMEOUT_MS || 90000);
 const DEFAULT_MEDIAN_BUDGET_MS = Number(process.env.METRIC_VISUAL_PERF_MEDIAN_BUDGET_MS || 150);
 const DEFAULT_MIN_FRAMES = Number(process.env.METRIC_VISUAL_PERF_MIN_FRAMES || 10);
+const GRAMMAR_FRAME_SAMPLE_TARGET = Number(process.env.METRIC_VISUAL_PERF_GRAMMAR_FRAME_SAMPLES || 45);
+const GRAMMAR_MEDIAN_BUDGET_MS = Number(process.env.METRIC_VISUAL_PERF_GRAMMAR_MEDIAN_BUDGET_MS || DEFAULT_MEDIAN_BUDGET_MS);
 const FORCE_SWIFTSHADER = process.env.METRIC_VISUAL_FORCE_SWIFTSHADER === "1";
+
+const GRAMMAR_CASES = [
+  {
+    id: "condition-monitoring-hero",
+    grammar: "field",
+    label: "condition-monitoring field + trajectory preview",
+    path: "/visual/examples/condition-monitoring-hero/index.html?verify=1",
+    expectedPrimitives: ["HeatFieldLayer", "CurveRibbonLayer"],
+    minDescriptorCount: 4,
+    minRuntimeLayers: 4,
+  },
+  {
+    id: "mixed-record-hero",
+    grammar: "glyph",
+    label: "mixed-record typed glyph + relation preview",
+    path: "/visual/examples/mixed-record-hero/index.html?verify=1",
+    expectedPrimitives: ["InstancedGlyphLayer", "RelationEdgeLayer"],
+    minDescriptorCount: 4,
+    minRuntimeLayers: 4,
+  },
+  {
+    id: "relation-matrix-neighborhood",
+    grammar: "matrix+graph",
+    label: "relation matrix + neighborhood graph preview",
+    path: "/visual/examples/relation-matrix-neighborhood/index.html?verify=1",
+    expectedPrimitives: ["RelationMatrixLayer", "RelationEdgeLayer"],
+    minDescriptorCount: 3,
+    minRuntimeLayers: 3,
+  },
+  {
+    id: "dynamics-noise-hero",
+    grammar: "dynamics",
+    label: "finite dynamics trajectory + field preview",
+    path: "/visual/examples/dynamics-noise-hero/index.html?verify=1",
+    expectedPrimitives: ["CurveRibbonLayer", "HeatFieldLayer", "InstancedPointLayer"],
+    minDescriptorCount: 3,
+    minRuntimeLayers: 3,
+  },
+  {
+    id: "mapping-dimensionality-hero",
+    grammar: "mapping",
+    label: "mapping coordinate morph preview",
+    path: "/visual/examples/mapping-dimensionality-hero/index.html?verify=1",
+    expectedPrimitives: ["InstancedPointLayer", "GroundProjectionLayer"],
+    minDescriptorCount: 3,
+    minRuntimeLayers: 3,
+  },
+  {
+    id: "cross-space-dependency-hero",
+    grammar: "graph",
+    label: "cross-space dependence bridge preview",
+    path: "/visual/examples/cross-space-dependency-hero/index.html?verify=1",
+    expectedPrimitives: ["RelationEdgeLayer", "InstancedGlyphLayer"],
+    minDescriptorCount: 4,
+    minRuntimeLayers: 4,
+  },
+];
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -152,6 +211,117 @@ const PERF_PROBE_SCRIPT = String.raw`
 })();
 `;
 
+const GRAMMAR_PROBE_SCRIPT = String.raw`
+(() => {
+  function dataset() {
+    return Object.fromEntries(Object.entries(document.documentElement.dataset || {}));
+  }
+  function canvasSummary() {
+    const canvas = document.querySelector("canvas");
+    const rect = canvas?.getBoundingClientRect?.();
+    return rect ? {
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
+      canvasWidth: canvas.width,
+      canvasHeight: canvas.height,
+      visible: rect.width > 0 && rect.height > 0 && getComputedStyle(canvas).visibility !== "hidden",
+    } : null;
+  }
+  function summarizeState(state) {
+    if (!state || typeof state !== "object") return null;
+    const diagnostics = state.diagnostics || {};
+    const descriptors = Array.isArray(state.descriptors) ? state.descriptors : [];
+    const views = Array.isArray(state.views) ? state.views : [];
+    const runtime = state.runtime || state;
+    return {
+      recordCount: Number(diagnostics.recordCount ?? document.documentElement.dataset.metricRecordCount) || null,
+      selectedViewKind: diagnostics.selectedViewKind || null,
+      viewKinds: views.map((view) => view?.kind).filter(Boolean),
+      descriptorIds: descriptors.map((descriptor) => descriptor?.id).filter(Boolean),
+      descriptorPrimitives: descriptors.map((descriptor) => descriptor?.primitive || descriptor?.kind).filter(Boolean),
+      layerDescriptorCount: Number(diagnostics.layerDescriptorCount ?? runtime.layerDescriptorCount ?? descriptors.length) || 0,
+      runtimeLayerCount: Number(diagnostics.runtimeLayerCount ?? runtime.layerInstanceCount) || 0,
+      runtimeLayerState: runtime.layerState?.status || null,
+      running: runtime.running ?? null,
+      warnings: (diagnostics.warnings || runtime.warnings || []).map((warning) => warning?.code || String(warning)),
+    };
+  }
+  function runtimeHandles() {
+    return Object.keys(window)
+      .filter((key) => /^metric/i.test(key))
+      .map((key) => {
+        const handle = window[key];
+        if (!handle || typeof handle !== "object") return null;
+        let state = null;
+        try {
+          if (typeof handle.getState === "function") state = handle.getState();
+          else if (typeof handle.visual?.getState === "function") state = handle.visual.getState();
+          else if (typeof handle.runtime?.getState === "function") state = handle.runtime.getState();
+        } catch (error) {
+          return { key, error: error instanceof Error ? error.message : String(error) };
+        }
+        return { key, state: summarizeState(state) };
+      })
+      .filter(Boolean);
+  }
+  function readWebglRenderer() {
+    const canvas = document.querySelector("canvas");
+    const gl = canvas?.getContext?.("webgl2") || canvas?.getContext?.("webgl") || canvas?.getContext?.("experimental-webgl");
+    if (!gl) return { available: false };
+    const debug = gl.getExtension("WEBGL_debug_renderer_info");
+    return {
+      available: true,
+      vendor: gl.getParameter(gl.VENDOR),
+      renderer: gl.getParameter(gl.RENDERER),
+      unmaskedVendor: debug ? gl.getParameter(debug.UNMASKED_VENDOR_WEBGL) : null,
+      unmaskedRenderer: debug ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) : null,
+    };
+  }
+  const handles = runtimeHandles();
+  const runtimeState = handles.map((entry) => entry.state).find((state) => state && state.runtimeLayerCount > 0)
+    || handles.map((entry) => entry.state).find(Boolean)
+    || null;
+  const canvas = canvasSummary();
+  return {
+    ready: Boolean(canvas?.visible) && Boolean(runtimeState?.runtimeLayerCount),
+    title: document.title,
+    data: dataset(),
+    runtimeHandles: handles,
+    runtimeState,
+    gpuDiagnostics: window.__metricVisualGpuDiagnostics || null,
+    renderer: readWebglRenderer(),
+    canvas,
+  };
+})();
+`;
+
+const FRAME_SAMPLE_SCRIPT = String.raw`
+(() => new Promise((resolve) => {
+  const target = Math.max(5, Number(window.__metricVisualGrammarFrameTarget || 45));
+  const deltas = [];
+  let last = null;
+  function step(now) {
+    if (last != null) deltas.push(now - last);
+    last = now;
+    if (deltas.length < target) requestAnimationFrame(step);
+    else {
+      const sorted = deltas.slice().sort((a, b) => a - b);
+      const median = sorted[Math.floor(sorted.length / 2)] || 0;
+      const p95 = sorted[Math.floor(sorted.length * 0.95)] || sorted[sorted.length - 1] || 0;
+      resolve({
+        frames: deltas.length,
+        medianMs: Number(median.toFixed(3)),
+        p95Ms: Number(p95.toFixed(3)),
+        minMs: Number((sorted[0] || 0).toFixed(3)),
+        maxMs: Number((sorted[sorted.length - 1] || 0).toFixed(3)),
+        fps: median > 0 ? Number((1000 / median).toFixed(1)) : 0,
+      });
+    }
+  }
+  requestAnimationFrame(step);
+}))();
+`;
+
 async function main() {
   await mkdir(OUT_DIR, { recursive: true });
   const chromeExecutable = findChromeExecutable();
@@ -171,6 +341,7 @@ async function main() {
   let server = null;
   let browser = null;
   const rows = [];
+  const grammarRows = [];
   try {
     server = await startStaticServer(ROOT);
     browser = await launchChrome(chromeExecutable);
@@ -178,9 +349,17 @@ async function main() {
     for (const count of COUNTS) {
       rows.push(await checkCount(browser, `${baseUrl}/visual/tools/perf-harness.html?n=${count}`, count));
     }
+    for (const grammarCase of GRAMMAR_CASES) {
+      grammarRows.push(await checkGrammarCase(browser, `${baseUrl}${grammarCase.path}`, grammarCase));
+    }
   } catch (error) {
     rows.push({
       recordCount: null,
+      ok: false,
+      issues: [{ code: "runner-error", message: error instanceof Error ? error.message : String(error) }],
+    });
+    grammarRows.push({
+      id: "(runner)",
       ok: false,
       issues: [{ code: "runner-error", message: error instanceof Error ? error.message : String(error) }],
     });
@@ -190,7 +369,7 @@ async function main() {
   }
 
   const report = {
-    ok: rows.every((row) => row.ok),
+    ok: rows.every((row) => row.ok) && grammarRows.every((row) => row.ok),
     generatedAt: new Date().toISOString(),
     chromeExecutable,
     viewport: VIEWPORT,
@@ -203,9 +382,17 @@ async function main() {
       requiredDescriptorCount: 1,
       requiredGpuDrawCalls: 1,
       requiredBufferUploads: 1,
+      grammarMedianFrameMs: GRAMMAR_MEDIAN_BUDGET_MS,
+      grammarFrameSamples: GRAMMAR_FRAME_SAMPLE_TARGET,
+    },
+    heroAcceptancePolicy: {
+      protectedAcceptedHero: "grae10-metric-engine",
+      publicPreviewRowsAreNotHeroAccepted: true,
+      screenshotAcceptanceInThisGate: false,
     },
     outDir: OUT_DIR,
     rows,
+    grammarRows,
   };
   await writeReport(report);
   console.log(JSON.stringify(report, null, 2));
@@ -283,6 +470,95 @@ async function checkCount(browser, url, count) {
   };
 }
 
+async function checkGrammarCase(browser, url, grammarCase) {
+  let page = null;
+  const issues = [];
+  let probe = null;
+  let frameTiming = null;
+  try {
+    page = await browser.newPage();
+    page.consoleErrors = [];
+    page.pageErrors = [];
+    await page.prepare();
+    await page.navigate(url);
+    probe = await waitForGrammarReady(page);
+    await evaluate(page, `window.__metricVisualGrammarFrameTarget = ${JSON.stringify(GRAMMAR_FRAME_SAMPLE_TARGET)}`, { timeoutMs: 30000 });
+    frameTiming = await evaluate(page, FRAME_SAMPLE_SCRIPT, { timeoutMs: 30000 });
+    probe = await evaluate(page, GRAMMAR_PROBE_SCRIPT, { timeoutMs: 30000 });
+  } catch (error) {
+    issues.push({ code: "browser-check-failed", message: error instanceof Error ? error.message : String(error) });
+  } finally {
+    if (page) await page.close().catch(() => {});
+  }
+
+  const runtime = probe?.runtimeState || {};
+  const gpu = probe?.gpuDiagnostics || {};
+  const renderer = probe?.renderer || {};
+  const rendererText = [
+    renderer.renderer,
+    renderer.unmaskedRenderer,
+    renderer.vendor,
+    renderer.unmaskedVendor,
+  ].filter(Boolean).join(" ").toLowerCase();
+  const softwareRenderer = /swiftshader|software|llvmpipe/.test(rendererText);
+  const primitives = runtime.descriptorPrimitives || [];
+  const missingPrimitives = grammarCase.expectedPrimitives.filter((primitive) => !primitives.includes(primitive));
+
+  if (!probe?.ready) issues.push({ code: "grammar-preview-not-ready" });
+  if ((runtime.recordCount || 0) < 1) issues.push({ code: "missing-record-count", actual: runtime.recordCount ?? null });
+  if ((runtime.layerDescriptorCount || 0) < grammarCase.minDescriptorCount) {
+    issues.push({ code: "insufficient-layer-descriptor-count", min: grammarCase.minDescriptorCount, actual: runtime.layerDescriptorCount || 0 });
+  }
+  if ((runtime.runtimeLayerCount || 0) < grammarCase.minRuntimeLayers) {
+    issues.push({ code: "insufficient-runtime-layer-count", min: grammarCase.minRuntimeLayers, actual: runtime.runtimeLayerCount || 0 });
+  }
+  if (missingPrimitives.length) issues.push({ code: "missing-grammar-primitives", expected: grammarCase.expectedPrimitives, missing: missingPrimitives, actual: primitives });
+  if ((frameTiming?.frames || 0) < DEFAULT_MIN_FRAMES) {
+    issues.push({ code: "insufficient-frame-sample", min: DEFAULT_MIN_FRAMES, actual: frameTiming?.frames || 0 });
+  }
+  if (!Number.isFinite(frameTiming?.medianMs) || frameTiming.medianMs > GRAMMAR_MEDIAN_BUDGET_MS) {
+    issues.push({ code: "grammar-median-frame-budget-exceeded", budgetMs: GRAMMAR_MEDIAN_BUDGET_MS, actualMs: frameTiming?.medianMs ?? null });
+  }
+  if ((gpu.bufferDataCalls || 0) < 1 || (gpu.totalBufferBytes || 0) < 1) issues.push({ code: "missing-gpu-buffer-diagnostics" });
+  if ((gpu.drawCalls || 0) < 1) issues.push({ code: "missing-gpu-draw-diagnostics" });
+  if (page?.consoleErrors?.length) issues.push({ code: "console-errors", count: page.consoleErrors.length, messages: page.consoleErrors });
+  if (page?.pageErrors?.length) issues.push({ code: "page-errors", count: page.pageErrors.length, messages: page.pageErrors });
+
+  return {
+    id: grammarCase.id,
+    grammar: grammarCase.grammar,
+    label: grammarCase.label,
+    classification: "public-preview-only",
+    heroAccepted: false,
+    ok: issues.length === 0,
+    recordCount: runtime.recordCount ?? null,
+    descriptorCount: runtime.layerDescriptorCount ?? null,
+    runtimeLayerCount: runtime.runtimeLayerCount ?? null,
+    runtimeLayerState: runtime.runtimeLayerState ?? null,
+    viewKinds: runtime.viewKinds || [],
+    selectedViewKind: runtime.selectedViewKind || null,
+    descriptorPrimitives: primitives,
+    expectedPrimitives: grammarCase.expectedPrimitives,
+    frameTimingSample: frameTiming,
+    renderer: {
+      ...renderer,
+      softwareRenderer,
+    },
+    gpuDiagnostics: {
+      bufferDataCalls: gpu.bufferDataCalls ?? null,
+      totalBufferBytes: gpu.totalBufferBytes ?? null,
+      drawCalls: gpu.drawCalls ?? null,
+      drawArraysCalls: gpu.drawArraysCalls ?? null,
+      drawElementsCalls: gpu.drawElementsCalls ?? null,
+      instancedDrawCalls: gpu.instancedDrawCalls ?? null,
+      drawVertices: gpu.drawVertices ?? null,
+      drawInstances: gpu.drawInstances ?? null,
+    },
+    canvas: probe?.canvas || null,
+    issues,
+  };
+}
+
 async function waitForPerfReady(page) {
   const deadline = Date.now() + READY_TIMEOUT_MS;
   let last = null;
@@ -297,6 +573,22 @@ async function waitForPerfReady(page) {
     await sleep(300);
   }
   throw new Error(`performance readiness timed out after ${READY_TIMEOUT_MS}ms: ${lastError || JSON.stringify(last)}`);
+}
+
+async function waitForGrammarReady(page) {
+  const deadline = Date.now() + READY_TIMEOUT_MS;
+  let last = null;
+  let lastError = null;
+  while (Date.now() < deadline) {
+    try {
+      last = await evaluate(page, GRAMMAR_PROBE_SCRIPT, { timeoutMs: 30000 });
+      if (last?.ready) return last;
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : String(error);
+    }
+    await sleep(300);
+  }
+  throw new Error(`grammar readiness timed out after ${READY_TIMEOUT_MS}ms: ${lastError || JSON.stringify(last)}`);
 }
 
 async function startStaticServer(rootDir) {

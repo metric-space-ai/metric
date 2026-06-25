@@ -131,11 +131,14 @@ Implemented native slices:
   relation-matrix cells, graph edges and deterministic projected-record
   fallback
 - reusable record/pair preview panel resolution from `metric.visual.v1`
-  evidence
+  evidence, including runtime selection state for selected record previews,
+  selected pair previews and inspection payloads
 - browser-backed public regression gate for the accepted GRAE10 reference and
   native preview examples:
   `visual/tools/check-visual-regression-public-examples.mjs`
-- large-scene performance gate for 1k, 10k and 60k point-cloud workloads:
+- large-scene performance gate for 1k, 10k and 60k point-cloud workloads plus
+  current public preview grammar rows for field, glyph, relation-matrix/graph,
+  dynamics, mapping and cross-space scenes:
   `visual/tools/check-visual-performance-large-scenes.mjs`
 
 Known gaps:
@@ -143,8 +146,10 @@ Known gaps:
 - first full-frame capture path exists; no polished multi-algorithm hero
   application/gallery yet
 - no full visual gallery for every METRIC algorithm family yet
-- relation matrix has native exported evidence, but is not yet a polished
-  public matrix/neighborhood hero
+- relation matrix has native exported evidence and a first readable WebGL
+  matrix grammar pass with block bands, block boundaries, row/column/cell
+  focus and pair-evidence picking, but it is not yet a polished public
+  matrix/neighborhood hero
 - metric curve-body study-style curve bodies now have a native `CurveTubeMeshLayer`; more
   algorithm-family views still need to adopt it where world-space continuity is
   the main evidence
@@ -164,10 +169,13 @@ Known gaps:
   regression gate now requires real `gpu-picking` hits with record IDs and edge
   IDs for native preview examples that expose pickable records, fields, graph
   edges or ribbon trajectories. Tube-curve picking is verified on the native
-  engine probe. Remaining layer-specific GPU work is matrix picking/readability
-  where semantic CPU pickers are not sufficient.
-- performance gates exist for large point-cloud workloads; matrix, graph,
-  field, glyph, dynamics and mapping grammars still need their own budget rows
+  engine probe. Relation-matrix cells use the semantic matrix picker and carry
+  native pair identity/properties into the same runtime preview path; remaining
+  layer-specific GPU work is matrix GPU picking only if the semantic picker is
+  not sufficient at larger tiled scales.
+- performance gates exist for large point-cloud workloads and current public
+  preview grammar rows; matrix, graph, field, glyph, dynamics and mapping still
+  need stress-size budgets at realistic hero evidence sizes
 
 It must help users inspect:
 

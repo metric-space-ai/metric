@@ -12,6 +12,8 @@ export function createRelationMatrixLayerDescriptor(source, options = {}) {
   const texture = source?.kind === "relation-matrix-texture-data"
     ? source
     : buildRelationMatrixTextureData(source, options);
+  const relationId = options.relationId || source?.id || source?.relation_id || null;
+  const relationName = options.relationName || source?.name || source?.label || null;
 
   return {
     id: options.id || "relation-matrix",
@@ -22,23 +24,43 @@ export function createRelationMatrixLayerDescriptor(source, options = {}) {
     source: {
       texture,
       recordIds: texture.recordIds,
+      relationId,
+      relationName,
     },
     geometry: {
       rect: options.rect || [0, 0, 1, 1],
       preserveAspect: options.preserveAspect !== false,
     },
     material: {
-      alpha: options.alpha ?? 1,
+      alpha: resolveMaterialAlpha(options),
       missingAlpha: options.missingAlpha ?? 0,
       background: options.background || [0.02, 0.025, 0.03, 1],
-      blockLineAlpha: options.blockLineAlpha ?? 0.22,
+      smoothingCellPixels: options.smoothingCellPixels ?? options.readabilityCellPixels ?? 4.25,
+      smoothingStrength: options.smoothingStrength ?? options.valueSmoothing ?? 0.72,
+      selectionAlpha: options.selectionAlpha ?? 0.38,
+      selectionCellAlpha: options.selectionCellAlpha ?? 0.72,
+      selectionOutlineAlpha: options.selectionOutlineAlpha ?? 0.92,
+      selectionOutlinePixels: options.selectionOutlinePixels ?? 1.35,
+      selectionColor: options.selectionColor || [1, 0.86, 0.42, 1],
+      blockBandAlpha: options.blockBandAlpha ?? 0.055,
+      blockBandColor: options.blockBandColor || [1, 0.95, 0.72, 1],
+      blockLineAlpha: options.blockLineAlpha ?? 0.32,
       blockLineColor: options.blockLineColor || [1, 1, 1, 1],
+      blockLineWidthCells: options.blockLineWidthCells ?? 0.68,
+      outerBorderAlpha: options.outerBorderAlpha ?? 0.42,
     },
     metadata: {
       relationVisualization: "matrix",
       diagnostics: texture.diagnostics,
       matrix: texture.matrix,
-      relationId: options.relationId || source?.id || null,
+      relationId,
+      relationName,
+      selectionModel: {
+        relationId,
+        recordIds: texture.recordIds,
+        respondsTo: ["record", "pair"],
+        selectedFeatures: ["row", "column", "cell"],
+      },
     },
   };
 }
@@ -172,4 +194,11 @@ function resolveSelectedId(value) {
   if (value == null) return "";
   if (typeof value === "string" || typeof value === "number") return String(value);
   return String(value.id ?? value.recordId ?? value.key ?? "");
+}
+
+function resolveMaterialAlpha(options = {}) {
+  const explicit = Number(options.materialAlpha ?? options.opacity);
+  if (Number.isFinite(explicit)) return explicit;
+  const alpha = Number(options.alpha);
+  return Number.isFinite(alpha) && alpha >= 0 && alpha <= 1 ? alpha : 1;
 }

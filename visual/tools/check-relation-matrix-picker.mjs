@@ -5,10 +5,12 @@ import { readFileSync } from "node:fs";
 import {
   buildRelationMatrixTextureData,
   createRelationGraphEdgeLayerDescriptor,
+  createRelationMatrixLayerDescriptor,
   createRelationMatrixPicker,
   pickRelationMatrixCell,
   RelationMatrixLayer,
 } from "../src/relational/index.js";
+import { RelationMatrixView } from "../src/views/index.js";
 
 const matrix = {
   kind: "dense-relation-matrix",
@@ -25,6 +27,22 @@ const matrix = {
     1, 1, 1,
     1, 1, 0,
     1, 1, 1,
+  ]),
+  missingValueCount: 1,
+  ordering: { source: "record_ids", reordered: false, blockCount: 0, recordCount: 3 },
+  pairEvidence: new Map([
+    [1, {
+      id: "ab-native",
+      pairId: "ab-native",
+      pairKey: "toy-metric\u0000a\u0000b",
+      relationId: "toy-metric",
+      relationName: "Toy metric",
+      rowId: "a",
+      columnId: "b",
+      value: 1,
+      properties: { bucket: "near" },
+      pair: { id: "ab-native", row_id: "a", column_id: "b", value: 1 },
+    }],
   ]),
 };
 
@@ -43,6 +61,9 @@ assert.deepEqual(picker.describe(), {
   relationId: "toy-metric",
   relationName: null,
   rect: [0.25, 0.2, 0.5, 0.6],
+  blockCount: 0,
+  missingValueCount: 1,
+  ordering: { source: "record_ids", reordered: false, blockCount: 0, recordCount: 3 },
 });
 
 assert.equal(picker.cellAtNormalizedPoint(0.24, 0.5), null);
@@ -59,6 +80,15 @@ assert.equal(cell.relationId, "toy-metric");
 assert.equal(cell.pairKey, "toy-metric\u0000a\u0000a");
 assert.equal(cell.value, 0);
 assert.equal(cell.present, true);
+
+cell = picker.cellAtNormalizedPoint(0.42, 0.21);
+assert.equal(cell.id, "ab-native");
+assert.equal(cell.pairId, "ab-native");
+assert.equal(cell.relationName, "Toy metric");
+assert.equal(cell.pairIdentity.rowId, "a");
+assert.equal(cell.pairIdentity.columnId, "b");
+assert.equal(cell.properties.bucket, "near");
+assert.equal(cell.nativePair.id, "ab-native");
 
 cell = picker.cellAtNormalizedPoint(0.74, 0.79);
 assert.equal(cell.row, 2);
@@ -108,6 +138,8 @@ layer.setSelection({
 assert.deepEqual(layer.selection, {
   row: 1,
   column: 2,
+  rowActive: true,
+  columnActive: true,
   active: true,
 });
 
@@ -115,6 +147,8 @@ layer.setSelection({ recordId: "a" });
 assert.deepEqual(layer.selection, {
   row: 0,
   column: 0,
+  rowActive: true,
+  columnActive: true,
   active: true,
 });
 
@@ -122,6 +156,8 @@ layer.setSelection({ pair: { rowId: "missing", columnId: "a" } });
 assert.deepEqual(layer.selection, {
   row: -1,
   column: 0,
+  rowActive: false,
+  columnActive: true,
   active: false,
 });
 
@@ -145,15 +181,42 @@ assert.equal(nativeTexture.matrix.diagnostics.matrixDimensions.width, 130);
 assert.equal(nativeTexture.matrix.diagnostics.metricLawDiagnostic.triangle, true);
 assert.equal(nativeTexture.matrix.pairEvidence.get(1).rowId, "pc-000");
 assert.equal(nativeTexture.matrix.pairEvidence.get(1).columnId, "pc-001");
+assert.equal(nativeTexture.matrix.pairEvidence.get(1).relationId, nativeRelation.id);
+assert.equal(nativeTexture.matrix.pairEvidence.get(1).pairKey, `${nativeRelation.id}\u0000pc-000\u0000pc-001`);
 assert.equal(nativeTexture.matrix.pairEvidence.get(1).pair?.value, 2.34478);
 
 const nativeLayer = new RelationMatrixLayer({ metadata: { matrix: nativeTexture.matrix } });
 nativeLayer.updateBlockBoundaries(nativeTexture);
 assert.equal(nativeLayer.blockBoundaryCount, 4);
+assert.equal(nativeLayer.blockRangeCount, 5);
 assert.deepEqual(
   Array.from(nativeLayer.blockBoundaries.slice(0, nativeLayer.blockBoundaryCount)).map((value) => Number(value.toFixed(3))),
   [0.2, 0.4, 0.6, 0.8],
 );
+assert.deepEqual(
+  Array.from(nativeLayer.blockRanges.slice(0, 4)).map((value) => Number(value.toFixed(3))),
+  [0, 0.2, 0.2, 0.4],
+);
+
+const layerDescriptor = createRelationMatrixLayerDescriptor(nativeTexture, {
+  relationId: nativeRelation.id,
+  relationName: nativeRelation.name,
+});
+assert.equal(layerDescriptor.material.alpha, 1);
+assert.equal(layerDescriptor.material.smoothingCellPixels, 4.25);
+assert.equal(layerDescriptor.material.blockBandAlpha, 0.055);
+assert.deepEqual(layerDescriptor.metadata.selectionModel.selectedFeatures, ["row", "column", "cell"]);
+assert.deepEqual(layerDescriptor.metadata.selectionModel.respondsTo, ["record", "pair"]);
+
+const matrixView = RelationMatrixView.fromVisualSpace(nativeDocument, {
+  relationId: nativeRelation.id,
+  rect: [0.6, 0.3, 0.32, 0.42],
+});
+const [matrixViewDescriptor] = matrixView.toLayerDescriptors();
+assert.equal(matrixViewDescriptor.source.texture.scaler.kind, "quantile");
+assert.equal(matrixViewDescriptor.source.relationId, nativeRelation.id);
+assert.equal(matrixViewDescriptor.metadata.relationId, nativeRelation.id);
+assert.equal(matrixViewDescriptor.material.smoothingStrength, 0.72);
 
 const graphDescriptor = createRelationGraphEdgeLayerDescriptor(nativeRelation, {
   graph: nativeGraph,

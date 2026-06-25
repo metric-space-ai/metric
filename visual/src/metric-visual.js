@@ -12,6 +12,7 @@ import {
   MetricSpaceView,
   NeighborhoodGraphView,
   RelationMatrixView,
+  SolverTraceView,
   SpacePropertiesView,
 } from "./views/index.js";
 import { VisualLayer } from "./views/VisualLayer.js";
@@ -107,6 +108,16 @@ export async function showRelationMatrixNeighborhood(evidence, options = {}) {
   return visual.showRelationMatrixNeighborhood(options);
 }
 
+export async function showSolverTrace(evidence, options = {}) {
+  const visual = await createMetricVisual({ ...options, evidence });
+  return visual.showSolverTrace(options);
+}
+
+export async function showPreview(evidence, options = {}) {
+  const visual = await createMetricVisual({ ...options, evidence });
+  return visual.showPreview(options);
+}
+
 export function createMetricVisualDocumentDiagnostics(document, options = {}) {
   const context = describeMetricVisualContext(options);
   const warnings = createMetricVisualDocumentWarnings(document, context);
@@ -157,6 +168,8 @@ export class MetricVisualSurface {
     if (normalized === "mixed-records") return this.showMixedRecords(options);
     if (normalized === "cross-space") return this.showCrossSpace(options);
     if (normalized === "relation-matrix-neighborhood") return this.showRelationMatrixNeighborhood(options);
+    if (normalized === "solver-trace" || normalized === "solver") return this.showSolverTrace(options);
+    if (normalized === "preview" || normalized === "record-preview" || normalized === "pair-preview") return this.showPreview(options);
     throw new Error(`Unsupported METRIC visual view: ${kind}`);
   }
 
@@ -430,6 +443,31 @@ export class MetricVisualSurface {
     return this.configurePreview({ ...options, preview: options.preview ?? "pair" });
   }
 
+  showSolverTrace(options = {}) {
+    const view = SolverTraceView.fromVisualSpace(this.document, options);
+    this.views = [view];
+    this.setViews([view], { source: "showSolverTrace", viewKind: "solver-trace" });
+    return this.configurePreview(options);
+  }
+
+  showPreview(options = {}) {
+    const mode = options.mode || options.preview || "record";
+    if (!this.descriptors.length) {
+      const pairMode = String(mode).toLowerCase().includes("pair") || options.relationId || options.relation;
+      if (pairMode && this.document?.relations?.length) {
+        this.showRelationMatrix({ ...options, preview: false });
+      } else {
+        this.showMetricSpace({ ...options, preview: false });
+      }
+    }
+    this.enableRecordPreview({ mode, ...(options.previewOptions || {}) });
+    this.recordCommandDiagnostics({
+      command: "showPreview",
+      viewKind: options.viewKind || `${String(mode).replace(/\s+/g, "-")}-preview`,
+    });
+    return this;
+  }
+
   recordCommandDiagnostics(options = {}) {
     const runtimeState = safeRuntimeState(this.runtime);
     const evidence = classifyMetricVisualEvidence(this.document);
@@ -494,16 +532,22 @@ export class MetricVisualSurface {
   }
 
   enableRecordPreview(options = {}) {
+    const canAttachDom = typeof document !== "undefined"
+      && typeof window !== "undefined"
+      && this.canvas
+      && typeof this.canvas.addEventListener === "function";
     if (!this.previewPanel) {
-      this.previewPanel = new RecordPreviewPanel({
-        root: options.root || document.body,
-        resolver: (input) => buildRecordPreview(this, input),
-        ...(options.panel || {}),
-      });
+      if (canAttachDom) {
+        this.previewPanel = new RecordPreviewPanel({
+          root: options.root || document.body,
+          resolver: (input) => buildRecordPreview(this, input),
+          ...(options.panel || {}),
+        });
+      }
     } else if (options.panel?.resolver) {
       this.previewPanel.setResolver(options.panel.resolver);
     }
-    if (!this.previewSubscriptions.length) {
+    if (canAttachDom && !this.previewSubscriptions.length) {
       this.previewSubscriptions.push(this.runtime.on("hoverfocuschange", ({ focusTarget, pointer }) => {
         if (!focusTarget?.recordId) {
           this.previewPanel?.hide();

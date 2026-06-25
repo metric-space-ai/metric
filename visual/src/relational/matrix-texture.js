@@ -38,6 +38,15 @@ export function buildDenseRelationMatrix(source, options = {}) {
   const present = new Uint8Array(size * size);
   const pairEvidence = new Map();
   const symmetric = options.symmetric === true ? "mirror" : options.symmetric || "directed";
+  const relationId = options.relationId
+    ?? source?.id
+    ?? source?.relation_id
+    ?? source?.relationId
+    ?? null;
+  const relationName = options.relationName
+    ?? source?.name
+    ?? source?.label
+    ?? null;
 
   for (let index = 0; index < values.length; index += 1) values[index] = missingValue;
   for (let index = 0; index < size; index += 1) {
@@ -76,6 +85,8 @@ export function buildDenseRelationMatrix(source, options = {}) {
       offset,
       value,
       mirrored: false,
+      relationId,
+      relationName,
     }));
     acceptedPairCount += 1;
 
@@ -92,6 +103,8 @@ export function buildDenseRelationMatrix(source, options = {}) {
         offset: reverseOffset,
         value,
         mirrored: true,
+        relationId,
+        relationName,
       }));
     }
   }
@@ -123,6 +136,8 @@ export function buildDenseRelationMatrix(source, options = {}) {
     height: size,
     recordIds,
     sourceRecordIds,
+    relationId,
+    relationName,
     values,
     present,
     pairEvidence,
@@ -150,6 +165,8 @@ export function buildDenseRelationMatrix(source, options = {}) {
       blockRanges,
       ordering,
       metricLawDiagnostic,
+      relationId,
+      relationName,
     },
   };
 }
@@ -207,6 +224,8 @@ export function buildRelationMatrixTextureData(source, options = {}) {
     data,
     matrix,
     recordIds: matrix.recordIds,
+    relationId: matrix.relationId,
+    relationName: matrix.relationName,
     scaler,
     palette,
     diagnostics: matrix.diagnostics,
@@ -215,9 +234,15 @@ export function buildRelationMatrixTextureData(source, options = {}) {
 
 function describePairEvidence(pair, cell) {
   const properties = pairProperties(pair);
+  const relationId = pair?.relation_id ?? pair?.relationId ?? cell.relationId ?? null;
+  const pairId = pair?.id ?? pair?.pair_id ?? pair?.pairId ?? null;
+  const pairKey = `${relationId || "relation"}\u0000${cell.rowId}\u0000${cell.columnId}`;
   return {
-    id: pair?.id ?? pair?.pair_id ?? pair?.pairId ?? null,
-    relationId: pair?.relation_id ?? pair?.relationId ?? null,
+    id: pairId,
+    pairId,
+    pairKey,
+    relationId,
+    relationName: cell.relationName ?? null,
     rowId: cell.rowId,
     columnId: cell.columnId,
     sourceId: cell.rowId,

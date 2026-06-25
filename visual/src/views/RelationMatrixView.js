@@ -21,7 +21,10 @@ export class RelationMatrixView extends BaseView {
       || [];
     this.relationType = this.relation?.relation_type || options.relationType || "relation";
     this.symmetric = options.symmetric ?? inferSymmetry(this.relation);
-    this.scale = options.scale || "minMax";
+    this.scale = options.scale
+      ?? this.relation?.metadata?.visual_scale
+      ?? this.relation?.metadata?.visualScale
+      ?? "quantile";
     this.palette = options.palette || "metric";
     this.rect = options.rect || [0, 0, 1, 1];
     this.recordOrder = options.recordOrder
@@ -43,6 +46,12 @@ export class RelationMatrixView extends BaseView {
     // value renders the empty grid faintly so the matrix reads as a matrix.
     this.missingAlpha = Number.isFinite(Number(options.missingAlpha)) ? Number(options.missingAlpha) : 0;
     this.valueKey = options.valueKey || ["value", "distance", "weight", "score"];
+    this.readabilityCellPixels = finiteOption(options.readabilityCellPixels ?? options.smoothingCellPixels, 4.25);
+    this.smoothingStrength = finiteOption(options.smoothingStrength ?? options.valueSmoothing, 0.72);
+    this.selectionAlpha = finiteOption(options.selectionAlpha, 0.38);
+    this.selectionCellAlpha = finiteOption(options.selectionCellAlpha, 0.72);
+    this.selectionOutlineAlpha = finiteOption(options.selectionOutlineAlpha, 0.92);
+    this.blockBandAlpha = finiteOption(options.blockBandAlpha, 0.055);
   }
 
   static fromVisualSpace(document, options = {}) {
@@ -88,6 +97,14 @@ export class RelationMatrixView extends BaseView {
       recordOrder: this.recordOrder,
       blockRanges: this.blockRanges,
       relationId: this.relationId,
+      relationName: this.relation?.name || null,
+      materialAlpha: this.materialAlpha,
+      readabilityCellPixels: this.readabilityCellPixels,
+      smoothingStrength: this.smoothingStrength,
+      selectionAlpha: this.selectionAlpha,
+      selectionCellAlpha: this.selectionCellAlpha,
+      selectionOutlineAlpha: this.selectionOutlineAlpha,
+      blockBandAlpha: this.blockBandAlpha,
     };
   }
 
@@ -134,4 +151,9 @@ function inferSymmetry(relation) {
   if (!relation) return false;
   if (relation.metadata && typeof relation.metadata.symmetric === "boolean") return relation.metadata.symmetric;
   return relation.storage === "symmetric_dense_matrix";
+}
+
+function finiteOption(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
 }

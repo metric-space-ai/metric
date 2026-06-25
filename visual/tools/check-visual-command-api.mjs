@@ -25,6 +25,8 @@ import {
   showMixedRecords,
   showCrossSpace,
   showRelationMatrixNeighborhood,
+  showSolverTrace,
+  showPreview,
 } from "../src/index.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -42,6 +44,8 @@ const COMMANDS = [
   "showMixedRecords",
   "showCrossSpace",
   "showRelationMatrixNeighborhood",
+  "showSolverTrace",
+  "showPreview",
 ];
 
 const EXPORTED_COMMANDS = {
@@ -55,6 +59,8 @@ const EXPORTED_COMMANDS = {
   showMixedRecords,
   showCrossSpace,
   showRelationMatrixNeighborhood,
+  showSolverTrace,
+  showPreview,
 };
 
 const PUBLIC_REFERENCE_EXEMPTIONS = new Set([
@@ -231,6 +237,33 @@ async function checkCommandDiagnostics(failures) {
         colorProperty: "process-family",
         matrixRect: [0.635, 0.30, 0.33, 0.44],
         preview: false,
+      },
+    },
+    {
+      command: "showSolverTrace",
+      viewKind: "solver-trace",
+      evidenceKind: "synthetic_fixture",
+      document: metricFixture,
+      options: {
+        series: [
+          { iteration: 0, residual: 1 },
+          { iteration: 1, residual: 0.4 },
+          { iteration: 2, residual: 0.08 },
+          { iteration: 3, residual: 0.008 },
+        ],
+        traceLabel: "PCG residual",
+        preview: false,
+      },
+    },
+    {
+      command: "showPreview",
+      viewKind: "record-preview",
+      evidenceKind: "synthetic_fixture",
+      document: metricFixture,
+      options: {
+        coordinateId: "landmark-3d",
+        colorBy: "anomaly",
+        mode: "record",
       },
     },
   ];

@@ -52,6 +52,9 @@ export function createRelationMatrixPicker(input, options = {}) {
         relationId: context.relationId,
         relationName: context.relationName,
         rect: rect.slice(),
+        blockCount: Array.isArray(matrix.blockRanges) ? matrix.blockRanges.length : 0,
+        missingValueCount: Number.isFinite(Number(matrix.missingValueCount)) ? Number(matrix.missingValueCount) : null,
+        ordering: matrix.ordering || null,
       };
     },
   };
@@ -80,12 +83,19 @@ function cellAtNormalizedPoint(matrix, rect, x, y, context = {}) {
   const present = matrix.present ? matrix.present[offset] === 1 : Number.isFinite(matrix.values?.[offset]);
   const evidence = matrix.pairEvidence?.get?.(offset) || null;
   const relationId = evidence?.relationId || context.relationId || null;
+  const relationName = evidence?.relationName || context.relationName || null;
   const rowId = matrix.recordIds[row];
   const columnId = matrix.recordIds[column];
+  const pairKey = evidence?.pairKey || `${relationId || "relation"}\u0000${rowId}\u0000${columnId}`;
+  const pairId = evidence?.pairId || evidence?.id || evidence?.pair?.id || evidence?.pair?.pair_id || evidence?.pair?.pairId || null;
+  const publicId = pairId || `${relationId || "relation"}:${rowId}:${columnId}`;
 
   return {
+    id: publicId,
+    pairId,
+    pairKey,
     relationId,
-    relationName: context.relationName,
+    relationName,
     row,
     column,
     rowId,
@@ -96,8 +106,17 @@ function cellAtNormalizedPoint(matrix, rect, x, y, context = {}) {
     present,
     offset,
     size,
-    pairKey: `${relationId || "relation"}\u0000${rowId}\u0000${columnId}`,
+    pairIdentity: {
+      relationId,
+      relationName,
+      pairId,
+      pairKey,
+      rowId,
+      columnId,
+      present,
+    },
     properties: evidence?.properties || null,
+    pairProperties: evidence?.properties || null,
     nativePair: evidence?.pair || null,
     mirrored: evidence?.mirrored === true,
   };
@@ -107,12 +126,20 @@ function resolvePairContext(input, options) {
   return {
     relationId: options.relationId
       ?? input?.source?.relationId
+      ?? input?.source?.texture?.relationId
+      ?? input?.source?.textureData?.relationId
       ?? input?.metadata?.relationId
+      ?? input?.metadata?.matrix?.relationId
+      ?? input?.texture?.relationId
       ?? input?.relationId
       ?? null,
     relationName: options.relationName
       ?? input?.source?.relationName
+      ?? input?.source?.texture?.relationName
+      ?? input?.source?.textureData?.relationName
       ?? input?.metadata?.relationName
+      ?? input?.metadata?.matrix?.relationName
+      ?? input?.texture?.relationName
       ?? input?.relationName
       ?? null,
   };

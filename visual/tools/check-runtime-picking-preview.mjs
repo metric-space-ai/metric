@@ -120,7 +120,7 @@ runtime.layerDescriptors = [
   },
 ];
 runtime.layerState = { status: "ready", descriptors: runtime.layerDescriptors.length, instances: 0, warning: null, errors: [] };
-runtime.selection = { recordId: null, pair: null, record: null, source: null, pickSource: null };
+runtime.selection = { recordId: null, pair: null, record: null, preview: null, source: null, pickSource: null };
 runtime.focusTarget = null;
 runtime.hoverFocusOptions = { enabled: false };
 runtime.hoverFocusState = { target: null };
@@ -156,20 +156,46 @@ assert.deepEqual(runtime.pickingIndex.availableSources, ["relation-matrix-pickin
 
 let result = runtime.inspectAt({ x: 10, y: 10 }, { select: true, source: "check-cpu" });
 assert.equal(result.source, "cpu-nearest");
-assert.equal(runtime.getState().selectedRecordId, "a");
-assert.equal(runtime.getState().selectedRecord.label, "Alpha");
+let state = runtime.getState();
+assert.equal(state.selectedRecordId, "a");
+assert.equal(state.selectedRecord.label, "Alpha");
+assert.equal(state.selectedRecordPreview.kind, "record");
+assert.equal(state.selectedRecordPreview.recordId, "a");
+assert.equal(state.selectedRecordPreview.payloadSnippet.find((field) => field.label === "group").value, "left");
+assert.equal(state.selectionPreview.kind, "record");
+assert.equal(state.inspection.selection.preview.kind, "record");
 
 result = runtime.inspectAt({ x: 150, y: 10 }, { select: true, source: "check-matrix" });
 assert.equal(result.source, "relation-matrix-picking");
-assert.equal(runtime.getState().selectedPair.rowId, "a");
-assert.equal(runtime.getState().selectedPair.columnId, "b");
-assert.equal(runtime.getState().selectionPickSource, "relation-matrix-picking");
+state = runtime.getState();
+assert.equal(state.selectedPair.rowId, "a");
+assert.equal(state.selectedPair.columnId, "b");
+assert.equal(state.selectionPickSource, "relation-matrix-picking");
+assert.equal(state.selectedPairPreview.kind, "pair");
+assert.equal(state.selectedPairPreview.pair.relationId, "toy-distance");
+assert.equal(state.selectedPairPreview.pair.relationName, "Toy exported distance");
+assert.equal(state.selectedPairPreview.pair.rowId, "a");
+assert.equal(state.selectedPairPreview.pair.columnId, "b");
+assert.equal(state.selectedPairPreview.pair.value, 1);
+assert.equal(state.selectedPairPreview.pair.properties.find((field) => field.label === "source").value, "exported");
+assert.equal(state.inspection.selection.preview.pair.relationId, "toy-distance");
 
 result = runtime.inspectAt({ x: 50, y: 120 }, { select: true, source: "check-graph" });
 assert.equal(result.source, "graph-picking");
-assert.equal(runtime.getState().selectedPair.rowId, "a");
-assert.equal(runtime.getState().selectedPair.columnId, "b");
-assert.equal(runtime.getState().inspection.graphPicking.edgeCount, 1);
+state = runtime.getState();
+assert.equal(state.selectedPair.rowId, "a");
+assert.equal(state.selectedPair.columnId, "b");
+assert.equal(state.selectedPairPreview.pair.value, 1);
+assert.equal(state.selectedPairPreview.pair.properties.find((field) => field.label === "source").value, "exported");
+assert.equal(state.inspection.graphPicking.edgeCount, 1);
+assert.deepEqual(state.inspection.runtimeStateKeys, {
+  selectedRecord: "selectedRecord",
+  selectedRecordId: "selectedRecordId",
+  selectedRecordPreview: "selectedRecordPreview",
+  selectedPair: "selectedPair",
+  selectedPairPreview: "selectedPairPreview",
+  selectionPreview: "selectionPreview",
+});
 
 const recordPreview = buildMetricRecordPreview({ recordId: "a" }, { visualSpace: runtime.visualSpace, document });
 assert.equal(recordPreview.title, "Alpha");
@@ -177,7 +203,10 @@ assert.equal(recordPreview.fields.find((field) => field.label === "group").value
 
 const pairPreview = buildMetricPairPreview(runtime.getState().selectedPair, { visualSpace: runtime.visualSpace, document });
 assert.equal(pairPreview.fields.find((field) => field.label === "value").value, "1.0000");
-assert.equal(pairPreview.fields.find((field) => field.label === "source").value, "exported");
+assert.equal(pairPreview.fields.find((field) => field.label === "relation id").value, "toy-distance");
+assert.equal(pairPreview.fields.find((field) => field.label === "row id").value, "a");
+assert.equal(pairPreview.fields.find((field) => field.label === "column id").value, "b");
+assert.equal(pairPreview.pair.properties.find((field) => field.label === "source").value, "exported");
 
 let disposedPickingTarget = false;
 runtime.pickingPass = { name: "test-picking-pass" };

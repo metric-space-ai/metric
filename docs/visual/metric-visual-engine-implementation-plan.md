@@ -45,7 +45,7 @@ That is the product. Hero pages are acceptance fixtures for this product.
 
 ## Current State
 
-Status date: 2026-06-24
+Status date: 2026-06-25
 
 This plan is authoritative only with the following current-state constraints:
 
@@ -2060,7 +2060,8 @@ Implemented:
 - Added the public command surface in `visual/src/metric-visual.js`:
   `createMetricVisual`, `showMetricSpace`, `showRelationMatrix`,
   `showNeighborhoodGraph`, `showSpaceProperties`, `showMapping`,
-  `showDynamics` and the `MetricVisualSurface` command object.
+  `showDynamics`, `showSolverTrace`, `showPreview` and the
+  `MetricVisualSurface` command object.
 - Rewired the current hero fixtures so page code calls engine commands instead
   of owning renderer construction.
 - Added architecture guards:
@@ -2113,17 +2114,28 @@ Not visually accepted yet:
 - Record and pair preview now share the runtime inspection path. The remaining
   preview work is richer payload renderers and linked multi-view presentation,
   not basic GPU record picking.
+- `RelationMatrixLayer` has a first WebGL readability pass: block ranges render
+  as subtle same-block bands plus explicit boundaries, dense cells use
+  pixel-footprint smoothing, and selection differentiates row, column and cell.
+  Matrix hits carry relation id/name, native pair identity and pair properties
+  into the shared runtime pair-preview path.
+- The large-scene performance gate now covers the point-cloud stress rows and
+  current public preview grammar rows for field, glyph, relation-matrix/graph,
+  dynamics, mapping and cross-space scenes. These rows prove runtime mechanics,
+  not hero acceptance.
 
 Next mandatory engine work:
 
 1. Promote the native preview exports into polished hero-specific visual
    grammars only after screenshot review.
-2. Implement reusable pair preview contracts.
-3. Extend layer-specific picking beyond point, glyph, ground projection,
-   heat fields, relation edges, curve ribbons and tube curves to matrix cases
-   where the semantic CPU pickers are not sufficient.
-4. Improve `RelationMatrixLayer` readability: block ordering, mip/LOD strategy,
-   explicit row/column focus, and no moire-like artifacts.
+2. Finish richer preview presentation for records, pairs and linked multi-view
+   inspection. The basic runtime preview payload contract exists; the remaining
+   work is useful presentation, not another page-local preview path.
+3. Extend layer-specific matrix picking to a GPU/tiled strategy only where the
+   semantic matrix picker is not sufficient at larger scales.
+4. Continue `RelationMatrixLayer` readability toward hero acceptance:
+   large-matrix tiling/LOD, screenshot review, row/column focus under dense
+   matrices and no moire-like artifacts.
 5. Replace placeholder glyph rendering with true type-specific glyph geometry
    for mixed records.
 6. Add stateful timeline controls to `DynamicsView`.

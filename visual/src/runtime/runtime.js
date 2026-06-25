@@ -1,6 +1,11 @@
 import { VisualRenderer, VisualScene } from "../engine/index.js";
 import { createMiniaturePerspectiveCamera } from "../camera/index.js";
-import { createFocusLineState, createCameraControls } from "../interaction/index.js";
+import {
+  buildMetricPairPreview,
+  buildMetricRecordPreview,
+  createFocusLineState,
+  createCameraControls,
+} from "../interaction/index.js";
 import { VisualSpace } from "../data/index.js";
 import {
   PickingPass,
@@ -363,6 +368,7 @@ export class MetricVisualRuntime {
       recordId: null,
       pair: null,
       record: null,
+      preview: null,
       source: null,
     };
     this.inspectionOptions = normalizeInspectionOptions(this.options.inspection ?? this.options.picking);
@@ -671,10 +677,13 @@ export class MetricVisualRuntime {
     const focusTarget = options.focus === false
       ? null
       : focusTargetForRecord(this, recordId, options);
+    const record = this.visualSpace?.getRecord ? this.visualSpace.getRecord(recordId) : null;
+    const preview = buildRuntimeRecordPreview(this, recordId);
     this.selection = {
       recordId,
       pair: null,
-      record: this.visualSpace?.getRecord ? this.visualSpace.getRecord(recordId) : null,
+      record,
+      preview,
       source: options.source || null,
       pickSource: options.pickSource || options.pickingSource || null,
       focusTarget,
@@ -698,10 +707,12 @@ export class MetricVisualRuntime {
 
   selectPair(pair, options = {}) {
     const normalized = normalizeSelectionPair(pair);
+    const preview = buildRuntimePairPreview(this, normalized);
     this.selection = {
       recordId: null,
       pair: normalized,
       record: null,
+      preview,
       source: options.source || null,
       pickSource: options.pickSource || options.pickingSource || normalized.pickSource || null,
       focusTarget: null,
@@ -727,6 +738,7 @@ export class MetricVisualRuntime {
       recordId: null,
       pair: null,
       record: null,
+      preview: null,
       source: options.source || null,
       pickSource: null,
     };
@@ -873,7 +885,7 @@ export class MetricVisualRuntime {
 
   inspectAt(input = {}, options = {}) {
     const result = this.pickAt(input, options);
-    const detail = inspectionDetailFromPickResult(result, options);
+    const detail = inspectionDetailFromPickResult(result, options, this);
     if (options.select === true || (options.mode === "click" && this.inspectionOptions.selectOnClick !== false)) {
       if (result?.hit) this.applyPickSelection(result, { source: options.source || "inspection" });
       else if (options.clearOnMiss ?? this.inspectionOptions.clearOnMiss) this.clearSelection({ source: options.source || "inspection-miss" });
@@ -1216,7 +1228,14 @@ export class MetricVisualRuntime {
       hasDocument: Boolean(this.document),
       selectedRecordId: this.selection.recordId,
       selectedRecord: this.selection.record ? clonePlainObject(this.selection.record) : null,
+      selectedRecordPreview: this.selection.recordId != null && this.selection.preview
+        ? clonePlainObject(this.selection.preview)
+        : null,
       selectedPair: this.selection.pair ? clonePlainObject(this.selection.pair) : null,
+      selectedPairPreview: this.selection.pair && this.selection.preview
+        ? clonePlainObject(this.selection.preview)
+        : null,
+      selectionPreview: this.selection.preview ? clonePlainObject(this.selection.preview) : null,
       selectionSource: this.selection.source || null,
       selectionPickSource: this.selection.pickSource || null,
       focusTarget: this.focusTarget ? clonePlainObject(this.focusTarget) : null,
@@ -1246,7 +1265,10 @@ export class MetricVisualRuntime {
         runtimeStateKeys: {
           selectedRecord: "selectedRecord",
           selectedRecordId: "selectedRecordId",
+          selectedRecordPreview: "selectedRecordPreview",
           selectedPair: "selectedPair",
+          selectedPairPreview: "selectedPairPreview",
+          selectionPreview: "selectionPreview",
         },
       }),
       hoverFocus: {
@@ -2213,6 +2235,10 @@ function normalizeSelectionPair(pair) {
   }
   return {
     relationId: pair.relationId ?? pair.relation_id ?? null,
+    relationName: pair.relationName ?? pair.relation_name ?? null,
+    relationType: pair.relationType ?? pair.relation_type ?? null,
+    graphId: pair.graphId ?? pair.graph_id ?? null,
+    edgeId: pair.edgeId ?? pair.edge_id ?? null,
     rowId: String(rowId),
     columnId: String(columnId),
     row: Number.isFinite(Number(pair.row)) ? Number(pair.row) : null,
@@ -2221,6 +2247,53 @@ function normalizeSelectionPair(pair) {
     present: pair.present !== false,
     offset: Number.isFinite(Number(pair.offset)) ? Number(pair.offset) : null,
     size: Number.isFinite(Number(pair.size)) ? Number(pair.size) : null,
+    properties: pair.properties == null ? null : normalizePreviewProperties(pair.properties),
+    nativePair: pair.nativePair ?? pair.native_pair ?? null,
+    pickSource: pair.pickSource ?? pair.pick_source ?? null,
+  };
+}
+
+function buildRuntimeRecordPreview(runtime, recordId) {
+  if (!runtime) return null;
+  return buildMetricRecordPreview({ recordId }, {
+    runtime,
+    visualSpace: runtime.visualSpace,
+    document: runtime.document,
+  });
+}
+
+function buildRuntimePairPreview(runtime, pair) {
+  if (!runtime) return null;
+  return buildMetricPairPreview({ pair }, {
+    runtime,
+    visualSpace: runtime.visualSpace,
+    document: runtime.document,
+  });
+}
+
+function normalizePreviewProperties(properties) {
+  if (!properties) return [];
+  if (Array.isArray(properties)) {
+    return properties.map(normalizePreviewProperty).filter(Boolean);
+  }
+  if (properties instanceof Map) {
+    return Array.from(properties, ([label, value]) => normalizePreviewProperty({ label, value })).filter(Boolean);
+  }
+  if (typeof properties === "object") {
+    return Object.entries(properties)
+      .map(([label, value]) => normalizePreviewProperty({ label, value }))
+      .filter(Boolean);
+  }
+  return [];
+}
+
+function normalizePreviewProperty(property) {
+  if (!property || typeof property !== "object") return null;
+  const label = property.label ?? property.name ?? property.id;
+  if (label == null) return null;
+  return {
+    label: String(label),
+    value: property.value,
   };
 }
 
@@ -2597,6 +2670,8 @@ function pairFromPickResult(result) {
   if (rowId == null || columnId == null) return null;
   return {
     relationId: payload.relationId ?? payload.relation_id ?? null,
+    relationName: payload.relationName ?? payload.relation_name ?? null,
+    relationType: payload.relationType ?? payload.relation_type ?? null,
     graphId: payload.graphId ?? payload.graph_id ?? null,
     edgeId: payload.edgeId ?? payload.edge_id ?? result.edgeId ?? null,
     rowId: String(rowId),
@@ -2607,11 +2682,13 @@ function pairFromPickResult(result) {
     present: payload.present !== false,
     offset: Number.isFinite(Number(payload.offset)) ? Number(payload.offset) : null,
     size: Number.isFinite(Number(payload.size)) ? Number(payload.size) : null,
+    properties: payload.properties == null ? null : normalizePreviewProperties(payload.properties),
+    nativePair: payload.nativePair ?? payload.native_pair ?? null,
     pickSource: result.source || null,
   };
 }
 
-function inspectionDetailFromPickResult(result, options = {}) {
+function inspectionDetailFromPickResult(result, options = {}, runtime = null) {
   if (!result?.hit) {
     return {
       hit: false,
@@ -2627,6 +2704,11 @@ function inspectionDetailFromPickResult(result, options = {}) {
     kind: pair ? "pair" : (result.kind || "record"),
     recordId: result.recordId ?? null,
     pair,
+    preview: pair
+      ? buildRuntimePairPreview(runtime, pair)
+      : result.recordId != null
+        ? buildRuntimeRecordPreview(runtime, result.recordId)
+        : null,
     layerId: result.layerId ?? null,
     edgeId: result.edgeId ?? null,
     numericId: result.numericId ?? 0,

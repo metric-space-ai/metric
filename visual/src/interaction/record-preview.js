@@ -169,6 +169,7 @@ export function buildMetricRecordPreview(input = {}, context = {}) {
   const record = visualSpace.getRecord?.(recordId);
   if (!record) return null;
   const payload = record.payload || {};
+  const payloadSnippet = payloadSnippetFields(payload, context.maxPayloadFields ?? 6);
   const fields = [
     { label: "id", value: record.id },
     { label: "type", value: record.record_type },
@@ -178,11 +179,27 @@ export function buildMetricRecordPreview(input = {}, context = {}) {
     ? Object.entries(payload.features).slice(0, 5).map(([label, value]) => ({ label, value }))
     : [];
   const preview = {
+    kind: "record",
+    source: "metric.visual.v1",
+    recordId: record.id,
     title: record.label || record.id,
     subtitle: record.record_type || "record",
+    record: {
+      id: record.id,
+      label: record.label || null,
+      type: record.record_type || null,
+      datasetId: record.dataset_id || null,
+    },
+    payloadSnippet,
     fields: fields.concat(featureFields),
     sections: [],
   };
+  if (payloadSnippet.length > 0) {
+    preview.sections.push({
+      title: "payload",
+      fields: payloadSnippet,
+    });
+  }
   if (Array.isArray(payload.series)) {
     preview.series = [{ label: "series", values: payload.series, color: "rgba(32, 118, 132, 0.86)" }];
   } else if (Array.isArray(payload.values) && payload.values.every((value) => Number.isFinite(Number(value)))) {
@@ -206,6 +223,7 @@ export function buildMetricPairPreview(input = {}, context = {}) {
 
   const relationId = pair.relationId ?? pair.relation_id ?? firstRelationId(document);
   const relation = relationId ? visualSpace.getRelation?.(relationId) : null;
+  const relationName = pair.relationName ?? pair.relation_name ?? relation?.name ?? null;
   const entry = pair.value !== undefined
     ? pair
     : relationId
@@ -215,28 +233,45 @@ export function buildMetricPairPreview(input = {}, context = {}) {
   const columnRecord = visualSpace.getRecord?.(columnId);
   const value = entry?.value ?? pair.value;
   const present = pair.present ?? Boolean(entry);
+  const directPairProperties = normalizePairPropertyFields(pair.properties);
+  const documentPairProperties = collectPairProperties(document, visualSpace, {
+    relationId,
+    rowId,
+    columnId,
+  });
+  const pairProperties = mergePairPropertyFields(directPairProperties, documentPairProperties);
   const fields = [
-    { label: "relation", value: relation?.name || relation?.id || relationId || "relation" },
-    { label: "row", value: labelForRecord(rowRecord, rowId) },
-    { label: "column", value: labelForRecord(columnRecord, columnId) },
+    { label: "relation id", value: relationId || "relation" },
+    { label: "relation name", value: relationName || relation?.id || relationId || "relation" },
+    { label: "row id", value: rowId },
+    { label: "column id", value: columnId },
     { label: "value", value: present && Number.isFinite(Number(value)) ? Number(value).toFixed(4) : (present ? value : "no direct pair") },
   ];
-
-  for (const property of document.properties || []) {
-    if (property.target_type !== "pair") continue;
-    const propertyValue = visualSpace.propertyValue?.(property.id, {
-      relation_id: relationId,
-      row_id: rowId,
-      column_id: columnId,
-    });
-    if (propertyValue) fields.push({ label: property.name || property.id, value: propertyValue.value });
-    if (fields.length >= 8) break;
-  }
+  if (relation?.relation_type) fields.splice(2, 0, { label: "relation type", value: relation.relation_type });
 
   return {
-    title: `${rowId} <-> ${columnId}`,
+    kind: "pair",
+    source: "metric.visual.v1",
+    title: `${labelForRecord(rowRecord, rowId)} <-> ${labelForRecord(columnRecord, columnId)}`,
     subtitle: relation?.relation_type || "pair relation",
+    pair: {
+      relationId,
+      relationName: relationName || null,
+      relationType: relation?.relation_type || null,
+      rowId,
+      columnId,
+      rowLabel: labelForRecord(rowRecord, rowId),
+      columnLabel: labelForRecord(columnRecord, columnId),
+      row: Number.isFinite(Number(pair.row ?? entry?.row)) ? Number(pair.row ?? entry?.row) : null,
+      column: Number.isFinite(Number(pair.column ?? entry?.column)) ? Number(pair.column ?? entry?.column) : null,
+      value,
+      present: Boolean(present),
+      properties: pairProperties,
+    },
     fields,
+    sections: pairProperties.length > 0
+      ? [{ title: "pair properties", fields: pairProperties }]
+      : [],
   };
 }
 
@@ -447,10 +482,84 @@ function labelForRecord(record, fallback) {
   return record?.label || record?.id || fallback;
 }
 
+function payloadSnippetFields(payload, maxFields) {
+  if (!payload || typeof payload !== "object") return [];
+  const fields = [];
+  for (const [label, value] of Object.entries(payload)) {
+    if (label === "series" || label === "values") continue;
+    if (label === "features" && value && typeof value === "object" && !Array.isArray(value)) {
+      for (const [featureLabel, featureValue] of Object.entries(value)) {
+        fields.push({ label: featureLabel, value: summarizePreviewValue(featureValue) });
+        if (fields.length >= maxFields) return fields;
+      }
+      continue;
+    }
+    fields.push({ label, value: summarizePreviewValue(value) });
+    if (fields.length >= maxFields) return fields;
+  }
+  if (Array.isArray(payload.values)) fields.push({ label: "values", value: summarizePreviewValue(payload.values) });
+  if (Array.isArray(payload.series)) fields.push({ label: "series", value: summarizePreviewValue(payload.series) });
+  return fields.slice(0, maxFields);
+}
+
 function summarizePreviewValue(value) {
   if (Array.isArray(value)) return `${value.length} values`;
   if (value && typeof value === "object") return `${Object.keys(value).length} fields`;
   return value;
+}
+
+function collectPairProperties(document, visualSpace, pair) {
+  const fields = [];
+  for (const property of document.properties || []) {
+    if (property.target_type !== "pair") continue;
+    const propertyValue = visualSpace.propertyValue?.(property.id, {
+      relation_id: pair.relationId,
+      row_id: pair.rowId,
+      column_id: pair.columnId,
+    });
+    if (propertyValue) fields.push({ label: property.name || property.id, value: propertyValue.value });
+  }
+  return fields;
+}
+
+function normalizePairPropertyFields(properties) {
+  if (!properties) return [];
+  if (Array.isArray(properties)) {
+    return properties.map(normalizePairPropertyField).filter(Boolean);
+  }
+  if (properties instanceof Map) {
+    return Array.from(properties, ([label, value]) => normalizePairPropertyField({ label, value })).filter(Boolean);
+  }
+  if (typeof properties === "object") {
+    return Object.entries(properties)
+      .map(([label, value]) => normalizePairPropertyField({ label, value }))
+      .filter(Boolean);
+  }
+  return [];
+}
+
+function normalizePairPropertyField(property) {
+  if (!property || typeof property !== "object") return null;
+  const label = property.label ?? property.name ?? property.id;
+  if (label == null) return null;
+  return {
+    label: String(label),
+    value: property.value,
+  };
+}
+
+function mergePairPropertyFields(...groups) {
+  const fields = [];
+  const seen = new Set();
+  for (const group of groups) {
+    for (const field of group || []) {
+      const key = `${field.label}\u0000${String(field.value)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      fields.push(field);
+    }
+  }
+  return fields;
 }
 
 function viewportAnchorX(ratio) {
