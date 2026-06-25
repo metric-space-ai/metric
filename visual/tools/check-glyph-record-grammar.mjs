@@ -5,7 +5,10 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
+  RECORD_GLYPH_GEOMETRY_CODES,
   RECORD_GLYPH_FAMILIES,
+  RECORD_GLYPH_MATERIAL_CODES,
+  RECORD_GLYPH_RENDER_SCHEMA,
   RECORD_GLYPH_TYPES,
   createRecordGlyphGrammar,
 } from "../src/glyphs/index.js";
@@ -64,6 +67,30 @@ assert("composed records map to composed-record glyph family",
 assert("composed records map to composed glyph type code",
   Array.from(glyphDescriptor.channels.glyphType?.array || []).every((value) => value === RECORD_GLYPH_TYPES.composed),
   { glyphTypes: Array.from(new Set(glyphDescriptor.channels.glyphType?.array || [])) });
+assert("typed glyph descriptor carries render geometry shader attributes",
+  glyphDescriptor.channels.glyphGeometry?.schema === RECORD_GLYPH_RENDER_SCHEMA
+    && glyphDescriptor.channels.glyphGeometry?.itemSize === 4
+    && glyphDescriptor.channels.glyphGeometry?.count === document.records.length,
+  {
+    schema: glyphDescriptor.channels.glyphGeometry?.schema,
+    itemSize: glyphDescriptor.channels.glyphGeometry?.itemSize,
+    count: glyphDescriptor.channels.glyphGeometry?.count,
+  });
+assert("typed glyph descriptor carries render material shader attributes",
+  glyphDescriptor.channels.glyphMaterial?.schema === RECORD_GLYPH_RENDER_SCHEMA
+    && glyphDescriptor.channels.glyphMaterial?.itemSize === 4
+    && glyphDescriptor.channels.glyphMaterial?.count === document.records.length,
+  {
+    schema: glyphDescriptor.channels.glyphMaterial?.schema,
+    itemSize: glyphDescriptor.channels.glyphMaterial?.itemSize,
+    count: glyphDescriptor.channels.glyphMaterial?.count,
+  });
+assert("native composed records map to composed dashboard geometry metadata",
+  geometryCodes(glyphDescriptor).every((value) => value === RECORD_GLYPH_GEOMETRY_CODES.composedDashboard),
+  { geometryCodes: Array.from(new Set(geometryCodes(glyphDescriptor))) });
+assert("native composed records map to composed instrument material metadata",
+  materialCodes(glyphDescriptor).every((value) => value === RECORD_GLYPH_MATERIAL_CODES.composedInstrument),
+  { materialCodes: Array.from(new Set(materialCodes(glyphDescriptor))) });
 
 const feature = glyphDescriptor.channels.glyphFeature?.array || [];
 const componentMax = [0, 0, 0, 0];
@@ -133,6 +160,38 @@ for (const family of [
     families: familyGrammar.families,
   });
 }
+const familyGeometryCodes = channelCodes(familyGrammar.channels.glyphGeometry);
+const familyMaterialCodes = channelCodes(familyGrammar.channels.glyphMaterial);
+assert("direct heterogeneous payloads map to distinct render geometry codes",
+  new Set(familyGeometryCodes).size >= 6
+    && familyGeometryCodes.includes(RECORD_GLYPH_GEOMETRY_CODES.textCard)
+    && familyGeometryCodes.includes(RECORD_GLYPH_GEOMETRY_CODES.timeSeriesRibbon)
+    && familyGeometryCodes.includes(RECORD_GLYPH_GEOMETRY_CODES.histogramPanel)
+    && familyGeometryCodes.includes(RECORD_GLYPH_GEOMETRY_CODES.imageTile)
+    && familyGeometryCodes.includes(RECORD_GLYPH_GEOMETRY_CODES.vectorDiamond)
+    && familyGeometryCodes.includes(RECORD_GLYPH_GEOMETRY_CODES.composedDashboard),
+  { familyGeometryCodes });
+assert("direct heterogeneous payloads map to distinct render material codes",
+  new Set(familyMaterialCodes).size >= 6
+    && familyMaterialCodes.includes(RECORD_GLYPH_MATERIAL_CODES.paperInk)
+    && familyMaterialCodes.includes(RECORD_GLYPH_MATERIAL_CODES.signalGlass)
+    && familyMaterialCodes.includes(RECORD_GLYPH_MATERIAL_CODES.histogramCeramic)
+    && familyMaterialCodes.includes(RECORD_GLYPH_MATERIAL_CODES.imageLumaTile)
+    && familyMaterialCodes.includes(RECORD_GLYPH_MATERIAL_CODES.vectorMetal)
+    && familyMaterialCodes.includes(RECORD_GLYPH_MATERIAL_CODES.composedInstrument),
+  { familyMaterialCodes });
+assert("histogram and image payloads no longer collapse to identical render geometry",
+  familyGeometryCodes[2] === RECORD_GLYPH_GEOMETRY_CODES.histogramPanel
+    && familyGeometryCodes[3] === RECORD_GLYPH_GEOMETRY_CODES.imageTile
+    && familyGeometryCodes[2] !== familyGeometryCodes[3],
+  { histogramGeometry: familyGeometryCodes[2], imageGeometry: familyGeometryCodes[3] });
+assert("render atlas declares geometry metadata for glyph families and payload kinds",
+  familyGrammar.renderSemantics?.schema === RECORD_GLYPH_RENDER_SCHEMA
+    && familyGrammar.renderSemantics?.families?.length >= 6
+    && familyGrammar.renderSemantics?.payloadKinds?.length >= 6
+    && familyGrammar.renderSemantics?.shaderAttributes?.glyphGeometry?.components?.includes("geometryCode")
+    && familyGrammar.renderSemantics?.shaderAttributes?.glyphMaterial?.components?.includes("materialCode"),
+  { renderSemantics: familyGrammar.renderSemantics });
 
 console.log(JSON.stringify({
   ok: true,
@@ -140,6 +199,25 @@ console.log(JSON.stringify({
   records: document.records.length,
   glyphFamilies: Array.from(new Set(glyphDescriptor.channels.glyphFamily.array)),
   payloadKinds: Array.from(new Set(glyphDescriptor.channels.payloadKind.array)),
+  geometryCodes: Array.from(new Set(geometryCodes(glyphDescriptor))),
+  materialCodes: Array.from(new Set(materialCodes(glyphDescriptor))),
   edgeCount: edgeDescriptor.metadata.graph.edgeCount,
   primitive: "InstancedGlyphLayer",
 }, null, 2));
+
+function geometryCodes(descriptor) {
+  return channelCodes(descriptor.channels.glyphGeometry);
+}
+
+function materialCodes(descriptor) {
+  return channelCodes(descriptor.channels.glyphMaterial);
+}
+
+function channelCodes(channel) {
+  const array = channel?.array || [];
+  const out = [];
+  for (let offset = 0; offset < array.length; offset += 4) {
+    out.push(Math.round(Number(array[offset]) || 0));
+  }
+  return out;
+}

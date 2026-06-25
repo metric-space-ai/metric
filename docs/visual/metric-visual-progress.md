@@ -32,11 +32,14 @@ node visual/tools/check-relation-matrix-picker.mjs
 node visual/tools/check-relation-matrix-readability.mjs
 node visual/tools/check-runtime-picking-preview.mjs
 node visual/tools/check-record-preview-payloads.mjs
+node visual/tools/check-mixed-glyph-geometry.mjs
+node visual/tools/check-linked-selection-presentation.mjs
 node visual/tools/check-hero-grammar-contract.mjs
 node visual/tools/check-single-render-pipeline.mjs
 node visual/tools/check-public-gallery-evidence.mjs
 node visual/tools/check-visual-regression-public-examples.mjs
 node visual/tools/check-visual-performance-large-scenes.mjs
+node visual/tools/check-hero-screenshot-review.mjs
 ctest --test-dir build/core -L 'metric_application_evidence|metric_phate_pipeline|metric_mnist|metric_visual_integrity|metric_benchmark_report' --output-on-failure
 ```
 
@@ -74,11 +77,30 @@ passing when the package is unavailable.
 | Relation matrix linked selection | checked headlessly and in browser | `MetricVisualRuntime.selectPair()` stores selected pair identity and pick source, `RelationMatrixLayer.setSelection()` highlights the selected row, column and cell, and the runtime state exposes selected pair data for shared preview/selection UI. |
 | Relation native graph grammar | checked headlessly and in browser | `NeighborhoodGraphView` resolves `graphs[].edge_relation_id` and `createRelationGraphEdgeLayerDescriptor()` preserves native `graphs[].edges` as a `native-neighborhood-graph` instead of deriving top-k edges in JavaScript. Graph descriptors expose the same native relation selection model as the matrix picker. |
 | Dynamics timeline controls | checked headlessly | `visual/tools/check-dynamics-timeline-control.mjs` verifies user-facing timeline-control descriptors, start/middle/end exported state selection, and changing ground/field state from exported timeline-step properties without JavaScript recomputation of diffusion or Redif inverse-dynamics values. |
+| Runtime timeline widget | checked headlessly | `TimelineControlWidget` consumes `metric.visual.timeline_control.v1` descriptors, exposes scrub/play/reset UI state, and feeds normalized exported timeline selection back through `MetricVisualSurface.showDynamics()`. `visual/tools/check-timeline-control-widget.mjs` verifies descriptor-driven state updates and no renderer-side dynamics computation. |
+| Mixed-record glyph geometry | checked headlessly and in browser | `createRecordGlyphGrammar()` emits typed glyph geometry and material channels, and `InstancedGlyphLayer` binds `aGlyphGeometry` and `aGlyphMaterial` for distinct silhouettes, material response and picking masks. `visual/tools/check-mixed-glyph-geometry.mjs` verifies the public mixed-record command path still uses one semantic view/runtime descriptor set. |
+| Linked selection presentation | checked headlessly and in browser | Runtime record and pair inspection carries `metric.visual.linked_selection_presentation.v1` payloads for metric records, relation-matrix row/column/cell context, graph edges and paired-space bridges. `visual/tools/check-linked-selection-presentation.mjs` verifies the presentation contract on native cross-space evidence. |
 | Grammar contract | checked headlessly | `visual/tools/check-hero-grammar-contract.mjs` rejects collapsing unrelated hero concepts into one point-cloud-only grammar. |
 | Single runtime path | checked headlessly | `visual/tools/check-single-render-pipeline.mjs` protects the one-runtime pipeline rule. |
 | Public gallery evidence gate | checked headlessly | `visual/tools/check-public-gallery-evidence.mjs` blocks synthetic hero fixtures from the public site and protects the GRAE10 reference hash. |
 | Public visual regression gate | checked in browser | `visual/tools/check-visual-regression-public-examples.mjs` verifies the protected GRAE10 60k reference plus six native preview examples load, render nonblank canvases, use native evidence and keep their declared grammar/status. |
+| Hero screenshot review gate | checked from browser artifacts | `visual/tools/check-hero-screenshot-review.mjs` consumes the public browser regression report and screenshot files, keeps GRAE10 accepted by protected reference, and leaves the other public previews in explicit review-pending status until a review manifest accepts them. |
 | Large-scene performance gate | checked in browser | `visual/tools/check-visual-performance-large-scenes.mjs` verifies 1k, 10k and 60k point-cloud workloads with a real browser WebGL backend. `visual/tools/perf-matrix.mjs` separately records the headless software-renderer floor. |
+
+### Engine Interaction Slices - 2026-06-25
+
+Three reusable engine slices were added without promoting any preview to hero
+status. Mixed records now carry type-specific glyph geometry and material
+channels through the existing `InstancedGlyphLayer`. Runtime inspection now
+adds linked-selection presentation payloads for records, pairs, matrix cells,
+graph edges and paired-space bridges. Dynamics pages can attach a descriptor-
+driven timeline widget that scrubs exported timeline states rather than
+computing dynamics in JavaScript.
+
+The screenshot-review gate records which examples have screenshot artifacts and
+which examples are explicitly accepted. Current rule: GRAE10 remains the only
+accepted hero because it is protected by the native 60k reference and golden
+hash. The six native preview pages remain review-pending.
 
 ### Runtime Picking/Preview Workstream Note - 2026-06-25
 

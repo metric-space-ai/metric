@@ -9,6 +9,7 @@ import {
   createTimelineControlDescriptor,
   sampleTimelineState,
 } from "../src/timeline/index.js";
+import { findTimelineControlDescriptor } from "../src/interaction/index.js";
 import { DynamicsView } from "../src/views/DynamicsView.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -60,6 +61,11 @@ async function main() {
       recordCount: field?.metadata?.recordCount,
     };
   });
+  const emittedControl = findTimelineControlDescriptor(DynamicsView.fromVisualSpace(document, {
+    timelineId: "reverse-reconstruction",
+    timelineFieldPropertyId: "reverse-mse-to-clean",
+    propertyField: "best-reconstruction-error",
+  }).toLayerDescriptors());
   const markCoordinates = control.marks.map((mark) => mark.activeCoordinateId);
   const fieldValues = sampledViews.map((sample) => Number(sample.fieldState?.value));
   const checks = [
@@ -67,6 +73,7 @@ async function main() {
     ["timeline control is marked user-facing", control.userFacing === true && control.presentation?.kind === "timeline-scrubber", control.presentation],
     ["timeline control exposes range, play and reset controls", control.controls.map((entry) => entry.role).join(",") === "timeline-state,timeline-playback,timeline-reset", control.controls],
     ["timeline range control binds normalized state", control.controls[0]?.binding?.source === "exported-timeline" && control.controls[0]?.display?.kind === "scrubber", control.controls[0]],
+    ["timeline control descriptor is discoverable from DynamicsView descriptors", emittedControl?.schema === "metric.visual.timeline_control.v1" && emittedControl?.controls?.[0]?.binding?.source === "exported-timeline", emittedControl],
     ["timeline control marks start/middle/end exported coordinates", markCoordinates.join(",") === "coord-reverse-00,coord-reverse-20,coord-reverse-40", markCoordinates],
     ["timeline marks carry exported property samples", control.marks.every((mark) => mark.activePropertySample?.propertyId === "reverse-mse-to-clean" && mark.activePropertySample.algorithmicComputation === false), control.marks],
     ["timeline states select exported property samples", states.every((state) => state.activePropertySample?.propertyId === "reverse-mse-to-clean" && state.activePropertySample.source === "exported-property"), states],

@@ -66,6 +66,8 @@ export class InstancedGlyphLayer extends BaseLayer {
     const glyphType = scalarChannel(this.channels, ["glyphType", "recordGlyphType"], this.count, 0);
     const glyphVariant = scalarChannel(this.channels, ["glyphVariant", "variant", "category"], this.count, 0);
     const glyphFeature = channelToFloat32(getChannel(this.channels, ["glyphFeature", "payloadFeature"]), 4, this.count, [0, 0, 0, 0]);
+    const glyphGeometry = channelToFloat32(getChannel(this.channels, ["glyphGeometry", "glyphRenderGeometry"]), 4, this.count, [0, 1, 0.48, 0.08]);
+    const glyphMaterial = channelToFloat32(getChannel(this.channels, ["glyphMaterial", "glyphRenderMaterial"]), 4, this.count, [0, 0.45, 0.62, 0.82]);
     const payloadComplexity = scalarChannel(this.channels, ["payloadComplexity", "complexity"], this.count, 0.35);
     this.baseFocus = combineScalarChannels(this.channels, ["focusWeight", "focus", "selection"], this.count, 0);
     this.recordIds = recordIdsForChannels(this.channels, this.count);
@@ -82,6 +84,8 @@ export class InstancedGlyphLayer extends BaseLayer {
     this.replaceBuffer("glyphType", glyphType);
     this.replaceBuffer("glyphVariant", glyphVariant);
     this.replaceBuffer("glyphFeature", glyphFeature);
+    this.replaceBuffer("glyphGeometry", glyphGeometry);
+    this.replaceBuffer("glyphMaterial", glyphMaterial);
     this.replaceBuffer("payloadComplexity", payloadComplexity);
     this.needsUpload = false;
   }
@@ -124,6 +128,8 @@ export class InstancedGlyphLayer extends BaseLayer {
     bindAttribute(gl, this.program, this.capabilities, "aGlyphType", this.buffers.glyphType, 1);
     bindAttribute(gl, this.program, this.capabilities, "aGlyphVariant", this.buffers.glyphVariant, 1);
     bindAttribute(gl, this.program, this.capabilities, "aGlyphFeature", this.buffers.glyphFeature, 4);
+    bindAttribute(gl, this.program, this.capabilities, "aGlyphGeometry", this.buffers.glyphGeometry, 4);
+    bindAttribute(gl, this.program, this.capabilities, "aGlyphMaterial", this.buffers.glyphMaterial, 4);
     bindAttribute(gl, this.program, this.capabilities, "aPayloadComplexity", this.buffers.payloadComplexity, 1);
 
     gl.drawArrays(gl.POINTS, 0, this.count);
@@ -163,6 +169,7 @@ export class InstancedGlyphLayer extends BaseLayer {
     bindAttribute(gl, this.pickProgram, this.capabilities, "aPosition", this.buffers.position, 3);
     bindAttribute(gl, this.pickProgram, this.capabilities, "aTargetPosition", this.buffers.targetPosition, 3);
     bindAttribute(gl, this.pickProgram, this.capabilities, "aSize", this.buffers.size, 1);
+    bindAttribute(gl, this.pickProgram, this.capabilities, "aGlyphGeometry", this.buffers.glyphGeometry, 4);
     bindAttribute(gl, this.pickProgram, this.capabilities, "aPickColor", this.buffers.pickColor, 4);
 
     gl.drawArrays(gl.POINTS, 0, this.count);
@@ -322,6 +329,8 @@ attribute float aFocus;
 attribute float aGlyphType;
 attribute float aGlyphVariant;
 attribute vec4 aGlyphFeature;
+attribute vec4 aGlyphGeometry;
+attribute vec4 aGlyphMaterial;
 attribute float aPayloadComplexity;
 
 uniform mat4 uViewProjectionMatrix;
@@ -338,6 +347,8 @@ varying float vFocus;
 varying float vGlyphType;
 varying float vGlyphVariant;
 varying vec4 vGlyphFeature;
+varying vec4 vGlyphGeometry;
+varying vec4 vGlyphMaterial;
 varying float vPayloadComplexity;
 
 void main() {
@@ -351,6 +362,8 @@ void main() {
   vGlyphType = aGlyphType;
   vGlyphVariant = aGlyphVariant;
   vGlyphFeature = aGlyphFeature;
+  vGlyphGeometry = aGlyphGeometry;
+  vGlyphMaterial = aGlyphMaterial;
   vPayloadComplexity = aPayloadComplexity;
 }
 `;
@@ -370,6 +383,8 @@ varying float vFocus;
 varying float vGlyphType;
 varying float vGlyphVariant;
 varying vec4 vGlyphFeature;
+varying vec4 vGlyphGeometry;
+varying vec4 vGlyphMaterial;
 varying float vPayloadComplexity;
 
 float rectAlpha(vec2 p, vec2 halfSize, float feather) {
@@ -377,6 +392,13 @@ float rectAlpha(vec2 p, vec2 halfSize, float feather) {
   float outside = length(max(d, vec2(0.0)));
   float inside = min(max(d.x, d.y), 0.0);
   return 1.0 - smoothstep(0.0, feather, outside + inside * 0.15);
+}
+
+float roundedRectAlpha(vec2 p, vec2 halfSize, float radius, float feather) {
+  vec2 d = abs(p) - halfSize + vec2(radius);
+  float outside = length(max(d, vec2(0.0))) - radius;
+  float inside = min(max(d.x, d.y), 0.0);
+  return 1.0 - smoothstep(0.0, feather, outside + inside * 0.12);
 }
 
 float circleAlpha(vec2 p, float radius, float feather) {
@@ -413,29 +435,36 @@ vec3 typedTint(float slot) {
 
 void main() {
   vec2 p = gl_PointCoord * 2.0 - 1.0;
-  float type = floor(vGlyphType + 0.5);
+  float geometry = floor(vGlyphGeometry.x + 0.5);
+  float material = floor(vGlyphMaterial.x + 0.5);
+  float aspect = clamp(vGlyphGeometry.y, 0.55, 1.65);
+  float corner = clamp(vGlyphGeometry.z, 0.0, 0.55);
+  float relief = clamp(vGlyphGeometry.w, 0.0, 0.5);
+  float lightingMix = clamp(vGlyphMaterial.y, 0.0, 1.0);
+  float markContrast = clamp(vGlyphMaterial.z, 0.2, 1.35);
+  float roughness = clamp(vGlyphMaterial.w, 0.0, 1.0);
   float alpha = 0.0;
   float mark = 0.0;
   vec3 markTint = uGlyphInk;
   vec3 base = vColor.rgb;
 
-  if (type < 0.5) {
+  if (geometry < 0.5) {
     alpha = circleAlpha(p, 0.95, 0.08);
     mark = circleAlpha(p, 0.38 + vPayloadComplexity * 0.22, 0.08) * 0.22;
-  } else if (type < 1.5) {
-    alpha = rectAlpha(p, vec2(0.78, 0.55), 0.08);
+  } else if (geometry < 1.5) {
+    alpha = roundedRectAlpha(p, vec2(0.78, 0.54), corner, 0.075);
     float line1 = lineMask(p.y - 0.21, 0.035) * step(-0.52, p.x) * step(p.x, -0.52 + 0.88 * max(0.25, vGlyphFeature.x));
     float line2 = lineMask(p.y, 0.035) * step(-0.52, p.x) * step(p.x, -0.52 + 1.04 * max(0.2, vGlyphFeature.y));
     float line3 = lineMask(p.y + 0.21, 0.035) * step(-0.52, p.x) * step(p.x, -0.52 + 0.72 + vGlyphFeature.z * 0.22);
     mark = max(line1, max(line2, line3));
-  } else if (type < 2.5) {
+  } else if (geometry < 2.5) {
     alpha = circleAlpha(p, 0.96, 0.08);
     float wave = sin((p.x * 2.0 + vGlyphVariant * 1.7 + uTime * 0.08) * 3.14159265359) * (0.12 + vGlyphFeature.y * 0.26);
     wave += (vGlyphFeature.z - 0.5) * p.x * 0.28;
     mark = lineMask(p.y - wave, 0.045) * step(-0.72, p.x) * step(p.x, 0.72);
     markTint = vec3(0.02, 0.18, 0.20);
-  } else if (type < 3.5) {
-    alpha = rectAlpha(p, vec2(0.68, 0.68), 0.08);
+  } else if (geometry < 3.5) {
+    alpha = roundedRectAlpha(p, vec2(0.69, 0.69), corner, 0.075);
     for (float slot = 0.0; slot < 4.0; slot += 1.0) {
       float x = -0.45 + slot * 0.30;
       float h = 0.16 + featureAt(slot) * 0.72;
@@ -443,7 +472,15 @@ void main() {
       mark = max(mark, bar);
     }
     markTint = vec3(0.18, 0.10, 0.04);
-  } else if (type < 4.5) {
+  } else if (geometry < 4.5) {
+    alpha = roundedRectAlpha(p, vec2(0.76, 0.58), corner, 0.065);
+    vec2 cell = floor((p + vec2(0.72, 0.52)) * vec2(3.2, 4.3));
+    float checker = mod(cell.x + cell.y, 2.0);
+    float scan = lineMask(fract((p.y + 0.66) * 5.0) - 0.5, 0.11);
+    float frame = 1.0 - roundedRectAlpha(p, vec2(0.58, 0.42), corner * 0.55, 0.055);
+    mark = max(checker * 0.28 + scan * (0.18 + vGlyphFeature.y * 0.32), frame * 0.55);
+    markTint = vec3(0.08, 0.10, 0.12);
+  } else if (geometry < 5.5) {
     alpha = diamondAlpha(p, 0.98, 0.08);
     float axisX = lineMask(p.y, 0.035) * step(abs(p.x), 0.68);
     float axisY = lineMask(p.x, 0.035) * step(abs(p.y), 0.68);
@@ -451,7 +488,7 @@ void main() {
     mark = max(max(axisX, axisY), diag);
     markTint = vec3(0.12, 0.06, 0.18);
   } else {
-    alpha = rectAlpha(p, vec2(0.76, 0.76), 0.08);
+    alpha = roundedRectAlpha(p, vec2(0.77, 0.77), corner, 0.075);
     float panelA = bandMask(p, vec2(-0.32, 0.32), vec2(0.25, 0.25)) * max(0.22, vGlyphFeature.x);
     float panelB = bandMask(p, vec2(0.32, 0.32), vec2(0.25, 0.25)) * max(0.22, vGlyphFeature.y);
     float panelC = bandMask(p, vec2(-0.32, -0.32), vec2(0.25, 0.25)) * max(0.22, vGlyphFeature.z);
@@ -463,9 +500,14 @@ void main() {
   }
 
   if (alpha <= 0.01) discard;
-  float rim = 1.0 - circleAlpha(p, 0.82, 0.22);
-  vec3 color = mix(base, markTint, clamp(mark * uGlyphStroke, 0.0, 1.0));
-  color = mix(color, color * vec3(0.62, 0.66, 0.70), clamp(rim * 0.28, 0.0, 0.5));
+  float radial = clamp(length(p), 0.0, 1.0);
+  float rim = 1.0 - circleAlpha(vec2(p.x / aspect, p.y), 0.82, 0.22);
+  float surfaceLift = 1.0 + (1.0 - radial) * relief * (0.5 + lightingMix * 0.65);
+  float edgeShade = mix(0.72, 0.48, lightingMix) * rim * (0.24 + relief);
+  vec3 color = mix(base, markTint, clamp(mark * uGlyphStroke * markContrast, 0.0, 1.0));
+  color *= mix(1.0, surfaceLift, 1.0 - roughness * 0.45);
+  color = mix(color, color * vec3(0.58, 0.62, 0.67), clamp(edgeShade, 0.0, 0.62));
+  color = mix(color, vec3(dot(color, vec3(0.299, 0.587, 0.114))), material == 4.0 ? 0.18 : 0.0);
   color = mix(color, uFocusColor, vFocus * 0.36);
   gl_FragColor = vec4(color, vColor.a * vAlpha * alpha * uGlobalAlpha);
 }
@@ -475,6 +517,7 @@ const GLYPH_PICK_VERTEX_SHADER = `
 attribute vec3 aPosition;
 attribute vec3 aTargetPosition;
 attribute float aSize;
+attribute vec4 aGlyphGeometry;
 attribute vec4 aPickColor;
 
 uniform mat4 uViewProjectionMatrix;
@@ -484,12 +527,14 @@ uniform float uMinPointSize;
 uniform float uMaxPointSize;
 
 varying vec4 vPickColor;
+varying vec4 vGlyphGeometry;
 
 void main() {
   vec3 position = mix(aPosition, aTargetPosition, clamp(uMorph, 0.0, 1.0));
   gl_Position = uViewProjectionMatrix * vec4(position, 1.0);
   gl_PointSize = clamp(max(aSize, 0.001) * uPointPixelScale, uMinPointSize, uMaxPointSize);
   vPickColor = aPickColor;
+  vGlyphGeometry = aGlyphGeometry;
 }
 `;
 
@@ -497,10 +542,39 @@ const GLYPH_PICK_FRAGMENT_SHADER = `
 precision mediump float;
 
 varying vec4 vPickColor;
+varying vec4 vGlyphGeometry;
+
+float roundedRectAlpha(vec2 p, vec2 halfSize, float radius, float feather) {
+  vec2 d = abs(p) - halfSize + vec2(radius);
+  float outside = length(max(d, vec2(0.0))) - radius;
+  float inside = min(max(d.x, d.y), 0.0);
+  return 1.0 - smoothstep(0.0, feather, outside + inside * 0.12);
+}
+
+float circleAlpha(vec2 p, float radius, float feather) {
+  return 1.0 - smoothstep(radius - feather, radius, length(p));
+}
+
+float diamondAlpha(vec2 p, float radius, float feather) {
+  float d = abs(p.x) + abs(p.y);
+  return 1.0 - smoothstep(radius - feather, radius, d);
+}
+
+float glyphPickAlpha(vec2 p) {
+  float geometry = floor(vGlyphGeometry.x + 0.5);
+  float corner = clamp(vGlyphGeometry.z, 0.0, 0.55);
+  if (geometry < 0.5) return circleAlpha(p, 0.95, 0.08);
+  if (geometry < 1.5) return roundedRectAlpha(p, vec2(0.78, 0.54), corner, 0.075);
+  if (geometry < 2.5) return circleAlpha(p, 0.96, 0.08);
+  if (geometry < 3.5) return roundedRectAlpha(p, vec2(0.69, 0.69), corner, 0.075);
+  if (geometry < 4.5) return roundedRectAlpha(p, vec2(0.76, 0.58), corner, 0.065);
+  if (geometry < 5.5) return diamondAlpha(p, 0.98, 0.08);
+  return roundedRectAlpha(p, vec2(0.77, 0.77), corner, 0.075);
+}
 
 void main() {
   vec2 centered = gl_PointCoord * 2.0 - 1.0;
-  if (dot(centered, centered) > 1.0) discard;
+  if (glyphPickAlpha(centered) <= 0.01) discard;
   gl_FragColor = vPickColor;
 }
 `;

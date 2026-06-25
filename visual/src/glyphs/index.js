@@ -5,6 +5,7 @@ import {
 
 export const GLYPH_SCHEMA = "metric.visual.glyph_registry.v1";
 export const RECORD_GLYPH_GRAMMAR_SCHEMA = "metric.visual.record_glyph_grammar.v1";
+export const RECORD_GLYPH_RENDER_SCHEMA = "metric.visual.record_glyph_render_semantics.v1";
 
 export const RECORD_GLYPH_TYPES = Object.freeze({
   neutral: 0,
@@ -25,6 +26,217 @@ export const RECORD_GLYPH_FAMILIES = Object.freeze({
   vector: "vector-record",
   composed: "composed-record",
 });
+
+export const RECORD_GLYPH_GEOMETRY_CODES = Object.freeze({
+  neutralOrb: 0,
+  textCard: 1,
+  timeSeriesRibbon: 2,
+  histogramPanel: 3,
+  imageTile: 4,
+  vectorDiamond: 5,
+  composedDashboard: 6,
+});
+
+export const RECORD_GLYPH_MATERIAL_CODES = Object.freeze({
+  neutralMatte: 0,
+  paperInk: 1,
+  signalGlass: 2,
+  histogramCeramic: 3,
+  imageLumaTile: 4,
+  vectorMetal: 5,
+  composedInstrument: 6,
+});
+
+const RECORD_GLYPH_RENDER_DEFINITIONS = Object.freeze({
+  neutral: freezeRenderDefinition({
+    family: RECORD_GLYPH_FAMILIES.neutral,
+    payloadKinds: ["unknown"],
+    geometryKind: "neutral-orb",
+    geometryCode: RECORD_GLYPH_GEOMETRY_CODES.neutralOrb,
+    geometryAttributes: [RECORD_GLYPH_GEOMETRY_CODES.neutralOrb, 1.0, 0.48, 0.08],
+    geometryMetadata: {
+      billboardPrimitive: "soft-disc",
+      silhouette: "orb",
+      markGrammar: "payload-complexity-core",
+    },
+    materialKind: "neutral-matte",
+    materialCode: RECORD_GLYPH_MATERIAL_CODES.neutralMatte,
+    materialAttributes: [RECORD_GLYPH_MATERIAL_CODES.neutralMatte, 0.45, 0.62, 0.82],
+    materialMetadata: {
+      lighting: "matte-relief",
+      ink: "subtle-core",
+      surface: "soft-polymer",
+    },
+  }),
+  text: freezeRenderDefinition({
+    family: RECORD_GLYPH_FAMILIES.text,
+    payloadKinds: ["string", "text", "code"],
+    geometryKind: "text-card",
+    geometryCode: RECORD_GLYPH_GEOMETRY_CODES.textCard,
+    geometryAttributes: [RECORD_GLYPH_GEOMETRY_CODES.textCard, 1.42, 0.11, 0.03],
+    geometryMetadata: {
+      billboardPrimitive: "rounded-card",
+      silhouette: "wide-card",
+      markGrammar: "ink-lines",
+    },
+    materialKind: "paper-ink",
+    materialCode: RECORD_GLYPH_MATERIAL_CODES.paperInk,
+    materialAttributes: [RECORD_GLYPH_MATERIAL_CODES.paperInk, 0.18, 1.05, 0.74],
+    materialMetadata: {
+      lighting: "mostly-unlit",
+      ink: "line-marks",
+      surface: "paper",
+    },
+  }),
+  timeSeries: freezeRenderDefinition({
+    family: RECORD_GLYPH_FAMILIES.timeSeries,
+    payloadKinds: ["time_series", "time-series", "timeseries", "series", "curve"],
+    geometryKind: "time-series-ribbon",
+    geometryCode: RECORD_GLYPH_GEOMETRY_CODES.timeSeriesRibbon,
+    geometryAttributes: [RECORD_GLYPH_GEOMETRY_CODES.timeSeriesRibbon, 1.08, 0.42, 0.1],
+    geometryMetadata: {
+      billboardPrimitive: "round-signal-disc",
+      silhouette: "disc",
+      markGrammar: "waveform",
+    },
+    materialKind: "signal-glass",
+    materialCode: RECORD_GLYPH_MATERIAL_CODES.signalGlass,
+    materialAttributes: [RECORD_GLYPH_MATERIAL_CODES.signalGlass, 0.72, 1.0, 0.52],
+    materialMetadata: {
+      lighting: "glossy-relief",
+      ink: "signal-trace",
+      surface: "tinted-glass",
+    },
+  }),
+  histogram: freezeRenderDefinition({
+    family: RECORD_GLYPH_FAMILIES.histogram,
+    payloadKinds: ["histogram", "spectrum", "bins"],
+    geometryKind: "histogram-panel",
+    geometryCode: RECORD_GLYPH_GEOMETRY_CODES.histogramPanel,
+    geometryAttributes: [RECORD_GLYPH_GEOMETRY_CODES.histogramPanel, 1.0, 0.08, 0.14],
+    geometryMetadata: {
+      billboardPrimitive: "bar-panel",
+      silhouette: "square-panel",
+      markGrammar: "bars",
+    },
+    materialKind: "histogram-ceramic",
+    materialCode: RECORD_GLYPH_MATERIAL_CODES.histogramCeramic,
+    materialAttributes: [RECORD_GLYPH_MATERIAL_CODES.histogramCeramic, 0.58, 1.08, 0.68],
+    materialMetadata: {
+      lighting: "flat-relief",
+      ink: "raised-bars",
+      surface: "ceramic-panel",
+    },
+  }),
+  image: freezeRenderDefinition({
+    family: RECORD_GLYPH_FAMILIES.image,
+    payloadKinds: ["image", "image_ref", "image-ref", "image-like", "pixels", "matrix"],
+    geometryKind: "image-tile",
+    geometryCode: RECORD_GLYPH_GEOMETRY_CODES.imageTile,
+    geometryAttributes: [RECORD_GLYPH_GEOMETRY_CODES.imageTile, 1.26, 0.05, 0.08],
+    geometryMetadata: {
+      billboardPrimitive: "luma-tile",
+      silhouette: "wide-tile",
+      markGrammar: "sample-grid",
+    },
+    materialKind: "image-luma-tile",
+    materialCode: RECORD_GLYPH_MATERIAL_CODES.imageLumaTile,
+    materialAttributes: [RECORD_GLYPH_MATERIAL_CODES.imageLumaTile, 0.36, 0.9, 0.46],
+    materialMetadata: {
+      lighting: "low-relief",
+      ink: "luma-cells",
+      surface: "satin-tile",
+    },
+  }),
+  vector: freezeRenderDefinition({
+    family: RECORD_GLYPH_FAMILIES.vector,
+    payloadKinds: ["vector", "embedding", "values", "features"],
+    geometryKind: "vector-diamond",
+    geometryCode: RECORD_GLYPH_GEOMETRY_CODES.vectorDiamond,
+    geometryAttributes: [RECORD_GLYPH_GEOMETRY_CODES.vectorDiamond, 1.0, 0.02, 0.18],
+    geometryMetadata: {
+      billboardPrimitive: "diamond-gauge",
+      silhouette: "diamond",
+      markGrammar: "axis-vector",
+    },
+    materialKind: "vector-metal",
+    materialCode: RECORD_GLYPH_MATERIAL_CODES.vectorMetal,
+    materialAttributes: [RECORD_GLYPH_MATERIAL_CODES.vectorMetal, 0.78, 0.96, 0.42],
+    materialMetadata: {
+      lighting: "lit-facet",
+      ink: "axis-gauge",
+      surface: "brushed-metal",
+    },
+  }),
+  composed: freezeRenderDefinition({
+    family: RECORD_GLYPH_FAMILIES.composed,
+    payloadKinds: ["composed", "mixed", "structured"],
+    geometryKind: "composed-dashboard",
+    geometryCode: RECORD_GLYPH_GEOMETRY_CODES.composedDashboard,
+    geometryAttributes: [RECORD_GLYPH_GEOMETRY_CODES.composedDashboard, 1.0, 0.09, 0.24],
+    geometryMetadata: {
+      billboardPrimitive: "four-panel-dashboard",
+      silhouette: "square-dashboard",
+      markGrammar: "component-panels",
+      componentSlots: ["text-card", "time-series-ribbon", "histogram-panel-or-image-tile", "vector-diamond"],
+    },
+    materialKind: "composed-instrument",
+    materialCode: RECORD_GLYPH_MATERIAL_CODES.composedInstrument,
+    materialAttributes: [RECORD_GLYPH_MATERIAL_CODES.composedInstrument, 0.84, 1.12, 0.5],
+    materialMetadata: {
+      lighting: "instrument-relief",
+      ink: "typed-component-panels",
+      surface: "anodized-panel",
+    },
+  }),
+});
+
+export const RECORD_GLYPH_RENDER_DEFINITIONS_BY_FAMILY = Object.freeze(Object.fromEntries(
+  Object.values(RECORD_GLYPH_RENDER_DEFINITIONS).map((definition) => [definition.family, definition]),
+));
+
+export function getRecordGlyphRenderDefinition(familyOrPayloadKind, payloadKind = "") {
+  const family = String(familyOrPayloadKind || "");
+  if (RECORD_GLYPH_RENDER_DEFINITIONS_BY_FAMILY[family]) {
+    return RECORD_GLYPH_RENDER_DEFINITIONS_BY_FAMILY[family];
+  }
+  const payloadKey = renderKeyForPayload(payloadKind || family);
+  return RECORD_GLYPH_RENDER_DEFINITIONS[payloadKey] || RECORD_GLYPH_RENDER_DEFINITIONS.neutral;
+}
+
+export function createRecordGlyphRenderAtlas(families = [], payloadKinds = []) {
+  const normalizedFamilies = uniqueStrings(families);
+  const normalizedPayloadKinds = uniqueStrings(payloadKinds);
+  const familyEntries = normalizedFamilies.map((family) => renderAtlasEntry({
+    family,
+    payloadKind: "",
+    definition: getRecordGlyphRenderDefinition(family),
+  }));
+  const payloadEntries = normalizedPayloadKinds.map((payloadKind) => renderAtlasEntry({
+    family: "",
+    payloadKind,
+    definition: getRecordGlyphRenderDefinition("", payloadKind),
+  }));
+
+  return {
+    schema: RECORD_GLYPH_RENDER_SCHEMA,
+    shaderAttributes: {
+      glyphGeometry: {
+        semantic: "record-glyph-render-geometry",
+        itemSize: 4,
+        components: ["geometryCode", "aspect", "cornerRadius", "reliefDepth"],
+      },
+      glyphMaterial: {
+        semantic: "record-glyph-render-material",
+        itemSize: 4,
+        components: ["materialCode", "lightingMix", "markContrast", "roughness"],
+      },
+    },
+    families: familyEntries,
+    payloadKinds: payloadEntries,
+    componentSlots: RECORD_GLYPH_RENDER_DEFINITIONS.composed.geometryMetadata.componentSlots,
+  };
+}
 
 const GLYPH_DEFINITIONS = {
   record: {
@@ -245,6 +457,8 @@ export function createRecordGlyphGrammar(records = [], recordIds = null, options
   const glyphType = new Float32Array(ids.length);
   const glyphVariant = new Float32Array(ids.length);
   const glyphFeature = new Float32Array(ids.length * 4);
+  const glyphGeometry = new Float32Array(ids.length * 4);
+  const glyphMaterial = new Float32Array(ids.length * 4);
   const payloadComplexity = new Float32Array(ids.length);
   const familyValues = [];
   const recordTypeValues = [];
@@ -252,6 +466,8 @@ export function createRecordGlyphGrammar(records = [], recordIds = null, options
   const labelValues = [];
   const families = new Set();
   const payloadKinds = new Set();
+  const geometryKinds = new Set();
+  const materialKinds = new Set();
 
   for (let index = 0; index < ids.length; index += 1) {
     const record = byId.get(ids[index]) || null;
@@ -259,6 +475,8 @@ export function createRecordGlyphGrammar(records = [], recordIds = null, options
     glyphType[index] = glyph.typeCode;
     glyphVariant[index] = glyph.variant;
     glyphFeature.set(glyph.features, index * 4);
+    glyphGeometry.set(glyph.geometryAttributes, index * 4);
+    glyphMaterial.set(glyph.materialAttributes, index * 4);
     payloadComplexity[index] = glyph.complexity;
     familyValues.push(glyph.family);
     recordTypeValues.push(glyph.recordType);
@@ -266,13 +484,20 @@ export function createRecordGlyphGrammar(records = [], recordIds = null, options
     labelValues.push(glyph.label);
     families.add(glyph.family);
     payloadKinds.add(glyph.payloadKind);
+    geometryKinds.add(glyph.geometryKind);
+    materialKinds.add(glyph.materialKind);
   }
 
+  const familyList = Array.from(families);
+  const payloadKindList = Array.from(payloadKinds);
   return {
     schema: RECORD_GLYPH_GRAMMAR_SCHEMA,
     recordCount: ids.length,
-    families: Array.from(families),
-    payloadKinds: Array.from(payloadKinds),
+    families: familyList,
+    payloadKinds: payloadKindList,
+    geometryKinds: Array.from(geometryKinds),
+    materialKinds: Array.from(materialKinds),
+    renderSemantics: createRecordGlyphRenderAtlas(familyList, payloadKindList),
     channels: {
       glyphType: numericChannel(glyphType, 1, "record-glyph-type", {
         grammar: RECORD_GLYPH_GRAMMAR_SCHEMA,
@@ -280,6 +505,14 @@ export function createRecordGlyphGrammar(records = [], recordIds = null, options
       }),
       glyphVariant: numericChannel(glyphVariant, 1, "record-glyph-variant"),
       glyphFeature: numericChannel(glyphFeature, 4, "record-glyph-feature"),
+      glyphGeometry: numericChannel(glyphGeometry, 4, "record-glyph-render-geometry", {
+        schema: RECORD_GLYPH_RENDER_SCHEMA,
+        components: ["geometryCode", "aspect", "cornerRadius", "reliefDepth"],
+      }),
+      glyphMaterial: numericChannel(glyphMaterial, 4, "record-glyph-render-material", {
+        schema: RECORD_GLYPH_RENDER_SCHEMA,
+        components: ["materialCode", "lightingMix", "markContrast", "roughness"],
+      }),
       payloadComplexity: numericChannel(payloadComplexity, 1, "record-payload-complexity"),
       glyphFamily: stringChannel(familyValues, "record-glyph-family"),
       recordType: stringChannel(recordTypeValues, "record-type"),
@@ -440,6 +673,7 @@ function composedGlyph(record, payload, recordType, payloadKind, label) {
 }
 
 function glyphResult(result) {
+  const renderDefinition = getRecordGlyphRenderDefinition(result.family, result.payloadKind);
   return {
     ...result,
     recordType: stringOr(result.recordType, "record"),
@@ -448,6 +682,10 @@ function glyphResult(result) {
     variant: clamp01(result.variant),
     complexity: clamp01(result.complexity),
     features: vector4(result.features),
+    geometryKind: renderDefinition.geometryKind,
+    materialKind: renderDefinition.materialKind,
+    geometryAttributes: numberVector4(renderDefinition.geometryAttributes),
+    materialAttributes: numberVector4(renderDefinition.materialAttributes),
   };
 }
 
@@ -564,6 +802,70 @@ function stringChannel(values, semantic) {
     count: values.length,
     array: values.map((value) => value == null ? "" : String(value)),
   };
+}
+
+function numberVector4(values) {
+  const out = [0, 0, 0, 0];
+  const source = Array.isArray(values) || ArrayBuffer.isView(values) ? values : [];
+  for (let index = 0; index < 4; index += 1) {
+    const value = Number(source[index]);
+    out[index] = Number.isFinite(value) ? value : 0;
+  }
+  return out;
+}
+
+function uniqueStrings(values) {
+  const out = [];
+  const seen = new Set();
+  for (const value of values || []) {
+    const text = String(value ?? "");
+    if (!text || seen.has(text)) continue;
+    seen.add(text);
+    out.push(text);
+  }
+  return out;
+}
+
+function renderAtlasEntry({ family, payloadKind, definition }) {
+  return {
+    family: family || definition.family,
+    payloadKind: payloadKind || "",
+    geometryKind: definition.geometryKind,
+    geometryCode: definition.geometryCode,
+    geometryAttributes: [...definition.geometryAttributes],
+    geometryMetadata: { ...definition.geometryMetadata },
+    materialKind: definition.materialKind,
+    materialCode: definition.materialCode,
+    materialAttributes: [...definition.materialAttributes],
+    materialMetadata: { ...definition.materialMetadata },
+  };
+}
+
+function renderKeyForPayload(payloadKind) {
+  const kind = normalizeKind(payloadKind);
+  if (kind === "string" || kind === "text" || kind === "code") return "text";
+  if (kind === "time-series" || kind === "timeseries" || kind === "series" || kind === "curve") return "timeSeries";
+  if (kind === "histogram" || kind === "spectrum" || kind === "bins") return "histogram";
+  if (kind === "image" || kind === "image-ref" || kind === "image-like" || kind === "pixels" || kind === "matrix") return "image";
+  if (kind === "vector" || kind === "embedding" || kind === "values" || kind === "features") return "vector";
+  if (kind === "composed" || kind === "mixed" || kind === "structured") return "composed";
+  return "neutral";
+}
+
+function freezeRenderDefinition(definition) {
+  return Object.freeze({
+    ...definition,
+    payloadKinds: Object.freeze([...(definition.payloadKinds || [])]),
+    geometryAttributes: Object.freeze(numberVector4(definition.geometryAttributes)),
+    geometryMetadata: Object.freeze({
+      ...(definition.geometryMetadata || {}),
+      componentSlots: definition.geometryMetadata?.componentSlots
+        ? Object.freeze([...definition.geometryMetadata.componentSlots])
+        : undefined,
+    }),
+    materialAttributes: Object.freeze(numberVector4(definition.materialAttributes)),
+    materialMetadata: Object.freeze({ ...(definition.materialMetadata || {}) }),
+  });
 }
 
 function hashUnit(value) {

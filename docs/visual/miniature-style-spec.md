@@ -231,7 +231,7 @@ This axis convention is a METRIC renderer decision. It is not copied from source
 - No CSS theme.
 - No runtime dependencies, npm packages, build tools, TypeScript, source visual references, Vue,
   external renderer, or adapter wrappers.
-- No algorithmic data derivation in JavaScript. Renderer-side fitting,
+- No algorithmic data derivation in JavaScript. Renderer-side calibrating,
   projection, material motion and focus animation are allowed only as visual
   transforms over exported evidence.
 
@@ -319,8 +319,8 @@ the example.
 
 - `createRuntimeOptions()` for `MetricVisualRuntime` setup.
 - `styleDescriptors()` for material/light/motion descriptor styling.
-- `createDescriptorBundle()` for styled layers without coordinate fitting.
-- `createSceneBundle()` for staged, fitted miniature scenes.
+- `createDescriptorBundle()` for styled layers without coordinate calibrating.
+- `createSceneBundle()` for staged, calibrated miniature scenes.
 - `attachRuntime()`, `applyStage()`, `applyBundle()` and `applyToRuntime()` for
   runtime application.
 - `applyFocus()` and `applyPostprocess()` for live updates without rebuilding
@@ -333,7 +333,7 @@ the example.
 - `toProfile()` for exporting the serializable miniature style contract.
 
 `createMiniatureStyleProfile()` is the renderer-facing style profile. It stores
-stage, camera, light rig, focus, ground relation, post-FX, fitting defaults and
+stage, camera, light rig, focus, ground relation, post-FX, calibrating defaults and
 style motion as plain data. It is the correct way to move a METRIC miniature
 look between examples, documentation captures and future visual documents. It
 does not store records, relation values, algorithm evidence, runtimes, DOM
@@ -395,7 +395,7 @@ coverage, frame/grade/vignette post-FX, pass sizing and either style or
 descriptor animation when descriptors are present.
 
 `createMiniatureSceneBundle()` is the preferred high-level API for arbitrary
-METRIC visuals. It combines scene fitting, stage creation, ground-plane sizing,
+METRIC visuals. It combines scene calibrating, stage creation, ground-plane sizing,
 descriptor styling, contact-shadow generation and runtime-ready layer
 generation. It returns `{ stage, layers, fit }`.
 

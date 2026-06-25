@@ -2105,16 +2105,19 @@ Not visually accepted yet:
   show high-frequency diagonal artifacts and is not acceptable as a final hero
   asset.
 - `MixedRecordView` is now a reusable semantic view with typed-glyph
-  descriptors and cross-type relation-edge evidence. It proves the grammar
-  split but still needs stronger type-specific glyph geometry and accepted
-  screenshot quality.
+  descriptors and cross-type relation-edge evidence. The shared glyph layer now
+  carries type-specific geometry and material channels for silhouettes,
+  material response and picking masks. It still needs public-scale mixed-record
+  evidence and accepted screenshot quality.
 - `CrossSpaceView` is now a reusable paired-space semantic view with side
-  spaces, exported pair bridge descriptors and linked-selection metadata. It
-  still needs richer runtime linked brushing and pair preview presentation.
+  spaces, exported pair bridge descriptors and linked-selection metadata.
+  Runtime inspection now carries linked-selection presentation payloads for
+  metric-space records, matrix cells, graph edges and paired-space bridges.
 - `DynamicsView` now emits timeline state/control descriptors, user-facing
   scrubber/playback/reset metadata, deterministic timeline samples and active
-  ground/field state from exported timeline-step properties. It still needs
-  runtime UI widgets and screenshot/readability acceptance.
+  ground/field state from exported timeline-step properties. The browser
+  surface can now attach a descriptor-driven timeline widget; screenshot and
+  readability acceptance remain open.
 - Record and pair preview now share the runtime inspection path and resolve
   payload families, record properties, linked memberships, relation-independent
   pair properties and symmetric native pair values. Remaining preview work is
@@ -2145,14 +2148,49 @@ Next mandatory engine work:
 4. Continue `RelationMatrixLayer` readability toward hero acceptance:
    streamed/tiled large-matrix rendering if needed, screenshot review,
    row/column focus under dense matrices and no moire-like artifacts.
-5. Replace placeholder glyph rendering with true type-specific glyph geometry
-   for mixed records.
-6. Build runtime UI widgets that consume the timeline-control descriptors
-   emitted by `DynamicsView`.
-7. Complete linked selection presentation between relation matrix, graph,
-   paired-space bridge and metric-space records.
-8. Re-run browser screenshots and only then decide which hero is allowed to
+5. Add shader-level edge emphasis for relation graph and paired-space bridge
+   selections using the runtime linked-selection presentation payload.
+6. Re-run browser screenshots and only then decide which hero is allowed to
    become the first visual quality bar.
+
+## Implementation Checkpoint: Glyphs, Selection Presentation And Screenshot Gate
+
+Status date: 2026-06-25
+
+Implemented:
+
+- Mixed-record glyphs now carry typed geometry and material semantics through
+  `glyphGeometry` and `glyphMaterial` channels into `InstancedGlyphLayer`.
+- Runtime record/pair inspection now exposes linked-selection presentation
+  payloads for metric-space records, relation-matrix cells, graph edges and
+  paired-space bridges.
+- `MetricVisualSurface.showDynamics()` can attach a descriptor-driven timeline
+  widget that scrubs exported timeline states without computing dynamics in
+  JavaScript.
+- Hero screenshot review is now an explicit gate over browser regression
+  artifacts. It keeps GRAE10 accepted and all other public previews
+  review-pending until manual screenshot acceptance exists.
+
+Verified:
+
+- `node visual/tools/check-glyph-record-grammar.mjs`
+- `node visual/tools/check-mixed-glyph-geometry.mjs`
+- `node visual/tools/check-runtime-picking-preview.mjs`
+- `node visual/tools/check-linked-selection-presentation.mjs`
+- `node visual/tools/check-dynamics-timeline-control.mjs`
+- `node visual/tools/check-timeline-control-widget.mjs`
+- `node visual/tools/check-visual-command-api.mjs`
+- `node visual/tools/check-views.mjs`
+- `node visual/tools/check-single-render-pipeline.mjs`
+- `node visual/tools/check-hero-screenshot-review.mjs`
+
+Corrected status:
+
+- These changes are engine capability progress. They do not promote condition
+  monitoring, mixed records, cross-space dependency, relation matrix, dynamics
+  or mapping to hero-accepted.
+- Remaining hero work is visual curation, public-scale evidence and screenshot
+  acceptance, not additional one-off page rendering paths.
 
 ## Implementation Checkpoint: Inspection, Readability And Timeline Controls
 

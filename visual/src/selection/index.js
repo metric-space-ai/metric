@@ -1,3 +1,12 @@
+import {
+  getChannel,
+  getChannelArray,
+  getChannelCount,
+  getChannelItemSize,
+} from "../layers/channels.js";
+
+export const LINKED_SELECTION_PRESENTATION_SCHEMA = "metric.visual.linked_selection_presentation.v1";
+
 export const SELECTION_TARGETS = Object.freeze({
   RECORDS: "records",
   PAIRS: "pairs",
@@ -32,6 +41,10 @@ const TARGET_ALIASES = Object.freeze({
   layers: SELECTION_TARGETS.LAYERS,
 });
 
+const RECORD_CHANNEL_NAMES = Object.freeze(["recordId", "record_id", "id", "cellId"]);
+const POSITION_CHANNEL_NAMES = Object.freeze(["position", "targetPosition", "sourcePosition"]);
+const EDGE_VALUE_CHANNEL_NAMES = Object.freeze(["relationValue", "value", "weight"]);
+
 export class SelectionState {
   constructor(options = {}) {
     this.records = new Set();
@@ -40,6 +53,7 @@ export class SelectionState {
     this.layers = new Set();
     this.hover = options.hover || null;
     this.focus = options.focus || null;
+    this.presentation = options.presentation || null;
     this.listeners = new Map();
     this.version = 0;
 
@@ -125,11 +139,13 @@ export class SelectionState {
     const changed = this.records.size > 0
       || this.pairs.size > 0
       || this.clusters.size > 0
-      || this.layers.size > 0;
+      || this.layers.size > 0
+      || this.presentation != null;
     this.records.clear();
     this.pairs.clear();
     this.clusters.clear();
     this.layers.clear();
+    this.presentation = null;
     if (changed) this.changed("selection", { target: null, mode: "clear" }, options);
     return this;
   }
@@ -202,6 +218,17 @@ export class SelectionState {
     return this.setFocus(null, options);
   }
 
+  setPresentation(value, options = {}) {
+    if (sameReferenceOrJSON(this.presentation, value)) return this;
+    this.presentation = value || null;
+    this.changed("presentation", { presentation: this.presentation }, options);
+    return this;
+  }
+
+  clearPresentation(options = {}) {
+    return this.setPresentation(null, options);
+  }
+
   snapshot() {
     return {
       records: Array.from(this.records),
@@ -210,6 +237,7 @@ export class SelectionState {
       layers: Array.from(this.layers),
       hover: this.hover,
       focus: this.focus,
+      presentation: this.presentation,
       version: this.version,
     };
   }
@@ -221,6 +249,7 @@ export class SelectionState {
     this.layers = new Set(snapshot.layers || []);
     this.hover = snapshot.hover || null;
     this.focus = snapshot.focus || null;
+    this.presentation = snapshot.presentation || null;
     this.changed("restore", {}, options);
     return this;
   }
@@ -236,6 +265,90 @@ export class SelectionState {
 
 export function createSelectionState(options = {}) {
   return new SelectionState(options);
+}
+
+export function buildLinkedSelectionPresentation(selection = {}, context = {}) {
+  const runtime = context.runtime || null;
+  const visualSpace = context.visualSpace || runtime?.visualSpace || null;
+  const document = context.document || visualSpace?.document || runtime?.document || null;
+  const descriptors = toSelectionArray(context.layerDescriptors ?? context.descriptors ?? runtime?.layerDescriptors);
+  const pair = normalizePresentationPair(selection?.pair);
+  const selectedRecordId = selection?.recordId == null ? null : String(selection.recordId);
+  const recordTargets = selectedRecordTargets(selectedRecordId, pair, visualSpace);
+  const presentation = {
+    schema: LINKED_SELECTION_PRESENTATION_SCHEMA,
+    kind: pair ? "pair" : selectedRecordId != null ? "record" : "none",
+    source: selection?.source || null,
+    pickSource: selection?.pickSource || selection?.pickingSource || pair?.pickSource || null,
+    selectedRecordId,
+    selectedPair: pair ? clonePresentationValue(pair) : null,
+    records: recordTargets.map((target) => ({
+      recordId: target.recordId,
+      roles: target.roles.slice(),
+      record: target.record ? recordSummary(target.record) : null,
+    })),
+    relationMatrixCells: [],
+    graphEdges: [],
+    pairedSpaceBridges: [],
+    recordFeatures: [],
+    features: [],
+    highlight: {
+      recordIds: [],
+      relationMatrixCells: [],
+      graphEdgeIds: [],
+      pairedSpaceBridgeIds: [],
+    },
+    counts: {
+      records: 0,
+      relationMatrixCells: 0,
+      graphEdges: 0,
+      pairedSpaceBridges: 0,
+      features: 0,
+    },
+  };
+
+  if (!pair && selectedRecordId == null) return presentation;
+
+  const seen = {
+    records: new Set(),
+    matrices: new Set(),
+    graphEdges: new Set(),
+    bridges: new Set(),
+  };
+
+  for (const descriptor of descriptors) {
+    if (!descriptor || descriptor.visible === false) continue;
+    collectRecordPresentationFeatures(presentation, descriptor, recordTargets, seen.records);
+    collectRelationMatrixPresentationFeatures(presentation, descriptor, { pair, selectedRecordId }, seen.matrices);
+    collectRelationEdgePresentationFeatures(presentation, descriptor, { pair, selectedRecordId }, seen);
+  }
+
+  presentation.features = [
+    ...presentation.recordFeatures,
+    ...presentation.relationMatrixCells,
+    ...presentation.graphEdges,
+    ...presentation.pairedSpaceBridges,
+  ];
+  presentation.highlight.recordIds = uniqueStrings(presentation.records.map((record) => record.recordId));
+  presentation.highlight.relationMatrixCells = presentation.relationMatrixCells.map((feature) => ({
+    layerId: feature.layerId,
+    relationId: feature.relationId,
+    rowId: feature.rowId,
+    columnId: feature.columnId,
+    row: feature.row,
+    column: feature.column,
+  }));
+  presentation.highlight.graphEdgeIds = uniqueStrings(presentation.graphEdges.map((feature) => feature.edgeId));
+  presentation.highlight.pairedSpaceBridgeIds = uniqueStrings(presentation.pairedSpaceBridges.map((feature) => feature.edgeId));
+  presentation.counts = {
+    records: presentation.recordFeatures.length,
+    relationMatrixCells: presentation.relationMatrixCells.length,
+    graphEdges: presentation.graphEdges.length,
+    pairedSpaceBridges: presentation.pairedSpaceBridges.length,
+    features: presentation.features.length,
+  };
+  presentation.document = document?.schema ? { schema: document.schema } : null;
+  return presentation;
 }
 
 export function getSelectionTarget(target) {
@@ -422,6 +535,430 @@ export function boundsForPoints(points = []) {
     width: x1 - x0,
     height: y1 - y0,
   };
+}
+
+function collectRecordPresentationFeatures(presentation, descriptor, recordTargets, seen) {
+  if (!recordTargets.length || descriptor.primitive === "RelationMatrixLayer" || descriptor.primitive === "RelationEdgeLayer") {
+    return presentation;
+  }
+  const channels = descriptor.channels || {};
+  const recordChannel = getChannel(channels, RECORD_CHANNEL_NAMES);
+  const positionChannel = getChannel(channels, POSITION_CHANNEL_NAMES);
+  const recordIds = getChannelArray(recordChannel);
+  const positions = getChannelArray(positionChannel);
+  if (!recordIds?.length || !positions?.length) return presentation;
+
+  const itemSize = getChannelItemSize(positionChannel, 3);
+  const count = Math.min(getChannelCount(recordChannel, 1), getChannelCount(positionChannel, itemSize));
+  const targetsById = new Map(recordTargets.map((target) => [target.recordId, target]));
+  for (let index = 0; index < count; index += 1) {
+    const recordId = recordIds[index] == null ? null : String(recordIds[index]);
+    const target = recordId == null ? null : targetsById.get(recordId);
+    if (!target) continue;
+    const source = descriptor.source || {};
+    const metadata = descriptor.metadata || {};
+    const layerId = descriptor.id || null;
+    const key = `${layerId || descriptor.primitive || "record"}:${recordId}:${index}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    presentation.recordFeatures.push({
+      kind: "record",
+      feature: "metric-space-record",
+      recordId,
+      roles: target.roles.slice(),
+      layerId,
+      descriptorId: descriptor.id || null,
+      descriptorKind: descriptor.kind || descriptor.primitive || null,
+      viewId: source.viewId || metadata.viewId || null,
+      viewKind: source.viewKind || metadata.viewKind || null,
+      spaceId: source.spaceId || metadata.spaceId || metadata.pairedSpace?.spaceId || null,
+      coordinateId: source.coordinateId || metadata.coordinateId || metadata.pairedSpace?.coordinateId || null,
+      pairedSpaceRole: source.pairedSpaceRole || metadata.pairedSpace?.role || metadata.selectionModel?.pairedSpaceRole || null,
+      pairSetId: source.pairSetId || metadata.pairedSpace?.pairSetId || metadata.selectionModel?.pairSetId || null,
+      index,
+      position: vectorAt(positions, itemSize, index),
+    });
+  }
+  return presentation;
+}
+
+function collectRelationMatrixPresentationFeatures(presentation, descriptor, selection, seen) {
+  if (descriptor.primitive !== "RelationMatrixLayer") return presentation;
+  const matrix = descriptor.metadata?.matrix
+    || descriptor.source?.texture?.matrix
+    || descriptor.source?.textureData?.matrix
+    || descriptor.source?.matrix
+    || null;
+  const recordIds = matrix?.recordIds || descriptor.source?.recordIds || descriptor.metadata?.recordIds || [];
+  if (!recordIds.length) return presentation;
+  const relationId = descriptor.source?.relationId || descriptor.metadata?.relationId || matrix?.relationId || null;
+  const relationName = descriptor.source?.relationName || descriptor.metadata?.relationName || matrix?.relationName || null;
+  const pair = selection.pair;
+  const selectedRecordId = selection.selectedRecordId;
+
+  if (pair) {
+    if (!relationCompatible(pair, relationId, { allowMissingPairRelation: false })) return presentation;
+    const row = findRecordIndex(recordIds, pair.rowId, pair.row);
+    const column = findRecordIndex(recordIds, pair.columnId, pair.column);
+    if (row < 0 && column < 0) return presentation;
+    pushMatrixFeature(presentation, descriptor, matrix, {
+      relationId,
+      relationName,
+      rowId: pair.rowId,
+      columnId: pair.columnId,
+      row,
+      column,
+      roles: ["row", "column", "cell"],
+      source: "selected-pair",
+    }, seen);
+    return presentation;
+  }
+
+  if (selectedRecordId != null) {
+    const index = findRecordIndex(recordIds, selectedRecordId);
+    if (index < 0) return presentation;
+    pushMatrixFeature(presentation, descriptor, matrix, {
+      relationId,
+      relationName,
+      rowId: selectedRecordId,
+      columnId: selectedRecordId,
+      row: index,
+      column: index,
+      roles: ["row", "column", "record-diagonal"],
+      source: "selected-record",
+    }, seen);
+  }
+  return presentation;
+}
+
+function pushMatrixFeature(presentation, descriptor, matrix, feature, seen) {
+  const layerId = descriptor.id || null;
+  const key = `${layerId || "matrix"}:${feature.relationId || ""}:${feature.rowId}:${feature.columnId}`;
+  if (seen.has(key)) return;
+  seen.add(key);
+  const value = matrixCellValue(matrix, feature.row, feature.column);
+  presentation.relationMatrixCells.push({
+    kind: "relation-matrix-cell",
+    feature: "relation-matrix-cell",
+    layerId,
+    descriptorId: descriptor.id || null,
+    descriptorKind: descriptor.kind || descriptor.primitive || null,
+    viewId: descriptor.source?.viewId || descriptor.metadata?.viewId || null,
+    viewKind: descriptor.source?.viewKind || descriptor.metadata?.viewKind || null,
+    relationId: feature.relationId,
+    relationName: feature.relationName,
+    rowId: feature.rowId,
+    columnId: feature.columnId,
+    row: feature.row,
+    column: feature.column,
+    rowActive: feature.row >= 0,
+    columnActive: feature.column >= 0,
+    cellActive: feature.row >= 0 && feature.column >= 0,
+    roles: feature.roles.slice(),
+    value: value.value,
+    present: value.present,
+    selectionSource: feature.source,
+  });
+}
+
+function collectRelationEdgePresentationFeatures(presentation, descriptor, selection, seen) {
+  if (descriptor.primitive !== "RelationEdgeLayer") return presentation;
+  const graph = descriptor.metadata?.graph || descriptor.source?.graph || null;
+  const edges = Array.isArray(graph?.edges) ? graph.edges : [];
+  if (!edges.length) return presentation;
+  const relationId = descriptor.source?.relationId || graph?.relationId || graph?.edge_relation_id || descriptor.metadata?.relationId || null;
+  const graphId = descriptor.source?.graphId || graph?.id || descriptor.metadata?.graphId || null;
+  const pairSetId = descriptor.source?.pairSetId || descriptor.metadata?.selectionModel?.pairSetId || graph?.id || null;
+  const sourcePositions = vec3ChannelReader(descriptor.channels, ["sourcePosition", "source"]);
+  const targetPositions = vec3ChannelReader(descriptor.channels, ["targetPosition", "target"]);
+  const values = getChannelArray(getChannel(descriptor.channels || {}, EDGE_VALUE_CHANNEL_NAMES));
+  const isBridge = isPairedSpaceBridgeDescriptor(descriptor, graph);
+  const count = Math.min(edges.length, Math.max(sourcePositions.count, targetPositions.count, edges.length));
+
+  for (let index = 0; index < count; index += 1) {
+    const edge = normalizePresentationEdge(edges[index] || {}, {
+      descriptor,
+      relationId,
+      graphId,
+      pairSetId,
+      value: values?.[index],
+      index,
+      sourcePosition: sourcePositions.at(index),
+      targetPosition: targetPositions.at(index),
+      isBridge,
+    });
+    const match = edgeSelectionMatch(edge, selection, { isBridge, relationId });
+    if (!match) continue;
+    if (isBridge) {
+      pushBridgeFeature(presentation, edge, descriptor, match, seen.bridges);
+    } else {
+      pushGraphEdgeFeature(presentation, edge, descriptor, match, seen.graphEdges);
+    }
+  }
+  return presentation;
+}
+
+function pushGraphEdgeFeature(presentation, edge, descriptor, match, seen) {
+  const key = `${descriptor.id || "edge"}:${edge.edgeId}:${match.kind}`;
+  if (seen.has(key)) return;
+  seen.add(key);
+  presentation.graphEdges.push({
+    ...edgeFeatureBase(edge, descriptor, match),
+    kind: "graph-edge",
+    feature: "graph-edge",
+  });
+}
+
+function pushBridgeFeature(presentation, edge, descriptor, match, seen) {
+  const key = `${descriptor.id || "bridge"}:${edge.edgeId}:${match.kind}`;
+  if (seen.has(key)) return;
+  seen.add(key);
+  presentation.pairedSpaceBridges.push({
+    ...edgeFeatureBase(edge, descriptor, match),
+    kind: "paired-space-bridge",
+    feature: "paired-space-bridge",
+    pairId: edge.pairId,
+    pairSetId: edge.pairSetId,
+    sourceSpaceId: edge.sourceSpaceId,
+    targetSpaceId: edge.targetSpaceId,
+    sourceCoordinateId: edge.sourceCoordinateId,
+    targetCoordinateId: edge.targetCoordinateId,
+  });
+}
+
+function edgeFeatureBase(edge, descriptor, match) {
+  return {
+    layerId: descriptor.id || edge.layerId || null,
+    descriptorId: descriptor.id || null,
+    descriptorKind: descriptor.kind || descriptor.primitive || null,
+    viewId: descriptor.source?.viewId || descriptor.metadata?.viewId || null,
+    viewKind: descriptor.source?.viewKind || descriptor.metadata?.viewKind || null,
+    relationId: edge.relationId,
+    graphId: edge.graphId,
+    edgeId: edge.edgeId,
+    rowId: edge.rowId,
+    columnId: edge.columnId,
+    sourceId: edge.sourceId,
+    targetId: edge.targetId,
+    row: edge.row,
+    column: edge.column,
+    value: edge.value,
+    present: edge.present,
+    index: edge.index,
+    sourcePosition: edge.sourcePosition,
+    targetPosition: edge.targetPosition,
+    selectionMatch: match,
+  };
+}
+
+function selectedRecordTargets(selectedRecordId, pair, visualSpace = null) {
+  const targets = new Map();
+  if (selectedRecordId != null) addRecordTarget(targets, selectedRecordId, ["selected"], visualSpace);
+  if (pair) {
+    addRecordTarget(targets, pair.rowId, ["row", "source"], visualSpace);
+    addRecordTarget(targets, pair.columnId, ["column", "target"], visualSpace);
+  }
+  return Array.from(targets.values());
+}
+
+function addRecordTarget(targets, recordId, roles, visualSpace = null) {
+  if (recordId == null) return;
+  const key = String(recordId);
+  if (!targets.has(key)) {
+    targets.set(key, {
+      recordId: key,
+      roles: [],
+      record: visualSpace?.getRecord ? visualSpace.getRecord(key) : null,
+    });
+  }
+  const target = targets.get(key);
+  for (const role of roles) {
+    if (!target.roles.includes(role)) target.roles.push(role);
+  }
+}
+
+function recordSummary(record) {
+  if (!record) return null;
+  return {
+    id: record.id ?? record.record_id ?? null,
+    label: record.label ?? record.name ?? record.id ?? null,
+    datasetId: record.dataset_id ?? record.datasetId ?? null,
+    type: record.record_type ?? record.recordType ?? record.type ?? null,
+  };
+}
+
+function normalizePresentationPair(pair) {
+  if (!pair || typeof pair !== "object") return null;
+  const rowId = pair.rowId ?? pair.row_id ?? pair.sourceId ?? pair.source_id;
+  const columnId = pair.columnId ?? pair.column_id ?? pair.targetId ?? pair.target_id;
+  if (rowId == null || columnId == null) return null;
+  return {
+    relationId: pair.relationId ?? pair.relation_id ?? null,
+    relationName: pair.relationName ?? pair.relation_name ?? null,
+    relationType: pair.relationType ?? pair.relation_type ?? null,
+    graphId: pair.graphId ?? pair.graph_id ?? null,
+    edgeId: pair.edgeId ?? pair.edge_id ?? null,
+    pairId: pair.pairId ?? pair.pair_id ?? null,
+    pairSetId: pair.pairSetId ?? pair.pair_set_id ?? null,
+    rowId: String(rowId),
+    columnId: String(columnId),
+    row: integerOrNull(pair.row),
+    column: integerOrNull(pair.column),
+    value: pair.value,
+    present: pair.present !== false,
+    pickSource: pair.pickSource ?? pair.pick_source ?? null,
+  };
+}
+
+function normalizePresentationEdge(edge, options) {
+  const rowId = edge.source ?? edge.rowId ?? edge.row_id ?? edge.sourceId ?? edge.source_id ?? edge.a;
+  const columnId = edge.target ?? edge.columnId ?? edge.column_id ?? edge.targetId ?? edge.target_id ?? edge.b;
+  const edgeId = edge.id || edge.edgeId || edge.edge_id
+    || `${options.relationId || options.graphId || options.pairSetId || options.descriptor.id || "edge"}:${rowId}:${columnId}:${options.index}`;
+  return {
+    relationId: options.relationId,
+    graphId: options.graphId,
+    edgeId: String(edgeId),
+    pairId: edge.pairId ?? edge.pair_id ?? null,
+    pairSetId: options.pairSetId,
+    rowId: rowId == null ? null : String(rowId),
+    columnId: columnId == null ? null : String(columnId),
+    sourceId: rowId == null ? null : String(rowId),
+    targetId: columnId == null ? null : String(columnId),
+    row: integerOrNull(edge.sourceIndex ?? edge.row),
+    column: integerOrNull(edge.targetIndex ?? edge.column),
+    value: edge.value ?? options.value ?? null,
+    present: edge.present !== false,
+    index: options.index,
+    layerId: options.descriptor.id || null,
+    sourcePosition: options.sourcePosition,
+    targetPosition: options.targetPosition,
+    sourceSpaceId: edge.sourceSpaceId ?? edge.source_space_id ?? null,
+    targetSpaceId: edge.targetSpaceId ?? edge.target_space_id ?? null,
+    sourceCoordinateId: edge.sourceCoordinateId ?? edge.source_coordinate_id ?? null,
+    targetCoordinateId: edge.targetCoordinateId ?? edge.target_coordinate_id ?? null,
+    isBridge: options.isBridge,
+  };
+}
+
+function edgeSelectionMatch(edge, selection, options = {}) {
+  const pair = selection.pair;
+  if (pair && pairMatchesEdge(pair, edge, options)) {
+    return {
+      kind: "pair",
+      direction: pair.rowId === edge.rowId && pair.columnId === edge.columnId ? "forward" : "reverse",
+    };
+  }
+  if (selection.selectedRecordId != null && (selection.selectedRecordId === edge.rowId || selection.selectedRecordId === edge.columnId)) {
+    return {
+      kind: "record-endpoint",
+      recordId: selection.selectedRecordId,
+      endpoint: selection.selectedRecordId === edge.rowId ? "source" : "target",
+    };
+  }
+  return null;
+}
+
+function pairMatchesEdge(pair, edge, options = {}) {
+  if (pair.edgeId != null && edge.edgeId != null && String(pair.edgeId) === String(edge.edgeId)) return true;
+  if (pair.pairId != null && edge.pairId != null && String(pair.pairId) === String(edge.pairId)) return true;
+  const relationOk = options.isBridge
+    ? (pair.pairSetId == null || edge.pairSetId == null || String(pair.pairSetId) === String(edge.pairSetId))
+    : relationCompatible(pair, edge.relationId, { allowMissingPairRelation: false });
+  if (!relationOk) return false;
+  const forward = pair.rowId === edge.rowId && pair.columnId === edge.columnId;
+  const reverse = pair.rowId === edge.columnId && pair.columnId === edge.rowId;
+  return forward || reverse;
+}
+
+function relationCompatible(pair, relationId, options = {}) {
+  const pairRelation = pair?.relationId == null ? null : String(pair.relationId);
+  const descriptorRelation = relationId == null ? null : String(relationId);
+  if (pairRelation && descriptorRelation) return pairRelation === descriptorRelation;
+  if (!pairRelation && !descriptorRelation) return true;
+  return options.allowMissingPairRelation !== false;
+}
+
+function isPairedSpaceBridgeDescriptor(descriptor, graph) {
+  const model = descriptor.metadata?.selectionModel || {};
+  return graph?.kind === "paired-space-linked-pairs"
+    || descriptor.metadata?.primaryGrammar === "paired-space"
+    || model.kind === "paired-space-linked-selection"
+    || descriptor.source?.role === "dependence bridge"
+    || descriptor.metadata?.role === "dependence bridge";
+}
+
+function matrixCellValue(matrix, row, column) {
+  if (!matrix || row < 0 || column < 0) return { value: undefined, present: false };
+  const width = Math.max(1, Number(matrix.width ?? matrix.size ?? matrix.recordIds?.length ?? 1) || 1);
+  const offset = row * width + column;
+  const values = matrix.values;
+  const present = matrix.present;
+  return {
+    value: values?.[offset],
+    present: present ? present[offset] !== 0 : values?.[offset] !== undefined,
+  };
+}
+
+function findRecordIndex(recordIds, recordId, fallbackIndex = null) {
+  if (recordId != null) {
+    const match = recordIds.findIndex((id) => String(id) === String(recordId));
+    if (match >= 0) return match;
+  }
+  const index = integerOrNull(fallbackIndex);
+  return index != null && index >= 0 && index < recordIds.length ? index : -1;
+}
+
+function vec3ChannelReader(channels = {}, names) {
+  const channel = getChannel(channels, names);
+  const array = getChannelArray(channel);
+  const itemSize = getChannelItemSize(channel, 3);
+  const count = getChannelCount(channel, itemSize);
+  return {
+    count,
+    at(index) {
+      if (!array || index < 0 || index >= count) return null;
+      return vectorAt(array, itemSize, index);
+    },
+  };
+}
+
+function vectorAt(array, itemSize, index) {
+  const offset = index * itemSize;
+  return [
+    finiteNumberOrNull(array?.[offset]) ?? 0,
+    finiteNumberOrNull(array?.[offset + 1]) ?? 0,
+    finiteNumberOrNull(array?.[offset + 2]) ?? 0,
+  ];
+}
+
+function integerOrNull(value) {
+  const number = Number(value);
+  return Number.isInteger(number) ? number : null;
+}
+
+function finiteNumberOrNull(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function toSelectionArray(value) {
+  if (Array.isArray(value)) return value;
+  if (value == null) return [];
+  return [value];
+}
+
+function uniqueStrings(values) {
+  return Array.from(new Set(values.filter((value) => value != null).map(String)));
+}
+
+function clonePresentationValue(value) {
+  if (Array.isArray(value)) return value.map(clonePresentationValue);
+  if (ArrayBuffer.isView(value)) return Array.from(value);
+  if (!value || typeof value !== "object") return value;
+  const out = {};
+  for (const [key, entry] of Object.entries(value)) out[key] = clonePresentationValue(entry);
+  return out;
 }
 
 function normalizeSelectionValue(target, value, options = {}) {

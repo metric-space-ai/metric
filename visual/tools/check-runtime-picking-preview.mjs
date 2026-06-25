@@ -121,7 +121,7 @@ runtime.layerDescriptors = [
   },
 ];
 runtime.layerState = { status: "ready", descriptors: runtime.layerDescriptors.length, instances: 0, warning: null, errors: [] };
-runtime.selection = { recordId: null, pair: null, record: null, preview: null, source: null, pickSource: null };
+runtime.selection = { recordId: null, pair: null, record: null, preview: null, presentation: null, source: null, pickSource: null };
 runtime.focusTarget = null;
 runtime.hoverFocusOptions = { enabled: false };
 runtime.hoverFocusState = { target: null };
@@ -164,7 +164,15 @@ assert.equal(state.selectedRecordPreview.kind, "record");
 assert.equal(state.selectedRecordPreview.recordId, "a");
 assert.equal(state.selectedRecordPreview.payloadSnippet.find((field) => field.label === "group").value, "left");
 assert.equal(state.selectionPreview.kind, "record");
+assert.equal(state.selectionPresentation.schema, "metric.visual.linked_selection_presentation.v1");
+assert.equal(state.selectionPresentation.kind, "record");
+assert.equal(state.selectionPresentation.recordFeatures.length, 1);
+assert.equal(state.selectionPresentation.recordFeatures[0].recordId, "a");
+assert.equal(state.selectionPresentation.relationMatrixCells[0].rowId, "a");
+assert.equal(state.selectionPresentation.relationMatrixCells[0].columnId, "a");
+assert.equal(state.selectionPresentation.graphEdges[0].edgeId, "toy-distance:a:b:0");
 assert.equal(state.inspection.selection.preview.kind, "record");
+assert.equal(state.inspection.selection.presentation.kind, "record");
 
 result = runtime.inspectAt({ x: 150, y: 10 }, { select: true, source: "check-matrix" });
 assert.equal(result.source, "relation-matrix-picking");
@@ -180,6 +188,16 @@ assert.equal(state.selectedPairPreview.pair.columnId, "b");
 assert.equal(state.selectedPairPreview.pair.value, 1);
 assert.equal(state.selectedPairPreview.pair.properties.find((field) => field.label === "source").value, "exported");
 assert.equal(state.inspection.selection.preview.pair.relationId, "toy-distance");
+assert.equal(state.selectionPresentation.kind, "pair");
+assert.deepEqual(state.selectionPresentation.records.map((record) => record.recordId), ["a", "b"]);
+assert.equal(state.selectionPresentation.recordFeatures.length, 2);
+assert.equal(state.selectionPresentation.relationMatrixCells.length, 1);
+assert.equal(state.selectionPresentation.relationMatrixCells[0].row, 0);
+assert.equal(state.selectionPresentation.relationMatrixCells[0].column, 1);
+assert.equal(state.selectionPresentation.graphEdges.length, 1);
+assert.equal(state.selectionPresentation.graphEdges[0].selectionMatch.kind, "pair");
+assert.equal(state.selectionPresentation.pairedSpaceBridges.length, 0);
+assert.equal(state.inspection.selection.presentation.graphEdges[0].edgeId, "toy-distance:a:b:0");
 
 result = runtime.inspectAt({ x: 50, y: 120 }, { select: true, source: "check-graph" });
 assert.equal(result.source, "graph-picking");
@@ -196,7 +214,10 @@ assert.deepEqual(state.inspection.runtimeStateKeys, {
   selectedPair: "selectedPair",
   selectedPairPreview: "selectedPairPreview",
   selectionPreview: "selectionPreview",
+  selectionPresentation: "selectionPresentation",
+  selectionFeatures: "selectionFeatures",
 });
+assert.equal(state.selectionPresentation.graphEdges[0].edgeId, "toy-distance:a:b:0");
 
 const recordPreview = buildMetricRecordPreview({ recordId: "a" }, { visualSpace: runtime.visualSpace, document });
 assert.equal(recordPreview.title, "Alpha");

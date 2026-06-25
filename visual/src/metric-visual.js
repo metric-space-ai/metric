@@ -3,7 +3,7 @@ import { createLayerFromDescriptor } from "./layers/index.js";
 import { MetricVisualRuntime } from "./runtime/index.js";
 import { createMiniatureHeroRuntimeOptions } from "./style/miniature/index.js";
 import { createTubeRibbonPathLayerDescriptor } from "./curves/index.js";
-import { RecordPreviewPanel } from "./interaction/index.js";
+import { RecordPreviewPanel, TimelineControlWidget, findTimelineControlDescriptor } from "./interaction/index.js";
 import { createRelationMatrixPicker } from "./relational/index.js";
 import {
   CrossSpaceView,
@@ -149,6 +149,9 @@ export class MetricVisualSurface {
     this.views = [];
     this.descriptors = [];
     this.previewPanel = null;
+    this.timelineControlWidget = null;
+    this.lastDynamicsOptions = null;
+    this.applyingTimelineControl = false;
     this.previewSubscriptions = [];
     this.previewPairPickers = [];
     this.documentDiagnostics = createMetricVisualDocumentDiagnostics(document, options);
@@ -199,6 +202,9 @@ export class MetricVisualSurface {
       viewKind: options.viewKind,
       append: options.append === true,
     });
+    if (options.viewKind && options.viewKind !== "dynamics") {
+      this.disableTimelineControl();
+    }
     return this;
   }
 
@@ -276,17 +282,20 @@ export class MetricVisualSurface {
   }
 
   showDynamics(options = {}) {
-    const view = DynamicsView.fromVisualSpace(this.document, normalizeMetricViewOptions(this.document, options));
+    const normalized = normalizeMetricViewOptions(this.document, options);
+    const view = DynamicsView.fromVisualSpace(this.document, normalized);
+    this.lastDynamicsOptions = { ...normalized };
     this.views = [view];
     const descriptors = view.toLayerDescriptors();
-    if (options.propertyField || options.groundField) {
+    if (normalized.propertyField || normalized.groundField) {
       descriptors.unshift(...propertyFieldDescriptors(this.document, {
-        ...options,
+        ...normalized,
         coordinateId: view.fittedStates?.[view.activeStep]?.coordinateId,
-        propertyId: options.propertyField || options.groundField,
+        propertyId: normalized.propertyField || normalized.groundField,
       }));
     }
     this.setLayerDescriptors(descriptors, { source: "showDynamics", viewKind: "dynamics" });
+    this.configureTimelineControl(view, normalized);
     return this.configurePreview(options);
   }
 
@@ -502,6 +511,70 @@ export class MetricVisualSurface {
     return this;
   }
 
+  configureTimelineControl(view, options = {}) {
+    const widgetOptions = normalizeTimelineControlWidgetOptions(options);
+    if (widgetOptions.enabled === false) {
+      return this.disableTimelineControl();
+    }
+    const descriptor = widgetOptions.descriptor || view?.timelineControl || findTimelineControlDescriptor(this.descriptors);
+    const canAttachDom = typeof document !== "undefined"
+      && typeof window !== "undefined"
+      && this.canvas;
+    if (!descriptor || !canAttachDom) return this;
+    const root = widgetOptions.root
+      || options.timelineControlRoot
+      || options.controlsRoot
+      || this.canvas.parentElement
+      || document.body;
+    const onTimelineChange = (state) => this.applyTimelineControlState(state);
+    if (!this.timelineControlWidget) {
+      this.timelineControlWidget = new TimelineControlWidget({
+        root,
+        runtime: this.runtime,
+        descriptor,
+        ...widgetOptions,
+        onTimelineChange,
+      });
+    } else {
+      this.timelineControlWidget
+        .setRuntime(this.runtime)
+        .setOnTimelineChange(onTimelineChange)
+        .setRoot(root)
+        .setDescriptor(descriptor);
+    }
+    return this;
+  }
+
+  applyTimelineControlState(state = {}) {
+    if (this.applyingTimelineControl) return this;
+    const normalized = Number(state.normalized ?? state.value);
+    if (!Number.isFinite(normalized)) return this;
+    const base = this.lastDynamicsOptions || {};
+    this.applyingTimelineControl = true;
+    try {
+      this.showDynamics({
+        ...base,
+        timelineProgress: normalized,
+        timelinePosition: normalized,
+      });
+    } finally {
+      this.applyingTimelineControl = false;
+    }
+    this.runtime?.emit?.("timelinecontrolchange", {
+      runtime: this.runtime,
+      surface: this,
+      state,
+      descriptor: state.descriptor || state.control || null,
+    });
+    return this;
+  }
+
+  disableTimelineControl() {
+    this.timelineControlWidget?.dispose?.();
+    this.timelineControlWidget = null;
+    return this;
+  }
+
   enableRecordPreview(options = {}) {
     const canAttachDom = typeof document !== "undefined"
       && typeof window !== "undefined"
@@ -599,7 +672,6 @@ export class MetricVisualSurface {
           x: event.clientX,
           y: event.clientY,
         });
-        document.documentElement.dataset.metricSelectedPair = `${pairHit.rowId}|${pairHit.columnId}`;
         return;
       }
     }
@@ -622,12 +694,31 @@ export class MetricVisualSurface {
 
   handlePreviewPointerClick(event) {
     if (String(this.previewMode || "").toLowerCase().includes("pair")) {
-      const pairHit = this.pickPreviewPair(event);
-      if (pairHit) {
-        this.runtime.selectPair(pairHit, { source: "metric-visual-pair-preview" });
-        document.documentElement.dataset.metricSelectedPair = `${pairHit.rowId}|${pairHit.columnId}`;
-      }
+      this.inspectRuntimeAtEvent(event, {
+        mode: "click",
+        select: true,
+        source: "metric-visual-pair-preview",
+      });
     }
+  }
+
+  inspectRuntimeAtEvent(event, options = {}) {
+    if (!this.runtime || !this.canvas) return null;
+    const rect = this.canvas.getBoundingClientRect();
+    const pixelRatio = this.runtime.renderer?.size?.pixelRatio || globalThis.devicePixelRatio || 1;
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    return this.runtime.inspectAt({}, {
+      ...options,
+      rawPointer: {
+        x,
+        y,
+        css: { x, y },
+        pixel: { x: x * pixelRatio, y: y * pixelRatio },
+        inside: x >= 0 && y >= 0 && x <= rect.width && y <= rect.height,
+      },
+      sourceEvent: event,
+    });
   }
 
   pickPreviewPair(event) {
@@ -974,6 +1065,16 @@ function normalizeMetricViewOptions(document, options = {}) {
   if (next.labels && next.labels !== true && !next.labelProperty) next.labelProperty = next.labels;
   if (next.pointSize !== undefined && next.size === undefined) next.size = next.pointSize;
   return next;
+}
+
+function normalizeTimelineControlWidgetOptions(options = {}) {
+  const raw = options.timelineControlWidget ?? options.timelineWidget ?? options.timelineControl;
+  if (raw === false) return { enabled: false };
+  if (raw && typeof raw === "object" && raw.schema === "metric.visual.timeline_control.v1") {
+    return { enabled: true, descriptor: raw };
+  }
+  if (raw && typeof raw === "object") return { enabled: true, ...raw };
+  return { enabled: true };
 }
 
 function normalizeRelationOptions(document, options = {}) {

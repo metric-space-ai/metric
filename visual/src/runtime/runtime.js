@@ -29,6 +29,7 @@ import {
   TiltShiftPass,
 } from "../native-postprocess/index.js";
 import { MetricPostFxStack } from "../postfx/index.js";
+import { buildLinkedSelectionPresentation } from "../selection/index.js";
 
 const RUNTIME_RENDER_PASS = "Scene(RenderPass)";
 const RUNTIME_COMPATIBILITY_PASS_ORDER = Object.freeze(["FxaaPass", "TiltShiftPass"]);
@@ -369,7 +370,9 @@ export class MetricVisualRuntime {
       pair: null,
       record: null,
       preview: null,
+      presentation: null,
       source: null,
+      pickSource: null,
     };
     this.inspectionOptions = normalizeInspectionOptions(this.options.inspection ?? this.options.picking);
     this.pickingRegistry = new PickingRegistry();
@@ -679,7 +682,7 @@ export class MetricVisualRuntime {
       : focusTargetForRecord(this, recordId, options);
     const record = this.visualSpace?.getRecord ? this.visualSpace.getRecord(recordId) : null;
     const preview = buildRuntimeRecordPreview(this, recordId);
-    this.selection = {
+    const selection = {
       recordId,
       pair: null,
       record,
@@ -688,6 +691,8 @@ export class MetricVisualRuntime {
       pickSource: options.pickSource || options.pickingSource || null,
       focusTarget,
     };
+    selection.presentation = buildRuntimeSelectionPresentation(this, selection);
+    this.selection = selection;
     if (focusTarget) {
       this.setFocusTarget(focusTarget, {
         source: options.source || "selectRecord",
@@ -708,7 +713,7 @@ export class MetricVisualRuntime {
   selectPair(pair, options = {}) {
     const normalized = normalizeSelectionPair(pair);
     const preview = buildRuntimePairPreview(this, normalized);
-    this.selection = {
+    const selection = {
       recordId: null,
       pair: normalized,
       record: null,
@@ -717,6 +722,8 @@ export class MetricVisualRuntime {
       pickSource: options.pickSource || options.pickingSource || normalized.pickSource || null,
       focusTarget: null,
     };
+    selection.presentation = buildRuntimeSelectionPresentation(this, selection);
+    this.selection = selection;
     this.applySelectionToLayers();
     this.emit("selectionchange", {
       runtime: this,
@@ -739,6 +746,7 @@ export class MetricVisualRuntime {
       pair: null,
       record: null,
       preview: null,
+      presentation: null,
       source: options.source || null,
       pickSource: null,
     };
@@ -1236,6 +1244,8 @@ export class MetricVisualRuntime {
         ? clonePlainObject(this.selection.preview)
         : null,
       selectionPreview: this.selection.preview ? clonePlainObject(this.selection.preview) : null,
+      selectionPresentation: this.selection.presentation ? clonePlainObject(this.selection.presentation) : null,
+      selectionFeatures: this.selection.presentation?.features ? clonePlainObject(this.selection.presentation.features) : [],
       selectionSource: this.selection.source || null,
       selectionPickSource: this.selection.pickSource || null,
       focusTarget: this.focusTarget ? clonePlainObject(this.focusTarget) : null,
@@ -1269,6 +1279,8 @@ export class MetricVisualRuntime {
           selectedPair: "selectedPair",
           selectedPairPreview: "selectedPairPreview",
           selectionPreview: "selectionPreview",
+          selectionPresentation: "selectionPresentation",
+          selectionFeatures: "selectionFeatures",
         },
       }),
       hoverFocus: {
@@ -2239,6 +2251,8 @@ function normalizeSelectionPair(pair) {
     relationType: pair.relationType ?? pair.relation_type ?? null,
     graphId: pair.graphId ?? pair.graph_id ?? null,
     edgeId: pair.edgeId ?? pair.edge_id ?? null,
+    pairId: pair.pairId ?? pair.pair_id ?? null,
+    pairSetId: pair.pairSetId ?? pair.pair_set_id ?? null,
     rowId: String(rowId),
     columnId: String(columnId),
     row: Number.isFinite(Number(pair.row)) ? Number(pair.row) : null,
@@ -2250,6 +2264,10 @@ function normalizeSelectionPair(pair) {
     properties: pair.properties == null ? null : normalizePreviewProperties(pair.properties),
     nativePair: pair.nativePair ?? pair.native_pair ?? null,
     pickSource: pair.pickSource ?? pair.pick_source ?? null,
+    sourceSpaceId: pair.sourceSpaceId ?? pair.source_space_id ?? null,
+    targetSpaceId: pair.targetSpaceId ?? pair.target_space_id ?? null,
+    sourceCoordinateId: pair.sourceCoordinateId ?? pair.source_coordinate_id ?? null,
+    targetCoordinateId: pair.targetCoordinateId ?? pair.target_coordinate_id ?? null,
   };
 }
 
@@ -2268,6 +2286,16 @@ function buildRuntimePairPreview(runtime, pair) {
     runtime,
     visualSpace: runtime.visualSpace,
     document: runtime.document,
+  });
+}
+
+function buildRuntimeSelectionPresentation(runtime, selection) {
+  if (!runtime) return null;
+  return buildLinkedSelectionPresentation(selection, {
+    runtime,
+    visualSpace: runtime.visualSpace,
+    document: runtime.document,
+    layerDescriptors: runtime.layerDescriptors,
   });
 }
 
@@ -2581,6 +2609,7 @@ function collectDescriptorGraphEdges(out, registry, descriptor) {
   const values = getChannelArray(getChannel(descriptor.channels || {}, ["relationValue", "value", "weight"]));
   const relationId = descriptor.source?.relationId || graph.relationId || graph.edge_relation_id || null;
   const graphId = descriptor.source?.graphId || graph.id || null;
+  const pairSetId = descriptor.source?.pairSetId || descriptor.metadata?.selectionModel?.pairSetId || graph.id || null;
   const count = Math.min(edges.length, sourcePositions.count, targetPositions.count);
 
   for (let index = 0; index < count; index += 1) {
@@ -2593,6 +2622,8 @@ function collectDescriptorGraphEdges(out, registry, descriptor) {
       relationId,
       graphId,
       edgeId,
+      pairId: edge.pairId ?? edge.pair_id ?? null,
+      pairSetId,
       rowId: String(rowId),
       columnId: String(columnId),
       row: Number.isFinite(Number(edge.sourceIndex)) ? Number(edge.sourceIndex) : null,
@@ -2601,6 +2632,10 @@ function collectDescriptorGraphEdges(out, registry, descriptor) {
       present: true,
       sourcePosition: sourcePositions.at(index),
       targetPosition: targetPositions.at(index),
+      sourceSpaceId: edge.sourceSpaceId ?? edge.source_space_id ?? null,
+      targetSpaceId: edge.targetSpaceId ?? edge.target_space_id ?? null,
+      sourceCoordinateId: edge.sourceCoordinateId ?? edge.source_coordinate_id ?? null,
+      targetCoordinateId: edge.targetCoordinateId ?? edge.target_coordinate_id ?? null,
       layerId: descriptor.id || null,
     };
     const numericId = registry.registerEdge(edgeId, {
@@ -2674,6 +2709,8 @@ function pairFromPickResult(result) {
     relationType: payload.relationType ?? payload.relation_type ?? null,
     graphId: payload.graphId ?? payload.graph_id ?? null,
     edgeId: payload.edgeId ?? payload.edge_id ?? result.edgeId ?? null,
+    pairId: payload.pairId ?? payload.pair_id ?? null,
+    pairSetId: payload.pairSetId ?? payload.pair_set_id ?? null,
     rowId: String(rowId),
     columnId: String(columnId),
     row: Number.isFinite(Number(payload.row)) ? Number(payload.row) : null,
@@ -2685,6 +2722,10 @@ function pairFromPickResult(result) {
     properties: payload.properties == null ? null : normalizePreviewProperties(payload.properties),
     nativePair: payload.nativePair ?? payload.native_pair ?? null,
     pickSource: result.source || null,
+    sourceSpaceId: payload.sourceSpaceId ?? payload.source_space_id ?? null,
+    targetSpaceId: payload.targetSpaceId ?? payload.target_space_id ?? null,
+    sourceCoordinateId: payload.sourceCoordinateId ?? payload.source_coordinate_id ?? null,
+    targetCoordinateId: payload.targetCoordinateId ?? payload.target_coordinate_id ?? null,
   };
 }
 
@@ -2697,6 +2738,18 @@ function inspectionDetailFromPickResult(result, options = {}, runtime = null) {
     };
   }
   const pair = pairFromPickResult(result);
+  const preview = pair
+    ? buildRuntimePairPreview(runtime, pair)
+    : result.recordId != null
+      ? buildRuntimeRecordPreview(runtime, result.recordId)
+      : null;
+  const presentation = buildRuntimeSelectionPresentation(runtime, {
+    recordId: pair ? null : (result.recordId ?? null),
+    pair,
+    preview,
+    source: options.source || "inspection",
+    pickSource: result.source || null,
+  });
   return {
     hit: true,
     source: result.source || "unknown",
@@ -2704,11 +2757,8 @@ function inspectionDetailFromPickResult(result, options = {}, runtime = null) {
     kind: pair ? "pair" : (result.kind || "record"),
     recordId: result.recordId ?? null,
     pair,
-    preview: pair
-      ? buildRuntimePairPreview(runtime, pair)
-      : result.recordId != null
-        ? buildRuntimeRecordPreview(runtime, result.recordId)
-        : null,
+    preview,
+    presentation,
     layerId: result.layerId ?? null,
     edgeId: result.edgeId ?? null,
     numericId: result.numericId ?? 0,
