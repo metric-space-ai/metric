@@ -25,6 +25,11 @@ export class CurveRibbonLayer extends BaseLayer {
     this.vertexCount = 0;
     this.buffers = {};
     this.program = null;
+    this.pickProgram = null;
+    this.pickEntries = [];
+    this.pickProbePoints = [];
+    this.pickColorRegistry = null;
+    this.pickColorRegistrySize = -1;
   }
 
   ensureResources() {
@@ -45,13 +50,32 @@ export class CurveRibbonLayer extends BaseLayer {
       });
     const channels = source.channels || {};
     this.vertexCount = source.vertexCount || inferChannelCount(channels.start, 3);
-    this.replaceBuffer("start", channelArray(channels.start, 3, this.vertexCount));
-    this.replaceBuffer("end", channelArray(channels.end, 3, this.vertexCount));
-    this.replaceBuffer("side", channelArray(channels.side, 1, this.vertexCount));
-    this.replaceBuffer("along", channelArray(channels.along, 1, this.vertexCount));
-    this.replaceBuffer("color", channelArray(channels.color, 4, this.vertexCount, [0.16, 0.52, 0.64, 0.82]));
-    this.replaceBuffer("width", channelArray(channels.width, 1, this.vertexCount, [3]));
-    this.replaceBuffer("distance", channelArray(channels.distance, 1, this.vertexCount));
+    const starts = channelArray(channels.start, 3, this.vertexCount);
+    const ends = channelArray(channels.end, 3, this.vertexCount);
+    const sides = channelArray(channels.side, 1, this.vertexCount);
+    const along = channelArray(channels.along, 1, this.vertexCount);
+    const colors = channelArray(channels.color, 4, this.vertexCount, [0.16, 0.52, 0.64, 0.82]);
+    const widths = channelArray(channels.width, 1, this.vertexCount, [3]);
+    const distances = channelArray(channels.distance, 1, this.vertexCount);
+    const pathIndices = channelArray(channels.pathIndex, 1, this.vertexCount);
+    this.pickEntries = buildPickEntries({
+      descriptor: this.descriptor,
+      source,
+      starts,
+      ends,
+      pathIndices,
+      vertexCount: this.vertexCount,
+    });
+    this.pickProbePoints = buildPickProbePoints(this.pickEntries);
+    this.pickColorRegistry = null;
+    this.pickColorRegistrySize = -1;
+    this.replaceBuffer("start", starts);
+    this.replaceBuffer("end", ends);
+    this.replaceBuffer("side", sides);
+    this.replaceBuffer("along", along);
+    this.replaceBuffer("color", colors);
+    this.replaceBuffer("width", widths);
+    this.replaceBuffer("distance", distances);
     this.needsUpload = false;
   }
 
@@ -100,6 +124,65 @@ export class CurveRibbonLayer extends BaseLayer {
     return this;
   }
 
+  renderPicking(context = {}) {
+    if (this.disposed || this.visible === false || !this.ensureResources() || this.vertexCount <= 0) return this;
+    if (!context.registry || !this.pickEntries.length) return this;
+    const gl = this.gl;
+    const material = this.material || {};
+
+    if (!this.pickProgram) {
+      this.pickProgram = this.track(createProgram(gl, "CurveRibbonLayerPicking", RIBBON_PICK_VERTEX_SHADER, RIBBON_PICK_FRAGMENT_SHADER));
+    }
+    this.updatePickColorBuffer(context);
+
+    configureDrawState(gl, { depthWrite: true, alphaMode: "opaque" }, {
+      blend: false,
+      cullFace: false,
+      depthWrite: true,
+    });
+
+    this.pickProgram.use();
+    setCameraUniforms(this.pickProgram, context, this.renderer);
+    this.pickProgram.setUniform("uViewport", resolveViewport(gl, context, this.renderer));
+    this.pickProgram.setUniform("uWidthScale", finiteNumber(material.pickWidthScale, material.widthScale, 1));
+    this.pickProgram.setUniform("uDepthBias", finiteNumber(material.pickDepthBias, material.depthBias, 0));
+    bindAttribute(gl, this.pickProgram, this.capabilities, "aStart", this.buffers.start, 3);
+    bindAttribute(gl, this.pickProgram, this.capabilities, "aEnd", this.buffers.end, 3);
+    bindAttribute(gl, this.pickProgram, this.capabilities, "aSide", this.buffers.side, 1);
+    bindAttribute(gl, this.pickProgram, this.capabilities, "aAlong", this.buffers.along, 1);
+    bindAttribute(gl, this.pickProgram, this.capabilities, "aWidth", this.buffers.width, 1);
+    bindAttribute(gl, this.pickProgram, this.capabilities, "aPickColor", this.buffers.pickColor, 4);
+    gl.drawArrays(gl.TRIANGLES, 0, this.vertexCount);
+    restoreDepthWrite(gl);
+    return this;
+  }
+
+  updatePickColorBuffer(context = {}) {
+    const registry = context.registry;
+    const registrySize = registry?.size ?? -1;
+    if (this.buffers.pickColor && this.pickColorRegistry === registry && this.pickColorRegistrySize === registrySize) {
+      return this;
+    }
+    const encode = context.encodePickIdRGBAFloat || encodePickIdRGBAFloatLocal;
+    const colors = new Float32Array(this.vertexCount * 4);
+    const scope = this.descriptor?.id || this.id || this.descriptor?.primitive || null;
+    for (let index = 0; index < this.vertexCount; index += 1) {
+      const entry = this.pickEntries[index] || fallbackPickEntry(index, this.descriptor);
+      const numericId = registry.registerEdge(String(entry.edgeId), {
+        scope,
+        layerId: this.id,
+        index,
+        descriptor: this.descriptor,
+        payload: entry,
+      });
+      encode(numericId, colors, index * 4);
+    }
+    this.replaceBuffer("pickColor", colors);
+    this.pickColorRegistry = registry;
+    this.pickColorRegistrySize = registry?.size ?? registrySize;
+    return this;
+  }
+
   replaceBuffer(name, data) {
     const gl = this.gl;
     if (this.buffers[name]) {
@@ -113,8 +196,92 @@ export class CurveRibbonLayer extends BaseLayer {
   dispose() {
     this.buffers = {};
     this.program = null;
+    this.pickProgram = null;
     super.dispose();
   }
+}
+
+function buildPickEntries({ descriptor = {}, source = {}, starts, ends, pathIndices, vertexCount }) {
+  const evidencePaths = Array.isArray(source?.evidence?.paths) ? source.evidence.paths : [];
+  const entries = new Array(vertexCount);
+  const layerId = descriptor.id || descriptor.primitive || "curve";
+  for (let vertex = 0; vertex < vertexCount; vertex += 1) {
+    const segmentIndex = Math.floor(vertex / 6);
+    const pathIndex = Math.max(0, Math.floor(pathIndices?.[vertex] ?? 0));
+    const path = evidencePaths[pathIndex] || {};
+    const pathId = String(path.id ?? path.pathId ?? path.trajectoryId ?? `${layerId}:path:${pathIndex}`);
+    const edgeId = `${pathId}:segment:${segmentIndex}`;
+    const offset = vertex * 3;
+    const start = [
+      finiteNumber(starts?.[offset], 0),
+      finiteNumber(starts?.[offset + 1], 0),
+      finiteNumber(starts?.[offset + 2], 0),
+    ];
+    const end = [
+      finiteNumber(ends?.[offset], 0),
+      finiteNumber(ends?.[offset + 1], 0),
+      finiteNumber(ends?.[offset + 2], 0),
+    ];
+    entries[vertex] = {
+      edgeId,
+      pathId,
+      pathIndex,
+      segmentIndex,
+      vertex,
+      sourceId: pathId,
+      targetId: pathId,
+      rowId: pathId,
+      columnId: pathId,
+      sourcePosition: start,
+      targetPosition: end,
+      layerId,
+      relationId: descriptor.source?.relationId || descriptor.metadata?.relationId || null,
+      graphId: descriptor.source?.graphId || descriptor.metadata?.graphId || null,
+      curve: true,
+      evidenceRole: descriptor.metadata?.evidenceRole || descriptor.source?.evidenceRole || null,
+    };
+  }
+  return entries;
+}
+
+function buildPickProbePoints(entries = []) {
+  const probes = [];
+  const seen = new Set();
+  for (const entry of entries) {
+    if (!entry || seen.has(entry.edgeId)) continue;
+    seen.add(entry.edgeId);
+    const source = entry.sourcePosition || [0, 0, 0];
+    const target = entry.targetPosition || source;
+    probes.push({
+      edgeId: entry.edgeId,
+      pathId: entry.pathId,
+      pathIndex: entry.pathIndex,
+      segmentIndex: entry.segmentIndex,
+      layerId: entry.layerId,
+      position: [
+        (finiteNumber(source[0], 0) + finiteNumber(target[0], 0)) * 0.5,
+        (finiteNumber(source[1], 0) + finiteNumber(target[1], 0)) * 0.5,
+        (finiteNumber(source[2], 0) + finiteNumber(target[2], 0)) * 0.5,
+      ],
+    });
+    if (probes.length >= 512) break;
+  }
+  return probes;
+}
+
+function fallbackPickEntry(index, descriptor = {}) {
+  const layerId = descriptor.id || descriptor.primitive || "curve";
+  return {
+    edgeId: `${layerId}:segment:${index}`,
+    pathId: `${layerId}:path:0`,
+    pathIndex: 0,
+    segmentIndex: index,
+    vertex: index,
+    sourceId: `${layerId}:path:0`,
+    targetId: `${layerId}:path:0`,
+    layerId,
+    curve: true,
+  };
 }
 
 function hasRibbonChannels(channels = {}) {
@@ -189,6 +356,15 @@ function color3(value, fallback) {
 
 function clamp01(value) {
   return Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0));
+}
+
+function encodePickIdRGBAFloatLocal(id, out = [0, 0, 0, 0], offset = 0) {
+  const numericId = Math.max(0, Math.floor(Number(id) || 0));
+  out[offset] = (numericId % 256) / 255;
+  out[offset + 1] = (Math.floor(numericId / 256) % 256) / 255;
+  out[offset + 2] = (Math.floor(numericId / 65536) % 256) / 255;
+  out[offset + 3] = (Math.floor(numericId / 16777216) % 256) / 255;
+  return out;
 }
 
 const RIBBON_VERTEX_SHADER = `
@@ -275,5 +451,47 @@ void main() {
   vec3 color = pow(max(lit, vec3(0.0)), vec3(1.0 / 2.2));
   float alpha = vColor.a * uGlobalAlpha * (1.0 - edge * 0.46);
   gl_FragColor = vec4(color, alpha);
+}
+`;
+
+const RIBBON_PICK_VERTEX_SHADER = `
+attribute vec3 aStart;
+attribute vec3 aEnd;
+attribute float aSide;
+attribute float aAlong;
+attribute float aWidth;
+attribute vec4 aPickColor;
+
+uniform mat4 uViewProjectionMatrix;
+uniform vec2 uViewport;
+uniform float uWidthScale;
+uniform float uDepthBias;
+
+varying vec4 vPickColor;
+
+void main() {
+  vec4 clipStart = uViewProjectionMatrix * vec4(aStart, 1.0);
+  vec4 clipEnd = uViewProjectionMatrix * vec4(aEnd, 1.0);
+  vec4 center = mix(clipStart, clipEnd, aAlong);
+  vec2 startNdc = clipStart.xy / max(abs(clipStart.w), 0.000001);
+  vec2 endNdc = clipEnd.xy / max(abs(clipEnd.w), 0.000001);
+  vec2 direction = endNdc - startNdc;
+  float directionLength = length(direction);
+  direction = directionLength > 0.000001 ? direction / directionLength : vec2(1.0, 0.0);
+  vec2 normal = vec2(-direction.y, direction.x);
+  vec2 pixelOffset = normal * aSide * max(aWidth, 4.0) * uWidthScale;
+  vec2 clipOffset = (pixelOffset / max(uViewport, vec2(1.0))) * 2.0 * center.w;
+  gl_Position = center + vec4(clipOffset, uDepthBias * center.w, 0.0);
+  vPickColor = aPickColor;
+}
+`;
+
+const RIBBON_PICK_FRAGMENT_SHADER = `
+precision mediump float;
+
+varying vec4 vPickColor;
+
+void main() {
+  gl_FragColor = vPickColor;
 }
 `;

@@ -455,6 +455,81 @@ const PAGE_PROBE_SCRIPT = String.raw`
     }
     return { available: false, hit: false, source: "no-gpu-pickable-field-runtime" };
   }
+  function gpuCurvePickingProbe() {
+    for (const entry of runtimeObjects()) {
+      const runtime = entry.runtime;
+      if (typeof runtime.refreshPickingIndex !== "function" || typeof runtime.pickAt !== "function") continue;
+      runtime.refreshPickingIndex();
+      const index = runtime.pickingIndex || {};
+      if (!(index.gpuLayerCount > 0)) continue;
+      const curveLayers = (runtime.layers || [])
+        .filter((layer) => layer && layer.visible !== false && (
+          layer.constructor?.name === "CurveRibbonLayer" ||
+          layer.constructor?.name === "CurveTubeMeshLayer" ||
+          layer.descriptor?.primitive === "CurveRibbonLayer" ||
+          layer.descriptor?.primitive === "CurveTubeMeshLayer" ||
+          layer.descriptor?.kind === "CurveRibbonLayer" ||
+          layer.descriptor?.kind === "CurveTubeMeshLayer"
+        ))
+        .filter((layer) => typeof layer.renderPicking === "function" && Array.isArray(layer.pickProbePoints) && layer.pickProbePoints.length);
+      const candidates = curveLayers
+        .flatMap((layer) => layer.pickProbePoints.map((point) => ({ ...point, layerId: point.layerId || layer.id })))
+        .slice(0, 240);
+      const misses = [];
+      for (const point of candidates) {
+        const pixel = runtime.camera?.projectToPixel?.(point.position, {});
+        if (!pixel || pixel.visible === false || !Number.isFinite(pixel.x) || !Number.isFinite(pixel.y)) continue;
+        const result = runtime.pickAt({ x: pixel.x, y: pixel.y }, {
+          gpu: true,
+          relationMatrix: false,
+          graph: false,
+          cpuFallback: false,
+          gpuRadiusPx: 12,
+          source: "gpu-curve-contract-probe",
+        });
+        const sample = {
+          source: result?.source || null,
+          kind: result?.kind || null,
+          edgeId: result?.edgeId ?? null,
+          expectedEdgeId: point.edgeId ?? null,
+          pathId: result?.payload?.pathId ?? result?.pathId ?? null,
+          expectedPathId: point.pathId ?? null,
+          layerId: result?.layerId ?? null,
+          expectedLayerId: point.layerId ?? null,
+          x: Math.round(pixel.x),
+          y: Math.round(pixel.y),
+        };
+        if (result?.source === "gpu-picking" && result?.hit === true && result?.kind === "edge" && result?.layerId === point.layerId) {
+          return {
+            key: entry.key,
+            available: true,
+            hit: true,
+            source: "gpu-picking",
+            edgeId: result?.edgeId ?? null,
+            expectedEdgeId: point.edgeId ?? null,
+            pathId: result?.payload?.pathId ?? result?.pathId ?? null,
+            expectedPathId: point.pathId ?? null,
+            layerId: point.layerId ?? null,
+            layerCount: index.gpuLayerCount,
+            candidateCount: candidates.length,
+            testedCandidates: misses.length + 1,
+          };
+        }
+        if (misses.length < 8) misses.push(sample);
+      }
+      return {
+        key: entry.key,
+        available: true,
+        hit: false,
+        source: "no-gpu-hit-for-visible-curve-candidates",
+        layerCount: index.gpuLayerCount,
+        candidateCount: candidates.length,
+        testedCandidates: candidates.length,
+        misses,
+      };
+    }
+    return { available: false, hit: false, source: "no-gpu-pickable-curve-runtime" };
+  }
   const canvases = canvasSummaries();
   const handles = runtimeHandles();
   const largestCanvas = canvases[0] || null;
@@ -473,6 +548,7 @@ const PAGE_PROBE_SCRIPT = String.raw`
     gpuPickingProbe: gpuPickingProbe(),
     gpuEdgePickingProbe: gpuEdgePickingProbe(),
     gpuFieldPickingProbe: gpuFieldPickingProbe(),
+    gpuCurvePickingProbe: gpuCurvePickingProbe(),
     gpuDiagnostics: window.__metricVisualGpuDiagnostics || null,
     loadingText: Array.from(document.querySelectorAll(".loading")).map((node) => node.textContent.trim()).join(" | "),
     ready: Boolean(largestCanvas?.visible) && (
@@ -677,6 +753,13 @@ async function checkExample(browser, baseUrl, name) {
       probe: probe?.gpuFieldPickingProbe || null,
     });
   }
+  if (requiresGpuCurvePicking(runtime.state) && probe?.gpuCurvePickingProbe?.source !== "gpu-picking") {
+    issues.push({
+      code: "gpu-curve-picking-probe-failed",
+      primitives: runtime.state?.descriptorPrimitives || [],
+      probe: probe?.gpuCurvePickingProbe || null,
+    });
+  }
   if (name === "grae10-metric-engine" && !evidence.protectedGrae10?.ok) {
     issues.push({ code: "grae10-protection-failed", details: evidence.protectedGrae10 });
   }
@@ -694,6 +777,7 @@ async function checkExample(browser, baseUrl, name) {
     gpuPickingProbe: probe?.gpuPickingProbe || null,
     gpuEdgePickingProbe: probe?.gpuEdgePickingProbe || null,
     gpuFieldPickingProbe: probe?.gpuFieldPickingProbe || null,
+    gpuCurvePickingProbe: probe?.gpuCurvePickingProbe || null,
     issues,
   };
 }
@@ -714,6 +798,11 @@ function requiresGpuEdgePicking(runtimeState) {
 function requiresGpuFieldPicking(runtimeState) {
   const primitives = runtimeState?.descriptorPrimitives || [];
   return primitives.includes("HeatFieldLayer");
+}
+
+function requiresGpuCurvePicking(runtimeState) {
+  const primitives = runtimeState?.descriptorPrimitives || [];
+  return primitives.includes("CurveRibbonLayer") || primitives.includes("CurveTubeMeshLayer");
 }
 
 function classifyStatus(name, evidence, grammar) {
