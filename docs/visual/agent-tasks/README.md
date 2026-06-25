@@ -45,6 +45,13 @@ set, and one validation path.
 | `legacy-render-facade-deletion.md` | delete old `metric.evidence.v1` WebGL/2D render facade from public API | ready to assign |
 | `process-curve-descriptor-factory-quarantine.md` | remove process-curve descriptor-factory calls from example/public paths | ready to assign |
 | `direct-runtime-harness-quarantine.md` | quarantine direct-runtime probes and standalone renderer exports | ready to assign |
+| `condition-monitoring-visual-acceptance.md` | visual acceptance candidate for native condition monitoring preview | ready to assign |
+| `mixed-records-visual-acceptance.md` | visual acceptance candidate for native mixed-record preview | ready to assign |
+| `cross-space-dependency-visual-acceptance.md` | visual acceptance candidate for native cross-space preview | ready to assign |
+| `mapping-dimensionality-visual-acceptance.md` | visual acceptance candidate for native mapping preview | ready to assign |
+| `dynamics-noise-visual-acceptance.md` | visual acceptance candidate for native dynamics preview | ready to assign |
+| `relation-matrix-visual-acceptance.md` | visual acceptance candidate for native relation-matrix preview | ready to assign |
+| `project-gallery-native-evidence.md` | project-page gallery limited to accepted/native evidence | ready to assign |
 
 ## Next Slots
 
@@ -52,6 +59,8 @@ The current native evidence exporter wave is integrated. The next parallel wave
 starts from reusable engine capabilities, visual grammars and gallery assets,
 not from synthetic data or one-off pages:
 
+- assign one visual-acceptance work order per native preview; each work order
+  has a disjoint write set and must keep GRAE10 untouched
 - harden the public command API so examples call semantic commands
 - continue the process-curve preview from the `showProcessCurves` command,
   not from generic matrix/point-cloud fallback code
@@ -63,6 +72,8 @@ not from synthetic data or one-off pages:
 - run screenshot/performance review against the GRAE10 visual reference and
   each grammar brief
 - keep public gallery promotion behind `check-public-gallery-evidence.mjs`
+- keep every review-pending preview out of accepted-hero status until screenshot
+  review explicitly accepts it
 
 ## Shared Validation Commands
 

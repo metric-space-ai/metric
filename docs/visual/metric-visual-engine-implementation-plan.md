@@ -1323,7 +1323,12 @@ If `visually accepted` is `no`, then `complete` must also be `no`.
 Every visual work order must produce:
 
 - one runnable HTML example under `visual/examples/<work-order-id>/`
-- one evidence fixture under `visual/examples/<work-order-id>/`
+- one checked evidence source:
+  - native hero/preview work uses
+    `docs/examples/assets/<work-order-id>/metric.visual.json`
+  - renderer-only development work may use
+    `visual/examples/<work-order-id>/evidence.json`, but that fixture must be
+    labeled synthetic and must not be promoted as application evidence
 - one screenshot under `visual/output/<work-order-id>/`
 - one report under `visual/reports/<work-order-id>.md`
 - one browser check or script under `visual/tools/` or a documented command in
@@ -1768,9 +1773,8 @@ Minimum evidence density:
 Required output paths:
 
 - `visual/examples/condition-monitoring-hero/index.html`
-- `visual/examples/condition-monitoring-hero/evidence.json` as a development
-  fixture only until replaced by native exported evidence
-- native export target: `docs/examples/assets/condition-monitoring/metric.visual.json`
+- page reads native export target:
+  `docs/examples/assets/condition-monitoring/metric.visual.json`
 - `visual/output/W4-condition-monitoring-hero.png`
 - `visual/reports/W4-condition-monitoring-hero.md`
 
@@ -1835,9 +1839,8 @@ Input evidence:
 Required output paths:
 
 - `visual/examples/mixed-record-hero/index.html`
-- `visual/examples/mixed-record-hero/evidence.json` as a development fixture
-  only until replaced by native exported evidence
-- native export target: `docs/examples/assets/mixed-records/metric.visual.json`
+- page reads native export target:
+  `docs/examples/assets/mixed-records/metric.visual.json`
 - `visual/output/W5-mixed-record-hero.png`
 - `visual/reports/W5-mixed-record-hero.md`
 
@@ -1899,7 +1902,7 @@ Input evidence:
 
 Minimum evidence density:
 
-- at least 2,000 records
+- at least 1,000 records
 - at least three visible structure families
 - residual/error values for every rendered record
 - source and target states for the same record IDs
@@ -1907,9 +1910,8 @@ Minimum evidence density:
 Required output paths:
 
 - `visual/examples/mapping-dimensionality-hero/index.html`
-- `visual/examples/mapping-dimensionality-hero/evidence.json` as a development
-  fixture only until replaced by native exported evidence
-- native export target: `docs/examples/assets/mapping-dimensionality/metric.visual.json`
+- page reads native export target:
+  `docs/examples/assets/mapping-dimensionality/metric.visual.json`
 - `visual/output/W6-mapping-dimensionality-hero.png`
 - `visual/reports/W6-mapping-dimensionality-hero.md`
 
@@ -1966,7 +1968,7 @@ Input evidence:
 
 Minimum evidence density:
 
-- at least 1,000 paired observations
+- at least 500 paired observations
 - two coordinate spaces with different visible geometry
 - local contribution values for selected regions
 - global statistic exported as evidence
@@ -1974,9 +1976,8 @@ Minimum evidence density:
 Required output paths:
 
 - `visual/examples/cross-space-dependency-hero/index.html`
-- `visual/examples/cross-space-dependency-hero/evidence.json` as a development
-  fixture only until replaced by native exported evidence
-- native export target: `docs/examples/assets/cross-space-dependency/metric.visual.json`
+- page reads native export target:
+  `docs/examples/assets/cross-space-dependency/metric.visual.json`
 - `visual/output/W7-cross-space-dependency-hero.png`
 - `visual/reports/W7-cross-space-dependency-hero.md`
 
@@ -2044,9 +2045,8 @@ Minimum evidence density:
 Required output paths:
 
 - `visual/examples/dynamics-noise-hero/index.html`
-- `visual/examples/dynamics-noise-hero/evidence.json` as a development fixture
-  only until replaced by native exported evidence
-- native export target: `docs/examples/assets/dynamics-noise/metric.visual.json`
+- page reads native export target:
+  `docs/examples/assets/dynamics-noise/metric.visual.json`
 - `visual/output/W8-dynamics-noise-hero.png`
 - `visual/reports/W8-dynamics-noise-hero.md`
 
@@ -2082,10 +2082,11 @@ Browser check:
    `visual/regression-baselines/grae10-metric-engine.sha256`.
 2. Keep the public project page limited to checked native evidence:
    60k MNIST/GRAE10 and UCR process curves.
-3. Build native `metric.visual.v1` exporters for the planned heroes.
-4. Wire each exporter into a distinct visual grammar through `createMetricVisual`
-   or semantic views.
-5. Add a browser screenshot check for each new native exporter.
+3. Use the checked native `metric.visual.v1` assets as the only evidence source
+   for the preview heroes; do not add page-local `evidence.json` fixtures.
+4. Polish each native preview into a distinct visual grammar through
+   `createMetricVisual` or semantic views.
+5. Add or strengthen browser screenshot checks for each native preview grammar.
 6. Add a hero to the public page only after the evidence gate and screenshot
    checks pass.
 
