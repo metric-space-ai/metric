@@ -44,6 +44,10 @@ const metricVisualForbidden = [
     pattern: /\bDenseFieldView\b/,
     message: "metric-visual.js must use PropertyFieldView for property fields, not direct DenseFieldView helpers",
   },
+  {
+    pattern: /\bcreateProcessCurveMiniatureLayerDescriptors\b/,
+    message: "process-curve grammar must be emitted by ProcessCurveSceneView, not metric-visual.js",
+  },
 ];
 
 const failures = [];

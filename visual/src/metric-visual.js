@@ -12,7 +12,7 @@ import {
   MixedRecordView,
   NeighborhoodGraphView,
   PropertyFieldView,
-  createProcessCurveMiniatureLayerDescriptors,
+  ProcessCurveSceneView,
   RelationMatrixView,
   SolverTraceView,
   SpacePropertiesView,
@@ -431,50 +431,9 @@ export class MetricVisualSurface {
       morphProgress: options.morphProgress ?? 1,
       ...options,
     };
-    const scene = createProcessCurveMiniatureLayerDescriptors(this.document, normalized);
-    const descriptors = scene.descriptors.slice();
-    const relationId = options.relationId || options.relation || firstVisualRelationId(this.document);
-    const coordinateId = normalized.targetCoordinateId || scene.inputs?.targetCoordinate?.id;
-    if (options.includeNeighborhood !== false && relationId && coordinateId) {
-      const graph = NeighborhoodGraphView.fromVisualSpace(this.document, normalizeGraphOptions(this.document, {
-        coordinateId,
-        relationId,
-        graphId: options.graphId || options.graph,
-        colorProperty: normalized.labelPropertyId,
-        topK: options.topK ?? 4,
-        size: options.neighborhoodPointSize ?? 1.0,
-      }));
-      descriptors.push(...graph.toLayerDescriptors().map((descriptor) => ({
-        ...descriptor,
-        id: `${descriptor.id || "process-curve-neighborhood"}:support`,
-        order: Math.max(Number(descriptor.order ?? 0), 36),
-        metadata: {
-          ...(descriptor.metadata || {}),
-          role: "process-curve-neighborhood-support",
-          visualGrammar: "process-curves",
-        },
-      })));
-    }
-    if (options.includeMatrix === true && relationId) {
-      const matrix = RelationMatrixView.fromVisualSpace(this.document, normalizeRelationOptions(this.document, {
-        relationId,
-        rect: options.matrixRect || [0.61, 0.25, 0.35, 0.50],
-        palette: options.palette || "metric",
-        symmetric: options.symmetric ?? true,
-        missingAlpha: 0,
-        materialAlpha: 0.96,
-      }));
-      descriptors.push(...matrix.toLayerDescriptors().map((descriptor) => ({
-        ...descriptor,
-        order: Math.max(Number(descriptor.order ?? 0), 220),
-        metadata: {
-          ...(descriptor.metadata || {}),
-          role: "process-curve-relation-matrix-support",
-          visualGrammar: "process-curves",
-        },
-      })));
-    }
-    this.views = [];
+    const view = ProcessCurveSceneView.fromVisualSpace(this.document, normalized);
+    this.views = [view];
+    const descriptors = view.toLayerDescriptors();
     this.setLayerDescriptors(descriptors, { source: "showProcessCurves", viewKind: "process-curves" });
     if (options.camera !== false) {
       this.setCamera(options.camera || processCurveCamera());

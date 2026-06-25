@@ -3,32 +3,251 @@ import {
   createMiniatureSceneBundle,
   createMiniatureStagePreset,
 } from "../style/miniature/index.js";
+import { BaseView } from "./BaseView.js";
 import { DenseFieldView } from "./DenseFieldView.js";
 import { GroundProjectionView } from "./GroundProjectionView.js";
 import { MorphView } from "./MorphView.js";
+import { NeighborhoodGraphView } from "./NeighborhoodGraphView.js";
+import { RelationMatrixView } from "./RelationMatrixView.js";
 import { TrajectoryPathView } from "./TrajectoryPathView.js";
 import { createChannel } from "./view-utils.js";
+
+export class ProcessCurveSceneView extends BaseView {
+  constructor(options = {}) {
+    const inputs = options.inputs || {};
+    const sourceCoordinate = options.sourceCoordinate || inputs.sourceCoordinate || null;
+    const targetCoordinate = options.targetCoordinate || inputs.targetCoordinate || null;
+    const labelProperty = options.labelProperty || inputs.labelProperty || null;
+    const relation = options.relation || null;
+    const graph = options.graph || null;
+    const datasetId = options.datasetId ?? inputs.datasetId ?? targetCoordinate?.dataset_id ?? null;
+    const sourceCoordinateId = options.sourceCoordinateId ?? sourceCoordinate?.id ?? targetCoordinate?.id ?? null;
+    const targetCoordinateId = options.targetCoordinateId ?? targetCoordinate?.id ?? options.coordinateId ?? null;
+    const propertyId = options.propertyId ?? options.labelPropertyId ?? labelProperty?.id ?? null;
+    const relationId = options.relationId ?? relation?.id ?? null;
+    const graphId = options.graphId ?? graph?.id ?? null;
+    const metadata = {
+      ...(options.metadata || {}),
+      viewClass: "ProcessCurveSceneView",
+      visualGrammar: "process-curves",
+      algorithmicComputation: false,
+      datasetId,
+      coordinateId: targetCoordinateId,
+      sourceCoordinateId,
+      targetCoordinateId,
+      propertyId,
+      labelPropertyId: propertyId,
+      relationId,
+      graphId,
+      relationIds: {
+        primary: relationId,
+        graph: graphId,
+      },
+    };
+    super({
+      ...options,
+      kind: "process-curves",
+      datasetId,
+      coordinateId: targetCoordinateId,
+      propertyId,
+      relationId,
+      metadata,
+    });
+    this.document = options.document || null;
+    this.inputs = {
+      ...inputs,
+      datasetId,
+      sourceCoordinate,
+      targetCoordinate,
+      labelProperty,
+      records: options.records || inputs.records || [],
+    };
+    this.sourceCoordinateId = sourceCoordinateId;
+    this.targetCoordinateId = targetCoordinateId;
+    this.labelPropertyId = propertyId;
+    this.relation = relation;
+    this.graph = graph;
+    this.graphId = graphId;
+    this.includeNeighborhood = options.includeNeighborhood !== false && options.neighborhood !== false;
+    this.includeMatrix = options.includeMatrix === true || options.matrix === true;
+    this.options = {
+      ...options,
+      datasetId,
+      sourceCoordinateId,
+      targetCoordinateId,
+      labelPropertyId: propertyId,
+      relationId,
+      graphId,
+    };
+  }
+
+  static fromVisualSpace(document, options = {}) {
+    const inputs = resolveProcessCurveSceneInputs(document, options);
+    const relation = resolveProcessCurveRelation(document, inputs.datasetId, options);
+    const graph = resolveProcessCurveGraph(document, inputs.datasetId, relation, options);
+    const matrixRequested = options.includeMatrix === true || options.matrix === true;
+    const graphRequested = options.includeNeighborhood === true || options.neighborhood === true;
+    if (matrixRequested && !relation) {
+      throw new Error(`Process-curve scene requires a relation for matrix support in ${inputs.datasetId}.`);
+    }
+    if (graphRequested && !relation && !graph) {
+      throw new Error(`Process-curve scene requires relation or graph evidence for neighborhood support in ${inputs.datasetId}.`);
+    }
+    return new ProcessCurveSceneView({
+      ...options,
+      document,
+      inputs,
+      records: inputs.records,
+      datasetId: inputs.datasetId,
+      sourceCoordinate: inputs.sourceCoordinate,
+      targetCoordinate: inputs.targetCoordinate,
+      labelProperty: inputs.labelProperty,
+      sourceCoordinateId: inputs.sourceCoordinate?.id,
+      targetCoordinateId: inputs.targetCoordinate?.id,
+      coordinateId: inputs.targetCoordinate?.id,
+      propertyId: inputs.labelProperty?.id,
+      labelPropertyId: inputs.labelProperty?.id,
+      relation,
+      relationId: relation?.id ?? null,
+      graph,
+      graphId: graph?.id ?? null,
+    });
+  }
+
+  toLayerDescriptors() {
+    if (!this.document) throw new Error("ProcessCurveSceneView requires a metric.visual document.");
+    const descriptors = createProcessCurveLayerDescriptors(this.document, this.inputs, this.options)
+      .map((descriptor) => this.withProcessCurveMetadata(descriptor));
+    descriptors.push(...this.neighborhoodDescriptors());
+    descriptors.push(...this.matrixDescriptors());
+    return descriptors.filter(Boolean);
+  }
+
+  neighborhoodDescriptors() {
+    if (!this.includeNeighborhood || !this.relationId || !this.targetCoordinateId) return [];
+    const graph = NeighborhoodGraphView.fromVisualSpace(this.document, {
+      coordinateId: this.targetCoordinateId,
+      relationId: this.relationId,
+      graphId: this.graph?.id || this.graphId || undefined,
+      colorProperty: this.labelPropertyId,
+      topK: this.options.topK ?? 4,
+      size: this.options.neighborhoodPointSize ?? 1,
+      targetRadius: this.options.neighborhoodTargetRadius ?? 1.6,
+      groundY: this.options.neighborhoodGroundY ?? 0,
+      fit: this.options.neighborhoodFit,
+    });
+    return graph.toLayerDescriptors().map((descriptor) => this.withProcessCurveMetadata({
+      ...descriptor,
+      id: `${descriptor.id || "process-curve-neighborhood"}:support`,
+      order: Math.max(Number(descriptor.order ?? 0), 36),
+      metadata: {
+        ...(descriptor.metadata || {}),
+        role: "process-curve-neighborhood-support",
+      },
+    }));
+  }
+
+  matrixDescriptors() {
+    if (!this.includeMatrix || !this.relationId) return [];
+    const matrix = RelationMatrixView.fromVisualSpace(this.document, {
+      relationId: this.relationId,
+      rect: this.options.matrixRect || [0.61, 0.25, 0.35, 0.50],
+      palette: this.options.palette || "metric",
+      symmetric: this.options.symmetric ?? true,
+      missingAlpha: this.options.matrixMissingAlpha ?? 0,
+      materialAlpha: this.options.matrixMaterialAlpha ?? 0.96,
+    });
+    return matrix.toLayerDescriptors().map((descriptor) => this.withProcessCurveMetadata({
+      ...descriptor,
+      order: Math.max(Number(descriptor.order ?? 0), 220),
+      metadata: {
+        ...(descriptor.metadata || {}),
+        role: "process-curve-relation-matrix-support",
+      },
+    }));
+  }
+
+  withProcessCurveMetadata(descriptor) {
+    if (!descriptor) return descriptor;
+    const resolved = this.resolvedMetadata();
+    return {
+      ...descriptor,
+      source: {
+        ...(descriptor.source || {}),
+        processCurveViewId: this.id,
+        processCurveViewKind: this.kind,
+        processCurveViewClass: "ProcessCurveSceneView",
+        datasetId: descriptor.source?.datasetId ?? this.datasetId,
+        coordinateId: descriptor.source?.coordinateId ?? this.targetCoordinateId,
+        propertyId: descriptor.source?.propertyId ?? this.labelPropertyId,
+        relationId: descriptor.source?.relationId ?? this.relationId ?? null,
+        graphId: descriptor.source?.graphId ?? this.graphId ?? null,
+      },
+      metadata: {
+        ...(descriptor.metadata || {}),
+        visualGrammar: "process-curves",
+        algorithmicComputation: false,
+        processCurveView: resolved,
+      },
+    };
+  }
+
+  resolvedMetadata() {
+    return {
+      viewClass: "ProcessCurveSceneView",
+      visualGrammar: "process-curves",
+      algorithmicComputation: false,
+      datasetId: this.datasetId,
+      coordinateId: this.targetCoordinateId,
+      sourceCoordinateId: this.sourceCoordinateId,
+      targetCoordinateId: this.targetCoordinateId,
+      propertyId: this.labelPropertyId,
+      labelPropertyId: this.labelPropertyId,
+      relationId: this.relationId ?? null,
+      graphId: this.graphId ?? null,
+      relationIds: {
+        primary: this.relationId ?? null,
+        graph: this.graphId ?? null,
+      },
+    };
+  }
+}
 
 export function resolveProcessCurveSceneInputs(document, options = {}) {
   const datasetId = options.datasetId || firstDatasetId(document);
   const coordinates = document?.coordinates || [];
   const properties = document?.properties || [];
-  const coordinateName = (entry) => String(entry?.name || entry?.id || "").toLowerCase();
+  const coordinateName = (entry) => `${entry?.id || ""} ${entry?.name || ""}`.toLowerCase();
+  const coordinateKey = (entry) => coordinateName(entry).replace(/[^a-z0-9]/g, "");
+  const matchesCoordinateName = (entry, name) => {
+    const needle = String(name || "").toLowerCase();
+    const compactNeedle = needle.replace(/[^a-z0-9]/g, "");
+    return coordinateName(entry).includes(needle) || coordinateKey(entry).includes(compactNeedle);
+  };
   let sourceCoordinate = resolveByIdOrPredicate(
     coordinates,
     options.sourceCoordinateId || options.sourceCoordinate,
-    (entry) => entry.dataset_id === datasetId && coordinateName(entry).includes(options.sourceCoordinateName || "landmark2"),
+    (entry) => entry.dataset_id === datasetId && matchesCoordinateName(entry, options.sourceCoordinateName || "landmark2"),
   );
-  const targetCoordinate = resolveByIdOrPredicate(
+  let targetCoordinate = resolveByIdOrPredicate(
     coordinates,
-    options.targetCoordinateId || options.targetCoordinate,
-    (entry) => entry.dataset_id === datasetId && coordinateName(entry).includes(options.targetCoordinateName || "landmark3"),
+    options.targetCoordinateId || options.targetCoordinate || options.coordinateId || options.coordinate,
+    (entry) => entry.dataset_id === datasetId && matchesCoordinateName(entry, options.targetCoordinateName || "landmark3"),
   );
   const labelProperty = resolveByIdOrPredicate(
     properties,
     options.labelPropertyId || options.propertyId || options.labelProperty,
-    (entry) => entry.dataset_id === datasetId && String(entry.id || "").endsWith(":record_label"),
+    (entry) => {
+      if (entry.dataset_id !== datasetId) return false;
+      const name = `${entry.id || ""} ${entry.name || ""}`.toLowerCase();
+      return String(entry.id || "").endsWith(":record_label") || /(^|[-_: ])(role|label|state|regime)([-_: ]|$)/.test(name);
+    },
   );
+  if (!targetCoordinate) {
+    targetCoordinate = coordinates.find((entry) => (
+      entry.dataset_id === datasetId && Number(entry.dimension) === 3
+    )) || coordinates.find((entry) => entry.dataset_id === datasetId);
+  }
   if (!sourceCoordinate) sourceCoordinate = targetCoordinate;
   if (!datasetId) throw new Error("Process-curve scene requires a dataset id.");
   if (!targetCoordinate) throw new Error(`Process-curve scene could not find target coordinate for ${datasetId}.`);
@@ -167,16 +386,20 @@ export function createProcessCurveMiniatureStage(options = {}) {
 
 export function createProcessCurveMiniatureLayerDescriptors(document, options = {}) {
   const inputs = resolveProcessCurveSceneInputs(document, options);
+  return {
+    inputs,
+    descriptors: createProcessCurveLayerDescriptors(document, inputs, options),
+  };
+}
+
+function createProcessCurveLayerDescriptors(document, inputs, options = {}) {
   const groundY = finiteNumber(options.groundY, options.stage?.grounding?.groundY, -0.56);
   const morph = createProcessCurveMorphDescriptor(document, inputs, options);
   const projection = createProcessCurveProjectionDescriptor(document, inputs, { ...options, groundY: groundY + 0.04 });
   const skyline = createProcessCurveSkylineDescriptor(document, inputs, { ...options, groundY });
   const field = createProcessCurveStateFieldDescriptor(document, inputs, { ...options, groundY: groundY + 0.03 });
   const track = createProcessCurveTrackDescriptor(document, inputs, { ...options, groundY: groundY + 0.06 });
-  return {
-    inputs,
-    descriptors: [field, projection, track, skyline, morph].filter(Boolean),
-  };
+  return [field, projection, track, skyline, morph].filter(Boolean);
 }
 
 export function createProcessCurveMiniatureSceneBundle(document, options = {}) {
@@ -493,6 +716,43 @@ function resolveByIdOrPredicate(items, id, predicate) {
     if (byId) return byId;
   }
   return items.find(predicate);
+}
+
+function resolveProcessCurveRelation(document, datasetId, options = {}) {
+  const relationRef = options.relationId || options.relation;
+  const relations = Array.isArray(document?.relations) ? document.relations : [];
+  if (relationRef && typeof relationRef === "object") return relationRef;
+  if (relationRef) {
+    const relation = relations.find((entry) => String(entry.id ?? entry.name) === String(relationRef));
+    if (!relation) throw new Error(`Unknown process-curve relation reference: ${String(relationRef)}`);
+    return relation;
+  }
+  return relations.find((entry) => (
+    matchesDataset(entry, datasetId) &&
+    /process|curve|aligned|metric/i.test(`${entry.id || ""} ${entry.name || ""} ${entry.relation_type || ""}`)
+  )) || relations.find((entry) => matchesDataset(entry, datasetId)) || null;
+}
+
+function resolveProcessCurveGraph(document, datasetId, relation, options = {}) {
+  const graphRef = options.graphId || options.graph;
+  const graphs = Array.isArray(document?.graphs) ? document.graphs : [];
+  if (graphRef && typeof graphRef === "object") return graphRef;
+  if (graphRef) {
+    const graph = graphs.find((entry) => String(entry.id ?? entry.name) === String(graphRef));
+    if (!graph) throw new Error(`Unknown process-curve graph reference: ${String(graphRef)}`);
+    return graph;
+  }
+  const relationId = relation?.id;
+  return graphs.find((entry) => (
+    relationId != null &&
+    String(entry.edge_relation_id ?? entry.edgeRelationId ?? entry.relation_id ?? entry.relationId) === String(relationId)
+  )) || graphs.find((entry) => matchesDataset(entry, datasetId)) || null;
+}
+
+function matchesDataset(entry, datasetId) {
+  if (datasetId == null) return true;
+  const entryDataset = entry?.dataset_id ?? entry?.datasetId;
+  return entryDataset == null || String(entryDataset) === String(datasetId);
 }
 
 function trackColor(index) {
