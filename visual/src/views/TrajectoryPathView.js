@@ -14,9 +14,10 @@ import {
 
 /**
  * TrajectoryPathView is the reusable trajectory/path grammar for METRIC Visual.
- * It translates exported record order, explicit record-id paths, graph/transition
+ * It translates explicit record-id paths, graph/transition
  * edges, or exported timeline coordinate states into CurveRibbon/CurveTube
- * descriptors. It does not solve, smooth, cluster, or infer metric structure.
+ * descriptors. Record order can be used only as a layout fallback. It does
+ * not solve, smooth, cluster, or infer metric structure.
  */
 export class TrajectoryPathView extends BaseView {
   constructor(options = {}) {
@@ -277,7 +278,7 @@ export class TrajectoryPathView extends BaseView {
 
     const recordOrder = this.pathsFromRecordOrder();
     return {
-      source: this.pathSource || "exported-record-order",
+      source: this.pathSource || "record-order-layout",
       paths: recordOrder,
       recordCount: this.recordIds.length,
     };
@@ -368,7 +369,7 @@ export class TrajectoryPathView extends BaseView {
       const group = ids.slice(start, start + segmentSize);
       const path = this.pathFromRecordIds(group, {
         id: `${this.id}:path-${paths.length}`,
-        evidenceType: "exported-record-order",
+        evidenceType: "record-order-layout",
       });
       if (path) paths.push(path);
     }

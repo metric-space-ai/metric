@@ -8,6 +8,8 @@ import {
   CrossSpaceView,
   DynamicsView,
   MappingView,
+  mappingMotionProgressAt,
+  normalizeMappingMotionTiming,
   MetricSpaceView,
   MixedRecordView,
   NeighborhoodGraphView,
@@ -16,7 +18,6 @@ import {
   RelationMatrixView,
   SolverTraceView,
   SpacePropertiesView,
-  TrajectoryPathView,
 } from "./views/index.js";
 import { VisualLayer } from "./views/VisualLayer.js";
 import { createChannel, createStringChannel } from "./views/view-utils.js";
@@ -126,6 +127,13 @@ export async function showPreview(evidence, options = {}) {
   return visual.showPreview(options);
 }
 
+export function captureHeroFrame(visual, options = {}) {
+  if (!visual || typeof visual.captureHeroFrame !== "function") {
+    throw new TypeError("captureHeroFrame expects a MetricVisualSurface-compatible object.");
+  }
+  return visual.captureHeroFrame(options);
+}
+
 export function createMetricVisualDocumentDiagnostics(document, options = {}) {
   const context = describeMetricVisualContext(options);
   const warnings = createMetricVisualDocumentWarnings(document, context);
@@ -171,6 +179,8 @@ export class MetricVisualSurface {
     this.applyingTimelineControl = false;
     this.previewSubscriptions = [];
     this.previewPairPickers = [];
+    this.mappingMotionSubscription = null;
+    this.mappingMotionState = null;
     this.documentDiagnostics = createMetricVisualDocumentDiagnostics(document, options);
     this.commandDiagnostics = [];
     this.lastCommandDiagnostics = null;
@@ -222,6 +232,9 @@ export class MetricVisualSurface {
     });
     if (options.viewKind && options.viewKind !== "dynamics") {
       this.disableTimelineControl();
+    }
+    if (options.viewKind && options.viewKind !== "mapping") {
+      this.disableMappingMotion();
     }
     return this;
   }
@@ -298,6 +311,7 @@ export class MetricVisualSurface {
     this.views = [view];
     const descriptors = view.toLayerDescriptors();
     this.setLayerDescriptors(descriptors, { source: "showMapping", viewKind: "mapping" });
+    this.configureMappingMotion(view, options);
     return this.configurePreview(options);
   }
 
@@ -332,85 +346,44 @@ export class MetricVisualSurface {
   }
 
   showConditionMonitoring(options = {}) {
-    const normalized = normalizeMetricViewOptions(this.document, {
-      coordinateId: options.coordinateId || options.coordinate || "condition-3d",
-      scalarProperty: options.scalarProperty || options.colorBy || "anomaly",
-      labelProperty: options.labelProperty || options.labels || "cluster",
-      pointSize: options.pointSize ?? 1,
-      targetRadius: options.targetRadius ?? 1.54,
-      groundScale: options.groundScale ?? 1.82,
-      groundGeometry: {
-        gridScale: 10,
-        ...(options.groundGeometry || {}),
-      },
-      groundMaterial: {
-        alpha: 0.42,
-        gridAlpha: 0.055,
-        axisAlpha: 0.025,
-        baseColor: [0.83, 0.86, 0.81],
-        gridColor: [0.33, 0.4, 0.38],
-        axisXColor: [0.36, 0.42, 0.41],
-        axisZColor: [0.41, 0.37, 0.32],
-        ...(options.groundMaterial || {}),
-      },
-      groundProjectionAlpha: options.groundProjectionAlpha ?? 0.16,
+    const view = ProcessCurveSceneView.fromVisualSpace(this.document, {
+      ...options,
+      targetCoordinateId: options.targetCoordinateId || options.coordinateId || options.coordinate || "condition-3d",
+      sourceCoordinateId: options.sourceCoordinateId || options.sourceCoordinate,
+      labelPropertyId: options.labelPropertyId || options.labelProperty || options.labels || "cluster",
+      relationId: options.relationId || options.pathRelationId || options.transitionRelationId,
+      graphId: options.graphId || options.pathGraphId,
+      groundField: options.groundField || options.propertyField || options.scalarProperty || options.colorBy || "anomaly",
+      includeNeighborhood: options.includeNeighborhood ?? false,
+      includeMatrix: options.includeMatrix ?? false,
+      useGraphTrajectory: options.useGraphTrajectory ?? true,
+      trackMode: options.trackMode || "ribbon",
+      trackWidth: options.trackWidth ?? options.pathWidth ?? 3.4,
+      trackAlpha: options.trackAlpha ?? options.pathAlpha ?? 0.68,
+      trackColor: options.trackColor || options.pathColor || [0.12, 0.36, 0.42, 0.68],
+      pointSize: options.pointSize ?? 1.42,
+      pointAlpha: options.pointAlpha ?? 0.78,
+      fieldAlpha: options.fieldAlpha ?? 0.2,
+      fieldRadius: options.fieldRadius ?? 0.16,
       labelFontSize: options.labelFontSize ?? 28,
       labelLift: options.labelLift ?? 0.46,
       labelOffsetRadius: options.labelOffsetRadius ?? 0.16,
       labelMap: {
         healthy: "normal regime",
+        normal: "normal regime",
         drift: "drift regime",
         fault: "fault regime",
         recovery: "recovery",
         ...(options.labelMap || {}),
       },
-      ...options,
-    });
-    const space = MetricSpaceView.fromVisualSpace(this.document, normalized);
-    const path = TrajectoryPathView.fromMetricSpaceView(space, {
-      document: this.document,
-      id: options.pathId || "condition-monitoring:trajectory",
-      kind: "condition-monitoring-trajectory",
-      descriptorKind: "trajectory",
-      sourceViewKind: "condition-monitoring-trajectory",
-      preferGraph: true,
-      pathGraphId: options.pathGraphId || options.graphId,
-      pathRelationId: options.pathRelationId || options.transitionRelationId,
-      pathCount: options.pathCount || 16,
-      width: options.pathWidth ?? 3.4,
-      alpha: options.pathAlpha ?? 0.68,
-      color: options.pathColor || [0.12, 0.36, 0.42, 0.68],
-      order: 32,
-      curveOptions: {
-        colorMix: 1,
-      },
       metadata: {
+        ...(options.metadata || {}),
         visualGrammar: "condition-monitoring",
+        command: "showConditionMonitoring",
       },
     });
-    this.views = [space, path];
-    const field = PropertyFieldView.fromMetricSpaceView(this.document, space, {
-      ...normalized,
-      propertyId: typeof options.groundField === "string"
-        ? options.groundField
-        : typeof options.propertyField === "string"
-          ? options.propertyField
-          : firstAvailablePropertyId(this.document, ["local-density", "density"]),
-      groundY: options.fieldGroundY ?? 0.035,
-      alpha: options.fieldAlpha ?? 0.2,
-      radius: options.fieldRadius ?? 0.16,
-      material: {
-        contour: 0.1,
-        glow: 0.04,
-        ...(options.fieldMaterial || {}),
-      },
-    });
-    this.views.splice(1, 0, field);
-    const descriptors = [
-      ...space.toLayerDescriptors(),
-      ...field.toLayerDescriptors(),
-    ];
-    descriptors.push(...path.toLayerDescriptors());
+    this.views = [view];
+    const descriptors = view.toLayerDescriptors();
     this.setLayerDescriptors(descriptors, { source: "showConditionMonitoring", viewKind: "condition-monitoring" });
     if (options.camera !== false) {
       this.setCamera(options.camera || conditionMonitoringCamera());
@@ -641,6 +614,94 @@ export class MetricVisualSurface {
         .setRoot(root)
         .setDescriptor(descriptor);
     }
+    return this;
+  }
+
+  configureMappingMotion(view, options = {}) {
+    this.disableMappingMotion();
+    const timing = normalizeMappingMotionTiming(
+      options.motionTiming || options.mappingMotionTiming || options.morphTiming || view?.motionTiming,
+      options,
+    );
+    const staticProgress = Number(options.progress ?? options.morphProgress);
+    if (options.loop === false || Number.isFinite(staticProgress)) {
+      const progress = Number.isFinite(staticProgress) ? staticProgress : 0;
+      this.applyMappingMotionProgress(progress, {
+        phase: progress >= 0.95 ? "target-hold" : progress <= 0.05 ? "source-hold" : "quick-transition",
+        timing,
+        emit: true,
+        render: true,
+      });
+      return this;
+    }
+
+    const startedAt = this.runtime?.renderer?.loop?.time?.elapsed ?? 0;
+    const update = (context = {}) => {
+      const elapsed = Math.max(0, Number(context?.time?.elapsed ?? 0) - startedAt);
+      const frame = mappingMotionProgressAt(elapsed, timing);
+      this.applyMappingMotionProgress(frame.progress, {
+        ...frame,
+        timing,
+        emit: true,
+        render: false,
+      });
+    };
+    if (this.runtime?.renderer && typeof this.runtime.renderer.on === "function") {
+      this.mappingMotionSubscription = this.runtime.renderer.on("beforeRender", update);
+      this.mappingMotionState = {
+        schema: "metric.visual.mapping_motion_state.v1",
+        mode: "runtime-before-render",
+        timing,
+        progress: 0,
+        phase: "source-hold",
+      };
+      this.runtime.start?.();
+      this.runtime.requestRender?.();
+    }
+    return this;
+  }
+
+  applyMappingMotionProgress(progress, options = {}) {
+    const next = Math.max(0, Math.min(1, Number(progress) || 0));
+    for (const layer of this.runtime?.layers || []) {
+      const animation = layer?.animation;
+      if (!animation) continue;
+      if (String(animation.mode || "").includes("morph") || animation.channel === "targetPosition") {
+        animation.progress = next;
+      }
+    }
+    for (const descriptor of this.descriptors || []) {
+      const animation = descriptor?.animation;
+      if (!animation) continue;
+      if (String(animation.mode || "").includes("morph") || animation.channel === "targetPosition") {
+        animation.progress = next;
+      }
+    }
+    this.mappingMotionState = {
+      schema: "metric.visual.mapping_motion_state.v1",
+      mode: options.mode || "runtime-before-render",
+      progress: next,
+      phase: options.phase || null,
+      elapsedMs: Number.isFinite(Number(options.elapsedMs)) ? Number(options.elapsedMs) : null,
+      timing: options.timing || null,
+    };
+    if (options.emit !== false) {
+      this.runtime?.emit?.("mappingmotionchange", {
+        runtime: this.runtime,
+        surface: this,
+        state: this.mappingMotionState,
+      });
+    }
+    if (options.render === true) this.runtime?.requestRender?.();
+    return this;
+  }
+
+  disableMappingMotion() {
+    if (this.mappingMotionSubscription) {
+      this.mappingMotionSubscription();
+      this.mappingMotionSubscription = null;
+    }
+    this.mappingMotionState = null;
     return this;
   }
 
@@ -912,22 +973,14 @@ function createMetricVisualDocumentWarnings(document, context = {}) {
 
 export function classifyMetricVisualEvidence(document) {
   const provenance = document?.provenance || {};
-  const provenanceText = JSON.stringify(provenance).toLowerCase();
   const signals = [];
   const syntheticFixture = provenance.synthetic === true || provenance.synthetic_fixture === true;
   if (provenance.synthetic === true) signals.push("provenance.synthetic");
   if (provenance.synthetic_fixture === true) signals.push("provenance.synthetic_fixture");
-  const native = !syntheticFixture && (
-    provenance.native_export === true
-    || provenance.native === true
-    || /\bnative[-_\s]*(c\+\+|cpp|metric)\b/.test(provenanceText)
-    || /\b(c\+\+|cpp|c\+\+17)\b/.test(provenanceText)
-  );
+  const explicitNativeExport = isExplicitNativeMetricVisualExport(provenance);
+  const native = !syntheticFixture && explicitNativeExport;
   if (native) {
-    if (provenance.native_export === true) signals.push("provenance.native_export");
-    if (provenance.native === true) signals.push("provenance.native");
-    if (/\bnative[-_\s]*(c\+\+|cpp|metric)\b/.test(provenanceText)) signals.push("provenance.native_text");
-    if (/\b(c\+\+|cpp|c\+\+17)\b/.test(provenanceText)) signals.push("provenance.cpp_text");
+    signals.push(provenance.native_export === true ? "provenance.native_export" : "provenance.nativeExport");
   }
   const documentedReference = !syntheticFixture && !native && (
     provenance.documented_reference === true
@@ -991,12 +1044,16 @@ function summarizeMetricVisualProvenance(provenance = {}) {
     runtime: provenance.runtime || provenance.computation || null,
     source: provenance.source || provenance.source_example || provenance.source_document || null,
     status: provenance.status || null,
-    nativeExport: provenance.native_export === true || provenance.native === true,
+    nativeExport: isExplicitNativeMetricVisualExport(provenance),
     synthetic: provenance.synthetic === true || provenance.synthetic_fixture === true,
     syntheticJs: provenance.synthetic_js === true,
     publicHeroReady: provenance.public_hero_ready === true,
     nativeChecksPass: provenance.native_checks_pass === true,
   };
+}
+
+export function isExplicitNativeMetricVisualExport(provenance = {}) {
+  return provenance.native_export === true || provenance.nativeExport === true;
 }
 
 function inferMetricVisualViewKind(views) {
@@ -1265,19 +1322,6 @@ function labelForRecord(record, fallback) {
 
 function firstRelationId(document) {
   return Array.isArray(document?.relations) && document.relations.length ? document.relations[0].id : null;
-}
-
-function firstAvailablePropertyId(document, candidates = []) {
-  for (const id of candidates) {
-    if (findVisualItem(document, "properties", id)) return id;
-  }
-  const property = Array.isArray(document?.properties)
-    ? document.properties.find((entry) => {
-      const valueType = entry?.value_type ?? entry?.valueType;
-      return valueType === "scalar" || valueType === "rank" || valueType === "number";
-    })
-    : null;
-  return property?.id;
 }
 
 function resolveMetricVisualCanvas(options = {}) {

@@ -627,7 +627,7 @@ function createProcessCurveTrackDescriptor(document, inputs, options) {
     propertyId: inputs.labelProperty.id,
     recordIds: trackRecordIds,
     paths: Array.from(pathsByLabel.values()),
-    pathSource: "exported-record-order",
+    pathSource: "record-order-layout",
     order: -8,
     mode: options.trackMode || "ribbon",
     width: finiteNumber(options.trackWidth, 3.15),
@@ -635,7 +635,7 @@ function createProcessCurveTrackDescriptor(document, inputs, options) {
     descriptorFactory: "tube-ribbon",
     nativeEvidence: {
       schema: "metric.visual.trajectory_path_evidence_ref.v1",
-      source: "exported-record-order",
+      source: "record-order-layout",
       documentSchema: document?.schema || null,
       provenance: document?.provenance ? {
         writer: document.provenance.writer || null,
@@ -669,7 +669,14 @@ function createProcessCurveTrackDescriptor(document, inputs, options) {
 }
 
 function createProcessCurveGraphTrackDescriptor(document, inputs, options) {
-  if (options.useGraphTrajectory !== true && options.preferGraphTrajectory !== true) return null;
+  const requestedGraphTrack = options.useGraphTrajectory === true
+    || options.preferGraphTrajectory === true
+    || options.graphId != null
+    || options.pathGraphId != null
+    || options.relationId != null
+    || options.pathRelationId != null
+    || options.transitionRelationId != null;
+  if (!requestedGraphTrack) return null;
   const relation = resolveProcessCurveRelation(document, inputs.datasetId, options);
   const graph = resolveProcessCurveGraph(document, inputs.datasetId, relation, options);
   if (!graph && !relation) return null;

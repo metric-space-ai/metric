@@ -45,7 +45,7 @@ That is the product. Hero pages are acceptance fixtures for this product.
 
 ## Current State
 
-Status date: 2026-06-25
+Status date: 2026-06-26
 
 This plan is authoritative only with the following current-state constraints:
 
@@ -88,6 +88,17 @@ This plan is authoritative only with the following current-state constraints:
   `MappingView` descriptors. `MetricVisualSurface.showMapping()` must not add
   page-level residual fallbacks that can hide missing native residual
   properties.
+- Mapping residual/error descriptors are emitted only when an explicit
+  residual property is selected and finite residual values exist. A missing
+  residual property must result in no residual/error layer and no preservation
+  summary claim.
+- `showConditionMonitoring()` is the public condition-monitoring command. It
+  now composes the reusable `ProcessCurveSceneView` grammar directly; the public
+  condition page must not call `showConditionMonitoring()` and then replace the
+  scene with `showProcessCurves()`.
+- `captureHeroFrame(visual, options)` is a top-level public API export that
+  delegates to `MetricVisualSurface.captureHeroFrame(options)`. It does not
+  create another capture or render pipeline.
 - The next production step is to harden each native public preview into an
   accepted hero through larger evidence where required, grammar-specific
   performance budgets and screenshot review, not more hand-written hero HTML
@@ -2415,3 +2426,58 @@ Corrected status:
   and command-backed preview, but remains explicitly blocked by source-record
   count until more real licensed source windows are available. It must not be
   promoted by synthetic padding.
+
+## Implementation Checkpoint: Command Fidelity And Residual Evidence Guards
+
+Status date: 2026-06-26
+
+Implemented:
+
+- `MappingView` no longer emits residual/error vectors or preservation-summary
+  claims unless an explicit residual property is selected and finite residual
+  values exist for rendered records.
+- `MetricVisualSurface.showMapping()` owns mapping motion progress. The mapping
+  preview page no longer mutates mapping layer progress through a page-local
+  animation loop; normal mode animates through the engine, screenshot frames set
+  deterministic static progress through the command options.
+- `MetricVisualSurface.showConditionMonitoring()` now composes the reusable
+  `ProcessCurveSceneView` grammar directly. The public condition-monitoring
+  preview uses a single `showConditionMonitoring()` command and no longer calls
+  `showProcessCurves()` as a second render path.
+- The public API now exports `captureHeroFrame(visual, options)`, a thin
+  delegation layer over `MetricVisualSurface.captureHeroFrame(options)`.
+- The condition-monitoring acceptance gate now checks the final
+  `showConditionMonitoring()` descriptor state, not just source-code command
+  presence.
+- The mapping-motion gate now includes a negative evidence case: a mapping
+  without residual property must not create residual/error layers.
+
+Verified:
+
+- `node visual/tools/check-mapping-motion-grammar.mjs`
+- `node visual/tools/check-mapping-frame-screenshots.mjs`
+- `node visual/tools/check-condition-monitoring-visual-acceptance.mjs`
+- `node visual/tools/check-trajectory-path-view.mjs`
+- `node visual/tools/check-process-curve-scene-view.mjs`
+- `node visual/tools/check-view-reference-contract.mjs`
+- `node visual/tools/check-visual-command-api.mjs`
+- `node visual/tools/check-single-render-pipeline.mjs`
+- `node visual/tools/check-hero-grammar-contract.mjs`
+- `node visual/tools/check-public-gallery-evidence.mjs`
+- `node visual/tools/check-native-hero-evidence-scale.mjs`
+- `node visual/tools/check-grae10-golden.mjs`
+- `node visual/tools/check-visual-regression-public-examples.mjs`
+- `node visual/tools/check-hero-visual-briefs.mjs`
+- `node visual/tools/check-schema-fixtures.mjs`
+- `node visual/tools/check-visual-document.mjs docs/examples/assets/condition-monitoring/metric.visual.json`
+- `node visual/tools/check-visual-document.mjs docs/examples/assets/mapping-dimensionality/metric.visual.json`
+- `node visual/tools/check-visual-performance-large-scenes.mjs`
+
+Corrected status:
+
+- These are engine-contract fixes and API-completeness fixes. They do not
+  promote condition monitoring, mapping, mixed records, cross-space dependency,
+  dynamics, relation matrix or external process curves to hero-accepted status.
+- GRAE10 remains the only accepted public hero. Other native examples remain
+  review-pending previews until screenshot review and public-page composition
+  acceptance are explicitly granted.

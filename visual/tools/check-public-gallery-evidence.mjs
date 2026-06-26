@@ -158,6 +158,13 @@ async function main() {
             target: asset.target,
           });
         }
+        if (!isExplicitNativeExport(document?.provenance)) {
+          issues.push({
+            code: "public_native_asset_missing_explicit_native_export",
+            example: name,
+            target: asset.target,
+          });
+        }
       } catch (error) {
         issues.push({
           code: "public_native_asset_unreadable",
@@ -204,6 +211,10 @@ async function main() {
     issues,
   }, null, 2));
   if (!ok) process.exitCode = 1;
+}
+
+function isExplicitNativeExport(provenance = {}) {
+  return provenance.native_export === true || provenance.nativeExport === true;
 }
 
 main().catch((error) => {

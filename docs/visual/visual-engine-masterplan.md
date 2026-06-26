@@ -184,11 +184,16 @@ Implemented native slices:
   current public preview grammar rows for field, glyph, relation-matrix/graph,
   dynamics, mapping and cross-space scenes:
   `visual/tools/check-visual-performance-large-scenes.mjs`
+- command-fidelity guards that keep public examples on one semantic engine
+  command, verify `showConditionMonitoring()` as the final condition grammar,
+  prevent residual/error mapping layers without explicit residual evidence and
+  expose `captureHeroFrame(visual, options)` as a top-level public API delegating
+  to the surface method
 
 Known gaps:
 
-- first full-frame capture path exists; no polished multi-algorithm hero
-  application/gallery yet
+- full-frame capture API exists; no polished multi-algorithm hero
+  application/gallery has been accepted yet
 - the existing UCR/process-curve evidence now has a native `metric.visual.v1`
   export and command-backed preview page; it remains preview-only until
   screenshot review accepts the visual grammar and composition

@@ -47,16 +47,16 @@ assert.throws(
 
 assert.throws(
   () => MappingView.fromVisualSpace(mapping, {
-    sourceCoordinateId: "phate-target-2d",
-    targetCoordinateId: "source-feature-layout-3d",
+    sourceCoordinateId: "source-coordinate-layout-3d",
+    targetCoordinateId: "parametric-coordinate-latent-2d",
     labels: "missing-process-family",
   }),
   /Unknown label property reference: missing-process-family/,
 );
 
 const mappingView = MappingView.fromVisualSpace(mapping, {
-  sourceCoordinateId: "phate-target-2d",
-  targetCoordinateId: "source-feature-layout-3d",
+  sourceCoordinateId: "source-coordinate-layout-3d",
+  targetCoordinateId: "parametric-coordinate-latent-2d",
   residualProperty: "local-mapping-distortion",
   labels: "process-family",
 });

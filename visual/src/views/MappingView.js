@@ -44,11 +44,12 @@ export class MappingView extends BaseView {
       ? Number(options.residualVectorWidth)
       : 1;
     this.motionTiming = normalizeMappingMotionTiming(options.motionTiming || options.mappingMotionTiming || options.morphTiming, options);
+    const hasNamedResidualProperty = hasNonEmptyId(this.propertyId) && this.residualValues;
     this.space = new MetricSpaceView({
       ...options,
       id: `${this.id}:space`,
-      scalarValues: this.residualValues || undefined,
-      colorValues: this.residualValues ? undefined : options.colorValues,
+      scalarValues: hasNamedResidualProperty ? this.residualValues : undefined,
+      colorValues: hasNamedResidualProperty ? undefined : options.colorValues,
       ground: options.ground !== false,
       groundProjection: options.groundProjection !== false,
       loop: options.loop ?? true,
@@ -173,7 +174,7 @@ export class MappingView extends BaseView {
   }
 
   residualVectorDescriptor() {
-    if (!this.showResidualVectors || !this.space?.targetPositions) return null;
+    if (!this.showResidualVectors || !this.space?.targetPositions || !this.hasResidualEvidence()) return null;
     const ids = this.recordIds || this.space.recordIds || [];
     const sourcePosition = new Float32Array(ids.length * 3);
     const targetPosition = new Float32Array(ids.length * 3);
@@ -246,6 +247,9 @@ export class MappingView extends BaseView {
   }
 
   mappingMotionEvidenceDescriptor(extra = {}) {
+    const residualLayer = this.showResidualVectors && this.hasResidualEvidence()
+      ? `${this.id}:residual-vectors`
+      : null;
     return {
       schema: "metric.visual.mapping_motion_evidence.v1",
       source: "exported-coordinate-and-property-evidence",
@@ -259,7 +263,7 @@ export class MappingView extends BaseView {
       motionContract: {
         mode: "coordinate-morph",
         channel: "targetPosition",
-        residualLayer: this.showResidualVectors ? `${this.id}:residual-vectors` : null,
+        residualLayer,
         timingProfile: this.motionTiming.profile,
         timingPhases: this.motionTiming.phases,
         controlledBy: "descriptor-animation",
@@ -276,10 +280,7 @@ export class MappingView extends BaseView {
    * the exported residual property.
    */
   preservationSummary() {
-    if (!this.residualValues) return { count: 0, meanResidual: 0, maxResidual: 0 };
-    const values = this.recordIds
-      .map((id) => Number(this.residualValues.get?.(id) ?? this.residualValues.get?.(String(id))))
-      .filter((value) => Number.isFinite(value));
+    const values = this.residualEvidenceValues();
     if (!values.length) return { count: 0, meanResidual: 0, maxResidual: 0 };
     const sum = values.reduce((total, value) => total + value, 0);
     return {
@@ -289,6 +290,17 @@ export class MappingView extends BaseView {
       sourceCoordinateId: this.sourceCoordinateId,
       targetCoordinateId: this.targetCoordinateId,
     };
+  }
+
+  hasResidualEvidence() {
+    return this.residualEvidenceValues().length > 0;
+  }
+
+  residualEvidenceValues() {
+    if (!hasNonEmptyId(this.propertyId) || !this.residualValues) return [];
+    return (this.recordIds || [])
+      .map((id, index) => Number(valueForId(this.residualValues, id, index)))
+      .filter((value) => Number.isFinite(value));
   }
 }
 
@@ -354,6 +366,10 @@ function mappingMotionPhases(timing) {
 function positiveNumber(value, fallback) {
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? number : fallback;
+}
+
+function hasNonEmptyId(value) {
+  return value != null && String(value).trim().length > 0;
 }
 
 function smoothstep(value) {

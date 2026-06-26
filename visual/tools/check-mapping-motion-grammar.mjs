@@ -39,6 +39,14 @@ async function main() {
   const point = descriptors.find((descriptor) => descriptor.primitive === "InstancedPointLayer" || descriptor.primitive === "InstancedGlyphLayer");
   const residual = descriptors.find((descriptor) => descriptor.metadata?.role === "residual/error");
   const labels = descriptors.find((descriptor) => descriptor.primitive === "BillboardLabelLayer");
+  const noResidualView = MappingView.fromVisualSpace(document, {
+    sourceCoordinateId,
+    targetCoordinateId,
+    labels: "process-family",
+  });
+  const noResidualDescriptors = noResidualView.toLayerDescriptors();
+  const noResidualPoint = noResidualDescriptors.find((descriptor) => descriptor.primitive === "InstancedPointLayer" || descriptor.primitive === "InstancedGlyphLayer");
+  const noResidualLayer = noResidualDescriptors.find((descriptor) => descriptor.metadata?.role === "residual/error");
   const timing = point?.metadata?.mappingMotionTiming;
   const transitionFrame = timing
     ? mappingMotionProgressAt(timing.sourceHoldMs + timing.transitionMs * 0.5, timing)
@@ -63,6 +71,9 @@ async function main() {
     ["mapping declares no JavaScript algorithmic computation", point?.metadata?.algorithmicComputation === false && residual?.metadata?.algorithmicComputation === false, { point: point?.metadata, residual: residual?.metadata }],
     ["mapping preservation summary covers native records", point?.metadata?.mappingEvidence?.preservationSummary?.count === 1000, point?.metadata?.mappingEvidence?.preservationSummary],
     ["mapping renders exported label property", Boolean(labels), descriptors.map((descriptor) => descriptor.primitive)],
+    ["mapping without residual property emits no residual/error vectors", !noResidualLayer, noResidualLayer],
+    ["mapping without residual property reports no residual motion layer", noResidualPoint?.metadata?.mappingEvidence?.motionContract?.residualLayer === null, noResidualPoint?.metadata?.mappingEvidence],
+    ["mapping without residual property reports no preservation summary", noResidualView.preservationSummary().count === 0, noResidualView.preservationSummary()],
   ];
   report(checks);
 }

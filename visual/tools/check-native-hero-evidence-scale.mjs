@@ -194,9 +194,7 @@ function maxRelationRecordCount(document) {
 function isNativeMetricVisualDocument(document) {
   const provenance = document?.provenance || {};
   if (provenance.synthetic === true || provenance.synthetic_js === true) return false;
-  if (provenance.native_export === true || provenance.nativeExport === true || provenance.synthetic_js === false) return true;
-  const provenanceText = Object.values(provenance).flat().join(" ");
-  return /\bnative\b|C\+\+|examples\/engine|\.cpp\b/i.test(provenanceText);
+  return provenance.native_export === true || provenance.nativeExport === true;
 }
 
 function countRecordTypes(records) {

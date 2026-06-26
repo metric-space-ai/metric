@@ -49,25 +49,15 @@
         profileId: "condition-monitoring-hero-profile",
       });
 
-      // Public preview compatibility: the global preview gate still expects
-      // the condition command to be present, but W4 renders the acceptance
-      // candidate through the reusable ProcessCurveSceneView grammar below.
       visual.showConditionMonitoring({
-        coordinateId: "process-state-trajectory-3d",
+        targetCoordinateId: "process-state-trajectory-3d",
+        sourceCoordinateId: "landmark-3d",
         colorBy: "metric-anomaly-severity",
         groundField: "local-density",
         labels: "truth-regime",
-        preview: false,
-        camera: false,
-        startMotion: false,
-      });
-      visual.showProcessCurves({
-        targetCoordinateId: "process-state-trajectory-3d",
-        sourceCoordinateId: "landmark-3d",
-        labelPropertyId: "truth-regime",
         relationId: "condition-monitoring-transition",
         graphId: "process-window-trajectory",
-        groundField: "metric-anomaly-severity",
+        propertyField: "metric-anomaly-severity",
         useGraphTrajectory: true,
         includeNeighborhood: false,
         includeMatrix: false,

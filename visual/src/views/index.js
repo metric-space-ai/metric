@@ -15,7 +15,13 @@ export { MixedRecordView, createMixedRecordView } from "./MixedRecordView.js";
 export { RelationMatrixView, createRelationMatrixView } from "./RelationMatrixView.js";
 export { NeighborhoodGraphView, createNeighborhoodGraphView } from "./NeighborhoodGraphView.js";
 export { SpacePropertiesView, createSpacePropertiesView } from "./SpacePropertiesView.js";
-export { MappingView, createMappingView } from "./MappingView.js";
+export {
+  DEFAULT_MAPPING_MOTION_TIMING,
+  MappingView,
+  createMappingView,
+  mappingMotionProgressAt,
+  normalizeMappingMotionTiming,
+} from "./MappingView.js";
 export { DynamicsView, createDynamicsView } from "./DynamicsView.js";
 export { SolverTraceView, createSolverTraceView } from "./SolverTraceView.js";
 export { TrajectoryPathView, createTrajectoryPathView } from "./TrajectoryPathView.js";

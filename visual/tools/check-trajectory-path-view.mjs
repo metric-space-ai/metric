@@ -31,7 +31,7 @@ async function main() {
     assert(checks, "graph transition creates a CurveRibbonLayer", descriptor?.primitive === "CurveRibbonLayer", descriptor);
     assert(checks, "graph transition comes from TrajectoryPathView", descriptor?.metadata?.viewClass === "TrajectoryPathView", descriptor?.metadata);
     assert(checks, "graph transition preserves native graph evidence", descriptor?.metadata?.nativeEvidence?.graphId === "process-window-trajectory", descriptor?.metadata?.nativeEvidence);
-    assert(checks, "graph transition reports record/path counts", descriptor?.metadata?.recordCount === 15 && descriptor?.metadata?.pathCount === 1, descriptor?.metadata);
+    assert(checks, "graph transition reports record/path counts", descriptor?.metadata?.recordCount === 528 && descriptor?.metadata?.pathCount === 1, descriptor?.metadata);
     assert(checks, "graph transition does not claim JS algorithmic computation", descriptor?.metadata?.algorithmicComputation === false, descriptor?.metadata);
   }
 
@@ -39,7 +39,7 @@ async function main() {
     const view = TrajectoryPathView.fromVisualSpace(condition, {
       id: "gate:explicit-record-path",
       coordinateId: "process-state-trajectory-3d",
-      pathRecordIds: [["window-00", "window-01", "window-02"]],
+      pathRecordIds: [["window-0000", "window-0001", "window-0002"]],
       width: 3,
     });
     const [descriptor] = view.toLayerDescriptors();
@@ -71,7 +71,7 @@ async function main() {
     });
     const descriptor = trajectoryDescriptor(surface.descriptors, "CurveRibbonLayer");
     assert(checks, "showDynamics uses TrajectoryPathView", descriptor?.metadata?.viewClass === "TrajectoryPathView", descriptor?.metadata);
-    assert(checks, "showDynamics emits one path per record through the engine pipeline", descriptor?.metadata?.pathCount === 28 && descriptor?.metadata?.recordCount === 28, descriptor?.metadata);
+    assert(checks, "showDynamics emits one path per record through the engine pipeline", descriptor?.metadata?.pathCount === 512 && descriptor?.metadata?.recordCount === 512, descriptor?.metadata);
     assert(checks, "showDynamics preserves timeline native evidence", descriptor?.metadata?.nativeEvidence?.timelineId === "reverse-reconstruction", descriptor?.metadata?.nativeEvidence);
   }
 

@@ -39,7 +39,6 @@
 
   <script type="module">
     import { createMetricVisual } from "../../src/index.js";
-    import { mappingMotionProgressAt } from "../../src/views/MappingView.js";
 
     const canvas = document.getElementById("scene");
     const loading = document.getElementById("loading");
@@ -88,13 +87,19 @@
         evidence: document_,
         profileId: "mapping-dimensionality-hero-profile",
       });
+      visual.runtime.on("mappingmotionchange", ({ state }) => {
+        const progress = Number(state?.progress ?? 0);
+        phaseEl.textContent = String(state?.phase || "mapping").replaceAll("-", " ");
+        document.documentElement.dataset.metricMorphPhase = state?.phase || "";
+        document.documentElement.dataset.metricMorphProgress = progress.toFixed(3);
+      });
       visual.showMapping({
         sourceCoordinateId: SOURCE_COORDINATE_ID,
         targetCoordinateId: TARGET_COORDINATE_ID,
         residualProperty: RESIDUAL_PROPERTY_ID,
         labels: LABEL_PROPERTY_ID,
-        loop: false,
-        progress: staticMorph ?? 0,
+        loop: staticMorph == null,
+        ...(staticMorph == null ? {} : { progress: staticMorph }),
         morphDurationMs: MAPPING_MOTION_TIMING.totalMs,
         motionTiming: MAPPING_MOTION_TIMING,
         targetRadius: 1.72,
@@ -107,12 +112,8 @@
       const state = visual.getState();
       const layerIds = state.descriptors.map((descriptor) => descriptor.id);
       const residualLayers = state.descriptors.filter((descriptor) => descriptor.metadata?.role === "residual/error");
-      if (staticMorph == null) {
-        startMappingMotionLoop(visual, phaseEl, MAPPING_MOTION_TIMING);
-      } else {
-        applyMappingMorphProgress(visual, staticMorph);
-        phaseEl.textContent = phaseLabel(staticMorph);
-      }
+      const initialProgress = staticMorph ?? Number(document.documentElement.dataset.metricMorphProgress || 0);
+      phaseEl.textContent = staticMorph == null ? "source hold" : phaseLabel(staticMorph);
 
       document.documentElement.dataset.metricMappingHero = "ready";
       document.documentElement.dataset.metricRecordCount = String(visual.views[0].recordIds.length);
@@ -123,6 +124,7 @@
       document.documentElement.dataset.metricResidualProperty = RESIDUAL_PROPERTY_ID;
       document.documentElement.dataset.metricRuntimeEvidenceProjection = "native-mapping-fields-only";
       document.documentElement.dataset.metricMorphTiming = `${MAPPING_MOTION_TIMING.sourceHoldMs}:${MAPPING_MOTION_TIMING.transitionMs}:${MAPPING_MOTION_TIMING.targetHoldMs}`;
+      document.documentElement.dataset.metricMorphProgress = initialProgress.toFixed(3);
       document.documentElement.dataset.metricMorph = staticMorph == null ? MAPPING_MOTION_TIMING.profile : `static-${staticMorph}`;
       window.metricMappingHero = { visual, runtime: visual.runtime, getState: () => visual.getState() };
 
@@ -149,30 +151,6 @@
           },
         })),
       };
-    }
-
-    function startMappingMotionLoop(visual, phaseElement, timing) {
-      const startedAt = performance.now();
-      const tick = () => {
-        const frame = mappingMotionProgressAt(performance.now() - startedAt, timing);
-        applyMappingMorphProgress(visual, frame.progress);
-        phaseElement.textContent = frame.phase.replaceAll("-", " ");
-        document.documentElement.dataset.metricMorphPhase = frame.phase;
-        requestAnimationFrame(tick);
-      };
-      tick();
-    }
-
-    function applyMappingMorphProgress(visual, progress) {
-      const next = Math.max(0, Math.min(1, Number(progress) || 0));
-      for (const layer of visual.runtime?.layers || []) {
-        const animation = layer?.animation;
-        if (!animation) continue;
-        if (String(animation.mode || "").includes("morph") || animation.channel === "targetPosition") {
-          animation.progress = next;
-        }
-      }
-      document.documentElement.dataset.metricMorphProgress = next.toFixed(3);
     }
 
     function phaseLabel(progress) {

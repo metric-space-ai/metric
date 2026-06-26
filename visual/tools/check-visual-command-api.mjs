@@ -28,6 +28,7 @@ import {
   showRelationMatrixNeighborhood,
   showSolverTrace,
   showPreview,
+  captureHeroFrame,
 } from "../src/index.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -48,6 +49,7 @@ const COMMANDS = [
   "showRelationMatrixNeighborhood",
   "showSolverTrace",
   "showPreview",
+  "captureHeroFrame",
 ];
 
 const EXPORTED_COMMANDS = {
@@ -64,6 +66,7 @@ const EXPORTED_COMMANDS = {
   showRelationMatrixNeighborhood,
   showSolverTrace,
   showPreview,
+  captureHeroFrame,
 };
 
 const PUBLIC_REFERENCE_EXEMPTIONS = new Set([
@@ -128,6 +131,16 @@ function checkExportSurface(failures) {
     if (typeof MetricVisualSurface.prototype[command] !== "function") {
       failures.push(`MetricVisualSurface: ${command} method is missing`);
     }
+  }
+  let delegatedOptions = null;
+  const captured = captureHeroFrame({
+    captureHeroFrame(options) {
+      delegatedOptions = options;
+      return "metric-hero-frame";
+    },
+  }, { at: "target-hold" });
+  if (captured !== "metric-hero-frame" || delegatedOptions?.at !== "target-hold") {
+    failures.push("src/index.js: captureHeroFrame must delegate to the visual surface method");
   }
 }
 
