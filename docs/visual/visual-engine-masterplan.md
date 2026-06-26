@@ -185,6 +185,9 @@ Implemented native slices:
 - browser-backed public regression gate for the accepted GRAE10 reference and
   native preview examples:
   `visual/tools/check-visual-regression-public-examples.mjs`
+- public preview visual briefs now require both render primitives and semantic
+  runtime descriptor roles, so a preview cannot satisfy its grammar by rendering
+  anonymous layers that only happen to use the right WebGL primitive
 - native hero evidence scale gate that compares public visual briefs with
   native `metric.visual.v1` assets before browser rendering and enforces
   native provenance plus record-count, relation-count and record-type blocker

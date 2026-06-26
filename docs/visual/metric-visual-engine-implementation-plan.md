@@ -123,7 +123,10 @@ This plan is authoritative only with the following current-state constraints:
 - Every public preview must have a checked visual brief in
   `visual/hero-visual-briefs.manifest.json`; the brief states the visual claim,
   expected primary grammar, minimum evidence target, required primitives and
-  explicit blockers that prevent hero acceptance.
+  explicit blockers that prevent hero acceptance. The brief also declares
+  required runtime descriptor roles, and
+  `visual/tools/check-hero-visual-briefs.mjs` rejects previews whose semantic
+  view descriptors lose those roles.
 
 The current accepted public hero set is therefore limited to:
 
@@ -2940,3 +2943,36 @@ Corrected status:
   review-pending candidates, not accepted public heroes.
 - Final acceptance still requires full public browser regression, screenshot
   review and human visual acceptance.
+
+## Implementation Checkpoint: Preview Semantic Role Contract
+
+Status date: 2026-06-26
+
+Implemented:
+
+- Public preview briefs in `visual/hero-visual-briefs.manifest.json` now carry
+  `requiredDescriptorRoles` in addition to required WebGL primitives.
+- `visual/tools/check-hero-visual-briefs.mjs` validates those roles against the
+  browser regression runtime state, so examples cannot pass their visual brief
+  by emitting anonymous layers.
+- `RelationMatrixView` and `NeighborhoodGraphView` now expose
+  `primary-relation-matrix`, `neighborhood-graph-nodes` and
+  `neighborhood-graph-edges` roles through reusable engine descriptors.
+
+Verified:
+
+- `node visual/tools/check-relation-matrix-composition.mjs`
+- `METRIC_VISUAL_EXAMPLES=relation-matrix-neighborhood node visual/tools/check-visual-regression-public-examples.mjs`
+- `node visual/tools/check-visual-regression-public-examples.mjs`
+- `node visual/tools/check-hero-visual-briefs.mjs`
+- `node visual/tools/check-hero-screenshot-review.mjs`
+- `node visual/tools/check-public-gallery-evidence.mjs`
+- `node visual/tools/check-project-site-copy-contract.mjs`
+- `node visual/tools/check-grae10-golden.mjs`
+
+Corrected status:
+
+- This is a grammar-contract hardening step, not visual hero acceptance.
+- GRAE10/MNIST remains the only accepted public hero; all other public previews
+  remain review-pending until screenshot and human visual acceptance clear their
+  blockers.

@@ -108,7 +108,7 @@ function validateManifestShape(manifest) {
     if (brief.requiresNativeEvidence !== true) {
       issues.push({ code: "brief-entry-must-require-native-evidence", example });
     }
-    for (const field of ["requiredPrimitives", "requiredEvidence", "acceptanceBlockers"]) {
+    for (const field of ["requiredPrimitives", "requiredDescriptorRoles", "requiredEvidence", "acceptanceBlockers"]) {
       if (!Array.isArray(brief[field]) || brief[field].length === 0 || brief[field].some((value) => !stringField(value))) {
         issues.push({ code: `brief-entry-invalid-${field}`, example });
       }
@@ -124,6 +124,7 @@ function validateBriefAgainstResult(result, brief) {
   const issues = [];
   const name = result.name;
   const primitives = result.runtime?.state?.descriptorPrimitives || [];
+  const descriptorRoles = result.runtime?.state?.descriptorRoles || [];
   const nativeEvidence = result.evidence?.nativeEvidence || [];
   const recordCount = maxNumber(nativeEvidence.map((entry) => entry.recordCount));
   const relationCount = maxNumber(nativeEvidence.map((entry) => entry.relationCount));
@@ -155,6 +156,11 @@ function validateBriefAgainstResult(result, brief) {
   for (const primitive of brief.requiredPrimitives || []) {
     if (!primitives.includes(primitive)) {
       issues.push({ code: "brief-required-primitive-missing", example: name, primitive, primitives });
+    }
+  }
+  for (const role of brief.requiredDescriptorRoles || []) {
+    if (!descriptorRoles.includes(role)) {
+      issues.push({ code: "brief-required-descriptor-role-missing", example: name, role, descriptorRoles });
     }
   }
 
@@ -214,6 +220,8 @@ function validateBriefAgainstResult(result, brief) {
     grammar: result.grammar?.expected ?? null,
     visualClaim: brief.visualClaim,
     primaryVisualGrammar: brief.primaryVisualGrammar,
+    requiredDescriptorRoles: brief.requiredDescriptorRoles || [],
+    descriptorRoles,
     recordCount,
     relationCount,
     recordTypeCount,

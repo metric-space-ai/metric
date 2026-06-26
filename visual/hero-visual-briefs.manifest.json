@@ -18,6 +18,12 @@
         "CurveRibbonLayer",
         "InstancedPointLayer"
       ],
+      "requiredDescriptorRoles": [
+        "dominant-anomaly-field",
+        "density-support-projection",
+        "trajectory/path",
+        "region-labels"
+      ],
       "requiredEvidence": [
         "windowed process records",
         "native metric relation or neighborhood graph",
@@ -46,6 +52,13 @@
         "RelationEdgeLayer",
         "GroundProjectionLayer"
       ],
+      "requiredDescriptorRoles": [
+        "stage",
+        "ground-projection",
+        "type-labels",
+        "typed-glyphs",
+        "cross-type-relation-edges"
+      ],
       "requiredEvidence": [
         "typed records",
         "type-specific preview payloads",
@@ -71,6 +84,12 @@
       "requiredPrimitives": [
         "InstancedGlyphLayer",
         "RelationEdgeLayer"
+      ],
+      "requiredDescriptorRoles": [
+        "shared-ground",
+        "typed-glyphs",
+        "paired-space-label-anchors",
+        "dependence bridge"
       ],
       "requiredEvidence": [
         "two native metric spaces",
@@ -98,6 +117,11 @@
         "RelationMatrixLayer",
         "RelationEdgeLayer",
         "InstancedPointLayer"
+      ],
+      "requiredDescriptorRoles": [
+        "primary-relation-matrix",
+        "neighborhood-graph-nodes",
+        "neighborhood-graph-edges"
       ],
       "requiredEvidence": [
         "native dense relation",
@@ -127,6 +151,12 @@
         "HeatFieldLayer",
         "InstancedPointLayer"
       ],
+      "requiredDescriptorRoles": [
+        "trajectory/path",
+        "property-field",
+        "timeline-state-history-context",
+        "current-timeline-state"
+      ],
       "requiredEvidence": [
         "timeline states",
         "native transition or dynamics relation",
@@ -153,6 +183,13 @@
         "InstancedPointLayer",
         "RelationEdgeLayer",
         "GroundProjectionLayer"
+      ],
+      "requiredDescriptorRoles": [
+        "stage",
+        "ground-projection",
+        "region-labels",
+        "mapping-coordinate-morph",
+        "residual/error"
       ],
       "requiredEvidence": [
         "source coordinate state",
@@ -182,6 +219,15 @@
         "InstancedBoxLayer",
         "RelationEdgeLayer",
         "RelationMatrixLayer"
+      ],
+      "requiredDescriptorRoles": [
+        "property-field",
+        "state-ground-projection",
+        "trajectory/path",
+        "miniature-record-volume",
+        "region-labels",
+        "process-curve-neighborhood-support",
+        "process-curve-relation-matrix-support"
       ],
       "requiredEvidence": [
         "real UCR process-curve records",
