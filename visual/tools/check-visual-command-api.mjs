@@ -101,6 +101,8 @@ const PUBLIC_EXAMPLE_FORBIDDEN = [
   ["direct view import", /from\s+["'][^"']*\/src\/views(?:\/index)?\.js["']/],
   ["direct engine import", /from\s+["'][^"']*\/src\/engine(?:\/index)?\.js["']/],
   ["direct miniature-engine import", /from\s+["'][^"']*\/src\/miniature-engine(?:\/index)?\.js["']/],
+  ["page-local evidence rewrite helper", /\bcreate[A-Za-z0-9_$]*RuntimeDocument\b/],
+  ["page-local relation value omission", /\bomitted_for_view\b|\bmapping_runtime_reference\b/],
 ];
 
 async function main() {
@@ -398,6 +400,10 @@ async function checkPublicExamples(failures) {
     const canvasCount = (text.match(/<canvas\b/gi) || []).length;
     const createVariables = createMetricVisualVariables(text);
 
+    assert(failures, `${relativePath}: has expected public command mapping`, Boolean(expectedCommand), {
+      expectedCommand,
+      configuredExamples: Array.from(PUBLIC_EXAMPLE_EXPECTED_COMMANDS.keys()).sort(),
+    });
     assert(failures, `${relativePath}: uses createMetricVisual`, /\bcreateMetricVisual\s*\(/.test(text), { commandCalls });
     assert(failures, `${relativePath}: stores createMetricVisual surface`, createVariables.length > 0, { createVariables });
     assert(failures, `${relativePath}: calls a semantic command`, commandCalls.length > 0, { commandCalls });

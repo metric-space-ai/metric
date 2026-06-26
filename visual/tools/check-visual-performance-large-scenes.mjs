@@ -22,6 +22,8 @@ import { fileURLToPath } from "node:url";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..", "..");
 const OUT_DIR = resolve(process.env.METRIC_VISUAL_PERF_OUT || join(ROOT, "output", "visual", "check-visual-performance-large-scenes"));
+const DEFAULT_BRIEF_MANIFEST = resolve(ROOT, "visual", "hero-visual-briefs.manifest.json");
+const BRIEF_MANIFEST = resolve(process.env.METRIC_VISUAL_BRIEF_MANIFEST || DEFAULT_BRIEF_MANIFEST);
 const COUNTS = parseCounts(process.env.METRIC_VISUAL_PERF_COUNTS || "1000,10000,60000");
 const VIEWPORT = parseViewport(process.env.METRIC_VISUAL_PERF_VIEWPORT || "1000x700");
 const READY_TIMEOUT_MS = Number(process.env.METRIC_VISUAL_PERF_READY_TIMEOUT_MS || 90000);
@@ -85,6 +87,15 @@ const GRAMMAR_CASES = [
     expectedPrimitives: ["RelationEdgeLayer", "InstancedGlyphLayer"],
     minDescriptorCount: 4,
     minRuntimeLayers: 4,
+  },
+  {
+    id: "process-curve-external-hero",
+    grammar: "process-curve",
+    label: "external process-curve recovery preview",
+    path: "/visual/examples/process-curve-external-hero/index.html?verify=1",
+    expectedPrimitives: ["HeatFieldLayer", "CurveTubeMeshLayer", "InstancedBoxLayer", "RelationEdgeLayer", "RelationMatrixLayer"],
+    minDescriptorCount: 6,
+    minRuntimeLayers: 6,
   },
 ];
 
@@ -343,6 +354,7 @@ async function main() {
   let browser = null;
   const rows = [];
   const grammarRows = [];
+  const visualBriefs = await loadVisualBriefs(BRIEF_MANIFEST);
   try {
     server = await startStaticServer(ROOT);
     browser = await launchChrome(chromeExecutable);
@@ -351,7 +363,7 @@ async function main() {
       rows.push(await checkCount(browser, `${baseUrl}/visual/tools/perf-harness.html?n=${count}`, count));
     }
     for (const grammarCase of GRAMMAR_CASES) {
-      grammarRows.push(await checkGrammarCase(browser, `${baseUrl}${grammarCase.path}`, grammarCase));
+      grammarRows.push(await checkGrammarCase(browser, `${baseUrl}${grammarCase.path}`, grammarCase, visualBriefs.get(grammarCase.id)));
     }
   } catch (error) {
     rows.push({
@@ -374,6 +386,12 @@ async function main() {
     generatedAt: new Date().toISOString(),
     chromeExecutable,
     viewport: VIEWPORT,
+    visualBriefManifest: BRIEF_MANIFEST,
+    visualBriefCoverage: {
+      requiredRows: GRAMMAR_CASES.length,
+      matchedRows: grammarRows.filter((row) => row.visualBriefMatched).length,
+      missingRows: grammarRows.filter((row) => !row.visualBriefMatched).map((row) => row.id),
+    },
     renderer: FORCE_SWIFTSHADER ? "headless Chrome with forced SwiftShader" : "headless Chrome using available WebGL backend",
     forcedSwiftShader: FORCE_SWIFTSHADER,
     budgets: {
@@ -471,7 +489,7 @@ async function checkCount(browser, url, count) {
   };
 }
 
-async function checkGrammarCase(browser, url, grammarCase) {
+async function checkGrammarCase(browser, url, grammarCase, visualBrief = null) {
   let page = null;
   const issues = [];
   let probe = null;
@@ -503,18 +521,43 @@ async function checkGrammarCase(browser, url, grammarCase) {
   ].filter(Boolean).join(" ").toLowerCase();
   const softwareRenderer = /swiftshader|software|llvmpipe/.test(rendererText);
   const primitives = runtime.descriptorPrimitives || [];
-  const missingPrimitives = grammarCase.expectedPrimitives.filter((primitive) => !primitives.includes(primitive));
+  const expectedPrimitives = Array.from(new Set([
+    ...(Array.isArray(visualBrief?.requiredPrimitives) ? visualBrief.requiredPrimitives : []),
+    ...grammarCase.expectedPrimitives,
+  ]));
+  const missingPrimitives = expectedPrimitives.filter((primitive) => !primitives.includes(primitive));
   const layerDiagnostics = Array.isArray(runtime.layerDiagnostics) ? runtime.layerDiagnostics : [];
+  const minimumEvidence = visualBrief?.minimumEvidence && typeof visualBrief.minimumEvidence === "object"
+    ? visualBrief.minimumEvidence
+    : {};
+  const minRecordCountForHero = finiteNumberOrNull(minimumEvidence.minRecordCountForHero);
+  const recordCountReady = minRecordCountForHero == null || (runtime.recordCount || 0) >= minRecordCountForHero;
+  const acceptanceBlockers = Array.isArray(visualBrief?.acceptanceBlockers) ? visualBrief.acceptanceBlockers : [];
 
   if (!probe?.ready) issues.push({ code: "grammar-preview-not-ready" });
+  if (!visualBrief) issues.push({ code: "visual-brief-missing", example: grammarCase.id, manifest: BRIEF_MANIFEST });
   if ((runtime.recordCount || 0) < 1) issues.push({ code: "missing-record-count", actual: runtime.recordCount ?? null });
+  if (!recordCountReady && !acceptanceBlockers.includes("record-count-below-hero-minimum")) {
+    issues.push({
+      code: "record-count-below-hero-minimum-without-blocker",
+      minRecordCountForHero,
+      actual: runtime.recordCount || 0,
+    });
+  }
+  if (recordCountReady && acceptanceBlockers.includes("record-count-below-hero-minimum")) {
+    issues.push({
+      code: "stale-record-count-blocker",
+      minRecordCountForHero,
+      actual: runtime.recordCount || 0,
+    });
+  }
   if ((runtime.layerDescriptorCount || 0) < grammarCase.minDescriptorCount) {
     issues.push({ code: "insufficient-layer-descriptor-count", min: grammarCase.minDescriptorCount, actual: runtime.layerDescriptorCount || 0 });
   }
   if ((runtime.runtimeLayerCount || 0) < grammarCase.minRuntimeLayers) {
     issues.push({ code: "insufficient-runtime-layer-count", min: grammarCase.minRuntimeLayers, actual: runtime.runtimeLayerCount || 0 });
   }
-  if (missingPrimitives.length) issues.push({ code: "missing-grammar-primitives", expected: grammarCase.expectedPrimitives, missing: missingPrimitives, actual: primitives });
+  if (missingPrimitives.length) issues.push({ code: "missing-grammar-primitives", expected: expectedPrimitives, missing: missingPrimitives, actual: primitives });
   if (grammarCase.id === "relation-matrix-neighborhood") {
     const matrixDiagnostics = layerDiagnostics.find((entry) => entry?.primitive === "RelationMatrixLayer");
     const tileSummary = matrixDiagnostics?.readability?.tileSummary;
@@ -539,6 +582,14 @@ async function checkGrammarCase(browser, url, grammarCase) {
     label: grammarCase.label,
     classification: "public-preview-only",
     heroAccepted: false,
+    reviewStatus: visualBrief?.reviewStatus || "unknown",
+    visualBriefMatched: Boolean(visualBrief),
+    visualClaim: visualBrief?.visualClaim || null,
+    primaryVisualGrammar: visualBrief?.primaryVisualGrammar || null,
+    expectedPrimaryVisualGrammar: visualBrief?.expectedPrimaryVisualGrammar || null,
+    minRecordCountForHero,
+    recordCountReady,
+    acceptanceBlockers,
     ok: issues.length === 0,
     recordCount: runtime.recordCount ?? null,
     descriptorCount: runtime.layerDescriptorCount ?? null,
@@ -548,7 +599,7 @@ async function checkGrammarCase(browser, url, grammarCase) {
     selectedViewKind: runtime.selectedViewKind || null,
     descriptorPrimitives: primitives,
     layerDiagnostics,
-    expectedPrimitives: grammarCase.expectedPrimitives,
+    expectedPrimitives,
     frameTimingSample: frameTiming,
     renderer: {
       ...renderer,
@@ -567,6 +618,18 @@ async function checkGrammarCase(browser, url, grammarCase) {
     canvas: probe?.canvas || null,
     issues,
   };
+}
+
+async function loadVisualBriefs(manifestPath) {
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  const briefs = new Map();
+  if (!Array.isArray(manifest?.previewBriefs)) return briefs;
+  for (const brief of manifest.previewBriefs) {
+    if (typeof brief?.exampleId === "string" && brief.exampleId.trim()) {
+      briefs.set(brief.exampleId.trim(), brief);
+    }
+  }
+  return briefs;
 }
 
 async function waitForPerfReady(page) {
@@ -868,6 +931,11 @@ function parseCounts(value) {
 function parseViewport(value) {
   const match = /^(\d+)x(\d+)$/i.exec(value);
   return match ? { width: Number(match[1]), height: Number(match[2]) } : { width: 1000, height: 700 };
+}
+
+function finiteNumberOrNull(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
 }
 
 function sleep(ms) {

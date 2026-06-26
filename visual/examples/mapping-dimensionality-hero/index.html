@@ -80,11 +80,10 @@
       const response = await fetch("../../../docs/examples/assets/mapping-dimensionality/metric.visual.json");
       if (!response.ok) throw new Error(`evidence ${response.status}`);
       const nativeDocument = await response.json();
-      const document_ = createMappingRuntimeDocument(nativeDocument);
 
       const visual = await createMetricVisual({
         canvas,
-        evidence: document_,
+        evidence: nativeDocument,
         profileId: "mapping-dimensionality-hero-profile",
       });
       visual.runtime.on("mappingmotionchange", ({ state }) => {
@@ -122,7 +121,7 @@
       document.documentElement.dataset.metricLayerIds = layerIds.join(",");
       document.documentElement.dataset.metricResidualLayers = residualLayers.map((descriptor) => descriptor.id).join(",");
       document.documentElement.dataset.metricResidualProperty = RESIDUAL_PROPERTY_ID;
-      document.documentElement.dataset.metricRuntimeEvidenceProjection = "native-mapping-fields-only";
+      document.documentElement.dataset.metricRuntimeEvidenceProjection = "native-mapping-evidence";
       document.documentElement.dataset.metricMorphTiming = `${MAPPING_MOTION_TIMING.sourceHoldMs}:${MAPPING_MOTION_TIMING.transitionMs}:${MAPPING_MOTION_TIMING.targetHoldMs}`;
       document.documentElement.dataset.metricMorphProgress = initialProgress.toFixed(3);
       document.documentElement.dataset.metricMorph = staticMorph == null ? MAPPING_MOTION_TIMING.profile : `static-${staticMorph}`;
@@ -134,23 +133,6 @@
       console.error(error);
       loading.className = "loading error";
       loading.textContent = error instanceof Error ? error.message : String(error);
-    }
-
-    function createMappingRuntimeDocument(document_) {
-      return {
-        ...document_,
-        relations: (document_.relations || []).map((relation) => ({
-          ...relation,
-          storage: "mapping_runtime_reference",
-          values: [],
-          metadata: {
-            ...(relation.metadata || {}),
-            native_storage: relation.storage,
-            native_value_count: Array.isArray(relation.values) ? relation.values.length : 0,
-            omitted_for_view: "mapping-dimensionality-hero",
-          },
-        })),
-      };
     }
 
     function phaseLabel(progress) {

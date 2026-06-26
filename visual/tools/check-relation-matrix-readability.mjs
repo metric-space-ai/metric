@@ -61,7 +61,8 @@ assert.deepEqual(readability.blocks.coverage, {
   startsAtZero: true,
   endsAtSize: true,
 });
-assert.equal(readability.blocks.shaderBoundaryLimit, 16);
+assert.equal(readability.blocks.shaderRangeLimit, 32);
+assert.equal(readability.blocks.shaderBoundaryLimit, 32);
 
 assert.equal(readability.tiles.kind, "relation-matrix-logical-tile-grid");
 assert.equal(readability.tiles.tileSize, 32);
@@ -146,6 +147,15 @@ assert.equal(layer.blockRangeCount, 5);
 assert.equal(layer.describeReadability().domFallback, false);
 assert.equal(layer.describeReadability().svgFallback, false);
 assert.equal(layer.describeReadability().readability.tiles.tileSize, 32);
+assert.deepEqual(layer.describeReadability().shaderCapacity, {
+  rangeLimit: 32,
+  boundaryLimit: 32,
+  rangeCount: 5,
+  boundaryCount: 4,
+  truncatedRangeCount: 0,
+  truncatedBoundaryCount: 0,
+  truncated: false,
+});
 
 layer.gl = createTextureOnlyGl();
 layer.replaceTexture(nativeTexture);
@@ -191,6 +201,7 @@ assert.equal(layer.getDiagnostics().selectedPair.columnId, "pc-001");
 assert.equal(layer.getDiagnostics().selectedPair.pairKey, `${nativeRelation.id}\u0000pc-000\u0000pc-001`);
 assert.equal(layer.getDiagnostics().selectedPair.nativePairPresent, true);
 assert.equal(layer.getDiagnostics().selectedPair.linkedGraph.present, false);
+assert.equal(layer.getDiagnostics().shaderCapacity.truncated, false);
 assert.equal(layer.describeReadability().selectedPair.rowId, "pc-000");
 
 layer.setSelection({ rowId: "pc-004" });

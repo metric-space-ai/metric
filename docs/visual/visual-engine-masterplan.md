@@ -182,8 +182,13 @@ Implemented native slices:
   `visual/tools/check-hero-screenshot-review.mjs`
 - large-scene performance gate for 1k, 10k and 60k point-cloud workloads plus
   current public preview grammar rows for field, glyph, relation-matrix/graph,
-  dynamics, mapping and cross-space scenes:
+  dynamics, mapping, cross-space and process-curve scenes:
   `visual/tools/check-visual-performance-large-scenes.mjs`
+- the large-scene performance gate now reads
+  `visual/hero-visual-briefs.manifest.json`, reports Visual-Brief coverage,
+  per-preview minimum record targets, current acceptance blockers and keeps
+  `process-curve-external-hero` explicitly scale-blocked instead of silently
+  treating a render pass as hero readiness
 - command-fidelity guards that keep public examples on one semantic engine
   command, verify `showConditionMonitoring()` as the final condition grammar,
   prevent residual/error mapping layers without explicit residual evidence and
@@ -211,8 +216,9 @@ Known gaps:
 - no full visual gallery for every METRIC algorithm family yet
 - relation matrix has native exported evidence and a reusable WebGL readability
   pass with block bands, tile/LOD metadata, block boundaries, row/column/cell
-  focus and pair-evidence picking, but it is not yet a polished public
-  matrix/neighborhood hero until screenshot review accepts it
+  focus, stronger focus/boundary defaults, explicit block shader capacity and
+  pair-evidence picking, but it is not yet a polished public matrix/neighborhood
+  hero until screenshot review accepts it
 - metric curve-body study-style curve bodies now have a native `CurveTubeMeshLayer`; more
   algorithm-family views still need to adopt it where world-space continuity is
   the main evidence
@@ -236,9 +242,9 @@ Known gaps:
   native pair identity/properties into the same runtime preview path; remaining
   layer-specific GPU work is matrix GPU picking only if the semantic picker is
   not sufficient at larger tiled scales.
-- performance gates exist for large point-cloud workloads and current public
-  preview grammar rows; matrix, graph, field, glyph, dynamics and mapping still
-  need stress-size budgets at realistic hero evidence sizes
+- performance gates exist for large point-cloud workloads and all seven current
+  public preview grammar rows; matrix, graph, field, glyph, dynamics and mapping
+  still need stricter stress-size budgets at realistic final hero evidence sizes
 
 It must help users inspect:
 

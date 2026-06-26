@@ -11,8 +11,8 @@ import { buildRelationMatrixTextureData } from "./matrix-texture.js";
 import { createRelationMatrixReadabilityProfile } from "./matrix-readability.js";
 import { createRelationMatrixDiagnostics } from "./diagnostics.js";
 
-const MAX_BLOCK_BOUNDARIES = 16;
-const MAX_BLOCK_RANGES = 16;
+const MAX_BLOCK_BOUNDARIES = 32;
+const MAX_BLOCK_RANGES = 32;
 
 /**
  * WebGL layer for rendering prebuilt relation matrix texture data.
@@ -37,6 +37,15 @@ export class RelationMatrixLayer extends BaseLayer {
     this.blockBoundaryCount = 0;
     this.blockRanges = new Float32Array(MAX_BLOCK_RANGES * 2);
     this.blockRangeCount = 0;
+    this.blockShaderCapacity = {
+      rangeLimit: MAX_BLOCK_RANGES,
+      boundaryLimit: MAX_BLOCK_BOUNDARIES,
+      rangeCount: 0,
+      boundaryCount: 0,
+      truncatedRangeCount: 0,
+      truncatedBoundaryCount: 0,
+      truncated: false,
+    };
     this.selection = {
       row: -1,
       column: -1,
@@ -109,30 +118,30 @@ export class RelationMatrixLayer extends BaseLayer {
       this.selection.columnActive ? this.selection.column : -1,
       this.selection.rowActive ? this.selection.row : -1,
     ]);
-    this.program.setUniform("uSelectionAlpha", numberOption(material.selectionAlpha, 0.38));
-    this.program.setUniform("uSelectionRowAlpha", numberOption(material.selectionRowAlpha, material.selectionAlpha, 0.38));
-    this.program.setUniform("uSelectionColumnAlpha", numberOption(material.selectionColumnAlpha, material.selectionAlpha, 0.38));
-    this.program.setUniform("uSelectionCellAlpha", numberOption(material.selectionCellAlpha, 0.72));
-    this.program.setUniform("uSelectionOutlineAlpha", numberOption(material.selectionOutlineAlpha, 0.92));
-    this.program.setUniform("uSelectionOutlinePixels", numberOption(material.selectionOutlinePixels, 1.35));
+    this.program.setUniform("uSelectionAlpha", numberOption(material.selectionAlpha, 0.54));
+    this.program.setUniform("uSelectionRowAlpha", numberOption(material.selectionRowAlpha, material.selectionAlpha, 0.54));
+    this.program.setUniform("uSelectionColumnAlpha", numberOption(material.selectionColumnAlpha, material.selectionAlpha, 0.54));
+    this.program.setUniform("uSelectionCellAlpha", numberOption(material.selectionCellAlpha, 0.9));
+    this.program.setUniform("uSelectionOutlineAlpha", numberOption(material.selectionOutlineAlpha, 1));
+    this.program.setUniform("uSelectionOutlinePixels", numberOption(material.selectionOutlinePixels, 2.2));
     this.program.setUniform("uSelectionColor", material.selectionColor || [1.0, 0.86, 0.42, 1]);
     this.program.setUniform("uSelectionRowColor", material.selectionRowColor || material.selectionColor || [1.0, 0.86, 0.42, 1]);
     this.program.setUniform("uSelectionColumnColor", material.selectionColumnColor || [0.42, 0.66, 1.0, 1]);
     this.program.setUniform("uSelectionCellColor", material.selectionCellColor || material.selectionColor || [1.0, 0.92, 0.56, 1]);
     this.program.setUniform("uFocusBackdropColor", material.focusBackdropColor || material.background || [0.02, 0.025, 0.03, 1]);
-    this.program.setUniform("uFocusBackdropAlpha", numberOption(material.focusBackdropAlpha, 0.3));
+    this.program.setUniform("uFocusBackdropAlpha", numberOption(material.focusBackdropAlpha, 0.38));
     this.program.setUniform("uFocusBlockColor", material.focusBlockColor || material.blockBandColor || [1.0, 0.95, 0.72, 1]);
-    this.program.setUniform("uFocusBlockAlpha", numberOption(material.focusBlockAlpha, 0.085));
+    this.program.setUniform("uFocusBlockAlpha", numberOption(material.focusBlockAlpha, 0.14));
     this.program.setUniform("uBlockRangeCount", this.blockRangeCount);
     this.program.setUniform("uBlockRanges", this.blockRanges);
     this.program.setUniform("uBlockBandColor", material.blockBandColor || [1.0, 0.95, 0.72, 1]);
-    this.program.setUniform("uBlockBandAlpha", numberOption(material.blockBandAlpha, 0.055));
+    this.program.setUniform("uBlockBandAlpha", numberOption(material.blockBandAlpha, 0.11));
     this.program.setUniform("uBlockBoundaryCount", this.blockBoundaryCount);
     this.program.setUniform("uBlockBoundaries", this.blockBoundaries);
     this.program.setUniform("uBlockLineColor", material.blockLineColor || [1.0, 1.0, 1.0, 1]);
-    this.program.setUniform("uBlockLineAlpha", numberOption(material.blockLineAlpha, 0.32));
-    this.program.setUniform("uBlockLineWidthCells", numberOption(material.blockLineWidthCells, 0.68));
-    this.program.setUniform("uOuterBorderAlpha", numberOption(material.outerBorderAlpha, 0.42));
+    this.program.setUniform("uBlockLineAlpha", numberOption(material.blockLineAlpha, 0.64));
+    this.program.setUniform("uBlockLineWidthCells", numberOption(material.blockLineWidthCells, 1.15));
+    this.program.setUniform("uOuterBorderAlpha", numberOption(material.outerBorderAlpha, 0.7));
     this.program.setUniform("uTileSize", numberOption(material.tileSize, this.readabilityProfile?.tiles?.tileSize, 0));
     this.program.setUniform("uTileSummaryGridSize", [
       this.tileSummaryPayload?.width || 0,
@@ -142,8 +151,8 @@ export class RelationMatrixLayer extends BaseLayer {
       "uTileSummaryStrength",
       numberOption(material.tileSummaryStrength, this.readabilityProfile?.lod?.tileSummaryLod?.strength, 0.68),
     );
-    this.program.setUniform("uTileBoundaryAlpha", numberOption(material.tileBoundaryAlpha, 0.16));
-    this.program.setUniform("uTileBoundaryWidthCells", numberOption(material.tileBoundaryWidthCells, 0.42));
+    this.program.setUniform("uTileBoundaryAlpha", numberOption(material.tileBoundaryAlpha, 0.2));
+    this.program.setUniform("uTileBoundaryWidthCells", numberOption(material.tileBoundaryWidthCells, 0.5));
     this.program.setUniform("uTileBoundaryColor", material.tileBoundaryColor || [0.72, 0.84, 1.0, 1]);
     bindAttribute(gl, this.program, this.capabilities, "aUnitPosition", this.buffers.quad, 2);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.vertexCount);
@@ -218,6 +227,16 @@ export class RelationMatrixLayer extends BaseLayer {
     const matrix = payload?.matrix || null;
     const size = Number(matrix?.size);
     if (!Number.isFinite(size) || size <= 0) return this;
+    const blockShaderInput = collectBlockShaderInputStats(matrix.blockRanges || [], size);
+    this.blockShaderCapacity = {
+      rangeLimit: MAX_BLOCK_RANGES,
+      boundaryLimit: MAX_BLOCK_BOUNDARIES,
+      rangeCount: blockShaderInput.rangeCount,
+      boundaryCount: blockShaderInput.boundaryCount,
+      truncatedRangeCount: Math.max(0, blockShaderInput.rangeCount - MAX_BLOCK_RANGES),
+      truncatedBoundaryCount: Math.max(0, blockShaderInput.boundaryCount - MAX_BLOCK_BOUNDARIES),
+      truncated: blockShaderInput.rangeCount > MAX_BLOCK_RANGES || blockShaderInput.boundaryCount > MAX_BLOCK_BOUNDARIES,
+    };
 
     const seen = new Set();
     for (const range of matrix.blockRanges || []) {
@@ -266,6 +285,7 @@ export class RelationMatrixLayer extends BaseLayer {
         tileSize: this.tileSummaryPayload.tileSize,
         source: this.tileSummaryPayload.source,
       } : null,
+      shaderCapacity: { ...this.blockShaderCapacity },
     };
   }
 
@@ -285,6 +305,7 @@ export class RelationMatrixLayer extends BaseLayer {
       selectedFocus: this.selectionDetails,
       selectedPair: this.selectionDetails?.kind === "pair" ? this.selectionDetails : null,
       linkedGraph: this.selectionDetails?.linkedGraph || null,
+      shaderCapacity: { ...this.blockShaderCapacity },
     };
   }
 }
@@ -512,6 +533,23 @@ function addBlockBoundary(out, seen, value, size, layer) {
   layer.blockBoundaryCount += 1;
 }
 
+function collectBlockShaderInputStats(ranges, size) {
+  if (!Array.isArray(ranges) || !Number.isFinite(size) || size <= 0) {
+    return { rangeCount: 0, boundaryCount: 0 };
+  }
+  let rangeCount = 0;
+  const boundaries = new Set();
+  for (const range of ranges) {
+    const start = Number(range.start ?? range.start_index ?? range.startIndex);
+    const end = Number(range.end_exclusive ?? range.endExclusive ?? range.end);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start || start < 0 || end > size) continue;
+    rangeCount += 1;
+    if (start > 0 && start < size) boundaries.add(start);
+    if (end > 0 && end < size) boundaries.add(end);
+  }
+  return { rangeCount, boundaryCount: boundaries.size };
+}
+
 const QUAD_VERTICES = new Float32Array([
   0, 0,
   1, 0,
@@ -569,11 +607,11 @@ uniform float uSelectionCellAlpha;
 uniform float uSelectionOutlineAlpha;
 uniform float uSelectionOutlinePixels;
 uniform int uBlockRangeCount;
-uniform vec2 uBlockRanges[16];
+uniform vec2 uBlockRanges[32];
 uniform vec4 uBlockBandColor;
 uniform float uBlockBandAlpha;
 uniform int uBlockBoundaryCount;
-uniform float uBlockBoundaries[16];
+uniform float uBlockBoundaries[32];
 uniform vec4 uBlockLineColor;
 uniform float uBlockLineAlpha;
 uniform float uBlockLineWidthCells;
@@ -641,7 +679,7 @@ void main() {
   float selectedBlockHit = 0.0;
   float selectedRowUnit = (uSelectedCell.y + 0.5) / max(uTextureSize.y, 1.0);
   float selectedColumnUnit = (uSelectedCell.x + 0.5) / max(uTextureSize.x, 1.0);
-  for (int index = 0; index < 16; index++) {
+  for (int index = 0; index < 32; index++) {
     if (index < uBlockRangeCount) {
       vec2 range = uBlockRanges[index];
       float insideX = step(range.x, safeUv.x) * step(safeUv.x, range.y);
@@ -654,7 +692,7 @@ void main() {
   }
   float boundaryHit = 0.0;
   float boundaryWidth = max(0.0006, uBlockLineWidthCells / max(uTextureSize.x, uTextureSize.y));
-  for (int index = 0; index < 16; index++) {
+  for (int index = 0; index < 32; index++) {
     if (index < uBlockBoundaryCount) {
       float boundary = uBlockBoundaries[index];
       float distanceToBoundary = min(abs(vUnit.x - boundary), abs(vUnit.y - boundary));

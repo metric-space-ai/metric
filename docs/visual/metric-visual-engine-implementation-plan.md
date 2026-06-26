@@ -99,6 +99,10 @@ This plan is authoritative only with the following current-state constraints:
 - `captureHeroFrame(visual, options)` is a top-level public API export that
   delegates to `MetricVisualSurface.captureHeroFrame(options)`. It does not
   create another capture or render pipeline.
+- The large-scene performance gate reads the public Visual-Brief manifest,
+  covers all seven native public preview rows, reports minimum record targets
+  and blockers per preview, and keeps `process-curve-external-hero` visibly
+  scale-blocked while still testing its process-curve grammar performance.
 - The next production step is to harden each native public preview into an
   accepted hero through larger evidence where required, grammar-specific
   performance budgets and screenshot review, not more hand-written hero HTML
@@ -2201,10 +2205,15 @@ Not visually accepted yet:
   labels and full block-coverage state. The public browser regression for
   `relation-matrix-neighborhood` fails if those named block diagnostics or the
   tile-summary LOD source disappear from runtime state.
+- Relation-matrix descriptors and runtime layers now use stronger engine-level
+  focus defaults for row, column, selected cell, block boundaries and tile
+  boundaries. The WebGL layer reports explicit block shader capacity and
+  truncation state through `shaderCapacity` instead of silently hiding block
+  range/boundary overflow.
 - The large-scene performance gate now covers the point-cloud stress rows and
   current public preview grammar rows for field, glyph, relation-matrix/graph,
-  dynamics, mapping and cross-space scenes. These rows prove runtime mechanics,
-  not hero acceptance.
+  dynamics, mapping, cross-space and process-curve scenes. These rows prove
+  runtime mechanics, not hero acceptance.
 
 Next mandatory engine work:
 
@@ -2396,7 +2405,8 @@ Implemented:
 - Relation-matrix descriptors and runtime layers expose
   `metric.visual.relation_matrix_readability_diagnostics.v1` with matrix
   dimensions, named block ranges, block coverage, tile counts, tile-summary
-  source, missing-value count and selected row/column/cell state.
+  source, missing-value count, selected row/column/cell state and explicit block
+  shader capacity/truncation diagnostics.
 - The task registry marks preview presentation, relation-matrix readability and
   visual acceptance gates as integrated after local rerun.
 

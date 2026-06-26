@@ -1,10 +1,12 @@
 # Native Hero Scale Evidence Upgrade Plan
 
-Date: 2026-06-25
+Date: 2026-06-26
 Branch: `codex/visual-engine-evidence-exporters`
 
-This is a planning audit only. No source, generated asset, CMake, example,
-project page or GRAE10 file was changed.
+This report is kept as the scale/evidence planning audit for native public
+previews. It was refreshed after the native scale exporters were enlarged and
+the Visual-Brief-aware performance gate was added. No generated `output/`
+artifacts are committed by this report.
 
 ## Inputs And Gates
 
@@ -24,26 +26,24 @@ node visual/tools/check-native-hero-evidence-scale.mjs
 node visual/tools/check-public-gallery-evidence.mjs
 ```
 
-Gate results:
+Current gate results:
 
-- `check-native-hero-evidence-scale`: `ok: true`, seven rows inspected, one
-  native-scale-ready row. The ready row is `relation-matrix-neighborhood`.
+- `check-native-hero-evidence-scale`: `ok: true`, seven rows inspected, six
+  native-scale-ready rows. The only current record-count blocker is
+  `process-curve-external-hero`.
 - `check-public-gallery-evidence`: `ok: true`, GRAE10 hash
   `464f6a90c36c1e9c6b4ec90068500dc226740d65b251918aca567f99d64d3d5e`,
   no public synthetic evidence, no synthetic example marked done.
-- The public gallery gate currently reports six public native assets and does
-  not list `process-curve-external-hero`; the native-scale gate does inspect
-  `process-curve-external-hero` through its brief/page asset reference.
+- `check-visual-performance-large-scenes`: `ok: true`, seven Visual Brief rows
+  matched, including the scale-blocked `process-curve-external-hero` preview.
 
 ## Top Blockers
 
 | Blocker | Concrete implication |
 | --- | --- |
-| Six previews are below the brief record-count floor | `condition-monitoring-hero`, `mixed-record-hero`, `cross-space-dependency-hero`, `dynamics-noise-hero`, `mapping-dimensionality-hero` and `process-curve-external-hero` must scale native C++ evidence before screenshot acceptance. |
-| `mixed-record-hero` has one exported record type | The exporter must emit at least four honest `record_type` values backed by type-specific payloads and native metric contributions. Relabeling the current composed records is not acceptable evidence. |
-| Several previews have the right evidence family but no hero grammar timeline or bridge | Mapping needs a coordinate-morph timeline and residual evidence through `MappingView`; condition monitoring and dynamics need timeline/state-history proof; cross-space needs explicit paired bridge or linked local-dependence evidence. |
-| `relation-matrix-neighborhood` is scale-ready but not visually accepted | Its remaining gate blockers are human screenshot/readability blockers, not count blockers. Do not mark it accepted until screenshot review clears the matrix and neighborhood composition. |
-| `process-curve-external-hero` count is inflated by query records | The gate sees 64 records, but the metric relation and coordinates cover 48 source records. Scaling must add real source windows and query evidence, not query-only padding. |
+| Six previews are scale-ready but not screenshot-accepted | `condition-monitoring-hero`, `mixed-record-hero`, `cross-space-dependency-hero`, `dynamics-noise-hero`, `mapping-dimensionality-hero` and `relation-matrix-neighborhood` now meet their current native scale thresholds, but remain preview-only until screenshot review accepts their visual grammar and composition. |
+| `relation-matrix-neighborhood` is scale-ready but not visually accepted | Its remaining gate blockers are human screenshot/readability blockers, not count blockers. The reusable matrix grammar now exposes stronger focus defaults and explicit shader-capacity diagnostics, but human review still has to accept the final screenshot. |
+| `process-curve-external-hero` count is inflated by query records | The gate sees 64 total records, but the metric relation and coordinates cover 48 source records. Scaling must add real source windows and query evidence, not query-only padding. |
 
 ## Preview Tickets
 
@@ -51,9 +51,9 @@ Gate results:
 
 | Field | Plan |
 | --- | --- |
-| Current counts | `recordCount: 15`, `relationCount: 2`, `recordTypeCount: 1` |
+| Current counts | `recordCount: 528`, `relationCount: 2`, `recordTypeCount: 1` |
 | Native/synthetic status | Native `metric.visual.v1`; `provenance.native_export: true`; `provenance.synthetic` absent/false. Asset: `docs/examples/assets/condition-monitoring/metric.visual.json`. |
-| Exact blocker text from gate | `record-count-below-hero-minimum`; `visual-composition-not-human-accepted` |
+| Exact blocker text from gate | `visual-composition-not-human-accepted` |
 | Minimum evidence target from brief | At least 500 records and at least 1 relation. Required evidence: windowed process records, native metric relation or neighborhood graph, density or entropy property, anomaly or regime property, original time-series preview payload. |
 | C++ exporter file to change | `examples/engine/condition_monitoring_visual_export.cpp` |
 | Dataset or deterministic native fixture source | Grow the deterministic process-window source currently in `examples/engine/condition_monitoring_visual_export.cpp::build_observations()`, mirroring the native `examples/engine/condition_monitoring.cpp` condition-monitoring generator. The target fixture must emit at least 500 ordered process windows across healthy baseline, slow drift, abrupt fault, recovery and recurring signature regimes. |
@@ -67,9 +67,9 @@ Gate results:
 
 | Field | Plan |
 | --- | --- |
-| Current counts | `recordCount: 20`, `relationCount: 1`, `recordTypeCount: 1` |
+| Current counts | `recordCount: 2,000`, `relationCount: 1`, `recordTypeCount: 4` |
 | Native/synthetic status | Native `metric.visual.v1`; `provenance.native_export: true`; `provenance.synthetic` absent/false. Asset: `docs/examples/assets/mixed-records/metric.visual.json`. |
-| Exact blocker text from gate | `record-count-below-hero-minimum`; `record-type-count-below-hero-minimum`; `visual-composition-not-human-accepted` |
+| Exact blocker text from gate | `visual-composition-not-human-accepted` |
 | Minimum evidence target from brief | At least 2,000 records, at least 1 relation and at least 4 record types. Required evidence: typed records, type-specific preview payloads, native metric relation, cross-type nearest-neighbor edges, family or type labels. |
 | C++ exporter file to change | `examples/engine/mixed_finite_records_visual_export.cpp` |
 | Dataset or deterministic native fixture source | Use the deterministic native source in `examples/engine/mixed_finite_records_fixture.hpp` and metric contract in `examples/engine/mixed_finite_records.hpp`. The implementation ticket is to expand the fixture to at least 2,000 records across four honest public record types: text code records, histogram/spectrum records, process-curve records and numeric-vitals records. Each public record type must carry a type-specific payload; do not satisfy the gate by only relabeling the current `mixed_structured_record` composed payload. |
@@ -77,15 +77,15 @@ Gate results:
 | Required exported properties, relations, coordinates, timelines and previews | Relations: grow `mixed-finite-records-composite-metric` to the 2,000-record domain and keep/grow the kNN graph. Add pair or edge metadata for dominant contribution channel where cross-type edges are shown. Properties: keep/grow `family`, `severity`, `type`, `channel`, `nearest_distance`, `nearest_contributions`, `cluster`, `representative`; add a record-type property matching the four exported `record_type` values. Coordinates: grow `mixed-finite-records-mds-3d` and `mixed-finite-records-family-severity-3d` or their native equivalents. Timelines: none required for this hero. Previews: text records expose source string, spectrum records expose histogram/distribution, process-curve records expose time series, numeric-vitals records expose vector/table values. |
 | Expected visual grammar | Primary `MixedRecordView` typed glyph scene plus `RelationEdgeLayer` cross-type nearest edges and typed preview; relation matrix is supporting context. |
 | Acceptance commands | `cmake --build build/core --target engine_mixed_finite_records_visual_export -- -j4`; `ctest --test-dir build/core -R 'visual_(export|validate)' --output-on-failure`; `node visual/tools/check-visual-document.mjs docs/examples/assets/mixed-records/metric.visual.json`; `node visual/tools/check-native-hero-evidence-scale.mjs`; `node visual/tools/check-public-gallery-evidence.mjs`; screenshot review through the public regression/review gate. |
-| Risk if scaled naively | Simply multiplying the current 20 composed records keeps `recordTypeCount: 1` and will continue to fail. Exporting a 2,000 x 2,000 full relation as verbose JSON can become the dominant artifact, so the exporter should use the schema-supported storage form intentionally and keep cross-type graph evidence sparse and inspectable. |
+| Risk if scaled naively | The previous blocker was multiplying composed records without creating honest public record types. The current exporter reports 2,000 records across four record types; future changes must preserve type-specific payloads and keep cross-type graph evidence sparse and inspectable. |
 
 ### `cross-space-dependency-hero`
 
 | Field | Plan |
 | --- | --- |
-| Current counts | `recordCount: 48`, `relationCount: 2`, `recordTypeCount: 1` |
+| Current counts | `recordCount: 512`, `relationCount: 3`, `recordTypeCount: 1` |
 | Native/synthetic status | Native `metric.visual.v1`; `provenance.native_export: true`; `provenance.synthetic` absent/false. Asset: `docs/examples/assets/cross-space-dependency/metric.visual.json`. |
-| Exact blocker text from gate | `record-count-below-hero-minimum`; `visual-composition-not-human-accepted` |
+| Exact blocker text from gate | `visual-composition-not-human-accepted` |
 | Minimum evidence target from brief | At least 500 records and at least 2 relations. Required evidence: two native metric spaces, paired records, cross-space dependence diagnostics, linked selection metadata, bridge or edge evidence. |
 | C++ exporter file to change | `examples/engine/cross_space_dependency_visual_export.cpp` |
 | Dataset or deterministic native fixture source | Use `examples/engine/cross_space_dependency.hpp::generate_dataset(count, Coupling::coupled, seed)` as the deterministic native paired-observation source and raise the export count to at least 500 paired observations. Keep the source semantics: event logs on the left, process curves on the right, one shared latent regime only for diagnostics. |
@@ -115,9 +115,9 @@ Gate results:
 
 | Field | Plan |
 | --- | --- |
-| Current counts | `recordCount: 28`, `relationCount: 2`, `recordTypeCount: 1` |
+| Current counts | `recordCount: 512`, `relationCount: 2`, `recordTypeCount: 1` |
 | Native/synthetic status | Native `metric.visual.v1`; `provenance.native_export: true`; `provenance.synthetic` absent/false. Asset: `docs/examples/assets/dynamics-noise/metric.visual.json`. |
-| Exact blocker text from gate | `record-count-below-hero-minimum`; `visual-composition-not-human-accepted` |
+| Exact blocker text from gate | `visual-composition-not-human-accepted` |
 | Minimum evidence target from brief | At least 500 records and at least 1 relation. Required evidence: timeline states, native transition or dynamics relation, propagation field, trajectory records, state-history preview data. |
 | C++ exporter file to change | `examples/engine/finite_metric_dynamics_visual_export.cpp` |
 | Dataset or deterministic native fixture source | Grow `examples/engine/finite_metric_dynamics_fixture.hpp` from the current 28-node S-curve to at least 500 deterministic nodes. The fixture should remain closed-form and reproducible, for example a higher-resolution S-curve or multi-segment low-dimensional manifold with deterministic noise states. |
@@ -131,9 +131,9 @@ Gate results:
 
 | Field | Plan |
 | --- | --- |
-| Current counts | `recordCount: 15`, `relationCount: 2`, `recordTypeCount: 1` |
+| Current counts | `recordCount: 1,000`, `relationCount: 2`, `recordTypeCount: 1` |
 | Native/synthetic status | Native `metric.visual.v1`; `provenance.native_export: true`; `provenance.synthetic` absent/false. Asset: `docs/examples/assets/mapping-dimensionality/metric.visual.json`. |
-| Exact blocker text from gate | `record-count-below-hero-minimum`; `visual-composition-not-human-accepted` |
+| Exact blocker text from gate | `visual-composition-not-human-accepted` |
 | Minimum evidence target from brief | At least 1,000 records and at least 1 relation. Required evidence: source coordinate state, target coordinate state, mapping diagnostics, residual or preservation-error property, record preview payloads. |
 | C++ exporter file to change | `examples/engine/mapping_dimensionality_visual_export.cpp` |
 | Dataset or deterministic native fixture source | The current embedded `process_records()` fixture is too small. Use a deterministic native process-curve fixture with at least 1,000 records, preferably the family/variant generator pattern already present in `examples/engine/relation_matrix_visual_export.cpp` (`family_templates`, `variant_curve`) or a licensed real process-curve corpus if expanded UCR windows become available. The source must include original time-series snippets and family labels. |

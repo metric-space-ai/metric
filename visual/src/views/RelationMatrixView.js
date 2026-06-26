@@ -48,18 +48,18 @@ export class RelationMatrixView extends BaseView {
     this.valueKey = options.valueKey || ["value", "distance", "weight", "score"];
     this.readabilityCellPixels = finiteOption(options.readabilityCellPixels ?? options.smoothingCellPixels, 4.25);
     this.smoothingStrength = finiteOption(options.smoothingStrength ?? options.valueSmoothing, 0.72);
-    this.selectionAlpha = finiteOption(options.selectionAlpha, 0.44);
-    this.selectionCellAlpha = finiteOption(options.selectionCellAlpha, 0.82);
-    this.selectionOutlineAlpha = finiteOption(options.selectionOutlineAlpha, 0.96);
-    this.selectionOutlinePixels = finiteOption(options.selectionOutlinePixels, 1.65);
-    this.focusBackdropAlpha = finiteOption(options.focusBackdropAlpha, 0.3);
-    this.focusBlockAlpha = finiteOption(options.focusBlockAlpha, 0.085);
-    this.blockBandAlpha = finiteOption(options.blockBandAlpha, 0.075);
-    this.blockLineAlpha = finiteOption(options.blockLineAlpha, 0.42);
-    this.blockLineWidthCells = finiteOption(options.blockLineWidthCells, 0.82);
-    this.tileBoundaryAlpha = finiteOption(options.tileBoundaryAlpha, 0.12);
-    this.tileBoundaryWidthCells = finiteOption(options.tileBoundaryWidthCells, 0.36);
-    this.outerBorderAlpha = finiteOption(options.outerBorderAlpha, 0.58);
+    this.selectionAlpha = finiteOption(options.selectionAlpha, 0.54);
+    this.selectionCellAlpha = finiteOption(options.selectionCellAlpha, 0.9);
+    this.selectionOutlineAlpha = finiteOption(options.selectionOutlineAlpha, 1);
+    this.selectionOutlinePixels = finiteOption(options.selectionOutlinePixels, 2.2);
+    this.focusBackdropAlpha = finiteOption(options.focusBackdropAlpha, 0.38);
+    this.focusBlockAlpha = finiteOption(options.focusBlockAlpha, 0.14);
+    this.blockBandAlpha = finiteOption(options.blockBandAlpha, 0.11);
+    this.blockLineAlpha = finiteOption(options.blockLineAlpha, 0.64);
+    this.blockLineWidthCells = finiteOption(options.blockLineWidthCells, 1.15);
+    this.tileBoundaryAlpha = finiteOption(options.tileBoundaryAlpha, 0.2);
+    this.tileBoundaryWidthCells = finiteOption(options.tileBoundaryWidthCells, 0.5);
+    this.outerBorderAlpha = finiteOption(options.outerBorderAlpha, 0.7);
   }
 
   static fromVisualSpace(document, options = {}) {

@@ -55,8 +55,8 @@ export function createRelationMatrixReadabilityProfile(matrix, options = {}) {
       labels: blockRanges.map((range) => range.label).filter(Boolean),
       labeledCount: blockRanges.filter((range) => range.label).length,
       coverage: blockCoverage,
-      shaderRangeLimit: 16,
-      shaderBoundaryLimit: 16,
+      shaderRangeLimit: 32,
+      shaderBoundaryLimit: 32,
     },
     tiles,
     lod: {
