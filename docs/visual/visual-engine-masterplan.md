@@ -189,6 +189,11 @@ Implemented native slices:
   prevent residual/error mapping layers without explicit residual evidence and
   expose `captureHeroFrame(visual, options)` as a top-level public API delegating
   to the surface method
+- screenshot-review gallery generation:
+  `visual/tools/check-hero-screenshot-review.mjs` writes
+  `output/visual/check-hero-screenshot-review/index.html` with the real page and
+  canvas screenshots, visual claims, expected grammars, native-evidence state
+  and open blockers for human review without promoting previews automatically
 
 Known gaps:
 

@@ -1,6 +1,6 @@
 # Hero Screenshot Review Workstream
 
-Status date: 2026-06-25
+Status date: 2026-06-26
 
 ## Scope
 
@@ -18,12 +18,20 @@ that only explicitly reviewed examples are marked as hero-accepted.
 - It accepts the protected GRAE10 reference by default because the native 60k
   evidence and golden visual hash are already enforced.
 - Optional future manual acceptances belong in
-  `docs/visual/hero-screenshot-review.json`.
+  `visual/hero-acceptance.manifest.json`.
+- The gate also writes a static browser-review artifact:
+  `output/visual/check-hero-screenshot-review/index.html`.
+  It lays out page and canvas screenshots with visual claims, primary grammar,
+  native-evidence state and open blockers. This is review evidence only; it
+  does not accept a hero automatically.
 
 ## Verification
 
 - `node --check visual/tools/check-hero-screenshot-review.mjs`
 - `node visual/tools/check-hero-screenshot-review.mjs`
+- generated gallery image-reference check:
+  `output/visual/check-hero-screenshot-review/index.html` references 16
+  existing screenshot images
 
 ## Current Status
 

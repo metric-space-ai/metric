@@ -52,7 +52,7 @@ async function main() {
   }
 
   for (const result of regression.results || []) {
-    const row = await reviewRow(result, accepted);
+    const row = await reviewRow(result, accepted, visualBriefs);
     rows.push(row);
     issues.push(...row.issues);
   }
@@ -87,6 +87,7 @@ async function main() {
     });
   }
 
+  const reviewGallery = join(OUT_DIR, "index.html");
   const report = {
     ok: issues.length === 0,
     generatedAt: new Date().toISOString(),
@@ -100,23 +101,26 @@ async function main() {
     reviewPendingPreviews: rows.filter((row) => row.reviewStatus === "review-pending").map((row) => row.name),
     acceptedHeroCount: rows.filter((row) => row.acceptedByReview).length,
     reviewPendingCount: rows.filter((row) => row.reviewStatus === "review-pending").length,
+    reviewGallery,
     rows,
     issues,
   };
 
   await mkdir(OUT_DIR, { recursive: true });
+  await writeFile(reviewGallery, renderReviewGalleryHtml(report));
   await writeFile(join(OUT_DIR, "results.json"), JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report, null, 2));
   if (!report.ok) process.exitCode = 1;
 }
 
-async function reviewRow(result, accepted) {
+async function reviewRow(result, accepted, visualBriefs = new Map()) {
   const issues = [];
   const status = result.status || {};
   const render = result.render || {};
   const screenshot = render.screenshot || null;
   const canvasScreenshot = render.canvasScreenshot || null;
   const acceptance = accepted.get(result.name) || null;
+  const brief = visualBriefs.get(result.name) || null;
   const acceptedReason = acceptance?.reason || null;
   const heroAccepted = status.heroAccepted === true || status.category === "hero-accepted";
   const acceptedByReview = acceptance != null;
@@ -151,12 +155,218 @@ async function reviewRow(result, accepted) {
     canvasScreenshot,
     screenshotOk,
     canvasScreenshotOk,
+    visualClaim: brief?.visualClaim || null,
+    primaryVisualGrammar: brief?.primaryVisualGrammar || null,
+    expectedPrimaryVisualGrammar: result.grammar?.expected || brief?.expectedPrimaryVisualGrammar || null,
+    requiredPrimitives: Array.isArray(brief?.requiredPrimitives) ? brief.requiredPrimitives.slice() : [],
+    acceptanceBlockers: Array.isArray(brief?.acceptanceBlockers) ? brief.acceptanceBlockers.slice() : [],
     nativeEvidence: result.evidence?.usesNativeEvidence === true || Boolean(result.evidence?.protectedGrae10),
     grammarOk: result.grammar?.ok === true,
     renderOk: render.ok === true,
     regressionOk: result.ok === true,
     issues,
   };
+}
+
+function renderReviewGalleryHtml(report) {
+  const rows = report.rows || [];
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>METRIC Visual Hero Screenshot Review</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f4f3ea;
+      --ink: #20282b;
+      --muted: #667175;
+      --line: #cbd2cb;
+      --accepted: #1d6f55;
+      --pending: #9b5b17;
+      --issue: #9c2f25;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    header {
+      padding: 32px 36px 24px;
+      border-bottom: 1px solid var(--line);
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: 28px;
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+    header p {
+      margin: 0;
+      max-width: 74ch;
+      color: var(--muted);
+    }
+    .summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding: 18px 36px;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .summary strong { color: var(--ink); }
+    main {
+      display: grid;
+      gap: 28px;
+      padding: 28px 36px 44px;
+    }
+    section {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 250, 0.62);
+    }
+    .meta {
+      display: grid;
+      grid-template-columns: minmax(180px, 0.65fr) minmax(260px, 1.35fr);
+      gap: 22px;
+      padding: 22px;
+      border-bottom: 1px solid var(--line);
+    }
+    h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .status.accepted { color: var(--accepted); }
+    .status.pending { color: var(--pending); }
+    .claim {
+      margin: 0 0 12px;
+      max-width: 78ch;
+    }
+    .details {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 18px;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .details b { color: var(--ink); }
+    .blockers {
+      margin: 14px 0 0;
+      padding: 0;
+      list-style: none;
+      color: var(--issue);
+      font-size: 12px;
+    }
+    .blockers li + li { margin-top: 4px; }
+    .shots {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--line);
+    }
+    figure {
+      margin: 0;
+      background: #ecede5;
+    }
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    figcaption {
+      padding: 9px 12px 11px;
+      color: var(--muted);
+      font-size: 12px;
+      border-top: 1px solid var(--line);
+      background: rgba(255, 255, 250, 0.72);
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.94em;
+    }
+    @media (max-width: 900px) {
+      .meta, .shots { grid-template-columns: 1fr; }
+      header, .summary, main { padding-left: 18px; padding-right: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>METRIC Visual Hero Screenshot Review</h1>
+    <p>This artifact is generated from the browser regression screenshots. It is evidence for human review, not automatic hero acceptance.</p>
+  </header>
+  <div class="summary">
+    <span><strong>${escapeHtml(String(report.acceptedHeroCount ?? 0))}</strong> accepted</span>
+    <span><strong>${escapeHtml(String(report.reviewPendingCount ?? 0))}</strong> review pending</span>
+    <span>generated <strong>${escapeHtml(report.generatedAt || "")}</strong></span>
+    <span>regression <code>${escapeHtml(relativeFromRoot(report.regressionReport || ""))}</code></span>
+  </div>
+  <main>
+    ${rows.map(renderReviewRowHtml).join("\n")}
+  </main>
+</body>
+</html>
+`;
+}
+
+function renderReviewRowHtml(row) {
+  const accepted = row.acceptedByReview === true;
+  const blockers = Array.isArray(row.acceptanceBlockers) ? row.acceptanceBlockers : [];
+  return `<section id="${escapeHtml(row.name)}">
+  <div class="meta">
+    <div>
+      <h2>${escapeHtml(row.name)}</h2>
+      <div class="status ${accepted ? "accepted" : "pending"}">${accepted ? "accepted" : "review pending"}</div>
+    </div>
+    <div>
+      <p class="claim">${escapeHtml(row.visualClaim || "No visual claim recorded.")}</p>
+      <div class="details">
+        <span><b>Grammar:</b> ${escapeHtml(row.expectedPrimaryVisualGrammar || row.primaryVisualGrammar || "unknown")}</span>
+        <span><b>View:</b> ${escapeHtml(row.selectedViewKind || "unknown")}</span>
+        <span><b>Runtime layers:</b> ${escapeHtml(String(row.runtimeLayerCount ?? "unknown"))}</span>
+        <span><b>Native evidence:</b> ${row.nativeEvidence ? "yes" : "no"}</span>
+        <span><b>Grammar gate:</b> ${row.grammarOk ? "pass" : "fail"}</span>
+        <span><b>Render gate:</b> ${row.renderOk ? "pass" : "fail"}</span>
+      </div>
+      ${blockers.length ? `<ul class="blockers">${blockers.map((blocker) => `<li>${escapeHtml(blocker)}</li>`).join("")}</ul>` : ""}
+    </div>
+  </div>
+  <div class="shots">
+    ${renderFigure("Page screenshot", row.screenshot, row.screenshotOk)}
+    ${renderFigure("Canvas screenshot", row.canvasScreenshot, row.canvasScreenshotOk)}
+  </div>
+</section>`;
+}
+
+function renderFigure(label, path, ok) {
+  if (!ok || !path) {
+    return `<figure><figcaption>${escapeHtml(label)} missing</figcaption></figure>`;
+  }
+  return `<figure>
+  <img src="${escapeAttribute(relativeAssetPath(path))}" alt="${escapeAttribute(label)}">
+  <figcaption>${escapeHtml(label)}: <code>${escapeHtml(relativeFromRoot(path))}</code></figcaption>
+</figure>`;
+}
+
+function relativeAssetPath(path) {
+  if (!path) return "";
+  const rel = relative(OUT_DIR, resolve(path));
+  return rel.split(/[\\/]/g).map(encodeURIComponent).join("/");
 }
 
 function acceptedMap(manifest, issues) {
@@ -354,6 +564,19 @@ function relativeFromRoot(path) {
   const resolved = resolve(path);
   const rel = relative(ROOT, resolved);
   return rel.startsWith("..") ? resolved : rel;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function escapeAttribute(value) {
+  return escapeHtml(value).replaceAll("`", "&#96;");
 }
 
 function nonEmptyString(value) {

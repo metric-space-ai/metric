@@ -2451,6 +2451,11 @@ Implemented:
   presence.
 - The mapping-motion gate now includes a negative evidence case: a mapping
   without residual property must not create residual/error layers.
+- The hero screenshot review gate now writes
+  `output/visual/check-hero-screenshot-review/index.html`, a static review
+  gallery over the real browser page/canvas screenshots. The gallery includes
+  visual claims, expected grammar, native-evidence state and open blockers. It
+  is review evidence, not automatic hero acceptance.
 
 Verified:
 
@@ -2472,6 +2477,10 @@ Verified:
 - `node visual/tools/check-visual-document.mjs docs/examples/assets/condition-monitoring/metric.visual.json`
 - `node visual/tools/check-visual-document.mjs docs/examples/assets/mapping-dimensionality/metric.visual.json`
 - `node visual/tools/check-visual-performance-large-scenes.mjs`
+- `node --check visual/tools/check-hero-screenshot-review.mjs`
+- `node visual/tools/check-hero-screenshot-review.mjs`
+- generated gallery image-reference check for
+  `output/visual/check-hero-screenshot-review/index.html`
 
 Corrected status:
 
