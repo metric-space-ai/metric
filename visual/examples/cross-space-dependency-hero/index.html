@@ -6,34 +6,137 @@
   <link rel="icon" href="data:,">
   <title>METRIC Visual — Cross-Space Dependency Preview</title>
   <style>
-    :root { color-scheme: light; --ink: #223039; --muted: #54636b; --panel: rgba(245, 248, 244, 0.78); --border: rgba(212, 222, 222, 0.6); }
+    :root {
+      color-scheme: light;
+      --ink: #1e2d32;
+      --muted: #51666b;
+      --panel: rgba(247, 250, 248, 0.84);
+      --panel-strong: rgba(250, 252, 250, 0.92);
+      --border: rgba(176, 197, 197, 0.58);
+      --source: #0f7381;
+      --target: #c9792a;
+    }
     * { box-sizing: border-box; }
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
-    body { background: radial-gradient(circle at 50% 42%, rgba(255, 252, 238, 0.82), rgba(230, 236, 231, 0.96) 62%, #dfe6e1 100%); font: 12px/1.4 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--ink); }
+    body {
+      background:
+        radial-gradient(circle at 50% 42%, rgba(249, 252, 247, 0.78), rgba(229, 238, 235, 0.98) 64%, #d9e5e3 100%);
+      font: 12px/1.4 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+    }
     main { position: fixed; inset: 0; }
     canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
-    .tag { position: absolute; top: 16px; padding: 4px 11px; border-radius: 999px; background: var(--panel); border: 1px solid var(--border); font-weight: 720; font-size: 11.5px; backdrop-filter: blur(10px); }
-    .tag.a { left: 18px; }
-    .tag.b { right: 18px; }
-    .hud { position: absolute; left: 50%; top: 16px; transform: translateX(-50%); max-width: 470px; text-align: center; padding: 11px 15px; border: 1px solid var(--border); border-radius: 13px; background: var(--panel); box-shadow: 0 12px 40px rgba(77, 92, 97, 0.12); backdrop-filter: blur(12px); z-index: 3; }
-    .hud h1 { margin: 0 0 3px; font-size: 14px; font-weight: 700; }
+    .space-band {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 41%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .space-band.a {
+      left: 0;
+      background: linear-gradient(90deg, rgba(15, 115, 129, 0.08), rgba(15, 115, 129, 0.015) 58%, rgba(15, 115, 129, 0));
+      border-right: 1px solid rgba(15, 115, 129, 0.13);
+    }
+    .space-band.b {
+      right: 0;
+      background: linear-gradient(270deg, rgba(201, 121, 42, 0.1), rgba(201, 121, 42, 0.018) 58%, rgba(201, 121, 42, 0));
+      border-left: 1px solid rgba(201, 121, 42, 0.16);
+    }
+    .tag {
+      position: absolute;
+      top: 16px;
+      min-width: 162px;
+      padding: 7px 11px 8px;
+      border-radius: 8px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 32px rgba(63, 82, 82, 0.09);
+      backdrop-filter: blur(10px);
+      z-index: 3;
+    }
+    .tag.a { left: 18px; border-left: 3px solid var(--source); }
+    .tag.b { right: 18px; text-align: right; border-right: 3px solid var(--target); }
+    .tag strong { display: block; font-weight: 760; font-size: 11.5px; letter-spacing: 0; }
+    .tag span { display: block; margin-top: 1px; color: var(--muted); font-size: 10.5px; }
+    .hud {
+      position: absolute;
+      left: 50%;
+      top: 16px;
+      transform: translateX(-50%);
+      max-width: 470px;
+      text-align: center;
+      padding: 11px 15px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--panel-strong);
+      box-shadow: 0 14px 42px rgba(62, 81, 84, 0.12);
+      backdrop-filter: blur(12px);
+      z-index: 3;
+    }
+    .hud h1 { margin: 0 0 3px; font-size: 14px; font-weight: 760; }
     .hud p { margin: 0; color: var(--muted); font-size: 11px; }
     .hud .stat { color: var(--ink); font-variant-numeric: tabular-nums; }
+    .evidence {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 48px;
+      display: grid;
+      grid-template-columns: minmax(120px, 1fr) auto minmax(120px, 1fr);
+      align-items: end;
+      gap: 18px;
+      color: var(--muted);
+      pointer-events: none;
+      z-index: 3;
+    }
+    .evidence .side { display: flex; flex-direction: column; gap: 2px; }
+    .evidence .side.b { align-items: flex-end; text-align: right; }
+    .evidence strong, .pair-chip strong { color: var(--ink); font-weight: 760; font-variant-numeric: tabular-nums; }
+    .evidence span, .pair-chip span { font-size: 10.5px; }
+    .pair-chip {
+      min-width: 250px;
+      padding: 8px 11px;
+      border: 1px solid rgba(137, 165, 166, 0.5);
+      border-radius: 8px;
+      background: rgba(250, 252, 250, 0.74);
+      box-shadow: 0 12px 34px rgba(59, 78, 82, 0.1);
+      backdrop-filter: blur(10px);
+      text-align: center;
+      color: var(--muted);
+    }
     .legend { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; gap: 12px; align-items: center; color: var(--muted); z-index: 3; }
     .legend .ramp { width: 168px; height: 9px; border-radius: 5px; background: linear-gradient(90deg, #1f3a5c, #1f9388, #f0a047, #d94f3a); }
     .loading, .error { position: absolute; inset: 0; display: grid; place-items: center; color: #2a3a3a; z-index: 4; }
     .error { color: #7a2222; }
+    @media (max-width: 760px) {
+      .hud { top: 62px; width: calc(100vw - 28px); }
+      .tag { min-width: 126px; }
+      .evidence { left: 14px; right: 14px; grid-template-columns: 1fr; gap: 7px; bottom: 40px; }
+      .evidence .side, .evidence .side.b { align-items: center; text-align: center; }
+      .pair-chip { min-width: 0; width: 100%; }
+      .legend { bottom: 12px; gap: 8px; }
+      .legend .ramp { width: 118px; }
+    }
   </style>
 </head>
 <body>
   <main>
     <canvas id="scene" aria-label="Paired metric spaces with dependence bridge"></canvas>
-    <div class="tag a">event-log space</div>
-    <div class="tag b">process-curve space</div>
+    <div class="space-band a" aria-hidden="true"></div>
+    <div class="space-band b" aria-hidden="true"></div>
+    <div class="tag a"><strong>event-log space</strong><span>edit-distance finite metric</span></div>
+    <div class="tag b"><strong>process-curve space</strong><span>TWED finite metric</span></div>
     <section class="hud">
       <h1>Cross-space dependency</h1>
       <p>Two native metric spaces over the same paired records are compared as spaces, not forced into one shared coordinate system. Color is exported local dependence contribution. <span class="stat" id="stat"></span></p>
     </section>
+    <div class="evidence" aria-label="Exported cross-space evidence">
+      <div class="side a"><strong id="pairCount">512</strong><span>paired observations</span></div>
+      <div class="pair-chip" id="pairChip"><strong>obs-000 ↔ obs-000</strong><br><span>selected exported bridge evidence</span></div>
+      <div class="side b"><strong id="bridgeCount">96</strong><span>native bridge contributors</span></div>
+    </div>
     <div class="legend"><span>independent</span><div class="ramp"></div><span>dependent</span></div>
     <div class="loading" id="loading">Loading paired-space evidence…</div>
   </main>
@@ -44,6 +147,10 @@
     const canvas = document.getElementById("scene");
     const loading = document.getElementById("loading");
     const stat = document.getElementById("stat");
+    const pairCount = document.getElementById("pairCount");
+    const bridgeCount = document.getElementById("bridgeCount");
+    const pairChip = document.getElementById("pairChip");
+    const selectedRecordId = "obs-000";
 
     try {
       const response = await fetch("../../../docs/examples/assets/cross-space-dependency/metric.visual.json");
@@ -54,6 +161,20 @@
         canvas,
         evidence: document_,
         profileId: "cross-space-dependency-profile",
+        profileOptions: {
+          styleMotion: false,
+          stageOptions: {
+            background: "#eef3f0",
+            focus: { yRatio: 0.46, radiusRatio: 0.34, focusBandRatio: 0.078, blurRadius: 3.3 },
+            postprocess: {
+              postFx: {
+                cameraDof: { amount: 0.48, focusDistance: 8.6, maxBlur: 2.8, focalRange: 0.32 },
+                miniatureFrame: { amount: 0.36, subjectIsolation: 0.28, microContrast: 0.22, stageShadow: 0.24, stageSpotlight: 0.22, edgeFade: 0.06 },
+                vignette: { amount: 0.08, radius: 0.86 },
+              },
+            },
+          },
+        },
       });
       visual.showCrossSpace({
         viewId: "cross-space-paired-view",
@@ -62,6 +183,9 @@
         dependenceProperty: "local-dependence-contribution",
         bridgeRelationId: "cross-space-dependence-bridge-relation",
         bridgeGraphId: "cross-space-dependence-bridges",
+        leftOffset: [-1.42, 0, 0],
+        rightOffset: [1.42, 0, 0],
+        targetRadius: 1.08,
         linkedBrushing: true,
         preview: "paired records",
       });
@@ -87,15 +211,49 @@
       const recordCount = crossSpace?.pairRecords?.length
         ?? crossSpace?.metadata?.contract?.pairCount
         ?? document_.records.length;
+      const bridgeEvidence = document_.diagnostics?.find((entry) => entry.id === "cross-space-bridge-evidence");
+      const selectedValue = exportedRecordPropertyValue(document_, "local-dependence-contribution", selectedRecordId);
+      const bridgeContributorCount = bridgeEvidence?.selected_bridge_count ?? bridgeEvidence?.selectedBridgeCount;
+      pairCount.textContent = new Intl.NumberFormat("en-US").format(recordCount);
+      if (Number.isFinite(Number(bridgeContributorCount))) bridgeCount.textContent = new Intl.NumberFormat("en-US").format(Number(bridgeContributorCount));
+      pairChip.innerHTML = `<strong>${selectedRecordId} ↔ ${selectedRecordId}</strong><br><span>local contribution ${Number(selectedValue).toFixed(3)} from native evidence</span>`;
       document.documentElement.dataset.metricRecordCount = String(recordCount);
+      document.documentElement.dataset.metricSelectedPair = `${selectedRecordId}:${selectedRecordId}`;
+      document.documentElement.dataset.metricSelectedPairValue = Number.isFinite(Number(selectedValue)) ? Number(selectedValue).toFixed(6) : "";
       window.metricCrossSpaceHero = { visual, runtime: visual.runtime, getState: () => visual.getState() };
 
       loading.remove();
+      requestAnimationFrame(() => {
+        visual.runtime.selectPair({
+          relationId: "cross-space-dependence-bridge-relation",
+          relationName: "high-contribution paired-space bridge strength",
+          relationType: "custom",
+          graphId: "cross-space-dependence-bridges",
+          pairSetId: crossSpace?.pairSetId || "cross-space:linked-pairs",
+          rowId: selectedRecordId,
+          columnId: selectedRecordId,
+          value: selectedValue,
+          present: true,
+          properties: [
+            { id: "local-dependence-contribution", label: "local dependence contribution", value: selectedValue },
+          ],
+          sourceSpaceId: "event-log-space",
+          targetSpaceId: "process-curve-space",
+          sourceCoordinateId: "event-log-landmark-3d",
+          targetCoordinateId: "process-curve-landmark-3d",
+        }, { source: "cross-space-acceptance-candidate" });
+      });
       addEventListener("resize", () => { const r = canvas.getBoundingClientRect(); visual.runtime.resize(Math.max(1, Math.floor(r.width)), Math.max(1, Math.floor(r.height))); });
     } catch (error) {
       console.error(error);
       loading.className = "loading error";
       loading.textContent = error instanceof Error ? error.message : String(error);
+    }
+
+    function exportedRecordPropertyValue(document_, propertyId, recordId) {
+      const property = document_?.properties?.find?.((entry) => entry?.id === propertyId);
+      const value = property?.values?.find?.((entry) => String(entry?.record_id ?? entry?.recordId) === String(recordId))?.value;
+      return Number.isFinite(Number(value)) ? Number(value) : 0;
     }
   </script>
 </body>

@@ -164,11 +164,14 @@ function createCommandSurface(document) {
     views: [],
     descriptors: [],
     setLayerDescriptorCalls: 0,
-    setLayerDescriptors(descriptors, layerOptions) {
+    _setLayerDescriptors(descriptors, layerOptions) {
       this.descriptors = descriptors;
       this.layerDescriptorOptions = layerOptions;
       this.setLayerDescriptorCalls += 1;
       return this;
+    },
+    setLayerDescriptors(descriptors, layerOptions) {
+      return this._setLayerDescriptors(descriptors, layerOptions);
     },
     configurePreview(previewOptions) {
       this.previewOptions = previewOptions;

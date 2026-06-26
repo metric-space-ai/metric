@@ -9,7 +9,7 @@
     :root { color-scheme: light; --ink: #223039; --muted: #54636b; }
     * { box-sizing: border-box; }
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
-    body { background: radial-gradient(circle at 48% 42%, rgba(255, 252, 238, 0.82), rgba(230, 236, 231, 0.96) 62%, #dfe6e1 100%); font: 12px/1.4 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--ink); }
+    body { background: radial-gradient(circle at 48% 42%, rgba(249, 252, 246, 0.9), rgba(227, 235, 231, 0.96) 62%, #d9e2de 100%); font: 12px/1.4 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--ink); }
     main { position: fixed; inset: 0; }
     canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
     canvas:active { cursor: grabbing; }
@@ -30,7 +30,7 @@
     <section class="caption" aria-hidden="true">
       <span class="status">Review-pending engine candidate</span>
       <h1>Mapping &amp; dimensionality</h1>
-      <p>Native mapping evidence rendered as a source-to-target coordinate morph. The 3D source state compresses into the parametric 2D target; color and vectors are exported local mapping distortion.</p>
+      <p>Native mapping evidence rendered as a source-to-target coordinate morph. The 3D source state compresses into the parametric 2D target; color and residual vectors expose exported local mapping distortion.</p>
     </section>
     <div class="legend"><span>preserved</span><div class="ramp"></div><span>distorted</span></div>
     <div class="phase" id="phase">source hold</div>
@@ -49,6 +49,21 @@
     const TIMELINE_ID = "mapping-coordinate-morph";
     const RESIDUAL_PROPERTY_ID = "local-mapping-distortion";
     const LABEL_PROPERTY_ID = "process-family";
+    const EVIDENCE_PATH = "../../../docs/examples/assets/mapping-dimensionality/metric.visual.json";
+    const HERO_CAMERA = Object.freeze({
+      fov: 36,
+      target: [0, -0.12, 0.03],
+      yaw: 0.62,
+      pitch: 0.46,
+      radius: 6.35,
+    });
+    const LABEL_MAP = Object.freeze({
+      normal_reference: "normal reference",
+      flat_hold: "flat hold",
+      late_ramp: "late ramp",
+      spike: "spike",
+      early_ramp: "early ramp",
+    });
     const MAPPING_MOTION_TIMING = Object.freeze({
       profile: "source-hold-quick-transition-target-hold",
       sourceHoldMs: 1600,
@@ -78,7 +93,7 @@
           : null;
 
     try {
-      const response = await fetch("../../../docs/examples/assets/mapping-dimensionality/metric.visual.json");
+      const response = await fetch(EVIDENCE_PATH);
       if (!response.ok) throw new Error(`evidence ${response.status}`);
       const nativeDocument = await response.json();
 
@@ -86,6 +101,10 @@
         canvas,
         evidence: nativeDocument,
         profileId: "mapping-dimensionality-hero-profile",
+        runtime: {
+          camera: HERO_CAMERA,
+          controls: { rotateSpeed: 0.0038 },
+        },
       });
       visual.runtime.on("mappingmotionchange", ({ state }) => {
         const progress = Number(state?.progress ?? 0);
@@ -103,13 +122,19 @@
         ...(staticMorph == null ? {} : { progress: staticMorph }),
         morphDurationMs: MAPPING_MOTION_TIMING.totalMs,
         motionTiming: MAPPING_MOTION_TIMING,
-        targetRadius: 1.72,
-        groundScale: 2.0,
-        pointSize: 1.8,
-        labelLift: 0.58,
-        labelOffsetRadius: 0.12,
+        targetRadius: 1.86,
+        groundScale: 2.25,
+        pointSize: 2.12,
+        pointAlpha: 0.95,
+        labelFontSize: 22,
+        labelLift: 0.46,
+        labelOffsetRadius: 0.36,
+        labelMap: LABEL_MAP,
+        residualVectorAlpha: 0.38,
+        residualVectorWidth: 0.72,
         preview: "record",
       });
+      visual.setCamera(HERO_CAMERA);
       const state = visual.getState();
       const layerIds = state.descriptors.map((descriptor) => descriptor.id);
       const residualLayers = state.descriptors.filter((descriptor) => descriptor.metadata?.role === "residual/error");
@@ -123,8 +148,11 @@
       document.documentElement.dataset.metricLayerIds = layerIds.join(",");
       document.documentElement.dataset.metricResidualLayers = residualLayers.map((descriptor) => descriptor.id).join(",");
       document.documentElement.dataset.metricResidualProperty = RESIDUAL_PROPERTY_ID;
+      document.documentElement.dataset.metricEvidencePath = "docs/examples/assets/mapping-dimensionality/metric.visual.json";
+      document.documentElement.dataset.metricResidualChannelName = "residual";
       document.documentElement.dataset.metricRuntimeEvidenceProjection = "native-mapping-evidence";
       document.documentElement.dataset.metricMorphTiming = `${MAPPING_MOTION_TIMING.sourceHoldMs}:${MAPPING_MOTION_TIMING.transitionMs}:${MAPPING_MOTION_TIMING.targetHoldMs}`;
+      document.documentElement.dataset.metricHeroCamera = `${HERO_CAMERA.fov}:${HERO_CAMERA.yaw}:${HERO_CAMERA.pitch}:${HERO_CAMERA.radius}`;
       document.documentElement.dataset.metricMorphProgress = initialProgress.toFixed(3);
       document.documentElement.dataset.metricMorph = staticMorph == null ? MAPPING_MOTION_TIMING.profile : `static-${staticMorph}`;
       window.metricMappingHero = { visual, runtime: visual.runtime, getState: () => visual.getState() };

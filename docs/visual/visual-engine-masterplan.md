@@ -231,9 +231,11 @@ Implemented native slices:
 - project-page gallery status is now explicit: GRAE10/MNIST is the only
   accepted reference, and every other native public scene is labelled
   review-pending until visual acceptance exists
-- condition monitoring and relation-matrix/neighborhood now have concrete
-  review-pending acceptance reports and screenshots under `visual/reports/` and
-  `visual/output/`; neither is promoted to accepted-hero status
+- condition monitoring, mixed records, cross-space dependency,
+  mapping/dimensionality, dynamics/noise and relation-matrix/neighborhood now
+  have concrete review-pending acceptance reports and screenshots under
+  `visual/reports/` and `visual/output/`; none is promoted to accepted-hero
+  status
 - GPU/CPU picking and record/pair preview coverage is documented in
   `docs/visual/reports/gpu-picking-preview-workstream.md`
 
@@ -251,9 +253,9 @@ Known gaps:
   composition. The external UCR process-curve preview remains explicitly blocked
   by source-record count and must not be inflated with synthetic windows.
 - no full visual gallery for every METRIC algorithm family yet
-- mixed records, cross-space dependency, mapping/dimensionality and
-  dynamics/noise still need the same visual-acceptance pass that condition
-  monitoring and relation-matrix/neighborhood now have
+- the six native public preview families now all have visual-acceptance
+  candidate pages/reports, but none has passed manual screenshot acceptance as a
+  public hero
 - relation matrix has native exported evidence and a reusable WebGL readability
   pass with block bands, tile/LOD metadata, block boundaries, row/column/cell
   focus, stronger focus/boundary defaults, explicit block shader capacity and

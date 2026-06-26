@@ -46,10 +46,10 @@ set, and one validation path.
 | `process-curve-descriptor-factory-quarantine.md` | remove process-curve descriptor-factory calls from example/public paths | integrated |
 | `direct-runtime-harness-quarantine.md` | quarantine direct-runtime probes and standalone renderer exports | integrated |
 | `condition-monitoring-visual-acceptance.md` | visual acceptance candidate for native condition monitoring preview | review-pending candidate integrated |
-| `mixed-records-visual-acceptance.md` | visual acceptance candidate for native mixed-record preview | ready to assign |
-| `cross-space-dependency-visual-acceptance.md` | visual acceptance candidate for native cross-space preview | ready to assign |
-| `mapping-dimensionality-visual-acceptance.md` | visual acceptance candidate for native mapping preview | ready to assign |
-| `dynamics-noise-visual-acceptance.md` | visual acceptance candidate for native dynamics preview | ready to assign |
+| `mixed-records-visual-acceptance.md` | visual acceptance candidate for native mixed-record preview | review-pending candidate integrated |
+| `cross-space-dependency-visual-acceptance.md` | visual acceptance candidate for native cross-space preview | review-pending candidate integrated |
+| `mapping-dimensionality-visual-acceptance.md` | visual acceptance candidate for native mapping preview | review-pending candidate integrated |
+| `dynamics-noise-visual-acceptance.md` | visual acceptance candidate for native dynamics preview | review-pending candidate integrated |
 | `relation-matrix-visual-acceptance.md` | visual acceptance candidate for native relation-matrix preview | review-pending candidate integrated |
 | `project-gallery-native-evidence.md` | project-page gallery limited to accepted/native evidence | integrated |
 | `descriptor-injection-hardening.md` | remove public raw descriptor injection escape hatches | integrated |
@@ -58,12 +58,12 @@ set, and one validation path.
 
 ## Next Slots
 
-The current native evidence exporter wave is integrated. The next parallel wave
-starts from reusable engine capabilities, visual grammars and gallery assets,
-not from synthetic data or one-off pages:
+The current native evidence exporter and first visual-acceptance candidate waves
+are integrated. The next parallel wave starts from reusable engine capabilities,
+visual grammars and gallery assets, not from synthetic data or one-off pages:
 
-- assign one visual-acceptance work order per native preview; each work order
-  has a disjoint write set and must keep GRAE10 untouched
+- keep the integrated visual-acceptance candidates review-pending until human
+  screenshot review accepts their composition
 - harden the public command API so examples call semantic commands
 - continue the process-curve preview from the `showProcessCurves` command,
   not from generic matrix/point-cloud fallback code

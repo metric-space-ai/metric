@@ -2678,7 +2678,8 @@ Corrected status:
 - Condition monitoring and relation-matrix/neighborhood are screenshot-ready
   review candidates, not accepted public heroes.
 - Mixed records, cross-space dependency, mapping/dimensionality and
-  dynamics/noise still need their own review-candidate work order.
+  dynamics/noise are addressed by the later "Remaining Visual Acceptance
+  Candidates" checkpoint in this file.
 
 ## Implementation Checkpoint: Render Path Inventory
 
@@ -2709,3 +2710,67 @@ Corrected status:
 - No new public render path was added.
 - The next cleanup tickets are runtime raw-descriptor hardening, optional style
   atlas command wrapping, and DOM-only preview-contract classification.
+
+## Implementation Checkpoint: Remaining Visual Acceptance Candidates
+
+Status date: 2026-06-26
+
+Implemented:
+
+- Mixed records is now a concrete review-pending visual acceptance candidate.
+  It loads only native mixed-record evidence, renders through
+  `showMixedRecords()`, uses typed glyphs plus cross-type relation edges and
+  resolves record/pair previews through the shared native-evidence preview path.
+- Cross-space dependency is now a concrete review-pending visual acceptance
+  candidate. It loads only native paired-space evidence, renders through
+  `showCrossSpace()`, shows separated source/target spaces plus exported bridge
+  evidence and uses shared pair selection/preview.
+- Mapping/dimensionality is now a concrete review-pending visual acceptance
+  candidate. It loads only native mapping evidence, renders through
+  `showMapping()`, uses the exported coordinate morph timeline and residual
+  vectors, and captures deterministic source/transition/target frames.
+- Dynamics/noise is now a concrete review-pending visual acceptance candidate.
+  It loads only native dynamics evidence, renders through `showDynamics()`, uses
+  the exported reverse-reconstruction timeline, trajectory paths, lifted field
+  evidence and the reusable timeline control.
+- The task registry marks `mixed-records-visual-acceptance`,
+  `cross-space-dependency-visual-acceptance`,
+  `mapping-dimensionality-visual-acceptance` and
+  `dynamics-noise-visual-acceptance` as review-pending candidate integrated.
+
+Verified:
+
+- `node visual/tools/check-visual-document.mjs docs/examples/assets/mixed-records/metric.visual.json`
+- `node visual/tools/check-visual-document.mjs docs/examples/assets/cross-space-dependency/metric.visual.json`
+- `node visual/tools/check-visual-document.mjs docs/examples/assets/mapping-dimensionality/metric.visual.json`
+- `node visual/tools/check-visual-document.mjs docs/examples/assets/dynamics-noise/metric.visual.json`
+- `node visual/tools/check-glyph-record-grammar.mjs`
+- `node visual/tools/check-mixed-glyph-geometry.mjs`
+- `node visual/tools/check-cross-space-linked-selection.mjs`
+- `node visual/tools/check-linked-selection-presentation.mjs`
+- `node visual/tools/check-mapping-motion-grammar.mjs`
+- `node visual/tools/check-mapping-frame-screenshots.mjs`
+- `node visual/tools/check-dynamics-motion-grammar.mjs`
+- `node visual/tools/check-dynamics-timeline-control.mjs`
+- `node visual/tools/check-timeline-motion-contract.mjs`
+- `node visual/tools/check-trajectory-path-view.mjs`
+- `node visual/tools/check-views.mjs`
+- `node visual/tools/check-single-render-pipeline.mjs`
+- `node visual/tools/check-hero-grammar-contract.mjs`
+- `node visual/tools/check-public-gallery-evidence.mjs`
+- `node visual/tools/check-grae10-golden.mjs`
+- `node visual/tools/check-visual-regression-public-examples.mjs`
+- `node visual/tools/check-hero-screenshot-review.mjs`
+- `node visual/tools/check-visual-performance-large-scenes.mjs`
+
+Corrected status:
+
+- GRAE10/MNIST remains the only accepted public hero.
+- Condition monitoring, mixed records, cross-space dependency,
+  mapping/dimensionality, dynamics/noise and relation-matrix/neighborhood are
+  review-pending visual candidates, not accepted public heroes.
+- The full public browser regression passes in the main worktree with 8
+  examples and 0 failures.
+- The next acceptance bottleneck is visual curation/manual screenshot review,
+  stricter grammar-specific stress budgets at final hero scale and richer
+  process-curve external evidence, not more synthetic page fixtures.

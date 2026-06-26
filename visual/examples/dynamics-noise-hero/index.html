@@ -6,10 +6,17 @@
   <link rel="icon" href="data:,">
   <title>METRIC Visual — Dynamics &amp; Noise Preview</title>
   <style>
-    :root { color-scheme: light; --ink: #223039; --muted: #54636b; }
+    :root {
+      color-scheme: light;
+      --ink: #20323a;
+      --muted: #53676c;
+      --surface: rgba(238, 244, 241, 0.88);
+      --line: rgba(61, 89, 91, 0.22);
+      --accent: #187f8a;
+    }
     * { box-sizing: border-box; }
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
-    body { background: radial-gradient(circle at 48% 42%, rgba(255, 252, 238, 0.82), rgba(230, 236, 231, 0.96) 62%, #dfe6e1 100%); font: 12px/1.4 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--ink); }
+    body { background: radial-gradient(circle at 48% 42%, rgba(247, 251, 253, 0.94), rgba(226, 238, 243, 0.96) 60%, #d5e5e8 100%); font: 12px/1.4 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--ink); }
     main { position: fixed; inset: 0; }
     canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
     canvas:active { cursor: grabbing; }
@@ -17,16 +24,23 @@
     .caption h1 { margin: 0 0 7px; font-size: 17px; font-weight: 700; }
     .caption p { margin: 0; font-size: 12px; line-height: 1.5; color: rgba(52, 66, 74, 0.82); max-width: 52ch; }
     .legend { position: absolute; left: 26px; bottom: 128px; display: flex; gap: 14px; align-items: center; color: var(--muted); }
-    .legend .ramp { width: 168px; height: 9px; border-radius: 5px; background: linear-gradient(90deg, #1f3a5c, #1f9388, #f0a047, #d94f3a); }
+    .legend .ramp { width: 168px; height: 9px; border-radius: 5px; background: linear-gradient(90deg, #123f64, #1f9388, #dfb24d, #d95543); }
     .phase { position: absolute; right: 24px; bottom: 128px; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; font-size: 10.5px; }
+    .state-readout { position: absolute; right: 24px; top: 24px; display: grid; gap: 6px; min-width: 218px; padding: 13px 14px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); box-shadow: 0 18px 44px rgba(33, 54, 58, 0.08); color: var(--muted); pointer-events: none; }
+    .state-readout .label { color: var(--ink); font-weight: 700; }
+    .state-readout .value { font-size: 18px; line-height: 1.1; color: var(--accent); font-weight: 700; }
+    .state-readout .meta { font-size: 11px; color: rgba(70, 86, 90, 0.84); }
     .loading, .error { position: absolute; inset: 0; display: grid; place-items: center; color: #2a3a3a; }
     .error { color: #7a2222; }
-    .mtrc-timeline-control { bottom: 18px; }
+    .mtrc-timeline-control { bottom: 18px; background: var(--surface); border-color: var(--line); border-radius: 8px; box-shadow: 0 18px 44px rgba(33, 54, 58, 0.1); }
+    .mtrc-timeline-control input[type="range"] { accent-color: var(--accent); }
+    .mtrc-timeline-control button { border-color: rgba(61, 89, 91, 0.2); background: rgba(250, 252, 248, 0.74); }
     @media (max-width: 720px) {
       .caption { left: 18px; top: 18px; max-width: calc(100% - 36px); }
       .legend { left: 18px; right: 18px; bottom: 126px; gap: 10px; }
       .legend .ramp { flex: 1; min-width: 92px; }
       .phase { right: 18px; bottom: 96px; }
+      .state-readout { left: 18px; right: 18px; top: auto; bottom: 154px; min-width: 0; }
     }
   </style>
 </head>
@@ -37,8 +51,13 @@
       <h1>Dynamics &amp; noise</h1>
       <p>Native finite-metric dynamics evidence rendered from exported coordinate states. Forward diffusion and reverse reconstruction are visible as movement over one metric relation structure.</p>
     </section>
-    <div class="legend"><span>settled</span><div class="ramp"></div><span>high cost</span></div>
-    <div class="phase" id="phase">noisy → representatives</div>
+    <div class="legend"><span>low MSE</span><div class="ramp"></div><span>high MSE</span></div>
+    <div class="state-readout" aria-hidden="true">
+      <span class="label" id="state-label">reverse reconstruction</span>
+      <span class="value" id="state-value">MSE loading</span>
+      <span class="meta" id="state-meta">512 paths over exported states</span>
+    </div>
+    <div class="phase" id="phase">noisy to representatives</div>
     <div class="loading" id="loading">Loading native dynamics evidence…</div>
   </main>
 
@@ -48,6 +67,9 @@
     const canvas = document.getElementById("scene");
     const loading = document.getElementById("loading");
     const phaseEl = document.getElementById("phase");
+    const stateLabel = document.getElementById("state-label");
+    const stateValue = document.getElementById("state-value");
+    const stateMeta = document.getElementById("state-meta");
     const params = new URLSearchParams(location.search);
     const flowParam = params.get("flow");
     const staticFlow = flowParam == null ? null : Math.max(0, Math.min(1, Number(flowParam)));
@@ -56,7 +78,9 @@
       const response = await fetch("../../../docs/examples/assets/dynamics-noise/metric.visual.json");
       if (!response.ok) throw new Error(`evidence ${response.status}`);
       const document_ = await response.json();
-      const states = (document_.timelines.find((t) => t.id === "reverse-reconstruction")?.steps || []).map((s) => s.coordinate_id);
+      const timeline = document_.timelines.find((t) => t.id === "reverse-reconstruction");
+      const steps = timeline?.steps || [];
+      const states = steps.map((s) => s.coordinate_id);
 
       const visual = await createMetricVisual({
         canvas,
@@ -66,7 +90,6 @@
       visual.showDynamics({
         timelineId: "reverse-reconstruction",
         field: true,
-        scalarProperty: "best-reconstruction-error",
         preview: "state-history",
         loop: staticFlow == null,
         progress: staticFlow ?? undefined,
@@ -74,14 +97,22 @@
         timelineDurationMs: 14400,
         timelineFieldPropertyId: "reverse-mse-to-clean",
         timelineControl: { root: canvas.parentElement },
-        pathWidth: 3.4,
-        pathAlpha: 0.68,
-        pointSize: 1.7,
+        fieldMode: "lifted",
+        fieldAlpha: 0.46,
+        fieldRadius: 0.18,
+        fieldLift: 0.5,
+        fieldMaterial: { contour: 0.18, glow: 0.14 },
+        pathWidth: 4.1,
+        pathAlpha: 0.72,
+        pointSize: 1.92,
       });
       const state = visual.getState();
       const layerIds = state.descriptors.map((descriptor) => descriptor.id);
       const pathLayers = state.descriptors.filter((descriptor) => descriptor.metadata?.evidenceRole === "trajectory/path");
-      if (staticFlow != null) phaseEl.textContent = staticFlow < 0.2 ? "noisy start" : staticFlow > 0.8 ? "representatives" : "reverse flow";
+      updateStateReadout(staticFlow ?? 0);
+      visual.runtime.on?.("timelinecontrolchange", ({ state: timelineState }) => {
+        updateStateReadout(Number(timelineState?.normalized ?? timelineState?.value ?? 0));
+      });
 
       document.documentElement.dataset.metricDynamicsHero = "ready";
       document.documentElement.dataset.metricRecordCount = String(visual.views[0].recordIds.length);
@@ -95,6 +126,21 @@
 
       loading.remove();
       addEventListener("resize", () => { const r = canvas.getBoundingClientRect(); visual.runtime.resize(Math.max(1, Math.floor(r.width)), Math.max(1, Math.floor(r.height))); });
+
+      function updateStateReadout(progress) {
+        const clamped = Math.max(0, Math.min(1, Number(progress) || 0));
+        const index = Math.round(clamped * Math.max(0, steps.length - 1));
+        const step = steps[index] || steps[0] || {};
+        const mse = Number(step.mse_to_clean);
+        const stepLabel = Number.isFinite(Number(step.index)) ? `Step ${step.index}` : "Step";
+        phaseEl.textContent = clamped < 0.2 ? "noisy start" : clamped > 0.8 ? "representatives" : "reverse flow";
+        stateLabel.textContent = `${stepLabel} - ${step.coordinate_id || "exported state"}`;
+        stateValue.textContent = Number.isFinite(mse) ? `${mse.toFixed(5)} MSE` : "MSE unavailable";
+        stateMeta.textContent = `${steps.length} timeline states - ${visual.views[0].recordIds.length} trajectory paths`;
+        document.documentElement.dataset.metricActiveTimelineStep = String(step.index ?? index);
+        document.documentElement.dataset.metricActiveTimelineCoordinate = step.coordinate_id || "";
+        document.documentElement.dataset.metricActiveTimelineMse = Number.isFinite(mse) ? mse.toFixed(7) : "";
+      }
     } catch (error) {
       console.error(error);
       loading.className = "loading error";

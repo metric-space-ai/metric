@@ -34,7 +34,10 @@
   </main>
 
   <script type="module">
-    import { createMetricVisual } from "../../src/index.js";
+    import {
+      createMetricEvidencePreviewResolver,
+      createMetricVisual,
+    } from "../../src/index.js";
 
     const EVIDENCE_URL = "../../../docs/examples/assets/mixed-records/metric.visual.json";
     const RECORD_TYPE_PROPERTY = "record_type";
@@ -90,20 +93,32 @@
         crossTypeProperty: RECORD_TYPE_PROPERTY,
         crossTypeRelations: true,
         topK: 8,
-        preview: "text image curve table",
-        pointSize: 1.8,
+        preview: "record pair",
+        previewOptions: {
+          panel: {
+            maxFields: 5,
+            resolver: createMetricEvidencePreviewResolver({
+              runtime: visual.runtime,
+              visualSpace: visual.visualSpace,
+              document: document_,
+            }),
+          },
+        },
+        pointSize: 2.05,
         edgeAlpha: 0.30,
         edgeWidth: 0.82,
         material: {
-          pointPixelScale: 18,
-          minPointSize: 7,
-          maxPointSize: 50,
+          pointPixelScale: 20,
+          minPointSize: 8,
+          maxPointSize: 58,
         },
       });
 
       document.documentElement.dataset.metricMixedHero = "ready";
       document.documentElement.dataset.metricRecordCount = String(visual.views[0].recordIds.length);
       document.documentElement.dataset.metricRecordTypes = RECORD_TYPES.join(",");
+      document.documentElement.dataset.metricPreviewPayloadFamilies = Array.from(new Set(document_.records.map((record) => String(record.payload?.kind || "")))).filter(Boolean).sort().join(",");
+      document.documentElement.dataset.metricRelationEdges = String(visual.views[0].graph?.edges?.length || 0);
       document.documentElement.dataset.metricPrimaryGrammar = "MixedRecordView";
       window.metricMixedHero = { visual, runtime: visual.runtime, getState: () => visual.getState() };
 
