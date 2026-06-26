@@ -1,76 +1,73 @@
 # W4 Condition Monitoring Visual Acceptance
 
-Status date: 2026-06-25
+Status date: 2026-06-26
 
 ## Status
 
-Review-pending screenshot candidate, not manually accepted as a public hero.
+Review-pending acceptance candidate, not manually accepted as a public hero.
 
 ## Scope
 
 - Example: `visual/examples/condition-monitoring-hero/index.html`
 - Native evidence: `docs/examples/assets/condition-monitoring/metric.visual.json`
-- Screenshot target: `visual/output/W4-condition-monitoring-hero.png`
-- Engine modules touched: `visual/src/views/ProcessCurveSceneView.js`
-- Check added: `visual/tools/check-condition-monitoring-visual-acceptance.mjs`
+- Screenshot: `visual/output/W4-condition-monitoring-hero.png`
+- Engine module touched: `visual/src/views/ProcessCurveSceneView.js`
+- Condition checks: `visual/tools/check-condition-monitoring-visual-acceptance.mjs`, `visual/tools/check-condition-monitoring-browser.mjs`
 
-The page uses `createMetricVisual()`, `showConditionMonitoring()` and
-`showProcessCurves()`. It does not load page-local `evidence.json`, does not
-compute anomaly, density, regime or time-series values in JavaScript, and keeps
-the result review-pending.
+The page uses `createMetricVisual()` and `showConditionMonitoring()`. It does
+not load page-local `evidence.json`, does not compute anomaly, density, regime
+or time-series values in JavaScript, and remains review-pending.
 
 ## Evidence Summary
 
+- Local URL used: `http://127.0.0.1:8789/visual/examples/condition-monitoring-hero/index.html?verify=1`
 - Native records: 528 process-window records
-- Relations: `condition-monitoring-twed`,
-  `condition-monitoring-transition`
-- Graph: `process-window-trajectory`
-- Coordinate state: `process-state-trajectory-3d`
-- Field property used in the process scene: `metric-anomaly-severity`
+- Native relations: `condition-monitoring-twed`, `condition-monitoring-transition`
+- Native graph: `process-window-trajectory`
+- Target coordinate: `process-state-trajectory-3d`
+- Field property: `metric-anomaly-severity`
 - Label property: `truth-regime`
 - Regimes present: `drift`, `fault`, `normal`, `recovery`, `signature`
 - Preview payload family: exported `time_series` process-window payloads
 
 ## Visual Grammar
 
-- Primary grammar: property field plus process trajectory
-- Primary views: `PropertyFieldView`, `ProcessCurveSceneView`,
-  `TrajectoryPathView`
-- Primary primitives: `HeatFieldLayer`, `CurveRibbonLayer`,
-  `BillboardLabelLayer`
-- Supporting primitives: `GroundProjectionLayer`, `InstancedPointLayer`,
-  `InstancedBoxLayer`
+- Primary grammar: `PropertyFieldView` + `ProcessCurveSceneView` + shared record preview
+- Primary primitives: `HeatFieldLayer`, `CurveRibbonLayer`, `BillboardLabelLayer`
+- Supporting primitives: `GroundProjectionLayer`, `InstancedPointLayer`, `InstancedBoxLayer`
+- Field evidence: `PropertyFieldView` emits `metric-anomaly-severity` with `algorithmicComputation: false`
+- Trajectory evidence: `TrajectoryPathView` emits graph-backed `process-window-trajectory`
+
+## Browser Evidence
+
+`node visual/tools/check-condition-monitoring-browser.mjs` verified:
+
+- `metricConditionHero=ready` and `metricRecordCount=528`
+- 528 preview-indexed process-window records from the process-state coordinate
+- visible `normal`, `drift`, `fault`, and `recovery` regime labels
+- no debug UI selectors present
+- hover target `window-0308` in regime `fault`
+- hover preview visible with a time-series sparkline
+- selection preview for `window-0308` resolves the original `time_series` payload
+- screenshot written to `visual/output/W4-condition-monitoring-hero.png`
 
 ## Validation
 
 Commands run:
 
 ```bash
-node visual/tools/check-condition-monitoring-visual-acceptance.mjs
+node visual/tools/check-visual-document.mjs docs/examples/assets/condition-monitoring/metric.visual.json
+node visual/tools/check-hero-grammar-contract.mjs
 node visual/tools/check-public-gallery-evidence.mjs
+node visual/tools/check-visual-regression-public-examples.mjs
 node visual/tools/check-grae10-golden.mjs
+node visual/tools/check-condition-monitoring-visual-acceptance.mjs
+METRIC_VISUAL_PORT=8789 node visual/tools/check-condition-monitoring-browser.mjs
 ```
 
-Result:
-
-- condition visual acceptance check: pass
-- public gallery evidence gate: pass
-- GRAE10 golden reference: pass
-
-The condition check verified 528 native records, exported anomaly field,
-graph-backed trajectory, five 3D regime labels, and no page-local evidence.
+Result: pass.
 
 ## Remaining Blockers
 
 - Manual screenshot review has not accepted this as a public hero.
-- The native fixture is only slightly above the 500-window minimum, so a larger
-  real process dataset would still be better before public hero promotion.
-
-Status:
-
-- loads: yes
-- renders: yes by specialized descriptor checks
-- interactive: shared record preview path available, manual browser review still
-  pending
-- visually accepted: no
-- complete: no, review-pending
+- The view is intentionally an acceptance candidate only; promotion is still gated by review.

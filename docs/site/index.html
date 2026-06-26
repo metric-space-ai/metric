@@ -174,6 +174,16 @@
         margin-top: 24px;
       }
 
+      .hero-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 16px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 760;
+      }
+
       .hero-visual,
       .visual {
         position: relative;
@@ -270,6 +280,47 @@
         color: color-mix(in oklch, var(--green), var(--ink) 35%);
       }
 
+      .status.pending {
+        border-color: color-mix(in oklch, var(--warm), var(--ink) 20%);
+        color: color-mix(in oklch, var(--warm), var(--ink) 38%);
+      }
+
+      .evidence-row {
+        display: grid;
+        grid-template-columns: minmax(280px, 0.42fr) minmax(320px, 0.58fr);
+        gap: 26px;
+        margin-bottom: 18px;
+        padding: clamp(22px, 3vw, 34px);
+        border: 1px solid color-mix(in oklch, var(--ink), transparent 84%);
+        background: color-mix(in oklch, var(--panel), transparent 3%);
+      }
+
+      .evidence-row h3 {
+        margin-top: 14px;
+        font-size: clamp(28px, 3.4vw, 50px);
+        line-height: 0.98;
+      }
+
+      .evidence-row p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.52;
+      }
+
+      .gallery-group {
+        margin-top: 38px;
+      }
+
+      .gallery-group > h3 {
+        margin: 0 0 18px;
+        color: var(--text);
+        font-size: 18px;
+        font-weight: 900;
+        letter-spacing: 0.10em;
+        text-transform: uppercase;
+      }
+
       .card h3 {
         font-size: clamp(30px, 3.4vw, 52px);
         line-height: 0.98;
@@ -334,6 +385,7 @@
       @media (max-width: 1020px) {
         .hero-copy,
         .section-head,
+        .evidence-row,
         .card,
         .card.accepted,
         .concept-grid {
@@ -393,17 +445,23 @@
         <div class="wrap hero-stage">
           <div class="hero-copy">
             <div>
-              <p class="eyebrow">Finite metric-space computing</p>
+              <p class="eyebrow">MNIST dimension reduction</p>
               <h1>METRIC</h1>
             </div>
             <div>
               <p class="lead">
-                Compare records directly, build the finite metric space, then
-                inspect the relations, fields, mappings and dynamics that follow.
+                60,000 handwritten digits become one finite metric space. The
+                GRAE10 view is a derived coordinate scene, rendered live from
+                METRIC evidence.
               </p>
               <div class="hero-actions">
                 <a class="button primary" href="#gallery">Explore visuals</a>
                 <a class="button" href="../../README.md">Read README</a>
+              </div>
+              <div class="hero-meta">
+                <span>60,000 MNIST records</span>
+                <span>10 digit classes</span>
+                <span>native METRIC evidence</span>
               </div>
               <div class="links" style="margin-top: 16px">
                 <a href="../../examples/engine/mnist_grae10_integrity.cpp">C++ integrity check</a>
@@ -431,218 +489,241 @@ build/core/examples/engine/engine_mnist_grae10_integrity</pre>
           <div class="section-head">
             <div>
               <p class="eyebrow">Visual gallery</p>
-              <h2>Native evidence, rendered live.</h2>
+              <h2>Metric-space visuals with native evidence.</h2>
             </div>
             <p>
-              Each view loads exported METRIC evidence. C++ computes records,
-              relations, properties, mappings and dynamics; the browser renders
-              and inspects the exported document.
+              Each view links the live browser scene, the native C++ export path
+              and the exported METRIC evidence document. MNIST is the current
+              full-scale reference; the other workflows are native previews
+              being hardened into final hero applications.
             </p>
           </div>
 
-          <div class="gallery">
-            <article class="card">
-              <div class="visual">
-                <iframe
-                  title="Condition monitoring native preview"
-                  src="../../visual/examples/condition-monitoring-hero/index.html"
-                  loading="lazy"></iframe>
+          <div class="evidence-row" aria-label="Accepted visual evidence">
+            <div>
+              <span class="status accepted">reference</span>
+              <h3>MNIST dimension reduction</h3>
+            </div>
+            <div>
+              <p>
+                The 60k GRAE10/MNIST scene shown above is the current
+                full-scale reference. It is linked here as evidence, not
+                repeated as a second iframe.
+              </p>
+              <div class="links" style="margin-top: 16px">
+                <a href="../../visual/examples/grae10-metric-engine/index.html">open visual</a>
+                <a href="../../examples/engine/mnist_grae10_integrity.cpp">C++ integrity check</a>
+                <a href="../../docs/examples/mnist-grae10-gallery.md">reference notes</a>
               </div>
-              <div class="card-body">
-                <span class="status">native preview</span>
-                <h3>Condition monitoring</h3>
-                <p>
-                  Process windows become a finite metric space with operating
-                  regimes, anomaly evidence, density structure and trajectory
-                  context.
-                </p>
-                <div class="links">
-                  <a href="../../visual/examples/condition-monitoring-hero/index.html">open visual</a>
-                  <a href="../../examples/engine/condition_monitoring_visual_export.cpp">C++ source</a>
-                  <a href="../../docs/examples/assets/condition-monitoring/metric.visual.json">evidence</a>
+            </div>
+          </div>
+
+          <div class="gallery-group" aria-label="Native evidence previews">
+            <h3>Native evidence previews</h3>
+            <div class="gallery">
+              <article class="card">
+                <div class="visual">
+                  <iframe
+                    title="Condition monitoring native evidence preview"
+                    src="../../visual/examples/condition-monitoring-hero/index.html"
+                    loading="lazy"></iframe>
                 </div>
-                <details>
-                  <summary>C++ export</summary>
-                  <pre>cmake --build build/core --target engine_condition_monitoring_visual_export
+                <div class="card-body">
+                  <span class="status pending">native evidence</span>
+                  <h3>Condition monitoring</h3>
+                  <p>
+                    Process windows become a finite metric space with operating
+                    regimes, anomaly evidence, density structure and trajectory
+                    context.
+                  </p>
+                  <div class="links">
+                    <a href="../../visual/examples/condition-monitoring-hero/index.html">open visual</a>
+                    <a href="../../examples/engine/condition_monitoring_visual_export.cpp">C++ source</a>
+                    <a href="../../docs/examples/assets/condition-monitoring/metric.visual.json">evidence</a>
+                  </div>
+                  <details>
+                    <summary>C++ export</summary>
+                    <pre>cmake --build build/core --target engine_condition_monitoring_visual_export
 build/core/examples/engine/engine_condition_monitoring_visual_export \
   --export-dir docs/examples/assets/condition-monitoring</pre>
-                </details>
-              </div>
-            </article>
-
-            <article class="card">
-              <div class="visual">
-                <iframe
-                  title="Mixed records native preview"
-                  src="../../visual/examples/mixed-record-hero/index.html"
-                  loading="lazy"></iframe>
-              </div>
-              <div class="card-body">
-                <span class="status">native preview</span>
-                <h3>Mixed records</h3>
-                <p>
-                  Typed records keep their source form while relation evidence
-                  connects strings, curves, distributions and structured rows
-                  in one finite-space workflow.
-                </p>
-                <div class="links">
-                  <a href="../../visual/examples/mixed-record-hero/index.html">open visual</a>
-                  <a href="../../examples/engine/mixed_finite_records_visual_export.cpp">C++ source</a>
-                  <a href="../../docs/examples/assets/mixed-records/metric.visual.json">evidence</a>
+                  </details>
                 </div>
-                <details>
-                  <summary>C++ export</summary>
-                  <pre>cmake --build build/core --target engine_mixed_finite_records_visual_export
+              </article>
+
+              <article class="card">
+                <div class="visual">
+                  <iframe
+                    title="Mixed records native evidence preview"
+                    src="../../visual/examples/mixed-record-hero/index.html"
+                    loading="lazy"></iframe>
+                </div>
+                <div class="card-body">
+                  <span class="status pending">native evidence</span>
+                  <h3>Mixed records</h3>
+                  <p>
+                    Typed records keep their source form while relation evidence
+                    connects strings, curves, distributions and structured rows
+                    in one finite-space workflow.
+                  </p>
+                  <div class="links">
+                    <a href="../../visual/examples/mixed-record-hero/index.html">open visual</a>
+                    <a href="../../examples/engine/mixed_finite_records_visual_export.cpp">C++ source</a>
+                    <a href="../../docs/examples/assets/mixed-records/metric.visual.json">evidence</a>
+                  </div>
+                  <details>
+                    <summary>C++ export</summary>
+                    <pre>cmake --build build/core --target engine_mixed_finite_records_visual_export
 build/core/examples/engine/engine_mixed_finite_records_visual_export \
   --export-dir docs/examples/assets/mixed-records</pre>
-                </details>
-              </div>
-            </article>
-
-            <article class="card">
-              <div class="visual">
-                <iframe
-                  title="Cross-space dependency native preview"
-                  src="../../visual/examples/cross-space-dependency-hero/index.html"
-                  loading="lazy"></iframe>
-              </div>
-              <div class="card-body">
-                <span class="status">native preview</span>
-                <h3>Cross-space dependency</h3>
-                <p>
-                  Two paired metric spaces stay separate while linked selection
-                  and dependence evidence show how their record relations move
-                  together.
-                </p>
-                <div class="links">
-                  <a href="../../visual/examples/cross-space-dependency-hero/index.html">open visual</a>
-                  <a href="../../examples/engine/cross_space_dependency_visual_export.cpp">C++ source</a>
-                  <a href="../../docs/examples/assets/cross-space-dependency/metric.visual.json">evidence</a>
+                  </details>
                 </div>
-                <details>
-                  <summary>C++ export</summary>
-                  <pre>cmake --build build/core --target engine_cross_space_dependency_visual_export
+              </article>
+
+              <article class="card">
+                <div class="visual">
+                  <iframe
+                    title="Cross-space dependency native evidence preview"
+                    src="../../visual/examples/cross-space-dependency-hero/index.html"
+                    loading="lazy"></iframe>
+                </div>
+                <div class="card-body">
+                  <span class="status pending">native evidence</span>
+                  <h3>Cross-space dependency</h3>
+                  <p>
+                    Two paired metric spaces stay separate while linked selection
+                    and dependence evidence show how their record relations move
+                    together.
+                  </p>
+                  <div class="links">
+                    <a href="../../visual/examples/cross-space-dependency-hero/index.html">open visual</a>
+                    <a href="../../examples/engine/cross_space_dependency_visual_export.cpp">C++ source</a>
+                    <a href="../../docs/examples/assets/cross-space-dependency/metric.visual.json">evidence</a>
+                  </div>
+                  <details>
+                    <summary>C++ export</summary>
+                    <pre>cmake --build build/core --target engine_cross_space_dependency_visual_export
 build/core/examples/engine/engine_cross_space_dependency_visual_export \
   --export-dir docs/examples/assets/cross-space-dependency</pre>
-                </details>
-              </div>
-            </article>
-
-            <article class="card">
-              <div class="visual">
-                <iframe
-                  title="Mapping and dimensionality native preview"
-                  src="../../visual/examples/mapping-dimensionality-hero/index.html"
-                  loading="lazy"></iframe>
-              </div>
-              <div class="card-body">
-                <span class="status">native preview</span>
-                <h3>Mapping and dimensionality</h3>
-                <p>
-                  A coordinate view is treated as a derived state of a source
-                  metric space, with morph timing and residual evidence showing
-                  what is preserved or distorted.
-                </p>
-                <div class="links">
-                  <a href="../../visual/examples/mapping-dimensionality-hero/index.html">open visual</a>
-                  <a href="../../examples/engine/mapping_dimensionality_visual_export.cpp">C++ source</a>
-                  <a href="../../docs/examples/assets/mapping-dimensionality/metric.visual.json">evidence</a>
+                  </details>
                 </div>
-                <details>
-                  <summary>C++ export</summary>
-                  <pre>cmake --build build/core --target engine_mapping_dimensionality_visual_export
+              </article>
+
+              <article class="card">
+                <div class="visual">
+                  <iframe
+                    title="Mapping and dimensionality native evidence preview"
+                    src="../../visual/examples/mapping-dimensionality-hero/index.html"
+                    loading="lazy"></iframe>
+                </div>
+                <div class="card-body">
+                  <span class="status pending">native evidence</span>
+                  <h3>Mapping and dimensionality</h3>
+                  <p>
+                    A coordinate view is treated as a derived state of a source
+                    metric space, with morph timing and residual evidence showing
+                    what is preserved or distorted.
+                  </p>
+                  <div class="links">
+                    <a href="../../visual/examples/mapping-dimensionality-hero/index.html">open visual</a>
+                    <a href="../../examples/engine/mapping_dimensionality_visual_export.cpp">C++ source</a>
+                    <a href="../../docs/examples/assets/mapping-dimensionality/metric.visual.json">evidence</a>
+                  </div>
+                  <details>
+                    <summary>C++ export</summary>
+                    <pre>cmake --build build/core --target engine_mapping_dimensionality_visual_export
 build/core/examples/engine/engine_mapping_dimensionality_visual_export \
   --export-dir docs/examples/assets/mapping-dimensionality</pre>
-                </details>
-              </div>
-            </article>
-
-            <article class="card">
-              <div class="visual">
-                <iframe
-                  title="Dynamics native preview"
-                  src="../../visual/examples/dynamics-noise-hero/index.html"
-                  loading="lazy"></iframe>
-              </div>
-              <div class="card-body">
-                <span class="status">native preview</span>
-                <h3>Finite dynamics</h3>
-                <p>
-                  Timeline states, transition structure and path evidence make
-                  diffusion and reverse reconstruction visible over the finite
-                  metric space.
-                </p>
-                <div class="links">
-                  <a href="../../visual/examples/dynamics-noise-hero/index.html">open visual</a>
-                  <a href="../../examples/engine/finite_metric_dynamics_visual_export.cpp">C++ source</a>
-                  <a href="../../docs/examples/assets/dynamics-noise/metric.visual.json">evidence</a>
+                  </details>
                 </div>
-                <details>
-                  <summary>C++ export</summary>
-                  <pre>cmake --build build/core --target engine_finite_metric_dynamics_visual_export
+              </article>
+
+              <article class="card">
+                <div class="visual">
+                  <iframe
+                    title="Dynamics native evidence preview"
+                    src="../../visual/examples/dynamics-noise-hero/index.html"
+                    loading="lazy"></iframe>
+                </div>
+                <div class="card-body">
+                  <span class="status pending">native evidence</span>
+                  <h3>Finite dynamics</h3>
+                  <p>
+                    Timeline states, transition structure and path evidence make
+                    diffusion and reverse reconstruction visible over the finite
+                    metric space.
+                  </p>
+                  <div class="links">
+                    <a href="../../visual/examples/dynamics-noise-hero/index.html">open visual</a>
+                    <a href="../../examples/engine/finite_metric_dynamics_visual_export.cpp">C++ source</a>
+                    <a href="../../docs/examples/assets/dynamics-noise/metric.visual.json">evidence</a>
+                  </div>
+                  <details>
+                    <summary>C++ export</summary>
+                    <pre>cmake --build build/core --target engine_finite_metric_dynamics_visual_export
 build/core/examples/engine/engine_finite_metric_dynamics_visual_export \
   --export-dir docs/examples/assets/dynamics-noise</pre>
-                </details>
-              </div>
-            </article>
-
-            <article class="card">
-              <div class="visual">
-                <iframe
-                  title="Relation matrix native preview"
-                  src="../../visual/examples/relation-matrix-neighborhood/index.html"
-                  loading="lazy"></iframe>
-              </div>
-              <div class="card-body">
-                <span class="status">native preview</span>
-                <h3>Relation matrix</h3>
-                <p>
-                  Pair values are evidence in their own right: blocks,
-                  neighborhoods and selected cells connect the matrix back to
-                  records and pair previews.
-                </p>
-                <div class="links">
-                  <a href="../../visual/examples/relation-matrix-neighborhood/index.html">open visual</a>
-                  <a href="../../examples/engine/relation_matrix_visual_export.cpp">C++ source</a>
-                  <a href="../../docs/examples/assets/relation-matrix/metric.visual.json">evidence</a>
+                  </details>
                 </div>
-                <details>
-                  <summary>C++ export</summary>
-                  <pre>cmake --build build/core --target engine_relation_matrix_visual_export
+              </article>
+
+              <article class="card">
+                <div class="visual">
+                  <iframe
+                    title="Relation matrix native evidence preview"
+                    src="../../visual/examples/relation-matrix-neighborhood/index.html"
+                    loading="lazy"></iframe>
+                </div>
+                <div class="card-body">
+                  <span class="status pending">native evidence</span>
+                  <h3>Relation matrix</h3>
+                  <p>
+                    Pair values are evidence in their own right: blocks,
+                    neighborhoods and selected cells connect the matrix back to
+                    records and pair previews.
+                  </p>
+                  <div class="links">
+                    <a href="../../visual/examples/relation-matrix-neighborhood/index.html">open visual</a>
+                    <a href="../../examples/engine/relation_matrix_visual_export.cpp">C++ source</a>
+                    <a href="../../docs/examples/assets/relation-matrix/metric.visual.json">evidence</a>
+                  </div>
+                  <details>
+                    <summary>C++ export</summary>
+                    <pre>cmake --build build/core --target engine_relation_matrix_visual_export
 build/core/examples/engine/engine_relation_matrix_visual_export \
   --export-dir docs/examples/assets/relation-matrix</pre>
-                </details>
-              </div>
-            </article>
-
-            <article class="card">
-              <div class="visual">
-                <iframe
-                  title="External process-curve native preview"
-                  src="../../visual/examples/process-curve-external-hero/index.html"
-                  loading="lazy"></iframe>
-              </div>
-              <div class="card-body">
-                <span class="status">native preview</span>
-                <h3>UCR process curves</h3>
-                <p>
-                  Real process-curve windows are compared as curves. The current
-                  public slice is kept honest as a native preview until the
-                  source-record count is large enough for hero status.
-                </p>
-                <div class="links">
-                  <a href="../../visual/examples/process-curve-external-hero/index.html">open visual</a>
-                  <a href="../../examples/engine/process_curve_external_visual_export.cpp">C++ source</a>
-                  <a href="../../docs/examples/assets/process-curve-external/metric.visual.json">evidence</a>
+                  </details>
                 </div>
-                <details>
-                  <summary>C++ export</summary>
-                  <pre>cmake --build build/core --target engine_process_curve_external_visual_export
+              </article>
+
+              <article class="card">
+                <div class="visual">
+                  <iframe
+                    title="External process-curve native evidence preview"
+                    src="../../visual/examples/process-curve-external-hero/index.html"
+                    loading="lazy"></iframe>
+                </div>
+                <div class="card-body">
+                  <span class="status pending">native evidence</span>
+                  <h3>UCR process curves</h3>
+                  <p>
+                    Real process-curve windows are compared as curves, with
+                    relation evidence and curve previews exported from the native
+                    C++ example.
+                  </p>
+                  <div class="links">
+                    <a href="../../visual/examples/process-curve-external-hero/index.html">open visual</a>
+                    <a href="../../examples/engine/process_curve_external_visual_export.cpp">C++ source</a>
+                    <a href="../../docs/examples/assets/process-curve-external/metric.visual.json">evidence</a>
+                  </div>
+                  <details>
+                    <summary>C++ export</summary>
+                    <pre>cmake --build build/core --target engine_process_curve_external_visual_export
 build/core/examples/engine/engine_process_curve_external_visual_export \
   --export-dir docs/examples/assets/process-curve-external</pre>
-                </details>
-              </div>
-            </article>
+                  </details>
+                </div>
+              </article>
+            </div>
           </div>
         </div>
       </section>

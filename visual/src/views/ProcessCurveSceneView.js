@@ -63,6 +63,8 @@ export class ProcessCurveSceneView extends BaseView {
       labelProperty,
       records: options.records || inputs.records || [],
     };
+    this.recordIds = (options.recordIds || this.inputs.records.map((record) => record.id)).map(String);
+    this.positions = options.positions || processCurvePreviewPositions(targetCoordinate, this.recordIds);
     this.sourceCoordinateId = sourceCoordinateId;
     this.targetCoordinateId = targetCoordinateId;
     this.labelPropertyId = propertyId;
@@ -957,6 +959,21 @@ function matchesDataset(entry, datasetId) {
   if (datasetId == null) return true;
   const entryDataset = entry?.dataset_id ?? entry?.datasetId;
   return entryDataset == null || String(entryDataset) === String(datasetId);
+}
+
+function processCurvePreviewPositions(coordinate, recordIds = []) {
+  const positionsByRecord = new Map((coordinate?.record_positions || []).map((entry) => [String(entry.record_id), entry.position || []]));
+  const positions = new Map();
+  for (const recordId of recordIds) {
+    const position = positionsByRecord.get(String(recordId));
+    if (!position) continue;
+    positions.set(String(recordId), [
+      Number(position[0]) || 0,
+      Number(position[1]) || 0,
+      Number(position[2] ?? position[1]) || 0,
+    ]);
+  }
+  return positions;
 }
 
 function trackColor(index) {

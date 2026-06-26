@@ -218,6 +218,21 @@ footprints collapse, reducing dense-matrix aliasing while keeping block
 boundaries, selected rows/columns/cells and semantic pair picking on the same
 engine path.
 
+### Relation Matrix Graph Grammar Browser Check - 2026-06-26
+
+The relation matrix and native graph grammar was browser-verified on
+`visual/examples/relation-matrix-neighborhood/index.html` with the selected
+native pair `process-curve-aligned-metric: pc-000 -> pc-004`. The semantic
+matrix picker returned native pair evidence with value `1.16831`; hover showed
+the engine pair preview for the row and column records; click updated runtime
+selected-pair state; `RelationMatrixLayer` reported selected row `0`, column
+`4` and active cell selection; and linked selection presentation matched two
+native graph edges in `process-curve-knn` (`pc-000->pc-004:0` and
+`pc-004->pc-000:22`) without deriving graph edges in JavaScript. Diagnostics
+reported matrix dimensions `130 x 130`, missing value count `0`, native graph
+edge count `650`, five named matrix blocks and metric-law diagnostic references
+from the native relation export.
+
 The current follow-up also exposes exported block labels as engine diagnostics,
 not as page-local overlay text. The native process-curve relation matrix now
 reports five named blocks (`normal reference`, `flat hold`, `late ramp`,
