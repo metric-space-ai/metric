@@ -7,6 +7,17 @@ This audit covers the native `metric.visual.v1` exporter wave. Exporters are
 evidence foundations only. Public hero promotion still requires a distinct
 visual grammar, browser screenshot review, and the public gallery evidence gate.
 
+Current status note, 2026-06-26: this earlier audit was superseded by
+`docs/visual/reports/native-exporter-quality-audit-2026-06-26-subagent.md` for
+the newer exporter-contract checks. Those blockers have since been addressed:
+Redif now has native non-synthetic provenance and a public
+`metric.visual.json`, Process-Curve/Solver-Trace emit JSON to stdout by
+default, and Relation-Matrix public evidence is byte-consistent with native
+regeneration. The executable task files are
+`docs/visual/agent-tasks/visual-exporter-cli-contract.md`,
+`docs/visual/agent-tasks/redif-native-public-evidence.md` and
+`docs/visual/agent-tasks/relation-matrix-reproducibility-audit.md`.
+
 ## Scope
 
 | Exporter | Native source |
@@ -15,6 +26,7 @@ visual grammar, browser screenshot review, and the public gallery evidence gate.
 | Mixed finite records | `examples/engine/mixed_finite_records_visual_export.cpp` |
 | Cross-space dependency | `examples/engine/cross_space_dependency_visual_export.cpp` |
 | Finite metric dynamics | `examples/engine/finite_metric_dynamics_visual_export.cpp` |
+| Redif metric dynamics | `examples/engine/redif_metric_dynamics_visual_export.cpp` |
 | Relation matrix | `examples/engine/relation_matrix_visual_export.cpp` |
 | Mapping/dimensionality | `examples/engine/mapping_dimensionality_visual_export.cpp` |
 
@@ -54,12 +66,16 @@ Result: `ok:true`, `total:6`.
 | Mixed finite records | 20 | 1 | 1 | 2 | 8 | 10 | false |
 | Cross-space dependency | 48 | 2 | 2 | 2 | 6 | 3 | false |
 | Finite metric dynamics | 28 | 1 | 2 | 48 | 12 | 25 | false |
+| Redif metric dynamics | 7 | 1 | 1 | 5 | 2 | 1 | false |
 | Relation matrix | 130 | 1 | 1 | 1 | 7 | 1 | false |
 | Mapping/dimensionality | 15 | 2 | 2 | 3 | 7 | 4 | false |
 
 ## Findings
 
-No blocking issues were found in this exporter wave.
+No blocking issues were found in the original six-exporter foundation wave.
+The later exporter-contract audit listed above added blocking follow-ups for
+the newer Redif, Solver-Trace and Process-Curve paths. Those follow-ups are now
+integrated; they remain normal validation gates, not accepted-hero promotion.
 
 - All six exporters compile as C++17 in the existing build.
 - All six exporters write `metric.visual.v1`.
@@ -78,6 +94,24 @@ Follow-up required before public hero promotion:
 - Do not promote an exporter to a public hero until its visual grammar is
   reviewed in-browser against the GRAE10 reference look.
 
+## Large Evidence Artifact Policy
+
+Native `metric.visual.v1` evidence larger than GitHub's warning threshold must
+not be treated as ordinary source churn. For production exports, use one of
+these explicit routes:
+
+- reduce or sample the checked-in public preview while keeping the full native
+  export reproducible from C++;
+- split the evidence into documented generated artifacts;
+- publish the full export through CI/release artifacts;
+- or move the large payload to Git LFS with the policy documented next to the
+  exporter.
+
+The checked-in mapping-dimensionality evidence is currently below the warning
+threshold in this worktree but remains close enough to require this policy for
+future native exports. Redif visual evidence is intentionally small, checked in
+as public native evidence and validated through `redif_visual_export_validate`.
+
 ## Export Writer Reuse Audit
 
 The exporter wave is evidence-valid and now shares the C++ writer foundation.
@@ -88,6 +122,7 @@ The exporter wave is evidence-valid and now shares the C++ writer foundation.
 | `mixed_finite_records_visual_export.cpp` | Migrated: common JSON/document/file writing flows through `mtrc::visual`; exporter keeps domain-specific raw evidence composition |
 | `cross_space_dependency_visual_export.cpp` | Migrated: common JSON/document/file writing flows through `mtrc::visual`; exporter keeps domain-specific raw evidence composition |
 | `finite_metric_dynamics_visual_export.cpp` | Migrated: common object/size/bool/array/root/event/file writing flows through `mtrc::visual`; exporter keeps domain-specific raw evidence composition |
+| `redif_metric_dynamics_visual_export.cpp` | New: native Redif measure paths, entropy, and transport path lengths are computed in C++ and serialized through `mtrc::visual`; JavaScript validation checks evidence consumption only |
 | `mapping_dimensionality_visual_export.cpp` | Migrated: common JSON/root/file writing flows through `mtrc::visual`; exporter keeps domain-specific raw evidence composition |
 | `relation_matrix_visual_export.cpp` | Migrated: local quote/number/object/file stack removed; common writing flows through `mtrc::visual`; graph keeps raw source/target/value semantics |
 

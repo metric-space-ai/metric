@@ -290,6 +290,11 @@ Known gaps:
 - performance gates exist for large point-cloud workloads and all seven current
   public preview grammar rows; matrix, graph, field, glyph, dynamics and mapping
   still need stricter stress-size budgets at realistic final hero evidence sizes
+- exporter-contract hardening is integrated for Process-Curve, Solver-Trace,
+  Redif and relation-matrix evidence. The completed work is tracked in
+  `docs/visual/agent-tasks/visual-exporter-cli-contract.md`,
+  `docs/visual/agent-tasks/redif-native-public-evidence.md` and
+  `docs/visual/agent-tasks/relation-matrix-reproducibility-audit.md`.
 
 It must help users inspect:
 

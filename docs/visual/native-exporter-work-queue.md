@@ -22,6 +22,7 @@ node visual/tools/check-views.mjs
 node visual/tools/check-visual-regression-public-examples.mjs
 node visual/tools/check-visual-performance-large-scenes.mjs
 node visual/tools/check-visual-document.mjs <exported metric.visual.json>
+node visual/tools/check-redif-visual-export.mjs <redif metric.visual.json>
 ctest --test-dir build/core -R 'visual_(export|validate)' --output-on-failure
 ctest --test-dir build/core -L 'metric_application_evidence|metric_diffusion_coordinate_pipeline|metric_mnist|metric_visual_integrity|metric_benchmark_report' --output-on-failure
 ```
@@ -36,7 +37,9 @@ ctest --test-dir build/core -L 'metric_application_evidence|metric_diffusion_coo
 | Relation matrix exporter | `examples/engine/relation_matrix_visual_export.cpp` | integrated in CMake/CTest | `docs/examples/assets/relation-matrix/metric.visual.json` |
 | Condition monitoring exporter | `examples/engine/condition_monitoring_visual_export.cpp` | integrated in CMake/CTest | `docs/examples/assets/condition-monitoring/metric.visual.json` |
 | Mapping/dimensionality exporter | `examples/engine/mapping_dimensionality_visual_export.cpp` | integrated in CMake/CTest | `docs/examples/assets/mapping-dimensionality/metric.visual.json` |
-| Process-curve external exporter | `examples/engine/process_curve_external_visual_export.cpp` | integrated in CMake/CTest; preview-only; blocked for hero scale until more real UCR source windows are available | `docs/examples/assets/process-curve-external/metric.visual.json` |
+| Process-curve external exporter | `examples/engine/process_curve_external_visual_export.cpp` | integrated in CMake/CTest; stdout/file-output contract normalized; preview-only; blocked for hero scale until more real UCR source windows are available | `docs/examples/assets/process-curve-external/metric.visual.json` |
+| Solver-trace exporter | `examples/engine/solver_trace_visual_export.cpp` | integrated in CMake/CTest; stdout/file-output contract normalized | `docs/examples/assets/solver-trace/metric.visual.json` |
+| Redif metric dynamics exporter | `examples/engine/redif_metric_dynamics_visual_export.cpp` | integrated in CMake/CTest; native non-synthetic public asset and checker enforced | `docs/examples/assets/redif-metric-dynamics/metric.visual.json` |
 
 ## Integrated Exporter Tests
 
@@ -54,7 +57,8 @@ hero visualization is finished.
 
 Integrated native exporter coverage now includes mixed records, cross-space
 dependency, finite metric dynamics, relation matrix, condition monitoring,
-mapping/dimensionality evidence, and the external UCR process-curve evidence.
+mapping/dimensionality evidence, external UCR process-curve evidence,
+solver-trace evidence and Redif metric-dynamics evidence.
 
 `visual/tools/check-native-hero-evidence-scale.mjs` now checks those native
 assets directly against the public visual briefs before browser screenshot
@@ -80,6 +84,21 @@ padding. The exact current blocker is
 ```text
 docs/visual/reports/process-curve-external-scale-exporter.md
 ```
+
+The most recent exporter quality follow-up is tracked in:
+
+```text
+docs/visual/reports/native-exporter-quality-audit-2026-06-26-subagent.md
+docs/visual/agent-tasks/visual-exporter-cli-contract.md
+docs/visual/agent-tasks/redif-native-public-evidence.md
+docs/visual/agent-tasks/relation-matrix-reproducibility-audit.md
+```
+
+This follow-up is not visual polish. It is part of the evidence-library
+contract. Current state: Process-Curve, Solver-Trace, Redif and Relation-Matrix
+all produce parseable visual evidence by default; Redif is no longer labelled
+synthetic; and the checked Relation-Matrix public asset is reproducible from the
+native exporter.
 
 Scale-up implementation contracts for the native preview families are tracked
 in:
@@ -115,6 +134,9 @@ Current status:
 - Exporters may still use raw `visual::object(...)` composition for
   domain-specific evidence shapes that should not be flattened into generic
   helper methods.
+- Default exporter CLI behavior is normalized across the newer Process-Curve,
+  Solver-Trace and Redif exporters: no arguments mean JSON on stdout; file
+  writes require explicit output arguments.
 
 Future exporter changes should keep one exporter per worker and disjoint write
 scopes.

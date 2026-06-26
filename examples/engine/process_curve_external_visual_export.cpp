@@ -777,20 +777,24 @@ int main(int argc, char **argv)
 	}
 
 	auto doc = build_document(domains);
-	const auto output = export_json.empty()
-							? std::filesystem::path(export_dir.empty()
-														? "docs/examples/assets/process-curve-external/metric.visual.json"
-														: (std::filesystem::path(export_dir) / "metric.visual.json"))
-							: std::filesystem::path(export_json);
-	std::filesystem::create_directories(output.parent_path());
+	if (export_dir.empty() && export_json.empty()) {
+		std::cout << doc.to_json() << "\n";
+		return 0;
+	}
+
+	const auto output = export_json.empty() ? (std::filesystem::path(export_dir) / "metric.visual.json")
+											: std::filesystem::path(export_json);
+	if (!output.parent_path().empty()) {
+		std::filesystem::create_directories(output.parent_path());
+	}
 	if (!doc.write_file(output)) {
 		throw std::runtime_error("unable to write metric.visual.json: " + output.string());
 	}
 
-	std::cout << "process curve external visual export = " << output.string() << "\n";
-	std::cout << "process curve external visual source records = " << all_source_records(domains).size() << "\n";
-	std::cout << "process curve external visual query records = " << query_records_count(domains) << "\n";
-	std::cout << "process curve external visual relation pairs = "
+	std::cerr << "process curve external visual export = " << output.string() << "\n";
+	std::cerr << "process curve external visual source records = " << all_source_records(domains).size() << "\n";
+	std::cerr << "process curve external visual query records = " << query_records_count(domains) << "\n";
+	std::cerr << "process curve external visual relation pairs = "
 			  << all_source_records(domains).size() * all_source_records(domains).size() << "\n";
 	return 0;
 }

@@ -534,30 +534,50 @@ auto build_visual_document() -> std::string
 						{"diagnostics", visual::array_of(diagnostics)}});
 }
 
-auto export_dir_from_args(int argc, char **argv) -> std::filesystem::path
+struct CliOptions {
+	std::filesystem::path export_dir;
+	bool write_file{};
+};
+
+auto cli_options_from_args(int argc, char **argv) -> CliOptions
 {
-	std::filesystem::path export_dir = "docs/examples/assets/solver-trace";
+	CliOptions options;
 	for (int index = 1; index < argc; ++index) {
 		const std::string arg = argv[index];
-		if (arg == "--export-dir" && index + 1 < argc) {
-			export_dir = argv[++index];
+		if (arg == "--export-dir") {
+			options.write_file = true;
+			if (index + 1 >= argc) {
+				return options;
+			}
+			options.export_dir = argv[++index];
 		} else if (arg.rfind("--export-dir=", 0) == 0) {
-			export_dir = arg.substr(std::string("--export-dir=").size());
+			options.export_dir = arg.substr(std::string("--export-dir=").size());
+			options.write_file = true;
 		}
 	}
-	return export_dir;
+	return options;
 }
 
 } // namespace
 
 auto main(int argc, char **argv) -> int
 {
-	const auto export_dir = export_dir_from_args(argc, argv);
+	const auto options = cli_options_from_args(argc, argv);
 	const auto document = build_visual_document();
-	if (!visual::write_metric_visual_file(export_dir, document)) {
-		std::cerr << "failed to write metric.visual.json to " << export_dir << "\n";
+	if (!options.write_file) {
+		std::cout << document << "\n";
+		return 0;
+	}
+
+	if (options.export_dir.empty()) {
+		std::cerr << "--export-dir requires a directory\n";
 		return 1;
 	}
-	std::cout << "wrote " << (export_dir / "metric.visual.json") << "\n";
+
+	if (!visual::write_metric_visual_file(options.export_dir, document)) {
+		std::cerr << "failed to write metric.visual.json to " << options.export_dir << "\n";
+		return 1;
+	}
+	std::cerr << "wrote " << (options.export_dir / "metric.visual.json") << "\n";
 	return 0;
 }

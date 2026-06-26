@@ -122,6 +122,10 @@ target_link_libraries(engine_finite_metric_dynamics PRIVATE ${METRIC_TARGET_NAME
 add_executable(engine_finite_metric_dynamics_visual_export finite_metric_dynamics_visual_export.cpp)
 target_link_libraries(engine_finite_metric_dynamics_visual_export PRIVATE ${METRIC_TARGET_NAME})
 
+add_executable(engine_redif_metric_dynamics_visual_export redif_metric_dynamics_visual_export.cpp)
+target_link_libraries(engine_redif_metric_dynamics_visual_export PRIVATE ${METRIC_TARGET_NAME})
+target_include_directories(engine_redif_metric_dynamics_visual_export PRIVATE ${CMAKE_SOURCE_DIR}/visual/cpp)
+
 add_executable(engine_mixed_finite_records mixed_finite_records.cpp)
 target_link_libraries(engine_mixed_finite_records PRIVATE ${METRIC_TARGET_NAME})
 
@@ -193,6 +197,10 @@ if (BUILD_TESTING)
         COMMAND engine_finite_metric_dynamics_visual_export
             --export-dir ${CMAKE_CURRENT_BINARY_DIR}/visual_exports/finite_metric_dynamics
     )
+    add_test(NAME example_engine_redif_metric_dynamics_visual_export
+        COMMAND engine_redif_metric_dynamics_visual_export
+            --export-dir ${CMAKE_CURRENT_BINARY_DIR}/visual_exports/redif_metric_dynamics
+    )
     add_test(NAME example_engine_relation_matrix_visual_export
         COMMAND engine_relation_matrix_visual_export
             --export-dir ${CMAKE_CURRENT_BINARY_DIR}/visual_exports/relation_matrix
@@ -226,6 +234,11 @@ if (BUILD_TESTING)
             COMMAND ${METRIC_NODE_EXECUTABLE}
                 ${CMAKE_SOURCE_DIR}/visual/tools/check-visual-document.mjs
                 ${CMAKE_CURRENT_BINARY_DIR}/visual_exports/finite_metric_dynamics/metric.visual.json
+        )
+        add_test(NAME redif_visual_export_validate
+            COMMAND ${METRIC_NODE_EXECUTABLE}
+                ${CMAKE_SOURCE_DIR}/visual/tools/check-redif-visual-export.mjs
+                ${CMAKE_CURRENT_BINARY_DIR}/visual_exports/redif_metric_dynamics/metric.visual.json
         )
         add_test(NAME example_engine_relation_matrix_visual_validate
             COMMAND ${METRIC_NODE_EXECUTABLE}
@@ -265,6 +278,10 @@ if (BUILD_TESTING)
             PROPERTIES DEPENDS example_engine_finite_metric_dynamics_visual_export
         )
         set_tests_properties(
+            redif_visual_export_validate
+            PROPERTIES DEPENDS example_engine_redif_metric_dynamics_visual_export
+        )
+        set_tests_properties(
             example_engine_relation_matrix_visual_validate
             PROPERTIES DEPENDS example_engine_relation_matrix_visual_export
         )
@@ -301,6 +318,7 @@ if (BUILD_TESTING)
         example_engine_mixed_finite_records_visual_export
         example_engine_cross_space_dependency_visual_export
         example_engine_finite_metric_dynamics_visual_export
+        example_engine_redif_metric_dynamics_visual_export
         example_engine_relation_matrix_visual_export
         example_engine_mapping_dimensionality_visual_export
         example_engine_solver_trace_visual_export
@@ -313,6 +331,7 @@ if (BUILD_TESTING)
             example_engine_mixed_finite_records_visual_validate
             example_engine_cross_space_dependency_visual_validate
             example_engine_finite_metric_dynamics_visual_validate
+            redif_visual_export_validate
             example_engine_relation_matrix_visual_validate
             example_engine_mapping_dimensionality_visual_validate
             example_engine_process_curve_external_visual_validate

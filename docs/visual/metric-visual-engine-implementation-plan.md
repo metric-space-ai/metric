@@ -142,6 +142,18 @@ regression gate, but still need screenshot acceptance and stronger public
 evidence where the current native fixture is too small to prove application
 value.
 
+The integrated exporter-contract wave is tracked in:
+
+```text
+docs/visual/agent-tasks/visual-exporter-cli-contract.md
+docs/visual/agent-tasks/redif-native-public-evidence.md
+docs/visual/agent-tasks/relation-matrix-reproducibility-audit.md
+```
+
+These tasks are prerequisites for further hero promotion. They make exporter
+output predictable, keep Redif native evidence from being labelled synthetic,
+and keep public relation-matrix assets reproducible from C++.
+
 ## Goal
 
 METRIC Visual must provide a simple, reusable API for metric-space data

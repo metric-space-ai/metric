@@ -52,9 +52,12 @@ set, and one validation path.
 | `dynamics-noise-visual-acceptance.md` | visual acceptance candidate for native dynamics preview | review-pending candidate integrated |
 | `relation-matrix-visual-acceptance.md` | visual acceptance candidate for native relation-matrix preview | review-pending candidate integrated |
 | `process-curve-external-scale-exporter.md` | scale external process-curve preview only with real licensed source windows | blocked: missing real source windows |
-| `native-provenance-command-contract-hardening.md` | harden explicit native provenance and public command coverage | ready to assign |
-| `evidence-strictness-trajectory-property-residual.md` | prevent record-order, scalar-default and residual fallback evidence claims | ready to assign |
-| `project-site-visual-portfolio-redesign.md` | reshape project page as visual-first native evidence portfolio | ready to assign |
+| `native-provenance-command-contract-hardening.md` | harden explicit native provenance and public command coverage | integrated |
+| `evidence-strictness-trajectory-property-residual.md` | prevent record-order, scalar-default and residual fallback evidence claims | integrated |
+| `project-site-visual-portfolio-redesign.md` | reshape project page as visual-first native evidence portfolio | integrated |
+| `visual-exporter-cli-contract.md` | make Process-Curve and Solver-Trace exporters emit JSON on stdout by default | integrated |
+| `redif-native-public-evidence.md` | make Redif visual evidence native, non-synthetic, published and checker-enforced | integrated |
+| `relation-matrix-reproducibility-audit.md` | normalize or document relation-matrix export reproducibility | integrated |
 | `project-gallery-native-evidence.md` | project-page gallery limited to accepted/native evidence | integrated |
 | `descriptor-injection-hardening.md` | remove public raw descriptor injection escape hatches | integrated |
 | `mnist-babyplot-quarantine.md` | remove old Babyplots/Babylon MNIST standalone renderer from active examples | integrated |
@@ -72,6 +75,13 @@ visual grammars and gallery assets, not from synthetic data or one-off pages:
   source windows; if the current CSV assets are insufficient, record the exact
   data blocker instead of inflating the preview synthetically
 - keep the public command API gate green so examples call semantic commands
+- keep the integrated exporter CLI contract green: native visual exporters emit
+  `metric.visual.v1` JSON to stdout by default and write files only through an
+  explicit file-output argument
+- keep Redif visual evidence native, non-synthetic and checker-enforced before
+  any Redif preview is promoted
+- keep relation-matrix public assets reproducible from the native exporter
+  without hidden patches
 - continue the process-curve preview from the `showProcessCurves` command,
   not from generic matrix/point-cloud fallback code
 - consolidate native exporter writer code through `visual/cpp/mtrc_visual.hpp`

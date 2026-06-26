@@ -9,6 +9,26 @@ runtime, examples, site, tests, or existing report files. Temporary export
 outputs were written under `/tmp/metric-native-export-audit.w1OyJB` and default
 stdout tests under `/tmp/metric-native-export-default.HUMcbk`.
 
+## Resolution Status
+
+The blocking exporter-contract findings from this audit have been addressed in
+the current branch:
+
+- Process-Curve, Solver-Trace and Redif now emit complete `metric.visual.v1`
+  JSON to stdout by default and write files only through explicit output
+  arguments.
+- Redif now carries native, non-synthetic provenance and has a published
+  `docs/examples/assets/redif-metric-dynamics/metric.visual.json` asset.
+- `visual/tools/check-redif-visual-export.mjs` now rejects synthetic Redif
+  evidence and requires explicit native provenance.
+- Relation-Matrix public evidence was regenerated from the native exporter and
+  is byte-consistent with stdout regeneration. The reproducibility details are
+  recorded in
+  `docs/visual/reports/relation-matrix-reproducibility-audit.md`.
+
+The remaining process-curve item is not an exporter-contract failure; it is the
+known source-record scale blocker for public hero promotion.
+
 ## Executive Summary
 
 Blocking issues:
