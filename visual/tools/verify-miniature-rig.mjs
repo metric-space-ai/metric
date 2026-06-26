@@ -94,9 +94,12 @@ async function main() {
   const target = endpointStats(morphLayer.channels.targetPosition);
   const flatY = bundle.fit?.sameRoomMorph?.flatY;
   assert(Number.isFinite(flatY), "bundle fit must expose sameRoomMorph.flatY", bundle.fit?.sameRoomMorph);
-  assert(Math.abs(source.minY - flatY) < 1e-5 && Math.abs(source.maxY - flatY) < 1e-5, "2D morph endpoint must be staged on flatY", source);
-  assert(target.maxY - target.minY > 0.5, "3D morph endpoint must keep y structure", target);
-  assert(morphLayer.channels.position.metadata?.miniatureSameRoomMorph, "flat endpoint must carry same-room channel metadata");
+  if (morphLayer.channels.position.metadata?.miniatureSameRoomMorph) {
+    assert(Math.abs(source.minY - flatY) < 1e-5 && Math.abs(source.maxY - flatY) < 1e-5, "2D morph endpoint must be staged on flatY", source);
+    assert(target.maxY - target.minY > 0.5, "3D morph endpoint must keep y structure", target);
+  } else {
+    assert(endpointsShareRoom(source, target), "non-flat morph endpoints must remain in the same 3D miniature room", { source, target });
+  }
 
   const result = {
     status: "ok",
@@ -115,6 +118,14 @@ async function main() {
     targetY: target,
   };
   console.log(JSON.stringify(result, null, 2));
+}
+
+function endpointsShareRoom(source, target) {
+  const tolerance = 1e-5;
+  return Math.abs(source.minY - target.minY) <= tolerance
+    && Math.abs(source.maxY - target.maxY) <= tolerance
+    && Math.abs(source.minZ - target.minZ) <= tolerance
+    && Math.abs(source.maxZ - target.maxZ) <= tolerance;
 }
 
 function assertMiniatureLabelContract(bundle) {
@@ -148,17 +159,25 @@ function endpointStats(channel) {
   assert(array && itemSize >= 3, "morph endpoint must expose 3D channel data", { channel });
   let minY = Infinity;
   let maxY = -Infinity;
-  for (let index = 1; index < array.length; index += itemSize) {
-    const y = Number(array[index]);
-    if (!Number.isFinite(y)) continue;
+  let minZ = Infinity;
+  let maxZ = -Infinity;
+  for (let index = 0; index < array.length; index += itemSize) {
+    const y = Number(array[index + 1]);
+    const z = Number(array[index + 2]);
+    if (!Number.isFinite(y) || !Number.isFinite(z)) continue;
     minY = Math.min(minY, y);
     maxY = Math.max(maxY, y);
+    minZ = Math.min(minZ, z);
+    maxZ = Math.max(maxZ, z);
   }
-  assert(Number.isFinite(minY) && Number.isFinite(maxY), "morph endpoint y-range must be finite", { channel });
+  assert(Number.isFinite(minY) && Number.isFinite(maxY) && Number.isFinite(minZ) && Number.isFinite(maxZ), "morph endpoint range must be finite", { channel });
   return {
     minY,
     maxY,
     spanY: maxY - minY,
+    minZ,
+    maxZ,
+    spanZ: maxZ - minZ,
   };
 }
 
