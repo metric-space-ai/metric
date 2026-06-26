@@ -135,6 +135,7 @@ export class RelationMatrixView extends BaseView {
     };
     descriptor.metadata = {
       ...descriptor.metadata,
+      role: "primary-relation-matrix",
       relationType: this.relationType,
       relationId: this.relationId,
       relationName: this.relation?.name || null,

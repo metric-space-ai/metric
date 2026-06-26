@@ -808,6 +808,13 @@ async function checkExample(browser, baseUrl, name) {
       readability: runtime.state?.relationMatrixReadability || [],
     });
   }
+  if (name === "relation-matrix-neighborhood" && !hasRelationMatrixNeighborhoodRoles(runtime.state)) {
+    issues.push({
+      code: "relation-matrix-semantic-roles-missing",
+      roles: runtime.state?.descriptorRoles || [],
+      primitives: runtime.state?.descriptorPrimitives || [],
+    });
+  }
   if (name === "mapping-dimensionality-hero" && !hasNativeMappingResidualLayer(runtime.state)) {
     issues.push({
       code: "mapping-residual-error-grammar-missing",
@@ -897,6 +904,13 @@ function hasReadableRelationMatrixBlocks(runtimeState) {
     matrix.tileCount > 0 &&
     matrix.tileSummarySource === "exported-relation-texture-downsample"
   ));
+}
+
+function hasRelationMatrixNeighborhoodRoles(runtimeState) {
+  const roles = new Set(runtimeState?.descriptorRoles || []);
+  return roles.has("primary-relation-matrix") &&
+    roles.has("neighborhood-graph-nodes") &&
+    roles.has("neighborhood-graph-edges");
 }
 
 function hasNativeMappingResidualLayer(runtimeState) {

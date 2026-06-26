@@ -144,7 +144,10 @@ export class NeighborhoodGraphView extends BaseView {
         scalarValues: this.scalarValues,
         size: this.size,
         shape: "sphere",
-        metadata: this.metadata,
+        metadata: {
+          ...this.metadata,
+          role: this.metadata.role || "neighborhood-graph-nodes",
+        },
       });
       descriptors.push(...point.toLayerDescriptors());
     }
@@ -155,6 +158,15 @@ export class NeighborhoodGraphView extends BaseView {
       viewKind: this.kind,
       relationId: this.relationId,
       graphId: this.graph?.id || edges.source?.graphId || null,
+      role: "neighborhood-graph-edges",
+    };
+    edges.metadata = {
+      ...edges.metadata,
+      role: "neighborhood-graph-edges",
+      composition: {
+        ...(edges.metadata?.composition || {}),
+        role: "supporting-neighborhood-graph",
+      },
     };
     descriptors.push(edges);
     return descriptors;

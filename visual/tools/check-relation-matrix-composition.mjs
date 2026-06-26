@@ -51,10 +51,16 @@ assert(primitives.has("RelationMatrixLayer"), "descriptors include RelationMatri
 assert(primitives.has("RelationEdgeLayer"), "descriptors include RelationEdgeLayer");
 assert(primitives.has("InstancedPointLayer"), "descriptors include InstancedPointLayer");
 
+const roles = new Set(surface.descriptors.map((descriptor) => descriptor.metadata?.role || descriptor.source?.role).filter(Boolean));
+assert(roles.has("primary-relation-matrix"), "matrix descriptor exposes its primary semantic role");
+assert(roles.has("neighborhood-graph-nodes"), "graph node descriptor exposes its semantic role");
+assert(roles.has("neighborhood-graph-edges"), "graph edge descriptor exposes its semantic role");
+
 const matrixDescriptor = surface.descriptors.find((descriptor) => descriptor.primitive === "RelationMatrixLayer");
 assert(matrixDescriptor, "matrix descriptor is present");
 assert.deepEqual(matrixDescriptor.geometry.rect, MATRIX_RECT);
 assert.equal(matrixDescriptor.metadata.matrix.size, 130);
+assert.equal(matrixDescriptor.metadata.role, "primary-relation-matrix");
 assert.equal(matrixDescriptor.metadata.composition.role, "primary-relation-matrix");
 assert.equal(matrixDescriptor.metadata.selectionModel.previewPlacement.strategy, "avoid-matrix-center");
 
