@@ -79,6 +79,15 @@ const VISIBLE_FORBIDDEN = [
   ["intent", /\bintent\b/i],
   ["should", /\bshould\b/i],
   ["will", /\bwill\b/i],
+  ["relative path", /\.\.\//],
+  ["local absolute path", /\/Users\//],
+  ["repo docs path", /\bdocs\//],
+  ["repo visual path", /\bvisual\//],
+  ["repo examples path", /\bexamples\//],
+  ["agent task path", /\bagent-tasks\b/i],
+  ["raw C++ filename", /\.cpp\b/],
+  ["raw JSON filename", /\.json\b/],
+  ["metric visual JSON filename", /\bmetric\.visual\.json\b/],
 ];
 
 async function main() {

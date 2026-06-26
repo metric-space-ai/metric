@@ -127,6 +127,12 @@ This plan is authoritative only with the following current-state constraints:
   required runtime descriptor roles, and
   `visual/tools/check-hero-visual-briefs.mjs` rejects previews whose semantic
   view descriptors lose those roles.
+- Every public preview must also pass
+  `visual/tools/check-public-miniature-scene-contract.mjs`. This gate consumes
+  the browser regression report and proves that the preview still uses the
+  reusable photographic miniature render contract: camera-depth DoF, miniature
+  frame, color grade, vignette, required primitives, semantic descriptor roles
+  and billboard labels where label roles are declared.
 
 The current accepted public hero set is therefore limited to:
 
@@ -2976,3 +2982,80 @@ Corrected status:
 - GRAE10/MNIST remains the only accepted public hero; all other public previews
   remain review-pending until screenshot and human visual acceptance clear their
   blockers.
+
+## Implementation Checkpoint: Public Miniature Scene Contract
+
+Status date: 2026-06-26
+
+Implemented:
+
+- `visual/tools/check-public-miniature-scene-contract.mjs` validates every
+  public review-pending preview from the browser regression report against the
+  shared miniature render contract.
+- The gate requires `postFx.cameraDof`, `postFx.miniatureFrame`,
+  `postFx.colorGrade` and `postFx.vignette` for public previews, and rejects a
+  preview if it falls back to a tilt-shift pass without native camera-depth DoF.
+- The gate cross-checks each visual brief's required primitives and semantic
+  descriptor roles against runtime state, and requires `BillboardLabelLayer`
+  whenever label roles such as `region-labels`, `type-labels` or
+  `paired-space-label-anchors` are present.
+- `BillboardLabelLayer` is part of the miniature style descriptor role mapping,
+  so labels are treated as first-class scene elements instead of page overlays.
+- Miniature rig/look verifiers now exercise `ProcessCurveSceneView` through
+  native `metric.visual.v1` evidence rather than a private process-curve
+  descriptor factory.
+
+Verified:
+
+- `node --check visual/tools/check-public-miniature-scene-contract.mjs`
+- `node visual/tools/check-public-miniature-scene-contract.mjs`
+- `node visual/tools/verify-miniature-rig.mjs`
+- `node visual/tools/verify-miniature-look-atlas.mjs`
+- `node visual/tools/verify-postfx-depth-dof-contract.mjs`
+- `node visual/tools/check-process-curve-descriptor-factory-quarantine.mjs`
+- `node visual/tools/check-hero-visual-briefs.mjs`
+- `node visual/tools/check-hero-screenshot-review.mjs`
+- `node visual/tools/check-native-hero-evidence-scale.mjs`
+- `node visual/tools/check-public-gallery-evidence.mjs`
+- `node visual/tools/check-project-site-copy-contract.mjs`
+- `node visual/tools/check-grae10-golden.mjs`
+
+Corrected status:
+
+- This gate proves the reusable miniature render/style contract for public
+  previews. It does not prove that a preview is visually accepted.
+- GRAE10/MNIST remains the only accepted public hero.
+- The next production work is visual acceptance and public portfolio quality
+  for each grammar, plus real-data scale-up for the external process-curve
+  preview.
+
+## Next Engine Acceptance Slices
+
+Status date: 2026-06-26
+
+The next parallel work is engine/view capability work, not new page HTML:
+
+1. Relation-matrix readability:
+   `RelationMatrixView`, `RelationMatrixLayer` and relation descriptors must
+   make a 130x130 native matrix readable as a primary visual, with crisp block
+   boundaries, row/column/cell focus and graph/matrix z-order rules. This
+   clears the explicit `matrix-readability-not-human-accepted` blocker before
+   relation-matrix/neighborhood can become an accepted hero.
+2. Trajectory/field hierarchy:
+   `TrajectoryPathView`, `PropertyFieldView`, `DynamicsView` and
+   `ProcessCurveSceneView` must give path, scalar field, current state and
+   labels predictable visual priority. Condition monitoring and finite dynamics
+   currently pass grammar gates but still read too much like blended clusters.
+3. Relation-edge legibility:
+   `RelationEdgeLayer`, `MixedRecordView`, `CrossSpaceView` and `MappingView`
+   must lane, bundle, sample or otherwise rank relation edges and residual
+   vectors so they support typed records, paired spaces and mapping residuals
+   instead of becoming visual noise.
+4. External process-curve scale:
+   `process-curve-external-hero` remains blocked until at least 500 distinct
+   real licensed source windows are available. The current local inventory has
+   only 48 real source windows plus 16 queries, and those queries must not be
+   counted as source-scale padding.
+
+Each slice must modify reusable engine/view/layer code, update or add a
+checker/report, and keep GRAE10 golden plus public gallery evidence green.

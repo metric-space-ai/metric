@@ -438,9 +438,17 @@ Primitive-to-family mapping is generic:
 - `RelationEdgeLayer` and `CurveRibbonLayer` -> `line`
 - `RelationMatrixLayer` -> `field`
 - `GroundPlaneLayer` -> `ground`
+- `BillboardLabelLayer` -> `sample` with the dedicated `miniature-label`
+  role
 
 The presence of `InstancedBoxLayer` in the mapping is renderer compatibility,
 not a public box subject API.
+
+Labels are scene descriptors, not page overlays. A label-bearing grammar must
+emit `BillboardLabelLayer` descriptors so labels share the same camera,
+selection and miniature-style contract as the surrounding evidence. The public
+miniature-scene gate rejects label roles that do not resolve to a
+`BillboardLabelLayer`.
 
 When `stage.grounding.contact.enabled` is true, grounded solid, glyph, and
 curve-path source layers receive an additional `GroundProjectionLayer` contact

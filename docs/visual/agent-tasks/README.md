@@ -85,6 +85,18 @@ The current native evidence exporter and first visual-acceptance candidate waves
 are integrated. The next parallel wave starts from reusable engine capabilities,
 visual grammars and gallery assets, not from synthetic data or one-off pages:
 
+- prioritize `relation-matrix-composition-acceptance.md` next: improve
+  reusable matrix readability, row/column/cell focus and graph/matrix z-order
+  in `RelationMatrixView`, `RelationMatrixLayer` and relation descriptors
+- prioritize a shared trajectory/field hierarchy pass across
+  `condition-monitoring-composition-acceptance.md` and
+  `dynamics-noise-composition-acceptance.md`: path, property field, current
+  state and labels need stable visual rank in shared view/layer modules
+- prioritize a shared relation-edge legibility pass across
+  `mixed-records-composition-acceptance.md`,
+  `cross-space-composition-acceptance.md` and
+  `mapping-residual-composition-acceptance.md`: edges and residual vectors must
+  be lanes, bundles, samples or ranked visual evidence, not hairballs
 - keep the integrated visual-acceptance candidates review-pending until human
   screenshot review accepts their composition
 - continue the external process-curve scale-up task only with real licensed
@@ -112,6 +124,9 @@ visual grammars and gallery assets, not from synthetic data or one-off pages:
   review explicitly accepts it
 - keep the project-page copy contract green so internal review state stays in
   tooling attributes and not visible public copy
+- keep the public miniature scene contract green so every public preview keeps
+  the shared photographic runtime contract instead of drifting into page-local
+  render/style code
 - keep the Redif preview on native `metric.visual.v1` evidence and
   `showDynamics()`; do not promote it to a public hero without a separate
   visual brief, gallery decision and screenshot review
@@ -134,6 +149,7 @@ node visual/tools/check-grae10-golden.mjs
 node visual/tools/check-views.mjs
 node visual/tools/check-cpp-export.mjs
 node visual/tools/check-project-site-copy-contract.mjs
+node visual/tools/check-public-miniature-scene-contract.mjs
 node visual/tools/check-redif-preview.mjs
 node visual/tools/check-visual-regression-public-examples.mjs
 node visual/tools/check-visual-performance-large-scenes.mjs

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="METRIC is a native C++ framework for finite metric spaces and visual evidence over records, metrics, relations, mappings and dynamics."
+      content="METRIC is a native C++ framework and dependency-free WebGL visual engine for finite metric spaces over records, metrics, relations, mappings and dynamics."
     />
     <link rel="icon" href="data:," />
     <title>METRIC | Visual Portfolio</title>
@@ -179,8 +179,7 @@
       }
 
       .hero-actions,
-      .links,
-      .path-links {
+      .links {
         display: flex;
         flex-wrap: wrap;
         gap: 10px;
@@ -188,20 +187,6 @@
 
       .hero-actions {
         margin-top: 24px;
-      }
-
-      .hero-meta {
-        display: grid;
-        gap: 9px;
-        max-width: 420px;
-        color: var(--muted);
-        font-size: 13px;
-        line-height: 1.42;
-      }
-
-      .hero-meta strong {
-        color: var(--text);
-        font-weight: 850;
       }
 
       .hero-visual {
@@ -361,26 +346,10 @@
         color: color-mix(in oklch, var(--blocked), var(--ink) 42%);
       }
 
-      .links a,
-      .path-links a {
+      .links a {
         color: var(--accent);
         font-size: 14px;
         font-weight: 830;
-      }
-
-      .path-list {
-        display: grid;
-        gap: 8px;
-        color: var(--text);
-        font-size: 12px;
-        line-height: 1.45;
-      }
-
-      .path-list a {
-        display: block;
-        overflow-wrap: anywhere;
-        color: inherit;
-        text-decoration-color: color-mix(in oklch, var(--accent), transparent 45%);
       }
 
       .source-note {
@@ -547,18 +516,13 @@
             </div>
             <div>
               <p class="lead">
-                A protected live view of all 60,000 MNIST records, exported
-                from native C++ and rendered in the browser. This GRAE10 scene
-                is the portfolio reference.
+                A native C++ framework and dependency-free WebGL engine for
+                finite metric spaces. This protected 60,000-record MNIST scene
+                is the live visual reference.
               </p>
               <div class="hero-actions">
                 <a class="button primary" href="#gallery">Open gallery</a>
                 <a class="button" href="../../examples/engine/mnist_grae10_integrity.cpp">C++ source</a>
-              </div>
-              <div class="hero-meta">
-                <span><strong>Live scene</strong> <a href="../../visual/examples/grae10-metric-engine/index.html">visual/examples/grae10-metric-engine/index.html</a></span>
-                <span><strong>Data JSON</strong> <a href="../../visual/examples/grae10-metric-engine/grae10-data.json">visual/examples/grae10-metric-engine/grae10-data.json</a></span>
-                <span><strong>Reference note</strong> <a href="../../docs/examples/mnist-grae10-gallery.md">docs/examples/mnist-grae10-gallery.md</a></span>
               </div>
             </div>
           </div>
@@ -594,17 +558,13 @@
             <div>
               <p class="portfolio-copy">
                 The first viewport embeds this protected 60k reference once.
-                These links expose the source and data behind the same view.
+                The source and exported data are available for inspection.
               </p>
-              <div class="path-links" style="margin-top: 14px">
+              <div class="links" style="margin-top: 14px">
                 <a href="../../visual/examples/grae10-metric-engine/index.html">Open visual</a>
                 <a href="../../examples/engine/mnist_grae10_integrity.cpp">C++ source</a>
                 <a href="../../visual/examples/grae10-metric-engine/grae10-data.json">Data JSON</a>
                 <a href="../../docs/examples/mnist-grae10-gallery.md">Reference note</a>
-              </div>
-              <div class="path-list" style="margin-top: 14px">
-                <a href="../../examples/engine/mnist_grae10_integrity.cpp"><code>examples/engine/mnist_grae10_integrity.cpp</code></a>
-                <a href="../../visual/examples/grae10-metric-engine/grae10-data.json"><code>visual/examples/grae10-metric-engine/grae10-data.json</code></a>
               </div>
             </div>
           </div>
@@ -631,10 +591,6 @@
                   <a href="../../examples/engine/condition_monitoring_visual_export.cpp">C++ source</a>
                   <a href="../../docs/examples/assets/condition-monitoring/metric.visual.json">Data JSON</a>
                 </div>
-                <div class="path-list">
-                  <a href="../../examples/engine/condition_monitoring_visual_export.cpp"><code>examples/engine/condition_monitoring_visual_export.cpp</code></a>
-                  <a href="../../docs/examples/assets/condition-monitoring/metric.visual.json"><code>docs/examples/assets/condition-monitoring/metric.visual.json</code></a>
-                </div>
               </div>
             </article>
 
@@ -658,10 +614,6 @@
                   <a href="../../visual/examples/mixed-record-hero/index.html">Open visual</a>
                   <a href="../../examples/engine/mixed_finite_records_visual_export.cpp">C++ source</a>
                   <a href="../../docs/examples/assets/mixed-records/metric.visual.json">Data JSON</a>
-                </div>
-                <div class="path-list">
-                  <a href="../../examples/engine/mixed_finite_records_visual_export.cpp"><code>examples/engine/mixed_finite_records_visual_export.cpp</code></a>
-                  <a href="../../docs/examples/assets/mixed-records/metric.visual.json"><code>docs/examples/assets/mixed-records/metric.visual.json</code></a>
                 </div>
               </div>
             </article>
@@ -687,10 +639,6 @@
                   <a href="../../examples/engine/cross_space_dependency_visual_export.cpp">C++ source</a>
                   <a href="../../docs/examples/assets/cross-space-dependency/metric.visual.json">Data JSON</a>
                 </div>
-                <div class="path-list">
-                  <a href="../../examples/engine/cross_space_dependency_visual_export.cpp"><code>examples/engine/cross_space_dependency_visual_export.cpp</code></a>
-                  <a href="../../docs/examples/assets/cross-space-dependency/metric.visual.json"><code>docs/examples/assets/cross-space-dependency/metric.visual.json</code></a>
-                </div>
               </div>
             </article>
 
@@ -714,10 +662,6 @@
                   <a href="../../visual/examples/mapping-dimensionality-hero/index.html">Open visual</a>
                   <a href="../../examples/engine/mapping_dimensionality_visual_export.cpp">C++ source</a>
                   <a href="../../docs/examples/assets/mapping-dimensionality/metric.visual.json">Data JSON</a>
-                </div>
-                <div class="path-list">
-                  <a href="../../examples/engine/mapping_dimensionality_visual_export.cpp"><code>examples/engine/mapping_dimensionality_visual_export.cpp</code></a>
-                  <a href="../../docs/examples/assets/mapping-dimensionality/metric.visual.json"><code>docs/examples/assets/mapping-dimensionality/metric.visual.json</code></a>
                 </div>
               </div>
             </article>
@@ -743,10 +687,6 @@
                   <a href="../../examples/engine/finite_metric_dynamics_visual_export.cpp">C++ source</a>
                   <a href="../../docs/examples/assets/dynamics-noise/metric.visual.json">Data JSON</a>
                 </div>
-                <div class="path-list">
-                  <a href="../../examples/engine/finite_metric_dynamics_visual_export.cpp"><code>examples/engine/finite_metric_dynamics_visual_export.cpp</code></a>
-                  <a href="../../docs/examples/assets/dynamics-noise/metric.visual.json"><code>docs/examples/assets/dynamics-noise/metric.visual.json</code></a>
-                </div>
               </div>
             </article>
 
@@ -771,10 +711,6 @@
                   <a href="../../examples/engine/relation_matrix_visual_export.cpp">C++ source</a>
                   <a href="../../docs/examples/assets/relation-matrix/metric.visual.json">Data JSON</a>
                 </div>
-                <div class="path-list">
-                  <a href="../../examples/engine/relation_matrix_visual_export.cpp"><code>examples/engine/relation_matrix_visual_export.cpp</code></a>
-                  <a href="../../docs/examples/assets/relation-matrix/metric.visual.json"><code>docs/examples/assets/relation-matrix/metric.visual.json</code></a>
-                </div>
               </div>
             </article>
 
@@ -786,7 +722,7 @@
                   loading="lazy"></iframe>
               </div>
               <div class="portfolio-main">
-                <span class="status blocked">Native preview</span>
+                <span class="status blocked">Scale-limited preview</span>
                 <h3>UCR process curves</h3>
                 <p class="portfolio-copy">
                   Real process-curve windows are rendered from a native export
@@ -798,10 +734,6 @@
                   <a href="../../visual/examples/process-curve-external-hero/index.html">Open visual</a>
                   <a href="../../examples/engine/process_curve_external_visual_export.cpp">C++ source</a>
                   <a href="../../docs/examples/assets/process-curve-external/metric.visual.json">Data JSON</a>
-                </div>
-                <div class="path-list">
-                  <a href="../../examples/engine/process_curve_external_visual_export.cpp"><code>examples/engine/process_curve_external_visual_export.cpp</code></a>
-                  <a href="../../docs/examples/assets/process-curve-external/metric.visual.json"><code>docs/examples/assets/process-curve-external/metric.visual.json</code></a>
                 </div>
               </div>
             </article>
@@ -851,8 +783,8 @@
 
     <footer>
       <div class="wrap">
-        Source: <a href="https://github.com/metric-space-ai/metric">github.com/metric-space-ai/metric</a>.
-        Documentation: <a href="docs.html">docs.html</a>.
+        <a href="https://github.com/metric-space-ai/metric">GitHub</a>
+        · <a href="docs.html">Documentation</a>
       </div>
     </footer>
   </body>

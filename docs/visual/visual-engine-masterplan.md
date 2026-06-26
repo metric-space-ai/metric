@@ -188,6 +188,12 @@ Implemented native slices:
 - public preview visual briefs now require both render primitives and semantic
   runtime descriptor roles, so a preview cannot satisfy its grammar by rendering
   anonymous layers that only happen to use the right WebGL primitive
+- public preview miniature scene contract gate:
+  `visual/tools/check-public-miniature-scene-contract.mjs` consumes the
+  browser regression report and requires every public preview to retain the
+  reusable photographic runtime contract: camera-depth DoF, miniature frame,
+  color grade, vignette, declared primitives, semantic descriptor roles and
+  billboard labels for label-bearing grammars
 - native hero evidence scale gate that compares public visual briefs with
   native `metric.visual.v1` assets before browser rendering and enforces
   native provenance plus record-count, relation-count and record-type blocker
@@ -321,6 +327,10 @@ Known gaps:
   budgets and GPU diagnostic minimums. Matrix, graph, field, glyph, dynamics
   and mapping still need larger final-evidence stress inputs before public hero
   acceptance.
+- public preview scenes now have a reusable miniature-scene contract gate, but
+  that gate only proves the shared render/style contract. It does not promote
+  review-pending previews to accepted heroes and does not replace human visual
+  acceptance against the GRAE10 reference.
 - exporter-contract hardening is integrated for Process-Curve, Solver-Trace,
   Redif and relation-matrix evidence. The completed work is tracked in
   `docs/visual/agent-tasks/visual-exporter-cli-contract.md`,
