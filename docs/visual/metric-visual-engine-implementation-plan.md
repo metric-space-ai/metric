@@ -99,6 +99,17 @@ This plan is authoritative only with the following current-state constraints:
 - `captureHeroFrame(visual, options)` is a top-level public API export that
   delegates to `MetricVisualSurface.captureHeroFrame(options)`. It does not
   create another capture or render pipeline.
+- `MetricVisualSurface.setLayerDescriptors()` and
+  `MetricVisualSurface.addLayerDescriptors()` are no longer public facade
+  methods. Public code must use semantic `show*` commands or `setViews()` with
+  semantic view objects; raw descriptor installation is internal-only.
+- `showSolverTrace()` is now backed by native C++ `metric.visual.v1` evidence
+  under `docs/examples/assets/solver-trace/metric.visual.json`, exported by
+  `examples/engine/solver_trace_visual_export.cpp`.
+- The old embedded Babyplots/Babylon
+  `visual/examples/mnist-dimension-reduction/index.html` page has been deleted
+  from active visual examples. MNIST dimension reduction remains represented by
+  the protected METRIC-owned 60k GRAE10 engine page.
 - The large-scene performance gate reads the public Visual-Brief manifest,
   covers all seven native public preview rows, reports minimum record targets
   and blockers per preview, and keeps `process-curve-external-hero` visibly

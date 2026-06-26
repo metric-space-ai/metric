@@ -160,6 +160,11 @@ Implemented native slices:
 - user-facing timeline-control metadata for scrubber/playback/reset controls
   plus active ground/field state descriptors from exported timeline-step
   properties
+- native solver-trace evidence under
+  `docs/examples/assets/solver-trace/metric.visual.json`, exported by
+  `examples/engine/solver_trace_visual_export.cpp`; `showSolverTrace()` now
+  exercises native timeline-step residual/objective evidence instead of a
+  synthetic JavaScript trace fixture
 - reusable relation-matrix readability metadata for block/tile/LOD contracts,
   weighted dense-cell smoothing, logical tile boundaries and row/column/cell
   selection focus
@@ -194,6 +199,13 @@ Implemented native slices:
   prevent residual/error mapping layers without explicit residual evidence and
   expose `captureHeroFrame(visual, options)` as a top-level public API delegating
   to the surface method
+- public descriptor-injection escape hatches on `MetricVisualSurface` are
+  removed; raw descriptor installation is internal-only, while public callers
+  use semantic `show*` commands or semantic view objects with
+  `toLayerDescriptors()`
+- the old embedded Babyplots/Babylon MNIST standalone page was deleted from
+  active visual examples; MNIST dimension reduction is represented by the
+  protected METRIC-owned 60k GRAE10 engine page
 - screenshot-review gallery generation:
   `visual/tools/check-hero-screenshot-review.mjs` writes
   `output/visual/check-hero-screenshot-review/index.html` with the real page and

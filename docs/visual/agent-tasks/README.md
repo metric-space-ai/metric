@@ -52,9 +52,9 @@ set, and one validation path.
 | `dynamics-noise-visual-acceptance.md` | visual acceptance candidate for native dynamics preview | ready to assign |
 | `relation-matrix-visual-acceptance.md` | visual acceptance candidate for native relation-matrix preview | ready to assign |
 | `project-gallery-native-evidence.md` | project-page gallery limited to accepted/native evidence | ready to assign |
-| `descriptor-injection-hardening.md` | remove public raw descriptor injection escape hatches | ready to assign |
-| `mnist-babyplot-quarantine.md` | remove old Babyplots/Babylon MNIST standalone renderer from active examples | ready to assign |
-| `solver-trace-native-evidence.md` | back `showSolverTrace()` with native METRIC evidence or document precise blockers | ready to assign |
+| `descriptor-injection-hardening.md` | remove public raw descriptor injection escape hatches | integrated |
+| `mnist-babyplot-quarantine.md` | remove old Babyplots/Babylon MNIST standalone renderer from active examples | integrated |
+| `solver-trace-native-evidence.md` | back `showSolverTrace()` with native METRIC evidence or document precise blockers | integrated |
 
 ## Next Slots
 
