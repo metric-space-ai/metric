@@ -127,11 +127,12 @@ async function reviewRow(result, accepted, visualBriefs = new Map()) {
 
   const screenshotOk = await fileLooksPresent(screenshot);
   const canvasScreenshotOk = await fileLooksPresent(canvasScreenshot);
-  if (!screenshotOk) {
-    issues.push({ code: "missing-page-screenshot", example: result.name, screenshot });
-  }
+  const visualScreenshotOk = screenshotOk || canvasScreenshotOk;
   if (!canvasScreenshotOk) {
     issues.push({ code: "missing-canvas-screenshot", example: result.name, canvasScreenshot });
+  }
+  if (!visualScreenshotOk) {
+    issues.push({ code: "missing-review-screenshot", example: result.name, screenshot, canvasScreenshot });
   }
   if (render.ok !== true) {
     issues.push({ code: "render-not-green", example: result.name });
@@ -155,6 +156,7 @@ async function reviewRow(result, accepted, visualBriefs = new Map()) {
     canvasScreenshot,
     screenshotOk,
     canvasScreenshotOk,
+    visualScreenshotOk,
     visualClaim: brief?.visualClaim || null,
     primaryVisualGrammar: brief?.primaryVisualGrammar || null,
     expectedPrimaryVisualGrammar: result.grammar?.expected || brief?.expectedPrimaryVisualGrammar || null,

@@ -28,6 +28,10 @@ Each `acceptedHeroes` entry must include:
   `generatedReport`,
   `requiresPageScreenshot`,
   `requiresCanvasScreenshot`.
+  `requiresCanvasScreenshot` is the required WebGL visual artifact for the
+  current public examples. `requiresPageScreenshot` may be `false` because
+  Chrome DevTools full-page capture can time out in headless WebGL even when
+  the canvas render proof is valid.
 - `humanAcceptance`: object with `status: "accepted"` and an ISO date
   (`YYYY-MM-DD`).
 - `acceptanceReason`: short human-readable reason for accepting the visual.

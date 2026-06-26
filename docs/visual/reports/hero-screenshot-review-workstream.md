@@ -14,27 +14,31 @@ that only explicitly reviewed examples are marked as hero-accepted.
 - Added `visual/tools/check-hero-screenshot-review.mjs`.
 - The gate consumes
   `output/visual/check-visual-regression-public-examples/results.json`.
-- It verifies page and canvas screenshots for each public example.
+- It verifies that each public example has a usable canvas screenshot. Page
+  screenshots are optional because Chrome DevTools full-page capture can time
+  out for headless WebGL scenes while the canvas capture still proves the
+  rendered visual artifact.
 - It accepts the protected GRAE10 reference by default because the native 60k
   evidence and golden visual hash are already enforced.
 - Optional future manual acceptances belong in
   `visual/hero-acceptance.manifest.json`.
 - The gate also writes a static browser-review artifact:
   `output/visual/check-hero-screenshot-review/index.html`.
-  It lays out page and canvas screenshots with visual claims, primary grammar,
-  native-evidence state and open blockers. This is review evidence only; it
-  does not accept a hero automatically.
+  It lays out page screenshots when available, canvas screenshots, visual
+  claims, primary grammar, native-evidence state and open blockers. This is
+  review evidence only; it does not accept a hero automatically.
 
 ## Verification
 
 - `node --check visual/tools/check-hero-screenshot-review.mjs`
 - `node visual/tools/check-hero-screenshot-review.mjs`
 - generated gallery image-reference check:
-  `output/visual/check-hero-screenshot-review/index.html` references 16
-  existing screenshot images
+  `output/visual/check-hero-screenshot-review/index.html` references the
+  available visual review artifacts; current headless WebGL runs require the
+  canvas images and treat page images as optional.
 
 ## Current Status
 
 GRAE10 is the only accepted hero. Condition monitoring, mixed records,
-cross-space dependency, relation matrix, dynamics and mapping stay
-review-pending until screenshot review accepts each grammar.
+cross-space dependency, relation matrix, dynamics, mapping and external
+process curves stay review-pending until visual review accepts each grammar.

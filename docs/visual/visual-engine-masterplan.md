@@ -250,9 +250,10 @@ Implemented native slices:
   protected METRIC-owned 60k GRAE10 engine page
 - screenshot-review gallery generation:
   `visual/tools/check-hero-screenshot-review.mjs` writes
-  `output/visual/check-hero-screenshot-review/index.html` with the real page and
-  canvas screenshots, visual claims, expected grammars, native-evidence state
-  and open blockers for human review without promoting previews automatically
+  `output/visual/check-hero-screenshot-review/index.html` with canvas
+  screenshots, optional page screenshots when available, visual claims,
+  expected grammars, native-evidence state and open blockers for human review
+  without promoting previews automatically
 - project-page gallery status is now explicit: GRAE10/MNIST is the only
   accepted reference, and every other native public scene is labelled
   review-pending until visual acceptance exists

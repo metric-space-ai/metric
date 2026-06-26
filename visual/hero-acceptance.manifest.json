@@ -7,7 +7,7 @@
       "expectedPrimaryVisualGrammar": "protected GRAE10 60k metric-engine reference",
       "screenshot": {
         "generatedReport": "output/visual/check-visual-regression-public-examples/results.json",
-        "requiresPageScreenshot": true,
+        "requiresPageScreenshot": false,
         "requiresCanvasScreenshot": true
       },
       "humanAcceptance": {

@@ -2528,7 +2528,8 @@ Implemented:
   without residual property must not create residual/error layers.
 - The hero screenshot review gate now writes
   `output/visual/check-hero-screenshot-review/index.html`, a static review
-  gallery over the real browser page/canvas screenshots. The gallery includes
+  gallery over the real browser canvas screenshots plus optional page
+  screenshots when Chrome DevTools can capture them. The gallery includes
   visual claims, expected grammar, native-evidence state and open blockers. It
   is review evidence, not automatic hero acceptance.
 
