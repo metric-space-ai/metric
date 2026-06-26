@@ -35,7 +35,7 @@ set, and one validation path.
 | `mapping-dynamics-motion-grammar-workstream.md` | mapping, dynamics, timeline and solver-trace grammar | integrated |
 | `visual-regression-performance-workstream.md` | browser regression and performance gates | integrated |
 | `cpp-visual-export-core-workstream.md` | reusable C++ `metric.visual.v1` writer core and single-exporter refactor rules | integrated |
-| `gpu-picking-preview-workstream.md` | GPU/CPU picking, record preview and pair preview contracts | ready to assign |
+| `gpu-picking-preview-workstream.md` | GPU/CPU picking, record preview and pair preview contracts | integrated |
 | `preview-panel-presentation-workstream.md` | bounded record/pair preview presentation for exported payloads | integrated |
 | `relation-matrix-readability-workstream.md` | matrix readability, row/column/cell focus and large-matrix diagnostics | integrated |
 | `visual-acceptance-gates-workstream.md` | regression, performance and screenshot gates that cannot promote smoke tests to heroes | integrated |
@@ -45,13 +45,13 @@ set, and one validation path.
 | `legacy-render-facade-deletion.md` | delete old `metric.evidence.v1` WebGL/2D render facade from public API | integrated |
 | `process-curve-descriptor-factory-quarantine.md` | remove process-curve descriptor-factory calls from example/public paths | integrated |
 | `direct-runtime-harness-quarantine.md` | quarantine direct-runtime probes and standalone renderer exports | integrated |
-| `condition-monitoring-visual-acceptance.md` | visual acceptance candidate for native condition monitoring preview | ready to assign |
+| `condition-monitoring-visual-acceptance.md` | visual acceptance candidate for native condition monitoring preview | review-pending candidate integrated |
 | `mixed-records-visual-acceptance.md` | visual acceptance candidate for native mixed-record preview | ready to assign |
 | `cross-space-dependency-visual-acceptance.md` | visual acceptance candidate for native cross-space preview | ready to assign |
 | `mapping-dimensionality-visual-acceptance.md` | visual acceptance candidate for native mapping preview | ready to assign |
 | `dynamics-noise-visual-acceptance.md` | visual acceptance candidate for native dynamics preview | ready to assign |
-| `relation-matrix-visual-acceptance.md` | visual acceptance candidate for native relation-matrix preview | ready to assign |
-| `project-gallery-native-evidence.md` | project-page gallery limited to accepted/native evidence | ready to assign |
+| `relation-matrix-visual-acceptance.md` | visual acceptance candidate for native relation-matrix preview | review-pending candidate integrated |
+| `project-gallery-native-evidence.md` | project-page gallery limited to accepted/native evidence | integrated |
 | `descriptor-injection-hardening.md` | remove public raw descriptor injection escape hatches | integrated |
 | `mnist-babyplot-quarantine.md` | remove old Babyplots/Babylon MNIST standalone renderer from active examples | integrated |
 | `solver-trace-native-evidence.md` | back `showSolverTrace()` with native METRIC evidence or document precise blockers | integrated |

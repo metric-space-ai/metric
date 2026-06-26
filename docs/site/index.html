@@ -464,11 +464,11 @@
                 <span>native METRIC evidence</span>
               </div>
               <div class="links" style="margin-top: 16px">
-                <a href="../../examples/engine/mnist_grae10_integrity.cpp">C++ integrity check</a>
+                <a href="../../examples/engine/mnist_grae10_integrity.cpp">integrity check</a>
                 <a href="../../docs/examples/mnist-grae10-gallery.md">MNIST notes</a>
               </div>
               <details style="margin-top: 16px">
-                <summary>C++ check</summary>
+                <summary>Reproduce check</summary>
                 <pre>cmake --build build/core --target engine_mnist_grae10_integrity
 build/core/examples/engine/engine_mnist_grae10_integrity</pre>
               </details>
@@ -488,19 +488,20 @@ build/core/examples/engine/engine_mnist_grae10_integrity</pre>
         <div class="wrap">
           <div class="section-head">
             <div>
-              <p class="eyebrow">Visual gallery</p>
+              <p class="eyebrow">Examples</p>
               <h2>Application gallery.</h2>
             </div>
             <p>
-              Each view pairs a live METRIC scene with the C++ exporter and the
-              generated evidence document. MNIST/GRAE10 is the full-scale
-              reference; the other examples show exported finite-space evidence.
+              Open each scene, inspect the exported evidence and read the
+              native source that produced it. MNIST/GRAE10 is the accepted
+              full-scale reference; the other examples remain under visual
+              review.
             </p>
           </div>
 
           <div class="evidence-row" aria-label="Accepted visual evidence">
             <div>
-              <span class="status accepted">reference</span>
+              <span class="status accepted">accepted reference</span>
               <h3>MNIST dimension reduction</h3>
             </div>
             <div>
@@ -511,7 +512,7 @@ build/core/examples/engine/engine_mnist_grae10_integrity</pre>
               </p>
               <div class="links" style="margin-top: 16px">
                 <a href="../../visual/examples/grae10-metric-engine/index.html">open visual</a>
-                <a href="../../examples/engine/mnist_grae10_integrity.cpp">C++ integrity check</a>
+                <a href="../../examples/engine/mnist_grae10_integrity.cpp">integrity check</a>
                 <a href="../../docs/examples/mnist-grae10-gallery.md">reference notes</a>
               </div>
             </div>
@@ -528,7 +529,7 @@ build/core/examples/engine/engine_mnist_grae10_integrity</pre>
                     loading="lazy"></iframe>
                 </div>
                 <div class="card-body">
-                  <span class="status pending">C++ export</span>
+                  <span class="status pending">review pending</span>
                   <h3>Condition monitoring</h3>
                   <p>
                     Process windows become a finite metric space with operating
@@ -537,11 +538,11 @@ build/core/examples/engine/engine_mnist_grae10_integrity</pre>
                   </p>
                   <div class="links">
                     <a href="../../visual/examples/condition-monitoring-hero/index.html">open visual</a>
-                    <a href="../../examples/engine/condition_monitoring_visual_export.cpp">C++ source</a>
-                    <a href="../../docs/examples/assets/condition-monitoring/metric.visual.json">evidence</a>
+                    <a href="../../examples/engine/condition_monitoring_visual_export.cpp">native source</a>
+                    <a href="../../docs/examples/assets/condition-monitoring/metric.visual.json">visual evidence</a>
                   </div>
                   <details>
-                    <summary>C++ export</summary>
+                    <summary>Reproduce evidence</summary>
                     <pre>cmake --build build/core --target engine_condition_monitoring_visual_export
 build/core/examples/engine/engine_condition_monitoring_visual_export \
   --export-dir docs/examples/assets/condition-monitoring</pre>
@@ -557,7 +558,7 @@ build/core/examples/engine/engine_condition_monitoring_visual_export \
                     loading="lazy"></iframe>
                 </div>
                 <div class="card-body">
-                  <span class="status pending">C++ export</span>
+                  <span class="status pending">review pending</span>
                   <h3>Mixed records</h3>
                   <p>
                     Typed records keep their source form while relation evidence
@@ -566,11 +567,11 @@ build/core/examples/engine/engine_condition_monitoring_visual_export \
                   </p>
                   <div class="links">
                     <a href="../../visual/examples/mixed-record-hero/index.html">open visual</a>
-                    <a href="../../examples/engine/mixed_finite_records_visual_export.cpp">C++ source</a>
-                    <a href="../../docs/examples/assets/mixed-records/metric.visual.json">evidence</a>
+                    <a href="../../examples/engine/mixed_finite_records_visual_export.cpp">native source</a>
+                    <a href="../../docs/examples/assets/mixed-records/metric.visual.json">visual evidence</a>
                   </div>
                   <details>
-                    <summary>C++ export</summary>
+                    <summary>Reproduce evidence</summary>
                     <pre>cmake --build build/core --target engine_mixed_finite_records_visual_export
 build/core/examples/engine/engine_mixed_finite_records_visual_export \
   --export-dir docs/examples/assets/mixed-records</pre>
@@ -586,7 +587,7 @@ build/core/examples/engine/engine_mixed_finite_records_visual_export \
                     loading="lazy"></iframe>
                 </div>
                 <div class="card-body">
-                  <span class="status pending">C++ export</span>
+                  <span class="status pending">review pending</span>
                   <h3>Cross-space dependency</h3>
                   <p>
                     Two paired metric spaces stay separate while linked selection
@@ -595,11 +596,11 @@ build/core/examples/engine/engine_mixed_finite_records_visual_export \
                   </p>
                   <div class="links">
                     <a href="../../visual/examples/cross-space-dependency-hero/index.html">open visual</a>
-                    <a href="../../examples/engine/cross_space_dependency_visual_export.cpp">C++ source</a>
-                    <a href="../../docs/examples/assets/cross-space-dependency/metric.visual.json">evidence</a>
+                    <a href="../../examples/engine/cross_space_dependency_visual_export.cpp">native source</a>
+                    <a href="../../docs/examples/assets/cross-space-dependency/metric.visual.json">visual evidence</a>
                   </div>
                   <details>
-                    <summary>C++ export</summary>
+                    <summary>Reproduce evidence</summary>
                     <pre>cmake --build build/core --target engine_cross_space_dependency_visual_export
 build/core/examples/engine/engine_cross_space_dependency_visual_export \
   --export-dir docs/examples/assets/cross-space-dependency</pre>
@@ -615,7 +616,7 @@ build/core/examples/engine/engine_cross_space_dependency_visual_export \
                     loading="lazy"></iframe>
                 </div>
                 <div class="card-body">
-                  <span class="status pending">C++ export</span>
+                  <span class="status pending">review pending</span>
                   <h3>Mapping and dimensionality</h3>
                   <p>
                     A coordinate view is treated as a derived state of a source
@@ -624,11 +625,11 @@ build/core/examples/engine/engine_cross_space_dependency_visual_export \
                   </p>
                   <div class="links">
                     <a href="../../visual/examples/mapping-dimensionality-hero/index.html">open visual</a>
-                    <a href="../../examples/engine/mapping_dimensionality_visual_export.cpp">C++ source</a>
-                    <a href="../../docs/examples/assets/mapping-dimensionality/metric.visual.json">evidence</a>
+                    <a href="../../examples/engine/mapping_dimensionality_visual_export.cpp">native source</a>
+                    <a href="../../docs/examples/assets/mapping-dimensionality/metric.visual.json">visual evidence</a>
                   </div>
                   <details>
-                    <summary>C++ export</summary>
+                    <summary>Reproduce evidence</summary>
                     <pre>cmake --build build/core --target engine_mapping_dimensionality_visual_export
 build/core/examples/engine/engine_mapping_dimensionality_visual_export \
   --export-dir docs/examples/assets/mapping-dimensionality</pre>
@@ -644,7 +645,7 @@ build/core/examples/engine/engine_mapping_dimensionality_visual_export \
                     loading="lazy"></iframe>
                 </div>
                 <div class="card-body">
-                  <span class="status pending">C++ export</span>
+                  <span class="status pending">review pending</span>
                   <h3>Finite dynamics</h3>
                   <p>
                     Timeline states, transition structure and path evidence make
@@ -653,11 +654,11 @@ build/core/examples/engine/engine_mapping_dimensionality_visual_export \
                   </p>
                   <div class="links">
                     <a href="../../visual/examples/dynamics-noise-hero/index.html">open visual</a>
-                    <a href="../../examples/engine/finite_metric_dynamics_visual_export.cpp">C++ source</a>
-                    <a href="../../docs/examples/assets/dynamics-noise/metric.visual.json">evidence</a>
+                    <a href="../../examples/engine/finite_metric_dynamics_visual_export.cpp">native source</a>
+                    <a href="../../docs/examples/assets/dynamics-noise/metric.visual.json">visual evidence</a>
                   </div>
                   <details>
-                    <summary>C++ export</summary>
+                    <summary>Reproduce evidence</summary>
                     <pre>cmake --build build/core --target engine_finite_metric_dynamics_visual_export
 build/core/examples/engine/engine_finite_metric_dynamics_visual_export \
   --export-dir docs/examples/assets/dynamics-noise</pre>
@@ -673,7 +674,7 @@ build/core/examples/engine/engine_finite_metric_dynamics_visual_export \
                     loading="lazy"></iframe>
                 </div>
                 <div class="card-body">
-                  <span class="status pending">C++ export</span>
+                  <span class="status pending">review pending</span>
                   <h3>Relation matrix</h3>
                   <p>
                     Pair values are evidence in their own right: blocks,
@@ -682,11 +683,11 @@ build/core/examples/engine/engine_finite_metric_dynamics_visual_export \
                   </p>
                   <div class="links">
                     <a href="../../visual/examples/relation-matrix-neighborhood/index.html">open visual</a>
-                    <a href="../../examples/engine/relation_matrix_visual_export.cpp">C++ source</a>
-                    <a href="../../docs/examples/assets/relation-matrix/metric.visual.json">evidence</a>
+                    <a href="../../examples/engine/relation_matrix_visual_export.cpp">native source</a>
+                    <a href="../../docs/examples/assets/relation-matrix/metric.visual.json">visual evidence</a>
                   </div>
                   <details>
-                    <summary>C++ export</summary>
+                    <summary>Reproduce evidence</summary>
                     <pre>cmake --build build/core --target engine_relation_matrix_visual_export
 build/core/examples/engine/engine_relation_matrix_visual_export \
   --export-dir docs/examples/assets/relation-matrix</pre>
@@ -702,7 +703,7 @@ build/core/examples/engine/engine_relation_matrix_visual_export \
                     loading="lazy"></iframe>
                 </div>
                 <div class="card-body">
-                  <span class="status pending">C++ export</span>
+                  <span class="status pending">review pending</span>
                   <h3>UCR process curves</h3>
                   <p>
                     Real process-curve windows are compared as curves, with
@@ -711,11 +712,11 @@ build/core/examples/engine/engine_relation_matrix_visual_export \
                   </p>
                   <div class="links">
                     <a href="../../visual/examples/process-curve-external-hero/index.html">open visual</a>
-                    <a href="../../examples/engine/process_curve_external_visual_export.cpp">C++ source</a>
-                    <a href="../../docs/examples/assets/process-curve-external/metric.visual.json">evidence</a>
+                    <a href="../../examples/engine/process_curve_external_visual_export.cpp">native source</a>
+                    <a href="../../docs/examples/assets/process-curve-external/metric.visual.json">visual evidence</a>
                   </div>
                   <details>
-                    <summary>C++ export</summary>
+                    <summary>Reproduce evidence</summary>
                     <pre>cmake --build build/core --target engine_process_curve_external_visual_export
 build/core/examples/engine/engine_process_curve_external_visual_export \
   --export-dir docs/examples/assets/process-curve-external</pre>

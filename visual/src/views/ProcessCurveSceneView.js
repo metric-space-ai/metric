@@ -399,12 +399,20 @@ function createProcessCurveLayerDescriptors(document, inputs, options = {}) {
   const groundY = finiteNumber(options.groundY, options.stage?.grounding?.groundY, -0.56);
   const morph = createProcessCurveMorphDescriptor(document, inputs, options);
   const projection = createProcessCurveProjectionDescriptor(document, inputs, { ...options, groundY: groundY + 0.04 });
-  const skyline = createProcessCurveSkylineDescriptor(document, inputs, { ...options, groundY });
+  const skyline = shouldIncludeProcessCurveSkyline(options)
+    ? createProcessCurveSkylineDescriptor(document, inputs, { ...options, groundY })
+    : null;
   const field = createProcessCurvePropertyFieldDescriptor(document, inputs, { ...options, groundY: groundY + 0.03 })
     || createProcessCurveStateFieldDescriptor(document, inputs, { ...options, groundY: groundY + 0.03 });
   const track = createProcessCurveTrackDescriptor(document, inputs, { ...options, groundY: groundY + 0.06 });
   const labels = createProcessCurveLabelDescriptor(document, inputs, { ...options, groundY });
   return [field, projection, track, skyline, morph, labels].filter(Boolean);
+}
+
+function shouldIncludeProcessCurveSkyline(options = {}) {
+  return options.includeRecordSkyline !== false
+    && options.recordSkyline !== false
+    && options.curveEnergySkyline !== false;
 }
 
 export function createProcessCurveMiniatureSceneBundle(document, options = {}) {

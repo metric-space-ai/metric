@@ -2630,3 +2630,52 @@ Corrected status:
 - This checkpoint advances reusable engine grammar and gates. It does not
   promote condition monitoring, mixed records, cross-space dependency, mapping,
   dynamics, relation matrix or external process curves to hero-accepted status.
+
+## Implementation Checkpoint: Gallery, Picking And First Review Candidates
+
+Status date: 2026-06-26
+
+Implemented:
+
+- The project page gallery now uses explicit public status language:
+  GRAE10/MNIST is the accepted reference; all other native examples are review
+  pending. Public copy points to the live scene, the native source and the
+  generated visual evidence without claiming hero acceptance.
+- GPU/CPU picking and record/pair preview coverage is documented in
+  `docs/visual/reports/gpu-picking-preview-workstream.md`. No page-local
+  hover/preview logic was added.
+- Condition monitoring is now a concrete review-pending visual acceptance
+  candidate. The page loads only native condition evidence, renders through
+  `showConditionMonitoring()`, disables derived record-skyline/time-series
+  geometry for this hero and exposes original process-window time series
+  through the shared preview path.
+- Relation-matrix/neighborhood is now a concrete review-pending visual
+  acceptance candidate with an updated report and screenshot. It remains a
+  relation matrix plus graph/pair-preview scene, not a point-cloud substitute.
+- The task registry marks `gpu-picking-preview-workstream` and
+  `project-gallery-native-evidence` as integrated, and marks
+  `condition-monitoring-visual-acceptance` plus
+  `relation-matrix-visual-acceptance` as review-pending candidate integrated.
+
+Verified:
+
+- `node visual/tools/check-condition-monitoring-visual-acceptance.mjs`
+- `METRIC_VISUAL_PORT=8789 node visual/tools/check-condition-monitoring-browser.mjs`
+- `node visual/tools/check-relation-matrix-readability.mjs`
+- `node visual/tools/check-relation-matrix-picker.mjs`
+- `node visual/tools/check-runtime-picking-preview.mjs`
+- `node visual/tools/check-views.mjs`
+- `node visual/tools/check-single-render-pipeline.mjs`
+- `node visual/tools/check-hero-grammar-contract.mjs`
+- `node visual/tools/check-public-gallery-evidence.mjs`
+- `node visual/tools/check-grae10-golden.mjs`
+- `node visual/tools/check-visual-regression-public-examples.mjs`
+- `node visual/tools/check-hero-screenshot-review.mjs`
+
+Corrected status:
+
+- GRAE10/MNIST remains the only accepted public hero.
+- Condition monitoring and relation-matrix/neighborhood are screenshot-ready
+  review candidates, not accepted public heroes.
+- Mixed records, cross-space dependency, mapping/dimensionality and
+  dynamics/noise still need their own review-candidate work order.

@@ -102,6 +102,8 @@ async function main() {
       && result.probe?.field?.viewClass === "PropertyFieldView"
       && result.probe?.field?.algorithmicComputation === false
       && result.probe?.trajectory?.viewClass === "TrajectoryPathView"
+      && result.probe?.derivedTimeSeriesLayerCount === 0
+      && includesAll(result.probe?.labelTexts, ["healthy", "drift", "fault", "recovery"])
       && result.hoverPreview?.visible === true
       && result.hoverPreview?.sparklineCount >= 1
       && /process window/i.test(result.hoverPreview?.title || "")
@@ -151,6 +153,14 @@ function conditionProbe() {
       recordCount: trajectory.metadata?.recordCount || null,
     } : null,
     labelCount: labels?.metadata?.labelCount || 0,
+    labelTexts: Array.isArray(labels?.labels)
+      ? labels.labels.map((label) => String(label?.text || "")).filter(Boolean)
+      : [],
+    derivedTimeSeriesLayerCount: descriptors.filter((descriptor) => (
+      descriptor?.kind === "record-skyline"
+        || descriptor?.metadata?.role === "miniature-record-volume"
+        || /curve energy/i.test(String(descriptor?.metadata?.visualizes || ""))
+    )).length,
     debugUiCount: document.querySelectorAll("[data-debug], .debug, #debug, .devtools, #devtools").length,
     loadingText: Array.from(document.querySelectorAll(".loading")).map((node) => node.textContent.trim()).join(" | "),
   };

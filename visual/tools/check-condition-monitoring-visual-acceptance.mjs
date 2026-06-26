@@ -82,6 +82,9 @@ assert("time-series preview payloads are exported",
 assert("page loads only the native condition-monitoring visual asset",
   page.includes("docs/examples/assets/condition-monitoring/metric.visual.json") && !/fetch\(\s*["'][^"']*evidence\.json/.test(page),
   { page: "visual/examples/condition-monitoring-hero/index.html" });
+assert("page disables derived time-series skyline geometry",
+  page.includes("includeRecordSkyline: false"),
+  { page: "visual/examples/condition-monitoring-hero/index.html" });
 assert("page renders through the condition-monitoring command only",
   page.includes(".showConditionMonitoring(") && !page.includes(".showProcessCurves("),
   {
@@ -97,6 +100,7 @@ const view = ProcessCurveSceneView.fromVisualSpace(document_, {
   graphId: "process-window-trajectory",
   groundField: "metric-anomaly-severity",
   useGraphTrajectory: true,
+  includeRecordSkyline: false,
   includeNeighborhood: false,
   includeMatrix: false,
 });
@@ -106,6 +110,7 @@ const field = descriptors.find((descriptor) => descriptor.primitive === "HeatFie
 const path = descriptors.find((descriptor) => descriptor.primitive === "CurveRibbonLayer" || descriptor.primitive === "CurveTubeMeshLayer");
 const points = descriptors.find((descriptor) => descriptor.primitive === "InstancedPointLayer");
 const labels = descriptors.find((descriptor) => descriptor.primitive === "BillboardLabelLayer");
+const skyline = descriptors.find(isDerivedTimeSeriesSkyline);
 
 const surface = createHeadlessSurface(document_);
 surface.showConditionMonitoring({
@@ -116,11 +121,13 @@ surface.showConditionMonitoring({
   graphId: "process-window-trajectory",
   groundField: "metric-anomaly-severity",
   useGraphTrajectory: true,
+  includeRecordSkyline: false,
   preview: false,
 });
 const commandDescriptors = surface.descriptors;
 const commandPrimitives = commandDescriptors.map((descriptor) => descriptor.primitive || descriptor.kind);
 const commandPath = commandDescriptors.find((descriptor) => descriptor.primitive === "CurveRibbonLayer" || descriptor.primitive === "CurveTubeMeshLayer");
+const commandSkyline = commandDescriptors.find(isDerivedTimeSeriesSkyline);
 
 assert("ProcessCurveSceneView is the primary grammar", view.kind === "process-curves" && view.metadata?.visualGrammar === "process-curves", {
   kind: view.kind,
@@ -144,6 +151,12 @@ assert("showConditionMonitoring final descriptors are not a point-cloud-only fal
   {
     primitives: commandPrimitives,
     trajectory: summarizeDescriptor(commandPath),
+  });
+assert("condition hero does not derive time-series geometry in JavaScript",
+  !skyline && !commandSkyline,
+  {
+    descriptors: descriptors.map(summarizeDescriptor),
+    commandDescriptors: commandDescriptors.map(summarizeDescriptor),
   });
 assert("exported anomaly field is emitted by PropertyFieldView", field?.metadata?.viewClass === "PropertyFieldView"
   && field.metadata?.propertyId === "metric-anomaly-severity"
@@ -206,6 +219,12 @@ function summarizeDescriptor(descriptor) {
     graphId: descriptor.metadata?.nativeEvidence?.graphId || descriptor.metadata?.graphId || null,
     labelCount: descriptor.metadata?.labelCount || null,
   };
+}
+
+function isDerivedTimeSeriesSkyline(descriptor) {
+  return descriptor?.kind === "record-skyline"
+    || descriptor?.metadata?.role === "miniature-record-volume"
+    || /curve energy/i.test(String(descriptor?.metadata?.visualizes || ""));
 }
 
 function createHeadlessSurface(document) {
