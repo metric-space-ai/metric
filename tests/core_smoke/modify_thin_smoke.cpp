@@ -306,6 +306,41 @@ int main()
 	REQUIRE(empty_thinned.source_record_count == space.size());
 	REQUIRE(empty_thinned.metric_status == mtrc::core::metric_traits<AbsoluteDistance>::law);
 
+	const auto empty_space = mtrc::make_space(std::vector<int>{}, AbsoluteDistance{});
+	const auto empty_uniform = mtrc::thin(empty_space, mtrc::uniform_density(1));
+	REQUIRE(empty_uniform.mapping == "thin");
+	REQUIRE(empty_uniform.strategy == "uniform_density_radius_net");
+	REQUIRE(empty_uniform.empty());
+	REQUIRE(empty_uniform.source_record_count == 0);
+	REQUIRE(empty_uniform.has_assignment_summary);
+	REQUIRE(empty_uniform.assignments.empty());
+	REQUIRE(empty_uniform.nearest_representative_distances.empty());
+	REQUIRE(empty_uniform.representative_multiplicities.empty());
+	REQUIRE(empty_uniform.representative_weights.empty());
+	REQUIRE(close(static_cast<double>(empty_uniform.coverage_radius), 0.0));
+	REQUIRE(close(empty_uniform.average_assignment_distance, 0.0));
+	REQUIRE(empty_uniform.diagnostics.populated);
+	REQUIRE(empty_uniform.diagnostics.policy == "maximal_radius_net");
+	REQUIRE(empty_uniform.diagnostics.source_record_count == 0);
+	REQUIRE(empty_uniform.diagnostics.target_record_count == 0);
+	REQUIRE(close(empty_uniform.diagnostics.coverage_radius, 0.0));
+	REQUIRE(close(empty_uniform.diagnostics.average_assignment_distance, 0.0));
+
+	const auto empty_equalized = mtrc::equalize(empty_space, mtrc::uniform_density(1));
+	REQUIRE(empty_equalized.mapping == "equalize");
+	REQUIRE(empty_equalized.empty());
+	REQUIRE(empty_equalized.has_assignment_summary);
+	REQUIRE(empty_equalized.diagnostics.populated);
+	REQUIRE(empty_equalized.diagnostics.target_record_count == 0);
+
+	const auto empty_sampled =
+		mtrc::uniform_density_sample(empty_space, mtrc::uniform_density(1), mtrc::space::storage::approximate());
+	REQUIRE(empty_sampled.mapping == "thin");
+	REQUIRE(empty_sampled.strategy == "sampled_uniform_density_radius_net");
+	REQUIRE(empty_sampled.empty());
+	REQUIRE(empty_sampled.has_assignment_summary);
+	REQUIRE(empty_sampled.diagnostics.policy == "sampled_radius_net");
+
 	REQUIRE(rejects([&] { (void)mtrc::thin(space, space.size() + 1); }));
 	REQUIRE(rejects([&] { (void)mtrc::thin(space, 1, mtrc::preserve_distribution(space.size())); }));
 

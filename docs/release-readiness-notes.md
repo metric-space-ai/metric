@@ -71,3 +71,11 @@ Agents should append dated entries here when changing release readiness status.
   Python examples passed.
 - 2026-06-25: Captured clean clone evidence from temporary committed snapshot
   `2d5bcdb`; configure, build, and CTest passed from an empty build directory.
+- 2026-06-26: Clarified that the landed `origin/main` state is a broad finite
+  metric-space release snapshot, not the narrow metric-space modification review
+  cut. Follow-up corrections should be focused, non-history-rewriting commits
+  with fresh verification evidence.
+- 2026-06-26: Added the post-review empty-space fix for uniform-density thinning
+  and equalization. A fresh `/tmp/metric-review-fix` Core build passed CTest with
+  193 discovered tests, 190 executed tests passed, 3 MNIST IDX-data skips, and 0
+  failed tests.

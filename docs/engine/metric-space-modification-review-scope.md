@@ -4,6 +4,17 @@ Use this file as the review cut for the finite metric-space modification work.
 The repository worktree currently contains many unrelated edits; do not stage
 them together with this change unless the PR intentionally expands scope.
 
+## Post-Main Scope Status
+
+As of 2026-06-26, this work has already landed on `origin/main` inside a
+broader finite metric-space release snapshot. Treat this file as the focused
+review lens for metric-space modification follow-up work, not as evidence that
+the landed `main` commit contains only the files listed below.
+
+Do not rewrite public history to recover the narrow review cut. Any further
+corrections should be small follow-up commits with their own verification
+evidence.
+
 ## Include In This Review
 
 Roadmap and public docs:
