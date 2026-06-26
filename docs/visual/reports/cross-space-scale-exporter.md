@@ -2,6 +2,14 @@
 
 Date: 2026-06-25
 
+Status note, 2026-06-26: this is a historical exporter execution report. The
+current authoritative scale/gate state is
+`docs/visual/reports/native-hero-scale-evidence-upgrade-plan.md` and
+`docs/visual/reports/visual-regression-performance-workstream.md`. The stale
+record-count blocker and temporary browser-runner failure described below are
+no longer the active gate state; the remaining blocker is
+screenshot/composition acceptance.
+
 ## Changed Files
 
 - `examples/engine/cross_space_dependency_visual_export.cpp`

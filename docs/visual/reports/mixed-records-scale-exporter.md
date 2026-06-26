@@ -3,6 +3,14 @@
 Date: 2026-06-25
 Branch: `codex/visual-engine-evidence-exporters`
 
+Status note, 2026-06-26: this is a historical exporter execution report. The
+current authoritative scale/gate state is
+`docs/visual/reports/native-hero-scale-evidence-upgrade-plan.md` and
+`docs/visual/reports/visual-regression-performance-workstream.md`. The stale
+record-count and record-type blockers described below have since been removed
+from the active Visual Brief state; the remaining blocker is
+screenshot/composition acceptance.
+
 ## Changed Files
 
 Edited by this task:

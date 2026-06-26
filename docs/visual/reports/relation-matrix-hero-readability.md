@@ -3,6 +3,14 @@
 Date: 2026-06-25
 Branch: `codex/visual-engine-evidence-exporters`
 
+Status note, 2026-06-26: this is a historical readability execution report.
+The current authoritative scale/gate state is
+`docs/visual/reports/native-hero-scale-evidence-upgrade-plan.md` and
+`docs/visual/reports/visual-regression-performance-workstream.md`. The stale
+record-count blocker context described below has since been superseded; the
+active relation-matrix blockers are screenshot/composition acceptance and human
+matrix-readability acceptance.
+
 ## Changed Files
 
 - `visual/src/views/RelationMatrixView.js`
