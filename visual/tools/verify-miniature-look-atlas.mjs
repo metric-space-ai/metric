@@ -4,12 +4,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  adaptMetricEvidenceV1,
   createMiniatureLookSceneAtlas,
   createMiniaturePhotographicRigContract,
   createMiniatureRigReport,
   createMiniatureStyleMotionAtlas,
-  createProcessCurveMiniatureLayerDescriptors,
+  ProcessCurveSceneView,
   miniatureRigReportDataset,
 } from "../src/index.js";
 
@@ -19,11 +18,16 @@ async function main() {
   const galleryHtml = await fs.readFile(path.join(root, "visual/examples/miniature-look-gallery/index.html"), "utf8");
   assertGalleryHtmlContract(galleryHtml);
 
-  const evidence = JSON.parse(await fs.readFile(path.join(root, "docs/examples/assets/process-curve-external/evidence.json"), "utf8"));
-  const document = adaptMetricEvidenceV1(evidence);
-  const sceneInput = createProcessCurveMiniatureLayerDescriptors(document, {
-    datasetId: "power_demand",
+  const document = JSON.parse(await fs.readFile(path.join(root, "docs/examples/assets/process-curve-external/metric.visual.json"), "utf8"));
+  const view = ProcessCurveSceneView.fromVisualSpace(document, {
+    datasetId: "process-curve-external",
+    targetCoordinateId: "process-curve-external-landmark-3d",
+    labelPropertyId: "process-role",
+    relationId: "process-curve-external-aligned-metric",
+    graphId: "process-curve-external-knn",
     morphLoop: true,
+    includeNeighborhood: true,
+    includeMatrix: true,
     pointSize: 1.72,
     projectionSize: 2.7,
     trackMode: "tube",
@@ -31,7 +35,7 @@ async function main() {
     trackRadialSegments: 8,
     trackAlpha: 0.9,
   });
-  const atlas = createMiniatureLookSceneAtlas(sceneInput.descriptors, {
+  const atlas = createMiniatureLookSceneAtlas(view.toLayerDescriptors(), {
     contacts: { includeSamples: false },
     fit: { targetSpan: 2.58 },
     metadata: {

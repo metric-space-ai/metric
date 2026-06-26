@@ -5,16 +5,38 @@
 #ifndef _METRIC_OPERATORS_ENTROPY_HPP
 #define _METRIC_OPERATORS_ENTROPY_HPP
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <limits>
+#include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 #include <metric/core/concepts.hpp>
+#include <metric/core/errors.hpp>
 #include <metric/core/result.hpp>
 #include <metric/correlation/entropy.hpp>
+#include <metric/stats/sample/sample.hpp>
 
 namespace mtrc::stats::properties {
+
+inline constexpr std::size_t default_max_exact_entropy_records = 4096;
+inline constexpr std::size_t default_entropy_sample_count = 1024;
+inline constexpr std::size_t default_entropy_max_distance_evaluations = 100'000'000;
+
+struct entropy_options {
+	std::size_t neighbor_count{7};
+	std::size_t approximation_order{70};
+	bool exponentiated{false};
+	std::size_t max_exact_records{default_max_exact_entropy_records};
+	bool allow_approximate{true};
+	std::size_t sample_count{default_entropy_sample_count};
+	std::size_t sample_seed{};
+	std::size_t max_distance_evaluations{default_entropy_max_distance_evaluations};
+};
 
 namespace entropy_detail {
 
@@ -48,6 +70,50 @@ inline auto entropy_effective_parameters(std::size_t record_count, std::size_t k
 		k_ = 2;
 	}
 	return {k_, p_};
+}
+
+inline auto checked_entropy_distance_product(std::size_t lhs, std::size_t rhs, const char *message) -> std::size_t
+{
+	if (rhs != 0 && lhs > std::numeric_limits<std::size_t>::max() / rhs) {
+		throw RepresentationError(message);
+	}
+	return lhs * rhs;
+}
+
+inline auto require_entropy_distance_budget(const char *operation, std::size_t record_count,
+											std::size_t max_distance_evaluations) -> void
+{
+	const auto estimated = checked_entropy_distance_product(
+		record_count, record_count, "entropy distance-evaluation estimate exceeds size_t capacity");
+	if (max_distance_evaluations == 0 || estimated <= max_distance_evaluations) {
+		return;
+	}
+	throw RepresentationError(
+		std::string(operation) + " refused entropy work before metric calls: records=" +
+		std::to_string(record_count) + ", estimated_distance_evaluations=" + std::to_string(estimated) +
+		", max_distance_evaluations=" + std::to_string(max_distance_evaluations) +
+		". Use entropy_options{allow_approximate=true} with a bounded sample_count, or raise the budget.");
+}
+
+template <typename Container>
+auto regular_entropy_sample(const Container &records, std::size_t sample_count, std::size_t sample_seed)
+{
+	using Record = typename std::decay<typename Container::value_type>::type;
+	const auto record_count = records.size();
+	if (sample_count == 0) {
+		throw std::invalid_argument("entropy sample_count must be positive");
+	}
+	if (sample_count > record_count) {
+		throw std::invalid_argument("entropy sample_count cannot exceed record_count");
+	}
+	const auto offset = record_count == 0 ? 0 : sample_seed % record_count;
+	const auto positions = sample::regular_sample_positions(record_count, sample_count, offset);
+	std::vector<Record> sampled;
+	sampled.reserve(positions.positions.size());
+	for (const auto position : positions.positions) {
+		sampled.push_back(records[position]);
+	}
+	return sampled;
 }
 
 // Entropy is a Level-1 PROPERTY of a coordinate finite metric space, not a source-metric
@@ -89,11 +155,12 @@ template <typename Container, typename Metric,
 		  typename Record = typename std::decay<typename Container::value_type>::type,
 		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
 auto coordinate_entropy(const Container &records, const Metric &metric, std::size_t k, std::size_t p,
-						bool exponentiated, const char *representation) -> EntropyResult<double>
+						bool exponentiated, const char *representation,
+						mtrc::entropy_resource_options resource_options = {}) -> EntropyResult<double>
 {
 	static_assert(CoordinateRecordLike_v<Record>,
 				  "mtrc::entropy requires an embedded coordinate space whose records expose size() and operator[]");
-	mtrc::Entropy<void, Metric> estimator(metric, k, p, exponentiated);
+	mtrc::Entropy<void, Metric> estimator(metric, k, p, exponentiated, resource_options);
 
 	auto result = core::make_entropy_result(estimator(records), records.size(), k, p, exponentiated, representation);
 
@@ -124,12 +191,70 @@ auto coordinate_entropy(const Container &records, const Metric &metric, std::siz
 } // namespace entropy_detail
 
 template <typename Space, typename std::enable_if<CoordinateSpaceLike_v<Space>, int>::type = 0>
+auto entropy(const Space &space, entropy_options options) -> EntropyResult<double>
+{
+	const auto record_count = space.size();
+	if (options.max_exact_records == 0 || record_count <= options.max_exact_records) {
+		entropy_detail::require_entropy_distance_budget("entropy", record_count, options.max_distance_evaluations);
+		auto result = entropy_detail::coordinate_entropy(space.records(), space.metric(), options.neighbor_count,
+														 options.approximation_order, options.exponentiated,
+														 "metric_space",
+														 mtrc::entropy_resource_options{options.max_exact_records,
+																					   options.max_distance_evaluations});
+		result.representation = "metric_space";
+		return result;
+	}
+
+	if (!options.allow_approximate) {
+		throw RepresentationError(
+			"entropy refused exact default work before metric calls: records=" + std::to_string(record_count) +
+			", max_exact_records=" + std::to_string(options.max_exact_records) +
+			". Set allow_approximate=true, lower sample_count, or explicitly raise max_exact_records.");
+	}
+
+	auto sample_count = std::min(options.sample_count, record_count);
+	if (record_count >= 4 && sample_count < 4) {
+		throw std::invalid_argument("entropy sample_count must be at least 4 for approximate entropy");
+	}
+	entropy_detail::require_entropy_distance_budget("sampled entropy", sample_count, options.max_distance_evaluations);
+
+	const auto sampled_records = entropy_detail::regular_entropy_sample(space.records(), sample_count, options.sample_seed);
+	auto result = entropy_detail::coordinate_entropy(sampled_records, space.metric(), options.neighbor_count,
+													 options.approximation_order, options.exponentiated,
+													 "sampled_metric_space",
+													 mtrc::entropy_resource_options{sample_count,
+																				   options.max_distance_evaluations});
+	result.record_count = record_count;
+	result.exact = false;
+	result.sample_count = sampled_records.size();
+	result.sample_seed = options.sample_seed;
+	result.approximation_reason =
+		"record_count exceeds max_exact_records; entropy evaluated on a deterministic regular sample";
+	result.representation = "sampled_metric_space";
+	return result;
+}
+
+template <typename Space, typename std::enable_if<CoordinateSpaceLike_v<Space>, int>::type = 0>
 auto entropy(const Space &space, std::size_t k = 7, std::size_t p = 70, bool exponentiated = false)
 	-> EntropyResult<double>
 {
-	auto result = entropy_detail::coordinate_entropy(space.records(), space.metric(), k, p, exponentiated,
-													 "metric_space");
-	result.representation = "metric_space";
+	entropy_options options;
+	options.neighbor_count = k;
+	options.approximation_order = p;
+	options.exponentiated = exponentiated;
+	return entropy(space, options);
+}
+
+template <typename Space>
+auto entropy(const core::MappingResult<Space> &mapping, entropy_options options) -> EntropyResult<double>
+{
+	core::require_mapping_result_contract(mapping, "entropy(mapping)");
+	static_assert(CoordinateSpaceLike_v<Space>,
+				  "mtrc::entropy requires a MappingResult whose target space is an embedded coordinate space");
+	auto result = entropy(mapping.space, options);
+	if (result.exact) {
+		result.representation = mapping.representation.empty() ? "mapped_metric_space" : mapping.representation;
+	}
 	return result;
 }
 
@@ -137,12 +262,11 @@ template <typename Space>
 auto entropy(const core::MappingResult<Space> &mapping, std::size_t k = 7, std::size_t p = 70,
 			 bool exponentiated = false) -> EntropyResult<double>
 {
-	core::require_mapping_result_contract(mapping, "entropy(mapping)");
-	static_assert(CoordinateSpaceLike_v<Space>,
-				  "mtrc::entropy requires a MappingResult whose target space is an embedded coordinate space");
-	auto result = entropy(mapping.space, k, p, exponentiated);
-	result.representation = mapping.representation.empty() ? "mapped_metric_space" : mapping.representation;
-	return result;
+	entropy_options options;
+	options.neighbor_count = k;
+	options.approximation_order = p;
+	options.exponentiated = exponentiated;
+	return entropy(mapping, options);
 }
 
 } // namespace mtrc::stats::properties

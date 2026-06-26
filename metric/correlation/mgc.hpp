@@ -20,11 +20,19 @@ Copyright (c) 2018, Michael Welsch
 #ifndef _METRIC_CORRELATION_DETAILS_MGC_HPP
 #define _METRIC_CORRELATION_DETAILS_MGC_HPP
 
+#include <cstddef>
+
 #include <metric/numeric.hpp>
 
 namespace mtrc {
 
 template <typename T> using DistanceMatrix = mtrc::numeric::SymmetricMatrix<mtrc::numeric::DynamicMatrix<T>>;
+
+struct mgc_resource_options {
+	std::size_t max_exact_records = 4096;
+	std::size_t max_distance_evaluations = 100'000'000;
+	std::size_t max_matrix_cells = 100'000'000;
+};
 
 /** @class MGC
  *  @brief Multiscale graph correlation
@@ -45,7 +53,11 @@ template <class RecType1, class Metric1, class RecType2, class Metric2> class MG
 	 * @param m1 Metric1 object
 	 * @param m2 Metric1 object
 	 */
-	explicit MGC(const Metric1 &m1 = Metric1(), const Metric2 &m2 = Metric2()) : metric1(m1), metric2(m2) {}
+	explicit MGC(const Metric1 &m1 = Metric1(), const Metric2 &m2 = Metric2(),
+				 mgc_resource_options resource_options = {})
+		: metric1(m1), metric2(m2), resource_options(resource_options)
+	{
+	}
 
 	/** @brief sample MGC dependence statistic between paired spaces a and b
 	 * @details A dependence/correlation statistic in [-1, 1], NOT a metric or distance.
@@ -91,6 +103,7 @@ template <class RecType1, class Metric1, class RecType2, class Metric2> class MG
   private:
 	Metric1 metric1;
 	Metric2 metric2;
+	mgc_resource_options resource_options;
 };
 
 /**
@@ -99,6 +112,8 @@ template <class RecType1, class Metric1, class RecType2, class Metric2> class MG
  *
  */
 struct MGC_direct {
+	explicit MGC_direct(mgc_resource_options resource_options = {}) : resource_options(resource_options) {}
+
 	/**
 	 * @brief
 	 *
@@ -243,6 +258,9 @@ struct MGC_direct {
 	template <typename T>
 	T optimal_local_generalized_correlation(const mtrc::numeric::DynamicMatrix<T> &corr,
 											const mtrc::numeric::DynamicMatrix<bool> &R);
+
+  private:
+	mgc_resource_options resource_options;
 };
 
 } // namespace mtrc

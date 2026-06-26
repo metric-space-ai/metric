@@ -6,6 +6,7 @@
 #define _METRIC_STATS_SAMPLE_SAMPLE_HPP
 
 #include <cstddef>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -13,6 +14,7 @@
 #include <vector>
 
 #include <metric/core/concepts.hpp>
+#include <metric/core/errors.hpp>
 #include <metric/core/metric_space.hpp>
 #include <metric/core/result.hpp>
 #include <metric/record/id.hpp>
@@ -79,6 +81,33 @@ inline auto regular_sample_positions(std::size_t record_count, std::size_t count
 }
 
 namespace sample_detail {
+
+inline auto checked_sample_distance_product(std::size_t lhs, std::size_t rhs, const char *message) -> std::size_t
+{
+	if (rhs != 0 && lhs > std::numeric_limits<std::size_t>::max() / rhs) {
+		throw RepresentationError(message);
+	}
+	return lhs * rhs;
+}
+
+inline auto require_sample_distance_budget(const char *operation, std::size_t record_count,
+										   std::size_t sample_count, std::size_t pass_count,
+										   std::size_t max_distance_evaluations) -> void
+{
+	const auto per_pass = checked_sample_distance_product(
+		record_count, sample_count, "sample distance-evaluation estimate exceeds size_t capacity");
+	const auto estimated = checked_sample_distance_product(
+		per_pass, pass_count, "sample distance-evaluation estimate exceeds size_t capacity");
+	if (max_distance_evaluations == 0 || estimated <= max_distance_evaluations) {
+		return;
+	}
+	throw RepresentationError(
+		std::string(operation) + " refused exact sample work before metric calls: records=" +
+		std::to_string(record_count) + ", sample_count=" + std::to_string(sample_count) +
+		", estimated_distance_evaluations=" + std::to_string(estimated) +
+		", max_distance_evaluations=" + std::to_string(max_distance_evaluations) +
+		". Use a smaller sample, a sampled/chunked higher-level operator, or raise the budget.");
+}
 
 template <typename Provider, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
 auto make_sample_result(const Provider &provider, std::vector<RecordId> record_ids, std::size_t requested_count,
@@ -169,6 +198,8 @@ auto farthest_first(const Provider &provider, std::size_t count, farthest_first_
 	if (options.seed_index >= provider.record_count()) {
 		throw std::out_of_range("seed_index is outside the distance provider");
 	}
+	sample_detail::require_sample_distance_budget(
+		"farthest_first", provider.record_count(), count, 2, options.max_distance_evaluations);
 
 	std::vector<RecordId> selected_ids;
 	selected_ids.reserve(count);
@@ -234,6 +265,8 @@ auto metric_walk(const Provider &provider, std::size_t count, metric_walk_option
 	if (options.seed_index >= provider.record_count()) {
 		throw std::out_of_range("seed_index is outside the distance provider");
 	}
+	sample_detail::require_sample_distance_budget(
+		"metric_walk", provider.record_count(), count, 2, options.max_distance_evaluations);
 
 	std::vector<RecordId> selected_ids;
 	selected_ids.reserve(count);
@@ -286,6 +319,8 @@ auto regular_sample(const Provider &provider, std::size_t count, std::size_t off
 	-> SampleResult<typename Provider::distance_type>
 {
 	const auto index_sample = regular_sample_positions(provider.record_count(), count, offset);
+	sample_detail::require_sample_distance_budget(
+		"regular_sample", provider.record_count(), count, 1, default_sample_max_distance_evaluations);
 	std::vector<RecordId> selected_ids;
 	selected_ids.reserve(index_sample.positions.size());
 	for (const auto position : index_sample.positions) {

@@ -157,6 +157,66 @@ int main()
 	assert_weights_close(materialized.representative_weights, compressed.representative_weights);
 	assert(materialized.space.record(materialized.space.id(1)) == compressed.space.record(compressed.space.id(1)));
 
+	auto exact_lazy_budget_calls = std::make_shared<std::size_t>(0);
+	const auto exact_lazy_budget_space =
+		mtrc::make_space(std::vector<int>{0, 1, 2, 3, 4, 5, 6, 7},
+						 CountingAbsoluteDistance{exact_lazy_budget_calls});
+	const auto refusing_exact_lazy_policy =
+		mtrc::space::storage::with_distance_evaluation_budget(mtrc::space::storage::exact(), 4);
+	const auto refused_exact_lazy_plan =
+		mtrc::space::storage::estimate_cost(exact_lazy_budget_space, "compress", refusing_exact_lazy_policy, 3);
+	assert(refused_exact_lazy_plan.refused);
+	assert(refused_exact_lazy_plan.reason.find("max_distance_evaluations") != std::string::npos);
+	bool refused_exact_lazy_count = false;
+	try {
+		(void)mtrc::compress(exact_lazy_budget_space, 3, mtrc::space::select::farthest_first{},
+							 refusing_exact_lazy_policy);
+	} catch (const mtrc::RepresentationError &error) {
+		refused_exact_lazy_count = true;
+		const std::string message = error.what();
+		assert(message.find("max_distance_evaluations") != std::string::npos);
+	}
+	assert(refused_exact_lazy_count);
+	assert(*exact_lazy_budget_calls == 0);
+
+	bool refused_exact_lazy_radius = false;
+	try {
+		(void)mtrc::compress(exact_lazy_budget_space, mtrc::space::select::radius_coverage{1},
+							 refusing_exact_lazy_policy);
+	} catch (const mtrc::RepresentationError &error) {
+		refused_exact_lazy_radius = true;
+		const std::string message = error.what();
+		assert(message.find("max_distance_evaluations") != std::string::npos);
+	}
+	assert(refused_exact_lazy_radius);
+	assert(*exact_lazy_budget_calls == 0);
+
+	bool refused_exact_lazy_medoids = false;
+	try {
+		(void)mtrc::compress(exact_lazy_budget_space, mtrc::k_medoids_options(2), refusing_exact_lazy_policy);
+	} catch (const mtrc::RepresentationError &error) {
+		refused_exact_lazy_medoids = true;
+		const std::string message = error.what();
+		assert(message.find("max_distance_evaluations") != std::string::npos);
+	}
+	assert(refused_exact_lazy_medoids);
+	assert(*exact_lazy_budget_calls == 0);
+
+	const auto accepted_exact_lazy_policy =
+		mtrc::space::storage::with_distance_evaluation_budget(mtrc::space::storage::exact(), 64);
+	const auto accepted_exact_lazy_plan =
+		mtrc::space::storage::estimate_cost(exact_lazy_budget_space, "compress", accepted_exact_lazy_policy, 3);
+	assert(accepted_exact_lazy_plan.allowed);
+	assert(!accepted_exact_lazy_plan.refused);
+	assert(accepted_exact_lazy_plan.estimated_distance_evaluations <= accepted_exact_lazy_policy.max_distance_evaluations());
+	const auto accepted_exact_lazy =
+		mtrc::compress(exact_lazy_budget_space, 3, mtrc::space::select::farthest_first{},
+					   accepted_exact_lazy_policy);
+	assert(accepted_exact_lazy.exact);
+	assert(accepted_exact_lazy.representation == "metric_space");
+	assert(accepted_exact_lazy.compressed_record_count == 3);
+	assert(*exact_lazy_budget_calls <= accepted_exact_lazy_policy.max_distance_evaluations());
+
 	const auto coverage = mtrc::compress(line, 3, mtrc::space::select::coverage{});
 	assert(coverage.strategy == "coverage");
 	assert(coverage.source_record_ids == compressed.source_record_ids);
@@ -342,13 +402,28 @@ int main()
 	assert(default_large_compress.nearest_representative_distances.size() == large_line.size());
 	assert(default_large_compress.representative_multiplicities.size() ==
 		   default_large_compress.compressed_record_count);
-	assert(default_large_compress.representative_weights.size() == default_large_compress.compressed_record_count);
-	assert_weight_mass(default_large_compress.representative_multiplicities,
-					   default_large_compress.representative_weights, default_large_compress.source_record_count);
+		assert(default_large_compress.representative_weights.size() == default_large_compress.compressed_record_count);
+		assert_weight_mass(default_large_compress.representative_multiplicities,
+						   default_large_compress.representative_weights, default_large_compress.source_record_count);
 
-	const auto bounded_approximate =
-		mtrc::compress(large_line, 8, mtrc::space::select::farthest_first{},
-					   mtrc::space::storage::using_knn_graph(32, mtrc::space::storage::approximate()));
+		auto default_large_radius_calls = std::make_shared<std::size_t>(0);
+		const auto default_large_radius_line =
+			mtrc::make_space(large_records, CountingAbsoluteDistance{default_large_radius_calls});
+		const auto default_large_radius =
+			mtrc::compress(default_large_radius_line, mtrc::space::select::radius_coverage{8});
+		assert(!default_large_radius.exact);
+		assert(default_large_radius.representation == "sampled_metric_space");
+		assert(default_large_radius.strategy == "sampled_radius_coverage");
+		assert(default_large_radius.source_record_count == default_large_radius_line.size());
+		assert(default_large_radius.assignments.size() == default_large_radius_line.size());
+		assert_weight_mass(default_large_radius.representative_multiplicities,
+						   default_large_radius.representative_weights, default_large_radius.source_record_count);
+		assert(*default_large_radius_calls < default_large_radius_line.size() *
+												 (default_large_radius_line.size() - 1) / 2);
+
+		const auto bounded_approximate =
+			mtrc::compress(large_line, 8, mtrc::space::select::farthest_first{},
+						   mtrc::space::storage::using_knn_graph(32, mtrc::space::storage::approximate()));
 	assert(!bounded_approximate.exact);
 	assert(bounded_approximate.representation == "sampled_metric_space");
 	assert(bounded_approximate.strategy == "sampled_farthest_first");

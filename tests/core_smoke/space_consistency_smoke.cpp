@@ -68,5 +68,22 @@ int main()
 
 	assert(matrix_values == tree_values);
 
+	std::vector<int> large_records(1001, 0);
+	bool rejected_large_matrix = false;
+	try {
+		(void)mtrc::MatrixSpace<int, AbsoluteDistance>(large_records);
+	} catch (const mtrc::RepresentationError &) {
+		rejected_large_matrix = true;
+	}
+	assert(rejected_large_matrix);
+
+	bool rejected_large_graph = false;
+	try {
+		(void)mtrc::GraphSpace<int, AbsoluteDistance>(large_records, 1, large_records.size());
+	} catch (const mtrc::RepresentationError &) {
+		rejected_large_graph = true;
+	}
+	assert(rejected_large_graph);
+
 	return 0;
 }

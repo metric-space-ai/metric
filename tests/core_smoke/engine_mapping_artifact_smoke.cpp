@@ -1,5 +1,6 @@
 #include <cassert>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <vector>
 
@@ -7,6 +8,16 @@
 
 struct AbsoluteDistance {
 	auto operator()(int lhs, int rhs) const -> int { return lhs > rhs ? lhs - rhs : rhs - lhs; }
+};
+
+struct CountingAbsoluteDistance {
+	int *calls{};
+
+	auto operator()(int lhs, int rhs) const -> int
+	{
+		++(*calls);
+		return lhs > rhs ? lhs - rhs : rhs - lhs;
+	}
 };
 
 int main()
@@ -51,6 +62,42 @@ int main()
 	assert(density_space.source_record_count == space.size());
 	assert(density_space.source_records[0].size() == 2);
 	assert(density_space.source_records[1].size() == 2);
+
+	int counted_metric_calls = 0;
+	auto counted_space =
+		mtrc::make_space(std::vector<int>{0, 1, 2, 3, 4}, CountingAbsoluteDistance{&counted_metric_calls});
+	const auto singleton_groups = mtrc::core::make_clustering_result<int>(
+		std::vector<std::size_t>{0, 1, 2, 3, 4},
+		std::vector<mtrc::RecordId>{counted_space.id(0), counted_space.id(1), counted_space.id(2),
+									counted_space.id(3), counted_space.id(4)},
+		std::vector<mtrc::RecordId>{}, std::vector<mtrc::RecordId>{}, std::vector<std::size_t>{1, 1, 1, 1, 1},
+		0, true, "manual_singletons", "metric_space");
+	auto low_distance_budget = mtrc::modify::map::ClusteredSpaceOptions{};
+	low_distance_budget.max_representatives = 0;
+	low_distance_budget.max_memory_bytes = 0;
+	low_distance_budget.max_distance_evaluations = counted_space.size() * counted_space.size() - 1;
+	bool rejected_large_representative_table = false;
+	try {
+		const auto guarded_mapping =
+			mtrc::modify::map::make_clustered_space_mapping(singleton_groups, low_distance_budget);
+		(void)mtrc::modify::map::derive_from(guarded_mapping, counted_space);
+	} catch (const mtrc::RepresentationError &error) {
+		rejected_large_representative_table = true;
+		const std::string message = error.what();
+		assert(message.find("clustered_space") != std::string::npos);
+		assert(message.find("max_distance_evaluations") != std::string::npos);
+	}
+	assert(rejected_large_representative_table);
+	assert(counted_metric_calls == 0);
+
+	auto explicit_unbounded_budget = mtrc::modify::map::ClusteredSpaceOptions{};
+	explicit_unbounded_budget.max_representatives = 0;
+	explicit_unbounded_budget.max_memory_bytes = 0;
+	explicit_unbounded_budget.max_distance_evaluations = 0;
+	const auto singleton_space =
+		mtrc::modify::map::clustered_space(counted_space, singleton_groups, explicit_unbounded_budget);
+	assert(singleton_space.space.size() == counted_space.size());
+	assert(counted_metric_calls == static_cast<int>(counted_space.size() * counted_space.size()));
 
 	auto invalid_groups = groups;
 	invalid_groups.assignments.pop_back();

@@ -59,6 +59,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -84,6 +85,8 @@ namespace mtrc::modify::dynamics {
 /// derive the heat-kernel scale `eps` from the data (mean k-NN distance), which
 /// keeps the transition probabilities a pure function of the metric.
 inline constexpr std::size_t default_metric_transition_max_dense_records = 4096;
+inline constexpr std::size_t default_metric_transition_max_memory_bytes = 512ULL * 1024ULL * 1024ULL;
+inline constexpr std::size_t default_metric_transition_max_distance_evaluations = 100'000'000;
 
 struct dynamics_schedule {
 	std::size_t neighbors = 6;   ///< k for the metric neighbourhood graph.
@@ -93,6 +96,8 @@ struct dynamics_schedule {
 	std::uint64_t seed = 0;      ///< seed for every stochastic draw (full reproducibility).
 	double bandwidth = 0.0;      ///< heat-kernel eps; 0 => derive from mean k-NN distance.
 	std::size_t max_dense_records = default_metric_transition_max_dense_records; ///< 0 => no dense preflight limit.
+	std::size_t max_memory_bytes = default_metric_transition_max_memory_bytes; ///< 0 => unbounded dense memory opt-in.
+	std::size_t max_distance_evaluations = default_metric_transition_max_distance_evaluations; ///< 0 => unbounded metric eval opt-in.
 };
 
 // ----------------------------------------------------------------------------
@@ -104,6 +109,68 @@ struct dynamics_schedule {
 // splitmix64 + Box-Muller is tiny, well understood and fully reproducible.
 // ----------------------------------------------------------------------------
 namespace detail {
+
+inline auto checked_dense_product(std::size_t lhs, std::size_t rhs, const char *operation) -> std::size_t
+{
+	if (rhs != 0 && lhs > std::numeric_limits<std::size_t>::max() / rhs) {
+		throw MetricInputError(std::string(operation) + " dense budget estimate exceeds size_t capacity");
+	}
+	return lhs * rhs;
+}
+
+inline auto dense_cell_count(std::size_t record_count, const char *operation) -> std::size_t
+{
+	return checked_dense_product(record_count, record_count, operation);
+}
+
+inline auto dense_unordered_pair_count(std::size_t record_count) -> std::size_t
+{
+	if (record_count < 2) {
+		return 0;
+	}
+	return record_count % 2 == 0 ? (record_count / 2) * (record_count - 1)
+								 : record_count * ((record_count - 1) / 2);
+}
+
+inline auto dense_matrix_memory_bytes(std::size_t record_count, std::size_t matrix_count, const char *operation)
+	-> std::size_t
+{
+	const auto cells = dense_cell_count(record_count, operation);
+	const auto matrix_cells = checked_dense_product(cells, matrix_count, operation);
+	return checked_dense_product(matrix_cells, sizeof(double), operation);
+}
+
+inline auto require_dense_metric_budget(const char *operation, std::size_t record_count, std::size_t max_dense_records,
+										std::size_t max_memory_bytes,
+										std::size_t max_distance_evaluations,
+										std::size_t matrix_count) -> void
+{
+	const auto estimated_bytes = dense_matrix_memory_bytes(record_count, matrix_count, operation);
+	const auto estimated_distance_evaluations = dense_unordered_pair_count(record_count);
+	if (max_dense_records > 0 && record_count > max_dense_records) {
+		throw MetricInputError(std::string(operation) + " dense construction exceeds max_dense_records: records=" +
+							   std::to_string(record_count) + " max_dense_records=" +
+							   std::to_string(max_dense_records) +
+							   " estimated_bytes=" + std::to_string(estimated_bytes) +
+							   " estimated_distance_evaluations=" +
+							   std::to_string(estimated_distance_evaluations));
+	}
+	if (max_memory_bytes > 0 && estimated_bytes > max_memory_bytes) {
+		throw MetricInputError(std::string(operation) + " dense construction exceeds max_memory_bytes: records=" +
+							   std::to_string(record_count) + " estimated_bytes=" +
+							   std::to_string(estimated_bytes) + " budget_bytes=" +
+							   std::to_string(max_memory_bytes) +
+							   " estimated_distance_evaluations=" +
+							   std::to_string(estimated_distance_evaluations));
+	}
+	if (max_distance_evaluations > 0 && estimated_distance_evaluations > max_distance_evaluations) {
+		throw MetricInputError(
+			std::string(operation) + " dense construction exceeds max_distance_evaluations: records=" +
+			std::to_string(record_count) + " estimated_distance_evaluations=" +
+			std::to_string(estimated_distance_evaluations) + " distance_evaluation_budget=" +
+			std::to_string(max_distance_evaluations) + " estimated_bytes=" + std::to_string(estimated_bytes));
+	}
+}
 
 class deterministic_rng {
   public:
@@ -229,11 +296,9 @@ auto metric_transition(const Space &space, const dynamics_schedule &schedule) ->
 	if (n == 0) {
 		throw std::invalid_argument("metric_transition requires a non-empty metric space");
 	}
-	if (schedule.max_dense_records > 0 && n > schedule.max_dense_records) {
-		throw MetricInputError("metric_transition dense construction exceeds max_dense_records: records=" +
-							   std::to_string(n) + " max_dense_records=" +
-							   std::to_string(schedule.max_dense_records));
-	}
+	detail::require_dense_metric_budget("metric_transition", n, schedule.max_dense_records,
+										schedule.max_memory_bytes,
+										schedule.max_distance_evaluations, 3);
 	const std::size_t k = std::min(schedule.neighbors, n > 0 ? n - 1 : 0);
 
 	const auto distances = detail::distance_matrix(space);

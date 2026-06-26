@@ -109,8 +109,8 @@ strategy = farthest_first, coverage radius = 16.4847, avg nearest = 6.4810
     rep 2 = bearingrun sev3.0000
     rep 3 = filterbed sev2.0000
 
---- clustering (k-medoids, k=4) ---
-composite: algorithm = kmedoids, clusters = 4, family purity = 1.0000
+--- grouping (representative strategy, k=4) ---
+composite: strategy = representative medoids, groups = 4, family purity = 1.0000
 flat:      clusters = 4, family purity = 1.0000
 (note: family is redundantly encoded -- distinct code letter-multisets, the curve phase, and a
  family vital -- so the flat baseline also separates families; the composite's edge is in the
@@ -120,8 +120,8 @@ flat:      clusters = 4, family purity = 1.0000
 fleet nearest-neighbour distance: min=3.3032 median=3.3032 max(excl anomaly)=3.3032
 anomaly nearest-neighbour distance = 39.1314
 
---- outliers / structure (DBSCAN) ---
-strategy = dbscan_density_outlier, representation = distance_table, flagged = 1 of 21
+--- singular records / density structure ---
+strategy = radius-density unassigned records, representation = distance_table, flagged = 1 of 21
     outlier index 20 (injected anomaly)
 
 --- cross-space MGC vs latent severity ---
@@ -218,8 +218,8 @@ record_metric = metrics.Composite(
 fleet = Space(records, metric=record_metric)
 fleet.neighbors(query, count=3)               # cover-tree routed (admitted metric)
 fleet.representatives(count=4)                # farthest-first archetypes
-fleet.groups(count=4)                         # k-medoids fault families
-fleet.outliers(strategy="dbscan", ...)        # DBSCAN novelty
+fleet.groups(count=4)                         # representative fault-family groups
+fleet.density_filter(radius=..., ...)         # concrete radius-density comparison
 fleet.compare(outcome_space, strategy="mgc")  # cross-space dependence vs severity
 ```
 

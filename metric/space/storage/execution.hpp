@@ -15,6 +15,7 @@
 #include <metric/core/metric_traits.hpp>
 #include <metric/space/chunked.hpp>
 #include "blocked_distance_table.hpp"
+#include "cover_tree_index.hpp"
 #include "distance_table.hpp"
 #include "policy.hpp"
 
@@ -392,6 +393,18 @@ inline auto blocked_distance_table_options_for(policy runtime_policy,
 		runtime_policy, budget_from_policy(runtime_policy), runtime);
 }
 
+inline auto estimate_resample_distance_evaluations(std::size_t record_count) -> std::size_t
+{
+	const auto dense_scan = detail::checked_distance_table_size_product(
+		record_count, record_count, "resample distance-evaluation estimate exceeds size_t capacity");
+	const auto two_scans = detail::checked_distance_table_size_sum(
+		dense_scan, dense_scan, "resample distance-evaluation estimate exceeds size_t capacity");
+	const auto four_scans = detail::checked_distance_table_size_sum(
+		two_scans, two_scans, "resample distance-evaluation estimate exceeds size_t capacity");
+	return detail::checked_distance_table_size_sum(
+		four_scans, four_scans, "resample distance-evaluation estimate exceeds size_t capacity");
+}
+
 inline auto estimate_live_distance_evaluations(std::size_t record_count, const std::string &intent,
 											   std::size_t query_count = 0) -> std::size_t
 {
@@ -401,10 +414,25 @@ inline auto estimate_live_distance_evaluations(std::size_t record_count, const s
 			"compare distance-evaluation estimate exceeds size_t capacity");
 	}
 	if (intent == "resample") {
+		return estimate_resample_distance_evaluations(record_count);
+	}
+	if (intent == "compress") {
+		if (query_count > 0) {
+			const auto representative_work = detail::checked_distance_table_size_product(
+				record_count, query_count, "compress distance-evaluation estimate exceeds size_t capacity");
+			return detail::checked_distance_table_size_sum(
+				representative_work, representative_work,
+				"compress distance-evaluation estimate exceeds size_t capacity");
+		}
 		return detail::checked_distance_table_size_product(
-			record_count, record_count, "resample distance-evaluation estimate exceeds size_t capacity");
+			record_count, record_count, "compress distance-evaluation estimate exceeds size_t capacity");
+	}
+	if (intent == "representatives" && query_count > 0) {
+		return detail::checked_distance_table_size_product(
+			record_count, query_count, "representatives distance-evaluation estimate exceeds size_t capacity");
 	}
 	if (intent == "groups" || intent == "outliers" || intent == "density_filter" ||
+		intent == "representatives" ||
 		intent == "describe" ||
 		intent == "workflow" || intent == "workflow_context") {
 		return detail::distance_table_dense_slot_count(record_count);
@@ -696,7 +724,7 @@ inline auto approximate_runtime_intent_supported(const std::string &intent) -> b
 {
 	return intent == "compare" || intent == "neighbors" || intent == "range" ||
 		   intent == "groups" || intent == "outliers" || intent == "density_filter" ||
-		   intent == "compress" || intent == "resample";
+		   intent == "compress" || intent == "resample" || intent == "representatives";
 }
 
 inline auto sampled_fallback_representation_for_intent(const std::string &intent) -> std::string
@@ -714,7 +742,7 @@ inline auto chunked_workflow_intent_supported(const std::string &intent) -> bool
 
 inline auto chunked_approximate_modify_intent_supported(const std::string &intent) -> bool
 {
-	return intent == "compress" || intent == "resample";
+	return intent == "compress" || intent == "resample" || intent == "representatives";
 }
 
 inline auto chunked_approximate_compare_intent_supported(const std::string &intent) -> bool
@@ -1068,7 +1096,8 @@ inline auto estimate_cost(const Space &space, std::string intent, policy runtime
 			plan.estimated_distance_evaluations = choice.estimated_distance_evaluations;
 			plan.memory_bytes_estimate = choice.memory_bytes_estimate;
 		} else if (plan.intent == "groups" || plan.intent == "outliers" || plan.intent == "density_filter" ||
-				   plan.intent == "compress" || plan.intent == "resample") {
+				   plan.intent == "compress" || plan.intent == "resample" ||
+				   plan.intent == "representatives") {
 			plan.representation = "sampled_metric_space";
 			plan.estimated_distance_evaluations =
 				estimate_approximate_structural_distance_evaluations(plan.record_count);
@@ -1178,10 +1207,16 @@ inline auto estimate_cost(const Space &space, std::string intent, policy runtime
 				apply_budget_refusal(plan, reason, fallback_hint_for_distance_budget(budget));
 			}
 		}
-	} else if (runtime_policy.is_exact() && runtime_policy.representation_mode() == representation::knn_graph) {
-		plan.estimated_distance_evaluations =
-			estimate_knn_graph_distance_evaluations(plan.record_count, plan.intent, plan.query_count);
-		plan.memory_bytes_estimate = estimate_knn_graph_memory_bytes<typename Space::distance_type>(
+		} else if (runtime_policy.is_exact() && runtime_policy.representation_mode() == representation::cover_tree) {
+			plan.estimated_distance_evaluations =
+				estimate_cover_tree_build_distance_evaluations(plan.record_count) +
+				estimate_live_distance_evaluations(plan.record_count, plan.intent, plan.query_count);
+			plan.memory_bytes_estimate = estimate_cover_tree_index_memory_bytes<typename Space::record_type>(
+				plan.record_count);
+		} else if (runtime_policy.is_exact() && runtime_policy.representation_mode() == representation::knn_graph) {
+			plan.estimated_distance_evaluations =
+				estimate_knn_graph_distance_evaluations(plan.record_count, plan.intent, plan.query_count);
+			plan.memory_bytes_estimate = estimate_knn_graph_memory_bytes<typename Space::distance_type>(
 			plan.record_count, runtime_policy.graph_neighbors());
 	} else if (runtime_policy.is_exact()) {
 		plan.estimated_distance_evaluations =

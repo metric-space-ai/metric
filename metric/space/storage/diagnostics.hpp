@@ -101,6 +101,7 @@ struct knn_graph_quality_diagnostics {
 	std::size_t edge_count{};
 	std::size_t requested_neighbors{};
 	std::size_t evaluated_queries{};
+	std::size_t requested_sample_count{};
 	std::size_t evaluated_neighbor_count{};
 	std::size_t matched_neighbors{};
 	std::size_t possible_neighbors{};
@@ -114,6 +115,7 @@ struct knn_graph_quality_diagnostics {
 	double maximum_best_distance_inflation{1.0};
 	bool exact_reference{true};
 	bool approximate_candidate{true};
+	bool sampled{};
 	bool stale{};
 	std::vector<std::string> warnings;
 };

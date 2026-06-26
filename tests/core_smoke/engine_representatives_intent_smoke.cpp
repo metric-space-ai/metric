@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cmath>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -9,6 +10,26 @@
 struct AbsoluteDistance {
 	auto operator()(int lhs, int rhs) const -> int { return lhs > rhs ? lhs - rhs : rhs - lhs; }
 };
+
+struct CountingAbsoluteDistance {
+	std::shared_ptr<std::size_t> calls;
+
+	auto operator()(int lhs, int rhs) const -> int
+	{
+		++*calls;
+		return lhs > rhs ? lhs - rhs : rhs - lhs;
+	}
+};
+
+auto line_records(std::size_t count) -> std::vector<int>
+{
+	std::vector<int> records;
+	records.reserve(count);
+	for (std::size_t index = 0; index < count; ++index) {
+		records.push_back(static_cast<int>(index));
+	}
+	return records;
+}
 
 int main()
 {
@@ -69,6 +90,63 @@ int main()
 	assert(materialized_seeded[0] == line.id(2));
 	assert(materialized_seeded[1] == line.id(0));
 
+	const auto approximate = mtrc::find_representatives(line, 2, mtrc::space::storage::approximate());
+	assert(!approximate.exact);
+	assert(approximate.representation == "sampled_metric_space");
+	assert(approximate.strategy == "sampled_farthest_first");
+	assert(approximate.size() == 2);
+
+	const auto approximate_coverage =
+		mtrc::find_representatives(line, 2, mtrc::space::select::coverage{}, mtrc::space::storage::approximate());
+	assert(!approximate_coverage.exact);
+	assert(approximate_coverage.representation == "sampled_metric_space");
+	assert(approximate_coverage.strategy == "sampled_coverage");
+
+	const auto approximate_radius = mtrc::find_representatives(
+		line, mtrc::space::select::radius_coverage{1}, mtrc::space::storage::approximate());
+	assert(!approximate_radius.exact);
+	assert(approximate_radius.representation == "sampled_metric_space");
+	assert(approximate_radius.strategy == "sampled_radius_coverage");
+
+	const auto chunked_records = line_records(48);
+	auto chunked_calls = std::make_shared<std::size_t>(0);
+	const auto chunked_space = mtrc::make_space(chunked_records, CountingAbsoluteDistance{chunked_calls});
+	auto chunked_policy = mtrc::space::storage::using_distance_table();
+	chunked_policy = mtrc::space::storage::with_distance_table_budget(chunked_policy, 8, 0);
+	chunked_policy = mtrc::space::storage::allow_approximate_fallback(chunked_policy);
+	chunked_policy = mtrc::space::storage::allow_chunking_fallback(chunked_policy);
+	const auto chunked_plan = mtrc::space::storage::estimate_cost(chunked_space, "representatives", chunked_policy);
+	assert(chunked_plan.allowed);
+	assert(chunked_plan.downgraded);
+	assert(!chunked_plan.exact);
+	assert(chunked_plan.representation == "chunked_space_view");
+	const auto chunked_representatives = mtrc::find_representatives(chunked_space, 4, chunked_policy);
+	assert(!chunked_representatives.exact);
+	assert(chunked_representatives.representation == "chunked_space_view");
+	assert(chunked_representatives.strategy == "chunked_farthest_first");
+	assert(chunked_representatives.size() == 4);
+	assert(*chunked_calls < chunked_space.size() * (chunked_space.size() - 1) / 2);
+
+	const auto sampled_records = line_records(80);
+	auto sampled_calls = std::make_shared<std::size_t>(0);
+	const auto sampled_space = mtrc::make_space(sampled_records, CountingAbsoluteDistance{sampled_calls});
+	auto sampled_policy = mtrc::space::storage::using_knn_graph(16);
+	sampled_policy = mtrc::space::storage::with_distance_table_budget(sampled_policy, 8, 0);
+	sampled_policy = mtrc::space::storage::allow_approximate_fallback(sampled_policy);
+	const auto sampled_plan = mtrc::space::storage::estimate_cost(
+		sampled_space, "representatives", mtrc::space::storage::using_distance_table(sampled_policy));
+	assert(sampled_plan.allowed);
+	assert(sampled_plan.downgraded);
+	assert(!sampled_plan.exact);
+	assert(sampled_plan.representation == "sampled_metric_space");
+	const auto sampled_representatives =
+		mtrc::find_representatives(sampled_space, 4, mtrc::space::select::k_center{}, sampled_policy);
+	assert(!sampled_representatives.exact);
+	assert(sampled_representatives.representation == "sampled_metric_space");
+	assert(sampled_representatives.strategy == "sampled_k_center");
+	assert(sampled_representatives.size() == 4);
+	assert(*sampled_calls < sampled_space.size() * (sampled_space.size() - 1) / 2);
+
 	const auto seeded = mtrc::find_representatives(line, 2, mtrc::space::select::farthest_first(2));
 	assert(seeded[0] == line.id(2));
 	assert(seeded[1] == line.id(0));
@@ -93,14 +171,6 @@ int main()
 		rejected_too_many = true;
 	}
 	assert(rejected_too_many);
-
-	bool rejected_approximate_runtime = false;
-	try {
-		(void)mtrc::find_representatives(line, 2, mtrc::space::storage::approximate());
-	} catch (const std::invalid_argument &) {
-		rejected_approximate_runtime = true;
-	}
-	assert(rejected_approximate_runtime);
 
 	bool rejected_seed = false;
 	try {

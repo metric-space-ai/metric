@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cstddef>
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -87,6 +88,7 @@ static auto test_landmark_policy_is_bounded_and_diagnostic() -> void
 	assert(neighbors.approximation_quality.confidence_radius_95 >= 0.0);
 	assert(neighbors.approximation_quality.confidence_radius_95 <= 1.0);
 	assert(neighbors.approximation_quality.reason.find("bounded holdout") != std::string::npos);
+	assert(neighbors.approximation_quality.reason.find("query-level standard error") != std::string::npos);
 	assert(neighbors.size() == 4);
 	assert(!contains_id(neighbors, query_id));
 	assert(contains_id(neighbors, space.id(499)));
@@ -117,6 +119,7 @@ static auto test_landmark_policy_is_bounded_and_diagnostic() -> void
 	assert(range.approximation_quality.standard_error >= 0.0);
 	assert(range.approximation_quality.confidence_radius_95 >= 0.0);
 	assert(range.approximation_quality.confidence_radius_95 <= 1.0);
+	assert(range.approximation_quality.reason.find("query-level standard error") != std::string::npos);
 	assert(range.size() == 4);
 	assert(contains_id(range, space.id(498)));
 	assert(contains_id(range, space.id(499)));
@@ -187,6 +190,72 @@ static auto test_landmark_calibration_is_budget_gated() -> void
 	assert(*calls < space.size() * space.size() / 10);
 }
 
+static auto test_direct_landmark_build_budgets_refuse_before_metric_calls() -> void
+{
+	{
+		const auto calls = std::make_shared<std::size_t>(0);
+		auto space = mtrc::make_space(line_records(1200), CountingLineMetric(calls));
+
+		bool refused = false;
+		try {
+			(void)mtrc::space::storage::landmark_index(space, 1200, 32);
+		} catch (const mtrc::RepresentationError &error) {
+			refused = true;
+			const std::string message = error.what();
+			assert(message.find("max_build_distance_evaluations") != std::string::npos);
+		}
+		assert(refused);
+		assert(*calls == 0);
+	}
+
+	const auto calls = std::make_shared<std::size_t>(0);
+	auto space = mtrc::make_space(line_records(100), CountingLineMetric(calls));
+
+	mtrc::space::storage::landmark_index_options low_distance_budget;
+	low_distance_budget.landmark_count = 50;
+	low_distance_budget.candidate_limit = 32;
+	low_distance_budget.max_build_distance_evaluations = 100;
+	low_distance_budget.max_memory_bytes = 0;
+	bool refused_distance = false;
+	try {
+		(void)mtrc::space::storage::landmark_index(space, low_distance_budget);
+	} catch (const mtrc::RepresentationError &error) {
+		refused_distance = true;
+		const std::string message = error.what();
+		assert(message.find("max_build_distance_evaluations") != std::string::npos);
+	}
+	assert(refused_distance);
+	assert(*calls == 0);
+
+	mtrc::space::storage::landmark_index_options low_memory_budget;
+	low_memory_budget.landmark_count = 8;
+	low_memory_budget.candidate_limit = 32;
+	low_memory_budget.max_build_distance_evaluations = 0;
+	low_memory_budget.max_memory_bytes = 1;
+	bool refused_memory = false;
+	try {
+		(void)mtrc::space::storage::landmark_index(space, low_memory_budget);
+	} catch (const mtrc::RepresentationError &error) {
+		refused_memory = true;
+		const std::string message = error.what();
+		assert(message.find("max_memory_bytes") != std::string::npos);
+	}
+	assert(refused_memory);
+	assert(*calls == 0);
+
+	mtrc::space::storage::landmark_index_options unbounded_build;
+	unbounded_build.landmark_count = 50;
+	unbounded_build.candidate_limit = 32;
+	unbounded_build.max_build_distance_evaluations = 0;
+	unbounded_build.max_memory_bytes = 0;
+	const auto index = mtrc::space::storage::landmark_index(space, unbounded_build);
+	assert(index.landmark_count() == 50);
+	assert(index.max_build_distance_evaluations() == 0);
+	assert(index.max_memory_bytes() == 0);
+	assert(index.build_distance_evaluations() == 50 * (space.size() - 1));
+	assert(*calls == index.build_distance_evaluations());
+}
+
 static auto test_landmark_refresh_after_streaming_append_is_bounded() -> void
 {
 	const auto calls = std::make_shared<std::size_t>(0);
@@ -237,6 +306,7 @@ int main()
 	test_landmark_policy_is_bounded_and_diagnostic();
 	test_execution_context_reuses_landmark_index();
 	test_landmark_calibration_is_budget_gated();
+	test_direct_landmark_build_budgets_refuse_before_metric_calls();
 	test_landmark_refresh_after_streaming_append_is_bounded();
 	return 0;
 }

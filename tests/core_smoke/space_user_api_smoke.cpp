@@ -230,17 +230,42 @@ static auto test_knn_graph_refresh_after_streaming_append_is_bounded() -> void
 	assert(append.distance_evaluations == 0);
 	assert(metric_calls == 0);
 	assert(index.is_stale());
-
-	const auto refresh = mtrc::space::refresh_after_append(index, append);
 	const auto expected_old_row_updates = initial_size * append.appended;
 	const auto expected_new_rows = append.appended * (space.size() - 1);
+	const auto expected_refresh_distance_evaluations = expected_old_row_updates + expected_new_rows;
+
+	const auto ids_before_refusal = index.source_record_ids();
+	const auto edge_count_before_refusal = index.edge_count();
+	const auto version_before_refusal = index.version();
+	const auto maintenance_before_refusal = index.maintenance_distance_evaluations();
+	mtrc::space::storage::knn_graph_index_refresh_options low_refresh_budget;
+	low_refresh_budget.max_refresh_distance_evaluations = expected_refresh_distance_evaluations - 1;
+	const auto refused_refresh = index.refresh_after_append(append, low_refresh_budget);
+	assert(!refused_refresh.refreshed);
+	assert(refused_refresh.rebuild_required);
+	assert(!refused_refresh.exact_rows_updated);
+	assert(refused_refresh.appended == append.appended);
+	assert(refused_refresh.old_row_update_distance_evaluations == expected_old_row_updates);
+	assert(refused_refresh.appended_row_distance_evaluations == expected_new_rows);
+	assert(refused_refresh.distance_evaluations == expected_refresh_distance_evaluations);
+	assert(refused_refresh.max_refresh_distance_evaluations == expected_refresh_distance_evaluations - 1);
+	assert(refused_refresh.reason.find("max_refresh_distance_evaluations") != std::string::npos);
+	assert(metric_calls == 0);
+	assert(index.is_stale());
+	assert(index.record_count() == initial_size);
+	assert(index.source_record_ids() == ids_before_refusal);
+	assert(index.edge_count() == edge_count_before_refusal);
+	assert(index.version() == version_before_refusal);
+	assert(index.maintenance_distance_evaluations() == maintenance_before_refusal);
+
+	const auto refresh = mtrc::space::refresh_after_append(index, append);
 	assert(refresh.refreshed);
 	assert(!refresh.rebuild_required);
 	assert(refresh.exact_rows_updated);
 	assert(refresh.appended == append.appended);
 	assert(refresh.old_row_update_distance_evaluations == expected_old_row_updates);
 	assert(refresh.appended_row_distance_evaluations == expected_new_rows);
-	assert(refresh.distance_evaluations == expected_old_row_updates + expected_new_rows);
+	assert(refresh.distance_evaluations == expected_refresh_distance_evaluations);
 	assert(metric_calls == static_cast<int>(refresh.distance_evaluations));
 	assert(!index.is_stale());
 	assert(index.record_count() == space.size());
@@ -400,10 +425,26 @@ static auto test_query_helpers_parity() -> void
 		assert(by_record[index].id == by_tree[index].id);
 		assert(by_record[index].id == by_scan[index].id);
 	}
-	const auto by_table = query::k_nearest(space, id0, 2, mtrc::stats::search::distance_table{});
-	assert(by_table.size() == 2 && by_table[0].id == k_nearest[0].id);
+		const auto by_table = query::k_nearest(space, id0, 2, mtrc::stats::search::distance_table{});
+		assert(by_table.size() == 2 && by_table[0].id == k_nearest[0].id);
+		int policy_query_calls = 0;
+		auto policy_query_space = mtrc::make_space(values, CountingAbsoluteDistance{&policy_query_calls});
+		const auto limited_query_policy = mtrc::space::storage::with_distance_evaluation_budget(
+			mtrc::space::storage::exact(), policy_query_space.size() - 1);
+		assert(throws([&] {
+			(void)query::try_nearest(policy_query_space, policy_query_space.id(0), limited_query_policy);
+		}));
+		assert(policy_query_calls == 0);
+		assert(throws([&] {
+			(void)query::nearest(policy_query_space, 4, limited_query_policy);
+		}));
+		assert(policy_query_calls == 0);
+		const auto accepted_policy_nearest =
+			query::nearest(policy_query_space, 4, mtrc::space::storage::exact());
+		assert(accepted_policy_nearest.id == by_record[0].id);
+		assert(policy_query_calls > 0);
 
-	// within radius parity: count and membership match brute force (radius 5 around id0).
+		// within radius parity: count and membership match brute force (radius 5 around id0).
 	const auto within = query::within(space, id0, 5);
 	const AbsoluteDistance metric;
 	std::size_t expected_within = 0;

@@ -17,6 +17,7 @@ components, the one-to-one lineage, and native diagnostics.
 """
 
 from dataclasses import dataclass
+import operator
 
 from metric.exceptions import StrategyUnavailableError
 
@@ -89,16 +90,75 @@ class MetricSpaceMappingArtifact:
         """One-to-one provenance from the derived space back to the source."""
         return dict(self._artifact.lineage())
 
-    def transform(self, records):
+    def transform(
+        self,
+        records,
+        *,
+        runtime=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+    ):
         """Map a finite metric space (rows) into the derived coordinate space."""
+        from metric.mappings import _preflight_parametric_diffusion_records
+
+        records = _preflight_parametric_diffusion_records(
+            "MetricSpaceMappingArtifact.transform(...)",
+            records,
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         return self._artifact.transform(records)
 
-    def inverse_transform(self, latent_records):
+    def inverse_transform(
+        self,
+        latent_records,
+        *,
+        runtime=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+    ):
         """Decode derived coordinates back into source-shaped records."""
+        from metric.mappings import _preflight_parametric_diffusion_records
+
+        latent_records = _preflight_parametric_diffusion_records(
+            "MetricSpaceMappingArtifact.inverse_transform(...)",
+            latent_records,
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         return self._artifact.inverse_transform(latent_records)
 
-    def neighbor_recall(self, neighbor_count=3):
+    def neighbor_recall(
+        self,
+        neighbor_count=3,
+        *,
+        runtime=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+    ):
         """Native neighbor-preservation recall of the derived coordinate space."""
+        from metric.operators import _ensure_exact_metric_work_allowed
+
+        neighbor_count = operator.index(neighbor_count)
+        if neighbor_count < 0:
+            raise ValueError("neighbor_count must be non-negative")
+        _ensure_exact_metric_work_allowed(
+            "MetricSpaceMappingArtifact.neighbor_recall(...)",
+            self.source_record_count,
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            dense=True,
+            dense_cell_bytes=64,
+        )
         return self._artifact.neighbor_recall(neighbor_count)
 
     def calibration_report(self):
@@ -157,6 +217,10 @@ def derive_mapping_pipeline(
     distance_provider="exact_metric_space_distance_provider",
     affinity_kernel="gaussian_affinity_kernel",
     diffusion_operator="row_normalized_diffusion_operator",
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
 ):
     """Derive the native metric-space coordinate artifact for vector-row records.
 
@@ -169,20 +233,44 @@ def derive_mapping_pipeline(
     the result; reproducibility is guaranteed structurally, not via the seed (see
     the determinism test in tests/core/test_mapping_pipeline_adapter.py).
     """
-    native_metric = _require_native("_metric_space_mapping_pipeline_derive")
-    artifact = native_metric._metric_space_mapping_pipeline_derive(
+    from metric.mappings import (
+        _call_native_with_optional_diffusion_budgets,
+        _parametric_diffusion_native_budgets,
+        _preflight_parametric_diffusion_records,
+    )
+
+    records = _preflight_parametric_diffusion_records(
+        "derive_mapping_pipeline(...)",
         records,
-        dimensions=dimensions,
-        calibration_steps=calibration_steps,
-        step_size=step_size,
-        diffusion_steps=diffusion_steps,
-        kernel_scale=kernel_scale,
-        reconstruction_weight=reconstruction_weight,
-        geometry_weight=geometry_weight,
-        seed=seed,
-        distance_provider=distance_provider,
-        affinity_kernel=affinity_kernel,
-        diffusion_operator=diffusion_operator,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    native_metric = _require_native("_metric_space_mapping_pipeline_derive")
+    native_kwargs = {
+        "dimensions": dimensions,
+        "calibration_steps": calibration_steps,
+        "step_size": step_size,
+        "diffusion_steps": diffusion_steps,
+        "kernel_scale": kernel_scale,
+        "reconstruction_weight": reconstruction_weight,
+        "geometry_weight": geometry_weight,
+        "seed": seed,
+        "distance_provider": distance_provider,
+        "affinity_kernel": affinity_kernel,
+        "diffusion_operator": diffusion_operator,
+        **_parametric_diffusion_native_budgets(
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        ),
+    }
+    artifact = _call_native_with_optional_diffusion_budgets(
+        native_metric._metric_space_mapping_pipeline_derive,
+        records,
+        native_kwargs,
     )
     return MetricSpaceMappingArtifact(
         artifact,

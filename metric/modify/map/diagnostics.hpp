@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -14,11 +15,22 @@
 #include <vector>
 
 #include <metric/core/concepts.hpp>
+#include <metric/core/errors.hpp>
 #include <metric/core/neighbor.hpp>
 #include <metric/record/id.hpp>
 #include <metric/stats/search/nearest.hpp>
 
 namespace mtrc::modify::map {
+
+inline constexpr std::size_t default_mapping_diagnostic_max_distance_evaluations = 1'000'000;
+
+struct MappingDiagnosticsOptions {
+	// Set to 0 only when the caller intentionally opts into an unbounded exact diagnostic scan.
+	std::size_t max_distance_evaluations{default_mapping_diagnostic_max_distance_evaluations};
+	std::size_t max_evaluated_items{};
+	bool allow_sampling{true};
+};
+
 namespace diagnostics_detail {
 
 template <typename Transform, typename Space, typename = void> struct DerivedSpaceTransformFor : std::false_type {};
@@ -32,6 +44,132 @@ struct DerivedSpaceTransformFor<
 template <typename Transform, typename Space>
 inline constexpr bool DerivedSpaceTransformFor_v = DerivedSpaceTransformFor<Transform, Space>::value;
 
+struct diagnostic_work_plan {
+	std::size_t evaluated_items{};
+	bool exact{true};
+	std::string reason;
+};
+
+inline auto checked_product(std::size_t lhs, std::size_t rhs, const char *message) -> std::size_t
+{
+	if (rhs != 0 && lhs > std::numeric_limits<std::size_t>::max() / rhs) {
+		throw RepresentationError(message);
+	}
+	return lhs * rhs;
+}
+
+inline auto sample_position(std::size_t sample_index, std::size_t sample_count, std::size_t total_count) -> std::size_t
+{
+	if (sample_count >= total_count) {
+		return sample_index;
+	}
+	if (sample_count <= 1) {
+		return total_count / 2;
+	}
+	return (sample_index * (total_count - 1)) / (sample_count - 1);
+}
+
+inline auto plan_diagnostic_work(std::size_t total_items, std::size_t distance_evaluations_per_item,
+								 MappingDiagnosticsOptions options, const char *diagnostic_name) -> diagnostic_work_plan
+{
+	diagnostic_work_plan plan;
+	plan.evaluated_items = total_items;
+
+	if (options.max_evaluated_items > 0 && options.max_evaluated_items < plan.evaluated_items) {
+		if (!options.allow_sampling) {
+			throw RepresentationError(std::string(diagnostic_name) +
+									  " diagnostics exceed max_evaluated_items: items=" +
+									  std::to_string(total_items) + " max_evaluated_items=" +
+									  std::to_string(options.max_evaluated_items));
+		}
+		plan.evaluated_items = options.max_evaluated_items;
+		plan.exact = false;
+		plan.reason = "sampled because diagnostic items exceed max_evaluated_items";
+	}
+
+	if (options.max_distance_evaluations == 0 || distance_evaluations_per_item == 0) {
+		return plan;
+	}
+
+	const auto planned_evaluations = checked_product(
+		plan.evaluated_items, distance_evaluations_per_item,
+		"mapping diagnostics distance-evaluation estimate exceeds size_t capacity");
+	if (planned_evaluations <= options.max_distance_evaluations) {
+		return plan;
+	}
+
+	const auto budgeted_items = options.max_distance_evaluations / distance_evaluations_per_item;
+	if (!options.allow_sampling || budgeted_items == 0) {
+		throw RepresentationError(std::string(diagnostic_name) +
+								  " diagnostics exceed max_distance_evaluations: items=" +
+								  std::to_string(total_items) + " evaluations_per_item=" +
+								  std::to_string(distance_evaluations_per_item) + " max_distance_evaluations=" +
+								  std::to_string(options.max_distance_evaluations) +
+								  "; allow sampling or raise the diagnostic budget");
+	}
+
+	plan.evaluated_items = std::min(plan.evaluated_items, budgeted_items);
+	plan.exact = plan.evaluated_items == total_items;
+	if (!plan.exact) {
+		plan.reason = "sampled because diagnostic work exceeds max_distance_evaluations";
+	}
+	return plan;
+}
+
+template <typename Distance>
+auto select_nearest_prefix(std::vector<core::Neighbor<Distance>> &neighbors, std::size_t count) -> std::size_t
+{
+	const auto selected_count = std::min(count, neighbors.size());
+	if (selected_count == 0) {
+		return 0;
+	}
+	if (selected_count >= neighbors.size()) {
+		core::sort_neighbors(neighbors);
+		return selected_count;
+	}
+	if (selected_count == 1) {
+		const auto nearest = std::min_element(neighbors.begin(), neighbors.end(), core::NeighborLess<Distance>{});
+		std::iter_swap(neighbors.begin(), nearest);
+		return selected_count;
+	}
+
+	std::nth_element(
+		neighbors.begin(), neighbors.begin() + selected_count, neighbors.end(), core::NeighborLess<Distance>{});
+	std::sort(neighbors.begin(), neighbors.begin() + selected_count, core::NeighborLess<Distance>{});
+	return selected_count;
+}
+
+template <typename Distance>
+auto neighbor_ids_prefix(const std::vector<core::Neighbor<Distance>> &neighbors, std::size_t count)
+	-> std::vector<RecordId>
+{
+	std::vector<RecordId> ids;
+	ids.reserve(count);
+	for (std::size_t index = 0; index < count; ++index) {
+		ids.push_back(neighbors[index].id);
+	}
+	return ids;
+}
+
+template <typename Distance>
+auto neighbor_rank_by_distance_order(const std::vector<core::Neighbor<Distance>> &neighbors, RecordId id)
+	-> std::size_t
+{
+	const auto target_position = core::neighbor_id_position(neighbors, id);
+	if (target_position == neighbors.size()) {
+		return neighbors.size() + 1;
+	}
+	const auto &target = neighbors[target_position];
+	std::size_t rank = 1;
+	const core::NeighborLess<Distance> less;
+	for (const auto &neighbor : neighbors) {
+		if (less(neighbor, target)) {
+			++rank;
+		}
+	}
+	return rank;
+}
+
 } // namespace diagnostics_detail
 
 struct NeighborPreservationDiagnostics {
@@ -44,6 +182,7 @@ struct NeighborPreservationDiagnostics {
 	std::size_t possible_neighbors{};
 	std::size_t source_distance_evaluations{};
 	std::size_t mapped_distance_evaluations{};
+	std::size_t max_distance_evaluations{};
 	double recall{};
 	double average_row_recall{};
 	double minimum_row_recall{};
@@ -52,6 +191,7 @@ struct NeighborPreservationDiagnostics {
 	std::string diagnostic{"neighbor_preservation"};
 	std::string source_representation{"metric_space"};
 	std::string mapped_representation{"metric_space"};
+	std::string reason;
 };
 
 struct OutOfSampleStabilityDiagnostics {
@@ -65,6 +205,7 @@ struct OutOfSampleStabilityDiagnostics {
 	std::size_t first_anchor_matches{};
 	std::size_t source_distance_evaluations{};
 	std::size_t mapped_distance_evaluations{};
+	std::size_t max_distance_evaluations{};
 	double anchor_recall{};
 	double average_query_recall{};
 	double minimum_query_recall{};
@@ -84,13 +225,15 @@ struct OutOfSampleStabilityDiagnostics {
 	std::string source_representation{"metric_space"};
 	std::string mapped_source_representation{"metric_space"};
 	std::string mapped_query_representation{"metric_space"};
+	std::string reason;
 };
 
 template <typename SourceSpace, typename MappingResult,
 		  typename std::enable_if<
 			  MetricSpaceLike_v<SourceSpace> && MetricSpaceLike_v<typename MappingResult::space_type>, int>::type = 0>
 auto neighbor_preservation(const SourceSpace &source_space, const MappingResult &mapping_result,
-						   std::size_t neighbor_count) -> NeighborPreservationDiagnostics
+						   std::size_t neighbor_count,
+						   MappingDiagnosticsOptions options = {}) -> NeighborPreservationDiagnostics
 {
 	if (source_space.size() < 2) {
 		throw std::invalid_argument("neighbor preservation diagnostics require at least two source records");
@@ -110,18 +253,38 @@ auto neighbor_preservation(const SourceSpace &source_space, const MappingResult 
 		"neighbor preservation diagnostics found lineage outside the source space");
 
 	const auto effective_neighbors = std::min(neighbor_count, source_space.size() - 1);
+	const auto source_evaluations_per_row = source_space.size() - 1;
+	const auto mapped_evaluations_per_row = mapping_result.space.size() - 1;
+	const auto evaluations_per_row = diagnostics_detail::checked_product(
+		2, source_evaluations_per_row, "neighbor preservation distance-evaluation estimate exceeds size_t capacity");
+	const auto work_plan = diagnostics_detail::plan_diagnostic_work(
+		mapping_result.space.size(), evaluations_per_row, options, "neighbor preservation");
+
 	NeighborPreservationDiagnostics diagnostics;
 	diagnostics.source_record_count = source_space.size();
 	diagnostics.mapped_record_count = mapping_result.space.size();
 	diagnostics.requested_neighbor_count = neighbor_count;
 	diagnostics.evaluated_neighbor_count = effective_neighbors;
-	diagnostics.evaluated_rows = mapping_result.space.size();
-	diagnostics.source_distance_evaluations = diagnostics.evaluated_rows * (source_space.size() - 1);
-	diagnostics.mapped_distance_evaluations = diagnostics.evaluated_rows * (mapping_result.space.size() - 1);
+	diagnostics.evaluated_rows = work_plan.evaluated_items;
+	diagnostics.source_distance_evaluations = diagnostics_detail::checked_product(
+		diagnostics.evaluated_rows, source_evaluations_per_row,
+		"neighbor preservation source distance-evaluation estimate exceeds size_t capacity");
+	diagnostics.mapped_distance_evaluations = diagnostics_detail::checked_product(
+		diagnostics.evaluated_rows, mapped_evaluations_per_row,
+		"neighbor preservation mapped distance-evaluation estimate exceeds size_t capacity");
+	diagnostics.max_distance_evaluations = options.max_distance_evaluations;
+	diagnostics.exact = work_plan.exact;
+	diagnostics.reason = work_plan.reason;
 	diagnostics.mapped_representation = mapping_result.representation;
+	if (!diagnostics.exact) {
+		diagnostics.source_representation = "metric_space_sample";
+		diagnostics.mapped_representation = mapping_result.representation + "_sample";
+	}
 
 	core::RecallAccumulator recall;
-	for (std::size_t row = 0; row < mapping_result.space.size(); ++row) {
+	for (std::size_t sample_index = 0; sample_index < diagnostics.evaluated_rows; ++sample_index) {
+		const auto row = diagnostics_detail::sample_position(
+			sample_index, diagnostics.evaluated_rows, mapping_result.space.size());
 		const auto source_id = source_ids[row];
 		const auto mapped_id = mapping_result.space.id(row);
 		const auto source_neighbors = stats::search::knn(source_space, source_id, effective_neighbors);
@@ -157,7 +320,8 @@ template <typename Transform, typename SourceSpace, typename QuerySpace,
 				  diagnostics_detail::DerivedSpaceTransformFor_v<Transform, QuerySpace>,
 			  int>::type = 0>
 auto out_of_sample_neighbor_stability(const Transform &mapping_artifact, const SourceSpace &source_space,
-									  const QuerySpace &query_space, std::size_t neighbor_count)
+									  const QuerySpace &query_space, std::size_t neighbor_count,
+									  MappingDiagnosticsOptions options = {})
 	-> OutOfSampleStabilityDiagnostics
 {
 	if (source_space.empty()) {
@@ -192,25 +356,47 @@ auto out_of_sample_neighbor_stability(const Transform &mapping_artifact, const S
 		"out-of-sample stability diagnostics require unique source record ids");
 
 	const auto effective_neighbors = std::min(neighbor_count, source_space.size());
+	const auto source_evaluations_per_query = source_space.size();
+	const auto mapped_evaluations_per_query = mapped_source.space.size();
+	const auto evaluations_per_query =
+		diagnostics_detail::checked_product(2, source_evaluations_per_query,
+											"out-of-sample stability distance-evaluation estimate exceeds size_t capacity");
+	const auto work_plan = diagnostics_detail::plan_diagnostic_work(
+		query_space.size(), evaluations_per_query, options, "out-of-sample stability");
+
 	OutOfSampleStabilityDiagnostics diagnostics;
 	diagnostics.source_record_count = source_space.size();
 	diagnostics.query_record_count = query_space.size();
 	diagnostics.requested_neighbor_count = neighbor_count;
 	diagnostics.evaluated_neighbor_count = effective_neighbors;
-	diagnostics.evaluated_queries = query_space.size();
-	diagnostics.source_distance_evaluations = query_space.size() * source_space.size();
-	diagnostics.mapped_distance_evaluations = query_space.size() * mapped_source.space.size();
+	diagnostics.evaluated_queries = work_plan.evaluated_items;
+	diagnostics.source_distance_evaluations = diagnostics_detail::checked_product(
+		diagnostics.evaluated_queries, source_evaluations_per_query,
+		"out-of-sample stability source distance-evaluation estimate exceeds size_t capacity");
+	diagnostics.mapped_distance_evaluations = diagnostics_detail::checked_product(
+		diagnostics.evaluated_queries, mapped_evaluations_per_query,
+		"out-of-sample stability mapped distance-evaluation estimate exceeds size_t capacity");
+	diagnostics.max_distance_evaluations = options.max_distance_evaluations;
+	diagnostics.exact = work_plan.exact;
+	diagnostics.reason = work_plan.reason;
 	diagnostics.mapping = mapped_source.mapping;
 	diagnostics.strategy = mapped_source.strategy;
 	diagnostics.mapped_source_representation = mapped_source.representation;
 	diagnostics.mapped_query_representation = mapped_query.representation;
+	if (!diagnostics.exact) {
+		diagnostics.source_representation = "metric_space_sample";
+		diagnostics.mapped_source_representation = mapped_source.representation + "_sample";
+		diagnostics.mapped_query_representation = mapped_query.representation + "_sample";
+	}
 
 	core::RecallAccumulator recall;
 	core::ScalarAccumulator<double> source_best_distance_summary;
 	core::ScalarAccumulator<double> mapped_best_source_distance_summary;
 	core::ScalarAccumulator<double> best_distance_penalty_summary;
 	core::ScalarAccumulator<std::size_t> mapped_best_source_rank_summary;
-	for (std::size_t query_position = 0; query_position < query_space.size(); ++query_position) {
+	for (std::size_t sample_index = 0; sample_index < diagnostics.evaluated_queries; ++sample_index) {
+		const auto query_position = diagnostics_detail::sample_position(
+			sample_index, diagnostics.evaluated_queries, query_space.size());
 		const auto query_id = query_space.id(query_position);
 		const auto mapped_query_id = mapped_query.space.id(query_position);
 
@@ -218,38 +404,43 @@ auto out_of_sample_neighbor_stability(const Transform &mapping_artifact, const S
 		auto source_candidates = core::neighbor_candidates<typename SourceSpace::distance_type>(
 			source_space.size(), [&source_space](std::size_t source_position) { return source_space.id(source_position); },
 			[&source_space, &query_record](RecordId source_id, std::size_t) {
-				return source_space.metric()(query_record, source_space.record(source_id));
-			});
-		core::sort_neighbors(source_candidates);
-		const auto source_neighbor_ids = core::neighbor_ids(source_candidates, effective_neighbors);
+					return source_space.metric()(query_record, source_space.record(source_id));
+				});
+			const auto source_neighbor_count =
+				diagnostics_detail::select_nearest_prefix(source_candidates, effective_neighbors);
+			const auto source_neighbor_ids =
+				diagnostics_detail::neighbor_ids_prefix(source_candidates, source_neighbor_count);
 
-		const auto &mapped_query_record = mapped_query.space.record(mapped_query_id);
-		auto mapped_candidates =
+			const auto &mapped_query_record = mapped_query.space.record(mapped_query_id);
+			auto mapped_candidates =
 			core::neighbor_candidates<typename std::decay<decltype(mapped_source.space)>::type::distance_type>(
 				mapped_source.space.size(),
 				[&source_ids](std::size_t source_position) { return source_ids[source_position]; },
 				[&mapped_source, &mapped_query_record](RecordId, std::size_t source_position) {
-					const auto mapped_source_id = mapped_source.space.id(source_position);
-					return mapped_source.space.metric()(mapped_query_record, mapped_source.space.record(mapped_source_id));
-				});
-		core::sort_neighbors(mapped_candidates);
-		const auto mapped_neighbor_ids = core::neighbor_ids(mapped_candidates, effective_neighbors);
+						const auto mapped_source_id = mapped_source.space.id(source_position);
+						return mapped_source.space.metric()(mapped_query_record, mapped_source.space.record(mapped_source_id));
+					});
+			const auto mapped_neighbor_count =
+				diagnostics_detail::select_nearest_prefix(mapped_candidates, effective_neighbors);
+			const auto mapped_neighbor_ids =
+				diagnostics_detail::neighbor_ids_prefix(mapped_candidates, mapped_neighbor_count);
 
 		const auto query_matches = mtrc::record_id_overlap_count(source_neighbor_ids, mapped_neighbor_ids);
 
 		const auto possible = source_neighbor_ids.size();
 		(void)recall.add(query_matches, possible);
 
-		const auto source_best_id = source_candidates.front().id;
-		const auto mapped_best_id = mapped_candidates.front().id;
+			const auto source_best_id = source_candidates.front().id;
+			const auto mapped_best_id = mapped_candidates.front().id;
 		if (source_best_id == mapped_best_id) {
 			++diagnostics.first_anchor_matches;
 		}
 		const auto source_best_distance = static_cast<double>(source_candidates.front().distance);
-		const auto mapped_best_source_distance =
-			static_cast<double>(core::neighbor_distance_or_throw(
-				source_candidates, mapped_best_id, "diagnostics could not find source anchor distance"));
-		const auto mapped_best_source_rank = core::neighbor_rank(source_candidates, mapped_best_id);
+			const auto mapped_best_source_distance =
+				static_cast<double>(core::neighbor_distance_or_throw(
+					source_candidates, mapped_best_id, "diagnostics could not find source anchor distance"));
+			const auto mapped_best_source_rank =
+				diagnostics_detail::neighbor_rank_by_distance_order(source_candidates, mapped_best_id);
 		const auto distance_penalty = mapped_best_source_distance - source_best_distance;
 		source_best_distance_summary.add(source_best_distance);
 		mapped_best_source_distance_summary.add(mapped_best_source_distance);

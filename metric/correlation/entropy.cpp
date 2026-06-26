@@ -11,10 +11,13 @@ Copyright (c) 2019 Panda Team
 // #include "metric/utils/type_traits.hpp"
 #include "epmgp.hpp"
 #include "estimator_helpers.hpp"
+#include "metric/core/errors.hpp"
 #include "metric/space/tree.hpp"
 
 #include <cmath>
 #include <limits>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 #ifndef M_PI
@@ -22,6 +25,67 @@ Copyright (c) 2019 Panda Team
 #endif
 
 namespace mtrc {
+
+namespace entropy_resource_detail {
+
+inline auto checked_product(std::size_t lhs, std::size_t rhs, const char *message) -> std::size_t
+{
+	if (lhs != 0 && rhs > std::numeric_limits<std::size_t>::max() / lhs) {
+		throw RepresentationError(message);
+	}
+	return lhs * rhs;
+}
+
+inline auto checked_sum(std::size_t lhs, std::size_t rhs, const char *message) -> std::size_t
+{
+	if (rhs > std::numeric_limits<std::size_t>::max() - lhs) {
+		throw RepresentationError(message);
+	}
+	return lhs + rhs;
+}
+
+inline auto require_entropy_budget(const char *operation, std::size_t record_count,
+								   entropy_resource_options options,
+								   std::size_t distance_multiplier = 1) -> void
+{
+	if (options.max_exact_records != 0 && record_count > options.max_exact_records) {
+		throw RepresentationError(
+			std::string(operation) + " refused exact entropy work before tree/list construction: records=" +
+			std::to_string(record_count) + ", max_exact_records=" + std::to_string(options.max_exact_records) +
+			". Use stats::properties::entropy(...), pass a bounded sample, or pass entropy_resource_options{0, 0} "
+			"for an explicit unbounded legacy run.");
+	}
+	if (options.max_distance_evaluations == 0) {
+		return;
+	}
+	const auto square = checked_product(record_count, record_count,
+										"entropy distance-evaluation estimate exceeds size_t capacity");
+	const auto estimated = checked_product(square, distance_multiplier,
+										   "entropy distance-evaluation estimate exceeds size_t capacity");
+	if (estimated > options.max_distance_evaluations) {
+		throw RepresentationError(
+			std::string(operation) + " refused exact entropy work before metric calls: records=" +
+			std::to_string(record_count) + ", estimated_distance_evaluations=" + std::to_string(estimated) +
+			", distance_evaluation_budget=" + std::to_string(options.max_distance_evaluations) +
+			". Use stats::properties::entropy(...), pass a bounded sample, or pass entropy_resource_options{0, 0} "
+			"for an explicit unbounded legacy run.");
+	}
+}
+
+inline auto effective_entropy_iterations(std::size_t data_size, std::size_t sample_size, std::size_t max_iterations)
+	-> std::size_t
+{
+	if (sample_size == 0) {
+		throw std::invalid_argument("entropy estimate sampleSize must be >= 1");
+	}
+	const auto maximum_full_samples = data_size / sample_size;
+	if (max_iterations == 0 || max_iterations > maximum_full_samples) {
+		return maximum_full_samples;
+	}
+	return max_iterations;
+}
+
+} // namespace entropy_resource_detail
 
 namespace entropy_details {
 
@@ -372,13 +436,7 @@ double estimate(const Container &data, const Functor &entropy, const size_t samp
 	const size_t dataSize = data.size();
 
 	// Update maxIterations
-	if (maxIterations == 0) {
-		maxIterations = dataSize / sampleSize;
-	}
-
-	if (maxIterations > dataSize / sampleSize) {
-		maxIterations = dataSize / sampleSize;
-	}
+	maxIterations = entropy_resource_detail::effective_entropy_iterations(dataSize, sampleSize, maxIterations);
 
 	if (maxIterations < 1) {
 		return entropy(data);
@@ -461,13 +519,7 @@ double estimate(const Container &a, const Container &b, const Functor &f, const 
 	const size_t dataSize = a.size();
 
 	/* Update maxIterations */
-	if (maxIterations == 0) {
-		maxIterations = dataSize / sampleSize;
-	}
-
-	if (maxIterations > dataSize / sampleSize) {
-		maxIterations = dataSize / sampleSize;
-	}
+	maxIterations = entropy_resource_detail::effective_entropy_iterations(dataSize, sampleSize, maxIterations);
 
 	if (maxIterations < 1) {
 		return f(a, b);
@@ -563,6 +615,8 @@ double EntropySimple<RecType, Metric>::operator()( // non-kpN version, DEPRECATE
 	if (data.empty() || data[0].empty()) {
 		return 0;
 	}
+	entropy_resource_detail::require_entropy_budget("EntropySimple::operator()(...)",
+													data.size(), resource_options);
 	if (data.size() < k + 1)
 		throw std::invalid_argument("number of points in dataset must be larger than k");
 
@@ -617,6 +671,12 @@ template <typename Container>
 double EntropySimple<RecType, Metric>::estimate(const Container &a, const size_t sampleSize, const double threshold,
 												size_t maxIterations) const
 {
+	const auto effective_iterations =
+		entropy_resource_detail::effective_entropy_iterations(a.size(), sampleSize, maxIterations);
+	if (effective_iterations > 0) {
+		entropy_resource_detail::require_entropy_budget("EntropySimple::estimate(...)",
+														sampleSize, resource_options, effective_iterations);
+	}
 	return entropy_details::estimate(a, *this, sampleSize, threshold, maxIterations);
 }
 
@@ -636,6 +696,8 @@ double Entropy<RecType, Metric>::operator()(const Container &data) const
 	// documented "estimation failed" sentinel for under-sized inputs.
 	if (n < 4)
 		return std::nan("estimation failed");
+	entropy_resource_detail::require_entropy_budget("Entropy::operator()(...)",
+													n, resource_options);
 
 	size_t d = data[0].size();
 
@@ -760,6 +822,12 @@ template <typename Container>
 double Entropy<RecType, Metric>::estimate(const Container &a, const size_t sampleSize, const double threshold,
 										  size_t maxIterations) const
 {
+	const auto effective_iterations =
+		entropy_resource_detail::effective_entropy_iterations(a.size(), sampleSize, maxIterations);
+	if (effective_iterations > 0) {
+		entropy_resource_detail::require_entropy_budget("Entropy::estimate(...)",
+														sampleSize, resource_options, effective_iterations);
+	}
 	return entropy_details::estimate(a, *this, sampleSize, threshold, maxIterations);
 }
 
@@ -777,6 +845,10 @@ VMixing_simple<RecType, Metric>::operator()(const C &Xc, const C &Yc) const
 
 	if (N < k + 1 || Yc.size() < k + 1)
 		throw std::invalid_argument("number of points in dataset must be larger than k");
+	const auto combined_count = entropy_resource_detail::checked_sum(
+		Xc.size(), Yc.size(), "VMixing_simple combined record count exceeds size_t capacity");
+	entropy_resource_detail::require_entropy_budget("VMixing_simple::operator()(...)",
+													combined_count, resource_options);
 
 	std::vector<std::vector<T>> X;
 	for (const auto &e : Xc)
@@ -791,7 +863,7 @@ VMixing_simple<RecType, Metric>::operator()(const C &Xc, const C &Yc) const
 	XY.insert(XY.end(), X.begin(), X.end());
 	XY.insert(XY.end(), Y.begin(), Y.end());
 
-	auto e = EntropySimple<void, Metric>(metric, k);
+	auto e = EntropySimple<void, Metric>(metric, k, false, resource_options);
 	auto result = 2 * e(XY) - e(Xc) - e(Yc);
 	return result;
 }
@@ -801,6 +873,18 @@ template <typename C>
 double VMixing_simple<RecType, Metric>::estimate(const C &a, const C &b, const size_t sampleSize,
 												 const double threshold, size_t maxIterations) const
 {
+	if (a.size() != b.size()) {
+		throw std::invalid_argument("VMixing estimate requires paired inputs with the same record count");
+	}
+	const auto effective_iterations =
+		entropy_resource_detail::effective_entropy_iterations(a.size(), sampleSize, maxIterations);
+	if (effective_iterations > 0) {
+		const auto combined_sample = entropy_resource_detail::checked_product(
+			2, sampleSize, "VMixing_simple sample record count exceeds size_t capacity");
+		entropy_resource_detail::require_entropy_budget("VMixing_simple::estimate(...)",
+														combined_sample, resource_options,
+														effective_iterations);
+	}
 	return entropy_details::estimate(a, b, *this, sampleSize, threshold, maxIterations);
 }
 
@@ -816,6 +900,10 @@ VMixing<RecType, Metric>::operator()(const C &Xc, const C &Yc) const
 
 	if (N < k + 1 || Yc.size() < k + 1)
 		throw std::invalid_argument("number of points in dataset must be larger than k");
+	const auto combined_count = entropy_resource_detail::checked_sum(
+		Xc.size(), Yc.size(), "VMixing combined record count exceeds size_t capacity");
+	entropy_resource_detail::require_entropy_budget("VMixing::operator()(...)",
+													combined_count, resource_options);
 
 	std::vector<std::vector<T>> X;
 	for (const auto &e : Xc)
@@ -830,7 +918,7 @@ VMixing<RecType, Metric>::operator()(const C &Xc, const C &Yc) const
 	XY.insert(XY.end(), X.begin(), X.end());
 	XY.insert(XY.end(), Y.begin(), Y.end());
 
-	auto e = Entropy<void, Metric>(metric, k, p);
+	auto e = Entropy<void, Metric>(metric, k, p, false, resource_options);
 	auto result = 2 * e(XY) - e(Xc) - e(Yc);
 	return result;
 }
@@ -840,6 +928,18 @@ template <typename C>
 double VMixing<RecType, Metric>::estimate(const C &a, const C &b, const size_t sampleSize, const double threshold,
 										  size_t maxIterations) const
 {
+	if (a.size() != b.size()) {
+		throw std::invalid_argument("VMixing estimate requires paired inputs with the same record count");
+	}
+	const auto effective_iterations =
+		entropy_resource_detail::effective_entropy_iterations(a.size(), sampleSize, maxIterations);
+	if (effective_iterations > 0) {
+		const auto combined_sample = entropy_resource_detail::checked_product(
+			2, sampleSize, "VMixing sample record count exceeds size_t capacity");
+		entropy_resource_detail::require_entropy_budget("VMixing::estimate(...)",
+														combined_sample, resource_options,
+														effective_iterations);
+	}
 	return entropy_details::estimate(a, b, *this, sampleSize, threshold, maxIterations);
 }
 

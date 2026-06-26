@@ -16,6 +16,7 @@
 #include <vector>
 
 #include <metric/core/concepts.hpp>
+#include <metric/core/errors.hpp>
 #include <metric/core/metric_space.hpp>
 #include <metric/core/result.hpp>
 #include <metric/space/chunked.hpp>
@@ -55,6 +56,9 @@ struct local_volume_options {
 	std::size_t max_exact_records{4096};
 	std::size_t sample_count{512};
 	bool allow_approximate{true};
+	// Maximum helper cells for multi-radius exact/chunked profile work.
+	// Set to 0 only when unbounded profile helper storage is intentional.
+	std::size_t max_profile_cells{1'000'000};
 };
 
 namespace local_volume_detail {
@@ -119,6 +123,64 @@ auto make_local_volume_result(std::vector<std::size_t> counts, std::vector<doubl
 inline auto should_sample_local_volume(std::size_t record_count, local_volume_options options) -> bool
 {
 	return options.allow_approximate && record_count > options.max_exact_records;
+}
+
+inline auto local_volume_exact_work(std::size_t record_count, const char *operation) -> std::size_t
+{
+	if (record_count != 0 && record_count > std::numeric_limits<std::size_t>::max() / record_count) {
+		throw ::mtrc::RepresentationError(
+			std::string(operation) + " exact distance-evaluation estimate exceeds size_t capacity");
+	}
+	return record_count * record_count;
+}
+
+inline auto checked_local_volume_size_product(std::size_t lhs, std::size_t rhs, const char *operation)
+	-> std::size_t
+{
+	if (rhs != 0 && lhs > std::numeric_limits<std::size_t>::max() / rhs) {
+		throw ::mtrc::RepresentationError(std::string(operation) + " helper size exceeds size_t capacity");
+	}
+	return lhs * rhs;
+}
+
+inline auto checked_local_volume_size_sum(std::size_t lhs, std::size_t rhs, const char *operation) -> std::size_t
+{
+	if (lhs > std::numeric_limits<std::size_t>::max() - rhs) {
+		throw ::mtrc::RepresentationError(std::string(operation) + " helper size exceeds size_t capacity");
+	}
+	return lhs + rhs;
+}
+
+inline auto require_local_volume_profile_cells(std::size_t record_count, std::size_t radius_columns,
+											   std::size_t max_profile_cells, const char *operation)
+	-> void
+{
+	const auto helper_cells = checked_local_volume_size_product(record_count, radius_columns, operation);
+	if (max_profile_cells == 0 || helper_cells <= max_profile_cells) {
+		return;
+	}
+	throw ::mtrc::RepresentationError(
+		std::string(operation) + " refused profile helper storage before allocation: records=" +
+		std::to_string(record_count) + ", radius_columns=" + std::to_string(radius_columns) +
+		", helper_cells=" + std::to_string(helper_cells) +
+		", max_profile_cells=" + std::to_string(max_profile_cells) +
+		". Reduce radii, use a streaming/chunked summary with fewer radii, or set max_profile_cells=0 only "
+		"when unbounded profile helper storage is intentional.");
+}
+
+inline auto require_exact_local_volume_allowed(std::size_t record_count, local_volume_options options,
+											   const char *operation) -> void
+{
+	if (options.allow_approximate || options.max_exact_records == 0 || record_count <= options.max_exact_records) {
+		return;
+	}
+	const auto estimated = local_volume_exact_work(record_count, operation);
+	throw ::mtrc::RepresentationError(
+		std::string(operation) + " refused exact local-volume work before distance calls: records=" +
+		std::to_string(record_count) + ", estimated_distance_evaluations=" + std::to_string(estimated) +
+		", max_exact_records=" + std::to_string(options.max_exact_records) +
+		". Enable approximate sampling, raise max_exact_records, or set max_exact_records=0 with "
+		"allow_approximate=false only when unbounded exact local-volume work is intentional.");
 }
 
 inline auto local_volume_row_count_standard_error(std::size_t observed_hits, std::size_t evaluated_candidates,
@@ -277,7 +339,7 @@ auto sampled_local_volume(const Provider &provider, Radius radius, local_volume_
 // Local volume counts how many records lie in each closed metric ball B(x, r),
 // including x itself. Density is that count normalized by the finite record count.
 template <typename Provider, typename Radius, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
-auto local_volume(const Provider &provider, Radius radius) -> LocalVolumeResult<typename Provider::distance_type>
+auto exact_local_volume(const Provider &provider, Radius radius) -> LocalVolumeResult<typename Provider::distance_type>
 {
 	using distance_type = typename Provider::distance_type;
 	using comparison_type = typename std::common_type<distance_type, Radius>::type;
@@ -329,7 +391,14 @@ auto local_volume(const Provider &provider, Radius radius, local_volume_options 
 	if (local_volume_detail::should_sample_local_volume(provider.record_count(), options)) {
 		return local_volume_detail::sampled_local_volume(provider, radius, options);
 	}
-	return local_volume(provider, radius);
+	local_volume_detail::require_exact_local_volume_allowed(provider.record_count(), options, "local_volume");
+	return exact_local_volume(provider, radius);
+}
+
+template <typename Provider, typename Radius, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
+auto local_volume(const Provider &provider, Radius radius) -> LocalVolumeResult<typename Provider::distance_type>
+{
+	return local_volume(provider, radius, local_volume_options{});
 }
 
 template <typename Space, typename Radius>
@@ -482,7 +551,8 @@ template <typename Distance> struct LocalVolumeProfile {
 };
 
 template <typename Provider, typename Radius, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
-auto local_volume_profile(const Provider &provider, const std::vector<Radius> &radii)
+auto exact_local_volume_profile(const Provider &provider, const std::vector<Radius> &radii,
+								local_volume_options options = {})
 	-> LocalVolumeProfile<typename Provider::distance_type>
 {
 	using distance_type = typename Provider::distance_type;
@@ -515,6 +585,8 @@ auto local_volume_profile(const Provider &provider, const std::vector<Radius> &r
 		thresholds.push_back(
 			radius_threshold{static_cast<comparison_type>(radius), static_cast<distance_type>(radius), index});
 	}
+	local_volume_detail::require_local_volume_profile_cells(
+		provider.record_count(), radii.size(), options.max_profile_cells, "exact_local_volume_profile");
 	profile.evaluated_distance_count = provider.record_count() * provider.record_count();
 	profile.sample_count = provider.record_count();
 	profile.sample_universe = provider.record_count();
@@ -581,9 +653,180 @@ auto local_volume_profile(const Provider &provider, const std::vector<Radius> &r
 	return profile;
 }
 
+template <typename Provider, typename Radius, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
+auto sampled_local_volume_profile(const Provider &provider, const std::vector<Radius> &radii,
+								  local_volume_options options)
+	-> LocalVolumeProfile<typename Provider::distance_type>
+{
+	using distance_type = typename Provider::distance_type;
+	using comparison_type = typename std::common_type<distance_type, Radius>::type;
+
+	if (options.sample_count == 0) {
+		throw std::invalid_argument("local_volume_profile sample_count must be >= 1 when sampling is enabled");
+	}
+
+	LocalVolumeProfile<distance_type> profile;
+	const auto record_count = provider.record_count();
+	profile.record_count = record_count;
+	profile.exact = false;
+	profile.algorithm = "sampled_local_volume_profile";
+	profile.representation = "sampled_metric_space";
+	profile.entries.resize(radii.size());
+	if (radii.empty()) {
+		return profile;
+	}
+
+	struct radius_threshold {
+		comparison_type threshold{};
+		distance_type radius{};
+		std::size_t original_index{};
+	};
+
+	std::vector<radius_threshold> thresholds;
+	thresholds.reserve(radii.size());
+	for (std::size_t index = 0; index < radii.size(); ++index) {
+		const auto radius = radii[index];
+		if (radius < Radius{}) {
+			throw std::invalid_argument("radius must be non-negative");
+		}
+		if (!local_volume_detail::finite_scalar(radius)) {
+			throw std::invalid_argument("radius must be finite");
+		}
+		profile.entries[index].radius = static_cast<distance_type>(radius);
+		thresholds.push_back(
+			radius_threshold{static_cast<comparison_type>(radius), static_cast<distance_type>(radius), index});
+	}
+
+	if (record_count == 0) {
+		return profile;
+	}
+	if (record_count == 1) {
+		for (auto &entry : profile.entries) {
+			entry.minimum_count = 1;
+			entry.maximum_count = 1;
+			entry.average_count = 1.0;
+			entry.minimum_density = 1.0;
+			entry.maximum_density = 1.0;
+			entry.average_density = 1.0;
+		}
+		return profile;
+	}
+
+	std::sort(thresholds.begin(), thresholds.end(), [](const auto &lhs, const auto &rhs) {
+		if (lhs.threshold < rhs.threshold) {
+			return true;
+		}
+		if (rhs.threshold < lhs.threshold) {
+			return false;
+		}
+		return lhs.original_index < rhs.original_index;
+	});
+
+	const auto target_sample_count = std::min(options.sample_count, record_count - 1);
+	const auto candidate_universe = record_count - 1;
+	std::vector<double> standard_error_sums(profile.entries.size(), 0.0);
+	for (auto &entry : profile.entries) {
+		entry.minimum_count = std::numeric_limits<std::size_t>::max();
+		entry.minimum_density = std::numeric_limits<double>::infinity();
+	}
+
+	for (std::size_t source = 0; source < record_count; ++source) {
+		const auto source_id = provider.id(source);
+		const auto sample_plan =
+			::mtrc::space::regular_sample_positions_excluding(record_count, source, target_sample_count);
+		std::vector<std::size_t> threshold_deltas(thresholds.size() + 1, 0);
+		for (const auto target : sample_plan.positions) {
+			const auto distance = provider.distance(source_id, provider.id(target));
+			if (!local_volume_detail::finite_scalar(distance)) {
+				throw std::invalid_argument("distance values must be finite");
+			}
+			const auto threshold = static_cast<comparison_type>(distance);
+			const auto first_matching = std::lower_bound(
+				thresholds.begin(), thresholds.end(), threshold,
+				[](const auto &entry, const auto &value) { return entry.threshold < value; });
+			if (first_matching != thresholds.end()) {
+				++threshold_deltas[static_cast<std::size_t>(first_matching - thresholds.begin())];
+			}
+		}
+
+		std::size_t observed_hits = 0;
+		for (std::size_t sorted_index = 0; sorted_index < thresholds.size(); ++sorted_index) {
+			observed_hits += threshold_deltas[sorted_index];
+			const auto sample = static_cast<double>(sample_plan.positions.size());
+			const auto estimated_other_count =
+				sample == 0.0 ? 0.0 : static_cast<double>(observed_hits) *
+										static_cast<double>(candidate_universe) / sample;
+			auto estimated_count = static_cast<std::size_t>(std::llround(1.0 + estimated_other_count));
+			if (estimated_count > record_count) {
+				estimated_count = record_count;
+			}
+			auto &entry = profile.entries[thresholds[sorted_index].original_index];
+			const auto density = static_cast<double>(estimated_count) / static_cast<double>(record_count);
+			if (estimated_count < entry.minimum_count) {
+				entry.minimum_count = estimated_count;
+			}
+			if (entry.maximum_count < estimated_count) {
+				entry.maximum_count = estimated_count;
+			}
+			if (density < entry.minimum_density) {
+				entry.minimum_density = density;
+			}
+			if (entry.maximum_density < density) {
+				entry.maximum_density = density;
+			}
+			entry.average_count += static_cast<double>(estimated_count);
+			entry.average_density += density;
+			standard_error_sums[thresholds[sorted_index].original_index] +=
+				local_volume_detail::local_volume_row_count_standard_error(
+					observed_hits, sample_plan.positions.size(), candidate_universe);
+		}
+	}
+
+	double maximum_standard_error = 0.0;
+	for (std::size_t index = 0; index < profile.entries.size(); ++index) {
+		auto &entry = profile.entries[index];
+		entry.average_count /= static_cast<double>(record_count);
+		entry.average_density /= static_cast<double>(record_count);
+		const auto standard_error = standard_error_sums[index] / static_cast<double>(record_count);
+		maximum_standard_error = std::max(maximum_standard_error, standard_error);
+	}
+
+	profile.sample_count = target_sample_count;
+	profile.sample_universe = candidate_universe;
+	profile.evaluated_distance_count = record_count * target_sample_count;
+	profile.approximation_quality.diagnostic = "local_volume_approximation";
+	profile.approximation_quality.candidate_policy = "regular_target_sample";
+	profile.approximation_quality.candidate_count = target_sample_count;
+	profile.approximation_quality.candidate_universe = candidate_universe;
+	profile.approximation_quality.distance_evaluations = profile.evaluated_distance_count;
+	profile.approximation_quality.sample_count = target_sample_count;
+	profile.approximation_quality.sample_universe = candidate_universe;
+	profile.approximation_quality.candidate_fraction =
+		static_cast<double>(target_sample_count) / static_cast<double>(candidate_universe);
+	profile.approximation_quality.sample_fraction = profile.approximation_quality.candidate_fraction;
+	profile.approximation_quality.standard_error = maximum_standard_error;
+	profile.approximation_quality.confidence_radius_95 = 1.96 * maximum_standard_error;
+	profile.approximation_quality.reason =
+		"local volume profile estimated from one deterministic regular target sample per source record";
+	return profile;
+}
+
+template <typename Provider, typename Radius, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
+auto local_volume_profile(const Provider &provider, const std::vector<Radius> &radii,
+						  local_volume_options options = {})
+	-> LocalVolumeProfile<typename Provider::distance_type>
+{
+	if (local_volume_detail::should_sample_local_volume(provider.record_count(), options)) {
+		return sampled_local_volume_profile(provider, radii, options);
+	}
+	local_volume_detail::require_exact_local_volume_allowed(
+		provider.record_count(), options, "local_volume_profile");
+	return exact_local_volume_profile(provider, radii, options);
+}
+
 template <typename Space, typename Radius>
 auto chunked_local_volume_profile(const ::mtrc::space::ChunkedSpaceView<Space> &chunks,
-								  const std::vector<Radius> &radii)
+								  const std::vector<Radius> &radii, local_volume_options options = {})
 	-> LocalVolumeProfile<typename ::mtrc::space::ChunkedSpaceView<Space>::distance_type>
 {
 	using distance_type = typename ::mtrc::space::ChunkedSpaceView<Space>::distance_type;
@@ -624,6 +867,10 @@ auto chunked_local_volume_profile(const ::mtrc::space::ChunkedSpaceView<Space> &
 			"local volume profile estimated from exact local chunk pairs plus chunk representative pairs");
 		return profile;
 	}
+	const auto helper_columns = local_volume_detail::checked_local_volume_size_sum(
+		thresholds.size(), std::size_t{1}, "chunked_local_volume_profile");
+	local_volume_detail::require_local_volume_profile_cells(
+		plan.record_count, helper_columns, options.max_profile_cells, "chunked_local_volume_profile");
 
 	std::sort(thresholds.begin(), thresholds.end(), [](const auto &lhs, const auto &rhs) {
 		if (lhs.threshold < rhs.threshold) {
@@ -725,24 +972,25 @@ auto chunked_local_volume_profile(const ::mtrc::space::ChunkedSpaceView<Space> &
 }
 
 template <typename Space, typename Radius, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
-auto local_volume_profile(const Space &space, const std::vector<Radius> &radii)
+auto local_volume_profile(const Space &space, const std::vector<Radius> &radii, local_volume_options options = {})
 	-> LocalVolumeProfile<typename Space::distance_type>
 {
 	space::storage::LiveDistances<Space> provider(space);
-	auto profile = local_volume_profile(provider, radii);
-	profile.representation = "metric_space";
+	auto profile = local_volume_profile(provider, radii, options);
+	profile.representation = profile.exact ? "metric_space" : "sampled_metric_space";
 	return profile;
 }
 
 template <typename Container, typename Metric, typename Radius,
 		  typename Record = typename std::decay<typename Container::value_type>::type,
 		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
-auto local_volume_profile(const Container &records, const Metric &metric, const std::vector<Radius> &radii)
+auto local_volume_profile(const Container &records, const Metric &metric, const std::vector<Radius> &radii,
+						  local_volume_options options = {})
 	-> LocalVolumeProfile<metric_result_t<Metric, Record>>
 {
 	auto space = core::make_space(records, metric);
-	auto profile = local_volume_profile(space, radii);
-	profile.representation = "records";
+	auto profile = local_volume_profile(space, radii, options);
+	profile.representation = profile.exact ? "records" : "sampled_metric_space";
 	return profile;
 }
 

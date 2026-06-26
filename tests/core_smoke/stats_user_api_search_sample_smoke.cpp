@@ -7,10 +7,12 @@
 // Both are read-only investigations of an existing finite metric space.
 
 #include <cassert>
+#include <cstddef>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
+#include "metric/core/errors.hpp"
 #include "metric/core/metric_space.hpp"
 #include "metric/core/result.hpp"
 #include "metric/space/storage/implicit.hpp"
@@ -22,6 +24,16 @@ namespace {
 
 struct AbsoluteDistance {
 	auto operator()(int lhs, int rhs) const -> int { return lhs > rhs ? lhs - rhs : rhs - lhs; }
+};
+
+struct CountingAbsoluteDistance {
+	int *calls{};
+
+	auto operator()(int lhs, int rhs) const -> int
+	{
+		++(*calls);
+		return lhs > rhs ? lhs - rhs : rhs - lhs;
+	}
 };
 
 template <typename Set> auto neighbor_sets_equal(const Set &lhs, const Set &rhs) -> bool
@@ -145,6 +157,52 @@ void range_batch_matches_single_queries()
 	assert(throws_invalid_argument([&] { (void)search::range_batch(records, AbsoluteDistance{}, std::vector<int>{}, -1); }));
 }
 
+void batch_policy_refuses_before_metric_calls()
+{
+	namespace search = mtrc::stats::search;
+	int calls = 0;
+	const std::vector<int> records{0, 4, 8, 12};
+	const std::vector<int> queries{1, 5, 9};
+	auto space = mtrc::make_space(records, CountingAbsoluteDistance{&calls});
+	const std::vector<mtrc::RecordId> query_ids{space.id(0), space.id(1), space.id(2)};
+	const auto limited_policy = mtrc::space::storage::with_distance_evaluation_budget(
+		mtrc::space::storage::exact(), records.size() * queries.size() - 1);
+
+	auto assert_refused_without_metric_calls = [&](auto operation) {
+		calls = 0;
+		bool rejected = false;
+		try {
+			operation();
+		} catch (const mtrc::RepresentationError &error) {
+			rejected = true;
+			const std::string message = error.what();
+			assert(message.find("distance_evaluation_budget") != std::string::npos);
+			assert(message.find("queries=3") != std::string::npos);
+		}
+		assert(rejected);
+		assert(calls == 0);
+	};
+
+	assert_refused_without_metric_calls([&] {
+		(void)search::knn_batch(space, queries, 2, limited_policy);
+	});
+	assert_refused_without_metric_calls([&] {
+		(void)search::range_batch(space, queries, 4, limited_policy);
+	});
+	assert_refused_without_metric_calls([&] {
+		(void)search::knn_batch(space, query_ids, 2, limited_policy);
+	});
+	assert_refused_without_metric_calls([&] {
+		(void)search::range_batch(space, query_ids, 4, limited_policy);
+	});
+	assert_refused_without_metric_calls([&] {
+		(void)search::knn_batch(records, CountingAbsoluteDistance{&calls}, queries, 2, limited_policy);
+	});
+	assert_refused_without_metric_calls([&] {
+		(void)search::range_batch(records, CountingAbsoluteDistance{&calls}, queries, 4, limited_policy);
+	});
+}
+
 void regular_sample_carries_lineage()
 {
 	namespace sample = mtrc::stats::sample;
@@ -189,6 +247,49 @@ void farthest_first_and_walk_are_deterministic()
 	// Seed out of range is rejected on both deterministic samplers.
 	assert(throws_out_of_range([&] { (void)sample::farthest_first(space, 1, sample::farthest_first_options(9)); }));
 	assert(throws_out_of_range([&] { (void)sample::metric_walk(space, 1, sample::metric_walk_options(9)); }));
+
+	int budget_calls = 0;
+	const auto counted_space = mtrc::make_space(std::vector<int>{0, 1, 2, 3, 4}, CountingAbsoluteDistance{&budget_calls});
+	sample::farthest_first_options low_farthest_budget;
+	low_farthest_budget.max_distance_evaluations = counted_space.size() * 3 * 2 - 1;
+	bool refused_farthest_budget = false;
+	try {
+		(void)sample::farthest_first(counted_space, 3, low_farthest_budget);
+	} catch (const mtrc::RepresentationError &error) {
+		refused_farthest_budget = true;
+		assert(std::string(error.what()).find("farthest_first") != std::string::npos);
+	}
+	assert(refused_farthest_budget);
+	assert(budget_calls == 0);
+
+	sample::metric_walk_options low_walk_budget;
+	low_walk_budget.max_distance_evaluations = counted_space.size() * 3 * 2 - 1;
+	bool refused_walk_budget = false;
+	try {
+		(void)sample::metric_walk(counted_space, 3, low_walk_budget);
+	} catch (const mtrc::RepresentationError &error) {
+		refused_walk_budget = true;
+		assert(std::string(error.what()).find("metric_walk") != std::string::npos);
+	}
+	assert(refused_walk_budget);
+	assert(budget_calls == 0);
+
+	std::vector<int> large_records;
+	large_records.reserve(100'001);
+	for (int value = 0; value < 100'001; ++value) {
+		large_records.push_back(value);
+	}
+	const auto large_space = mtrc::make_space(large_records, CountingAbsoluteDistance{&budget_calls});
+	bool refused_regular_budget = false;
+	try {
+		(void)sample::regular_sample(large_space, 1000);
+	} catch (const mtrc::RepresentationError &error) {
+		refused_regular_budget = true;
+		assert(std::string(error.what()).find("regular_sample") != std::string::npos);
+	}
+	assert(refused_regular_budget);
+	assert(budget_calls == 0);
+
 }
 
 } // namespace
@@ -197,6 +298,7 @@ int main()
 {
 	knn_batch_matches_single_queries();
 	range_batch_matches_single_queries();
+	batch_policy_refuses_before_metric_calls();
 	regular_sample_carries_lineage();
 	farthest_first_and_walk_are_deterministic();
 	return 0;

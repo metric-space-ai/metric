@@ -107,7 +107,8 @@ budgets before invoking the metric.
 - `runtime`: runtime policy objects for exactness, cache materialization preferences, and serial/parallel execution preferences
 - `strategies`: strategy objects for finite-space methods. `KMedoids`,
   `DBSCAN`, `FarthestFirst`, `Coverage`, `KCenter`, `RadiusCoverage`,
-  `PreserveDistribution`, `UniformDensity`, and `DistanceProfileCorrelation`
+  `PreserveDistribution`, `UniformDensity`, `DistanceProfileCorrelation`,
+  `RedifDynamics`, `ForwardDynamics`, `InverseDynamics`, and `TransportPath`
   are executable where their matching promoted operator path exists.
   `MDS`/`ClassicMDS` remain
   reserved strategy tokens for the unpromoted `embed` path and raise explicit
@@ -189,6 +190,10 @@ space.embed(dimensions=2, representation=space.to_matrix())
 space.outliers(count=2, representation=space.to_matrix())
 space.outliers(threshold=10)
 space.outliers(strategy=DBSCAN(radius=1, min_points=2))
+space.outliers(strategy=TransportPath(neighbors=2, iterations=4))
+space.add_noise(ForwardDynamics(neighbors=2, iterations=4))
+space.remove_noise(InverseDynamics(neighbors=2, iterations=4))
+space.dynamics(RedifDynamics(neighbors=2, iterations=4), direction="inverse")
 space.density_filter()
 space.density_filter(count=2, representation=space.to_matrix())
 space.density_filter(strategy=DBSCAN(radius=1, min_points=2))
@@ -228,6 +233,51 @@ Space.vectors(records, metric=custom_vector_metric)
 `pairwise_distances()`. A symmetric metric yields a symmetric matrix and an
 identity-respecting metric yields a zero diagonal. numpy is imported lazily; the
 method raises `OptionalDependencyError` when numpy is not installed.
+
+## Redif Dynamics And Noise
+
+Python exposes Redif as finite metric-space dynamics, not as a top-level
+algorithm collection. The promoted surface is:
+
+- `Space.add_noise(...)`: forward metric-induced dynamics;
+- `Space.remove_noise(...)`: inverse metric-induced dynamics;
+- `Space.dynamics(..., direction="forward" | "inverse")`: explicit direction
+  wrapper;
+- `Space.outliers(strategy=TransportPath(...))`: Redif transport-path
+  singularity score;
+- `metric.operators.add_noise_space(...)`,
+  `metric.operators.remove_noise_space(...)`, and
+  `metric.operators.redif_dynamics(...)` for function-style adapter use.
+
+The strategy tokens live in `metric.strategies`: `RedifDynamics`,
+`ForwardDynamics`, `InverseDynamics`, and `TransportPath`. A result is a
+`RedifMeasureResult` containing explicit atom-measure paths, stationary
+measures, entropy diagnostics, operator diagnostics, step stability diagnostics,
+exact transport diagnostics, and path summaries. It provides `to_dict()`,
+`to_numpy()`, and optional `to_pandas()` helpers.
+Each operator-diagnostics entry exposes the transition escape-probability proxy
+as `spectral_gap_proxy="minimum_transition_escape_probability"` and
+`spectral_gap_proxy_value`; it is a finite-operator audit signal, not an exact
+eigenvalue gap.
+The same payload includes local-relation exactness fields such as
+`local_relation_representation`, `local_relation_exactness`,
+`local_relation_distance_evaluations`, candidate/chunk diagnostics when present,
+and transport fields such as `transport_problem_count`,
+`support_truncated`, `discarded_mass_total`, and `exactness`.
+
+```python
+from metric import Space
+from metric.strategies import ForwardDynamics, InverseDynamics, TransportPath
+
+space = Space([0, 1, 2, 100], metric=lambda lhs, rhs: abs(lhs - rhs))
+
+forward = space.add_noise(ForwardDynamics(neighbors=1, iterations=3))
+inverse = space.remove_noise(InverseDynamics(neighbors=1, iterations=3))
+ranked = space.outliers(TransportPath(neighbors=1, iterations=3))
+```
+
+The returned paths are measures over the original finite space's atoms. They do
+not reconstruct arbitrary source records in a coordinate chart.
 
 Use `Space.from_dataframe(df, metric=row_metric, id_column="sample_id")` for
 DataFrame-like tabular records. The constructor reads rows through

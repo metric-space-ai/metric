@@ -10,6 +10,20 @@ _CACHE_MODES = {"auto", "lazy", "materialized", "none"}
 _REPRESENTATION_MODES = {"auto", "metric_space", "matrix", "tree", "graph"}
 
 
+def _normalize_optional_budget(value, name):
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        raise StrategyParameterError(f"{name} must be a non-negative integer")
+    try:
+        value = operator.index(value)
+    except TypeError:
+        raise StrategyParameterError(f"{name} must be a non-negative integer") from None
+    if value < 0:
+        raise StrategyParameterError(f"{name} must be non-negative")
+    return value
+
+
 @dataclass(frozen=True)
 class CachePolicy:
     """Representation cache preference for promoted Python intent helpers."""
@@ -35,6 +49,9 @@ class RuntimePolicy:
     cache: str | CachePolicy = "auto"
     representation: str = "auto"
     graph_count: int | None = None
+    max_memory_bytes: int | None = None
+    max_distance_evaluations: int | None = None
+    max_dense_records: int | None = None
 
     def __post_init__(self):
         if not isinstance(self.exact, bool):
@@ -58,6 +75,24 @@ class RuntimePolicy:
                 raise StrategyParameterError("graph_count must be non-negative")
         object.__setattr__(self, "cache", cache)
         object.__setattr__(self, "graph_count", graph_count)
+        object.__setattr__(
+            self,
+            "max_memory_bytes",
+            _normalize_optional_budget(self.max_memory_bytes, "max_memory_bytes"),
+        )
+        object.__setattr__(
+            self,
+            "max_distance_evaluations",
+            _normalize_optional_budget(
+                self.max_distance_evaluations,
+                "max_distance_evaluations",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "max_dense_records",
+            _normalize_optional_budget(self.max_dense_records, "max_dense_records"),
+        )
 
     @property
     def cache_mode(self):
@@ -91,6 +126,9 @@ class RuntimePolicy:
             "representation": self.representation,
             "representation_preference": self.representation_preference,
             "graph_count": self.graph_count,
+            "max_memory_bytes": self.max_memory_bytes,
+            "max_distance_evaluations": self.max_distance_evaluations,
+            "max_dense_records": self.max_dense_records,
         }
 
 
@@ -106,6 +144,9 @@ class RuntimeDiagnostics:
     intent: str | None = None
     supported: bool = True
     reason: str = ""
+    max_memory_bytes: int | None = None
+    max_distance_evaluations: int | None = None
+    max_dense_records: int | None = None
 
     def to_dict(self):
         return {
@@ -117,6 +158,9 @@ class RuntimeDiagnostics:
             "intent": self.intent,
             "supported": self.supported,
             "reason": self.reason,
+            "max_memory_bytes": self.max_memory_bytes,
+            "max_distance_evaluations": self.max_distance_evaluations,
+            "max_dense_records": self.max_dense_records,
         }
 
     def to_pandas(self):
@@ -173,6 +217,9 @@ def runtime_diagnostics(runtime=None, *, representation=None, intent=None):
         intent=intent,
         supported=supported,
         reason=reason,
+        max_memory_bytes=policy.max_memory_bytes,
+        max_distance_evaluations=policy.max_distance_evaluations,
+        max_dense_records=policy.max_dense_records,
     )
 
 
@@ -192,6 +239,9 @@ def materialized(policy=None):
         cache="materialized",
         representation=policy.representation,
         graph_count=policy.graph_count,
+        max_memory_bytes=policy.max_memory_bytes,
+        max_distance_evaluations=policy.max_distance_evaluations,
+        max_dense_records=policy.max_dense_records,
     )
 
 
@@ -203,6 +253,9 @@ def lazy(policy=None):
         cache="lazy",
         representation=policy.representation,
         graph_count=policy.graph_count,
+        max_memory_bytes=policy.max_memory_bytes,
+        max_distance_evaluations=policy.max_distance_evaluations,
+        max_dense_records=policy.max_dense_records,
     )
 
 
@@ -214,6 +267,9 @@ def parallel(policy=None):
         cache=policy.cache,
         representation=policy.representation,
         graph_count=policy.graph_count,
+        max_memory_bytes=policy.max_memory_bytes,
+        max_distance_evaluations=policy.max_distance_evaluations,
+        max_dense_records=policy.max_dense_records,
     )
 
 
@@ -225,6 +281,9 @@ def serial(policy=None):
         cache=policy.cache,
         representation=policy.representation,
         graph_count=policy.graph_count,
+        max_memory_bytes=policy.max_memory_bytes,
+        max_distance_evaluations=policy.max_distance_evaluations,
+        max_dense_records=policy.max_dense_records,
     )
 
 
@@ -235,6 +294,10 @@ def using_implicit(policy=None):
         parallel=policy.parallel,
         cache="lazy",
         representation="metric_space",
+        graph_count=policy.graph_count,
+        max_memory_bytes=policy.max_memory_bytes,
+        max_distance_evaluations=policy.max_distance_evaluations,
+        max_dense_records=policy.max_dense_records,
     )
 
 
@@ -245,6 +308,10 @@ def using_matrix(policy=None):
         parallel=policy.parallel,
         cache="materialized",
         representation="matrix",
+        graph_count=policy.graph_count,
+        max_memory_bytes=policy.max_memory_bytes,
+        max_distance_evaluations=policy.max_distance_evaluations,
+        max_dense_records=policy.max_dense_records,
     )
 
 
@@ -255,6 +322,10 @@ def using_tree(policy=None):
         parallel=policy.parallel,
         cache="materialized",
         representation="tree",
+        graph_count=policy.graph_count,
+        max_memory_bytes=policy.max_memory_bytes,
+        max_distance_evaluations=policy.max_distance_evaluations,
+        max_dense_records=policy.max_dense_records,
     )
 
 
@@ -266,6 +337,9 @@ def using_graph(count=None, policy=None):
         cache="materialized",
         representation="graph",
         graph_count=count,
+        max_memory_bytes=policy.max_memory_bytes,
+        max_distance_evaluations=policy.max_distance_evaluations,
+        max_dense_records=policy.max_dense_records,
     )
 
 

@@ -85,4 +85,5 @@ export const MINIATURE_LAYER_ROLES = Object.freeze({
   field: "miniature-field",
   glyph: "miniature-glyph",
   image: "miniature-image",
+  label: "miniature-label",
 });

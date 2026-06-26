@@ -10,12 +10,14 @@
 #include "metric/core/result.hpp"
 #include "metric/core/metric_space.hpp"
 #include "metric/record/id.hpp"
+#include "metric/space/distances.hpp"
 #include "metric/space/storage/cover_tree_index.hpp"
 #include "metric/space/storage/distance_table.hpp"
 #include "metric/space/storage/exact_scan_index.hpp"
 #include "metric/space/storage/implicit.hpp"
 #include "metric/space/storage/knn_graph_index.hpp"
 #include "metric/space/storage/policy.hpp"
+#include "metric/space/storage/strategy.hpp"
 #include "metric/stats/search/neighbors.hpp"
 #include "metric/stats/search/nearest.hpp"
 
@@ -23,8 +25,26 @@ struct AbsoluteDistance {
 	auto operator()(int lhs, int rhs) const -> int { return lhs > rhs ? lhs - rhs : rhs - lhs; }
 };
 
+struct CountingAbsoluteDistance {
+	int *calls{};
+
+	auto operator()(int lhs, int rhs) const -> int
+	{
+		if (calls != nullptr) {
+			++*calls;
+		}
+		return lhs > rhs ? lhs - rhs : rhs - lhs;
+	}
+};
+
 namespace mtrc::core {
 template <> struct metric_traits<AbsoluteDistance> {
+	static constexpr auto law = metric_law::metric;
+	static constexpr auto records = record_kind::custom;
+	static constexpr bool thread_safe = true;
+};
+
+template <> struct metric_traits<CountingAbsoluteDistance> {
 	static constexpr auto law = metric_law::metric;
 	static constexpr auto records = record_kind::custom;
 	static constexpr bool thread_safe = true;
@@ -61,6 +81,19 @@ template <typename Callable> auto assert_out_of_range(Callable &&call) -> void
 		rejected = true;
 	}
 	assert(rejected);
+}
+
+template <typename Callable> auto assert_representation_error_before_calls(int &calls, Callable &&call) -> void
+{
+	calls = 0;
+	bool rejected = false;
+	try {
+		call();
+	} catch (const mtrc::RepresentationError &) {
+		rejected = true;
+	}
+	assert(rejected);
+	assert(calls == 0);
 }
 
 auto empty_space_queries_are_consistent() -> void
@@ -240,6 +273,81 @@ auto index_value_queries_match_brute_force_scan_contract() -> void
 					 "knn_graph_index");
 }
 
+auto default_distance_table_entries_refuse_large_dense_materialization_before_metric_calls() -> void
+{
+	const auto count = mtrc::space::storage::default_distance_table_max_dense_records + 1;
+	std::vector<int> records(count);
+	for (std::size_t index = 0; index < records.size(); ++index) {
+		records[index] = static_cast<int>(index);
+	}
+
+	int metric_calls = 0;
+	const auto space = mtrc::make_space(records, CountingAbsoluteDistance{&metric_calls});
+
+	assert_representation_error_before_calls(metric_calls, [&space]() {
+		(void)mtrc::space::storage::DistanceTable<decltype(space)>(space);
+	});
+	assert_representation_error_before_calls(metric_calls, [&space]() { (void)mtrc::space::storage::matrix(space); });
+	assert_representation_error_before_calls(metric_calls, [&space]() {
+		(void)mtrc::space::distances::materialize(space);
+	});
+	assert_representation_error_before_calls(metric_calls, [&space]() {
+		(void)mtrc::space::storage::make(space, mtrc::stats::search::distance_table{});
+	});
+}
+
+auto default_knn_graph_entries_refuse_large_builds_before_metric_calls() -> void
+{
+	const auto count = static_cast<std::size_t>(1001);
+	std::vector<int> records(count);
+	for (std::size_t index = 0; index < records.size(); ++index) {
+		records[index] = static_cast<int>(index);
+	}
+
+	int metric_calls = 0;
+	const auto space = mtrc::make_space(records, CountingAbsoluteDistance{&metric_calls});
+
+	assert_representation_error_before_calls(metric_calls, [&space]() { (void)mtrc::space::storage::knn_graph(space, 1); });
+	assert_representation_error_before_calls(metric_calls, [&space]() { (void)mtrc::space::storage::graph(space, 1); });
+	assert_representation_error_before_calls(metric_calls, [&space]() {
+		(void)mtrc::space::storage::make(space, mtrc::stats::search::knn_graph(1));
+	});
+
+	const auto zero_neighbor_graph = mtrc::space::storage::knn_graph(space, 0);
+	assert(zero_neighbor_graph.record_count() == records.size());
+	assert(zero_neighbor_graph.edge_count() == 0);
+	assert(zero_neighbor_graph.build_distance_evaluations() == 0);
+	assert(metric_calls == 0);
+}
+
+auto default_knn_graph_quality_uses_sampled_rows_for_large_graphs() -> void
+{
+	const auto count = static_cast<std::size_t>(300);
+	std::vector<int> records(count);
+	for (std::size_t index = 0; index < records.size(); ++index) {
+		records[index] = static_cast<int>(index);
+	}
+
+	int metric_calls = 0;
+	const auto space = mtrc::make_space(records, CountingAbsoluteDistance{&metric_calls});
+	const auto graph = mtrc::space::storage::knn_graph(space, 1);
+	assert(graph.build_distance_evaluations() == count * (count - 1));
+	assert(metric_calls == static_cast<int>(count * (count - 1)));
+
+	const auto table = mtrc::space::storage::matrix(space);
+	assert(metric_calls == static_cast<int>(count * (count - 1) + count * count));
+
+	const auto quality = graph.quality_against(table);
+	assert(quality.sampled);
+	assert(quality.requested_sample_count == mtrc::space::storage::default_knn_graph_quality_sample_count);
+	assert(quality.evaluated_queries == mtrc::space::storage::default_knn_graph_quality_sample_count);
+	assert(quality.exact_distance_evaluations ==
+		   mtrc::space::storage::default_knn_graph_quality_sample_count * (count - 1));
+	assert(quality.graph_edge_evaluations == mtrc::space::storage::default_knn_graph_quality_sample_count);
+	assert(!quality.warnings.empty());
+	assert(quality.recall == 1.0);
+}
+
 } // namespace
 
 int main()
@@ -248,5 +356,8 @@ int main()
 	singleton_id_queries_exclude_self();
 	duplicate_records_keep_zero_distance_and_id_ties();
 	index_value_queries_match_brute_force_scan_contract();
+	default_distance_table_entries_refuse_large_dense_materialization_before_metric_calls();
+	default_knn_graph_entries_refuse_large_builds_before_metric_calls();
+	default_knn_graph_quality_uses_sampled_rows_for_large_graphs();
 	return 0;
 }

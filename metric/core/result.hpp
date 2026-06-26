@@ -661,6 +661,9 @@ template <typename Value = double> struct EntropyResult {
 	bool exponentiated{false};
 	bool exact{true};
 	entropy_status status{entropy_status::valid};
+	std::size_t sample_count{};
+	std::size_t sample_seed{};
+	std::string approximation_reason;
 	std::string algorithm;
 	std::string representation;
 
@@ -1041,7 +1044,14 @@ template <typename Value> auto operator<<(std::ostream &os, const EntropyResult<
 	   << ", k=" << result.neighbor_count << ", p=" << result.approximation_order
 	   << ", effective_k=" << result.effective_neighbor_count << ", effective_p=" << result.effective_approximation_order
 	   << ", " << (result.exponentiated ? "exponentiated" : "raw") << ", representation=" << result.representation
-	   << ", " << exact_label(result.exact) << ')';
+	   << ", " << exact_label(result.exact);
+	if (!result.exact && result.sample_count > 0) {
+		os << ", sample_count=" << result.sample_count << ", sample_seed=" << result.sample_seed;
+	}
+	if (!result.exact && !result.approximation_reason.empty()) {
+		os << ", reason=" << result.approximation_reason;
+	}
+	os << ')';
 	return os;
 }
 

@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <random>
 #include <stdexcept>
 #include <string>
@@ -63,11 +64,14 @@ struct significance_options {
 
 	std::size_t permutations{200};
 	std::uint64_t seed{0x9E3779B97F4A7C15ULL};
+	// Maximum dense matrix cells copied or processed by permutation trials.
+	// Set to 0 only when unbounded permutation work is intentional.
+	std::size_t max_permutation_matrix_cells{100'000'000};
 };
 
 namespace significance_detail {
 
-constexpr std::size_t max_default_exact_mgc_significance_records = 4096;
+constexpr std::size_t max_default_exact_mgc_significance_records = 2886;
 
 inline auto default_mgc_significance_preflight_policy() -> space::storage::policy
 {
@@ -84,6 +88,38 @@ inline auto significance_plan_failure_message(const space::storage::execution_pl
 	message += "; MGC significance requires dense exact pairwise distances, so reduce record count or pass an explicit "
 			   "pairwise-distance provider";
 	return message;
+}
+
+inline auto checked_significance_work_product(std::size_t lhs, std::size_t rhs, const char *message)
+	-> std::size_t
+{
+	if (rhs != 0 && lhs > std::numeric_limits<std::size_t>::max() / rhs) {
+		throw mtrc::RepresentationError(message);
+	}
+	return lhs * rhs;
+}
+
+inline auto estimate_permutation_matrix_cells(std::size_t record_count, std::size_t permutations) -> std::size_t
+{
+	const auto matrix_cells = checked_significance_work_product(
+		record_count, record_count, "MGC significance permutation matrix-cell estimate exceeds size_t capacity");
+	return checked_significance_work_product(
+		matrix_cells, permutations, "MGC significance permutation matrix-cell estimate exceeds size_t capacity");
+}
+
+inline auto require_permutation_work_budget(std::size_t record_count, significance_options options) -> void
+{
+	const auto estimated_cells = estimate_permutation_matrix_cells(record_count, options.permutations);
+	if (options.max_permutation_matrix_cells == 0 || estimated_cells <= options.max_permutation_matrix_cells) {
+		return;
+	}
+	throw mtrc::RepresentationError(
+		"MGC significance refused permutation work before dense matrix construction: records=" +
+		std::to_string(record_count) + ", permutations=" + std::to_string(options.permutations) +
+		", estimated_permutation_matrix_cells=" + std::to_string(estimated_cells) +
+		", max_permutation_matrix_cells=" + std::to_string(options.max_permutation_matrix_cells) +
+		". Reduce permutations or set max_permutation_matrix_cells=0 only when unbounded permutation work is "
+		"intentional.");
 }
 
 template <typename Space> inline auto require_default_mgc_significance_preflight(const Space &space) -> void
@@ -143,6 +179,7 @@ inline auto run_mgc_permutation(const mtrc::DistanceMatrix<double> &left, const 
 	if (!symmetric_double_matrix_is_finite(left) || !symmetric_double_matrix_is_finite(right)) {
 		throw std::invalid_argument("MGC significance requires finite distance values");
 	}
+	require_permutation_work_budget(left.rows(), options);
 
 	SignificanceResult<double> result;
 	result.permutations = options.permutations;
@@ -193,6 +230,7 @@ auto mgc_significance(const LeftProvider &left_provider, const RightProvider &ri
 	if (left_provider.record_count() < 2) {
 		throw std::invalid_argument("MGC significance requires at least two paired records");
 	}
+	significance_detail::require_permutation_work_budget(left_provider.record_count(), options);
 
 	auto left = space::storage::provider_symmetric_distance_matrix<double>(left_provider);
 	auto right = space::storage::provider_symmetric_distance_matrix<double>(right_provider);
@@ -210,6 +248,7 @@ auto mgc_significance(const LeftSpace &left_space, const RightSpace &right_space
 	if (left_space.size() < 2) {
 		throw std::invalid_argument("MGC significance requires at least two paired records");
 	}
+	significance_detail::require_permutation_work_budget(left_space.size(), options);
 
 	significance_detail::require_default_mgc_significance_preflight(left_space);
 	significance_detail::require_default_mgc_significance_preflight(right_space);
@@ -291,6 +330,7 @@ auto mgc_by_record_id(const LeftSpace &left_space, const RightSpace &right_space
 	if (matched.size() < 2) {
 		throw std::invalid_argument("MGC by RecordId requires at least two shared records");
 	}
+	detail::require_default_exact_mgc_records(matched.size(), "mgc_by_record_id(...)");
 
 	std::vector<typename LeftSpace::record_type> left_records;
 	std::vector<typename RightSpace::record_type> right_records;

@@ -8,7 +8,9 @@
 #include <metric/space.hpp>
 
 #include <metric/core/concepts.hpp>
+#include <metric/core/metric_space.hpp>
 #include <metric/numeric/math/GraphPrimitives.h>
+#include <metric/space/storage/implicit.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -40,6 +42,12 @@ struct graph_stretch_options {
 	std::size_t max_metric_distance_evaluations{default_max_exact_graph_distance_evaluations};
 	std::size_t max_shortest_path_cells{default_max_graph_shortest_path_cells};
 	std::size_t max_shortest_path_relaxations{default_max_graph_shortest_path_relaxations};
+};
+
+struct exact_metric_work_options {
+	// Maximum direct metric calls for legacy exact helper algorithms.
+	// Set to 0 only when the caller intentionally opts into unbounded exact work.
+	std::size_t max_distance_evaluations{default_max_exact_graph_distance_evaluations};
 };
 
 namespace detail {
@@ -81,6 +89,19 @@ inline auto require_graph_distance_budget(std::size_t record_count, bool directe
 		std::string(operation) + " refused exhaustive graph work before metric calls: records=" +
 		std::to_string(record_count) +
 		(directed ? ", directed_metric_pairs=" : ", metric_pairs=") + std::to_string(pair_count) +
+		", max_distance_evaluations=" + std::to_string(max_distance_evaluations) + ". " + options_hint);
+}
+
+inline auto require_metric_evaluation_budget(std::size_t estimated_distance_evaluations,
+											 std::size_t max_distance_evaluations, const char *operation,
+											 const char *options_hint) -> void
+{
+	if (max_distance_evaluations == 0 || estimated_distance_evaluations <= max_distance_evaluations) {
+		return;
+	}
+	throw ::mtrc::RepresentationError(
+		std::string(operation) + " refused exact metric work before metric calls: estimated_distance_evaluations=" +
+		std::to_string(estimated_distance_evaluations) +
 		", max_distance_evaluations=" + std::to_string(max_distance_evaluations) + ". " + options_hint);
 }
 
@@ -406,8 +427,10 @@ auto observe_graph_component_edges(GraphComponentTracker &component_tracker, con
 	::mtrc::numeric::observe_graph_component_edges(component_tracker, edges, record_count);
 }
 
-inline auto make_graph_shortest_path_matrix(std::size_t record_count) -> std::vector<std::vector<double>>
+inline auto make_graph_shortest_path_matrix(std::size_t record_count, graph_stretch_options options = {})
+	-> std::vector<std::vector<double>>
 {
+	detail::require_graph_shortest_path_budget(record_count, options, "make_graph_shortest_path_matrix");
 	return ::mtrc::numeric::make_graph_shortest_path_matrix(record_count);
 }
 
@@ -431,8 +454,11 @@ auto observe_graph_shortest_path_edges(std::vector<std::vector<double>> &shortes
 	::mtrc::numeric::observe_graph_shortest_path_edges(shortest_paths, edges, directed);
 }
 
-inline auto close_graph_shortest_paths(std::vector<std::vector<double>> &shortest_paths) -> void
+inline auto close_graph_shortest_paths(std::vector<std::vector<double>> &shortest_paths,
+									   graph_stretch_options options = {}) -> void
 {
+	const auto record_count = checked_graph_shortest_path_matrix_record_count(shortest_paths);
+	detail::require_graph_shortest_path_budget(record_count, options, "close_graph_shortest_paths");
 	::mtrc::numeric::close_graph_shortest_paths(shortest_paths);
 }
 
@@ -459,6 +485,18 @@ template <typename Distance, typename RadiusValue>
 auto graph_shortest_path_distances(const GraphConstructionResult<Distance, RadiusValue> &graph)
 	-> std::vector<std::vector<double>>
 {
+	detail::require_graph_shortest_path_budget(graph.metadata.record_count, graph_stretch_options{},
+											   "graph_shortest_path_distances");
+	return ::mtrc::numeric::graph_shortest_path_distances(graph.metadata.record_count, graph.edges,
+														   graph.metadata.directed);
+}
+
+template <typename Distance, typename RadiusValue>
+auto graph_shortest_path_distances(const GraphConstructionResult<Distance, RadiusValue> &graph,
+								   graph_stretch_options options) -> std::vector<std::vector<double>>
+{
+	detail::require_graph_shortest_path_budget(graph.metadata.record_count, options,
+											   "graph_shortest_path_distances");
 	return ::mtrc::numeric::graph_shortest_path_distances(graph.metadata.record_count, graph.edges,
 														   graph.metadata.directed);
 }
@@ -466,6 +504,21 @@ auto graph_shortest_path_distances(const GraphConstructionResult<Distance, Radiu
 inline auto graph_metric_pair_indices(std::size_t record_count, bool directed)
 	-> std::vector<std::pair<std::size_t, std::size_t>>
 {
+	(void)detail::require_graph_distance_budget(record_count, directed,
+												default_max_exact_graph_distance_evaluations,
+												"graph_metric_pair_indices",
+												"Pass exact_metric_work_options{0} only when unbounded pair "
+												"materialization is intentional.");
+	return ::mtrc::numeric::graph_index_pairs(record_count, directed);
+}
+
+inline auto graph_metric_pair_indices(std::size_t record_count, bool directed, exact_metric_work_options options)
+	-> std::vector<std::pair<std::size_t, std::size_t>>
+{
+	(void)detail::require_graph_distance_budget(record_count, directed, options.max_distance_evaluations,
+												"graph_metric_pair_indices",
+												"Pass exact_metric_work_options{0} only when unbounded pair "
+												"materialization is intentional.");
 	return ::mtrc::numeric::graph_index_pairs(record_count, directed);
 }
 
@@ -481,7 +534,14 @@ auto pairwise_distance_matrix(const Container &records, Metric distance)
 	-> std::vector<std::vector<typename detail::finite_space_t<Container, Metric>::distance_type>>
 {
 	(void)::mtrc::finite_space_detail::require_pairwise_matrix_budget(records.size(), ::mtrc::pairwise_matrix_options{});
-	return ::mtrc::Space::from_records(records, std::move(distance)).pairwise_distances();
+	using distance_type = typename detail::finite_space_t<Container, Metric>::distance_type;
+	std::vector<std::vector<distance_type>> distances(records.size(), std::vector<distance_type>(records.size()));
+	for (std::size_t row = 0; row < records.size(); ++row) {
+		for (std::size_t column = 0; column < records.size(); ++column) {
+			distances[row][column] = distance(records[row], records[column]);
+		}
+	}
+	return distances;
 }
 
 template <typename Container, typename Metric>
@@ -489,21 +549,65 @@ auto pairwise_distance_matrix(const Container &records, Metric distance, ::mtrc:
 	-> std::vector<std::vector<typename detail::finite_space_t<Container, Metric>::distance_type>>
 {
 	(void)::mtrc::finite_space_detail::require_pairwise_matrix_budget(records.size(), options);
-	return ::mtrc::Space::from_records(records, std::move(distance)).pairwise_distances(options);
+	using distance_type = typename detail::finite_space_t<Container, Metric>::distance_type;
+	std::vector<std::vector<distance_type>> distances(records.size(), std::vector<distance_type>(records.size()));
+	for (std::size_t row = 0; row < records.size(); ++row) {
+		for (std::size_t column = 0; column < records.size(); ++column) {
+			distances[row][column] = distance(records[row], records[column]);
+		}
+	}
+	return distances;
 }
 
 template <typename Container, typename Metric>
 auto nearest_neighbors(const Container &records, Metric distance, const detail::record_type_t<Container> &query,
-					   unsigned k = 1)
+					   unsigned k = 1, exact_metric_work_options options = {})
 {
-	return ::mtrc::Space::from_records(records, std::move(distance)).neighbors(query, k);
+	using distance_type = typename detail::finite_space_t<Container, Metric>::distance_type;
+	using neighbor_type = std::pair<std::size_t, distance_type>;
+
+	detail::require_metric_evaluation_budget(
+		records.size(), options.max_distance_evaluations, "nearest_neighbors",
+		"Pass exact_metric_work_options{0} only when an unbounded exact scan is intentional.");
+
+	std::vector<neighbor_type> result;
+	if (k == 0 || records.empty()) {
+		return result;
+	}
+	result.reserve(std::min<std::size_t>(k, records.size()));
+	for (std::size_t index = 0; index < records.size(); ++index) {
+		result.emplace_back(index, distance(query, records[index]));
+	}
+	std::stable_sort(result.begin(), result.end(),
+					 [](const auto &lhs, const auto &rhs) { return lhs.second < rhs.second; });
+	if (result.size() > k) {
+		result.resize(k);
+	}
+	return result;
 }
 
 template <typename Container, typename Metric>
 auto range_neighbors(const Container &records, Metric distance, const detail::record_type_t<Container> &query,
-					 typename detail::finite_space_t<Container, Metric>::distance_type radius)
+					 typename detail::finite_space_t<Container, Metric>::distance_type radius,
+					 exact_metric_work_options options = {})
 {
-	return ::mtrc::Space::from_records(records, std::move(distance)).within_radius(query, radius);
+	using distance_type = typename detail::finite_space_t<Container, Metric>::distance_type;
+	using neighbor_type = std::pair<std::size_t, distance_type>;
+
+	detail::require_metric_evaluation_budget(
+		records.size(), options.max_distance_evaluations, "range_neighbors",
+		"Pass exact_metric_work_options{0} only when an unbounded exact scan is intentional.");
+
+	std::vector<neighbor_type> result;
+	for (std::size_t index = 0; index < records.size(); ++index) {
+		const auto candidate_distance = distance(query, records[index]);
+		if (candidate_distance <= radius) {
+			result.emplace_back(index, candidate_distance);
+		}
+	}
+	std::stable_sort(result.begin(), result.end(),
+					 [](const auto &lhs, const auto &rhs) { return lhs.second < rhs.second; });
+	return result;
 }
 
 template <typename Container, typename Metric>
@@ -529,7 +633,6 @@ auto exact_knn_graph(const Container &records, Metric distance, std::size_t k, e
 												"Pass exact_graph_options{0} only when unbounded exact graph "
 												"construction is intentional.");
 
-	const auto space = ::mtrc::Space::from_records(records, std::move(distance));
 	edges.reserve(detail::checked_graph_size_product(records.size(), k,
 													 "exact_knn_graph edge count exceeds size_t capacity"));
 
@@ -541,7 +644,7 @@ auto exact_knn_graph(const Container &records, Metric distance, std::size_t k, e
 			if (source_index == target_index) {
 				continue;
 			}
-			candidates.emplace_back(space.distance(source_index, target_index), target_index);
+			candidates.emplace_back(distance(records[source_index], records[target_index]), target_index);
 		}
 
 		const auto selected_candidates = select_graph_neighbor_candidates_by_distance(std::move(candidates), k);
@@ -581,14 +684,12 @@ auto exact_radius_graph(const Container &records, Metric distance, Radius radius
 												"exact_radius_graph",
 												"Pass exact_graph_options{0} only when unbounded exact graph "
 												"construction is intentional.");
-	const auto space = ::mtrc::Space::from_records(records, std::move(distance));
-
 	for (std::size_t source_index = 0; source_index < records.size(); ++source_index) {
 		for (std::size_t target_index = 0; target_index < records.size(); ++target_index) {
 			if (source_index == target_index) {
 				continue;
 			}
-			const auto edge_distance = space.distance(source_index, target_index);
+			const auto edge_distance = distance(records[source_index], records[target_index]);
 			if (static_cast<comparison_type>(edge_distance) <= threshold) {
 				edges.emplace_back(source_index, target_index, edge_distance);
 			}
@@ -758,11 +859,10 @@ auto graph_stretch_diagnostics(const Container &records, Metric distance,
 		"graph_stretch_diagnostics",
 		"Pass graph_stretch_options{0, 0, 0} only when unbounded stretch diagnostics are intentional.");
 
-	const auto shortest_paths = graph_shortest_path_distances(graph);
-	const auto space = ::mtrc::Space::from_records(records, std::move(distance));
+	const auto shortest_paths = graph_shortest_path_distances(graph, options);
 	GraphStretchAccumulator stretch_accumulator;
 	const auto metric_distance_at = [&](std::size_t source_index, std::size_t target_index) {
-		return space.distance(source_index, target_index);
+		return distance(records[source_index], records[target_index]);
 	};
 	for (std::size_t source_index = 0; source_index < result.record_count; ++source_index) {
 		const auto first_target = graph.metadata.directed ? std::size_t{0} : source_index + 1;
@@ -788,7 +888,8 @@ namespace mtrc::stats::structural_analysis {
 namespace detail = ::mtrc::space::index::detail;
 
 template <typename Container, typename Metric>
-auto representative_indices(const Container &records, Metric distance, std::size_t k, std::size_t seed_index = 0)
+auto representative_indices(const Container &records, Metric distance, std::size_t k, std::size_t seed_index = 0,
+							::mtrc::space::index::exact_metric_work_options options = {})
 	-> std::vector<std::size_t>
 {
 	if (k == 0) {
@@ -805,15 +906,19 @@ auto representative_indices(const Container &records, Metric distance, std::size
 	}
 
 	using distance_type = typename detail::finite_space_t<Container, Metric>::distance_type;
+	detail::require_metric_evaluation_budget(
+		detail::checked_graph_size_product(records.size(), k,
+										   "representative_indices distance-evaluation estimate exceeds size_t capacity"),
+		options.max_distance_evaluations, "representative_indices",
+		"Pass exact_metric_work_options{0} only when unbounded farthest-first work is intentional.");
 
-	const auto space = ::mtrc::Space::from_records(records, std::move(distance));
 	std::vector<std::size_t> selected = {seed_index};
 	std::vector<bool> is_selected(records.size(), false);
 	is_selected[seed_index] = true;
 
 	std::vector<distance_type> nearest_selected_distances(records.size());
 	for (std::size_t index = 0; index < records.size(); ++index) {
-		nearest_selected_distances[index] = space.distance(index, seed_index);
+		nearest_selected_distances[index] = distance(records[index], records[seed_index]);
 	}
 
 	while (selected.size() < k) {
@@ -825,7 +930,7 @@ auto representative_indices(const Container &records, Metric distance, std::size
 		is_selected[next_index] = true;
 		for (std::size_t index = 0; index < nearest_selected_distances.size(); ++index) {
 			nearest_selected_distances[index] =
-				std::min(nearest_selected_distances[index], space.distance(index, next_index));
+				std::min(nearest_selected_distances[index], distance(records[index], records[next_index]));
 		}
 	}
 
@@ -833,10 +938,11 @@ auto representative_indices(const Container &records, Metric distance, std::size
 }
 
 template <typename Container, typename Metric>
-auto representatives(const Container &records, Metric distance, std::size_t k, std::size_t seed_index = 0)
+auto representatives(const Container &records, Metric distance, std::size_t k, std::size_t seed_index = 0,
+					 ::mtrc::space::index::exact_metric_work_options options = {})
 	-> std::vector<detail::record_type_t<Container>>
 {
-	const auto selected = representative_indices(records, std::move(distance), k, seed_index);
+	const auto selected = representative_indices(records, std::move(distance), k, seed_index, options);
 	std::vector<detail::record_type_t<Container>> result;
 	result.reserve(selected.size());
 	for (const auto index : selected) {
@@ -846,30 +952,42 @@ auto representatives(const Container &records, Metric distance, std::size_t k, s
 }
 
 template <typename Container, typename Metric>
-auto medoid_index(const Container &records, Metric distance) -> std::size_t
+auto medoid_index(const Container &records, Metric distance,
+				  ::mtrc::space::index::exact_metric_work_options options = {}) -> std::size_t
 {
 	if (records.empty()) {
 		throw std::invalid_argument("cannot select a medoid from an empty record set");
 	}
 
-	const auto space = ::mtrc::Space::from_records(records, std::move(distance));
-	const auto provider = detail::indexed_pairwise_distances(space);
-	std::vector<::mtrc::RecordId> candidate_ids;
-	candidate_ids.reserve(records.size());
-	for (std::size_t index = 0; index < records.size(); ++index) {
-		candidate_ids.push_back(provider.id(index));
-	}
+	detail::require_metric_evaluation_budget(
+		detail::checked_graph_size_product(records.size(), records.size(),
+										   "medoid_index distance-evaluation estimate exceeds size_t capacity"),
+		options.max_distance_evaluations, "medoid_index",
+		"Pass exact_metric_work_options{0} only when unbounded medoid work is intentional.");
 
-	const auto medoid_id = ::mtrc::core::minimum_total_distance_record_id(
-		provider, candidate_ids, "cannot select a medoid from an empty record set",
-		"candidate id is outside the record set");
-	return provider.position_of(medoid_id);
+	auto best_index = std::size_t{0};
+	auto best_total = distance(records[0], records[0]);
+	for (std::size_t target = 1; target < records.size(); ++target) {
+		best_total += distance(records[0], records[target]);
+	}
+	for (std::size_t candidate = 1; candidate < records.size(); ++candidate) {
+		auto total = distance(records[candidate], records[0]);
+		for (std::size_t target = 1; target < records.size(); ++target) {
+			total += distance(records[candidate], records[target]);
+		}
+		if (total < best_total) {
+			best_index = candidate;
+			best_total = total;
+		}
+	}
+	return best_index;
 }
 
 template <typename Container, typename Metric>
-auto medoid(const Container &records, Metric distance) -> detail::record_type_t<Container>
+auto medoid(const Container &records, Metric distance,
+			::mtrc::space::index::exact_metric_work_options options = {}) -> detail::record_type_t<Container>
 {
-	return records[medoid_index(records, std::move(distance))];
+	return records[medoid_index(records, std::move(distance), options)];
 }
 
 template <typename Container, typename Metric, typename MinimumDistance>
@@ -887,18 +1005,26 @@ auto separated_representative_indices(const Container &records, Metric distance,
 	}
 
 	const auto threshold = static_cast<comparison_type>(minimum_distance);
-	const auto space = ::mtrc::Space::from_records(records, std::move(distance));
-	const auto provider = detail::indexed_pairwise_distances(space);
+	detail::require_metric_evaluation_budget(
+		detail::checked_graph_size_product(records.size(), records.size(),
+										   "separated_representative_indices distance-evaluation estimate exceeds size_t capacity"),
+		::mtrc::space::index::exact_metric_work_options{}.max_distance_evaluations,
+		"separated_representative_indices",
+		"Pass the overload with exact_metric_work_options{0} only when unbounded separated-representative work is intentional.");
 	std::vector<std::size_t> selected;
-	std::vector<::mtrc::RecordId> selected_ids;
+	std::vector<std::size_t> selected_indices;
 
 	for (std::size_t candidate_index = 0; candidate_index < records.size(); ++candidate_index) {
-		const auto candidate_id = provider.id(candidate_index);
-		if (::mtrc::core::record_is_separated_from_record_ids(
-				provider, candidate_id, selected_ids, threshold, "candidate id is outside the record set",
-				"selected representative id is outside the record set")) {
+		bool separated = true;
+		for (const auto selected_index : selected_indices) {
+			if (static_cast<comparison_type>(distance(records[candidate_index], records[selected_index])) < threshold) {
+				separated = false;
+				break;
+			}
+		}
+		if (separated) {
 			selected.push_back(candidate_index);
-			selected_ids.push_back(candidate_id);
+			selected_indices.push_back(candidate_index);
 		}
 	}
 
@@ -906,10 +1032,52 @@ auto separated_representative_indices(const Container &records, Metric distance,
 }
 
 template <typename Container, typename Metric, typename MinimumDistance>
-auto separated_representatives(const Container &records, Metric distance, MinimumDistance minimum_distance)
+auto separated_representative_indices(const Container &records, Metric distance, MinimumDistance minimum_distance,
+									  ::mtrc::space::index::exact_metric_work_options options)
+	-> std::vector<std::size_t>
+{
+	using distance_type = typename detail::finite_space_t<Container, Metric>::distance_type;
+	using comparison_type = typename std::common_type<distance_type, MinimumDistance>::type;
+
+	if (minimum_distance < MinimumDistance{}) {
+		throw std::invalid_argument("minimum_distance must be non-negative");
+	}
+	if (records.empty()) {
+		return {};
+	}
+
+	const auto threshold = static_cast<comparison_type>(minimum_distance);
+	detail::require_metric_evaluation_budget(
+		detail::checked_graph_size_product(records.size(), records.size(),
+										   "separated_representative_indices distance-evaluation estimate exceeds size_t capacity"),
+		options.max_distance_evaluations, "separated_representative_indices",
+		"Pass exact_metric_work_options{0} only when unbounded separated-representative work is intentional.");
+	std::vector<std::size_t> selected;
+	std::vector<std::size_t> selected_indices;
+
+	for (std::size_t candidate_index = 0; candidate_index < records.size(); ++candidate_index) {
+		bool separated = true;
+		for (const auto selected_index : selected_indices) {
+			if (static_cast<comparison_type>(distance(records[candidate_index], records[selected_index])) < threshold) {
+				separated = false;
+				break;
+			}
+		}
+		if (separated) {
+			selected.push_back(candidate_index);
+			selected_indices.push_back(candidate_index);
+		}
+	}
+
+	return selected;
+}
+
+template <typename Container, typename Metric, typename MinimumDistance>
+auto separated_representatives(const Container &records, Metric distance, MinimumDistance minimum_distance,
+							   ::mtrc::space::index::exact_metric_work_options options = {})
 	-> std::vector<detail::record_type_t<Container>>
 {
-	const auto selected = separated_representative_indices(records, std::move(distance), minimum_distance);
+	const auto selected = separated_representative_indices(records, std::move(distance), minimum_distance, options);
 	std::vector<detail::record_type_t<Container>> result;
 	result.reserve(selected.size());
 	for (const auto index : selected) {
@@ -919,10 +1087,12 @@ auto separated_representatives(const Container &records, Metric distance, Minimu
 }
 
 template <typename Container, typename Metric, typename Radius>
-auto coverage_representative_indices(const Container &records, Metric distance, Radius radius)
+auto coverage_representative_indices(const Container &records, Metric distance, Radius radius,
+									 ::mtrc::space::index::exact_metric_work_options options = {})
 	-> std::vector<std::size_t>
 {
 	using distance_type = typename detail::finite_space_t<Container, Metric>::distance_type;
+	using comparison_type = typename std::common_type<distance_type, Radius>::type;
 
 	if (radius < Radius{}) {
 		throw std::invalid_argument("radius must be non-negative");
@@ -931,9 +1101,12 @@ auto coverage_representative_indices(const Container &records, Metric distance, 
 		return {};
 	}
 
-	const auto cover_radius = static_cast<distance_type>(radius);
-	const auto space = ::mtrc::Space::from_records(records, std::move(distance));
-	const auto provider = detail::indexed_pairwise_distances(space);
+	const auto cover_radius = static_cast<comparison_type>(radius);
+	detail::require_metric_evaluation_budget(
+		detail::checked_graph_size_product(records.size(), records.size(),
+										   "coverage_representative_indices distance-evaluation estimate exceeds size_t capacity"),
+		options.max_distance_evaluations, "coverage_representative_indices",
+		"Pass exact_metric_work_options{0} only when unbounded coverage-representative work is intentional.");
 	std::vector<std::size_t> selected;
 	std::vector<bool> covered(records.size(), false);
 	std::size_t covered_count = 0;
@@ -942,19 +1115,24 @@ auto coverage_representative_indices(const Container &records, Metric distance, 
 		const auto seed_index =
 			::mtrc::core::first_unmarked_position(covered, "failed to select the next coverage representative");
 		selected.push_back(seed_index);
-		covered_count += ::mtrc::core::mark_records_within_radius(
-			provider, provider.id(seed_index), cover_radius, covered, "coverage state count does not match record count",
-			"coverage representative id is outside the record set");
+		for (std::size_t index = 0; index < records.size(); ++index) {
+			if (!covered[index] &&
+				static_cast<comparison_type>(distance(records[seed_index], records[index])) <= cover_radius) {
+				covered[index] = true;
+				++covered_count;
+			}
+		}
 	}
 
 	return selected;
 }
 
 template <typename Container, typename Metric, typename Radius>
-auto coverage_representatives(const Container &records, Metric distance, Radius radius)
+auto coverage_representatives(const Container &records, Metric distance, Radius radius,
+							  ::mtrc::space::index::exact_metric_work_options options = {})
 	-> std::vector<detail::record_type_t<Container>>
 {
-	const auto selected = coverage_representative_indices(records, std::move(distance), radius);
+	const auto selected = coverage_representative_indices(records, std::move(distance), radius, options);
 	std::vector<detail::record_type_t<Container>> result;
 	result.reserve(selected.size());
 	for (const auto index : selected) {

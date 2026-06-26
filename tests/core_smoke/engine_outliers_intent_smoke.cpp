@@ -31,6 +31,34 @@ struct CountingMetric {
 	}
 };
 
+struct LargeCountingProvider {
+	using distance_type = int;
+
+	std::size_t count{};
+	std::size_t *calls{};
+
+	auto record_count() const -> std::size_t { return count; }
+	auto id(std::size_t position) const -> mtrc::RecordId { return mtrc::RecordId::from_index(position); }
+	auto contains(mtrc::RecordId id) const -> bool { return id.index() < count; }
+	auto position_of(mtrc::RecordId id) const -> std::size_t
+	{
+		if (!contains(id)) {
+			throw std::out_of_range("unknown large provider id");
+		}
+		return id.index();
+	}
+	auto version() const -> std::size_t { return 1; }
+	auto is_stale() const -> bool { return false; }
+	auto distance(mtrc::RecordId lhs, mtrc::RecordId rhs) const -> distance_type
+	{
+		++(*calls);
+		const auto lhs_position = lhs.index();
+		const auto rhs_position = rhs.index();
+		return lhs_position > rhs_position ? static_cast<int>(lhs_position - rhs_position)
+										   : static_cast<int>(rhs_position - lhs_position);
+	}
+};
+
 int main()
 {
 	auto space = mtrc::make_space(std::vector<int>{0, 1, 10, 11, 30}, AbsoluteDistance{});
@@ -165,6 +193,38 @@ int main()
 	assert(provider_nearest_outliers.strategy == "nearest_neighbor_distance");
 	assert(provider_nearest_outliers.representation == "pairwise_distances");
 	assert(*provider_nearest_calls == provider_nearest_space.size() * (provider_nearest_space.size() - 1));
+
+	std::size_t provider_dbscan_calls = 0;
+	const LargeCountingProvider large_dbscan_provider{
+		mtrc::stats::structural_analysis::group_detail::max_default_exact_structural_records + 1,
+		&provider_dbscan_calls};
+	bool refused_large_provider_dbscan_outliers = false;
+	try {
+		(void)mtrc::find_outliers(large_dbscan_provider, mtrc::stats::structural_analysis::dbscan_options(1.0, 2));
+	} catch (const mtrc::RepresentationError &error) {
+		refused_large_provider_dbscan_outliers = true;
+		const std::string message = error.what();
+		assert(message.find("find_outliers") != std::string::npos);
+		assert(message.find("max_exact_records") != std::string::npos);
+	}
+	assert(refused_large_provider_dbscan_outliers);
+	assert(provider_dbscan_calls == 0);
+
+	std::size_t provider_nearest_large_calls = 0;
+	const LargeCountingProvider large_nearest_provider{
+		mtrc::stats::structural_analysis::group_detail::max_default_exact_structural_records + 1,
+		&provider_nearest_large_calls};
+	bool refused_large_provider_nearest_outliers = false;
+	try {
+		(void)mtrc::nearest_neighbor_outliers(large_nearest_provider, 1);
+	} catch (const mtrc::RepresentationError &error) {
+		refused_large_provider_nearest_outliers = true;
+		const std::string message = error.what();
+		assert(message.find("nearest_neighbor_outliers") != std::string::npos);
+		assert(message.find("max_exact_records") != std::string::npos);
+	}
+	assert(refused_large_provider_nearest_outliers);
+	assert(provider_nearest_large_calls == 0);
 
 	auto exact_policy_calls = std::make_shared<std::size_t>(0);
 	auto exact_policy_space =

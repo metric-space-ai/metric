@@ -6,7 +6,9 @@
 #define _METRIC_REPRESENTATIONS_LANDMARK_INDEX_HPP
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -23,6 +25,34 @@
 
 namespace mtrc::space::storage {
 
+inline constexpr std::size_t default_landmark_index_max_build_distance_evaluations = 1'000'000;
+inline constexpr std::size_t default_landmark_index_max_memory_bytes = 512ULL * 1024ULL * 1024ULL;
+
+struct landmark_index_options {
+	std::size_t landmark_count{default_landmark_index_landmarks};
+	std::size_t candidate_limit{default_landmark_index_candidates};
+	// Set to 0 only when the caller intentionally opts into an unbounded exact landmark projection build.
+	std::size_t max_build_distance_evaluations{default_landmark_index_max_build_distance_evaluations};
+	// Set to 0 only when the caller intentionally opts into unbounded landmark projection storage.
+	std::size_t max_memory_bytes{default_landmark_index_max_memory_bytes};
+	runtime_guard runtime;
+};
+
+inline auto landmark_index_options_from_policy(std::size_t landmark_count, std::size_t candidate_limit,
+											   policy runtime_policy, runtime_guard runtime = {})
+	-> landmark_index_options
+{
+	return landmark_index_options{
+		landmark_count,
+		candidate_limit,
+		runtime_policy.max_distance_evaluations() == 0
+			? default_landmark_index_max_build_distance_evaluations
+			: runtime_policy.max_distance_evaluations(),
+		runtime_policy.max_memory_bytes() == 0 ? default_landmark_index_max_memory_bytes
+											   : runtime_policy.max_memory_bytes(),
+		runtime};
+}
+
 struct landmark_recall_calibration {
 	bool measured{false};
 	std::size_t sample_query_count{};
@@ -31,6 +61,8 @@ struct landmark_recall_calibration {
 	std::size_t matched_count{};
 	std::size_t distance_evaluations{};
 	double recall{};
+	double standard_error{};
+	double confidence_radius_95{};
 };
 
 struct landmark_index_refresh_report {
@@ -62,9 +94,17 @@ template <typename Space> class LandmarkIndex {
 						   std::size_t landmark_count = default_landmark_index_landmarks,
 						   std::size_t candidate_limit = default_landmark_index_candidates,
 						   runtime_guard runtime = {})
-		: space_(&space), requested_landmark_count_(landmark_count == 0 ? default_landmark_index_landmarks
-																		: landmark_count),
-		  candidate_limit_(candidate_limit == 0 ? default_landmark_index_candidates : candidate_limit),
+		: LandmarkIndex(
+			  space, landmark_index_options{landmark_count, candidate_limit,
+											default_landmark_index_max_build_distance_evaluations,
+											default_landmark_index_max_memory_bytes, runtime})
+	{
+	}
+
+	explicit LandmarkIndex(const space_type &space, landmark_index_options options)
+		: space_(&space), requested_landmark_count_(options.landmark_count == 0 ? default_landmark_index_landmarks
+																				: options.landmark_count),
+		  candidate_limit_(options.candidate_limit == 0 ? default_landmark_index_candidates : options.candidate_limit),
 		  record_count_(space.size()), version_(space.version()), metric_key_(core::metric_cache_key(space.metric()))
 	{
 		constexpr auto law = core::metric_traits<typename space_type::metric_type>::law;
@@ -72,6 +112,9 @@ template <typename Space> class LandmarkIndex {
 			throw RepresentationError(
 				"landmark index requires a metric or pseudo-metric so triangle-inequality bounds are valid");
 		}
+		max_build_distance_evaluations_ = options.max_build_distance_evaluations;
+		max_memory_bytes_ = options.max_memory_bytes;
+		enforce_build_budget();
 
 		ids_ = mtrc::record_ids(space);
 		records_ = mtrc::records_for_record_ids(space, ids_);
@@ -79,7 +122,7 @@ template <typename Space> class LandmarkIndex {
 			"landmark_index", metric_key_, version_, ids_,
 			{{"landmarks", std::to_string(requested_landmark_count_)},
 			 {"candidates", std::to_string(candidate_limit_)}});
-		build(runtime);
+		build(options.runtime);
 	}
 
 	auto knn(const record_type &query, std::size_t k, std::size_t candidate_limit = 0,
@@ -147,6 +190,8 @@ template <typename Space> class LandmarkIndex {
 	auto requested_landmark_count() const -> std::size_t { return requested_landmark_count_; }
 	auto candidate_limit() const -> std::size_t { return candidate_limit_; }
 	auto record_count() const -> std::size_t { return record_count_; }
+	auto max_build_distance_evaluations() const -> std::size_t { return max_build_distance_evaluations_; }
+	auto max_memory_bytes() const -> std::size_t { return max_memory_bytes_; }
 	auto build_distance_evaluations() const -> std::size_t { return build_distance_evaluations_; }
 	auto maintenance_distance_evaluations() const -> std::size_t { return maintenance_distance_evaluations_; }
 	auto total_distance_evaluations() const -> std::size_t
@@ -278,6 +323,8 @@ template <typename Space> class LandmarkIndex {
 		}
 
 		const auto query_positions = calibration_query_positions(sample_query_count);
+		double query_recall_mean = 0.0;
+		double query_recall_m2 = 0.0;
 		for (const auto query_position : query_positions) {
 			runtime.throw_if_cancelled("landmark knn recall calibration");
 			const auto query_id = ids_[query_position];
@@ -296,14 +343,25 @@ template <typename Space> class LandmarkIndex {
 			result.distance_evaluations += candidate_positions.size() + reference_positions.size();
 			result.reference_candidate_count += reference_positions.size();
 			result.reference_count += reference.size();
-			result.matched_count += core::neighbor_id_overlap_count(reference, candidates);
+			const auto matched = core::neighbor_id_overlap_count(reference, candidates);
+			result.matched_count += matched;
 			++result.sample_query_count;
+			const auto query_recall =
+				reference.empty() ? 1.0 : static_cast<double>(matched) / static_cast<double>(reference.size());
+			const auto delta = query_recall - query_recall_mean;
+			query_recall_mean += delta / static_cast<double>(result.sample_query_count);
+			query_recall_m2 += delta * (query_recall - query_recall_mean);
 		}
 		result.measured = result.sample_query_count > 0;
 		result.recall = result.reference_count == 0
 							? 1.0
 							: static_cast<double>(result.matched_count) /
 								  static_cast<double>(result.reference_count);
+		if (result.sample_query_count > 1) {
+			const auto sample_variance = query_recall_m2 / static_cast<double>(result.sample_query_count - 1);
+			result.standard_error = std::sqrt(sample_variance / static_cast<double>(result.sample_query_count));
+			result.confidence_radius_95 = std::min(1.0, 1.96 * result.standard_error);
+		}
 		return result;
 	}
 
@@ -319,6 +377,8 @@ template <typename Space> class LandmarkIndex {
 		}
 
 		const auto query_positions = calibration_query_positions(sample_query_count);
+		double query_recall_mean = 0.0;
+		double query_recall_m2 = 0.0;
 		for (const auto query_position : query_positions) {
 			runtime.throw_if_cancelled("landmark range recall calibration");
 			const auto query_id = ids_[query_position];
@@ -337,14 +397,25 @@ template <typename Space> class LandmarkIndex {
 			result.distance_evaluations += candidate_positions.size() + reference_positions.size();
 			result.reference_candidate_count += reference_positions.size();
 			result.reference_count += reference.size();
-			result.matched_count += core::neighbor_id_overlap_count(reference, candidates);
+			const auto matched = core::neighbor_id_overlap_count(reference, candidates);
+			result.matched_count += matched;
 			++result.sample_query_count;
+			const auto query_recall =
+				reference.empty() ? 1.0 : static_cast<double>(matched) / static_cast<double>(reference.size());
+			const auto delta = query_recall - query_recall_mean;
+			query_recall_mean += delta / static_cast<double>(result.sample_query_count);
+			query_recall_m2 += delta * (query_recall - query_recall_mean);
 		}
 		result.measured = result.sample_query_count > 0;
 		result.recall = result.reference_count == 0
 							? 1.0
 							: static_cast<double>(result.matched_count) /
 								  static_cast<double>(result.reference_count);
+		if (result.sample_query_count > 1) {
+			const auto sample_variance = query_recall_m2 / static_cast<double>(result.sample_query_count - 1);
+			result.standard_error = std::sqrt(sample_variance / static_cast<double>(result.sample_query_count));
+			result.confidence_radius_95 = std::min(1.0, 1.96 * result.standard_error);
+		}
 		return result;
 	}
 
@@ -354,6 +425,89 @@ template <typename Space> class LandmarkIndex {
 		RecordId id{};
 		distance_type lower_bound{};
 	};
+
+	static auto checked_size_product(std::size_t lhs, std::size_t rhs, const char *message) -> std::size_t
+	{
+		if (rhs != 0 && lhs > std::numeric_limits<std::size_t>::max() / rhs) {
+			throw RepresentationError(message);
+		}
+		return lhs * rhs;
+	}
+
+	static auto checked_size_sum(std::size_t lhs, std::size_t rhs, const char *message) -> std::size_t
+	{
+		if (lhs > std::numeric_limits<std::size_t>::max() - rhs) {
+			throw RepresentationError(message);
+		}
+		return lhs + rhs;
+	}
+
+	auto build_landmark_count() const -> std::size_t
+	{
+		return std::min(requested_landmark_count_, record_count_);
+	}
+
+	auto build_distance_evaluation_estimate() const -> std::size_t
+	{
+		if (record_count_ < 2) {
+			return 0;
+		}
+		return checked_size_product(build_landmark_count(), record_count_ - 1,
+									"landmark index build distance-evaluation estimate exceeds size_t capacity");
+	}
+
+	auto build_memory_estimate_bytes() const -> std::size_t
+	{
+		const auto landmarks = build_landmark_count();
+		const auto projection_cells = checked_size_product(
+			record_count_, landmarks, "landmark index build memory estimate exceeds size_t capacity");
+		auto total = checked_size_product(record_count_, sizeof(RecordId),
+										  "landmark index build memory estimate exceeds size_t capacity");
+		total = checked_size_sum(
+			total, checked_size_product(record_count_, sizeof(record_type),
+										"landmark index build memory estimate exceeds size_t capacity"),
+			"landmark index build memory estimate exceeds size_t capacity");
+		total = checked_size_sum(
+			total, checked_size_product(landmarks, sizeof(std::size_t),
+										"landmark index build memory estimate exceeds size_t capacity"),
+			"landmark index build memory estimate exceeds size_t capacity");
+		total = checked_size_sum(
+			total, checked_size_product(record_count_, sizeof(std::vector<distance_type>),
+										"landmark index build memory estimate exceeds size_t capacity"),
+			"landmark index build memory estimate exceeds size_t capacity");
+		total = checked_size_sum(
+			total, checked_size_product(projection_cells, sizeof(distance_type),
+										"landmark index build memory estimate exceeds size_t capacity"),
+			"landmark index build memory estimate exceeds size_t capacity");
+		return total;
+	}
+
+	auto enforce_build_budget() const -> void
+	{
+		const auto estimated_distance_evaluations = build_distance_evaluation_estimate();
+		if (max_build_distance_evaluations_ > 0 &&
+			estimated_distance_evaluations > max_build_distance_evaluations_) {
+			throw RepresentationError(
+				"landmark index construction exceeds max_build_distance_evaluations: records=" +
+				std::to_string(record_count_) + " requested_landmarks=" +
+				std::to_string(requested_landmark_count_) + " admitted_landmarks=" +
+				std::to_string(build_landmark_count()) + " estimated_distance_evaluations=" +
+				std::to_string(estimated_distance_evaluations) + " max_build_distance_evaluations=" +
+				std::to_string(max_build_distance_evaluations_) +
+				"; reduce landmark_count/candidate_limit, use sampled search, or pass landmark_index_options with an explicit budget");
+		}
+		const auto estimated_memory_bytes = build_memory_estimate_bytes();
+		if (max_memory_bytes_ > 0 && estimated_memory_bytes > max_memory_bytes_) {
+			throw RepresentationError(
+				"landmark index construction exceeds max_memory_bytes: records=" +
+				std::to_string(record_count_) + " requested_landmarks=" +
+				std::to_string(requested_landmark_count_) + " admitted_landmarks=" +
+				std::to_string(build_landmark_count()) + " estimated_bytes=" +
+				std::to_string(estimated_memory_bytes) + " max_memory_bytes=" +
+				std::to_string(max_memory_bytes_) +
+				"; reduce landmark_count/candidate_limit, use sampled search, or pass landmark_index_options with an explicit budget");
+		}
+	}
 
 	static auto distance_gap(distance_type lhs, distance_type rhs) -> distance_type
 	{
@@ -757,6 +911,8 @@ template <typename Space> class LandmarkIndex {
 	std::vector<record_type> records_;
 	std::vector<std::size_t> landmark_positions_;
 	std::vector<std::vector<distance_type>> landmark_distances_;
+	std::size_t max_build_distance_evaluations_{};
+	std::size_t max_memory_bytes_{};
 	std::size_t build_distance_evaluations_{};
 	std::size_t maintenance_distance_evaluations_{};
 };
@@ -767,6 +923,12 @@ auto landmark_index(const Space &space, std::size_t landmark_count = default_lan
 	-> LandmarkIndex<Space>
 {
 	return LandmarkIndex<Space>(space, landmark_count, candidate_limit, runtime);
+}
+
+template <typename Space>
+auto landmark_index(const Space &space, landmark_index_options options) -> LandmarkIndex<Space>
+{
+	return LandmarkIndex<Space>(space, options);
 }
 
 } // namespace mtrc::space::storage

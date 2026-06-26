@@ -12,25 +12,53 @@
 
 #include <cassert>
 #include <cmath>
+#include <memory>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
 #include "metric/metric/catalog.hpp"
+#include "metric/core/errors.hpp"
 #include "metric/core/metric_space.hpp"
 #include "metric/stats/properties/entropy.hpp"
 
-namespace {
+namespace entropy_status_smoke {
 
 using Rec = std::vector<double>;
 using Cheb = mtrc::Chebyshev<double>;
 
 auto close(double lhs, double rhs, double tolerance = 1.0e-6) -> bool { return std::abs(lhs - rhs) < tolerance; }
 
-} // namespace
+struct CountingCheb {
+	std::shared_ptr<std::size_t> calls{std::make_shared<std::size_t>(0)};
+
+	auto operator()(const Rec &lhs, const Rec &rhs) const -> double
+	{
+		++(*calls);
+		return Cheb()(lhs, rhs);
+	}
+};
+
+} // namespace entropy_status_smoke
+
+namespace mtrc::core {
+
+template <> struct metric_traits<::entropy_status_smoke::CountingCheb> {
+	static constexpr auto law = metric_law::metric;
+	static constexpr auto records = record_kind::aligned_vector;
+	static constexpr bool thread_safe = false;
+};
+
+namespace detail {
+template <> struct coordinate_metric_family<::entropy_status_smoke::CountingCheb> : std::true_type {};
+} // namespace detail
+
+} // namespace mtrc::core
 
 int main()
 {
 	namespace properties = mtrc::stats::properties;
+	using namespace entropy_status_smoke;
 
 	// Valid estimate. Four distinct 2-D records; the differential entropy here is NEGATIVE,
 	// which is a VALID result, never a failure (regression anchor shared with the entropy
@@ -69,6 +97,48 @@ int main()
 	assert(space_entropy.representation == "metric_space");
 	assert(space_entropy.status == mtrc::entropy_status::valid);
 	assert(close(space_entropy.value, valid.value));
+
+	std::vector<Rec> large_records;
+	large_records.reserve(64);
+	for (std::size_t i = 0; i < 64; ++i) {
+		large_records.push_back(Rec{static_cast<double>(i), static_cast<double>((i * i) % 17)});
+	}
+
+	CountingCheb refused_metric;
+	auto refused_space = mtrc::make_space(large_records, refused_metric);
+	properties::entropy_options exact_only;
+	exact_only.neighbor_count = 3;
+	exact_only.approximation_order = 2;
+	exact_only.max_exact_records = 8;
+	exact_only.allow_approximate = false;
+	bool refused = false;
+	try {
+		(void)properties::entropy(refused_space, exact_only);
+	} catch (const mtrc::RepresentationError &error) {
+		refused = std::string(error.what()).find("entropy refused exact default work") != std::string::npos;
+	}
+	assert(refused);
+	assert(*refused_metric.calls == 0);
+
+	CountingCheb sampled_metric;
+	auto sampled_space = mtrc::make_space(large_records, sampled_metric);
+	properties::entropy_options sampled;
+	sampled.neighbor_count = 3;
+	sampled.approximation_order = 2;
+	sampled.max_exact_records = 8;
+	sampled.sample_count = 12;
+	sampled.sample_seed = 5;
+	const auto sampled_entropy = properties::entropy(sampled_space, sampled);
+	assert(sampled_entropy.status == mtrc::entropy_status::valid);
+	assert(!sampled_entropy.exact);
+	assert(sampled_entropy.representation == "sampled_metric_space");
+	assert(sampled_entropy.record_count == sampled_space.size());
+	assert(sampled_entropy.sample_count == sampled.sample_count);
+	assert(sampled_entropy.sample_seed == sampled.sample_seed);
+	assert(!sampled_entropy.approximation_reason.empty());
+	assert(*sampled_metric.calls > 0);
+	assert(*sampled_metric.calls < sampled_space.size() * sampled_space.size());
+	assert(mtrc::summary(sampled_entropy).find("sample_count=12") != std::string::npos);
 
 	return 0;
 }

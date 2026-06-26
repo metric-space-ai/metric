@@ -15,6 +15,7 @@
 #include <limits>
 #include <numeric>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #if defined(_MSC_VER)
@@ -50,16 +51,121 @@
 #include <metric/numeric/Math.h>
 
 #include <metric/metric/catalog.hpp>
+#include <metric/core/errors.hpp>
 #include "../utils/graph/connected_components.hpp"
 #include "estimator_helpers.hpp"
 
 namespace mtrc {
+
+namespace mgc_detail {
+
+inline auto checked_mgc_product(size_t lhs, size_t rhs, const char *message) -> size_t
+{
+	if (lhs != 0 && rhs > std::numeric_limits<size_t>::max() / lhs) {
+		throw RepresentationError(message);
+	}
+	return lhs * rhs;
+}
+
+inline auto checked_mgc_sum(size_t lhs, size_t rhs, const char *message) -> size_t
+{
+	if (rhs > std::numeric_limits<size_t>::max() - lhs) {
+		throw RepresentationError(message);
+	}
+	return lhs + rhs;
+}
+
+inline auto symmetric_pair_count(size_t record_count) -> size_t
+{
+	if (record_count < 2) {
+		return 0;
+	}
+	const auto product = checked_mgc_product(
+		record_count, record_count - 1, "MGC exact pair-count estimate exceeds size_t capacity");
+	return product / 2;
+}
+
+inline auto square_cell_count(size_t record_count) -> size_t
+{
+	return checked_mgc_product(record_count, record_count, "MGC dense matrix-cell estimate exceeds size_t capacity");
+}
+
+inline auto require_mgc_record_budget(size_t record_count, mgc_resource_options options, const char *operation) -> void
+{
+	if (options.max_exact_records != 0 && record_count > options.max_exact_records) {
+		throw RepresentationError(
+			std::string(operation) + " refused exact dense MGC before matrix allocation: records=" +
+			std::to_string(record_count) + ", max_exact_records=" + std::to_string(options.max_exact_records) +
+			". Use stats::correlate::compare(...), stats::correlate::mgc_estimate(...), or pass "
+			"mgc_resource_options{0, 0, 0} for an explicit unbounded legacy run.");
+	}
+	const auto matrix_cells = square_cell_count(record_count);
+	if (options.max_matrix_cells != 0 && matrix_cells > options.max_matrix_cells) {
+		throw RepresentationError(
+			std::string(operation) + " refused exact dense MGC before matrix allocation: records=" +
+			std::to_string(record_count) + ", estimated_matrix_cells=" + std::to_string(matrix_cells) +
+			", matrix_cell_budget=" + std::to_string(options.max_matrix_cells) +
+			". Use a sampled MGC estimate or pass mgc_resource_options{0, 0, 0} for an explicit unbounded legacy run.");
+	}
+}
+
+inline auto require_mgc_distance_budget(size_t record_count, size_t distance_matrix_count,
+										mgc_resource_options options, const char *operation) -> void
+{
+	if (options.max_distance_evaluations == 0) {
+		return;
+	}
+	const auto pair_count = symmetric_pair_count(record_count);
+	const auto estimated = checked_mgc_product(
+		pair_count, distance_matrix_count, "MGC exact distance-evaluation estimate exceeds size_t capacity");
+	if (estimated > options.max_distance_evaluations) {
+		throw RepresentationError(
+			std::string(operation) + " refused exact dense MGC before metric calls: records=" +
+			std::to_string(record_count) + ", estimated_distance_evaluations=" + std::to_string(estimated) +
+			", distance_evaluation_budget=" + std::to_string(options.max_distance_evaluations) +
+			". Use stats::correlate::compare(...), stats::correlate::mgc_estimate(...), or pass "
+			"mgc_resource_options{0, 0, 0} for an explicit unbounded legacy run.");
+	}
+}
+
+inline auto require_mgc_matrix_work_budget(size_t record_count, size_t matrix_work_multiplier,
+										   mgc_resource_options options, const char *operation) -> void
+{
+	if (options.max_matrix_cells == 0) {
+		return;
+	}
+	const auto matrix_cells = square_cell_count(record_count);
+	const auto estimated = checked_mgc_product(
+		matrix_cells, matrix_work_multiplier, "MGC dense matrix-work estimate exceeds size_t capacity");
+	if (estimated > options.max_matrix_cells) {
+		throw RepresentationError(
+			std::string(operation) + " refused exact dense MGC before scratch matrix allocation: records=" +
+			std::to_string(record_count) + ", estimated_matrix_cells=" + std::to_string(estimated) +
+			", matrix_cell_budget=" + std::to_string(options.max_matrix_cells) +
+			". Reduce the shift/record count or pass mgc_resource_options{0, 0, 0} for an explicit unbounded legacy run.");
+	}
+}
+
+inline auto require_mgc_cell_budget(size_t cell_count, mgc_resource_options options, const char *operation) -> void
+{
+	if (options.max_matrix_cells == 0 || cell_count <= options.max_matrix_cells) {
+		return;
+	}
+	throw RepresentationError(
+		std::string(operation) + " refused exact dense MGC before scratch matrix allocation: estimated_matrix_cells=" +
+		std::to_string(cell_count) + ", matrix_cell_budget=" + std::to_string(options.max_matrix_cells) +
+		". Pass mgc_resource_options{0, 0, 0} for an explicit unbounded legacy run.");
+}
+
+} // namespace mgc_detail
 
 // computes the (pairwise) distance matrix for arbitrary random access matrix like containers.
 template <typename Container> Container distance_matrix(const Container &data)
 {
 	typedef typename Container::value_type Row;
 	typedef typename Row::value_type T;
+	mgc_detail::require_mgc_record_budget(data.size(), mgc_resource_options{}, "distance_matrix(...)");
+	mgc_detail::require_mgc_distance_budget(data.size(), 1, mgc_resource_options{}, "distance_matrix(...)");
 	Container matrix(data.size(), Row(data.size())); // initialize
 
 	auto distance_function = mtrc::Euclidean<T>();
@@ -77,6 +183,8 @@ template <typename Container> Container distance_matrix(const Container &data)
 template <typename T>
 mtrc::numeric::DynamicMatrix<size_t> MGC_direct::rank_distance_matrix(const DistanceMatrix<T> &data)
 {
+	mgc_detail::require_mgc_matrix_work_budget(data.rows(), 1, resource_options,
+											   "MGC_direct::rank_distance_matrix(...)");
 	mtrc::numeric::DynamicMatrix<size_t> matrix(data.rows(), data.columns());
 
 	std::vector<size_t> indexes(data.rows());
@@ -108,6 +216,8 @@ mtrc::numeric::DynamicMatrix<size_t> MGC_direct::center_ranked_distance_matrix(c
 
 template <typename T> mtrc::numeric::DynamicMatrix<T> MGC_direct::center_distance_matrix(const DistanceMatrix<T> &X)
 {
+	mgc_detail::require_mgc_matrix_work_budget(X.rows(), 1, resource_options,
+											   "MGC_direct::center_distance_matrix(...)");
 	mtrc::numeric::DynamicVector<T, mtrc::numeric::rowVector> list_of_sums =
 		mtrc::numeric::sum<mtrc::numeric::columnwise>(X);
 	list_of_sums /= X.rows() - 1;
@@ -137,6 +247,9 @@ mtrc::numeric::DynamicMatrix<T> MGC_direct::local_covariance(const mtrc::numeric
 
 	const size_t nX = mtrc::numeric::max(RX) + 1;
 	const size_t nY = mtrc::numeric::max(RY) + 1;
+	mgc_detail::require_mgc_cell_budget(
+		mgc_detail::checked_mgc_product(nX, nY, "MGC local covariance scratch estimate exceeds size_t capacity"),
+		resource_options, "MGC_direct::local_covariance(...)");
 
 	mtrc::numeric::DynamicMatrix<T> covXY(nX, nY, 0);
 	mtrc::numeric::DynamicMatrix<T, mtrc::numeric::columnMajor> EX(nX, 1, 0);
@@ -201,6 +314,10 @@ template <typename T>
 mtrc::numeric::DynamicMatrix<bool>
 MGC_direct::significant_local_correlation(const mtrc::numeric::DynamicMatrix<T> &localCorr, T p)
 {
+	mgc_detail::require_mgc_cell_budget(
+		mgc_detail::checked_mgc_product(localCorr.rows(), localCorr.columns(),
+										"MGC significant-local-correlation scratch estimate exceeds size_t capacity"),
+		resource_options, "MGC_direct::significant_local_correlation(...)");
 	/* Sample size minus one */
 	T sz = T(localCorr.rows() - 1);
 
@@ -317,6 +434,8 @@ template <typename T> T MGC_direct::operator()(const DistanceMatrix<T> &X, const
 	if (X.rows() != Y.rows()) {
 		throw std::invalid_argument("MGC requires distance matrices with the same record count");
 	}
+	mgc_detail::require_mgc_record_budget(X.rows(), resource_options, "MGC_direct(...)");
+	mgc_detail::require_mgc_matrix_work_budget(X.rows(), 12, resource_options, "MGC_direct(...)");
 
 	// center distance matrix
 	mtrc::numeric::DynamicMatrix<T> A = center_distance_matrix(X);
@@ -380,6 +499,18 @@ std::vector<double> MGC_direct::xcorr(const DistanceMatrix<T> &a, const Distance
 	if (n > static_cast<unsigned int>(std::numeric_limits<int>::max())) {
 		throw std::invalid_argument("MGC xcorr shift count exceeds the supported range");
 	}
+	if (n >= a.rows()) {
+		throw std::invalid_argument("MGC xcorr shift count must be smaller than the paired record count");
+	}
+	const auto shift_count =
+		mgc_detail::checked_mgc_sum(mgc_detail::checked_mgc_product(2, n, "MGC xcorr shift count exceeds size_t capacity"),
+									1, "MGC xcorr shift count exceeds size_t capacity");
+	mgc_detail::require_mgc_record_budget(a.rows(), resource_options, "MGC_direct::xcorr(...)");
+	mgc_detail::require_mgc_matrix_work_budget(
+		a.rows(),
+		mgc_detail::checked_mgc_product(12, shift_count,
+										"MGC xcorr scratch matrix-work estimate exceeds size_t capacity"),
+		resource_options, "MGC_direct::xcorr(...)");
 
 	std::vector<double> result;
 	result.reserve(2 * n + 1);
@@ -412,6 +543,9 @@ double MGC<RecType1, Metric1, RecType2, Metric2>::operator()(const Container1 &a
 	if (a.size() != b.size()) {
 		throw std::invalid_argument("MGC requires paired record containers of equal size");
 	}
+	mgc_detail::require_mgc_record_budget(a.size(), resource_options, "MGC::operator()(...)");
+	mgc_detail::require_mgc_distance_budget(a.size(), 2, resource_options, "MGC::operator()(...)");
+	mgc_detail::require_mgc_matrix_work_budget(a.size(), 12, resource_options, "MGC::operator()(...)");
 
 	/* Compute distance matrices */
 	auto X = computeDistanceMatrix<Container1>(a, metric1);
@@ -428,6 +562,8 @@ DistanceMatrix<double> MGC<RecType1, Metric1, RecType2, Metric2>::computeDistanc
 	// DistanceMatrix is a SymmetricMatrix (see mgc.hpp), so writing only the upper
 	// triangle mirrors each entry to the lower triangle automatically. Keep this in
 	// sync with the standalone distance_matrix() helper above, which fills both halves.
+	mgc_detail::require_mgc_record_budget(c.size(), resource_options, "MGC::computeDistanceMatrix(...)");
+	mgc_detail::require_mgc_distance_budget(c.size(), 1, resource_options, "MGC::computeDistanceMatrix(...)");
 	DistanceMatrix<double> X(c.size());
 	for (size_t i = 0; i < X.rows(); ++i) {
 		X(i, i) = 0;
@@ -460,6 +596,9 @@ double MGC<RecType1, Metric1, RecType2, Metric2>::estimate(const Container1 &a, 
 	if (a.size() != b.size()) {
 		throw std::invalid_argument("MGC estimate requires paired inputs with the same record count");
 	}
+	if (sampleSize == 0) {
+		throw std::invalid_argument("MGC estimate sampleSize must be >= 1");
+	}
 
 	const size_t dataSize = a.size();
 
@@ -475,6 +614,14 @@ double MGC<RecType1, Metric1, RecType2, Metric2>::estimate(const Container1 &a, 
 	if (maxIterations < 1) {
 		return operator()(a, b);
 	}
+	mgc_detail::require_mgc_record_budget(sampleSize, resource_options, "MGC::estimate(...)");
+	mgc_detail::require_mgc_distance_budget(
+		sampleSize, mgc_detail::checked_mgc_product(2, maxIterations,
+													"MGC estimate iteration estimate exceeds size_t capacity"),
+		resource_options, "MGC::estimate(...)");
+	mgc_detail::require_mgc_matrix_work_budget(
+		sampleSize, 12,
+		resource_options, "MGC::estimate(...)");
 
 	/* Create shuffle indexes */
 	std::vector<size_t> indexes(dataSize);
@@ -547,12 +694,29 @@ std::vector<double> MGC<RecType1, Metric1, RecType2, Metric2>::xcorr(const Conta
 	if (a.size() != b.size()) {
 		throw std::invalid_argument("MGC xcorr requires paired inputs with the same record count");
 	}
+	if (n < 0) {
+		throw std::invalid_argument("MGC xcorr shift count must be non-negative");
+	}
+	if (static_cast<size_t>(n) >= a.size()) {
+		throw std::invalid_argument("MGC xcorr shift count must be smaller than the paired record count");
+	}
+	const auto shift_count =
+		mgc_detail::checked_mgc_sum(mgc_detail::checked_mgc_product(2, static_cast<size_t>(n),
+																	"MGC xcorr shift count exceeds size_t capacity"),
+									1, "MGC xcorr shift count exceeds size_t capacity");
+	mgc_detail::require_mgc_record_budget(a.size(), resource_options, "MGC::xcorr(...)");
+	mgc_detail::require_mgc_distance_budget(a.size(), 2, resource_options, "MGC::xcorr(...)");
+	mgc_detail::require_mgc_matrix_work_budget(
+		a.size(),
+		mgc_detail::checked_mgc_product(12, shift_count,
+										"MGC xcorr scratch matrix-work estimate exceeds size_t capacity"),
+		resource_options, "MGC::xcorr(...)");
 
 	/* Compute distance matrices */
 	auto X = computeDistanceMatrix<Container1>(a, metric1);
 	auto Y = computeDistanceMatrix<Container2>(b, metric2);
 
-	return MGC_direct().xcorr(X, Y, n);
+	return MGC_direct(resource_options).xcorr(X, Y, static_cast<unsigned int>(n));
 }
 
 } // namespace mtrc

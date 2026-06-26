@@ -21,6 +21,22 @@ struct StringLengthDistance {
 	}
 };
 
+struct CountingVectorDistance {
+	int *calls{};
+
+	auto operator()(const std::vector<double> &lhs, const std::vector<double> &rhs) const -> double
+	{
+		++(*calls);
+		double total = 0.0;
+		const auto count = lhs.size() < rhs.size() ? lhs.size() : rhs.size();
+		for (std::size_t index = 0; index < count; ++index) {
+			const auto delta = lhs[index] - rhs[index];
+			total += delta * delta;
+		}
+		return total;
+	}
+};
+
 } // namespace
 
 int main()
@@ -60,6 +76,30 @@ int main()
 		}
 	}
 	assert(found_midpoint);
+
+	int counted_calls = 0;
+	auto counted_space = mtrc::make_space(records, CountingVectorDistance{&counted_calls});
+	auto low_distance_budget = mtrc::ExpandOptions{};
+	low_distance_budget.max_exact_records = 0;
+	low_distance_budget.max_distance_evaluations = counted_space.size() * (counted_space.size() - 1) - 1;
+	bool rejected_budget = false;
+	try {
+		(void)mtrc::modify::expand::expand(counted_space, low_distance_budget);
+	} catch (const mtrc::RepresentationError &error) {
+		rejected_budget = true;
+		const std::string message = error.what();
+		assert(message.find("modify::expand") != std::string::npos);
+		assert(message.find("max_distance_evaluations") != std::string::npos);
+	}
+	assert(rejected_budget);
+	assert(counted_calls == 0);
+
+	auto explicit_unbounded_budget = mtrc::ExpandOptions{};
+	explicit_unbounded_budget.max_exact_records = 0;
+	explicit_unbounded_budget.max_distance_evaluations = 0;
+	const auto counted_expanded = mtrc::modify::expand::expand(counted_space, explicit_unbounded_budget);
+	assert(counted_expanded.space.size() >= counted_space.size());
+	assert(counted_calls == static_cast<int>(counted_space.size() * (counted_space.size() - 1)));
 
 	const auto line = mtrc::make_space(std::vector<int>{0, 1, 2}, AbsoluteDistance{});
 	bool rejected = false;

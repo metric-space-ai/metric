@@ -9,10 +9,12 @@
 #include <cassert>
 #include <cstddef>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
+#include "metric/core/errors.hpp"
 #include "metric/core/metric_space.hpp"
 #include "metric/core/result.hpp"
 #include "metric/metric/catalog.hpp"
@@ -28,6 +30,16 @@ namespace {
 struct IntDistance {
 	auto operator()(int lhs, int rhs) const -> double
 	{
+		return static_cast<double>(lhs > rhs ? lhs - rhs : rhs - lhs);
+	}
+};
+
+struct CountingIntDistance {
+	int *calls{};
+
+	auto operator()(int lhs, int rhs) const -> double
+	{
+		++(*calls);
 		return static_cast<double>(lhs > rhs ? lhs - rhs : rhs - lhs);
 	}
 };
@@ -172,6 +184,32 @@ int main()
 	assert(mapped_range_batch[0].provenance.route_kind == mtrc::search_route_kind::mapped_space);
 	assert(mapped_range_batch[0].provenance.domain_kind == mtrc::result_domain_kind::mapped_space);
 	assert(mapped_range_batch[0].provenance.mapping_strategy == "deterministic_transform");
+
+	int mapped_metric_calls = 0;
+	const auto counted_mapped = mtrc::map(
+		source, [](int record) { return record; }, CountingIntDistance{&mapped_metric_calls});
+	const auto mapped_limited_policy = mtrc::space::storage::with_distance_evaluation_budget(
+		mtrc::space::storage::exact(), counted_mapped.space.size() * mapped_queries.size() - 1);
+	auto assert_mapped_batch_refused_without_metric_calls = [&](auto operation) {
+		mapped_metric_calls = 0;
+		bool rejected = false;
+		try {
+			operation();
+		} catch (const mtrc::RepresentationError &error) {
+			rejected = true;
+			const std::string message = error.what();
+			assert(message.find("distance_evaluation_budget") != std::string::npos);
+			assert(message.find("queries=2") != std::string::npos);
+		}
+		assert(rejected);
+		assert(mapped_metric_calls == 0);
+	};
+	assert_mapped_batch_refused_without_metric_calls([&] {
+		(void)mtrc::stats::search::knn_batch(counted_mapped, mapped_queries, 2, mapped_limited_policy);
+	});
+	assert_mapped_batch_refused_without_metric_calls([&] {
+		(void)mtrc::stats::search::range_batch(counted_mapped, mapped_queries, 4.0, mapped_limited_policy);
+	});
 
 	auto malformed_mapping = mapped;
 	malformed_mapping.validity.clear();

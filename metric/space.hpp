@@ -83,14 +83,15 @@ template <typename RecType, typename Metric> class FiniteSpace {
 	using distance_type = typename representation_type::distType;
 	using neighbor_type = std::pair<std::size_t, distance_type>;
 
-	FiniteSpace(const std::vector<record_type> &records, metric_type metric = metric_type())
-		: representation_(records, std::move(metric))
+	FiniteSpace(const std::vector<record_type> &records, metric_type metric = metric_type(),
+				matrix_space_options matrix_options = {})
+		: representation_(records, std::move(metric), matrix_options)
 	{
 	}
 
 	template <typename Container>
-	FiniteSpace(const Container &records, metric_type metric = metric_type())
-		: representation_(records, std::move(metric))
+	FiniteSpace(const Container &records, metric_type metric = metric_type(), matrix_space_options matrix_options = {})
+		: representation_(records, std::move(metric), matrix_options)
 	{
 	}
 
@@ -152,11 +153,11 @@ template <typename RecType, typename Metric> class FiniteSpace {
 
 struct Space {
 	template <typename Container, typename Metric>
-	static auto from_records(const Container &records, Metric metric)
+	static auto from_records(const Container &records, Metric metric, matrix_space_options matrix_options = {})
 		-> FiniteSpace<typename std::decay<typename Container::value_type>::type, Metric>
 	{
 		using record_type = typename std::decay<typename Container::value_type>::type;
-		return FiniteSpace<record_type, Metric>(records, std::move(metric));
+		return FiniteSpace<record_type, Metric>(records, std::move(metric), matrix_options);
 	}
 };
 

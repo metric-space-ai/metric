@@ -20,6 +20,9 @@
 #define _METRIC_MODIFY_EXPAND_HPP
 
 #include <cstddef>
+#include <limits>
+#include <set>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -31,6 +34,57 @@
 #include <metric/record/id.hpp>
 
 namespace mtrc::modify::expand {
+
+inline constexpr std::size_t default_expand_max_exact_records = 4096;
+inline constexpr std::size_t default_expand_max_distance_evaluations = 100'000'000;
+
+struct ExpandOptions {
+	// Set either budget to 0 only when exact all-record nearest-neighbour expansion is intentional.
+	std::size_t max_exact_records{default_expand_max_exact_records};
+	std::size_t max_distance_evaluations{default_expand_max_distance_evaluations};
+};
+
+namespace detail {
+
+inline auto checked_product(std::size_t lhs, std::size_t rhs, const char *message) -> std::size_t
+{
+	if (rhs != 0 && lhs > std::numeric_limits<std::size_t>::max() / rhs) {
+		throw RepresentationError(message);
+	}
+	return lhs * rhs;
+}
+
+inline auto nearest_neighbor_scan_work(std::size_t record_count) -> std::size_t
+{
+	return record_count < 2 ? std::size_t{0}
+							: checked_product(record_count, record_count - 1,
+											  "modify::expand distance-evaluation estimate exceeds size_t capacity");
+}
+
+inline auto require_expand_budget(std::size_t record_count, ExpandOptions options) -> void
+{
+	const auto estimated_distance_evaluations = nearest_neighbor_scan_work(record_count);
+	if (options.max_exact_records > 0 && record_count > options.max_exact_records) {
+		throw RepresentationError(
+			"modify::expand refused nearest-neighbour midpoint expansion before metric calls: records=" +
+			std::to_string(record_count) + " max_exact_records=" + std::to_string(options.max_exact_records) +
+			" estimated_distance_evaluations=" + std::to_string(estimated_distance_evaluations) +
+			". Use a bounded sample/representative workflow for large expansion or pass ExpandOptions with explicit "
+			"zero budgets only when unbounded exact expansion is intentional.");
+	}
+	if (options.max_distance_evaluations > 0 &&
+		estimated_distance_evaluations > options.max_distance_evaluations) {
+		throw RepresentationError(
+			"modify::expand refused nearest-neighbour midpoint expansion before metric calls: records=" +
+			std::to_string(record_count) +
+			" estimated_distance_evaluations=" + std::to_string(estimated_distance_evaluations) +
+			" max_distance_evaluations=" + std::to_string(options.max_distance_evaluations) +
+			". Use a bounded sample/representative workflow for large expansion or pass ExpandOptions with explicit "
+			"zero budgets only when unbounded exact expansion is intentional.");
+	}
+}
+
+} // namespace detail
 
 // A scalar admits a meaningful numeric midpoint: arithmetic, but not a character
 // type or bool. Character vectors such as std::string are sequences whose true
@@ -64,7 +118,7 @@ struct supports_interpolation<
 template <typename Record> constexpr bool supports_interpolation_v = supports_interpolation<Record>::value;
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
-auto expand(const Space &space)
+auto expand(const Space &space, ExpandOptions options = {})
 	-> MappingResult<MetricSpace<typename Space::record_type, typename Space::metric_type>>
 {
 	using record_type = typename Space::record_type;
@@ -74,6 +128,7 @@ auto expand(const Space &space)
 		using value_type = typename record_type::value_type;
 
 		const auto count = space.size();
+		detail::require_expand_budget(count, options);
 		std::vector<record_type> records;
 		std::vector<std::vector<RecordId>> source_records;
 		std::vector<RecordId> representative_records;
@@ -90,7 +145,7 @@ auto expand(const Space &space)
 		}
 
 		// One synthetic midpoint per unique unordered nearest-neighbour pair.
-		std::vector<std::vector<bool>> emitted(count, std::vector<bool>(count, false));
+		std::set<std::pair<std::size_t, std::size_t>> emitted_pairs;
 		for (std::size_t index = 0; index < count; ++index) {
 			std::size_t nearest = count;
 			typename Space::distance_type best{};
@@ -110,10 +165,9 @@ auto expand(const Space &space)
 
 			const auto low = index < nearest ? index : nearest;
 			const auto high = index < nearest ? nearest : index;
-			if (emitted[low][high]) {
+			if (!emitted_pairs.insert({low, high}).second) {
 				continue;
 			}
-			emitted[low][high] = true;
 
 			const auto &lhs = space.records()[low];
 			const auto &rhs = space.records()[high];
@@ -148,6 +202,7 @@ auto expand(const Space &space)
 } // namespace mtrc::modify::expand
 
 namespace mtrc {
+using modify::expand::ExpandOptions;
 using modify::expand::expand;
 } // namespace mtrc
 

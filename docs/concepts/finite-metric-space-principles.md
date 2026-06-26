@@ -47,7 +47,7 @@ Some finite metric-space operations have no useful simplified ML equivalent:
 | lineage-preserving representative spaces | The output is a new finite metric space with source-record provenance. |
 | Redif measure paths on arbitrary records | The state is a probability measure over atoms, so the record domain need not be vectorial. |
 | entropy trajectory under metric dynamics | Entropy is read from measures and transitions induced by `d`, not assumed as external randomness. |
-| transport path length for singular records | Outlier strength can be a dynamical transport property, not a classifier score. |
+| transport path length for singular records | Singularity strength can be a dynamical transport property, not a downstream decision score. |
 
 ## Noise And Dynamics
 

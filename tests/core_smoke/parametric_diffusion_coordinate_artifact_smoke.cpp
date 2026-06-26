@@ -128,6 +128,9 @@ int main()
 	assert(artifact.manifest.at("diffusion_coordinates").at("spec").at("dimensions") == geometry.dimensions);
 	assert(artifact.manifest.at("diffusion_coordinates").at("spec").at("diffusion_steps") == geometry.diffusion_steps);
 	assert(artifact.manifest.at("diffusion_coordinates").at("spec").at("max_dense_records") == geometry.max_dense_records);
+	assert(artifact.manifest.at("diffusion_coordinates").at("spec").at("max_memory_bytes") == geometry.max_memory_bytes);
+	assert(artifact.manifest.at("diffusion_coordinates").at("spec").at("max_distance_evaluations") ==
+		   geometry.max_distance_evaluations);
 	assert(artifact.manifest.at("diffusion_coordinates").at("targets").at("target_count") == records.size());
 	assert(artifact.manifest.at("diffusion_coordinates").at("targets").at("pairwise_distances") ==
 		   "distance_table_pairwise_distances");
@@ -136,6 +139,9 @@ int main()
 		   "lazy_row_normalized_diffusion_operator");
 	assert(artifact.manifest.at("diffusion_coordinates").at("targets").at("dense_distance_evaluations") ==
 		   records.size() * records.size());
+	assert(artifact.manifest.at("diffusion_coordinates").at("targets").at("max_memory_bytes") == geometry.max_memory_bytes);
+	assert(artifact.manifest.at("diffusion_coordinates").at("targets").at("max_distance_evaluations") ==
+		   geometry.max_distance_evaluations);
 	assert(artifact.manifest.at("loss").at("terms").size() == 2);
 	assert(artifact.manifest.at("source").at("record_count") == records.size());
 	assert(artifact.manifest.at("source").at("space_version") == space.version());

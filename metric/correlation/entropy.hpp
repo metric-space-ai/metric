@@ -9,18 +9,27 @@ Copyright (c) 2020 Panda Team
 #ifndef _METRIC_DISTANCE_K_RANDOM_ENTROPY_HPP
 #define _METRIC_DISTANCE_K_RANDOM_ENTROPY_HPP
 
+#include <cstddef>
+
 #include <metric/metric/catalog/vector/Standards.hpp>
 #include "metric/utils/type_traits.hpp"
 #include <metric/numeric.hpp>
 
 namespace mtrc {
 
+struct entropy_resource_options {
+	std::size_t max_exact_records = 4096;
+	std::size_t max_distance_evaluations = 100'000'000;
+};
+
 // non-kpN version, DEPRECATED
 template <typename RecType, typename Metric = mtrc::Euclidean<typename RecType::value_type>>
 class EntropySimple { // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO
 					  // refactor to avoid code dubbing
   public:
-	EntropySimple(Metric metric = Metric(), size_t k = 3, bool exp = false) : metric(metric), k(k), exp(exp), logbase(2)
+	EntropySimple(Metric metric = Metric(), size_t k = 3, bool exp = false,
+				  entropy_resource_options resource_options = {})
+		: k(k), metric(metric), logbase(2), exp(exp), resource_options(resource_options)
 	{
 	} // TODO remove (?)
 
@@ -45,6 +54,7 @@ class EntropySimple { // averaged entropy estimation: code COPIED from mgc.*pp w
 	Metric metric;
 	double logbase;
 	bool exp;
+	entropy_resource_options resource_options;
 };
 
 // kpN local-Gaussian (Kozachenko-Leonenko style) DIFFERENTIAL entropy estimator of a
@@ -57,8 +67,9 @@ class EntropySimple { // averaged entropy estimation: code COPIED from mgc.*pp w
 // so callers should test std::isnan on the result. See mtrc::stats::properties::entropy.
 template <typename RecType, typename Metric = mtrc::Chebyshev<typename RecType::value_type>> class Entropy {
   public:
-	Entropy(Metric metric = Metric(), size_t k = 7, size_t p = 70, bool exp = false)
-		: metric(metric), k(k), p(p), exp(exp)
+	Entropy(Metric metric = Metric(), size_t k = 7, size_t p = 70, bool exp = false,
+			entropy_resource_options resource_options = {})
+		: k(k), p(p), metric(metric), exp(exp), resource_options(resource_options)
 	{
 	}
 
@@ -73,6 +84,7 @@ template <typename RecType, typename Metric = mtrc::Chebyshev<typename RecType::
 	size_t p;
 	Metric metric;
 	bool exp;
+	entropy_resource_options resource_options;
 };
 
 // VMixing
@@ -81,7 +93,10 @@ template <typename RecType, typename Metric = mtrc::Euclidean<typename RecType::
 class VMixing_simple { // non-kpN version, DEPRECATED
 
   public:
-	VMixing_simple(Metric metric = Metric(), int k = 3) : metric(metric), k(k) {}
+	VMixing_simple(Metric metric = Metric(), int k = 3, entropy_resource_options resource_options = {})
+		: k(k), metric(metric), resource_options(resource_options)
+	{
+	}
 
 	template <typename C>
 	typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
@@ -94,12 +109,16 @@ class VMixing_simple { // non-kpN version, DEPRECATED
   private:
 	int k;
 	Metric metric;
+	entropy_resource_options resource_options;
 };
 
 template <typename RecType, typename Metric = mtrc::Euclidean<typename RecType::value_type>> class VMixing {
 
   public:
-	VMixing(Metric metric = Metric(), int k = 3, int p = 25) : metric(metric), k(k), p(p) {}
+	VMixing(Metric metric = Metric(), int k = 3, int p = 25, entropy_resource_options resource_options = {})
+		: k(k), p(p), metric(metric), resource_options(resource_options)
+	{
+	}
 
 	template <typename C>
 	typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
@@ -113,6 +132,7 @@ template <typename RecType, typename Metric = mtrc::Euclidean<typename RecType::
 	int k;
 	int p;
 	Metric metric;
+	entropy_resource_options resource_options;
 };
 
 /* // VOI code, works and may be enabled

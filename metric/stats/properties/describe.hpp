@@ -9,6 +9,7 @@
 #include <cmath>
 #include <cstddef>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -287,6 +288,15 @@ auto describe_structure(const Space &space, space::storage::policy runtime_polic
 {
 	space::storage::require_exact_describe(runtime_policy);
 	space::storage::require_parallel_metric<typename Space::metric_type>(runtime_policy);
+	const auto plan = space::storage::estimate_cost(space, "describe", runtime_policy);
+	if (!plan.allowed || !plan.exact || plan.downgraded) {
+		throw RepresentationError(
+			"describe_structure refused exact metric work before running metric calls: records=" +
+			std::to_string(plan.record_count) +
+			" estimated_distance_evaluations=" + std::to_string(plan.estimated_distance_evaluations) +
+			" distance_evaluation_budget=" + std::to_string(plan.budget.max_distance_evaluations) +
+			". Reason: " + plan.reason + ". Suggested fallback: " + plan.fallback_hint);
+	}
 	if (runtime_policy.uses_materialization()) {
 		auto matrix = space::storage::make_distance_table(space, runtime_policy);
 		auto result = describe_structure(matrix);

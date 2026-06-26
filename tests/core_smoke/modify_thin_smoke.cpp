@@ -203,6 +203,46 @@ int main()
 	REQUIRE(equalized.diagnostics.target_record_count == equalized.space.size());
 	REQUIRE(close(equalized.diagnostics.local_volume_density_drift, -1.0 / 12.0));
 
+	const auto exact_budget_records = line_records(6);
+	auto refused_resample_calls = std::make_shared<std::size_t>(0);
+	const auto refused_resample_space =
+		mtrc::make_space(exact_budget_records, CountingAbsoluteDistance{refused_resample_calls});
+	const auto refused_resample_calls_before = *refused_resample_calls;
+	const auto too_low_resample_policy = mtrc::space::storage::with_distance_evaluation_budget(
+		mtrc::space::storage::exact(), exact_budget_records.size() * exact_budget_records.size());
+	const auto too_low_resample_plan =
+		mtrc::space::storage::estimate_cost(refused_resample_space, "resample", too_low_resample_policy);
+	REQUIRE(too_low_resample_plan.refused);
+	REQUIRE(too_low_resample_plan.reason.find("max_distance_evaluations") != std::string::npos);
+	bool refused_resample = false;
+	try {
+		(void)mtrc::thin(refused_resample_space, mtrc::uniform_density(0), too_low_resample_policy);
+	} catch (const mtrc::RepresentationError &error) {
+		refused_resample = true;
+		REQUIRE(std::string(error.what()).find("max_distance_evaluations") != std::string::npos);
+	}
+	REQUIRE(refused_resample);
+	REQUIRE(*refused_resample_calls == refused_resample_calls_before);
+
+	auto accepted_resample_calls = std::make_shared<std::size_t>(0);
+	const auto accepted_resample_space =
+		mtrc::make_space(exact_budget_records, CountingAbsoluteDistance{accepted_resample_calls});
+	const auto accepted_resample_calls_before = *accepted_resample_calls;
+	const auto accepted_resample_budget =
+		mtrc::space::storage::estimate_resample_distance_evaluations(exact_budget_records.size());
+	const auto accepted_resample_policy = mtrc::space::storage::with_distance_evaluation_budget(
+		mtrc::space::storage::exact(), accepted_resample_budget);
+	const auto accepted_resample_plan =
+		mtrc::space::storage::estimate_cost(accepted_resample_space, "resample", accepted_resample_policy);
+	REQUIRE(accepted_resample_plan.allowed);
+	REQUIRE(!accepted_resample_plan.refused);
+	REQUIRE(accepted_resample_plan.estimated_distance_evaluations <= accepted_resample_budget);
+	const auto accepted_exact_uniform =
+		mtrc::equalize(accepted_resample_space, mtrc::uniform_density(0), accepted_resample_policy);
+	REQUIRE(accepted_exact_uniform.strategy == "uniform_density_radius_net");
+	REQUIRE(accepted_exact_uniform.representation == "metric_space");
+	REQUIRE(*accepted_resample_calls - accepted_resample_calls_before <= accepted_resample_budget);
+
 	const auto chunked_records = line_records(48);
 	auto chunked_calls = std::make_shared<std::size_t>(0);
 	const auto chunked_space = mtrc::make_space(chunked_records, CountingAbsoluteDistance{chunked_calls});

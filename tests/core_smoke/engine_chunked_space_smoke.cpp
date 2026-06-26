@@ -643,6 +643,12 @@ static auto test_chunked_local_volume_profile_reuses_bounded_pair_work() -> void
 	assert(profile.entries[3].maximum_count == 6);
 	assert(close(profile.entries[3].average_count, 46.0 / 12.0));
 	assert(close(profile.entries[3].average_density, 46.0 / 144.0));
+
+	*calls = 0;
+	mtrc::stats::properties::local_volume_options tight_profile_storage;
+	tight_profile_storage.max_profile_cells = records.size();
+	assert(throws([&] { (void)mtrc::chunked_local_volume_profile(chunks, radii, tight_profile_storage); }));
+	assert(*calls == 0);
 }
 
 static auto test_estimate_cost_reports_chunked_workflow_plan() -> void

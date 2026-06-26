@@ -56,12 +56,15 @@ class TreeIndex:
     def __init__(self, space):
         self.source_space = space
         self.source_version = _source_version(space)
-        self.records = list(space.records)
         self.metric = space.metric
-        self.record_count = len(self.records)
+        self.record_count = len(space)
 
     def __len__(self):
         return self.record_count
+
+    @property
+    def records(self):
+        return self.source_space.records
 
     def __getitem__(self, index):
         return self.records[index]
@@ -103,8 +106,6 @@ class GraphIndex:
     def __init__(self, space, count):
         self.source_space = space
         self.source_version = _source_version(space)
-        self.records = list(space.records)
-        self.metric = space.metric
         self.count = _coerce_count(count, "count")
         _require_native_binding("Space.to_graph(...) / GraphIndex(...)", "exact kNN graph construction")
 

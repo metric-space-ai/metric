@@ -29,10 +29,14 @@ enum class distance_table_mode {
 	lazy,
 };
 
+inline constexpr std::size_t default_distance_table_max_dense_records = 4096;
+inline constexpr std::size_t default_distance_table_max_memory_bytes = 512ULL * 1024ULL * 1024ULL;
+
 struct distance_table_options {
 	distance_table_mode mode{distance_table_mode::eager};
-	std::size_t max_dense_records{};
-	std::size_t max_memory_bytes{};
+	// Set either budget to 0 only when the caller intentionally opts into unbounded table growth.
+	std::size_t max_dense_records{default_distance_table_max_dense_records};
+	std::size_t max_memory_bytes{default_distance_table_max_memory_bytes};
 	runtime_guard runtime;
 };
 

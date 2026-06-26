@@ -95,6 +95,15 @@ int main()
 	assert(rejected_large_pairwise_matrix);
 	assert(guarded_metric_calls == 0);
 
+	bool rejected_large_legacy_space_build = false;
+	try {
+		(void)mtrc::Space::from_records(large_records, CountingAbsoluteDistance{&guarded_metric_calls});
+	} catch (const mtrc::RepresentationError &) {
+		rejected_large_legacy_space_build = true;
+	}
+	assert(rejected_large_legacy_space_build);
+	assert(guarded_metric_calls == 0);
+
 	auto small_int_space = mtrc::Space::from_records(std::vector<int>{0, 1, 2},
 													 CountingAbsoluteDistance{&guarded_metric_calls});
 	const auto calls_after_construction = guarded_metric_calls;
@@ -123,6 +132,16 @@ int main()
 	const auto operator_range =
 		mtrc::space::index::range_neighbors(records, mtrc::Edit<std::string>{}, std::string("cut"), 1);
 	assert(operator_range.size() == 2);
+
+	int direct_search_calls = 0;
+	const auto direct_nearest = mtrc::space::index::nearest_neighbors(
+		large_records, CountingAbsoluteDistance{&direct_search_calls}, 5, 1);
+	assert(direct_nearest.size() == 1);
+	assert(direct_search_calls == static_cast<int>(large_records.size()));
+	const auto direct_range = mtrc::space::index::range_neighbors(
+		large_records, CountingAbsoluteDistance{&direct_search_calls}, 5, 5);
+	assert(direct_range.size() == large_records.size());
+	assert(direct_search_calls == static_cast<int>(large_records.size() * 2));
 
 	const auto representative_ids = mtrc::stats::structural_analysis::representative_indices(records, mtrc::Edit<std::string>{}, 3);
 	assert((representative_ids == std::vector<std::size_t>{0, 3, 1}));
@@ -179,6 +198,47 @@ int main()
 		rejected_large_k = true;
 	}
 	assert(rejected_large_k);
+
+	int legacy_structural_calls = 0;
+	bool rejected_large_representatives = false;
+	try {
+		(void)mtrc::stats::structural_analysis::representative_indices(
+			large_records, CountingAbsoluteDistance{&legacy_structural_calls}, large_records.size());
+	} catch (const mtrc::RepresentationError &) {
+		rejected_large_representatives = true;
+	}
+	assert(rejected_large_representatives);
+	assert(legacy_structural_calls == 0);
+
+	bool rejected_large_medoid = false;
+	try {
+		(void)mtrc::stats::structural_analysis::medoid_index(
+			large_records, CountingAbsoluteDistance{&legacy_structural_calls});
+	} catch (const mtrc::RepresentationError &) {
+		rejected_large_medoid = true;
+	}
+	assert(rejected_large_medoid);
+	assert(legacy_structural_calls == 0);
+
+	bool rejected_large_separated = false;
+	try {
+		(void)mtrc::stats::structural_analysis::separated_representative_indices(
+			large_records, CountingAbsoluteDistance{&legacy_structural_calls}, 1);
+	} catch (const mtrc::RepresentationError &) {
+		rejected_large_separated = true;
+	}
+	assert(rejected_large_separated);
+	assert(legacy_structural_calls == 0);
+
+	bool rejected_large_coverage = false;
+	try {
+		(void)mtrc::stats::structural_analysis::coverage_representative_indices(
+			large_records, CountingAbsoluteDistance{&legacy_structural_calls}, 1);
+	} catch (const mtrc::RepresentationError &) {
+		rejected_large_coverage = true;
+	}
+	assert(rejected_large_coverage);
+	assert(legacy_structural_calls == 0);
 
 	bool rejected_seed = false;
 	try {
@@ -372,6 +432,22 @@ int main()
 	assert(unbounded_counting_stretch.pair_count == 10);
 	assert(graph_guard_metric_calls > calls_before_unbounded_stretch);
 	const auto calls_after_unbounded_stretch = graph_guard_metric_calls;
+
+	bool rejected_large_graph_pairs = false;
+	try {
+		(void)mtrc::space::index::graph_metric_pair_indices(1001, true);
+	} catch (const mtrc::RepresentationError &) {
+		rejected_large_graph_pairs = true;
+	}
+	assert(rejected_large_graph_pairs);
+
+	bool rejected_large_shortest_path_matrix = false;
+	try {
+		(void)mtrc::space::index::make_graph_shortest_path_matrix(1001);
+	} catch (const mtrc::RepresentationError &) {
+		rejected_large_shortest_path_matrix = true;
+	}
+	assert(rejected_large_shortest_path_matrix);
 
 	bool rejected_undirected_pruning = false;
 	try {

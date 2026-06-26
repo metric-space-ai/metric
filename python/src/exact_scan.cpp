@@ -1,6 +1,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "metric/engine.hpp"
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -888,6 +890,279 @@ auto native_dbscan_outliers(py::sequence records, py::object metric, double radi
 	return result;
 }
 
+auto redif_scale_policy_from_name(const std::string &name) -> mtrc::redif_scale_policy
+{
+	if (name == "mean_local_distance" || name == "mean") {
+		return mtrc::redif_scale_policy::mean_local_distance;
+	}
+	if (name == "median_local_distance" || name == "median") {
+		return mtrc::redif_scale_policy::median_local_distance;
+	}
+	if (name == "kth_local_distance" || name == "kth") {
+		return mtrc::redif_scale_policy::kth_local_distance;
+	}
+	if (name == "global_mean_distance" || name == "global_mean") {
+		return mtrc::redif_scale_policy::global_mean_distance;
+	}
+	throw std::invalid_argument("unknown Redif local scale policy");
+}
+
+auto redif_options_from_arguments(std::size_t neighbors, std::size_t iterations, double euler_step,
+								  bool adaptive_geometry, const std::string &scale_policy,
+								  double stability_tolerance,
+								  double marginal_stability_tolerance,
+								  std::size_t max_dense_records,
+								  std::size_t max_memory_bytes,
+								  std::size_t max_distance_evaluations) -> mtrc::redif_options
+{
+	mtrc::redif_options options;
+	options.neighbors = neighbors;
+	options.iterations = iterations;
+	options.euler_step = euler_step;
+	options.adaptive_geometry = adaptive_geometry;
+	options.scale_policy = redif_scale_policy_from_name(scale_policy);
+	options.stability_tolerance = stability_tolerance;
+	options.marginal_stability_tolerance = marginal_stability_tolerance;
+	options.max_dense_records = max_dense_records;
+	options.max_memory_bytes = max_memory_bytes;
+	options.max_distance_evaluations = max_distance_evaluations;
+	return options;
+}
+
+auto redif_operator_diagnostics_payload(const mtrc::RedifOperatorDiagnostics &diagnostics) -> py::dict
+{
+	auto result = py::dict{};
+	result["node_count"] = diagnostics.node_count;
+	result["neighbors"] = diagnostics.neighbors;
+	result["local_relation_representation"] = diagnostics.local_relation_representation;
+	result["local_relation_exactness"] = diagnostics.local_relation_exactness;
+	result["local_relation_directed_entries"] = diagnostics.local_relation_directed_entries;
+	result["local_relation_distance_evaluations"] = diagnostics.local_relation_distance_evaluations;
+	result["dense_distance_evaluations"] = diagnostics.dense_distance_evaluations;
+	result["local_relation_candidate_count"] = diagnostics.local_relation_candidate_count;
+	result["local_relation_candidate_universe"] = diagnostics.local_relation_candidate_universe;
+	result["local_relation_chunk_size"] = diagnostics.local_relation_chunk_size;
+	result["local_relation_chunk_count"] = diagnostics.local_relation_chunk_count;
+	result["local_relation_candidate_fraction"] = diagnostics.local_relation_candidate_fraction;
+	result["local_relation_exact"] = diagnostics.local_relation_exact;
+	result["local_relation_refused"] = diagnostics.local_relation_refused;
+	result["local_relation_refusal_reason"] = diagnostics.local_relation_refusal_reason;
+	result["minimum_degree"] = diagnostics.minimum_degree;
+	result["maximum_degree"] = diagnostics.maximum_degree;
+	result["degree_ratio"] = diagnostics.degree_ratio;
+	result["minimum_local_scale"] = diagnostics.minimum_local_scale;
+	result["maximum_local_scale"] = diagnostics.maximum_local_scale;
+	result["minimum_positive_affinity"] = diagnostics.minimum_positive_affinity;
+	result["maximum_affinity"] = diagnostics.maximum_affinity;
+	result["minimum_transition_row_sum"] = diagnostics.minimum_transition_row_sum;
+	result["maximum_transition_row_sum"] = diagnostics.maximum_transition_row_sum;
+	result["maximum_self_transition_probability"] = diagnostics.maximum_self_transition_probability;
+	result["minimum_transition_escape_probability"] = diagnostics.minimum_transition_escape_probability;
+	result["spectral_gap_proxy"] = diagnostics.spectral_gap_proxy;
+	result["spectral_gap_proxy_value"] = diagnostics.spectral_gap_proxy_value;
+	result["component_count"] = diagnostics.component_count;
+	result["reversible"] = diagnostics.reversible;
+	return result;
+}
+
+auto redif_stability_payload(const mtrc::RedifStabilityDiagnostics &diagnostics) -> py::dict
+{
+	auto result = py::dict{};
+	result["status"] = diagnostics.status;
+	result["minimum_pivot_abs"] = diagnostics.minimum_pivot_abs;
+	result["maximum_pivot_abs"] = diagnostics.maximum_pivot_abs;
+	result["pivot_ratio"] = diagnostics.pivot_ratio;
+	result["singularity_margin"] = diagnostics.singularity_margin;
+	result["stable"] = diagnostics.stable;
+	result["marginal"] = diagnostics.marginal;
+	return result;
+}
+
+auto redif_step_diagnostics_payload(const mtrc::RedifStepDiagnostics &diagnostics) -> py::dict
+{
+	auto result = py::dict{};
+	result["step"] = diagnostics.step;
+	result["operator_diagnostics"] = redif_operator_diagnostics_payload(diagnostics.operator_diagnostics);
+	result["stability"] = redif_stability_payload(diagnostics.stability);
+	result["stationary"] = diagnostics.stationary;
+	result["minimum_shannon_entropy"] = diagnostics.minimum_shannon_entropy;
+	result["maximum_shannon_entropy"] = diagnostics.maximum_shannon_entropy;
+	result["maximum_relative_entropy_to_current_stationary"] =
+		diagnostics.maximum_relative_entropy_to_current_stationary;
+	return result;
+}
+
+auto redif_measure_result_payload(const mtrc::RedifMeasureResult &measure_result) -> py::dict
+{
+	auto paths = py::list{};
+	for (const auto &path : measure_result.paths) {
+		auto item = py::dict{};
+		item["record_id"] = path.id.index();
+		item["measures"] = path.measures;
+		item["step_transport"] = path.step_transport;
+		item["transport_path_length"] = path.transport_path_length;
+		paths.append(std::move(item));
+	}
+
+	auto entropy = py::list{};
+	for (const auto &diagnostics : measure_result.entropy_diagnostics) {
+		auto item = py::dict{};
+		item["record_id"] = diagnostics.id.index();
+		item["initial_shannon_entropy"] = diagnostics.initial_shannon_entropy;
+		item["terminal_shannon_entropy"] = diagnostics.terminal_shannon_entropy;
+		item["initial_relative_entropy_to_stationary"] =
+			diagnostics.initial_relative_entropy_to_stationary;
+		item["terminal_relative_entropy_to_stationary"] =
+			diagnostics.terminal_relative_entropy_to_stationary;
+		item["terminal_relative_entropy_to_terminal_stationary"] =
+			diagnostics.terminal_relative_entropy_to_terminal_stationary;
+		entropy.append(std::move(item));
+	}
+
+	auto operator_diagnostics = py::list{};
+	for (const auto &diagnostics : measure_result.operator_diagnostics) {
+		operator_diagnostics.append(redif_operator_diagnostics_payload(diagnostics));
+	}
+
+	auto step_diagnostics = py::list{};
+	for (const auto &diagnostics : measure_result.step_diagnostics) {
+		step_diagnostics.append(redif_step_diagnostics_payload(diagnostics));
+	}
+
+	auto summaries = py::list{};
+	for (const auto &summary : measure_result.summaries()) {
+		auto item = py::dict{};
+		item["record_id"] = summary.id.index();
+		item["transport_path_length"] = summary.transport_path_length;
+		item["initial_shannon_entropy"] = summary.initial_shannon_entropy;
+		item["terminal_shannon_entropy"] = summary.terminal_shannon_entropy;
+		item["entropy_delta"] = summary.entropy_delta;
+		item["terminal_top_record_index"] = summary.terminal_top_record_index;
+		item["terminal_top_record_mass"] = summary.terminal_top_record_mass;
+		summaries.append(std::move(item));
+	}
+
+	auto transport = py::dict{};
+	transport["ground_metric"] = measure_result.transport_diagnostics.ground_metric;
+	transport["solver"] = measure_result.transport_diagnostics.solver;
+	transport["measure_count"] = measure_result.transport_diagnostics.measure_count;
+	transport["pair_count"] = measure_result.transport_diagnostics.pair_count;
+	transport["transport_problem_count"] = measure_result.transport_diagnostics.transport_problem_count;
+	transport["max_transport_problems"] = measure_result.transport_diagnostics.max_transport_problems;
+	transport["support_atom_count"] = measure_result.transport_diagnostics.support_atom_count;
+	transport["max_transport_support_atoms"] =
+		measure_result.transport_diagnostics.max_transport_support_atoms;
+	transport["truncated_measure_count"] = measure_result.transport_diagnostics.truncated_measure_count;
+	transport["discarded_mass_total"] = measure_result.transport_diagnostics.discarded_mass_total;
+	transport["maximum_discarded_mass"] = measure_result.transport_diagnostics.maximum_discarded_mass;
+	transport["support_mass_floor"] = measure_result.transport_diagnostics.support_mass_floor;
+	transport["exact"] = measure_result.transport_diagnostics.exact;
+	transport["support_truncated"] = measure_result.transport_diagnostics.support_truncated;
+	transport["refused"] = measure_result.transport_diagnostics.refused;
+	transport["exactness"] = measure_result.transport_diagnostics.exactness;
+	transport["refusal_reason"] = measure_result.transport_diagnostics.refusal_reason;
+
+	auto result = py::dict{};
+	result["paths"] = std::move(paths);
+	result["record_count"] = measure_result.record_count;
+	result["neighbors"] = measure_result.neighbors;
+	result["iterations"] = measure_result.iterations;
+	result["euler_step"] = measure_result.euler_step;
+	result["adaptive_geometry"] = measure_result.adaptive_geometry;
+	result["exact"] = measure_result.exact;
+	result["operator_name"] = measure_result.operator_name;
+	result["strategy"] = measure_result.strategy;
+	result["representation"] = measure_result.representation;
+	result["initial_stationary"] = measure_result.initial_stationary;
+	result["terminal_stationary"] = measure_result.terminal_stationary;
+	result["entropy_diagnostics"] = std::move(entropy);
+	result["operator_diagnostics"] = std::move(operator_diagnostics);
+	result["step_diagnostics"] = std::move(step_diagnostics);
+	result["transport_diagnostics"] = std::move(transport);
+	result["summaries"] = std::move(summaries);
+	return result;
+}
+
+auto native_redif_remove_noise(py::sequence records, py::object metric, std::size_t neighbors,
+							   std::size_t iterations, double euler_step, bool adaptive_geometry,
+							   const std::string &scale_policy, double stability_tolerance,
+							   double marginal_stability_tolerance, std::size_t max_dense_records,
+							   std::size_t max_memory_bytes, std::size_t max_distance_evaluations,
+							   const std::string &representation = "metric_space") -> py::dict
+{
+	const auto distances = native_pairwise_distance_matrix(records, metric);
+	auto options = redif_options_from_arguments(neighbors, iterations, euler_step, adaptive_geometry,
+											   scale_policy, stability_tolerance,
+											   marginal_stability_tolerance, max_dense_records,
+											   max_memory_bytes, max_distance_evaluations);
+	auto result = mtrc::redif_remove_noise_from_distance_matrix(distances, options);
+	result.representation = representation;
+	return redif_measure_result_payload(result);
+}
+
+auto native_redif_add_noise(py::sequence records, py::object metric, std::size_t neighbors,
+							std::size_t iterations, double euler_step, bool adaptive_geometry,
+							const std::string &scale_policy, double stability_tolerance,
+							double marginal_stability_tolerance, std::size_t max_dense_records,
+							std::size_t max_memory_bytes, std::size_t max_distance_evaluations,
+							const std::string &representation = "metric_space") -> py::dict
+{
+	const auto distances = native_pairwise_distance_matrix(records, metric);
+	auto options = redif_options_from_arguments(neighbors, iterations, euler_step, adaptive_geometry,
+											   scale_policy, stability_tolerance,
+											   marginal_stability_tolerance, max_dense_records,
+											   max_memory_bytes, max_distance_evaluations);
+	auto result = mtrc::redif_add_noise_from_distance_matrix(distances, options);
+	result.representation = representation;
+	return redif_measure_result_payload(result);
+}
+
+auto native_redif_transport_path_outliers(py::sequence records, py::object metric, std::size_t neighbors,
+										  std::size_t iterations, double euler_step,
+										  bool adaptive_geometry, const std::string &scale_policy,
+										  double stability_tolerance,
+										  double marginal_stability_tolerance,
+										  std::size_t max_dense_records,
+										  std::size_t max_memory_bytes,
+										  std::size_t max_distance_evaluations,
+										  const std::string &representation = "metric_space") -> py::dict
+{
+	const auto dynamics = native_redif_remove_noise(records, metric, neighbors, iterations, euler_step,
+												   adaptive_geometry, scale_policy, stability_tolerance,
+												   marginal_stability_tolerance, max_dense_records,
+												   max_memory_bytes, max_distance_evaluations,
+												   representation);
+	auto summaries = dynamics["summaries"].cast<py::list>();
+	std::vector<std::pair<std::size_t, double>> scored;
+	scored.reserve(static_cast<std::size_t>(summaries.size()));
+	for (auto item : summaries) {
+		auto summary = py::reinterpret_borrow<py::dict>(item);
+		scored.emplace_back(summary["record_id"].cast<std::size_t>(),
+							summary["transport_path_length"].cast<double>());
+	}
+	std::sort(scored.begin(), scored.end(), [](const auto &lhs, const auto &rhs) {
+		if (lhs.second > rhs.second) {
+			return true;
+		}
+		if (rhs.second > lhs.second) {
+			return false;
+		}
+		return lhs.first < rhs.first;
+	});
+
+	auto result = py::dict{};
+	result["outliers"] = scored;
+	result["record_count"] = dynamics["record_count"];
+	result["cluster_count"] = 0;
+	result["unassigned_count"] = scored.size();
+	result["exact"] = true;
+	result["operator_name"] = "find_outliers";
+	result["strategy"] = "redif_transport_path_length";
+	result["representation"] = representation;
+	result["dynamics"] = dynamics;
+	return result;
+}
+
 void export_exact_scan(py::module &m)
 {
 	m.def("pairwise_distance_matrix", &native_pairwise_distance_matrix, py::arg("records"), py::arg("metric"));
@@ -919,4 +1194,35 @@ void export_exact_scan(py::module &m)
 		  py::arg("count"), py::arg("representation") = "metric_space");
 	m.def("dbscan_outliers", &native_dbscan_outliers, py::arg("records"), py::arg("metric"), py::arg("radius"),
 		  py::arg("min_points"), py::arg("representation") = "metric_space");
+	m.def("redif_remove_noise", &native_redif_remove_noise, py::arg("records"), py::arg("metric"),
+		  py::arg("neighbors") = 10, py::arg("iterations") = 15, py::arg("euler_step") = 0.25,
+		  py::arg("adaptive_geometry") = true, py::arg("scale_policy") = "mean_local_distance",
+		  py::arg("stability_tolerance") = 1.0e-12,
+		  py::arg("marginal_stability_tolerance") = 1.0e-8,
+		  py::arg("max_dense_records") = mtrc::modify::dynamics::default_metric_transition_max_dense_records,
+		  py::arg("max_memory_bytes") = mtrc::modify::dynamics::default_metric_transition_max_memory_bytes,
+		  py::arg("max_distance_evaluations") =
+			  mtrc::modify::dynamics::default_metric_transition_max_distance_evaluations,
+		  py::arg("representation") = "metric_space");
+	m.def("redif_add_noise", &native_redif_add_noise, py::arg("records"), py::arg("metric"),
+		  py::arg("neighbors") = 10, py::arg("iterations") = 15, py::arg("euler_step") = 0.25,
+		  py::arg("adaptive_geometry") = true, py::arg("scale_policy") = "mean_local_distance",
+		  py::arg("stability_tolerance") = 1.0e-12,
+		  py::arg("marginal_stability_tolerance") = 1.0e-8,
+		  py::arg("max_dense_records") = mtrc::modify::dynamics::default_metric_transition_max_dense_records,
+		  py::arg("max_memory_bytes") = mtrc::modify::dynamics::default_metric_transition_max_memory_bytes,
+		  py::arg("max_distance_evaluations") =
+			  mtrc::modify::dynamics::default_metric_transition_max_distance_evaluations,
+		  py::arg("representation") = "metric_space");
+	m.def("redif_transport_path_outliers", &native_redif_transport_path_outliers,
+		  py::arg("records"), py::arg("metric"), py::arg("neighbors") = 10,
+		  py::arg("iterations") = 15, py::arg("euler_step") = 0.25,
+		  py::arg("adaptive_geometry") = true, py::arg("scale_policy") = "mean_local_distance",
+		  py::arg("stability_tolerance") = 1.0e-12,
+		  py::arg("marginal_stability_tolerance") = 1.0e-8,
+		  py::arg("max_dense_records") = mtrc::modify::dynamics::default_metric_transition_max_dense_records,
+		  py::arg("max_memory_bytes") = mtrc::modify::dynamics::default_metric_transition_max_memory_bytes,
+		  py::arg("max_distance_evaluations") =
+			  mtrc::modify::dynamics::default_metric_transition_max_distance_evaluations,
+		  py::arg("representation") = "metric_space");
 }

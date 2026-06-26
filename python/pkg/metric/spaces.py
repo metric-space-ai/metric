@@ -2,6 +2,7 @@
 
 from collections.abc import Mapping
 import copy as _copy
+import csv as _csv
 from dataclasses import dataclass
 import math
 import numbers
@@ -43,6 +44,20 @@ _SOURCE_METRIC_REPRESENTATION_ALIASES = {
     "metric_space",
     "source_metric",
     "live_scan",
+}
+_AUTO_LANDMARK_NATIVE_METRIC_NAMES = {
+    "Edit",
+    "Euclidean",
+    "Manhattan",
+    "Minkowski",
+    "Chebyshev",
+    "P_norm",
+    "TWED",
+}
+_AUTO_LANDMARK_METRIC_LAWS = {
+    "metric",
+    "pseudo_metric",
+    "pseudometric",
 }
 
 
@@ -156,6 +171,115 @@ def _normalize_optional_budget(value, name, default):
     return _normalize_non_negative_count(value, name)
 
 
+def _has_known_length(values):
+    try:
+        len(values)
+    except TypeError:
+        return False
+    return True
+
+
+def _materialize_records_for_space(records, *, copy_records, max_dense_records):
+    if _has_known_length(records):
+        return [_copy.copy(record) for record in records] if copy_records else list(records)
+
+    max_dense_records = _normalize_optional_budget(
+        max_dense_records,
+        "max_dense_records",
+        _DEFAULT_MAX_DENSE_RECORDS,
+    )
+    materialized = []
+    for index, record in enumerate(records):
+        if index >= max_dense_records:
+            raise MetricComputationError(
+                "Space(...) refused record materialization for an unsized iterator: "
+                f"records>{max_dense_records}, max_dense_records={max_dense_records}. "
+                "Suggested fallback: pass a sized container, stream records in smaller batches, "
+                "or raise max_dense_records explicitly."
+            )
+        materialized.append(_copy.copy(record) if copy_records else record)
+    return materialized
+
+
+def _materialize_ids_for_space(ids, *, record_count):
+    if _has_known_length(ids):
+        return list(ids)
+
+    materialized = []
+    for index, record_id in enumerate(ids):
+        if index > record_count:
+            raise ValueError("ids must have the same length as records")
+        materialized.append(record_id)
+    return materialized
+
+
+def _max_dense_records_from_kwargs(kwargs):
+    return _normalize_optional_budget(
+        kwargs.get("max_dense_records"),
+        "max_dense_records",
+        _DEFAULT_MAX_DENSE_RECORDS,
+    )
+
+
+def _refuse_import_record_count(operation, observed_record_count, max_dense_records):
+    raise MetricComputationError(
+        f"{operation} refused record import before dense materialization: "
+        f"observed_records={observed_record_count}, max_dense_records={max_dense_records}. "
+        "Suggested fallback: load a bounded sample, stream the source in smaller batches, "
+        "or raise max_dense_records explicitly."
+    )
+
+
+def _ensure_import_record_count_allowed(operation, record_count, max_dense_records):
+    if record_count > max_dense_records:
+        _refuse_import_record_count(operation, record_count, max_dense_records)
+
+
+def _count_delimited_records_for_budget(
+    operation,
+    kind,
+    path,
+    *,
+    has_header,
+    allow_empty_lines,
+    quote,
+    max_dense_records,
+):
+    delimiter = "\t" if kind == "tsv" else ","
+    with open(path, newline="") as handle:
+        reader = _csv.reader(handle, delimiter=delimiter, quotechar=quote)
+        if has_header:
+            next(reader, None)
+        observed = 0
+        for row in reader:
+            if allow_empty_lines and (not row or all(field == "" for field in row)):
+                continue
+            observed += 1
+            if observed > max_dense_records:
+                _refuse_import_record_count(operation, observed, max_dense_records)
+    return observed
+
+
+def _resolve_runtime_budget(policy, value, name):
+    if value is not None or policy is None:
+        return value
+    return getattr(policy, name)
+
+
+def _resolve_runtime_budgets(
+    policy,
+    *,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
+    return (
+        _resolve_runtime_budget(policy, max_memory_bytes, "max_memory_bytes"),
+        _resolve_runtime_budget(policy, max_distance_evaluations, "max_distance_evaluations"),
+        _resolve_runtime_budget(policy, max_dense_records, "max_dense_records"),
+    )
+
+
 def _normalize_optional_positive_count(value, name):
     if value is None:
         return None
@@ -189,6 +313,22 @@ def _source_metric_representation_name(value):
     if value is None or normalized in _SOURCE_METRIC_REPRESENTATION_ALIASES:
         return "metric_space"
     return None
+
+
+def _metric_allows_auto_landmark(metric):
+    for attribute in ("metric_law", "__metric_law__", "distance_law"):
+        law = _normalize_representation_token(getattr(metric, attribute, None))
+        if law in _AUTO_LANDMARK_METRIC_LAWS:
+            return True
+
+    if getattr(metric, "is_metric", False) is True or getattr(metric, "is_pseudometric", False) is True:
+        return True
+
+    metric_type = type(metric)
+    return (
+        metric_type.__module__ == "metric._impl.distance"
+        and metric_type.__name__ in _AUTO_LANDMARK_NATIVE_METRIC_NAMES
+    )
 
 
 def _canonical_plan_intent(intent):
@@ -271,14 +411,6 @@ def _normalize_neighbor_limit(k=None, count=None):
     if requested is None:
         requested = 1
     return _normalize_non_negative_count(requested, "neighbor count")
-
-
-def _normalize_query_batch(query, queries):
-    if queries is None:
-        return [query], False
-    if query is not None:
-        raise ValueError("use either query or queries, not both")
-    return list(queries), True
 
 
 def _budget_reasons(record_count, distance_evaluations, memory_bytes, budgets):
@@ -535,7 +667,7 @@ def _landmark_neighbor_recall_diagnostics(
     count=None,
     radius=None,
 ):
-    from metric.operators import _recall_confidence_interval, _unmeasured_recall_diagnostics
+    from metric.operators import _query_level_recall_confidence_interval, _unmeasured_recall_diagnostics
 
     def unmeasured(reason, *, recall_distance_evaluations=0):
         diagnostics = _unmeasured_recall_diagnostics(
@@ -570,6 +702,7 @@ def _landmark_neighbor_recall_diagnostics(
     total_calibration_records = 0
     recall_distance_evaluations = 0
     reference_candidate_counts = []
+    query_recalls = []
 
     for query, returned_indices in zip(queries, returned_indices_by_query):
         remaining = remaining_distance_budget - recall_distance_evaluations
@@ -604,8 +737,11 @@ def _landmark_neighbor_recall_diagnostics(
 
         returned_ids = set(returned_indices)
         measured_queries += 1
-        total_relevant += len(reference_ids)
-        total_hits += len(reference_ids & returned_ids)
+        relevant_count = len(reference_ids)
+        hit_count = len(reference_ids & returned_ids)
+        total_relevant += relevant_count
+        total_hits += hit_count
+        query_recalls.append(hit_count / relevant_count)
 
     if measured_queries <= 0 or total_relevant <= 0:
         if recall_distance_evaluations <= 0:
@@ -620,10 +756,7 @@ def _landmark_neighbor_recall_diagnostics(
         )
 
     recall = total_hits / total_relevant
-    standard_error, confidence_radius_95 = _recall_confidence_interval(
-        total_hits,
-        total_relevant,
-    )
+    standard_error, confidence_radius_95 = _query_level_recall_confidence_interval(query_recalls)
     return {
         "recall_measured": True,
         "recall": recall,
@@ -638,7 +771,7 @@ def _landmark_neighbor_recall_diagnostics(
         "recall_reference_candidate_counts": tuple(reference_candidate_counts),
         "recall_measurement_reason": (
             "measured over landmark candidates plus a larger lower-bound reference "
-            "window within the distance budget"
+            "window within the distance budget with query-level standard error"
         ),
     }
 
@@ -716,7 +849,9 @@ def _make_plan(
     max_dense_records=None,
     allow_approximate=True,
     allow_chunking=True,
+    allow_auto_landmark=True,
     dense_cell_bytes=_PYTHON_DISTANCE_CELL_BYTES,
+    distance_evaluation_multiplier=1,
 ):
     intent = _canonical_plan_intent(intent)
     record_count = _normalize_non_negative_count(record_count, "record_count")
@@ -805,6 +940,30 @@ def _make_plan(
                     max_dense_records=max_dense_records,
                     diagnostics=diagnostics,
                 )
+            if diagnostics["memory_bytes_estimate"] > max_memory_bytes:
+                return SpacePlan(
+                    record_count=record_count,
+                    intent=intent,
+                    query_count=normalized_query_count,
+                    exactness="approximate",
+                    representation="landmark_index",
+                    estimated_distance_evaluations=diagnostics["estimated_distance_evaluations"],
+                    memory_bytes_estimate=diagnostics["memory_bytes_estimate"],
+                    decision="refused",
+                    reason=(
+                        "landmark index memory exceeds max_memory_bytes: "
+                        f"estimated_memory_bytes={diagnostics['memory_bytes_estimate']} "
+                        f"max_memory_bytes={max_memory_bytes}"
+                    ),
+                    fallback=(
+                        "raise max_memory_bytes",
+                        "use representation=None for sampled_live_scan",
+                    ),
+                    max_memory_bytes=max_memory_bytes,
+                    max_distance_evaluations=max_distance_evaluations,
+                    max_dense_records=max_dense_records,
+                    diagnostics=diagnostics,
+                )
             return SpacePlan(
                 record_count=record_count,
                 intent=intent,
@@ -828,6 +987,7 @@ def _make_plan(
         if (
             not exact
             and allow_approximate
+            and allow_auto_landmark
             and not landmark_requested
             and _source_metric_representation_name(representation) is not None
         ):
@@ -993,7 +1153,11 @@ def _make_plan(
             max_dense_records=max_dense_records,
         )
 
-    dense_evaluations = record_count * record_count
+    distance_evaluation_multiplier = _normalize_non_negative_count(
+        distance_evaluation_multiplier,
+        "distance_evaluation_multiplier",
+    )
+    dense_evaluations = record_count * record_count * distance_evaluation_multiplier
     memory_bytes = _dense_memory_estimate(record_count, cell_bytes=dense_cell_bytes)
     reasons = _budget_reasons(record_count, dense_evaluations, memory_bytes, budgets)
     if not reasons:
@@ -1141,17 +1305,58 @@ def _read_native_delimited_records(
     )
 
 
-def _rows_for_native_export(records, ids, *, value_type, as_scalar, include_ids):
+def _materialize_export_fields(operation, values, *, max_fields, field_kind):
+    try:
+        field_count = operator.index(len(values))
+    except TypeError:
+        materialized = []
+        for index, value in enumerate(values):
+            if index >= max_fields:
+                raise MetricComputationError(
+                    f"{operation} refused {field_kind} materialization before native export: "
+                    f"fields>{max_fields}, max_fields={max_fields}. "
+                    "Suggested fallback: pass sized rows/header fields, export in scalar mode, "
+                    "or raise max_record_fields/max_header_fields explicitly."
+                )
+            materialized.append(value)
+        return materialized
+
+    if field_count > max_fields:
+        raise MetricComputationError(
+            f"{operation} refused {field_kind} materialization before native export: "
+            f"fields={field_count}, max_fields={max_fields}. "
+            "Suggested fallback: pass fewer fields, export in scalar mode, "
+            "or raise max_record_fields/max_header_fields explicitly."
+        )
+    return list(values)
+
+
+def _rows_for_native_export(records, ids, *, value_type, as_scalar, include_ids, max_record_fields):
     normalized = _normalize_record_value_type(value_type)
     rows = []
     for row_index, record in enumerate(records):
         if as_scalar or isinstance(record, (str, bytes)):
             row = [record]
+            if len(row) > max_record_fields:
+                raise MetricComputationError(
+                    "Space export refused scalar record materialization before native export: "
+                    f"fields=1, max_fields={max_record_fields}."
+                )
         else:
             try:
-                row = list(record)
+                row = _materialize_export_fields(
+                    "Space export",
+                    record,
+                    max_fields=max_record_fields,
+                    field_kind=f"record {row_index} fields",
+                )
             except TypeError:
                 row = [record]
+                if len(row) > max_record_fields:
+                    raise MetricComputationError(
+                        "Space export refused scalar record materialization before native export: "
+                        f"fields=1, max_fields={max_record_fields}."
+                    )
         if not row:
             raise ValueError(f"record {row_index} has no fields")
         if include_ids:
@@ -1175,10 +1380,27 @@ def _write_native_delimited_records(
     id_header,
     newline_at_end,
     quote,
+    max_record_fields=None,
+    max_header_fields=None,
 ):
     normalized = _normalize_record_value_type(value_type)
+    max_record_fields = _normalize_optional_budget(
+        max_record_fields,
+        "max_record_fields",
+        _DEFAULT_MAX_DENSE_RECORDS,
+    )
+    max_header_fields = _normalize_optional_budget(
+        max_header_fields,
+        "max_header_fields",
+        _DEFAULT_MAX_DENSE_RECORDS,
+    )
     writer = _native_record_writer(kind, normalized)
-    output_header = [] if header is None else list(header)
+    output_header = [] if header is None else _materialize_export_fields(
+        "Space export",
+        header,
+        max_fields=max_header_fields,
+        field_kind="header fields",
+    )
     if include_ids and output_header:
         output_header = [id_header] + output_header
     writer(
@@ -1189,6 +1411,7 @@ def _write_native_delimited_records(
             value_type=normalized,
             as_scalar=as_scalar,
             include_ids=include_ids,
+            max_record_fields=max_record_fields,
         ),
         newline_at_end=newline_at_end,
         header=output_header,
@@ -1445,8 +1668,16 @@ class FiniteMetricSpace:
         cache = _normalize_cache(cache)
         if not isinstance(copy, bool):
             raise TypeError("copy must be a bool")
-        self.records = [_copy.copy(record) for record in records] if copy else list(records)
-        self.ids = [RecordId(index) for index in range(len(self.records))] if ids is None else list(ids)
+        self.records = _materialize_records_for_space(
+            records,
+            copy_records=copy,
+            max_dense_records=max_dense_records,
+        )
+        self.ids = (
+            [RecordId(index) for index in range(len(self.records))]
+            if ids is None
+            else _materialize_ids_for_space(ids, record_count=len(self.records))
+        )
         if len(self.ids) != len(self.records):
             raise ValueError("ids must have the same length as records")
         if len(set(self.ids)) != len(self.ids):
@@ -1557,6 +1788,18 @@ class FiniteMetricSpace:
         if not hasattr(dataframe, "to_dict"):
             raise TypeError("dataframe must provide to_dict('records')")
 
+        max_dense_records = _max_dense_records_from_kwargs(kwargs)
+        try:
+            row_count = len(dataframe)
+        except TypeError:
+            row_count = None
+        if row_count is not None:
+            _ensure_import_record_count_allowed(
+                "Space.from_dataframe(...)",
+                row_count,
+                max_dense_records,
+            )
+
         try:
             rows = dataframe.to_dict("records")
         except TypeError:
@@ -1564,6 +1807,11 @@ class FiniteMetricSpace:
 
         ids = None
         records = list(rows)
+        _ensure_import_record_count_allowed(
+            "Space.from_dataframe(...)",
+            len(records),
+            max_dense_records,
+        )
         if id_column is not None:
             ids = []
             field_records = []
@@ -1602,6 +1850,16 @@ class FiniteMetricSpace:
     ):
         """Construct a finite metric space from native C++ CSV record import."""
 
+        max_dense_records = _max_dense_records_from_kwargs(kwargs)
+        _count_delimited_records_for_budget(
+            "Space.from_csv(...)",
+            "csv",
+            path,
+            has_header=has_header,
+            allow_empty_lines=allow_empty_lines,
+            quote=quote,
+            max_dense_records=max_dense_records,
+        )
         records = _read_native_delimited_records(
             "csv",
             path,
@@ -1646,6 +1904,16 @@ class FiniteMetricSpace:
     ):
         """Construct a finite metric space from native C++ TSV record import."""
 
+        max_dense_records = _max_dense_records_from_kwargs(kwargs)
+        _count_delimited_records_for_budget(
+            "Space.from_tsv(...)",
+            "tsv",
+            path,
+            has_header=has_header,
+            allow_empty_lines=allow_empty_lines,
+            quote=quote,
+            max_dense_records=max_dense_records,
+        )
         records = _read_native_delimited_records(
             "tsv",
             path,
@@ -1685,6 +1953,11 @@ class FiniteMetricSpace:
         array = _load_numpy_array(path, allow_pickle=allow_pickle)
         if array.ndim != 2:
             raise ValueError("Space.from_numpy_file requires a 2D array shaped as records x fields")
+        _ensure_import_record_count_allowed(
+            "Space.from_numpy_file(...)",
+            int(array.shape[0]),
+            _max_dense_records_from_kwargs(kwargs),
+        )
         records = array.tolist()
         if metric is None:
             return cls.vectors(records, ids=ids, **kwargs)
@@ -1730,6 +2003,7 @@ class FiniteMetricSpace:
         query_count=None,
         exact=True,
         representation=None,
+        runtime=None,
         landmark_count=None,
         candidate_count=None,
         max_memory_bytes=None,
@@ -1741,6 +2015,20 @@ class FiniteMetricSpace:
         """Estimate cost and representation choice before running an operation."""
 
         self.ensure_fresh()
+        policy = None
+        if runtime is not None:
+            policy = require_exact_runtime(runtime)
+            if exact is False:
+                raise MetricInputError(
+                    "Space.plan(runtime=...) requires exact=True when an exact runtime is supplied"
+                )
+            exact = True
+        max_memory_bytes, max_distance_evaluations, max_dense_records = _resolve_runtime_budgets(
+            policy,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         return _make_plan(
             intent,
             len(self.records),
@@ -1754,6 +2042,7 @@ class FiniteMetricSpace:
             max_dense_records=max_dense_records,
             allow_approximate=allow_approximate,
             allow_chunking=allow_chunking,
+            allow_auto_landmark=_metric_allows_auto_landmark(self.metric),
         )
 
     def describe_plan(self, intent="describe", **kwargs):
@@ -1819,6 +2108,41 @@ class FiniteMetricSpace:
             )
         return plan
 
+    def _materialize_pairwise_ids(
+        self,
+        ids,
+        *,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+    ):
+        try:
+            id_count = _normalize_non_negative_count(len(ids), "ids")
+        except TypeError:
+            materialized = []
+            for record_id in ids:
+                observed = len(materialized) + 1
+                self._ensure_dense_materialization_allowed(
+                    "pairwise",
+                    record_count=observed,
+                    max_memory_bytes=max_memory_bytes,
+                    max_distance_evaluations=max_distance_evaluations,
+                    max_dense_records=max_dense_records,
+                    operation="Space.pairwise(ids=...)",
+                )
+                materialized.append(record_id)
+            return materialized
+
+        self._ensure_dense_materialization_allowed(
+            "pairwise",
+            record_count=id_count,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            operation="Space.pairwise(ids=...)",
+        )
+        return list(ids)
+
     def _ensure_strict_validation_allowed(
         self,
         *,
@@ -1845,11 +2169,19 @@ class FiniteMetricSpace:
     def pairwise_distances(
         self,
         *,
+        runtime=None,
         max_memory_bytes=None,
         max_distance_evaluations=None,
         max_dense_records=None,
     ):
         self.ensure_fresh()
+        policy = require_exact_runtime(runtime) if runtime is not None else None
+        max_memory_bytes, max_distance_evaluations, max_dense_records = _resolve_runtime_budgets(
+            policy,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         self._ensure_dense_materialization_allowed(
             "pairwise_distances",
             max_memory_bytes=max_memory_bytes,
@@ -1868,27 +2200,34 @@ class FiniteMetricSpace:
         self,
         ids=None,
         *,
+        runtime=None,
         max_memory_bytes=None,
         max_distance_evaluations=None,
         max_dense_records=None,
     ):
         self.ensure_fresh()
+        policy = require_exact_runtime(runtime) if runtime is not None else None
+        max_memory_bytes, max_distance_evaluations, max_dense_records = _resolve_runtime_budgets(
+            policy,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         if ids is None:
             return self.pairwise_distances(
+                runtime=policy,
                 max_memory_bytes=max_memory_bytes,
                 max_distance_evaluations=max_distance_evaluations,
                 max_dense_records=max_dense_records,
             )
 
-        positions = [self._id_to_index[record_id] for record_id in ids]
-        self._ensure_dense_materialization_allowed(
-            "pairwise",
-            record_count=len(positions),
+        materialized_ids = self._materialize_pairwise_ids(
+            ids,
             max_memory_bytes=max_memory_bytes,
             max_distance_evaluations=max_distance_evaluations,
             max_dense_records=max_dense_records,
-            operation="Space.pairwise(ids=...)",
         )
+        positions = [self._id_to_index[record_id] for record_id in materialized_ids]
         return [
             [self.distance(lhs, rhs) for rhs in positions]
             for lhs in positions
@@ -1897,6 +2236,7 @@ class FiniteMetricSpace:
     def distance_matrix_numpy(
         self,
         *,
+        runtime=None,
         max_memory_bytes=None,
         max_distance_evaluations=None,
         max_dense_records=None,
@@ -1913,6 +2253,13 @@ class FiniteMetricSpace:
         Raises ``OptionalDependencyError`` if numpy is not installed.
         """
         np = _numpy()
+        policy = require_exact_runtime(runtime) if runtime is not None else None
+        max_memory_bytes, max_distance_evaluations, max_dense_records = _resolve_runtime_budgets(
+            policy,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         self._ensure_dense_materialization_allowed(
             "distance_matrix_numpy",
             max_memory_bytes=max_memory_bytes,
@@ -1941,6 +2288,8 @@ class FiniteMetricSpace:
         id_header="id",
         newline_at_end=True,
         quote='"',
+        max_record_fields=None,
+        max_header_fields=None,
     ):
         """Export records through the native C++ CSV writer."""
 
@@ -1957,6 +2306,8 @@ class FiniteMetricSpace:
             id_header=id_header,
             newline_at_end=newline_at_end,
             quote=quote,
+            max_record_fields=max_record_fields,
+            max_header_fields=max_header_fields,
         )
 
     def to_tsv(
@@ -1970,6 +2321,8 @@ class FiniteMetricSpace:
         id_header="id",
         newline_at_end=True,
         quote='"',
+        max_record_fields=None,
+        max_header_fields=None,
     ):
         """Export records through the native C++ TSV writer."""
 
@@ -1986,15 +2339,25 @@ class FiniteMetricSpace:
             id_header=id_header,
             newline_at_end=newline_at_end,
             quote=quote,
+            max_record_fields=max_record_fields,
+            max_header_fields=max_header_fields,
         )
 
     def to_matrix(
         self,
         *,
+        runtime=None,
         max_memory_bytes=None,
         max_distance_evaluations=None,
         max_dense_records=None,
     ):
+        policy = require_exact_runtime(runtime) if runtime is not None else None
+        max_memory_bytes, max_distance_evaluations, max_dense_records = _resolve_runtime_budgets(
+            policy,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         self._ensure_dense_materialization_allowed(
             "to_matrix",
             max_memory_bytes=max_memory_bytes,
@@ -2122,6 +2485,87 @@ class FiniteMetricSpace:
                 f"Reason: {plan.reason}. Suggested fallback: {fallback}."
             )
         return plan
+
+    def _query_batch_materialization_limit(self, max_dense_records):
+        return _normalize_optional_budget(
+            max_dense_records,
+            "max_dense_records",
+            _DEFAULT_MAX_DENSE_RECORDS,
+        )
+
+    def _refuse_query_batch_materialization(self, operation, observed_query_count, max_query_records):
+        raise MetricComputationError(
+            f"{operation} refused query batch materialization before running metric calls: "
+            f"queries={observed_query_count}, max_dense_records={max_query_records}. "
+            "Reason: query batch exceeds the bounded materialization budget. "
+            "Suggested fallback: pass a bounded query batch, process queries in chunks, "
+            "or raise max_dense_records explicitly."
+        )
+
+    def _materialize_query_batch_with_plan(
+        self,
+        operation,
+        intent,
+        query,
+        queries,
+        *,
+        exact,
+        representation=None,
+        landmark_count=None,
+        candidate_count=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+        allow_approximate=True,
+        allow_chunking=True,
+    ):
+        def plan_for(query_count):
+            return self._ensure_query_plan_allowed(
+                operation,
+                intent,
+                query_count=query_count,
+                exact=exact,
+                representation=representation,
+                landmark_count=landmark_count,
+                candidate_count=candidate_count,
+                max_memory_bytes=max_memory_bytes,
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
+                allow_approximate=allow_approximate,
+                allow_chunking=allow_chunking,
+            )
+
+        if queries is None:
+            return [query], False, plan_for(1)
+        if query is not None:
+            raise ValueError("use either query or queries, not both")
+
+        max_query_records = self._query_batch_materialization_limit(max_dense_records)
+        try:
+            query_count = _normalize_non_negative_count(len(queries), "query_count")
+        except TypeError:
+            query_values = []
+            plan = plan_for(0)
+            for query_value in queries:
+                observed_query_count = len(query_values) + 1
+                plan = plan_for(observed_query_count)
+                if observed_query_count > max_query_records:
+                    self._refuse_query_batch_materialization(
+                        operation,
+                        observed_query_count,
+                        max_query_records,
+                    )
+                query_values.append(query_value)
+            return query_values, True, plan
+
+        plan = plan_for(query_count)
+        if query_count > max_query_records:
+            self._refuse_query_batch_materialization(
+                operation,
+                query_count,
+                max_query_records,
+            )
+        return list(queries), True, plan
 
     def _sample_indices_for_query_plan(self, plan):
         query_count = plan.query_count if plan.query_count is not None else 1
@@ -2478,7 +2922,7 @@ class FiniteMetricSpace:
         allow_chunking=True,
         operation=None,
     ):
-        query_values, batched = _normalize_query_batch(query, queries)
+        operation_name = operation or f"{type(self).__name__}.{intent}()"
         representation_name = self._representation_name(representation)
         if _landmark_representation_name(representation_name) is not None:
             if exact:
@@ -2486,10 +2930,11 @@ class FiniteMetricSpace:
                     "landmark search is approximate; pass exact=False with representation='landmark'"
                 )
             representation_name = "landmark_index"
-        plan = self._ensure_query_plan_allowed(
-            operation or f"{type(self).__name__}.{intent}()",
+        query_values, batched, plan = self._materialize_query_batch_with_plan(
+            operation_name,
             intent,
-            query_count=len(query_values),
+            query,
+            queries,
             exact=exact,
             representation=representation_name,
             landmark_count=landmark_count,
@@ -2809,13 +3254,20 @@ class Space(FiniteMetricSpace):
         allow_chunking=True,
     ):
         """Exact-scan neighbor query through the native C++ binding."""
+        policy = None
         if runtime is not None:
-            require_exact_runtime(runtime)
+            policy = require_exact_runtime(runtime)
             if exact is False:
                 raise MetricInputError(
                     "Space.neighbors(runtime=...) requires exact=True when an exact runtime is supplied"
                 )
             exact = True
+        max_memory_bytes, max_distance_evaluations, max_dense_records = _resolve_runtime_budgets(
+            policy,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         if strategy is not None:
             landmark_strategy = _landmark_representation_name(strategy)
             if landmark_strategy is not None:
@@ -2884,13 +3336,20 @@ class Space(FiniteMetricSpace):
         allow_chunking=True,
     ):
         """Exact-scan nearest neighbor through the native C++ binding."""
+        policy = None
         if runtime is not None:
-            require_exact_runtime(runtime)
+            policy = require_exact_runtime(runtime)
             if exact is False:
                 raise MetricInputError(
                     "Space.nearest(runtime=...) requires exact=True when an exact runtime is supplied"
                 )
             exact = True
+        max_memory_bytes, max_distance_evaluations, max_dense_records = _resolve_runtime_budgets(
+            policy,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         return self.nn(
             query,
             queries=queries,
@@ -2923,13 +3382,20 @@ class Space(FiniteMetricSpace):
         allow_chunking=True,
     ):
         """Exact-scan radius neighbors through the native C++ binding."""
+        policy = None
         if runtime is not None:
-            require_exact_runtime(runtime)
+            policy = require_exact_runtime(runtime)
             if exact is False:
                 raise MetricInputError(
                     "Space.within_radius(runtime=...) requires exact=True when an exact runtime is supplied"
                 )
             exact = True
+        max_memory_bytes, max_distance_evaluations, max_dense_records = _resolve_runtime_budgets(
+            policy,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         return self.rnn(
             query,
             radius,
@@ -2949,9 +3415,27 @@ class Space(FiniteMetricSpace):
         """Radius-neighbor alias for APIs that name this intent as range."""
         return self.within_radius(query, radius, **kwargs)
 
-    def groups(self, strategy=None, *, count="auto", radius=None, min_size=1, representation=None, runtime=None):
+    def groups(
+        self,
+        strategy=None,
+        *,
+        count="auto",
+        radius=None,
+        min_size=1,
+        representation=None,
+        runtime=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+    ):
         """Group records through promoted native clustering bindings."""
-        require_exact_runtime(runtime)
+        policy = require_exact_runtime(runtime) if runtime is not None else None
+        max_memory_bytes, max_distance_evaluations, max_dense_records = _resolve_runtime_budgets(
+            policy,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         from metric.operators import ClusteringResult, find_groups
         from metric.strategies import DBSCAN, KMedoids
 
@@ -2966,6 +3450,9 @@ class Space(FiniteMetricSpace):
             self.metric,
             strategy,
             representation=self._representation_name(representation),
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
         )
         id_by_position = {position: self.ids[position] for position in range(len(self.ids))}
         assignments = result.assignments
@@ -2996,9 +3483,18 @@ class Space(FiniteMetricSpace):
         threshold=None,
         representation=None,
         runtime=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
     ):
         """Find unusual records through promoted native outlier bindings."""
-        require_exact_runtime(runtime)
+        policy = require_exact_runtime(runtime) if runtime is not None else None
+        max_memory_bytes, max_distance_evaluations, max_dense_records = _resolve_runtime_budgets(
+            policy,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         from metric.operators import Outlier, OutlierResult, find_outliers
 
         if strategy is None:
@@ -3013,6 +3509,9 @@ class Space(FiniteMetricSpace):
             self.metric,
             strategy,
             representation=self._representation_name(representation),
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
         )
         outliers = tuple(
             Outlier(record_id=self.ids[int(outlier.record_id)], score=outlier.score)
@@ -3030,6 +3529,140 @@ class Space(FiniteMetricSpace):
             representation=result.representation,
         )
 
+    def _redif_result_with_space_ids(self, result):
+        from metric.operators import RedifMeasurePath, RedifMeasureResult, RedifMeasureSummary
+
+        def mapped_id(position):
+            return self.ids[int(position)]
+
+        def map_record_diagnostic(item):
+            mapped = dict(item)
+            if "record_id" in mapped:
+                mapped["record_id"] = mapped_id(mapped["record_id"])
+            return mapped
+
+        return RedifMeasureResult(
+            paths=tuple(
+                RedifMeasurePath(
+                    record_id=mapped_id(path.record_id),
+                    measures=path.measures,
+                    step_transport=path.step_transport,
+                    transport_path_length=path.transport_path_length,
+                )
+                for path in result.paths
+            ),
+            record_count=result.record_count,
+            neighbors=result.neighbors,
+            iterations=result.iterations,
+            euler_step=result.euler_step,
+            adaptive_geometry=result.adaptive_geometry,
+            exact=result.exact,
+            operator_name=result.operator_name,
+            strategy=result.strategy,
+            representation=result.representation,
+            initial_stationary=result.initial_stationary,
+            terminal_stationary=result.terminal_stationary,
+            entropy_diagnostics=tuple(map_record_diagnostic(item) for item in result.entropy_diagnostics),
+            operator_diagnostics=result.operator_diagnostics,
+            step_diagnostics=result.step_diagnostics,
+            transport_diagnostics=result.transport_diagnostics,
+            summaries=tuple(
+                RedifMeasureSummary(
+                    record_id=mapped_id(summary.record_id),
+                    transport_path_length=summary.transport_path_length,
+                    initial_shannon_entropy=summary.initial_shannon_entropy,
+                    terminal_shannon_entropy=summary.terminal_shannon_entropy,
+                    entropy_delta=summary.entropy_delta,
+                    terminal_top_record_index=summary.terminal_top_record_index,
+                    terminal_top_record_mass=summary.terminal_top_record_mass,
+                )
+                for summary in result.summaries
+            ),
+        )
+
+    def remove_noise(
+        self,
+        strategy=None,
+        *,
+        representation=None,
+        runtime=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+        **options,
+    ):
+        """Run inverse Redif dynamics over this finite metric space."""
+        from metric.operators import remove_noise_space
+
+        result = remove_noise_space(
+            self.records,
+            self.metric,
+            strategy,
+            representation=self._representation_name(representation),
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            **options,
+        )
+        return self._redif_result_with_space_ids(result)
+
+    def add_noise(
+        self,
+        strategy=None,
+        *,
+        representation=None,
+        runtime=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+        **options,
+    ):
+        """Run forward metric-induced Redif dynamics over this finite metric space."""
+        from metric.operators import add_noise_space
+
+        result = add_noise_space(
+            self.records,
+            self.metric,
+            strategy,
+            representation=self._representation_name(representation),
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            **options,
+        )
+        return self._redif_result_with_space_ids(result)
+
+    def dynamics(
+        self,
+        strategy=None,
+        *,
+        direction="inverse",
+        representation=None,
+        runtime=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+        **options,
+    ):
+        """Run Redif metric dynamics over this finite metric space."""
+        from metric.operators import redif_dynamics
+
+        result = redif_dynamics(
+            self.records,
+            self.metric,
+            strategy,
+            direction=direction,
+            representation=self._representation_name(representation),
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            **options,
+        )
+        return self._redif_result_with_space_ids(result)
+
     def density_filter(
         self,
         strategy=None,
@@ -3040,9 +3673,18 @@ class Space(FiniteMetricSpace):
         strength="auto",
         representation=None,
         runtime=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
     ):
         """Filter density-isolated or selected source records into a derived metric space."""
-        require_exact_runtime(runtime)
+        policy = require_exact_runtime(runtime) if runtime is not None else None
+        max_memory_bytes, max_distance_evaluations, max_dense_records = _resolve_runtime_budgets(
+            policy,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         from metric.operators import MappingResult, density_filter_space
 
         if strategy is not None:
@@ -3051,6 +3693,9 @@ class Space(FiniteMetricSpace):
                 self.metric,
                 strategy,
                 representation=self._representation_name(representation),
+                max_memory_bytes=max_memory_bytes,
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
             )
             kept_positions = [int(index) for index in result.source_record_ids]
         else:
@@ -3059,7 +3704,9 @@ class Space(FiniteMetricSpace):
                 fraction=fraction,
                 threshold=threshold,
                 representation=representation,
-                runtime=runtime,
+                max_memory_bytes=max_memory_bytes,
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
             )
             removed_ids = {outlier.record_id for outlier in outliers.outliers}
             kept_positions = [index for index, record_id in enumerate(self.ids) if record_id not in removed_ids]
@@ -3085,8 +3732,8 @@ class Space(FiniteMetricSpace):
                 ids=[self.ids[index] for index in kept_positions],
                 name=self.name,
                 metadata=mapping_metadata,
-                validate=self.validate,
-                cache=self.cache,
+                validate="none",
+                cache="none",
             ),
             source_record_ids=tuple(self.ids[index] for index in kept_positions),
             source_record_count=len(self.records),
@@ -3104,10 +3751,29 @@ class Space(FiniteMetricSpace):
             validity=validity,
         )
 
-    def _resample(self, count=None, strategy=None, *, radius=None, representation=None, runtime=None, mapping="thin"):
-        require_exact_runtime(runtime)
+    def _resample(
+        self,
+        count=None,
+        strategy=None,
+        *,
+        radius=None,
+        representation=None,
+        runtime=None,
+        mapping="thin",
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+    ):
+        policy = require_exact_runtime(runtime) if runtime is not None else None
+        max_memory_bytes, max_distance_evaluations, max_dense_records = _resolve_runtime_budgets(
+            policy,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         from metric.operators import (
             MappingResult,
+            _ensure_exact_metric_work_allowed,
             _radius_coverage_representative_indices,
             _regular_thin_indices,
             _uniform_density_diagnostics,
@@ -3137,7 +3803,25 @@ class Space(FiniteMetricSpace):
         if isinstance(strategy, UniformDensity):
             if count is not None:
                 raise ValueError("uniform-density thinning chooses the representative count; omit count")
-            selected_positions = _radius_coverage_representative_indices(self.records, self.metric, strategy.radius)
+            operation = "Space.equalize(...)" if mapping == "equalize" else "Space.thin(...)"
+            _ensure_exact_metric_work_allowed(
+                operation,
+                len(self.records),
+                max_memory_bytes=max_memory_bytes,
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
+                dense=True,
+                distance_evaluation_multiplier=8,
+            )
+            selected_positions = _radius_coverage_representative_indices(
+                self.records,
+                self.metric,
+                strategy.radius,
+                max_memory_bytes=max_memory_bytes,
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
+                operation=operation,
+            )
             if mapping == "equalize":
                 validity = (
                     "density-equalizing deterministic thinning by maximal metric radius net; kept records are an "
@@ -3149,9 +3833,18 @@ class Space(FiniteMetricSpace):
                     "uniform-density deterministic thinning by maximal metric radius net; kept records are an "
                     "unmodified radius-separated and radius-covering subset under the source metric; empirical density "
                     "is intentionally flattened"
-                )
+            )
             strategy_name = "uniform_density_radius_net"
-            diagnostics = _uniform_density_diagnostics(self.records, self.metric, selected_positions, strategy.radius)
+            diagnostics = _uniform_density_diagnostics(
+                self.records,
+                self.metric,
+                selected_positions,
+                strategy.radius,
+                max_memory_bytes=max_memory_bytes,
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
+                operation=operation,
+            )
             assignments = diagnostics["assignments"]
             nearest_distances = diagnostics["nearest_representative_distances"]
             representative_multiplicities = diagnostics["representative_multiplicities"]
@@ -3192,8 +3885,8 @@ class Space(FiniteMetricSpace):
                 ids=[self.ids[index] for index in selected_positions],
                 name=self.name,
                 metadata=mapping_metadata,
-                validate=self.validate,
-                cache=self.cache,
+                validate="none",
+                cache="none",
             ),
             source_record_ids=tuple(self.ids[index] for index in selected_positions),
             source_record_count=len(self.records),
@@ -3218,7 +3911,18 @@ class Space(FiniteMetricSpace):
             diagnostics=diagnostics,
         )
 
-    def thin(self, count=None, strategy=None, *, radius=None, representation=None, runtime=None):
+    def thin(
+        self,
+        count=None,
+        strategy=None,
+        *,
+        radius=None,
+        representation=None,
+        runtime=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+    ):
         """Distribution-preserving deterministic thinning into a derived metric space."""
         return self._resample(
             count=count,
@@ -3226,20 +3930,67 @@ class Space(FiniteMetricSpace):
             radius=radius,
             representation=representation,
             runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
             mapping="thin",
         )
 
-    def distribution_sample(self, count, strategy=None, *, representation=None, runtime=None):
+    def distribution_sample(
+        self,
+        count,
+        strategy=None,
+        *,
+        representation=None,
+        runtime=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+    ):
         """Alias for distribution-preserving thinning."""
-        return self.thin(count, strategy=strategy, representation=representation, runtime=runtime)
+        return self.thin(
+            count,
+            strategy=strategy,
+            representation=representation,
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
 
-    def uniform_density_sample(self, radius, *, representation=None, runtime=None):
+    def uniform_density_sample(
+        self,
+        radius,
+        *,
+        representation=None,
+        runtime=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+    ):
         """Alias for uniform-density thinning by maximal radius net."""
         from metric.strategies import UniformDensity
 
-        return self.thin(strategy=UniformDensity(radius), representation=representation, runtime=runtime)
+        return self.thin(
+            strategy=UniformDensity(radius),
+            representation=representation,
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
 
-    def equalize(self, radius=None, strategy=None, *, representation=None, runtime=None):
+    def equalize(
+        self,
+        radius=None,
+        strategy=None,
+        *,
+        representation=None,
+        runtime=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+    ):
         """Density-equalizing thinning by maximal metric radius net."""
         from metric.strategies import UniformDensity
 
@@ -3255,12 +4006,32 @@ class Space(FiniteMetricSpace):
             strategy=strategy,
             representation=representation,
             runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
             mapping="equalize",
         )
 
-    def representatives(self, k=None, strategy=None, *, count=None, representation=None, runtime=None):
+    def representatives(
+        self,
+        k=None,
+        strategy=None,
+        *,
+        count=None,
+        representation=None,
+        runtime=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+    ):
         """Select representative records through the native C++ binding."""
-        require_exact_runtime(runtime)
+        policy = require_exact_runtime(runtime) if runtime is not None else None
+        max_memory_bytes, max_distance_evaluations, max_dense_records = _resolve_runtime_budgets(
+            policy,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         from metric.operators import RepresentativeSet, find_representatives
 
         result = find_representatives(
@@ -3270,6 +4041,9 @@ class Space(FiniteMetricSpace):
             count=count,
             strategy=strategy,
             representation=self._representation_name(representation),
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
         )
         return RepresentativeSet(
             representatives=tuple(self.ids[int(index)] for index in result.representatives),
@@ -3293,9 +4067,25 @@ class Space(FiniteMetricSpace):
                 representation_name = getattr(representation, "representation", representation_name)
         return representation_name
 
-    def reduce(self, count=None, strategy=None, *, representation=None, runtime=None):
+    def reduce(
+        self,
+        count=None,
+        strategy=None,
+        *,
+        representation=None,
+        runtime=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+    ):
         """Reduce the space to representative records through the native C++ binding."""
-        require_exact_runtime(runtime)
+        policy = require_exact_runtime(runtime) if runtime is not None else None
+        max_memory_bytes, max_distance_evaluations, max_dense_records = _resolve_runtime_budgets(
+            policy,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         from metric.operators import ReductionResult, reduce_space
 
         result = reduce_space(
@@ -3304,6 +4094,9 @@ class Space(FiniteMetricSpace):
             count=count,
             strategy=strategy,
             representation=self._representation_name(representation),
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
         )
         selected_positions = [int(index) for index in result.source_record_ids]
         return ReductionResult(
@@ -3313,8 +4106,8 @@ class Space(FiniteMetricSpace):
                 ids=[self.ids[index] for index in selected_positions],
                 name=self.name,
                 metadata=self.metadata,
-                validate=self.validate,
-                cache=self.cache,
+                validate="none",
+                cache="none",
             ),
             source_record_ids=tuple(self.ids[index] for index in selected_positions),
             assignments=result.assignments,
@@ -3328,14 +4121,32 @@ class Space(FiniteMetricSpace):
             inverse_supported=result.inverse_supported,
         )
 
-    def compress(self, count=None, strategy=None, *, radius=None, representation=None, runtime=None):
+    def compress(
+        self,
+        count=None,
+        strategy=None,
+        *,
+        radius=None,
+        representation=None,
+        runtime=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+    ):
         """Compress the space by retaining representatives through the native C++ binding."""
-        require_exact_runtime(runtime)
+        policy = require_exact_runtime(runtime) if runtime is not None else None
+        max_memory_bytes, max_distance_evaluations, max_dense_records = _resolve_runtime_budgets(
+            policy,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         from metric.operators import (
             CompressionResult,
             _assign_to_representatives,
             _compression_validity,
             _compression_representative_measure,
+            _ensure_exact_metric_work_allowed,
             _radius_coverage_representative_indices,
             kmedoids,
         )
@@ -3351,8 +4162,25 @@ class Space(FiniteMetricSpace):
         if isinstance(strategy, RadiusCoverage):
             if count is not None:
                 raise ValueError("radius_coverage compression chooses the representative count; omit count")
+            _ensure_exact_metric_work_allowed(
+                "Space.compress(...)",
+                len(self.records),
+                max_memory_bytes=max_memory_bytes,
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
+                dense=True,
+                distance_evaluation_multiplier=2,
+            )
             selected_positions = list(
-                _radius_coverage_representative_indices(self.records, self.metric, strategy.radius)
+                _radius_coverage_representative_indices(
+                    self.records,
+                    self.metric,
+                    strategy.radius,
+                    max_memory_bytes=max_memory_bytes,
+                    max_distance_evaluations=max_distance_evaluations,
+                    max_dense_records=max_dense_records,
+                    operation="Space.compress(...)",
+                )
             )
             assignments, distances = _assign_to_representatives(self.records, self.metric, selected_positions)
             multiplicities, weights = _compression_representative_measure(
@@ -3377,8 +4205,8 @@ class Space(FiniteMetricSpace):
                     ids=[self.ids[index] for index in selected_positions],
                     name=self.name,
                     metadata=compression_metadata,
-                    validate=self.validate,
-                    cache=self.cache,
+                    validate="none",
+                    cache="none",
                 ),
                 source_record_ids=tuple(self.ids[index] for index in selected_positions),
                 assignments=assignments,
@@ -3402,12 +4230,25 @@ class Space(FiniteMetricSpace):
         if isinstance(strategy, KMedoids):
             if count is not None and count != strategy.groups:
                 raise ValueError("use either count= or KMedoids(groups=...), not conflicting group counts")
+            groups_count = _normalize_non_negative_count(strategy.groups, "groups")
+            max_iterations = _normalize_non_negative_count(strategy.max_iterations, "max_iterations")
+            _ensure_exact_metric_work_allowed(
+                "Space.compress(...)",
+                len(self.records),
+                max_memory_bytes=max_memory_bytes,
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
+                query_count=(groups_count * max_iterations) + groups_count,
+            )
             groups = kmedoids(
                 self.records,
                 self.metric,
-                strategy.groups,
-                strategy.max_iterations,
+                groups_count,
+                max_iterations,
                 representation=self._representation_name(representation),
+                max_memory_bytes=max_memory_bytes,
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
             )
             selected_positions = [int(index) for index in groups.medoids]
             assignments, distances = _assign_to_representatives(self.records, self.metric, selected_positions)
@@ -3433,8 +4274,8 @@ class Space(FiniteMetricSpace):
                     ids=[self.ids[index] for index in selected_positions],
                     name=self.name,
                     metadata=compression_metadata,
-                    validate=self.validate,
-                    cache=self.cache,
+                    validate="none",
+                    cache="none",
                 ),
                 source_record_ids=tuple(self.ids[index] for index in selected_positions),
                 assignments=assignments,
@@ -3455,7 +4296,23 @@ class Space(FiniteMetricSpace):
                 validity=validity,
             )
 
-        reduced = self.reduce(count=count, strategy=strategy, representation=representation, runtime=runtime)
+        requested_count = _normalize_neighbor_limit(count, None)
+        _ensure_exact_metric_work_allowed(
+            "Space.compress(...)",
+            len(self.records),
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            query_count=2 * requested_count,
+        )
+        reduced = self.reduce(
+            count=count,
+            strategy=strategy,
+            representation=representation,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         ratio = (reduced.reduced_record_count / reduced.source_record_count) if reduced.source_record_count else 0.0
         multiplicities, weights = _compression_representative_measure(
             reduced.assignments,
@@ -3477,8 +4334,8 @@ class Space(FiniteMetricSpace):
             ids=reduced.space.ids,
             name=reduced.space.name,
             metadata=compression_metadata,
-            validate=reduced.space.validate,
-            cache=reduced.space.cache,
+            validate="none",
+            cache="none",
         )
         return CompressionResult(
             space=reduced_space,
@@ -3501,8 +4358,20 @@ class Space(FiniteMetricSpace):
             validity=validity,
         )
 
-    def map(self, transform=None, metric=None, *, target=None, strategy=None, representation=None, runtime=None):
-        require_exact_runtime(runtime)
+    def map(
+        self,
+        transform=None,
+        metric=None,
+        *,
+        target=None,
+        strategy=None,
+        representation=None,
+        runtime=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+    ):
+        policy = require_exact_runtime(runtime)
         from metric.strategies import ParametricDiffusionCoordinates
 
         if isinstance(strategy, ParametricDiffusionCoordinates):
@@ -3525,6 +4394,24 @@ class Space(FiniteMetricSpace):
 
             self.ensure_fresh()
             representation_name = self._representation_name(representation)
+            max_memory_bytes, max_distance_evaluations, max_dense_records = _resolve_runtime_budgets(
+                policy,
+                max_memory_bytes=(
+                    max_memory_bytes
+                    if max_memory_bytes is not None
+                    else getattr(strategy, "max_memory_bytes", None)
+                ),
+                max_distance_evaluations=(
+                    max_distance_evaluations
+                    if max_distance_evaluations is not None
+                    else getattr(strategy, "max_distance_evaluations", None)
+                ),
+                max_dense_records=(
+                    max_dense_records
+                    if max_dense_records is not None
+                    else getattr(strategy, "max_dense_records", None)
+                ),
+            )
             mapping_artifact = derive_parametric_diffusion_coordinates(
                 self.records,
                 dimensions=strategy.dimensions,
@@ -3538,6 +4425,9 @@ class Space(FiniteMetricSpace):
                 distance_provider=strategy.distance_provider,
                 affinity_kernel=strategy.affinity_kernel,
                 diffusion_operator=strategy.diffusion_operator,
+                max_memory_bytes=max_memory_bytes,
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
             )
             latent_records = mapping_artifact.transform(self.records)
             validity = (
@@ -3604,12 +4494,22 @@ class Space(FiniteMetricSpace):
                 "Pass metric=space.metric explicitly only when the transformed records remain in the source metric domain."
             )
 
+        max_memory_bytes, max_distance_evaluations, max_dense_records = _resolve_runtime_budgets(
+            policy,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         return map_space(
             self.records,
             transform,
             metric,
             representation=self._representation_name(representation),
             source_ids=self.ids,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            operation="Space.map(transform=...)",
         )
 
     def embed(self, dimensions=2, strategy=None, *, representation=None, runtime=None):
@@ -3729,13 +4629,20 @@ class Space(FiniteMetricSpace):
         allow_chunking=True,
     ):
         """Describe finite-space structure with a budget-aware execution plan."""
+        policy = None
         if runtime is not None:
-            require_exact_runtime(runtime)
+            policy = require_exact_runtime(runtime)
             if exact is False:
                 raise MetricInputError(
                     "Space.describe(runtime=...) requires exact=True when an exact runtime is supplied"
                 )
             exact = True
+        max_memory_bytes, max_distance_evaluations, max_dense_records = _resolve_runtime_budgets(
+            policy,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         if exact is None:
             exact = False
         plan = self.plan(
@@ -3765,6 +4672,9 @@ class Space(FiniteMetricSpace):
             self.records,
             self.metric,
             representation=self._representation_name(representation),
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
         )
 
     def describe_structure(self, *, representation=None, runtime=None, **kwargs):
@@ -3795,9 +4705,18 @@ class Space(FiniteMetricSpace):
         representation,
         other_representation,
         runtime,
+        max_memory_bytes,
+        max_distance_evaluations,
+        max_dense_records,
     ):
         """Delegate aligned compare/correlate to the native operator binding."""
-        require_exact_runtime(runtime)
+        policy = require_exact_runtime(runtime) if runtime is not None else None
+        max_memory_bytes, max_distance_evaluations, max_dense_records = _resolve_runtime_budgets(
+            policy,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         if align != "position":
             _require_native_binding(
                 f"Space.{operator_name}(...)",
@@ -3823,6 +4742,9 @@ class Space(FiniteMetricSpace):
             strategy,
             left_representation=self._representation_name(representation),
             right_representation=self._representation_name(other_representation),
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
         )
 
     def compare(
@@ -3835,6 +4757,9 @@ class Space(FiniteMetricSpace):
         representation=None,
         other_representation=None,
         runtime=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
     ):
         """Compare aligned finite metric spaces by distance-profile correlation.
 
@@ -3852,6 +4777,9 @@ class Space(FiniteMetricSpace):
             representation=representation,
             other_representation=other_representation,
             runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
         )
 
     def correlate(
@@ -3864,6 +4792,9 @@ class Space(FiniteMetricSpace):
         representation=None,
         other_representation=None,
         runtime=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
     ):
         """Correlate aligned finite metric spaces by distance-profile correlation.
 
@@ -3878,6 +4809,9 @@ class Space(FiniteMetricSpace):
             representation=representation,
             other_representation=other_representation,
             runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
         )
 
 

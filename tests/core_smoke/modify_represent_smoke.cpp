@@ -2,6 +2,7 @@
 // construction, and its separation from lossy mtrc::modify::reduce::compress.
 
 #include <cassert>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -12,6 +13,26 @@ namespace {
 struct AbsoluteDistance {
 	auto operator()(int lhs, int rhs) const -> int { return lhs > rhs ? lhs - rhs : rhs - lhs; }
 };
+
+struct CountingAbsoluteDistance {
+	std::shared_ptr<std::size_t> calls;
+
+	auto operator()(int lhs, int rhs) const -> int
+	{
+		++*calls;
+		return lhs > rhs ? lhs - rhs : rhs - lhs;
+	}
+};
+
+auto line_records(std::size_t count) -> std::vector<int>
+{
+	std::vector<int> records;
+	records.reserve(count);
+	for (std::size_t index = 0; index < count; ++index) {
+		records.push_back(static_cast<int>(index));
+	}
+	return records;
+}
 
 } // namespace
 
@@ -53,6 +74,17 @@ int main()
 
 	const auto exact = mtrc::represent(line, 2, mtrc::space::storage::exact());
 	assert(exact.size() == 2);
+
+	const auto large_records = line_records(4097);
+	auto large_calls = std::make_shared<std::size_t>(0);
+	const auto large_line = mtrc::make_space(large_records, CountingAbsoluteDistance{large_calls});
+	const auto large_represented = mtrc::represent(large_line, 4);
+	assert(large_represented.mapping == "represent");
+	assert(large_represented.strategy == "sampled_farthest_first");
+	assert(large_represented.representation == "sampled_metric_space");
+	assert(large_represented.size() == 4);
+	assert(large_represented.source_record_count == large_line.size());
+	assert(*large_calls < large_line.size() * (large_line.size() - 1) / 2);
 
 	bool rejected_empty_count = false;
 	try {

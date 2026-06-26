@@ -13,11 +13,44 @@ Copyright (c) 2018 Michael Welsch
 #include <metric/numeric.hpp>
 
 #include <iostream>
+#include <limits>
+#include <metric/core/errors.hpp>
+#include <string>
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
 
 namespace mtrc {
+
+inline constexpr std::size_t default_matrix_space_max_cells = 1'000'000;
+
+struct matrix_space_options {
+	// Maximum distance-matrix cells a legacy Matrix/MatrixSpace may materialize.
+	// Set to 0 only when the caller intentionally opts into an unbounded exact matrix.
+	std::size_t max_cells{default_matrix_space_max_cells};
+};
+
+namespace matrix_detail {
+
+inline auto require_matrix_space_budget(std::size_t record_count, matrix_space_options options,
+										const char *operation) -> std::size_t
+{
+	if (record_count != 0 && record_count > std::numeric_limits<std::size_t>::max() / record_count) {
+		throw RepresentationError(std::string(operation) + " cannot represent record_count * record_count");
+	}
+	const auto cell_count = record_count * record_count;
+	if (options.max_cells == 0 || cell_count <= options.max_cells) {
+		return cell_count;
+	}
+	throw RepresentationError(std::string(operation) +
+							  " refused to materialize the legacy distance matrix before metric calls: records=" +
+							  std::to_string(record_count) + ", cells=" + std::to_string(cell_count) +
+							  ", max_cells=" + std::to_string(options.max_cells) +
+							  ". Use mtrc::make_space with promoted lazy/storage providers for large data or pass "
+							  "matrix_space_options{0} only when an unbounded exact matrix is intentional.");
+}
+
+} // namespace matrix_detail
 
 /**
  * @class Matrix
@@ -36,7 +69,7 @@ template <typename RecType, typename Metric> class Matrix {
 	 *
 	 * @param d metric object to use as distance
 	 */
-	explicit Matrix(Metric d = Metric()) : metric_(d) {}
+	explicit Matrix(Metric d = Metric(), matrix_space_options options = {}) : metric_(d), options_(options) {}
 
 	/**
 	 * @brief Construct a new Matrix with one data record
@@ -44,7 +77,11 @@ template <typename RecType, typename Metric> class Matrix {
 	 * @param p data record
 	 * @param d metric object to use as distance
 	 */
-	explicit Matrix(const RecType &p, Metric d = Metric()) : metric_(d) { insert(p); }
+	explicit Matrix(const RecType &p, Metric d = Metric(), matrix_space_options options = {})
+		: metric_(d), options_(options)
+	{
+		insert(p);
+	}
 
 	/**
 	 * @brief Construct a new Matrix with set of data records
@@ -55,7 +92,8 @@ template <typename RecType, typename Metric> class Matrix {
 	template <typename Container,
 			  typename = std::enable_if<std::is_same<
 				  RecType, typename std::decay<decltype(std::declval<Container>().operator[](0))>::type>::value>>
-	explicit Matrix(const Container &p, Metric d = Metric()) : metric_(d)
+	explicit Matrix(const Container &p, Metric d = Metric(), matrix_space_options options = {})
+		: metric_(d), options_(options)
 	{
 		insert(p);
 	}
@@ -232,6 +270,7 @@ template <typename RecType, typename Metric> class Matrix {
 
 	/*** Properties ***/
 	Metric metric_;
+	matrix_space_options options_;
 	mtrc::numeric::CompressedMatrix<distType> D_;
 	std::vector<RecType> data_;
 	mutable std::unordered_map<std::size_t, std::size_t> index_map_;

@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "metric/correlation/mgc.hpp"
+#include "metric/core/errors.hpp"
 #include "metric/metric/catalog.hpp"
 #include "metric/stats/correlate/correlation.hpp"
 
@@ -47,6 +48,16 @@ auto ramp(int n, double scale, double offset) -> std::vector<Rec>
 	}
 	return out;
 }
+
+struct CountingMetric {
+	std::size_t *calls{};
+
+	auto operator()(const Rec &lhs, const Rec &rhs) const -> double
+	{
+		++(*calls);
+		return std::abs(lhs[0] - rhs[0]);
+	}
+};
 
 } // namespace
 
@@ -144,6 +155,86 @@ int main()
 	const auto wrapper_pair = mtrc::stats::correlate::mgc(pair, Eucl(), pair, Eucl());
 	assert(wrapper_pair.algorithm == "mgc");
 	assert(in_unit_range(wrapper_pair.value));
+
+	// Legacy raw MGC is still available, but exact dense work now has a safe default
+	// and explicit budgets. Refusal must happen before distance matrices call the metric.
+	const auto triple = ramp(3, 1.0, 0.0);
+	std::size_t calls = 0;
+	CountingMetric counting{&calls};
+	mtrc::MGC<Rec, CountingMetric, Rec, CountingMetric> low_record_budget(
+		counting, counting, mtrc::mgc_resource_options{2, 0, 0});
+	bool raw_refused_by_record_budget = false;
+	try {
+		(void)low_record_budget(triple, triple);
+	} catch (const mtrc::RepresentationError &) {
+		raw_refused_by_record_budget = true;
+	}
+	assert(raw_refused_by_record_budget);
+	assert(calls == 0);
+
+	mtrc::MGC<Rec, CountingMetric, Rec, CountingMetric> low_distance_budget(
+		counting, counting, mtrc::mgc_resource_options{0, 2, 0});
+	bool raw_refused_by_distance_budget = false;
+	try {
+		(void)low_distance_budget(triple, triple);
+	} catch (const mtrc::RepresentationError &) {
+		raw_refused_by_distance_budget = true;
+	}
+	assert(raw_refused_by_distance_budget);
+	assert(calls == 0);
+
+	const auto scratch_large = ramp(2887, 1.0, 0.0);
+	bool wrapper_refused_by_scratch_budget = false;
+	try {
+		(void)mtrc::stats::correlate::mgc(scratch_large, counting, scratch_large, counting);
+	} catch (const mtrc::RepresentationError &) {
+		wrapper_refused_by_scratch_budget = true;
+	}
+	assert(wrapper_refused_by_scratch_budget);
+	assert(calls == 0);
+
+	mtrc::DistanceMatrix<double> direct_a(3);
+	mtrc::DistanceMatrix<double> direct_b(3);
+	for (std::size_t i = 0; i < 3; ++i) {
+		direct_a(i, i) = 0.0;
+		direct_b(i, i) = 0.0;
+		for (std::size_t j = i + 1; j < 3; ++j) {
+			direct_a(i, j) = static_cast<double>(j - i);
+			direct_b(i, j) = static_cast<double>((j - i) * 2);
+		}
+	}
+	bool direct_refused_by_matrix_budget = false;
+	try {
+		(void)mtrc::MGC_direct(mtrc::mgc_resource_options{0, 0, 8})(direct_a, direct_b);
+	} catch (const mtrc::RepresentationError &) {
+		direct_refused_by_matrix_budget = true;
+	}
+	assert(direct_refused_by_matrix_budget);
+
+	bool direct_helper_refused_by_matrix_budget = false;
+	try {
+		(void)mtrc::MGC_direct(mtrc::mgc_resource_options{0, 0, 8}).center_distance_matrix(direct_a);
+	} catch (const mtrc::RepresentationError &) {
+		direct_helper_refused_by_matrix_budget = true;
+	}
+	assert(direct_helper_refused_by_matrix_budget);
+
+	bool xcorr_rejected_overshift = false;
+	try {
+		(void)mgc.xcorr(triple, triple, 3);
+	} catch (const std::invalid_argument &) {
+		xcorr_rejected_overshift = true;
+	}
+	assert(xcorr_rejected_overshift);
+
+	bool free_distance_matrix_refused_default_large = false;
+	try {
+		const auto too_large_for_default = ramp(4097, 1.0, 0.0);
+		(void)mtrc::distance_matrix(too_large_for_default);
+	} catch (const mtrc::RepresentationError &) {
+		free_distance_matrix_refused_default_large = true;
+	}
+	assert(free_distance_matrix_refused_default_large);
 
 	std::cout << std::setprecision(17) << "MGC identity=" << identity << " partial=" << partial_xy
 			  << " constant=" << constant_corr << "\n";

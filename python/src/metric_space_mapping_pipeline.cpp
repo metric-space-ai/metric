@@ -241,7 +241,9 @@ auto derive_metric_space_mapping_pipeline(const py::object &records, std::size_t
 										  std::size_t diffusion_steps, double kernel_scale,
 										  double reconstruction_weight, double geometry_weight, std::uint64_t seed,
 										  std::string distance_provider, std::string affinity_kernel,
-										  std::string diffusion_operator) -> PyMetricSpaceMappingArtifact
+										  std::string diffusion_operator, std::size_t max_dense_records,
+										  std::size_t max_memory_bytes, std::size_t max_distance_evaluations)
+	-> PyMetricSpaceMappingArtifact
 {
 	const auto rows = records_from_python(records);
 	const auto source_dimension = rows.front().size();
@@ -253,7 +255,9 @@ auto derive_metric_space_mapping_pipeline(const py::object &records, std::size_t
 	geometry.dimensions = dimensions;
 	geometry.diffusion_steps = diffusion_steps;
 	geometry.kernel_scale = kernel_scale;
-	geometry.max_dense_records = rows.size();
+	geometry.max_dense_records = max_dense_records;
+	geometry.max_memory_bytes = max_memory_bytes;
+	geometry.max_distance_evaluations = max_distance_evaluations;
 
 	mtrc::modify::map::CoordinateCalibrationSpec<double> calibration;
 	calibration.steps = calibration_steps;
@@ -297,5 +301,9 @@ void export_metric_space_mapping_pipeline(py::module &m)
 		  py::arg("geometry_weight") = 1.0, py::arg("seed") = 29,
 		  py::arg("distance_provider") = "exact_metric_space_distance_provider",
 		  py::arg("affinity_kernel") = "gaussian_affinity_kernel",
-		  py::arg("diffusion_operator") = "row_normalized_diffusion_operator");
+		  py::arg("diffusion_operator") = "row_normalized_diffusion_operator",
+		  py::arg("max_dense_records") = mtrc::modify::map::default_diffusion_coordinate_max_dense_records,
+		  py::arg("max_memory_bytes") = mtrc::modify::map::default_diffusion_coordinate_max_memory_bytes,
+		  py::arg("max_distance_evaluations") =
+			  mtrc::modify::map::default_diffusion_coordinate_max_distance_evaluations);
 }

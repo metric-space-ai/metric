@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -21,10 +22,14 @@
 namespace mtrc::modify::dynamics {
 
 inline constexpr std::size_t default_diffusion_max_dense_records = 4096;
+inline constexpr std::size_t default_diffusion_max_memory_bytes = 512ULL * 1024ULL * 1024ULL;
+inline constexpr std::size_t default_diffusion_max_distance_evaluations = 100'000'000ULL;
 
 template <typename Scalar> struct DiffusionOptions {
 	std::size_t diffusion_steps{1};
 	std::size_t max_dense_records{default_diffusion_max_dense_records};
+	std::size_t max_memory_bytes{default_diffusion_max_memory_bytes};
+	std::size_t max_distance_evaluations{default_diffusion_max_distance_evaluations};
 	Scalar kernel_scale{0};
 	Scalar epsilon{Scalar(1.0e-12)};
 	std::string pairwise_distances{"exact_space_distances"};
@@ -43,6 +48,8 @@ template <typename Scalar> struct DiffusionProcess {
 	std::size_t record_count{0};
 	std::size_t dense_distance_evaluations{0};
 	std::size_t max_dense_records{0};
+	std::size_t max_memory_bytes{0};
+	std::size_t max_distance_evaluations{0};
 	scalar_type kernel_scale{0};
 	std::string pairwise_distances{"exact_space_distances"};
 	std::string affinity_kernel{"gaussian_affinity_kernel"};
@@ -62,6 +69,54 @@ inline auto is_supported_affinity_kernel(const std::string &name) -> bool
 inline auto is_supported_diffusion_operator(const std::string &name) -> bool
 {
 	return name == "row_normalized_diffusion_operator" || name == "lazy_row_normalized_diffusion_operator";
+}
+
+inline auto dense_diffusion_cell_count(std::size_t record_count, const char *operation) -> std::size_t
+{
+	if (record_count != 0 && record_count > std::numeric_limits<std::size_t>::max() / record_count) {
+		throw std::invalid_argument(std::string(operation) + " cannot represent record_count * record_count");
+	}
+	return record_count * record_count;
+}
+
+template <typename Scalar>
+auto dense_diffusion_memory_estimate(std::size_t cell_count, std::size_t matrix_count, const char *operation)
+	-> std::size_t
+{
+	if (matrix_count != 0 && cell_count > std::numeric_limits<std::size_t>::max() / matrix_count) {
+		throw std::invalid_argument(std::string(operation) + " cannot represent dense matrix_count * cell_count");
+	}
+	const auto matrix_cells = cell_count * matrix_count;
+	if (matrix_cells != 0 && sizeof(Scalar) > std::numeric_limits<std::size_t>::max() / matrix_cells) {
+		throw std::invalid_argument(std::string(operation) + " cannot represent dense memory estimate");
+	}
+	return matrix_cells * sizeof(Scalar);
+}
+
+template <typename Scalar>
+auto require_diffusion_dense_budget(std::size_t record_count, const DiffusionOptions<Scalar> &options,
+									std::size_t matrix_count, const char *operation) -> std::size_t
+{
+	const auto cell_count = dense_diffusion_cell_count(record_count, operation);
+	if (options.max_dense_records > 0 && record_count > options.max_dense_records) {
+		throw std::invalid_argument(std::string(operation) + " exceeds max_dense_records: records=" +
+									std::to_string(record_count) + " max_dense_records=" +
+									std::to_string(options.max_dense_records));
+	}
+	if (options.max_distance_evaluations > 0 && cell_count > options.max_distance_evaluations) {
+		throw std::invalid_argument(std::string(operation) +
+									" exceeds max_distance_evaluations: estimated_distance_evaluations=" +
+									std::to_string(cell_count) + " max_distance_evaluations=" +
+									std::to_string(options.max_distance_evaluations));
+	}
+	const auto memory_bytes = dense_diffusion_memory_estimate<Scalar>(cell_count, matrix_count, operation);
+	if (options.max_memory_bytes > 0 && memory_bytes > options.max_memory_bytes) {
+		throw std::invalid_argument(std::string(operation) + " exceeds max_memory_bytes: records=" +
+									std::to_string(record_count) + " estimated_bytes=" +
+									std::to_string(memory_bytes) + " max_memory_bytes=" +
+									std::to_string(options.max_memory_bytes));
+	}
+	return cell_count;
 }
 
 template <typename Scalar> auto affinity_value(Scalar scaled_distance, const std::string &affinity_kernel) -> Scalar
@@ -112,10 +167,9 @@ auto diffusion_process_from_distances(const Matrix &distances, DiffusionOptions<
 		throw std::invalid_argument("diffusion epsilon must be positive");
 	}
 
-	const auto record_count = distances.rows();
-	if (options.max_dense_records > 0 && record_count > options.max_dense_records) {
-		throw std::invalid_argument("diffusion dense construction exceeds max_dense_records");
-	}
+		const auto record_count = distances.rows();
+		const auto cell_count =
+			require_diffusion_dense_budget<Scalar>(record_count, options, 3, "diffusion process from distances");
 
 	const Scalar scale = options.kernel_scale > Scalar(0) ? options.kernel_scale
 														 : numeric::positive_mean_or(distances, Scalar(1));
@@ -136,9 +190,11 @@ auto diffusion_process_from_distances(const Matrix &distances, DiffusionOptions<
 	process.potential = std::move(potential);
 	process.diffusion_steps = options.diffusion_steps;
 	process.record_count = record_count;
-	process.dense_distance_evaluations = record_count * record_count;
-	process.max_dense_records = options.max_dense_records;
-	process.kernel_scale = scale;
+		process.dense_distance_evaluations = cell_count;
+		process.max_dense_records = options.max_dense_records;
+		process.max_memory_bytes = options.max_memory_bytes;
+		process.max_distance_evaluations = options.max_distance_evaluations;
+		process.kernel_scale = scale;
 	process.pairwise_distances = std::move(options.pairwise_distances);
 	process.affinity_kernel = std::move(options.affinity_kernel);
 	process.diffusion_operator = std::move(options.diffusion_operator);
@@ -148,15 +204,16 @@ auto diffusion_process_from_distances(const Matrix &distances, DiffusionOptions<
 template <typename Space, typename Scalar = double, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto diffusion_process(const Space &space, DiffusionOptions<Scalar> options = {}) -> DiffusionProcess<Scalar>
 {
-	if (space.empty()) {
-		throw std::invalid_argument("diffusion process requires a non-empty finite space");
+		if (space.empty()) {
+			throw std::invalid_argument("diffusion process requires a non-empty finite space");
+		}
+		const auto cell_count =
+			require_diffusion_dense_budget<Scalar>(space.size(), options, 4, "diffusion dense construction");
+		const auto matrix_options = space::storage::dense_distance_matrix_options{
+			options.max_dense_records == 0 ? std::size_t{0} : cell_count};
+		const auto distances = space::storage::metric_space_dense_distance_matrix<Scalar>(space, matrix_options);
+		return diffusion_process_from_distances<Scalar>(distances, std::move(options));
 	}
-	if (options.max_dense_records > 0 && space.size() > options.max_dense_records) {
-		throw std::invalid_argument("diffusion dense construction exceeds max_dense_records");
-	}
-	const auto distances = space::storage::metric_space_dense_distance_matrix<Scalar>(space);
-	return diffusion_process_from_distances<Scalar>(distances, std::move(options));
-}
 
 template <typename Scalar>
 auto diffusion_potential_anchor_coordinates(const DiffusionProcess<Scalar> &process, std::size_t dimensions)

@@ -21,6 +21,7 @@
 #define _METRIC_MODIFY_DYNAMICS_HPP
 
 #include <cstddef>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -53,10 +54,61 @@ struct supports_diffusion<
 template <typename Record> constexpr bool supports_diffusion_v = supports_diffusion<Record>::value;
 
 inline constexpr std::size_t default_diffuse_max_dense_records = 4096;
+inline constexpr std::size_t default_diffuse_max_memory_bytes = 512ULL * 1024ULL * 1024ULL;
+inline constexpr std::size_t default_diffuse_max_distance_evaluations = 100'000'000;
+
+namespace diffuse_detail {
+
+inline auto checked_product(std::size_t lhs, std::size_t rhs, const char *operation) -> std::size_t
+{
+	if (rhs != 0 && lhs > std::numeric_limits<std::size_t>::max() / rhs) {
+		throw MetricInputError(std::string(operation) + " dense budget estimate exceeds size_t capacity");
+	}
+	return lhs * rhs;
+}
+
+template <typename Scalar>
+auto require_diffuse_dense_budget(const char *operation, std::size_t record_count, std::size_t max_dense_records,
+								  std::size_t max_memory_bytes,
+								  std::size_t max_distance_evaluations) -> std::size_t
+{
+	const auto cell_count = checked_product(record_count, record_count, operation);
+	const auto estimated_distance_evaluations = cell_count;
+	const auto matrix_cells = checked_product(cell_count, std::size_t{3}, operation);
+	const auto estimated_bytes = checked_product(matrix_cells, sizeof(Scalar), operation);
+	if (max_dense_records > 0 && record_count > max_dense_records) {
+		throw MetricInputError(std::string(operation) + " dense distance matrix exceeds max_dense_records: records=" +
+							   std::to_string(record_count) + " max_dense_records=" +
+							   std::to_string(max_dense_records) +
+							   " estimated_bytes=" + std::to_string(estimated_bytes) +
+							   " estimated_distance_evaluations=" +
+							   std::to_string(estimated_distance_evaluations));
+	}
+	if (max_memory_bytes > 0 && estimated_bytes > max_memory_bytes) {
+		throw MetricInputError(std::string(operation) + " dense distance matrix exceeds max_memory_bytes: records=" +
+							   std::to_string(record_count) + " estimated_bytes=" +
+							   std::to_string(estimated_bytes) + " budget_bytes=" +
+							   std::to_string(max_memory_bytes) +
+							   " estimated_distance_evaluations=" +
+							   std::to_string(estimated_distance_evaluations));
+	}
+	if (max_distance_evaluations > 0 && estimated_distance_evaluations > max_distance_evaluations) {
+		throw MetricInputError(
+			std::string(operation) + " dense distance matrix exceeds max_distance_evaluations: records=" +
+			std::to_string(record_count) + " estimated_distance_evaluations=" +
+			std::to_string(estimated_distance_evaluations) + " distance_evaluation_budget=" +
+			std::to_string(max_distance_evaluations) + " estimated_bytes=" + std::to_string(estimated_bytes));
+	}
+	return cell_count;
+}
+
+} // namespace diffuse_detail
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto diffuse(const Space &space, std::size_t steps, double kernel_scale = 0.0, bool lazy = false,
-			 std::size_t max_dense_records = default_diffuse_max_dense_records)
+			 std::size_t max_dense_records = default_diffuse_max_dense_records,
+			 std::size_t max_memory_bytes = default_diffuse_max_memory_bytes,
+			 std::size_t max_distance_evaluations = default_diffuse_max_distance_evaluations)
 	-> MappingResult<MetricSpace<typename Space::record_type, typename Space::metric_type>>
 {
 	using record_type = typename Space::record_type;
@@ -73,11 +125,9 @@ auto diffuse(const Space &space, std::size_t steps, double kernel_scale = 0.0, b
 		}
 
 		const auto count = space.size();
-		if (max_dense_records > 0 && count > max_dense_records) {
-			throw MetricInputError("modify::dynamics::diffuse dense distance matrix exceeds max_dense_records: records=" +
-								   std::to_string(count) + " max_dense_records=" +
-								   std::to_string(max_dense_records));
-		}
+		const auto dense_cell_count = diffuse_detail::require_diffuse_dense_budget<coord_type>(
+			"modify::dynamics::diffuse", count, max_dense_records, max_memory_bytes,
+			max_distance_evaluations);
 		const auto dimension = space.records().front().size();
 		for (std::size_t index = 0; index < count; ++index) {
 			if (space.records()[index].size() != dimension) {
@@ -85,7 +135,9 @@ auto diffuse(const Space &space, std::size_t steps, double kernel_scale = 0.0, b
 			}
 		}
 
-		auto distances = space::storage::metric_space_dense_distance_matrix<coord_type>(space);
+		auto distances = space::storage::metric_space_dense_distance_matrix<coord_type>(
+			space, space::storage::dense_distance_matrix_options{max_dense_records == 0 ? std::size_t{0} :
+								 dense_cell_count});
 		const coord_type scale =
 			kernel_scale > 0.0 ? static_cast<coord_type>(kernel_scale) : numeric::positive_mean_or(distances, coord_type(1));
 

@@ -130,6 +130,8 @@ int main()
 	assert(targets.diffusion_steps == geometry.diffusion_steps);
 	assert(targets.record_count == space.size());
 	assert(targets.dense_distance_evaluations == space.size() * space.size());
+	assert(targets.max_memory_bytes == geometry.max_memory_bytes);
+	assert(targets.max_distance_evaluations == geometry.max_distance_evaluations);
 	assert(targets.method == "diffusion_potential_anchor_coordinates");
 	assert(targets.pairwise_distances == "exact_space_distances");
 	for (std::size_t index = 0; index < space.size(); ++index) {
@@ -149,6 +151,26 @@ int main()
 		rejected_dense_limit = true;
 	}
 	assert(rejected_dense_limit);
+
+	auto evaluation_limited_geometry = geometry;
+	evaluation_limited_geometry.max_distance_evaluations = space.size() * space.size() - 1;
+	bool rejected_evaluation_limit = false;
+	try {
+		(void)mtrc::modify::map::diffusion_coordinate_targets<decltype(space), double>(space, evaluation_limited_geometry);
+	} catch (const std::invalid_argument &) {
+		rejected_evaluation_limit = true;
+	}
+	assert(rejected_evaluation_limit);
+
+	auto memory_limited_geometry = geometry;
+	memory_limited_geometry.max_memory_bytes = 1;
+	bool rejected_memory_limit = false;
+	try {
+		(void)mtrc::modify::map::diffusion_coordinate_targets<decltype(space), double>(space, memory_limited_geometry);
+	} catch (const std::invalid_argument &) {
+		rejected_memory_limit = true;
+	}
+	assert(rejected_memory_limit);
 
 	mtrc::modify::map::CoordinateCalibrationSpec<double> calibration;
 	calibration.steps = 160;

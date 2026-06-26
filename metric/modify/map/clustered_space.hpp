@@ -6,6 +6,7 @@
 #define _METRIC_MAPPINGS_CLUSTERED_SPACE_HPP
 
 #include <cstddef>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -13,12 +14,98 @@
 #include <vector>
 
 #include <metric/core/concepts.hpp>
+#include <metric/core/errors.hpp>
 #include <metric/core/metric_space.hpp>
 #include <metric/record/id.hpp>
 #include <metric/core/result.hpp>
 #include <metric/space/storage/implicit.hpp>
 
 namespace mtrc::modify::map {
+
+inline constexpr std::size_t default_clustered_space_max_representatives = 4096;
+inline constexpr std::size_t default_clustered_space_max_memory_bytes = 512ULL * 1024ULL * 1024ULL;
+inline constexpr std::size_t default_clustered_space_max_distance_evaluations = 100'000'000;
+
+struct ClusteredSpaceOptions {
+	// Set any budget to 0 only when the caller intentionally opts into an unbounded representative table.
+	std::size_t max_representatives{default_clustered_space_max_representatives};
+	std::size_t max_memory_bytes{default_clustered_space_max_memory_bytes};
+	std::size_t max_distance_evaluations{default_clustered_space_max_distance_evaluations};
+};
+
+namespace clustered_space_detail {
+
+inline auto checked_product(std::size_t lhs, std::size_t rhs, const char *message) -> std::size_t
+{
+	if (rhs != 0 && lhs > std::numeric_limits<std::size_t>::max() / rhs) {
+		throw RepresentationError(message);
+	}
+	return lhs * rhs;
+}
+
+inline auto checked_sum(std::size_t lhs, std::size_t rhs, const char *message) -> std::size_t
+{
+	if (lhs > std::numeric_limits<std::size_t>::max() - rhs) {
+		throw RepresentationError(message);
+	}
+	return lhs + rhs;
+}
+
+template <typename Distance>
+auto representative_distance_table_bytes(std::size_t representative_count) -> std::size_t
+{
+	const auto cells = checked_product(
+		representative_count, representative_count,
+		"clustered_space representative table cell estimate exceeds size_t capacity");
+	const auto distance_bytes = checked_product(
+		cells, sizeof(Distance), "clustered_space representative table memory estimate exceeds size_t capacity");
+	const auto row_bytes = checked_product(
+		representative_count, sizeof(std::vector<Distance>),
+		"clustered_space representative table memory estimate exceeds size_t capacity");
+	return checked_sum(distance_bytes, row_bytes,
+					   "clustered_space representative table memory estimate exceeds size_t capacity");
+}
+
+template <typename Distance>
+auto require_clustered_space_budget(std::size_t representative_count, ClusteredSpaceOptions options) -> void
+{
+	const auto distance_evaluations = checked_product(
+		representative_count, representative_count,
+		"clustered_space representative distance-evaluation estimate exceeds size_t capacity");
+	const auto estimated_bytes = representative_distance_table_bytes<Distance>(representative_count);
+
+	if (options.max_representatives > 0 && representative_count > options.max_representatives) {
+		throw RepresentationError(
+			"clustered_space refused representative distance table before metric calls: representatives=" +
+			std::to_string(representative_count) + " max_representatives=" +
+			std::to_string(options.max_representatives) +
+			" estimated_distance_evaluations=" + std::to_string(distance_evaluations) +
+			" estimated_bytes=" + std::to_string(estimated_bytes) +
+			". Pass ClusteredSpaceOptions with explicit unbounded budgets only when exact clustered-space "
+			"materialization is intentional.");
+	}
+	if (options.max_memory_bytes > 0 && estimated_bytes > options.max_memory_bytes) {
+		throw RepresentationError(
+			"clustered_space refused representative distance table before allocation: representatives=" +
+			std::to_string(representative_count) + " estimated_bytes=" + std::to_string(estimated_bytes) +
+			" max_memory_bytes=" + std::to_string(options.max_memory_bytes) +
+			" estimated_distance_evaluations=" + std::to_string(distance_evaluations) +
+			". Pass ClusteredSpaceOptions with explicit unbounded budgets only when exact clustered-space "
+			"materialization is intentional.");
+	}
+	if (options.max_distance_evaluations > 0 && distance_evaluations > options.max_distance_evaluations) {
+		throw RepresentationError(
+			"clustered_space refused representative distance table before metric calls: representatives=" +
+			std::to_string(representative_count) +
+			" estimated_distance_evaluations=" + std::to_string(distance_evaluations) +
+			" max_distance_evaluations=" + std::to_string(options.max_distance_evaluations) +
+			" estimated_bytes=" + std::to_string(estimated_bytes) +
+			". Pass ClusteredSpaceOptions with explicit unbounded budgets only when exact clustered-space "
+			"materialization is intentional.");
+	}
+}
+
+} // namespace clustered_space_detail
 
 struct ClusterRecord {
 	std::size_t label{};
@@ -108,25 +195,42 @@ template <typename Distance> class ClusteredSpaceMapping {
 	using distance_type = Distance;
 	using clustering_type = ClusteringResult<distance_type>;
 
-	explicit ClusteredSpaceMapping(clustering_type clustering) : clustering_(std::move(clustering)) {}
+	explicit ClusteredSpaceMapping(clustering_type clustering, ClusteredSpaceOptions options = {})
+		: clustering_(std::move(clustering)), options_(options)
+	{
+	}
 
 	template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 	auto derive_from(const Space &space) const -> ClusteredSpaceDerivation<distance_type>
 	{
 		space::storage::LiveDistances<Space> provider(space);
-		return build_derivation(provider, clustering_, core::metric_traits<typename Space::metric_type>::law);
+		return build_derivation(provider, clustering_, core::metric_traits<typename Space::metric_type>::law, options_);
+	}
+
+	template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+	auto derive_from(const Space &space, ClusteredSpaceOptions options) const -> ClusteredSpaceDerivation<distance_type>
+	{
+		space::storage::LiveDistances<Space> provider(space);
+		return build_derivation(provider, clustering_, core::metric_traits<typename Space::metric_type>::law, options);
 	}
 
 	template <typename Provider, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
 	auto derive_from_provider(const Provider &provider) const -> ClusteredSpaceDerivation<distance_type>
 	{
-		return build_derivation(provider, clustering_, core::metric_law::unknown);
+		return build_derivation(provider, clustering_, core::metric_law::unknown, options_);
+	}
+
+	template <typename Provider, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
+	auto derive_from_provider(const Provider &provider, ClusteredSpaceOptions options) const
+		-> ClusteredSpaceDerivation<distance_type>
+	{
+		return build_derivation(provider, clustering_, core::metric_law::unknown, options);
 	}
 
   private:
 	template <typename Provider>
 	static auto build_derivation(const Provider &provider, const clustering_type &clustering,
-								 core::metric_law source_metric_law)
+								 core::metric_law source_metric_law, ClusteredSpaceOptions options)
 		-> ClusteredSpaceDerivation<distance_type>
 	{
 		::mtrc::require_clustering_result_shape(clustering, provider.record_count(),
@@ -154,6 +258,7 @@ template <typename Distance> class ClusteredSpaceMapping {
 			records.push_back(ClusterRecord{label, representative, source_records[label], false});
 		}
 
+		clustered_space_detail::require_clustered_space_budget<distance_type>(representative_records.size(), options);
 		auto distances = ::mtrc::distance_table_for_record_ids(provider, representative_records,
 																"cluster representative id is outside provider");
 
@@ -164,12 +269,20 @@ template <typename Distance> class ClusteredSpaceMapping {
 	}
 
 	clustering_type clustering_;
+	ClusteredSpaceOptions options_;
 };
 
 template <typename Distance>
 auto make_clustered_space_mapping(ClusteringResult<Distance> clustering) -> ClusteredSpaceMapping<Distance>
 {
 	return ClusteredSpaceMapping<Distance>(std::move(clustering));
+}
+
+template <typename Distance>
+auto make_clustered_space_mapping(ClusteringResult<Distance> clustering, ClusteredSpaceOptions options)
+	-> ClusteredSpaceMapping<Distance>
+{
+	return ClusteredSpaceMapping<Distance>(std::move(clustering), options);
 }
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
@@ -179,11 +292,29 @@ auto clustered_space(const Space &space, ClusteringResult<typename Space::distan
 	return make_clustered_space_mapping(std::move(clustering)).derive_from(space).transform(space);
 }
 
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto clustered_space(const Space &space, ClusteringResult<typename Space::distance_type> clustering,
+					 ClusteredSpaceOptions options) ->
+	typename ClusteredSpaceDerivation<typename Space::distance_type>::result_type
+{
+	return make_clustered_space_mapping(std::move(clustering), options).derive_from(space).transform(space);
+}
+
 template <typename Provider, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
 auto clustered_space(const Provider &provider, ClusteringResult<typename Provider::distance_type> clustering) ->
 	typename ClusteredSpaceDerivation<typename Provider::distance_type>::result_type
 {
 	auto mapping = make_clustered_space_mapping(std::move(clustering));
+	auto derivation = mapping.derive_from_provider(provider);
+	return derivation.transform();
+}
+
+template <typename Provider, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
+auto clustered_space(const Provider &provider, ClusteringResult<typename Provider::distance_type> clustering,
+					 ClusteredSpaceOptions options) ->
+	typename ClusteredSpaceDerivation<typename Provider::distance_type>::result_type
+{
+	auto mapping = make_clustered_space_mapping(std::move(clustering), options);
 	auto derivation = mapping.derive_from_provider(provider);
 	return derivation.transform();
 }

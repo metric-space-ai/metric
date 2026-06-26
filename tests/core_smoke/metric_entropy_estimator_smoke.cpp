@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "metric/correlation/entropy.hpp"
+#include "metric/core/errors.hpp"
 #include "metric/metric/catalog.hpp"
 
 namespace {
@@ -40,6 +41,22 @@ using Eucl = mtrc::Euclidean<double>;
 struct LenientL2 {
 	template <typename A, typename B> double operator()(const A &a, const B &b) const
 	{
+		const std::size_t n = std::min(a.size(), b.size());
+		double s = 0.0;
+		for (std::size_t i = 0; i < n; ++i) {
+			const double d = static_cast<double>(a[i]) - static_cast<double>(b[i]);
+			s += d * d;
+		}
+		return std::sqrt(s);
+	}
+};
+
+struct CountingMetric {
+	std::size_t *calls{};
+
+	template <typename A, typename B> auto operator()(const A &a, const B &b) const -> double
+	{
+		++(*calls);
 		const std::size_t n = std::min(a.size(), b.size());
 		double s = 0.0;
 		for (std::size_t i = 0; i < n; ++i) {
@@ -79,6 +96,34 @@ int main()
 		assert(a == e(base));
 	}
 
+	// ---- Legacy direct Entropy now refuses oversized exact work before metric calls.
+	{
+		const std::vector<Rec> data = {{0.0}, {1.0}, {2.0}, {3.0}, {4.0}};
+		std::size_t calls = 0;
+		const CountingMetric metric{&calls};
+		const mtrc::Entropy<void, CountingMetric> low_record_budget(
+			metric, 3, 4, false, mtrc::entropy_resource_options{4, 0});
+		bool refused_by_record_budget = false;
+		try {
+			(void)low_record_budget(data);
+		} catch (const mtrc::RepresentationError &) {
+			refused_by_record_budget = true;
+		}
+		assert(refused_by_record_budget);
+		assert(calls == 0);
+
+		const mtrc::Entropy<void, CountingMetric> low_distance_budget(
+			metric, 3, 4, false, mtrc::entropy_resource_options{0, 15});
+		bool refused_by_distance_budget = false;
+		try {
+			(void)low_distance_budget(std::vector<Rec>{{0.0}, {1.0}, {2.0}, {3.0}});
+		} catch (const mtrc::RepresentationError &) {
+			refused_by_distance_budget = true;
+		}
+		assert(refused_by_distance_budget);
+		assert(calls == 0);
+	}
+
 	// ---- kpN Entropy, near-degenerate space (nearly all identical, one slight outlier):
 	// must not crash or invoke UB; the contract is simply "finite estimate or NaN
 	// sentinel". This exercises the local-covariance regularization + EPMGP rejection
@@ -114,6 +159,31 @@ int main()
 		const std::vector<std::deque<double>> Yd = {{5.0, 5.0}, {2.0, 2.0}, {3.0, 3.0}, {1.0, 0.0}};
 		assert(vm(Xd, Yd) == m);
 		assert(vms(Xd, Yd) == s);
+	}
+
+	// ---- Legacy direct VMixing refuses combined exact work before copying/metric calls.
+	{
+		const std::vector<Rec> X = {{0.0}, {1.0}, {2.0}, {3.0}};
+		const std::vector<Rec> Y = {{4.0}, {5.0}, {6.0}, {7.0}};
+		std::size_t calls = 0;
+		const CountingMetric metric{&calls};
+		mtrc::VMixing<void, CountingMetric> vm(metric, 3, 4, mtrc::entropy_resource_options{7, 0});
+		bool refused_combined_work = false;
+		try {
+			(void)vm(X, Y);
+		} catch (const mtrc::RepresentationError &) {
+			refused_combined_work = true;
+		}
+		assert(refused_combined_work);
+		assert(calls == 0);
+
+		bool rejected_zero_sample = false;
+		try {
+			(void)vm.estimate(X, Y, 0);
+		} catch (const std::invalid_argument &) {
+			rejected_zero_sample = true;
+		}
+		assert(rejected_zero_sample);
 	}
 
 	// ---- Throw contract: the non-kpN ("simple") estimators require strictly more than k

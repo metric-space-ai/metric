@@ -13,10 +13,44 @@ Copyright (c) 2020 Panda Team
 #include "metric/utils/graph.hpp"
 #include "metric/utils/type_traits.hpp"
 
+#include <limits>
+#include <metric/core/errors.hpp>
+#include <string>
 #include <type_traits>
 #include <vector>
 
 namespace mtrc {
+
+inline constexpr std::size_t default_legacy_knn_graph_max_matrix_cells = 1'000'000;
+
+struct legacy_knn_graph_options {
+	// Maximum distance-matrix cells the legacy KNNGraph may materialize.
+	// Set to 0 only when the caller intentionally opts into an unbounded legacy graph build.
+	std::size_t max_matrix_cells{default_legacy_knn_graph_max_matrix_cells};
+};
+
+namespace knn_graph_detail {
+
+inline auto require_legacy_knn_graph_budget(std::size_t record_count, legacy_knn_graph_options options,
+											const char *operation) -> void
+{
+	if (record_count != 0 && record_count > std::numeric_limits<std::size_t>::max() / record_count) {
+		throw RepresentationError(std::string(operation) + " cannot represent record_count * record_count");
+	}
+	const auto cell_count = record_count * record_count;
+	if (options.max_matrix_cells == 0 || cell_count <= options.max_matrix_cells) {
+		return;
+	}
+	throw RepresentationError(std::string(operation) +
+							  " refused to build the legacy kNN distance matrix before metric calls: records=" +
+							  std::to_string(record_count) + ", cells=" + std::to_string(cell_count) +
+							  ", max_matrix_cells=" + std::to_string(options.max_matrix_cells) +
+							  ". Use space::storage::KnnGraphIndex/using_knn_graph with runtime budgets for large "
+							  "data or pass legacy_knn_graph_options{0} only when an unbounded legacy build is "
+							  "intentional.");
+}
+
+} // namespace knn_graph_detail
 
 /**
  * @class KNNGraph
@@ -39,7 +73,17 @@ class KNNGraph : public Graph<WeightType, isDense, isSymmetric> {
 	template <typename Container,
 			  typename = std::enable_if<std::is_same_v<Sample, type_traits::index_value_type_t<Container>>>>
 	KNNGraph(const Container &X, size_t neighbors_num, size_t max_bruteforce_size, int max_iterations = 100,
-			 double update_range = 0.02);
+			 double update_range = 0.02, legacy_knn_graph_options options = {});
+
+	template <typename Container,
+			  typename = std::enable_if<std::is_same_v<Sample, type_traits::index_value_type_t<Container>>>>
+	KNNGraph(const Container &X, size_t neighbors_num, size_t max_bruteforce_size,
+			 legacy_knn_graph_options options);
+
+	template <typename Container,
+			  typename = std::enable_if<std::is_same_v<Sample, type_traits::index_value_type_t<Container>>>>
+	KNNGraph(const Container &X, size_t neighbors_num, size_t max_bruteforce_size, int max_iterations,
+			 legacy_knn_graph_options options);
 
 	///**
 	// * @brief Construct a new KNN Graph object
@@ -154,6 +198,7 @@ class KNNGraph : public Graph<WeightType, isDense, isSymmetric> {
 	double _update_range = 0.02;
 
 	bool _not_more_neighbors = false;
+	legacy_knn_graph_options _options;
 
 	std::vector<Sample> _nodes;
 	std::vector<std::vector<distance_type>> _distance_matrix;

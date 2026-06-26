@@ -31,11 +31,17 @@
 namespace mtrc::modify::map {
 
 inline constexpr std::size_t default_diffusion_coordinate_max_dense_records = 4096;
+inline constexpr std::size_t default_diffusion_coordinate_max_memory_bytes =
+	::mtrc::modify::dynamics::default_diffusion_max_memory_bytes;
+inline constexpr std::size_t default_diffusion_coordinate_max_distance_evaluations =
+	::mtrc::modify::dynamics::default_diffusion_max_distance_evaluations;
 
 template <typename Scalar> struct DiffusionCoordinateSpec {
 	std::size_t dimensions{1};
 	std::size_t diffusion_steps{1};
 	std::size_t max_dense_records{default_diffusion_coordinate_max_dense_records};
+	std::size_t max_memory_bytes{default_diffusion_coordinate_max_memory_bytes};
+	std::size_t max_distance_evaluations{default_diffusion_coordinate_max_distance_evaluations};
 	Scalar kernel_scale{0};
 	Scalar epsilon{Scalar(1.0e-12)};
 };
@@ -57,6 +63,8 @@ template <typename Scalar> struct DiffusionCoordinateTargets {
 	std::size_t record_count{0};
 	std::size_t dense_distance_evaluations{0};
 	std::size_t max_dense_records{0};
+	std::size_t max_memory_bytes{0};
+	std::size_t max_distance_evaluations{0};
 	Scalar kernel_scale{0};
 	std::string method{"diffusion_potential_anchor_coordinates"};
 	std::string pairwise_distances{"exact_space_distances"};
@@ -66,11 +74,13 @@ template <typename Scalar> struct DiffusionCoordinateTargets {
 
 template <typename Scalar> auto diffusion_coordinate_spec_to_json(const DiffusionCoordinateSpec<Scalar> &spec) -> mtrc::core::Metadata
 {
-	return {{"dimensions", spec.dimensions},
-			{"diffusion_steps", spec.diffusion_steps},
-			{"max_dense_records", spec.max_dense_records},
-			{"kernel_scale", spec.kernel_scale},
-			{"epsilon", spec.epsilon}};
+		return {{"dimensions", spec.dimensions},
+				{"diffusion_steps", spec.diffusion_steps},
+				{"max_dense_records", spec.max_dense_records},
+				{"max_memory_bytes", spec.max_memory_bytes},
+				{"max_distance_evaluations", spec.max_distance_evaluations},
+				{"kernel_scale", spec.kernel_scale},
+				{"epsilon", spec.epsilon}};
 }
 
 template <typename Scalar>
@@ -78,10 +88,12 @@ auto diffusion_coordinate_targets_to_json(const DiffusionCoordinateTargets<Scala
 {
 	return {{"dimensions", targets.dimensions},
 			{"diffusion_steps", targets.diffusion_steps},
-			{"record_count", targets.record_count},
-			{"dense_distance_evaluations", targets.dense_distance_evaluations},
-			{"max_dense_records", targets.max_dense_records},
-			{"kernel_scale", targets.kernel_scale},
+				{"record_count", targets.record_count},
+				{"dense_distance_evaluations", targets.dense_distance_evaluations},
+				{"max_dense_records", targets.max_dense_records},
+				{"max_memory_bytes", targets.max_memory_bytes},
+				{"max_distance_evaluations", targets.max_distance_evaluations},
+				{"kernel_scale", targets.kernel_scale},
 			{"method", targets.method},
 			{"pairwise_distances", targets.pairwise_distances},
 			{"affinity_kernel", targets.affinity_kernel},
@@ -184,9 +196,11 @@ auto diffusion_coordinate_targets(const Space &space, DiffusionCoordinateSpec<Sc
 	}
 
 	modify::dynamics::DiffusionOptions<Scalar> diffusion_options;
-	diffusion_options.diffusion_steps = spec.diffusion_steps;
-	diffusion_options.max_dense_records = spec.max_dense_records;
-	diffusion_options.kernel_scale = spec.kernel_scale;
+		diffusion_options.diffusion_steps = spec.diffusion_steps;
+		diffusion_options.max_dense_records = spec.max_dense_records;
+		diffusion_options.max_memory_bytes = spec.max_memory_bytes;
+		diffusion_options.max_distance_evaluations = spec.max_distance_evaluations;
+		diffusion_options.kernel_scale = spec.kernel_scale;
 	diffusion_options.epsilon = spec.epsilon;
 	diffusion_options.pairwise_distances = std::move(pairwise_distances);
 	diffusion_options.affinity_kernel = std::move(affinity_kernel);
@@ -199,9 +213,11 @@ auto diffusion_coordinate_targets(const Space &space, DiffusionCoordinateSpec<Sc
 	targets.dimensions = spec.dimensions;
 	targets.diffusion_steps = process.diffusion_steps;
 	targets.record_count = process.record_count;
-	targets.dense_distance_evaluations = process.dense_distance_evaluations;
-	targets.max_dense_records = process.max_dense_records;
-	targets.kernel_scale = process.kernel_scale;
+		targets.dense_distance_evaluations = process.dense_distance_evaluations;
+		targets.max_dense_records = process.max_dense_records;
+		targets.max_memory_bytes = process.max_memory_bytes;
+		targets.max_distance_evaluations = process.max_distance_evaluations;
+		targets.kernel_scale = process.kernel_scale;
 	targets.pairwise_distances = process.pairwise_distances;
 	targets.affinity_kernel = process.affinity_kernel;
 	targets.diffusion_operator = process.diffusion_operator;

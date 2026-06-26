@@ -161,6 +161,17 @@ int main()
 		auto oversized_space = mtrc::make_space(oversized_records, CountingVectorDistance{default_guard_calls});
 		REQUIRE(rejects([&] { (void)mtrc::modify::dynamics::diffuse(oversized_space, 1); }));
 		REQUIRE(*default_guard_calls == 0);
+
+		*default_guard_calls = 0;
+		auto low_eval_space = mtrc::make_space(
+			std::vector<std::vector<double>>{{0.0}, {1.0}}, CountingVectorDistance{default_guard_calls});
+		REQUIRE(rejects([&] {
+			(void)mtrc::modify::dynamics::diffuse(
+				low_eval_space, 1, 0.0, false,
+				mtrc::modify::dynamics::default_diffuse_max_dense_records,
+				mtrc::modify::dynamics::default_diffuse_max_memory_bytes, 3);
+		}));
+		REQUIRE(*default_guard_calls == 0);
 	}
 
 	const auto evolved = mtrc::modify::dynamics::diffuse_distribution(process, {1.0, 0.0, 0.0, 0.0, 0.0, 0.0});
@@ -209,6 +220,14 @@ int main()
 			mtrc::make_space(oversized_records, CountingAbsoluteDistance{transition_guard_calls});
 		const mtrc::modify::dynamics::dynamics_schedule default_schedule;
 		REQUIRE(rejects([&] { (void)mtrc::metric_transition(oversized_space, default_schedule); }));
+		REQUIRE(*transition_guard_calls == 0);
+
+		*transition_guard_calls = 0;
+		auto low_eval_space =
+			mtrc::make_space(std::vector<int>{0, 1, 2}, CountingAbsoluteDistance{transition_guard_calls});
+		auto low_eval_schedule = default_schedule;
+		low_eval_schedule.max_distance_evaluations = 2;
+		REQUIRE(rejects([&] { (void)mtrc::metric_transition(low_eval_space, low_eval_schedule); }));
 		REQUIRE(*transition_guard_calls == 0);
 	}
 

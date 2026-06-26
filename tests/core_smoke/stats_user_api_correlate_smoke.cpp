@@ -60,6 +60,16 @@ template <typename Function> auto throws_invalid_argument(Function run) -> bool
 	return false;
 }
 
+template <typename Function> auto throws_representation_error(Function run) -> bool
+{
+	try {
+		run();
+	} catch (const mtrc::RepresentationError &) {
+		return true;
+	}
+	return false;
+}
+
 void public_domain_overloads_match_mgc_core()
 {
 	namespace correlate = mtrc::stats::correlate;
@@ -123,6 +133,41 @@ void large_metric_space_defaults_preflight_dense_mgc()
 	const auto sx = mtrc::make_space(x, CountingPairDistance{&left_calls});
 	const auto sy = mtrc::make_space(y, CountingPairDistance{&right_calls});
 	const auto dense_all_pairs = large_count * large_count;
+
+	bool refused_direct_space_mgc = false;
+	try {
+		(void)correlate::mgc(sx, sy);
+	} catch (const mtrc::RepresentationError &error) {
+		refused_direct_space_mgc = true;
+		const std::string message = error.what();
+		assert(message.find("exact MGC") != std::string::npos);
+		assert(message.find("mgc_estimate") != std::string::npos);
+	}
+	assert(refused_direct_space_mgc);
+	assert(left_calls == 0);
+	assert(right_calls == 0);
+
+	bool refused_direct_records_mgc = false;
+	try {
+		(void)correlate::mgc(x, CountingPairDistance{&left_calls}, y, CountingPairDistance{&right_calls});
+	} catch (const mtrc::RepresentationError &) {
+		refused_direct_records_mgc = true;
+	}
+	assert(refused_direct_records_mgc);
+	assert(left_calls == 0);
+	assert(right_calls == 0);
+
+	correlate::mgc_options full_sample_options;
+	full_sample_options.sample_count = large_count;
+	bool refused_full_sample_estimate = false;
+	try {
+		(void)correlate::mgc_estimate(sx, sy, full_sample_options);
+	} catch (const mtrc::RepresentationError &) {
+		refused_full_sample_estimate = true;
+	}
+	assert(refused_full_sample_estimate);
+	assert(left_calls == 0);
+	assert(right_calls == 0);
 
 	const auto compared = mtrc::compare(sx, sy);
 	assert(!compared.exact);
@@ -223,6 +268,32 @@ void permutation_test_is_reproducible_for_a_seed()
 	assert(close(first.statistic, second.statistic));
 }
 
+void permutation_work_budget_refuses_before_metric_calls()
+{
+	namespace correlate = mtrc::stats::correlate;
+	std::vector<Rec> x, y;
+	for (int i = 0; i < 8; ++i) {
+		x.push_back({static_cast<double>(i)});
+		y.push_back({static_cast<double>((i * 3) % 8)});
+	}
+
+	std::size_t left_calls = 0;
+	std::size_t right_calls = 0;
+	const auto sx = mtrc::make_space(x, CountingPairDistance{&left_calls});
+	const auto sy = mtrc::make_space(y, CountingPairDistance{&right_calls});
+
+	auto options = correlate::significance_options(2);
+	options.max_permutation_matrix_cells = x.size() * x.size() - 1;
+	assert(throws_representation_error([&] { (void)correlate::mgc_significance(sx, sy, options); }));
+	assert(left_calls == 0);
+	assert(right_calls == 0);
+
+	options = correlate::significance_options(10'000'000);
+	assert(throws_representation_error([&] { (void)correlate::mgc_significance(sx, sy, options); }));
+	assert(left_calls == 0);
+	assert(right_calls == 0);
+}
+
 void permutation_test_rejects_invalid_inputs()
 {
 	namespace correlate = mtrc::stats::correlate;
@@ -285,6 +356,7 @@ int main()
 	large_metric_space_defaults_preflight_dense_mgc();
 	permutation_test_separates_dependent_from_independent();
 	permutation_test_is_reproducible_for_a_seed();
+	permutation_work_budget_refuses_before_metric_calls();
 	permutation_test_rejects_invalid_inputs();
 	record_id_alignment_reports_dropped_pairs();
 	return 0;

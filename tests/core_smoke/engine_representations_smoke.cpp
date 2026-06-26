@@ -324,8 +324,8 @@ int main()
 	assert(matrix_diagnostics.cached_distances == space.size() * space.size());
 	assert(matrix_diagnostics.distance_evaluations == space.size() * space.size());
 	assert(matrix_diagnostics.dense_distance_slots == space.size() * space.size());
-	assert(matrix_diagnostics.max_dense_records == 0);
-	assert(matrix_diagnostics.max_memory_bytes == 0);
+	assert(matrix_diagnostics.max_dense_records == mtrc::space::storage::default_distance_table_max_dense_records);
+	assert(matrix_diagnostics.max_memory_bytes == mtrc::space::storage::default_distance_table_max_memory_bytes);
 	assert(matrix_diagnostics.memory_bytes_estimate ==
 		   mtrc::space::storage::estimate_distance_table_memory_bytes<int>(space.size()));
 	assert(matrix_diagnostics.built_for_version == space.version());
@@ -343,10 +343,51 @@ int main()
 	auto counted_space =
 		mtrc::make_space(std::vector<int>{0, 2, 5, 9}, CountingAbsoluteDistance{&symmetric_metric_calls});
 	const auto counted_id0 = counted_space.id(0);
-	const auto counted_id1 = counted_space.id(1);
-	const auto counted_id2 = counted_space.id(2);
-	const auto counted_id3 = counted_space.id(3);
-	auto symmetric_table = mtrc::space::storage::symmetric_distance_table(counted_space);
+		const auto counted_id1 = counted_space.id(1);
+		const auto counted_id2 = counted_space.id(2);
+		const auto counted_id3 = counted_space.id(3);
+		bool rejected_symmetric_record_budget = false;
+		mtrc::space::storage::symmetric_distance_table_options low_symmetric_record_budget;
+		low_symmetric_record_budget.max_dense_records = 2;
+		try {
+			(void)mtrc::space::storage::symmetric_distance_table(counted_space, low_symmetric_record_budget);
+		} catch (const mtrc::RepresentationError &) {
+			rejected_symmetric_record_budget = true;
+		}
+		assert(rejected_symmetric_record_budget);
+		assert(symmetric_metric_calls == 0);
+
+		bool rejected_symmetric_distance_budget = false;
+		mtrc::space::storage::symmetric_distance_table_options low_symmetric_distance_budget;
+		low_symmetric_distance_budget.max_dense_records = 0;
+		low_symmetric_distance_budget.max_memory_bytes = 0;
+		low_symmetric_distance_budget.max_distance_evaluations = 2;
+		try {
+			(void)mtrc::space::storage::symmetric_distance_table(counted_space, low_symmetric_distance_budget);
+		} catch (const mtrc::RepresentationError &) {
+			rejected_symmetric_distance_budget = true;
+		}
+		assert(rejected_symmetric_distance_budget);
+		assert(symmetric_metric_calls == 0);
+
+		std::vector<int> large_symmetric_records(
+			mtrc::space::storage::default_symmetric_distance_table_max_dense_records + 1);
+		for (std::size_t index = 0; index < large_symmetric_records.size(); ++index) {
+			large_symmetric_records[index] = static_cast<int>(index);
+		}
+		auto large_symmetric_space =
+			mtrc::make_space(large_symmetric_records, CountingAbsoluteDistance{&symmetric_metric_calls});
+		bool rejected_symmetric_runtime_guard_defaults = false;
+		try {
+			(void)mtrc::space::storage::symmetric_distance_table(
+				large_symmetric_space, mtrc::space::storage::runtime_guard{});
+		} catch (const mtrc::RepresentationError &) {
+			rejected_symmetric_runtime_guard_defaults = true;
+		}
+		assert(rejected_symmetric_runtime_guard_defaults);
+		assert(symmetric_metric_calls == 0);
+
+		auto symmetric_table = mtrc::space::storage::symmetric_distance_table(counted_space);
 	static_assert(mtrc::PairwiseDistances_v<decltype(symmetric_table)>);
 	assert(symmetric_table.record_count() == counted_space.size());
 	assert(symmetric_table.off_diagonal_slots() == counted_space.size() * (counted_space.size() - 1) / 2);
@@ -506,12 +547,48 @@ int main()
 	assert(tree_diagnostics.source_record_ids == initial_ids);
 	assert(tree.source_record_ids() == initial_ids);
 	assert(!tree.cache_key().empty());
-	assert(tree.stats().nodes == space.size());
-	auto strategy_tree = mtrc::space::storage::make(space, mtrc::stats::search::cover_tree{});
-	static_assert(mtrc::NeighborSearchIndex_v<decltype(strategy_tree)>);
-	assert(strategy_tree.knn(4, 2)[0].id == tree_neighbors[0].id);
+		assert(tree.stats().nodes == space.size());
+		auto strategy_tree = mtrc::space::storage::make(space, mtrc::stats::search::cover_tree{});
+		static_assert(mtrc::NeighborSearchIndex_v<decltype(strategy_tree)>);
+		assert(strategy_tree.knn(4, 2)[0].id == tree_neighbors[0].id);
+		int cover_tree_budget_calls = 0;
+		auto cover_tree_budget_space =
+			mtrc::make_space(std::vector<int>{0, 2, 5, 9}, CountingAbsoluteDistance{&cover_tree_budget_calls});
+		bool rejected_cover_tree_build_budget = false;
+		try {
+			(void)mtrc::space::storage::cover_tree(
+				cover_tree_budget_space, mtrc::space::storage::cover_tree_index_options{3, 0});
+		} catch (const mtrc::RepresentationError &error) {
+			rejected_cover_tree_build_budget = true;
+			const std::string message = error.what();
+			assert(message.find("distance_evaluation_budget") != std::string::npos);
+		}
+		assert(rejected_cover_tree_build_budget);
+		assert(cover_tree_budget_calls == 0);
+		auto unbounded_cover_tree = mtrc::space::storage::cover_tree(
+			cover_tree_budget_space, mtrc::space::storage::cover_tree_index_options{0, 0});
+		assert(unbounded_cover_tree.record_count() == cover_tree_budget_space.size());
+		assert(cover_tree_budget_calls > 0);
+		cover_tree_budget_calls = 0;
+		std::vector<int> large_cover_tree_records;
+		large_cover_tree_records.reserve(10001);
+		for (int value = 0; value < 10001; ++value) {
+			large_cover_tree_records.push_back(value);
+		}
+		auto large_cover_tree_space =
+			mtrc::make_space(large_cover_tree_records, CountingAbsoluteDistance{&cover_tree_budget_calls});
+		bool rejected_default_cover_tree_build_budget = false;
+		try {
+			(void)mtrc::space::storage::cover_tree(large_cover_tree_space);
+		} catch (const mtrc::RepresentationError &error) {
+			rejected_default_cover_tree_build_budget = true;
+			const std::string message = error.what();
+			assert(message.find("distance_evaluation_budget") != std::string::npos);
+		}
+		assert(rejected_default_cover_tree_build_budget);
+		assert(cover_tree_budget_calls == 0);
 
-	auto graph = mtrc::space::storage::knn_graph(space, 1);
+		auto graph = mtrc::space::storage::knn_graph(space, 1);
 	static_assert(mtrc::NeighborSearchIndex_v<decltype(graph)>);
 	assert(graph.k() == 1);
 	assert(graph.id(0) == id0);

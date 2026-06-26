@@ -90,6 +90,40 @@ inline auto sampled_outlier_distance_evaluations(std::size_t record_count, std::
 	return total > sample_count ? total - sample_count : 0;
 }
 
+inline auto estimate_nearest_outlier_distance_evaluations(std::size_t record_count) -> std::size_t
+{
+	if (record_count == 0) {
+		return 0;
+	}
+	if (record_count - 1 > std::numeric_limits<std::size_t>::max() / record_count) {
+		throw RepresentationError("nearest_neighbor_outliers distance-evaluation estimate exceeds size_t capacity");
+	}
+	return record_count * (record_count - 1);
+}
+
+inline auto require_default_provider_outlier_work(const char *operation, std::size_t record_count,
+												  std::size_t estimated_distance_evaluations) -> void
+{
+	if (record_count > group_detail::max_default_exact_structural_records) {
+		throw RepresentationError(
+			std::string(operation) + " refused exact provider outlier work before metric calls: records=" +
+			std::to_string(record_count) +
+			", max_exact_records=" + std::to_string(group_detail::max_default_exact_structural_records) +
+			". Use the MetricSpace overload for default sampled behavior, pass an explicit runtime policy, "
+			"or use a smaller provider.");
+	}
+	if (estimated_distance_evaluations > engine_detail::max_default_exact_clustering_distance_evaluations) {
+		throw RepresentationError(
+			std::string(operation) + " refused exact provider outlier work before metric calls: records=" +
+			std::to_string(record_count) +
+			", estimated_distance_evaluations=" + std::to_string(estimated_distance_evaluations) +
+			", max_distance_evaluations=" +
+			std::to_string(engine_detail::max_default_exact_clustering_distance_evaluations) +
+			". Use the MetricSpace overload for default sampled behavior, pass an explicit runtime policy, "
+			"or reduce the input.");
+	}
+}
+
 template <typename Score>
 auto mark_sampled_nearest_outlier_quality(core::OutlierResult<Score> &result, std::size_t sample_count,
 										  std::size_t k) -> void
@@ -363,12 +397,18 @@ auto sampled_nearest_neighbor_outliers(const Provider &provider, std::size_t k,
 
 template <typename Provider, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
 auto nearest_neighbor_outliers_from_provider(const Provider &provider, std::size_t k,
-											 space::storage::runtime_guard runtime = {})
+											 space::storage::runtime_guard runtime = {},
+											 bool enforce_default_provider_budget = true)
 	-> OutlierResult<typename Provider::distance_type>
 {
 	using distance_type = typename Provider::distance_type;
 
 	validate_nearest_neighbor_outlier_request(provider.record_count(), k);
+	if (enforce_default_provider_budget) {
+		require_default_provider_outlier_work(
+			"nearest_neighbor_outliers", provider.record_count(),
+			estimate_nearest_outlier_distance_evaluations(provider.record_count()));
+	}
 
 	std::vector<core::Outlier<distance_type>> outliers;
 	outliers.reserve(provider.record_count());
@@ -391,6 +431,10 @@ template <typename Provider, typename std::enable_if<PairwiseDistances_v<Provide
 auto find_outliers(const Provider &provider, stats::structural_analysis::dbscan_options strategy)
 	-> OutlierResult<typename Provider::distance_type>
 {
+	engine_detail::validate_dbscan_parameters(strategy.radius, strategy.min_points);
+	outlier_detail::require_default_provider_outlier_work(
+		"find_outliers(dbscan)", provider.record_count(),
+		engine_detail::estimate_dbscan_distance_evaluations(provider.record_count()));
 	const auto groups = group_detail::guarded_dbscan(provider, strategy.radius, strategy.min_points, {});
 	return outlier_detail::outlier_result_from_groups(provider, groups, {});
 }
@@ -552,14 +596,14 @@ auto nearest_neighbor_outliers(const Space &space, std::size_t k, space::storage
 	if (runtime_policy.uses_materialization()) {
 		return space::storage::with_materialized_distance_provider(
 			space, runtime_policy, "outliers", [k, runtime](const auto &provider, const auto &materialized_plan) {
-				auto result = outlier_detail::nearest_neighbor_outliers_from_provider(provider, k, runtime);
+				auto result = outlier_detail::nearest_neighbor_outliers_from_provider(provider, k, runtime, false);
 				result.representation = space::storage::materialized_operator_representation(materialized_plan);
 				return result;
 			});
 	}
 
 	space::storage::LiveDistances<Space> provider(space);
-	auto result = outlier_detail::nearest_neighbor_outliers_from_provider(provider, k, runtime);
+	auto result = outlier_detail::nearest_neighbor_outliers_from_provider(provider, k, runtime, false);
 	result.representation = space::storage::outlier_representation(runtime_policy);
 	return result;
 }

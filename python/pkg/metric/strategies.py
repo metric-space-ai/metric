@@ -49,6 +49,37 @@ class ParametricDiffusionCoordinates:
     distance_provider: str = "exact_metric_space_distance_provider"
     affinity_kernel: str = "gaussian_affinity_kernel"
     diffusion_operator: str = "row_normalized_diffusion_operator"
+    max_memory_bytes: object = None
+    max_distance_evaluations: object = None
+    max_dense_records: object = None
+
+
+@dataclass(frozen=True)
+class RedifDynamics:
+    """Metric-induced Redif measure dynamics over a finite metric space."""
+
+    neighbors: int = 10
+    iterations: int = 15
+    euler_step: float = 0.25
+    adaptive_geometry: bool = True
+    scale_policy: str = "mean_local_distance"
+    stability_tolerance: float = 1.0e-12
+    marginal_stability_tolerance: float = 1.0e-8
+
+
+@dataclass(frozen=True)
+class ForwardDynamics(RedifDynamics):
+    """Forward metric-induced dynamics, interpreted as adding noise."""
+
+
+@dataclass(frozen=True)
+class InverseDynamics(RedifDynamics):
+    """Inverse metric-induced dynamics, interpreted as removing noise."""
+
+
+@dataclass(frozen=True)
+class TransportPath(RedifDynamics):
+    """Score atoms by Redif transport path length."""
 
 
 @dataclass(frozen=True)
@@ -123,11 +154,15 @@ __all__ = [
     "DiffusionEmbedding",
     "DistanceProfileCorrelation",
     "FarthestFirst",
+    "ForwardDynamics",
+    "InverseDynamics",
     "KCenter",
     "KMedoids",
     "MDS",
     "ParametricDiffusionCoordinates",
     "PreserveDistribution",
     "RadiusCoverage",
+    "RedifDynamics",
+    "TransportPath",
     "UniformDensity",
 ]

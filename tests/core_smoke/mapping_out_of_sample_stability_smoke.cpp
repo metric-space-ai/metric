@@ -9,6 +9,18 @@ namespace {
 
 auto absolute_distance(double lhs, double rhs) -> double { return std::abs(lhs - rhs); }
 
+struct CountingAbsoluteDistance {
+	std::size_t *calls{};
+
+	auto operator()(double lhs, double rhs) const -> double
+	{
+		if (calls != nullptr) {
+			++*calls;
+		}
+		return std::abs(lhs - rhs);
+	}
+};
+
 struct IdentityModel {
 	template <typename Space> auto transform(const Space &space) const
 	{
@@ -20,6 +32,15 @@ struct FoldedModel {
 	template <typename Space> auto transform(const Space &space) const
 	{
 		return mtrc::map(space, [](double value) { return std::abs(value - 7.0); }, absolute_distance);
+	}
+};
+
+struct CountingIdentityModel {
+	std::size_t *mapped_calls{};
+
+	template <typename Space> auto transform(const Space &space) const
+	{
+		return mtrc::map(space, [](double value) { return value; }, CountingAbsoluteDistance{mapped_calls});
 	}
 };
 
@@ -103,6 +124,38 @@ int main()
 		rejected_empty_query = true;
 	}
 	assert(rejected_empty_query);
+
+	constexpr std::size_t large_count = 1000;
+	std::vector<double> large_source_records(large_count);
+	std::vector<double> large_query_records(large_count);
+	for (std::size_t index = 0; index < large_count; ++index) {
+		large_source_records[index] = static_cast<double>(index);
+		large_query_records[index] = static_cast<double>(index) + 0.25;
+	}
+
+	std::size_t large_source_calls = 0;
+	std::size_t large_query_calls = 0;
+	std::size_t large_mapped_calls = 0;
+	auto large_source = mtrc::make_space(large_source_records, CountingAbsoluteDistance{&large_source_calls});
+	auto large_query = mtrc::make_space(large_query_records, CountingAbsoluteDistance{&large_query_calls});
+	const CountingIdentityModel counting_identity{&large_mapped_calls};
+	const auto sampled =
+		mtrc::modify::map::out_of_sample_neighbor_stability(counting_identity, large_source, large_query, 1);
+	assert(!sampled.exact);
+	assert(sampled.evaluated_queries < large_query_records.size());
+	assert(sampled.evaluated_queries > 0);
+	assert(sampled.max_distance_evaluations ==
+		   mtrc::modify::map::default_mapping_diagnostic_max_distance_evaluations);
+	assert(!sampled.reason.empty());
+	assert(sampled.source_representation == "metric_space_sample");
+	assert(sampled.mapped_source_representation == "metric_space_sample");
+	assert(sampled.mapped_query_representation == "metric_space_sample");
+	assert(sampled.source_distance_evaluations + sampled.mapped_distance_evaluations <=
+		   mtrc::modify::map::default_mapping_diagnostic_max_distance_evaluations);
+	assert(large_source_calls == sampled.source_distance_evaluations);
+	assert(large_mapped_calls == sampled.mapped_distance_evaluations);
+	assert(large_query_calls == 0);
+	assert(sampled.anchor_recall == 1.0);
 
 	return 0;
 }

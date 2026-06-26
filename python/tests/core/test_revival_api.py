@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
 
@@ -65,11 +66,13 @@ from metric.operators import (
     NeighborResult,
     Outlier,
     OutlierResult,
+    RedifMeasureResult,
     RepresentativeSet,
     ReductionResult,
     StructureDescription,
     coverage_representative_indices,
     coverage_representatives,
+    add_noise_space,
     compress_space,
     compare_spaces,
     correlate_spaces,
@@ -98,9 +101,11 @@ from metric.operators import (
     pairwise_distance_matrix,
     prune_graph_out_degree,
     range_neighbors,
+    redif_dynamics,
     reduce_space,
     representative_indices,
     representatives,
+    remove_noise_space,
     separated_representative_indices,
     separated_representatives,
     symmetrize_graph,
@@ -117,12 +122,16 @@ from metric.strategies import (
     DiffusionEmbedding,
     DistanceProfileCorrelation,
     FarthestFirst,
+    ForwardDynamics,
     KCenter,
     KMedoids,
+    InverseDynamics,
     MDS,
     ParametricDiffusionCoordinates,
     PreserveDistribution,
     RadiusCoverage,
+    RedifDynamics,
+    TransportPath,
     UniformDensity,
 )
 
@@ -213,12 +222,16 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.operators.ClusteringResult, ClusteringResult)
         self.assertIs(metric.operators.Outlier, Outlier)
         self.assertIs(metric.operators.OutlierResult, OutlierResult)
+        self.assertIs(metric.operators.RedifMeasureResult, RedifMeasureResult)
         self.assertIs(metric.operators.CorrelationResult, CorrelationResult)
         self.assertIs(metric.operators.RepresentativeSet, RepresentativeSet)
         self.assertIs(metric.operators.ReductionResult, ReductionResult)
         self.assertIs(metric.operators.StructureDescription, StructureDescription)
         self.assertIs(metric.operators.find_groups, find_groups)
         self.assertIs(metric.operators.find_outliers, find_outliers)
+        self.assertIs(metric.operators.add_noise_space, add_noise_space)
+        self.assertIs(metric.operators.remove_noise_space, remove_noise_space)
+        self.assertIs(metric.operators.redif_dynamics, redif_dynamics)
         self.assertIs(metric.operators.density_filter_space, density_filter_space)
         self.assertIs(metric.operators.equalize_space, equalize_space)
         self.assertIs(metric.operators.embed_space, embed_space)
@@ -273,11 +286,18 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.ClusteringResult, ClusteringResult)
         self.assertIs(metric.Outlier, Outlier)
         self.assertIs(metric.OutlierResult, OutlierResult)
+        self.assertIs(metric.RedifMeasureResult, RedifMeasureResult)
         self.assertIs(metric.RepresentativeSet, RepresentativeSet)
         self.assertIs(metric.ReductionResult, ReductionResult)
         self.assertIs(metric.StructureDescription, StructureDescription)
         self.assertIs(metric.find_groups, find_groups)
         self.assertIs(metric.find_outliers, find_outliers)
+        self.assertIs(metric.add_noise_space, add_noise_space)
+        self.assertIs(metric.remove_noise_space, remove_noise_space)
+        self.assertIs(metric.redif_dynamics, redif_dynamics)
+        self.assertIs(metric.intent.add_noise, add_noise_space)
+        self.assertIs(metric.intent.remove_noise, remove_noise_space)
+        self.assertIs(metric.intent.dynamics, redif_dynamics)
         self.assertIs(metric.density_filter_space, density_filter_space)
         self.assertIs(metric.embed_space, embed_space)
         self.assertIs(metric.describe_structure, describe_structure)
@@ -291,9 +311,13 @@ class RevivalApiTest(unittest.TestCase):
             "DiffusionEmbedding",
             "DistanceProfileCorrelation",
             "FarthestFirst",
+            "ForwardDynamics",
+            "InverseDynamics",
             "KMedoids",
             "MDS",
             "ParametricDiffusionCoordinates",
+            "RedifDynamics",
+            "TransportPath",
         ):
             self.assertFalse(hasattr(metric, strategy_name), strategy_name)
         with self.assertRaises(ImportError):
@@ -363,12 +387,16 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("ClusteringResult", metric.__all__)
         self.assertIn("Outlier", metric.__all__)
         self.assertIn("OutlierResult", metric.__all__)
+        self.assertIn("RedifMeasureResult", metric.__all__)
         self.assertIn("CorrelationResult", metric.__all__)
         self.assertIn("RepresentativeSet", metric.__all__)
         self.assertIn("ReductionResult", metric.__all__)
         self.assertIn("StructureDescription", metric.__all__)
         self.assertIn("find_groups", metric.__all__)
         self.assertIn("find_outliers", metric.__all__)
+        self.assertIn("add_noise_space", metric.__all__)
+        self.assertIn("remove_noise_space", metric.__all__)
+        self.assertIn("redif_dynamics", metric.__all__)
         self.assertIn("density_filter_space", metric.__all__)
         self.assertIn("equalize_space", metric.__all__)
         self.assertIn("embed_space", metric.__all__)
@@ -386,9 +414,13 @@ class RevivalApiTest(unittest.TestCase):
             "DiffusionEmbedding",
             "DistanceProfileCorrelation",
             "FarthestFirst",
+            "ForwardDynamics",
+            "InverseDynamics",
             "KMedoids",
             "MDS",
             "ParametricDiffusionCoordinates",
+            "RedifDynamics",
+            "TransportPath",
         ):
             self.assertNotIn(strategy_name, metric.__all__)
         self.assertIn("exact_knn_graph", metric.__all__)
@@ -578,6 +610,36 @@ class RevivalApiTest(unittest.TestCase):
             )
             self.assertEqual(exported_strings.records, ["cat", "coat"])
 
+            class LazyFields:
+                def __iter__(self):
+                    for value in range(3):
+                        yield value
+
+            lazy_fields_space = Space(
+                [LazyFields()],
+                metric=lambda lhs, rhs: 0.0,
+                validate="none",
+                cache="none",
+            )
+            with self.assertRaisesRegex(
+                MetricComputationError,
+                r"Space export refused record 0 fields materialization.*max_fields=2",
+            ):
+                lazy_fields_space.to_csv(
+                    Path(tmpdir) / "lazy_fields.csv",
+                    max_record_fields=2,
+                )
+
+            with self.assertRaisesRegex(
+                MetricComputationError,
+                r"Space export refused header fields materialization.*max_fields=2",
+            ):
+                space.to_csv(
+                    Path(tmpdir) / "lazy_header.csv",
+                    header=(f"col_{index}" for index in range(3)),
+                    max_header_fields=2,
+                )
+
             with self.assertRaisesRegex(MissingMetricError, "requires metric"):
                 Space.from_tsv(tsv_path, value_type="string", has_header=True, as_scalar=True)
 
@@ -585,6 +647,37 @@ class RevivalApiTest(unittest.TestCase):
             np.save(invalid_npy_path, np.asarray([1.0, 2.0]))
             with self.assertRaisesRegex(ValueError, "2D array"):
                 Space.from_numpy_file(invalid_npy_path)
+
+            oversized_csv = Path(tmpdir) / "oversized.csv"
+            oversized_csv.write_text("x,y\n0,0\n1,1\n2,2\n", encoding="utf-8")
+            with self.assertRaisesRegex(
+                MetricComputationError,
+                r"Space\.from_csv\(\.\.\.\).*max_dense_records=2",
+            ):
+                Space.from_csv(oversized_csv, has_header=True, max_dense_records=2)
+
+            oversized_tsv = Path(tmpdir) / "oversized.tsv"
+            oversized_tsv.write_text("token\ncat\ncot\ncoat\n", encoding="utf-8")
+            with self.assertRaisesRegex(
+                MetricComputationError,
+                r"Space\.from_tsv\(\.\.\.\).*max_dense_records=2",
+            ):
+                Space.from_tsv(
+                    oversized_tsv,
+                    metric=self.metric,
+                    value_type="string",
+                    has_header=True,
+                    as_scalar=True,
+                    max_dense_records=2,
+                )
+
+            oversized_npy_path = Path(tmpdir) / "oversized.npy"
+            np.save(oversized_npy_path, np.asarray([[0.0], [1.0], [2.0]], dtype=float))
+            with self.assertRaisesRegex(
+                MetricComputationError,
+                r"Space\.from_numpy_file\(\.\.\.\).*max_dense_records=2",
+            ):
+                Space.from_numpy_file(oversized_npy_path, max_dense_records=2)
 
     def test_native_mapping_artifact_projection_is_metadata_only(self):
         manifest = {
@@ -713,6 +806,133 @@ class RevivalApiTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unsupported parametric diffusion coordinate diffusion operator"):
             mappings.derive_parametric_diffusion_coordinates(records, diffusion_operator="unknown")
 
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"derive_parametric_diffusion_coordinates\(\.\.\.\).*max_dense_records=2",
+        ):
+            mappings.derive_parametric_diffusion_coordinates(records, max_dense_records=2)
+
+    def test_parametric_diffusion_optional_budget_retry_is_narrow(self):
+        native_kwargs = {
+            "dimensions": 1,
+            "max_memory_bytes": 100,
+            "max_distance_evaluations": 200,
+            "max_dense_records": 300,
+        }
+        calls = []
+
+        def old_binding(_records, **kwargs):
+            calls.append(dict(kwargs))
+            if "max_memory_bytes" in kwargs:
+                raise TypeError("got an unexpected keyword argument 'max_memory_bytes'")
+            return dict(kwargs)
+
+        result = mappings._call_native_with_optional_diffusion_budgets(
+            old_binding,
+            [[0.0], [1.0]],
+            native_kwargs,
+        )
+        self.assertNotIn("max_memory_bytes", result)
+        self.assertEqual(result["max_distance_evaluations"], 200)
+        self.assertEqual(result["max_dense_records"], 300)
+        self.assertIn("max_memory_bytes", native_kwargs)
+        self.assertEqual(len(calls), 2)
+
+        validation_calls = []
+
+        def validation_error(_records, **kwargs):
+            validation_calls.append(dict(kwargs))
+            raise TypeError("max_dense_records must be an integer")
+
+        with self.assertRaisesRegex(TypeError, "max_dense_records must be an integer"):
+            mappings._call_native_with_optional_diffusion_budgets(
+                validation_error,
+                [[0.0], [1.0]],
+                native_kwargs,
+            )
+        self.assertEqual(len(validation_calls), 1)
+        self.assertIn("max_dense_records", validation_calls[0])
+
+    def test_mapping_artifact_methods_preflight_iterators_before_native_calls(self):
+        from metric import mapping_pipeline
+
+        calls = {"transform": 0, "inverse": 0, "recall": 0}
+
+        class FakeArtifact:
+            source_record_count = 3
+            latent_dimension = 1
+            inverse_supported = True
+            components = ()
+
+            def transform(self, records):
+                calls["transform"] += 1
+                return list(records)
+
+            def inverse_transform(self, records):
+                calls["inverse"] += 1
+                return list(records)
+
+            def neighbor_recall(self, neighbor_count):
+                calls["recall"] += 1
+                return 1.0
+
+            def calibration_report(self):
+                return {}
+
+            def lineage(self):
+                return {}
+
+        def unsized_records():
+            for index in range(3):
+                yield [float(index)]
+
+        artifact = mappings.ParametricDiffusionCoordinateArtifact(
+            FakeArtifact(),
+            distance_provider="matrix_cache_distance_provider",
+            affinity_kernel="adaptive_gaussian_affinity_kernel",
+            diffusion_operator="lazy_row_normalized_diffusion_operator",
+        )
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"ParametricDiffusionCoordinateArtifact\.transform\(\.\.\.\).*max_dense_records=2",
+        ):
+            artifact.transform(unsized_records(), max_dense_records=2)
+        self.assertEqual(calls["transform"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"ParametricDiffusionCoordinateArtifact\.inverse_transform\(\.\.\.\).*max_dense_records=2",
+        ):
+            artifact.inverse_transform(unsized_records(), max_dense_records=2)
+        self.assertEqual(calls["inverse"], 0)
+
+        pipeline_artifact = mapping_pipeline.MetricSpaceMappingArtifact(
+            FakeArtifact(),
+            distance_provider="matrix_cache_distance_provider",
+            affinity_kernel="adaptive_gaussian_affinity_kernel",
+            diffusion_operator="lazy_row_normalized_diffusion_operator",
+        )
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"MetricSpaceMappingArtifact\.transform\(\.\.\.\).*max_dense_records=2",
+        ):
+            pipeline_artifact.transform(unsized_records(), max_dense_records=2)
+        self.assertEqual(calls["transform"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"MetricSpaceMappingArtifact\.inverse_transform\(\.\.\.\).*max_dense_records=2",
+        ):
+            pipeline_artifact.inverse_transform(unsized_records(), max_dense_records=2)
+        self.assertEqual(calls["inverse"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"MetricSpaceMappingArtifact\.neighbor_recall\(\.\.\.\).*max_dense_records=2",
+        ):
+            pipeline_artifact.neighbor_recall(1, max_dense_records=2)
+        self.assertEqual(calls["recall"], 0)
+
     def test_space_map_parametric_diffusion_coordinates_delegates_only_for_native_vector_spaces(self):
         try:
             from metric.distance import Euclidean
@@ -762,6 +982,18 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(len(restored), len(records))
         self.assertEqual(len(restored[0]), 2)
 
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"derive_parametric_diffusion_coordinates\(\.\.\.\).*max_dense_records=2",
+        ):
+            space.map(
+                strategy=ParametricDiffusionCoordinates(
+                    dimensions=1,
+                    calibration_steps=3,
+                    max_dense_records=2,
+                )
+            )
+
         custom_metric_space = Space.vectors(
             records,
             metric=lambda lhs, rhs: abs(lhs[0] - rhs[0]) + abs(lhs[1] - rhs[1]),
@@ -793,6 +1025,146 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("metric._impl.entropy", str(ctx.exception))
         self.assertNotIsInstance(ctx.exception, ModuleNotFoundError)
         self.assertIsNone(ctx.exception.__cause__)
+
+    def test_low_level_correlation_adapters_preflight_before_native_calls(self):
+        module_names = (
+            "metric.correlation",
+            "metric.correlation.entropy",
+            "metric.correlation.mgc",
+            "metric.correlation._budget",
+            "metric._impl",
+            "metric._impl.entropy",
+            "metric._impl.mgc",
+        )
+        missing = object()
+        saved_modules = {name: sys.modules.get(name, missing) for name in module_names}
+        for name in module_names:
+            sys.modules.pop(name, None)
+
+        calls = {"mgc": 0, "xcorr": 0, "direct": 0, "entropy": 0, "estimate": 0}
+
+        class FakeMGC:
+            def __call__(self, lhs, rhs):
+                calls["mgc"] += 1
+                return 0.5
+
+            def xcorr(self, lhs, rhs, n=1):
+                calls["xcorr"] += 1
+                return [0.5] * (2 * n + 1)
+
+        def create_mgc(**kwargs):
+            return FakeMGC()
+
+        def fake_mgc_direct(lhs, rhs):
+            calls["direct"] += 1
+            return 0.25
+
+        class FakeEntropy:
+            def __init__(self, **kwargs):
+                pass
+
+            def __call__(self, records):
+                calls["entropy"] += 1
+                return 1.0
+
+            def estimate(self, records, **kwargs):
+                calls["estimate"] += 1
+                return 2.0
+
+        fake_impl_package = types.ModuleType("metric._impl")
+        fake_impl_package.__path__ = []
+        fake_entropy_module = types.ModuleType("metric._impl.entropy")
+        fake_entropy_module.Entropy = FakeEntropy
+        fake_mgc_module = types.ModuleType("metric._impl.mgc")
+        fake_mgc_module.create_mgc = create_mgc
+        fake_mgc_module.MGC_direct = fake_mgc_direct
+
+        try:
+            sys.modules["metric._impl"] = fake_impl_package
+            sys.modules["metric._impl.entropy"] = fake_entropy_module
+            sys.modules["metric._impl.mgc"] = fake_mgc_module
+            correlation = importlib.import_module("metric.correlation")
+
+            with self.assertRaisesRegex(MetricComputationError, r"MGC\(\.\.\.\).*max_dense_records=2"):
+                correlation.MGC(max_dense_records=2)([0, 1, 2], [0, 1, 2])
+            self.assertEqual(calls["mgc"], 0)
+
+            with self.assertRaisesRegex(
+                MetricComputationError,
+                r"MGC\(\.\.\.\).*unsized iterator materialization.*max_dense_records=2",
+            ):
+                correlation.MGC(max_dense_records=2)(
+                    (index for index in range(3)),
+                    (index for index in range(3)),
+                )
+            self.assertEqual(calls["mgc"], 0)
+
+            with self.assertRaisesRegex(
+                MetricComputationError,
+                r"MGC_direct\(\.\.\.\).*estimated_distance_evaluations=18.*distance_evaluation_budget=17",
+            ):
+                correlation.MGC_direct([0, 1, 2], [0, 1, 2], max_distance_evaluations=17)
+            self.assertEqual(calls["direct"], 0)
+
+            with self.assertRaisesRegex(
+                MetricComputationError,
+                r"MGC_direct\(\.\.\.\).*unsized iterator materialization.*max_dense_records=2",
+            ):
+                correlation.MGC_direct(
+                    (index for index in range(3)),
+                    (index for index in range(3)),
+                    max_dense_records=2,
+                )
+            self.assertEqual(calls["direct"], 0)
+
+            with self.assertRaisesRegex(
+                MetricComputationError,
+                r"MGC\.xcorr\(\.\.\.\).*estimated_distance_evaluations=54.*distance_evaluation_budget=53",
+            ):
+                correlation.MGC().xcorr([0, 1, 2], [0, 1, 2], n=1, max_distance_evaluations=53)
+            self.assertEqual(calls["xcorr"], 0)
+
+            self.assertEqual(
+                correlation.MGC(max_distance_evaluations=18)([0, 1, 2], [0, 1, 2]),
+                0.5,
+            )
+            self.assertEqual(calls["mgc"], 1)
+
+            with self.assertRaisesRegex(MetricComputationError, r"Entropy\(\.\.\.\).*budget_bytes=511"):
+                correlation.Entropy(max_memory_bytes=511)([0, 1, 2, 3])
+            self.assertEqual(calls["entropy"], 0)
+
+            with self.assertRaisesRegex(
+                MetricComputationError,
+                r"Entropy\(\.\.\.\).*unsized iterator materialization.*max_dense_records=2",
+            ):
+                correlation.Entropy(max_dense_records=2)(index for index in range(3))
+            self.assertEqual(calls["entropy"], 0)
+
+            with self.assertRaisesRegex(
+                MetricComputationError,
+                r"Entropy\.estimate\(\.\.\.\).*estimated_distance_evaluations=9.*distance_evaluation_budget=8",
+            ):
+                correlation.Entropy().estimate([0, 1, 2], max_distance_evaluations=8)
+            self.assertEqual(calls["estimate"], 0)
+
+            with self.assertRaisesRegex(
+                MetricComputationError,
+                r"Entropy\.estimate\(\.\.\.\).*unsized iterator materialization.*max_dense_records=2",
+            ):
+                correlation.Entropy().estimate((index for index in range(3)), max_dense_records=2)
+            self.assertEqual(calls["estimate"], 0)
+
+            self.assertEqual(correlation.Entropy(max_memory_bytes=512)([0, 1, 2, 3]), 1.0)
+            self.assertEqual(calls["entropy"], 1)
+        finally:
+            for name in module_names:
+                if saved_modules[name] is missing:
+                    sys.modules.pop(name, None)
+                else:
+                    sys.modules[name] = saved_modules[name]
+            if saved_modules["metric.correlation"] is missing and hasattr(metric, "correlation"):
+                delattr(metric, "correlation")
 
     def test_top_level_hides_debug_extension_exports(self):
         for name in ("DoubleVector", "LongVector", "test"):
@@ -892,6 +1264,37 @@ class RevivalApiTest(unittest.TestCase):
         self.assertRequiresNative(tree_index.neighbors, "cut", 2)
         self.assertRequiresNative(tree_index.rnn, "cut", 1)
         self.assertIs(tree(space).source_space, space)
+
+        class LazyRepresentationSource:
+            metric = staticmethod(lambda lhs, rhs: abs(lhs - rhs))
+
+            def __init__(self):
+                self.records_accesses = 0
+
+            def __len__(self):
+                return 100_000
+
+            def version(self):
+                return 7
+
+            @property
+            def records(self):
+                self.records_accesses += 1
+                raise AssertionError("records should not be materialized during representation construction")
+
+            def distance(self, lhs_index, rhs_index):
+                return abs(lhs_index - rhs_index)
+
+        lazy_source = LazyRepresentationSource()
+        lazy_tree = TreeIndex(lazy_source)
+        self.assertEqual(lazy_tree.record_count, 100_000)
+        self.assertEqual(lazy_tree.source_version, 7)
+        self.assertEqual(lazy_source.records_accesses, 0)
+        self.assertEqual(lazy_tree.distance(1, 4), 3)
+        self.assertEqual(lazy_source.records_accesses, 0)
+        with self.assertRaisesRegex(StrategyUnavailableError, "native C\\+\\+ binding"):
+            GraphIndex(lazy_source, 1)
+        self.assertEqual(lazy_source.records_accesses, 0)
 
         # Building an exact kNN graph is a native-only construction algorithm.
         self.assertRequiresNative(space.to_graph, 1)
@@ -1018,11 +1421,162 @@ class RevivalApiTest(unittest.TestCase):
             space.to_matrix(max_dense_records=2)
         self.assertEqual(calls["count"], 0)
 
+        yielded_ids = {"count": 0}
+
+        def generated_ids():
+            for record_id in (0, 1, 2):
+                yielded_ids["count"] += 1
+                yield record_id
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"Space\.pairwise\(ids=\.\.\.\).*max_dense_records=2",
+        ):
+            space.pairwise(ids=generated_ids(), max_dense_records=2)
+        self.assertEqual(yielded_ids["count"], 3)
+        self.assertEqual(calls["count"], 0)
+
         with self.assertRaisesRegex(
             MetricComputationError,
             r"pairwise_distance_matrix\(\.\.\.\).*estimated_bytes=.*budget_bytes=.*Suggested fallback",
         ):
             pairwise_distance_matrix([0, 1, 2], counted_distance, max_dense_records=2)
+        self.assertEqual(calls["count"], 0)
+
+        yielded = {"count": 0}
+
+        def generated_records():
+            for value in range(10):
+                yielded["count"] += 1
+                yield value
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"pairwise_distance_matrix\(\.\.\.\).*max_dense_records=2",
+        ):
+            pairwise_distance_matrix(generated_records(), counted_distance, max_dense_records=2)
+        self.assertEqual(yielded["count"], 3)
+        self.assertEqual(calls["count"], 0)
+
+        yielded["count"] = 0
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"Space\(\.\.\.\).*record materialization.*max_dense_records=2",
+        ):
+            Space(
+                generated_records(),
+                metric=counted_distance,
+                validate="none",
+                cache="none",
+                max_dense_records=2,
+            )
+        self.assertEqual(yielded["count"], 3)
+        self.assertEqual(calls["count"], 0)
+
+        for operation in (
+            lambda values: dbscan(values, counted_distance, radius=1, min_points=1, max_dense_records=2),
+            lambda values: find_outliers(values, counted_distance, DBSCAN(radius=1, min_points=1), max_dense_records=2),
+            lambda values: find_outliers(values, counted_distance, 1, max_dense_records=2),
+            lambda values: density_filter_space(
+                values,
+                counted_distance,
+                DBSCAN(radius=1, min_points=1),
+                max_dense_records=2,
+            ),
+            lambda values: kmedoids(values, counted_distance, 2, max_iterations=2, max_dense_records=2),
+            lambda values: representative_indices(values, counted_distance, 2, max_dense_records=2),
+            lambda values: representatives(values, counted_distance, 2, max_dense_records=2),
+            lambda values: find_representatives(values, counted_distance, 2, max_dense_records=2),
+            lambda values: reduce_space(values, counted_distance, count=2, max_dense_records=2),
+            lambda values: uniform_density_sample_space(values, counted_distance, 1, max_dense_records=2),
+            lambda values: equalize_space(values, counted_distance, radius=1, max_dense_records=2),
+            lambda values: compress_space(values, counted_distance, radius=1, max_dense_records=2),
+            lambda values: compress_space(values, counted_distance, count=2, max_dense_records=2),
+            lambda values: compress_space(
+                values,
+                counted_distance,
+                strategy=KMedoids(groups=2, max_iterations=2),
+                max_dense_records=2,
+            ),
+            lambda values: medoid_index(values, counted_distance, max_dense_records=2),
+            lambda values: medoid(values, counted_distance, max_dense_records=2),
+            lambda values: separated_representative_indices(values, counted_distance, 1, max_dense_records=2),
+            lambda values: separated_representatives(values, counted_distance, 1, max_dense_records=2),
+            lambda values: coverage_representative_indices(values, counted_distance, 1, max_dense_records=2),
+            lambda values: coverage_representatives(values, counted_distance, 1, max_dense_records=2),
+            lambda values: intrinsic_dimension(values, counted_distance, max_dense_records=2),
+            lambda values: describe_structure(values, counted_distance, max_dense_records=2),
+            lambda values: thin_space(values, counted_distance, count=2, max_dense_records=2),
+            lambda values: distribution_sample_space(values, counted_distance, count=2, max_dense_records=2),
+        ):
+            yielded["count"] = 0
+            with self.assertRaisesRegex(MetricComputationError, r"max_dense_records=2"):
+                operation(generated_records())
+            self.assertEqual(yielded["count"], 3)
+            self.assertEqual(calls["count"], 0)
+
+        right_yielded = {"count": 0}
+
+        def right_generated_records():
+            for value in range(10):
+                right_yielded["count"] += 1
+                yield value
+
+        yielded["count"] = 0
+        with self.assertRaisesRegex(MetricComputationError, r"compare_spaces\(\.\.\.\).*max_dense_records=2"):
+            compare_spaces(
+                generated_records(),
+                counted_distance,
+                right_generated_records(),
+                counted_distance,
+                max_dense_records=2,
+            )
+        self.assertEqual(yielded["count"], 3)
+        self.assertEqual(right_yielded["count"], 0)
+        self.assertEqual(calls["count"], 0)
+
+        matched_yielded = {"count": 0}
+
+        def generated_matched_ids():
+            for value in range(10):
+                matched_yielded["count"] += 1
+                yield value
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"compare_spaces\(\.\.\. matched_ids\).*max_dense_records=2",
+        ):
+            compare_spaces(
+                [0, 1],
+                counted_distance,
+                [0, 1],
+                counted_distance,
+                matched_ids=generated_matched_ids(),
+                max_dense_records=2,
+            )
+        self.assertEqual(matched_yielded["count"], 3)
+        self.assertEqual(calls["count"], 0)
+
+        dropped_yielded = {"count": 0}
+
+        def generated_dropped_ids():
+            for value in range(10):
+                dropped_yielded["count"] += 1
+                yield value
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"compare_spaces\(\.\.\. dropped_left_ids\).*max_dense_records=2",
+        ):
+            compare_spaces(
+                [0, 1],
+                counted_distance,
+                [0, 1],
+                counted_distance,
+                dropped_left_ids=generated_dropped_ids(),
+                max_dense_records=2,
+            )
+        self.assertEqual(dropped_yielded["count"], 3)
         self.assertEqual(calls["count"], 0)
 
         with self.assertRaisesRegex(
@@ -1062,6 +1616,48 @@ class RevivalApiTest(unittest.TestCase):
             space.within_radius(0, 1, max_distance_evaluations=4)
         self.assertEqual(calls["count"], 0)
 
+        yielded = {"count": 0}
+
+        def generated_records():
+            for value in range(10):
+                yielded["count"] += 1
+                yield value
+
+        policy = RuntimePolicy(exact=True, max_distance_evaluations=10, max_dense_records=2)
+        with self.assertRaisesRegex(MetricComputationError, r"nearest_neighbors\(\.\.\.\).*max_dense_records=2"):
+            nearest_neighbors(generated_records(), counted_distance, 0, count=1, runtime=policy)
+        self.assertEqual(yielded["count"], 3)
+        self.assertEqual(calls["count"], 0)
+
+        yielded["count"] = 0
+        with self.assertRaisesRegex(MetricComputationError, r"range_neighbors\(\.\.\.\).*max_dense_records=2"):
+            range_neighbors(generated_records(), counted_distance, 0, radius=1, runtime=policy)
+        self.assertEqual(yielded["count"], 3)
+        self.assertEqual(calls["count"], 0)
+
+        large_yielded = {"count": 0}
+        default_dense_limit = spaces_module._DEFAULT_MAX_DENSE_RECORDS
+
+        def generated_large_records():
+            for value in range(default_dense_limit + 5):
+                large_yielded["count"] += 1
+                yield value
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            rf"nearest_neighbors\(\.\.\.\).*max_dense_records={default_dense_limit}",
+        ):
+            nearest_neighbors(
+                generated_large_records(),
+                counted_distance,
+                0,
+                count=1,
+                exact=False,
+                max_distance_evaluations=2,
+            )
+        self.assertEqual(large_yielded["count"], default_dense_limit + 1)
+        self.assertEqual(calls["count"], 0)
+
         with self.assertRaisesRegex(
             MetricComputationError,
             r"Space\.neighbors\(\).*records=8, queries=1.*distance_evaluation_budget=4",
@@ -1073,6 +1669,40 @@ class RevivalApiTest(unittest.TestCase):
                 allow_approximate=False,
                 max_distance_evaluations=4,
             )
+        self.assertEqual(calls["count"], 0)
+
+        query_yielded = {"count": 0}
+
+        def generated_queries():
+            for value in range(10):
+                query_yielded["count"] += 1
+                yield value
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"Space\.neighbors\(\).*records=8, queries=1.*distance_evaluation_budget=4",
+        ):
+            space.neighbors(
+                queries=generated_queries(),
+                count=1,
+                max_distance_evaluations=4,
+            )
+        self.assertEqual(query_yielded["count"], 1)
+        self.assertEqual(calls["count"], 0)
+
+        query_yielded["count"] = 0
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"Space\.neighbors\(\).*query batch materialization.*queries=3, max_dense_records=2",
+        ):
+            space.neighbors(
+                queries=generated_queries(),
+                count=1,
+                exact=False,
+                max_distance_evaluations=100,
+                max_dense_records=2,
+            )
+        self.assertEqual(query_yielded["count"], 3)
         self.assertEqual(calls["count"], 0)
 
     def test_exact_false_selects_sampled_neighbors_and_range_even_within_budget(self):
@@ -1211,9 +1841,10 @@ class RevivalApiTest(unittest.TestCase):
         self.assertFalse(radius_result.exact)
         self.assertTrue(radius_result.diagnostics["recall_measured"])
         self.assertAlmostEqual(radius_result.diagnostics["recall"], 2 / 3)
-        radius_standard_error = math.sqrt((2 / 3) * (1 / 3) / 3)
+        radius_standard_error = math.sqrt((((0.5 - 0.75) ** 2) + ((1.0 - 0.75) ** 2)) / 1 / 2)
         self.assertAlmostEqual(radius_result.diagnostics["standard_error"], radius_standard_error)
         self.assertAlmostEqual(radius_result.diagnostics["confidence_radius_95"], 1.96 * radius_standard_error)
+        self.assertIn("query-level standard error", radius_result.diagnostics["recall_measurement_reason"])
         self.assertEqual(radius_result.diagnostics["sampled_distance_evaluations"], 6)
         self.assertEqual(radius_result.diagnostics["recall_distance_evaluations"], 2)
         self.assertEqual(radius_result.diagnostics["distance_evaluations"], 8)
@@ -1261,6 +1892,34 @@ class RevivalApiTest(unittest.TestCase):
         )
         self.assertEqual(calls["count"], 0)
 
+        memory_limited_plan = space.plan(
+            "neighbors",
+            query_count=1,
+            exact=False,
+            representation="landmark",
+            landmark_count=landmark_count,
+            candidate_count=candidate_count,
+            max_distance_evaluations=budget,
+            max_memory_bytes=64,
+        )
+        self.assertEqual(memory_limited_plan.decision, "refused")
+        self.assertEqual(memory_limited_plan.representation, "landmark_index")
+        self.assertGreater(memory_limited_plan.memory_bytes_estimate, memory_limited_plan.max_memory_bytes)
+        self.assertIn("max_memory_bytes", memory_limited_plan.reason)
+        self.assertEqual(calls["count"], 0)
+        with self.assertRaisesRegex(MetricComputationError, r"landmark index memory exceeds max_memory_bytes"):
+            space.neighbors(
+                123,
+                count=3,
+                exact=False,
+                representation="landmark",
+                landmark_count=landmark_count,
+                candidate_count=candidate_count,
+                max_distance_evaluations=budget,
+                max_memory_bytes=64,
+            )
+        self.assertEqual(calls["count"], 0)
+
         result = space.neighbors(
             123,
             count=3,
@@ -1296,6 +1955,7 @@ class RevivalApiTest(unittest.TestCase):
             candidate_count,
         )
         self.assertIn("larger lower-bound reference window", result.diagnostics["recall_measurement_reason"])
+        self.assertIn("query-level standard error", result.diagnostics["recall_measurement_reason"])
         self.assertEqual(result.provenance["search_representation"], "landmark_index")
 
         with self.assertRaisesRegex(MetricInputError, "exact=False"):
@@ -1339,7 +1999,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(calls["count"], radius_result.diagnostics["distance_evaluations"])
         self.assertLess(calls["count"], dense_distance_evaluations // 8)
 
-    def test_exact_false_auto_selects_landmark_for_batch_queries_when_bounded(self):
+    def test_exact_false_auto_uses_sampled_search_for_unadmitted_python_callable(self):
         class CountingMetric:
             def __init__(self):
                 self.count = 0
@@ -1350,6 +2010,40 @@ class RevivalApiTest(unittest.TestCase):
 
         record_count = 128
         queries = (5, 25, 65, 100)
+        metric = CountingMetric()
+        space = Space(list(range(record_count)), metric=metric, validate="none")
+        plan = space.plan(
+            "neighbors",
+            query_count=len(queries),
+            exact=False,
+            landmark_count=4,
+            candidate_count=12,
+            max_distance_evaluations=80,
+        )
+        self.assertEqual(plan.exactness, "approximate")
+        self.assertEqual(plan.representation, "sampled_live_scan")
+        self.assertEqual(plan.diagnostics["candidate_policy"], "regular_sample")
+
+        result = space.neighbors(
+            queries=queries,
+            count=2,
+            exact=False,
+            landmark_count=4,
+            candidate_count=12,
+            max_distance_evaluations=80,
+        )
+        self.assertFalse(result.exact)
+        self.assertEqual(result.strategy, "sampled_knn_budget_guard")
+        self.assertEqual(result.representation, "sampled_live_scan")
+        self.assertEqual(result.diagnostics["candidate_policy"], "regular_sample")
+        self.assertEqual(result.diagnostics["query_count"], len(queries))
+        self.assertNotIn("landmark_index", result.provenance)
+        self.assertLessEqual(metric.count, 80)
+
+    def test_exact_false_auto_selects_landmark_for_admitted_batch_queries_when_bounded(self):
+        record_count = 128
+        records = [[float(index)] for index in range(record_count)]
+        queries = ([5.0], [25.0], [65.0], [100.0])
         landmark_count = 4
         candidate_count = 12
         budget = 1000
@@ -1358,8 +2052,7 @@ class RevivalApiTest(unittest.TestCase):
         expected_query_landmark_evaluations = len(queries) * landmark_count
         expected_refinement_evaluations = len(queries) * candidate_count
 
-        metric = CountingMetric()
-        space = Space(list(range(record_count)), metric=metric, validate="none")
+        space = Space.vectors(records, metric=distance_module.Euclidean(), validate="none")
 
         single_plan = space.plan(
             "neighbors",
@@ -1372,7 +2065,11 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(single_plan.representation, "sampled_live_scan")
         self.assertEqual(single_plan.diagnostics["candidate_policy"], "regular_sample")
 
-        small_space = Space(list(range(8)), metric=CountingMetric(), validate="none")
+        small_space = Space.vectors(
+            [[float(index)] for index in range(8)],
+            metric=distance_module.Euclidean(),
+            validate="none",
+        )
         small_batch_plan = small_space.plan(
             "neighbors",
             query_count=len(queries),
@@ -1407,7 +2104,6 @@ class RevivalApiTest(unittest.TestCase):
             + expected_query_landmark_evaluations
             + expected_refinement_evaluations,
         )
-        self.assertEqual(metric.count, 0)
 
         result = space.neighbors(
             queries=queries,
@@ -1439,19 +2135,18 @@ class RevivalApiTest(unittest.TestCase):
             result.diagnostics["refinement_distance_evaluations"],
             expected_refinement_evaluations,
         )
-        self.assertEqual(metric.count, result.diagnostics["distance_evaluations"])
-        self.assertLess(metric.count, dense_distance_evaluations)
+        self.assertLess(result.diagnostics["distance_evaluations"], dense_distance_evaluations)
         self.assertEqual(result.provenance["search_representation"], "landmark_index")
         self.assertIn("landmark_index", result.provenance)
         self.assertTrue(result.diagnostics["recall_measured"])
         self.assertGreater(result.diagnostics["recall_distance_evaluations"], 0)
         self.assertEqual(result.diagnostics["recall_sample_query_count"], len(queries))
+        self.assertIn("query-level standard error", result.diagnostics["recall_measurement_reason"])
         self.assertEqual(
             result.diagnostics["recall_reference_candidate_counts"],
             (candidate_count * 2,) * len(queries),
         )
 
-        metric.count = 0
         range_plan = space.plan(
             "range",
             query_count=len(queries),
@@ -1490,8 +2185,7 @@ class RevivalApiTest(unittest.TestCase):
             radius_result.diagnostics["refinement_distance_evaluations"],
             expected_refinement_evaluations,
         )
-        self.assertEqual(metric.count, radius_result.diagnostics["distance_evaluations"])
-        self.assertLess(metric.count, dense_distance_evaluations)
+        self.assertLess(radius_result.diagnostics["distance_evaluations"], dense_distance_evaluations)
         self.assertEqual(radius_result.provenance["search_representation"], "landmark_index")
         self.assertIn("landmark_index", radius_result.provenance)
         self.assertTrue(radius_result.diagnostics["recall_measured"])
@@ -1633,9 +2327,10 @@ class RevivalApiTest(unittest.TestCase):
         self.assertFalse(bounded_range.exact)
         self.assertTrue(bounded_range.diagnostics["recall_measured"])
         self.assertAlmostEqual(bounded_range.diagnostics["recall"], 0.5)
-        range_standard_error = math.sqrt(0.5 * 0.5 / 2)
+        range_standard_error = 0.0
         self.assertAlmostEqual(bounded_range.diagnostics["standard_error"], range_standard_error)
         self.assertAlmostEqual(bounded_range.diagnostics["confidence_radius_95"], 1.96 * range_standard_error)
+        self.assertIn("query-level standard error", bounded_range.diagnostics["recall_measurement_reason"])
         self.assertEqual(bounded_range.diagnostics["candidate_count"], 6)
         self.assertEqual(bounded_range.diagnostics["sampled_distance_evaluations"], 6)
         self.assertEqual(bounded_range.diagnostics["recall_distance_evaluations"], 2)
@@ -1784,6 +2479,19 @@ class RevivalApiTest(unittest.TestCase):
             Space.from_dataframe(dataframe, metric=row_distance, id_column="sample_id", ids=["a", "b", "c"])
         with self.assertRaises(KeyError):
             Space.from_dataframe(DataFrameLike([{"sample_id": "a"}, {"other": "b"}]), metric=row_distance, id_column="sample_id")
+
+        class OversizedDataFrameLike:
+            def __len__(self):
+                return 3
+
+            def to_dict(self, orient):
+                raise AssertionError("to_dict should not run after max_dense_records refusal")
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"Space\.from_dataframe\(\.\.\.\).*max_dense_records=2",
+        ):
+            Space.from_dataframe(OversizedDataFrameLike(), metric=row_distance, max_dense_records=2)
 
     def test_nearest_neighbor_helpers_use_native_exact_scan(self):
         space = FiniteMetricSpace(self.records, self.metric)
@@ -2026,6 +2734,54 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(filtered.space.records, [0, 1, 2])
         self.assertFalse(filtered.out_of_sample_supported)
         self.assertIn("DBSCAN-unassigned", filtered.validity)
+        redif_records = [0, 1, 2, 100]
+        inverse_dynamics = remove_noise_space(
+            redif_records,
+            metric,
+            InverseDynamics(neighbors=1, iterations=2, euler_step=0.25, adaptive_geometry=False),
+        )
+        self.assertIsInstance(inverse_dynamics, RedifMeasureResult)
+        self.assertEqual(inverse_dynamics.operator_name, "redif_remove_noise")
+        self.assertEqual(len(inverse_dynamics.paths), len(redif_records))
+        self.assertEqual(len(inverse_dynamics.step_diagnostics), 2)
+        self.assertEqual(inverse_dynamics.transport_diagnostics["solver"], "exact_discrete_wasserstein")
+        forward_dynamics = add_noise_space(
+            redif_records,
+            metric,
+            ForwardDynamics(neighbors=1, iterations=2, euler_step=0.25, adaptive_geometry=False),
+        )
+        self.assertEqual(forward_dynamics.operator_name, "redif_add_noise")
+        self.assertGreater(forward_dynamics.summaries[0].terminal_shannon_entropy, 0.0)
+        generic_forward = redif_dynamics(
+            redif_records,
+            metric,
+            RedifDynamics(neighbors=1, iterations=1, euler_step=0.25, adaptive_geometry=False),
+            direction="forward",
+        )
+        self.assertEqual(generic_forward.operator_name, "redif_add_noise")
+        path_ranked = find_outliers(
+            redif_records,
+            metric,
+            TransportPath(neighbors=1, iterations=2, euler_step=0.25, adaptive_geometry=True),
+        )
+        self.assertEqual(path_ranked.strategy, "redif_transport_path_length")
+        self.assertEqual(path_ranked.outliers[0].record_id, 3)
+        redif_space = Space(redif_records, metric=metric)
+        space_inverse = redif_space.remove_noise(
+            InverseDynamics(neighbors=1, iterations=1, euler_step=0.25, adaptive_geometry=False)
+        )
+        self.assertEqual(space_inverse.paths[0].record_id, redif_space.ids[0])
+        space_forward = redif_space.add_noise(
+            ForwardDynamics(neighbors=1, iterations=1, euler_step=0.25, adaptive_geometry=False)
+        )
+        self.assertEqual(space_forward.operator_name, "redif_add_noise")
+        self.assertEqual(
+            redif_space.dynamics(
+                RedifDynamics(neighbors=1, iterations=1, euler_step=0.25, adaptive_geometry=False),
+                direction="inverse",
+            ).operator_name,
+            "redif_remove_noise",
+        )
         self.assertEqual(find_representatives(records, metric, 2).representatives, (0, 4))
         self.assertEqual(reduce_space(records, metric, 2).source_record_ids, (0, 4))
         self.assertEqual(compress_space(records, metric, 2).compressed_record_count, 2)
@@ -2071,6 +2827,37 @@ class RevivalApiTest(unittest.TestCase):
             map_space([0, 1, 2], lambda record: record * record, lambda lhs, rhs: abs(lhs - rhs)).space.records,
             [0, 1, 4],
         )
+
+        mapped_yielded = {"count": 0}
+        transform_calls = {"count": 0}
+
+        def generated_mapping_records():
+            for value in range(10):
+                mapped_yielded["count"] += 1
+                yield value
+
+        def counted_transform(record):
+            transform_calls["count"] += 1
+            return record * record
+
+        with self.assertRaisesRegex(MetricComputationError, r"map_space\(\.\.\.\).*max_dense_records=2"):
+            map_space(
+                generated_mapping_records(),
+                counted_transform,
+                lambda lhs, rhs: abs(lhs - rhs),
+                max_dense_records=2,
+            )
+        self.assertEqual(mapped_yielded["count"], 3)
+        self.assertEqual(transform_calls["count"], 0)
+
+        with self.assertRaisesRegex(MetricComputationError, r"Space\.map\(transform=\.\.\.\).*max_dense_records=2"):
+            space.map(
+                transform=counted_transform,
+                metric=metric,
+                max_dense_records=2,
+            )
+        self.assertEqual(transform_calls["count"], 0)
+
         with self.assertRaisesRegex(UnsupportedOperationError, "inverse_supported=False"):
             mapped.inverse_transform()
 
@@ -2119,6 +2906,77 @@ class RevivalApiTest(unittest.TestCase):
         self.assertFalse(derivation.inverse_supported())
         self.assertEqual(mappings.transform(derivation, group_space).source_records, clustered.source_records)
 
+        clustered_calls = {"count": 0}
+
+        def counted_cluster_metric(lhs, rhs):
+            clustered_calls["count"] += 1
+            return abs(lhs - rhs)
+
+        counted_group_space = Space(
+            [0, 1, 2, 10, 11],
+            metric=counted_cluster_metric,
+            validate="none",
+            cache="none",
+        )
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"clustered_space\(\.\.\.\).*estimated_distance_evaluations=4.*distance_evaluation_budget=3",
+        ):
+            mappings.clustered_space(
+                counted_group_space,
+                clustering,
+                max_distance_evaluations=3,
+            )
+        self.assertEqual(clustered_calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"clustered_space\(\.\.\.\).*max_dense_records=1",
+        ):
+            mappings.derive_from(
+                mappings.make_clustered_space_mapping(clustering),
+                counted_group_space,
+                max_dense_records=1,
+            )
+        self.assertEqual(clustered_calls["count"], 0)
+
+        assignment_yields = {"count": 0}
+
+        class LazyClustering:
+            record_count = 5
+            cluster_count = 2
+            unassigned_count = 0
+            unassigned_label = -1
+            medoids = (1, 3)
+            algorithm = "kmedoids"
+            representation = "metric_space"
+
+            @property
+            def assignments(self):
+                for label in (0, 0, 0, 1, 1):
+                    assignment_yields["count"] += 1
+                    yield label
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"clustered_space\(\.\.\.\).*max_dense_records=1",
+        ):
+            mappings.clustered_space(
+                counted_group_space,
+                LazyClustering(),
+                max_dense_records=1,
+            )
+        self.assertEqual(assignment_yields["count"], 0)
+        self.assertEqual(clustered_calls["count"], 0)
+
+        accepted_clustered = mappings.clustered_space(
+            counted_group_space,
+            clustering,
+            max_distance_evaluations=4,
+        )
+        self.assertEqual(accepted_clustered.representative_records, (1, 3))
+        self.assertEqual(clustered_calls["count"], 4)
+
         keyed_space = Space(
             [0, 1, 2, 10, 11],
             metric=lambda lhs, rhs: abs(lhs - rhs),
@@ -2129,6 +2987,36 @@ class RevivalApiTest(unittest.TestCase):
         keyed_clustered = mappings.clustered_space(keyed_space, keyed_groups)
         self.assertEqual(keyed_clustered.source_records, ((10, 11, 12), (20, 21)))
         self.assertEqual(keyed_clustered.representative_records, (11, 20))
+
+        class NoLinearIndexList(list):
+            def index(self, *args, **kwargs):
+                raise AssertionError("clustered_space must use indexed SourceId lookup")
+
+        indexed_space = Space(
+            [0, 10, 20, 30, 40],
+            metric=lambda lhs, rhs: abs(lhs - rhs),
+            ids=[100, 110, 120, 130, 140],
+            validate="none",
+            cache="none",
+        )
+        indexed_space.ids = NoLinearIndexList(indexed_space.ids)
+        one_record_clusters = ClusteringResult(
+            assignments=(0, 1, 2, 3, 4),
+            medoids=(100, 110, 120, 130, 140),
+            core_records=(),
+            unassigned_records=(),
+            cluster_sizes=(1, 1, 1, 1, 1),
+            record_count=5,
+            cluster_count=5,
+            unassigned_count=0,
+            iterations=1,
+            converged=True,
+            algorithm="indexed_medoids",
+            representation="metric_space",
+        )
+        indexed_clustered = mappings.clustered_space(indexed_space, one_record_clusters)
+        self.assertEqual(indexed_clustered.representative_records, (100, 110, 120, 130, 140))
+        self.assertEqual(indexed_clustered.source_records, ((100,), (110,), (120,), (130,), (140,)))
 
         keyed_mapped = keyed_space.map(lambda record: record * 10, metric=lambda lhs, rhs: abs(lhs - rhs))
         self.assertEqual(keyed_mapped.source_record_ids, tuple(keyed_space.ids))
@@ -2144,6 +3032,36 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(operators.intrinsic_dimension_from_distances([[0.0, 1.0], [1.0, 0.0]]), 0.0)
         with self.assertRaisesRegex(ValueError, "row 0"):
             operators.intrinsic_dimension_from_distances([[0.0, 1.0, 2.0], [1.0, 0.0]])
+
+        class HugePrecomputedDistances:
+            def __len__(self):
+                return 3
+
+            def __iter__(self):
+                raise AssertionError("distance rows should not be materialized after budget refusal")
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"intrinsic_dimension_from_distances\(\.\.\.\).*max_dense_records=2",
+        ):
+            operators.intrinsic_dimension_from_distances(HugePrecomputedDistances(), max_dense_records=2)
+
+        yielded_columns = []
+
+        def overlong_row():
+            for value in (0.0, 1.0, 2.0, 3.0):
+                yielded_columns.append(value)
+                yield value
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"intrinsic_dimension_from_distances\(\.\.\.\).*row materialization",
+        ):
+            operators.intrinsic_dimension_from_distances(
+                [overlong_row(), [1.0, 0.0]],
+                max_dense_records=3,
+            )
+        self.assertEqual(len(yielded_columns), 3)
     def test_representative_and_graph_operators_require_native(self):
         records = [(1.0, 0.0), (0.0, 1.0), (0.5, 0.5)]
 
@@ -2402,6 +3320,380 @@ class RevivalApiTest(unittest.TestCase):
             RuntimePolicy(representation="graph", graph_count=-1)
         with self.assertRaises(StrategyParameterError):
             RuntimePolicy(parallel="yes")
+
+    def test_runtime_policy_budgets_drive_python_space_guards(self):
+        calls = {"count": 0}
+
+        def counted_distance(lhs, rhs):
+            calls["count"] += 1
+            return abs(lhs - rhs)
+
+        space = Space([0, 1, 2], metric=counted_distance, validate="none")
+        policy = RuntimePolicy(
+            exact=True,
+            max_memory_bytes=1,
+            max_distance_evaluations=2,
+            max_dense_records=2,
+        )
+
+        self.assertEqual(policy.to_dict()["max_memory_bytes"], 1)
+        self.assertEqual(policy.to_dict()["max_distance_evaluations"], 2)
+        self.assertEqual(policy.to_dict()["max_dense_records"], 2)
+        self.assertEqual(runtime.materialized(policy).max_dense_records, 2)
+        diagnostics = runtime_diagnostics(policy, intent="to_matrix").to_dict()
+        self.assertEqual(diagnostics["max_memory_bytes"], 1)
+        self.assertEqual(diagnostics["max_distance_evaluations"], 2)
+        self.assertEqual(diagnostics["max_dense_records"], 2)
+
+        plan = space.plan("to_matrix", runtime=policy)
+        self.assertEqual(plan.decision, "refused")
+        self.assertEqual(plan.max_memory_bytes, 1)
+        self.assertEqual(plan.max_distance_evaluations, 2)
+        self.assertEqual(plan.max_dense_records, 2)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"Space\.to_matrix\(\).*estimated_bytes=.*distance_evaluation_budget=2.*max_dense_records=2",
+        ):
+            space.to_matrix(runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"Space\.pairwise_distances\(\).*estimated_bytes=.*distance_evaluation_budget=2.*max_dense_records=2",
+        ):
+            space.pairwise_distances(runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"pairwise_distance_matrix\(\.\.\.\).*estimated_bytes=.*distance_evaluation_budget=2.*max_dense_records=2",
+        ):
+            pairwise_distance_matrix([0, 1, 2], counted_distance, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"Space\.neighbors\(\).*estimated_distance_evaluations=3.*distance_evaluation_budget=2",
+        ):
+            space.neighbors(0, count=1, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"nearest_neighbors\(\.\.\.\).*estimated_distance_evaluations=3.*distance_evaluation_budget=2",
+        ):
+            nearest_neighbors([0, 1, 2], counted_distance, 0, count=1, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"range_neighbors\(\.\.\.\).*estimated_distance_evaluations=3.*distance_evaluation_budget=2",
+        ):
+            range_neighbors([0, 1, 2], counted_distance, 0, 1, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"Space\.describe\(\).*estimated_distance_evaluations=27.*distance_evaluation_budget=2",
+        ):
+            space.describe(runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"compare_spaces\(\.\.\.\).*estimated_distance_evaluations=18.*distance_evaluation_budget=2",
+        ):
+            compare_spaces([0, 1, 2], counted_distance, [0, 1, 2], counted_distance, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"compare_spaces\(\.\.\.\).*estimated_distance_evaluations=18.*distance_evaluation_budget=2",
+        ):
+            space.compare(space, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"describe_structure\(\.\.\.\).*estimated_distance_evaluations=27.*distance_evaluation_budget=2",
+        ):
+            describe_structure([0, 1, 2], counted_distance, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"intrinsic_dimension\(\.\.\.\).*estimated_distance_evaluations=27.*distance_evaluation_budget=2",
+        ):
+            intrinsic_dimension([0, 1, 2], counted_distance, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"derive_parametric_diffusion_coordinates\(\.\.\.\).*max_dense_records=2",
+        ):
+            mappings.derive_parametric_diffusion_coordinates([[0.0], [1.0], [2.0]], runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        from metric import mapping_pipeline
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"derive_mapping_pipeline\(\.\.\.\).*max_dense_records=2",
+        ):
+            mapping_pipeline.derive_mapping_pipeline([[0.0], [1.0], [2.0]], runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"kmedoids\(\.\.\.\).*estimated_distance_evaluations=12.*distance_evaluation_budget=2",
+        ):
+            kmedoids([0, 1, 2], counted_distance, 2, max_iterations=2, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"dbscan\(\.\.\.\).*estimated_distance_evaluations=9.*distance_evaluation_budget=2",
+        ):
+            dbscan([0, 1, 2], counted_distance, 1, 2, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"find_outliers\(\.\.\.\).*estimated_distance_evaluations=9.*distance_evaluation_budget=2",
+        ):
+            find_outliers([0, 1, 2], counted_distance, 1, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"representative_indices\(\.\.\.\).*estimated_distance_evaluations=6.*distance_evaluation_budget=2",
+        ):
+            representative_indices([0, 1, 2], counted_distance, 2, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"find_representatives\(\.\.\.\).*estimated_distance_evaluations=6.*distance_evaluation_budget=2",
+        ):
+            find_representatives([0, 1, 2], counted_distance, count=1, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"reduce_space\(\.\.\.\).*estimated_distance_evaluations=6.*distance_evaluation_budget=2",
+        ):
+            reduce_space([0, 1, 2], counted_distance, count=1, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"compress_space\(\.\.\.\).*estimated_distance_evaluations=6.*distance_evaluation_budget=2",
+        ):
+            compress_space([0, 1, 2], counted_distance, count=1, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"representatives\(\.\.\.\).*estimated_distance_evaluations=6.*distance_evaluation_budget=2",
+        ):
+            representatives([0, 1, 2], counted_distance, 2, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"medoid_index\(\.\.\.\).*estimated_distance_evaluations=9.*distance_evaluation_budget=2",
+        ):
+            medoid_index([0, 1, 2], counted_distance, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"medoid\(\.\.\.\).*estimated_distance_evaluations=9.*distance_evaluation_budget=2",
+        ):
+            medoid([0, 1, 2], counted_distance, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"separated_representative_indices\(\.\.\.\).*estimated_distance_evaluations=9.*distance_evaluation_budget=2",
+        ):
+            separated_representative_indices([0, 1, 2], counted_distance, 1, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"separated_representatives\(\.\.\.\).*estimated_distance_evaluations=9.*distance_evaluation_budget=2",
+        ):
+            separated_representatives([0, 1, 2], counted_distance, 1, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"coverage_representative_indices\(\.\.\.\).*estimated_distance_evaluations=9.*distance_evaluation_budget=2",
+        ):
+            coverage_representative_indices([0, 1, 2], counted_distance, 1, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"coverage_representatives\(\.\.\.\).*estimated_distance_evaluations=9.*distance_evaluation_budget=2",
+        ):
+            coverage_representatives([0, 1, 2], counted_distance, 1, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"thin_space\(\.\.\.\).*estimated_distance_evaluations=72.*distance_evaluation_budget=2",
+        ):
+            uniform_density_sample_space([0, 1, 2], counted_distance, 1, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"equalize_space\(\.\.\.\).*estimated_distance_evaluations=72.*distance_evaluation_budget=2",
+        ):
+            equalize_space([0, 1, 2], counted_distance, radius=1, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        regular = thin_space([0, 1, 2], counted_distance, count=1, runtime=policy)
+        self.assertEqual(regular.source_record_ids, (0,))
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"kmedoids\(\.\.\.\).*estimated_distance_evaluations=600.*distance_evaluation_budget=2",
+        ):
+            space.groups(count=2, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"find_outliers\(\.\.\.\).*estimated_distance_evaluations=9.*distance_evaluation_budget=2",
+        ):
+            space.outliers(count=1, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"find_representatives\(\.\.\.\).*estimated_distance_evaluations=6.*distance_evaluation_budget=2",
+        ):
+            space.representatives(count=1, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"reduce_space\(\.\.\.\).*estimated_distance_evaluations=6.*distance_evaluation_budget=2",
+        ):
+            space.reduce(1, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"Space\.compress\(\.\.\.\).*estimated_distance_evaluations=6.*distance_evaluation_budget=2",
+        ):
+            space.compress(1, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"Space\.compress\(\.\.\.\).*estimated_distance_evaluations=18.*distance_evaluation_budget=2",
+        ):
+            space.compress(radius=1, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"Space\.thin\(\.\.\.\).*estimated_distance_evaluations=72.*distance_evaluation_budget=2",
+        ):
+            space.thin(strategy=UniformDensity(1), runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"Space\.thin\(\.\.\.\).*estimated_distance_evaluations=72.*distance_evaluation_budget=2",
+        ):
+            space.uniform_density_sample(1, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"Space\.equalize\(\.\.\.\).*estimated_distance_evaluations=72.*distance_evaluation_budget=2",
+        ):
+            space.equalize(radius=1, runtime=policy)
+        self.assertEqual(calls["count"], 0)
+
+        regular_space = space.distribution_sample(1, runtime=policy)
+        self.assertEqual(regular_space.source_record_ids, (RecordId(0),))
+        self.assertEqual(calls["count"], 0)
+        self.assertEqual(regular_space.space.validate, "none")
+        self.assertEqual(regular_space.space.cache.mode, "none")
+
+        radius_policy = RuntimePolicy(exact=True, max_distance_evaluations=9)
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"compress_space\(\.\.\.\).*estimated_distance_evaluations=18.*distance_evaluation_budget=9",
+        ):
+            compress_space([0, 1, 2], counted_distance, radius=1, runtime=radius_policy)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"Space\.compress\(\.\.\.\).*estimated_distance_evaluations=18.*distance_evaluation_budget=9",
+        ):
+            space.compress(radius=1, runtime=radius_policy)
+        self.assertEqual(calls["count"], 0)
+
+        accepted_calls = {"count": 0}
+
+        def accepted_distance(lhs, rhs):
+            accepted_calls["count"] += 1
+            return abs(lhs - rhs)
+
+        accepted_compression_policy = RuntimePolicy(exact=True, max_distance_evaluations=18)
+        compressed = compress_space([0, 1, 2], accepted_distance, radius=1, runtime=accepted_compression_policy)
+        self.assertEqual(compressed.compressed_record_count, 2)
+        self.assertLessEqual(accepted_calls["count"], accepted_compression_policy.max_distance_evaluations)
+        self.assertEqual(compressed.space.validate, "none")
+        self.assertEqual(compressed.space.cache.mode, "none")
+
+        accepted_calls["count"] = 0
+        accepted_resample_policy = RuntimePolicy(exact=True, max_distance_evaluations=72)
+        equalized = equalize_space([0, 1, 2], accepted_distance, radius=1, runtime=accepted_resample_policy)
+        self.assertEqual(equalized.target_record_count, 2)
+        self.assertLessEqual(accepted_calls["count"], accepted_resample_policy.max_distance_evaluations)
+        self.assertEqual(equalized.space.validate, "none")
+        self.assertEqual(equalized.space.cache.mode, "none")
+
+        derived_calls = {"count": 0}
+
+        def derived_distance(lhs, rhs):
+            derived_calls["count"] += 1
+            return abs(lhs - rhs)
+
+        materialized_source = Space(
+            [0, 1, 2],
+            metric=derived_distance,
+            validate="none",
+            cache="materialized",
+            max_dense_records=3,
+        )
+        derived_calls["count"] = 0
+        derived_regular = materialized_source.distribution_sample(1, runtime=policy)
+        self.assertEqual(derived_regular.source_record_ids, (RecordId(0),))
+        self.assertEqual(derived_calls["count"], 0)
+        self.assertEqual(derived_regular.space.validate, "none")
+        self.assertEqual(derived_regular.space.cache.mode, "none")
+
+        override_plan = space.plan("to_matrix", runtime=policy, max_dense_records=3)
+        self.assertEqual(override_plan.max_dense_records, 3)
+        self.assertEqual(override_plan.max_memory_bytes, 1)
+
+        with self.assertRaises(StrategyParameterError):
+            RuntimePolicy(max_distance_evaluations=-1)
+        with self.assertRaises(StrategyParameterError):
+            RuntimePolicy(max_memory_bytes=True)
+
     def test_numpy_record_arrays_use_custom_metric_callable(self):
         records = np.array([[0.0, 0.0], [3.0, 4.0], [6.0, 8.0]])
 
@@ -2714,8 +4006,11 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(drift.target_record_count, 2)
         self.assertEqual(drift.to_dict()["source_record_count"], 3)
         self.assertEqual(drift.to_dict()["target_record_count"], 2)
-        self.assertEqual(drift.to_dict()["cost_model"]["policy"], "distance_distribution_drift_two_pass")
-        self.assertEqual(drift.to_dict()["cost_model"]["distance_evaluations"], 8)
+        self.assertEqual(
+            drift.to_dict()["cost_model"]["policy"],
+            "distance_distribution_drift_shared_histogram_pass",
+        )
+        self.assertEqual(drift.to_dict()["cost_model"]["distance_evaluations"], 4)
         self.assertAlmostEqual(drift.mean_absolute_drift, 1.0)
         self.assertAlmostEqual(drift.median_absolute_drift, 1.0)
         self.assertAlmostEqual(drift.maximum_quantile_absolute_drift, 2.0)
@@ -2998,6 +4293,293 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(words.levels[0].representative_indices, (0, 3))
         self.assertEqual(words.levels[0].multiplicities, (3, 1))
         self.assertIn("source medoids", words.validity)
+
+    def test_experimental_budget_preflights_before_metric_calls(self):
+        calls = {"count": 0}
+
+        def counted_distance(lhs, rhs):
+            calls["count"] += 1
+            return abs(lhs - rhs)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"distance_distribution_sketch\(\.\.\.\).*estimated_distance_evaluations=3.*distance_evaluation_budget=2",
+        ):
+            distance_distribution_sketch([0, 1, 2], counted_distance, max_distance_evaluations=2)
+        self.assertEqual(calls["count"], 0)
+
+        sampled = distance_distribution_sketch(
+            [0, 1, 2],
+            counted_distance,
+            sample_count=2,
+            max_distance_evaluations=2,
+        )
+        self.assertEqual(sampled.evaluated_pair_count, 2)
+        self.assertFalse(sampled.exact)
+        self.assertEqual(calls["count"], 2)
+
+        calls["count"] = 0
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"distance_distribution_sketch\(\.\.\.\).*value materialization.*budget_bytes=64",
+        ):
+            distance_distribution_sketch([0, 1, 2, 3], counted_distance, max_memory_bytes=64)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"distance_distribution_drift\(\.\.\.\).*value materialization.*budget_bytes=64",
+        ):
+            distance_distribution_drift(
+                [0, 1, 2],
+                [0, 1, 2],
+                counted_distance,
+                max_memory_bytes=64,
+            )
+        self.assertEqual(calls["count"], 0)
+
+        budgeted_runtime = RuntimePolicy(
+            exact=True,
+            max_distance_evaluations=2,
+            max_dense_records=4,
+        )
+        for operation in (
+            lambda: distance_distribution_drift(
+                [0, 1, 2],
+                [0, 1, 2],
+                counted_distance,
+                runtime=budgeted_runtime,
+            ),
+            lambda: knn_recall_sketch(
+                [0, 1, 2],
+                counted_distance,
+                sketch_indices=(0, 1),
+                max_distance_evaluations=2,
+            ),
+            lambda: hierarchical_metric_net(
+                [0, 1, 2],
+                counted_distance,
+                radii=(1.0,),
+                max_distance_evaluations=2,
+            ),
+            lambda: adaptive_density_equalization(
+                [0, 1, 2],
+                counted_distance,
+                radius=1.0,
+                max_distance_evaluations=2,
+            ),
+            lambda: metric_measure_drift(
+                [0, 1, 2],
+                [0, 1, 2],
+                counted_distance,
+                max_distance_evaluations=2,
+            ),
+            lambda: metric_graph_spanner(
+                [0, 1, 2],
+                counted_distance,
+                max_distance_evaluations=2,
+            ),
+            lambda: density_hierarchy_quotient(
+                [0, 1, 2],
+                counted_distance,
+                radii=(1.0,),
+                max_dense_records=2,
+            ),
+        ):
+            before = calls["count"]
+            with self.assertRaisesRegex(MetricComputationError, r"refused .*before running metric calls"):
+                operation()
+            self.assertEqual(calls["count"], before)
+
+        calls["count"] = 0
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"metric_graph_spanner\(\.\.\.\).*spanner pair materialization.*pair_count=6.*estimated_bytes=1152.*budget_bytes=900",
+        ):
+            metric_graph_spanner(
+                [0, 1, 2, 3],
+                counted_distance,
+                max_memory_bytes=900,
+                max_distance_evaluations=1000,
+            )
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"metric_graph_spanner\(\.\.\.\).*estimated_metric_distance_evaluations=6.*estimated_shortest_path_work=192.*estimated_spanner_work=198.*distance_evaluation_budget=197",
+        ):
+            metric_graph_spanner(
+                [0, 1, 2, 3],
+                counted_distance,
+                max_distance_evaluations=197,
+            )
+        self.assertEqual(calls["count"], 0)
+
+    def test_experimental_record_materialization_is_bounded_for_iterators(self):
+        calls = {"count": 0}
+        yielded = {"count": 0}
+        yielded_radii = {"count": 0}
+        yielded_density_radii = {"count": 0}
+        yielded_weights = {"count": 0}
+
+        def records():
+            for value in range(10):
+                yielded["count"] += 1
+                yield value
+
+        def source_weights():
+            for value in range(10):
+                yielded_weights["count"] += 1
+                yield float(value + 1)
+
+        def radii():
+            for value in range(10):
+                yielded_radii["count"] += 1
+                yield float(value + 1)
+
+        def density_radii():
+            for value in range(10):
+                yielded_density_radii["count"] += 1
+                yield float(value + 1)
+
+        def counted_distance(lhs, rhs):
+            calls["count"] += 1
+            return abs(lhs - rhs)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"distance_distribution_sketch\(\.\.\.\).*refused record materialization.*max_dense_records=2",
+        ):
+            distance_distribution_sketch(records(), counted_distance, max_dense_records=2)
+
+        self.assertEqual(yielded["count"], 3)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"hierarchical_metric_net\(\.\.\.\).*radii materialization.*distance_evaluation_budget=2",
+        ):
+            hierarchical_metric_net(
+                [0, 1, 2],
+                counted_distance,
+                radii=radii(),
+                max_distance_evaluations=2,
+            )
+        self.assertEqual(yielded_radii["count"], 1)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"density_hierarchy_quotient\(\.\.\.\).*radii materialization.*max_dense_records=2",
+        ):
+            density_hierarchy_quotient(
+                [0, 1],
+                counted_distance,
+                radii=density_radii(),
+                max_dense_records=2,
+            )
+        self.assertEqual(yielded_density_radii["count"], 3)
+        self.assertEqual(calls["count"], 0)
+
+        with self.assertRaisesRegex(ValueError, r"source weights must match record count"):
+            metric_measure_drift(
+                [0, 1],
+                [0, 1],
+                counted_distance,
+                source_weights=source_weights(),
+                max_dense_records=4,
+            )
+        self.assertEqual(yielded_weights["count"], 3)
+
+    def test_clustered_space_refuses_before_assignment_materialization(self):
+        assignment_yields = {"count": 0}
+        medoid_yields = {"count": 0}
+        calls = {"count": 0}
+
+        def counted_distance(lhs, rhs):
+            calls["count"] += 1
+            return abs(lhs - rhs)
+
+        class LazyClustering:
+            record_count = 5
+            cluster_count = 2
+            unassigned_count = 0
+            unassigned_label = -1
+            medoids = (1, 3)
+            algorithm = "kmedoids"
+            representation = "metric_space"
+
+            @property
+            def assignments(self):
+                for label in (0, 0, 0, 1, 1):
+                    assignment_yields["count"] += 1
+                    yield label
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"clustered_space\(\.\.\.\).*max_dense_records=1",
+        ):
+            mappings.clustered_space(
+                Space([0, 1, 2, 10, 11], metric=counted_distance, validate="none", cache="none"),
+                LazyClustering(),
+                max_dense_records=1,
+            )
+        self.assertEqual(assignment_yields["count"], 0)
+        self.assertEqual(calls["count"], 0)
+
+        class OverlongAssignments:
+            record_count = 2
+            cluster_count = 1
+            unassigned_count = 0
+            unassigned_label = -1
+            medoids = (0,)
+            algorithm = "kmedoids"
+            representation = "metric_space"
+
+            @property
+            def assignments(self):
+                for label in (0, 0, 0):
+                    assignment_yields["count"] += 1
+                    yield label
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"clustered_space\(\.\.\.\).*assignments materialization",
+        ):
+            mappings.clustered_space(
+                Space([0, 1], metric=counted_distance, validate="none", cache="none"),
+                OverlongAssignments(),
+                max_dense_records=2,
+            )
+        self.assertEqual(assignment_yields["count"], 3)
+        self.assertEqual(calls["count"], 0)
+
+        class OverlongMedoids:
+            record_count = 2
+            cluster_count = 1
+            unassigned_count = 0
+            unassigned_label = -1
+            assignments = (0, 0)
+            algorithm = "kmedoids"
+            representation = "metric_space"
+
+            @property
+            def medoids(self):
+                for medoid in (0, 1):
+                    medoid_yields["count"] += 1
+                    yield medoid
+
+        with self.assertRaisesRegex(
+            MetricComputationError,
+            r"clustered_space\(\.\.\.\).*medoids materialization",
+        ):
+            mappings.clustered_space(
+                Space([0, 1], metric=counted_distance, validate="none", cache="none"),
+                OverlongMedoids(),
+                max_dense_records=2,
+            )
+        self.assertEqual(medoid_yields["count"], 2)
+        self.assertEqual(calls["count"], 0)
 
     def test_distance_matrix_numpy_marshals_pairwise_in_record_order(self):
         records = [0.0, 1.0, 4.0]

@@ -99,6 +99,30 @@ auto try_nearest(const Space &space, const typename Space::record_type &query)
 	return result[0];
 }
 
+template <typename Space, typename Strategy,
+		  typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto try_nearest(const Space &space, RecordId query_id, Strategy strategy)
+	-> std::optional<Neighbor<typename Space::distance_type>>
+{
+	auto result = stats::search::find_neighbors(space, query_id, 1, strategy);
+	if (result.empty()) {
+		return std::nullopt;
+	}
+	return result[0];
+}
+
+template <typename Space, typename Strategy,
+		  typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto try_nearest(const Space &space, const typename Space::record_type &query, Strategy strategy)
+	-> std::optional<Neighbor<typename Space::distance_type>>
+{
+	auto result = stats::search::find_neighbors(space, query, 1, strategy);
+	if (result.empty()) {
+		return std::nullopt;
+	}
+	return result[0];
+}
+
 // Nearest other record to a record in the space. Throws MetricInputError if the space holds no other
 // record (a single-record or empty space has no neighbour to return).
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
@@ -117,6 +141,29 @@ auto nearest(const Space &space, const typename Space::record_type &query)
 	-> Neighbor<typename Space::distance_type>
 {
 	auto result = try_nearest(space, query);
+	if (!result.has_value()) {
+		throw MetricInputError("nearest(): the metric space is empty");
+	}
+	return *result;
+}
+
+template <typename Space, typename Strategy,
+		  typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto nearest(const Space &space, RecordId query_id, Strategy strategy) -> Neighbor<typename Space::distance_type>
+{
+	auto result = try_nearest(space, query_id, strategy);
+	if (!result.has_value()) {
+		throw MetricInputError("nearest(): the metric space has no other record than the query record");
+	}
+	return *result;
+}
+
+template <typename Space, typename Strategy,
+		  typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto nearest(const Space &space, const typename Space::record_type &query, Strategy strategy)
+	-> Neighbor<typename Space::distance_type>
+{
+	auto result = try_nearest(space, query, strategy);
 	if (!result.has_value()) {
 		throw MetricInputError("nearest(): the metric space is empty");
 	}

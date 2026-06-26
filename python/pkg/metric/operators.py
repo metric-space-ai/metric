@@ -75,6 +75,12 @@ def native_binding_available(name):
     return native is not None and hasattr(native, name)
 
 
+def _normalize_bool(value, name):
+    if isinstance(value, bool):
+        return value
+    raise TypeError(f"{name} must be a boolean")
+
+
 def _normalize_neighbor_count(k=None, count=None):
     if k is not None and count is not None and k != count:
         raise ValueError("use either k or count, not conflicting values")
@@ -104,6 +110,454 @@ def _normalize_optional_distance_budget(max_distance_evaluations):
     if max_distance_evaluations < 0:
         raise ValueError("max_distance_evaluations must be non-negative")
     return max_distance_evaluations
+
+
+def _normalize_optional_count_budget(value, name):
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        raise TypeError(f"{name} must be an integer")
+    try:
+        value = operator.index(value)
+    except TypeError:
+        raise TypeError(f"{name} must be an integer") from None
+    if value < 0:
+        raise ValueError(f"{name} must be non-negative")
+    return value
+
+
+def _runtime_policy_or_none(runtime):
+    if runtime is None:
+        return None
+    from metric.runtime import require_exact_runtime
+
+    return require_exact_runtime(runtime)
+
+
+def _resolve_runtime_budget(policy, value, name):
+    if value is not None or policy is None:
+        return value
+    return getattr(policy, name)
+
+
+def _resolve_runtime_budgets(
+    policy,
+    *,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
+    return (
+        _resolve_runtime_budget(policy, max_memory_bytes, "max_memory_bytes"),
+        _resolve_runtime_budget(policy, max_distance_evaluations, "max_distance_evaluations"),
+        _resolve_runtime_budget(policy, max_dense_records, "max_dense_records"),
+    )
+
+
+def _normalize_dense_operation_budgets(
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
+    policy = _runtime_policy_or_none(runtime)
+    max_memory_bytes, max_distance_evaluations, max_dense_records = _resolve_runtime_budgets(
+        policy,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    from metric.spaces import (
+        _DEFAULT_MAX_DENSE_RECORDS,
+        _DEFAULT_MAX_DISTANCE_EVALUATIONS,
+        _DEFAULT_MAX_MEMORY_BYTES,
+        _normalize_optional_budget,
+    )
+
+    return (
+        _normalize_optional_budget(
+            max_memory_bytes,
+            "max_memory_bytes",
+            _DEFAULT_MAX_MEMORY_BYTES,
+        ),
+        _normalize_optional_budget(
+            max_distance_evaluations,
+            "max_distance_evaluations",
+            _DEFAULT_MAX_DISTANCE_EVALUATIONS,
+        ),
+        _normalize_optional_budget(
+            max_dense_records,
+            "max_dense_records",
+            _DEFAULT_MAX_DENSE_RECORDS,
+        ),
+    )
+
+
+def _record_count_or_none(records):
+    try:
+        return operator.index(len(records))
+    except TypeError:
+        return None
+
+
+def _refuse_record_materialization(operation, observed_record_count, max_dense_records):
+    raise MetricComputationError(
+        f"{operation} refused record materialization before running metric calls: "
+        f"observed_records={observed_record_count}, max_dense_records={max_dense_records}. "
+        "Reason: source records exceed the bounded materialization budget. "
+        "Suggested fallback: pass a bounded sample, use a Space with planned execution, "
+        "or raise max_dense_records explicitly."
+    )
+
+
+def _materialize_records_for_live_scan_operation(
+    operation,
+    records,
+    *,
+    runtime=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+    exact=True,
+):
+    policy = _runtime_policy_or_none(runtime)
+    max_distance_evaluations = _resolve_runtime_budget(
+        policy,
+        max_distance_evaluations,
+        "max_distance_evaluations",
+    )
+    max_dense_records = _resolve_runtime_budget(policy, max_dense_records, "max_dense_records")
+    budget = _normalize_optional_distance_budget(max_distance_evaluations)
+    from metric.spaces import _DEFAULT_MAX_DENSE_RECORDS, _normalize_optional_budget
+
+    materialization_limit = _normalize_optional_budget(
+        max_dense_records,
+        "max_dense_records",
+        _DEFAULT_MAX_DENSE_RECORDS,
+    )
+
+    record_count = _record_count_or_none(records)
+    if record_count is not None:
+        if exact and budget is not None and record_count > budget:
+            _refuse_over_budget_neighbor_helper(operation, record_count, budget)
+        if materialization_limit is not None and record_count > materialization_limit:
+            _refuse_record_materialization(operation, record_count, materialization_limit)
+        return list(records), budget
+
+    record_list = []
+    for record in records:
+        observed = len(record_list) + 1
+        if exact and budget is not None and observed > budget:
+            _refuse_over_budget_neighbor_helper(operation, observed, budget)
+        if materialization_limit is not None and observed > materialization_limit:
+            _refuse_record_materialization(operation, observed, materialization_limit)
+        record_list.append(record)
+    return record_list, budget
+
+
+def _dense_operation_plan(
+    intent,
+    record_count,
+    *,
+    max_memory_bytes,
+    max_distance_evaluations,
+    max_dense_records,
+    distance_evaluation_multiplier=1,
+):
+    from metric.spaces import _make_plan
+
+    return _make_plan(
+        intent,
+        record_count,
+        exact=True,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+        allow_approximate=False,
+        allow_chunking=False,
+        distance_evaluation_multiplier=distance_evaluation_multiplier,
+    )
+
+
+def _materialize_records_for_dense_operation(
+    operation,
+    records,
+    *,
+    intent,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+    distance_evaluation_multiplier=1,
+):
+    max_memory_bytes, max_distance_evaluations, max_dense_records = _normalize_dense_operation_budgets(
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    record_count = _record_count_or_none(records)
+    if record_count is not None:
+        plan = _dense_operation_plan(
+            intent,
+            record_count,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            distance_evaluation_multiplier=distance_evaluation_multiplier,
+        )
+        if plan.decision == "refused":
+            _refuse_dense_materialization(operation, plan)
+        return list(records), plan
+
+    record_list = []
+    for record in records:
+        if len(record_list) >= max_dense_records:
+            plan = _dense_operation_plan(
+                intent,
+                len(record_list) + 1,
+                max_memory_bytes=max_memory_bytes,
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
+                distance_evaluation_multiplier=distance_evaluation_multiplier,
+            )
+            _refuse_dense_materialization(operation, plan)
+        record_list.append(record)
+
+    plan = _dense_operation_plan(
+        intent,
+        len(record_list),
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+        distance_evaluation_multiplier=distance_evaluation_multiplier,
+    )
+    if plan.decision == "refused":
+        _refuse_dense_materialization(operation, plan)
+    return record_list, plan
+
+
+def _materialize_matched_ids_for_compare(matched_ids, expected_count, max_dense_records):
+    if matched_ids is None:
+        return tuple(range(expected_count))
+
+    if expected_count > max_dense_records:
+        raise MetricComputationError(
+            "compare_spaces(... matched_ids) refused matched-id materialization before running metric calls: "
+            f"matched_ids>{max_dense_records}, max_dense_records={max_dense_records}. "
+            "Reason: matched IDs exceed the bounded materialization budget. "
+            "Suggested fallback: pass a bounded ID sequence or raise max_dense_records explicitly."
+        )
+
+    known_count = _record_count_or_none(matched_ids)
+    if known_count is not None:
+        if known_count > max_dense_records:
+            raise MetricComputationError(
+                "compare_spaces(... matched_ids) refused matched-id materialization before running metric calls: "
+                f"matched_ids={known_count}, max_dense_records={max_dense_records}. "
+                "Reason: matched IDs exceed the bounded materialization budget. "
+                "Suggested fallback: pass a bounded ID sequence or raise max_dense_records explicitly."
+            )
+        if known_count != expected_count:
+            raise ValueError("matched_ids must match compared record count")
+        return tuple(matched_ids)
+
+    materialized = []
+    for matched_id in matched_ids:
+        if len(materialized) >= max_dense_records:
+            raise MetricComputationError(
+                "compare_spaces(... matched_ids) refused matched-id materialization before running metric calls: "
+                f"observed_matched_ids={len(materialized) + 1}, max_dense_records={max_dense_records}. "
+                "Reason: matched IDs exceed the bounded materialization budget. "
+                "Suggested fallback: pass a bounded ID sequence or raise max_dense_records explicitly."
+            )
+        if len(materialized) >= expected_count:
+            raise ValueError("matched_ids must match compared record count")
+        materialized.append(matched_id)
+    if len(materialized) != expected_count:
+        raise ValueError("matched_ids must match compared record count")
+    return tuple(materialized)
+
+
+def _materialize_bounded_compare_ids(ids, name, max_dense_records):
+    if ids is None:
+        return ()
+    known_count = _record_count_or_none(ids)
+    if known_count is not None:
+        if known_count > max_dense_records:
+            raise MetricComputationError(
+                f"compare_spaces(... {name}) refused ID materialization before running metric calls: "
+                f"{name}={known_count}, max_dense_records={max_dense_records}. "
+                "Reason: compare metadata IDs exceed the bounded materialization budget. "
+                "Suggested fallback: pass a bounded ID sequence or raise max_dense_records explicitly."
+            )
+        return tuple(ids)
+
+    materialized = []
+    for record_id in ids:
+        if len(materialized) >= max_dense_records:
+            raise MetricComputationError(
+                f"compare_spaces(... {name}) refused ID materialization before running metric calls: "
+                f"observed_{name}={len(materialized) + 1}, max_dense_records={max_dense_records}. "
+                "Reason: compare metadata IDs exceed the bounded materialization budget. "
+                "Suggested fallback: pass a bounded ID sequence or raise max_dense_records explicitly."
+            )
+        materialized.append(record_id)
+    return tuple(materialized)
+
+
+def _materialize_records_for_exact_metric_work(
+    operation,
+    records,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+    query_count=1,
+):
+    max_memory_bytes, max_distance_evaluations, max_dense_records = _normalize_dense_operation_budgets(
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+
+    def plan_for(record_count):
+        return _ensure_exact_metric_work_allowed(
+            operation,
+            record_count,
+            runtime=None,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            query_count=query_count,
+        )
+
+    record_count = _record_count_or_none(records)
+    if record_count is not None:
+        plan = plan_for(record_count)
+        if record_count > max_dense_records:
+            _refuse_record_materialization(operation, record_count, max_dense_records)
+        return list(records), plan
+
+    record_list = []
+    for record in records:
+        observed = len(record_list) + 1
+        if observed > max_dense_records:
+            _refuse_record_materialization(operation, observed, max_dense_records)
+        plan_for(observed)
+        record_list.append(record)
+
+    plan = plan_for(len(record_list))
+    return record_list, plan
+
+
+def _materialize_records_for_exact_diagnostics(
+    operation,
+    records,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
+    max_memory_bytes, max_distance_evaluations, max_dense_records = _normalize_dense_operation_budgets(
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    from metric.spaces import _make_plan
+
+    def plan_for(record_count):
+        plan = _make_plan(
+            "describe",
+            record_count,
+            exact=True,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            allow_approximate=False,
+            allow_chunking=False,
+        )
+        if plan.decision == "refused":
+            _refuse_exact_diagnostics(operation, plan)
+        return plan
+
+    record_count = _record_count_or_none(records)
+    if record_count is not None:
+        plan = plan_for(record_count)
+        if record_count > max_dense_records:
+            _refuse_record_materialization(operation, record_count, max_dense_records)
+        return list(records), plan
+
+    record_list = []
+    for record in records:
+        observed = len(record_list) + 1
+        if observed > max_dense_records:
+            _refuse_record_materialization(operation, observed, max_dense_records)
+        plan_for(observed)
+        record_list.append(record)
+
+    plan = plan_for(len(record_list))
+    return record_list, plan
+
+
+def _materialize_records_for_mapping(
+    operation,
+    records,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
+    _, _, max_dense_records = _normalize_dense_operation_budgets(
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+
+    record_count = _record_count_or_none(records)
+    if record_count is not None:
+        if record_count > max_dense_records:
+            _refuse_record_materialization(operation, record_count, max_dense_records)
+        return list(records)
+
+    record_list = []
+    for record in records:
+        observed = len(record_list) + 1
+        if observed > max_dense_records:
+            _refuse_record_materialization(operation, observed, max_dense_records)
+        record_list.append(record)
+    return record_list
+
+
+def _materialize_source_ids_for_mapping(operation, source_ids, expected_count):
+    if source_ids is None:
+        return tuple(range(expected_count))
+
+    source_id_count = _record_count_or_none(source_ids)
+    if source_id_count is not None:
+        if source_id_count != expected_count:
+            raise ValueError("source_ids must match the mapped record count")
+        return tuple(source_ids)
+
+    source_id_iter = iter(source_ids)
+    materialized = []
+    for _ in range(expected_count):
+        try:
+            materialized.append(next(source_id_iter))
+        except StopIteration:
+            raise ValueError("source_ids must match the mapped record count") from None
+
+    try:
+        next(source_id_iter)
+    except StopIteration:
+        return tuple(materialized)
+    raise ValueError("source_ids must match the mapped record count")
 
 
 def _sample_indices(record_count, sample_count):
@@ -186,12 +640,15 @@ def _unmeasured_recall_diagnostics(reason, *, recall_distance_evaluations=0):
     }
 
 
-def _recall_confidence_interval(hit_count, relevant_count):
-    if relevant_count <= 0:
+def _query_level_recall_confidence_interval(query_recalls):
+    query_recalls = tuple(float(recall) for recall in query_recalls)
+    sample_count = len(query_recalls)
+    if sample_count <= 1:
         return 0.0, 0.0
-    recall = hit_count / relevant_count
-    variance = recall * (1.0 - recall) / relevant_count
-    standard_error = math.sqrt(max(0.0, variance))
+
+    mean = sum(query_recalls) / sample_count
+    variance = sum((recall - mean) ** 2 for recall in query_recalls) / (sample_count - 1)
+    standard_error = math.sqrt(max(0.0, variance) / sample_count)
     return standard_error, min(1.0, 1.96 * standard_error)
 
 
@@ -222,6 +679,7 @@ def _sampled_neighbor_recall_diagnostics(
     total_hits = 0
     total_calibration_records = 0
     recall_distance_evaluations = 0
+    query_recalls = []
 
     for query, sampled_distances in zip(queries, sampled_distances_by_query):
         if recall_distance_evaluations >= remaining_distance_budget:
@@ -269,9 +727,12 @@ def _sampled_neighbor_recall_diagnostics(
         sampled_ids = {record_index for record_index, _distance in sampled_pairs}
 
         measured_queries += 1
-        total_relevant += len(exact_ids)
-        total_hits += len(exact_ids & sampled_ids)
+        relevant_count = len(exact_ids)
+        hit_count = len(exact_ids & sampled_ids)
+        total_relevant += relevant_count
+        total_hits += hit_count
         total_calibration_records += len(window_distances)
+        query_recalls.append(hit_count / relevant_count)
 
     if measured_queries <= 0 or total_relevant <= 0:
         reason = (
@@ -285,10 +746,7 @@ def _sampled_neighbor_recall_diagnostics(
         )
 
     recall = total_hits / total_relevant
-    standard_error, confidence_radius_95 = _recall_confidence_interval(
-        total_hits,
-        total_relevant,
-    )
+    standard_error, confidence_radius_95 = _query_level_recall_confidence_interval(query_recalls)
     return {
         "recall_measured": True,
         "recall": recall,
@@ -300,7 +758,8 @@ def _sampled_neighbor_recall_diagnostics(
         "recall_hit_count": total_hits,
         "recall_distance_evaluations": recall_distance_evaluations,
         "recall_measurement_reason": (
-            "measured over sampled candidates plus holdout records within the distance budget"
+            "measured over sampled candidates plus holdout records within the distance budget "
+            "with query-level standard error"
         ),
     }
 
@@ -436,11 +895,30 @@ def _compression_validity(strategy):
     )
 
 
-def _radius_coverage_representative_indices(records, metric, radius):
+def _radius_coverage_representative_indices(
+    records,
+    metric,
+    radius,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+    operation="_radius_coverage_representative_indices(...)",
+):
     if radius < 0:
         raise ValueError("coverage radius must be non-negative")
     if not records:
         raise ValueError("cannot compress an empty metric space")
+    _ensure_exact_metric_work_allowed(
+        operation,
+        len(records),
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+        dense=True,
+    )
 
     covered = [False] * len(records)
     selected = []
@@ -520,7 +998,28 @@ def _average_local_volume(records, metric, radius):
     return average_count, average_count / len(records)
 
 
-def _uniform_density_diagnostics(records, metric, selected, radius):
+def _uniform_density_diagnostics(
+    records,
+    metric,
+    selected,
+    radius,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+    operation="_uniform_density_diagnostics(...)",
+):
+    _ensure_exact_metric_work_allowed(
+        operation,
+        len(records),
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+        dense=True,
+        distance_evaluation_multiplier=5,
+    )
     assignments, distances = _assign_positions_to_selected(records, metric, selected)
     multiplicities, weights = _compression_representative_measure(
         assignments,
@@ -587,6 +1086,131 @@ def _outlier_result_from_payload(payload):
         operator_name=str(payload["operator_name"]),
         strategy=str(payload["strategy"]),
         representation=str(payload["representation"]),
+    )
+
+
+def _redif_measure_result_from_payload(payload):
+    paths = tuple(
+        RedifMeasurePath(
+            record_id=int(path["record_id"]),
+            measures=tuple(tuple(float(value) for value in measure) for measure in path["measures"]),
+            step_transport=tuple(float(value) for value in path["step_transport"]),
+            transport_path_length=float(path["transport_path_length"]),
+        )
+        for path in payload["paths"]
+    )
+    summaries = tuple(
+        RedifMeasureSummary(
+            record_id=int(summary["record_id"]),
+            transport_path_length=float(summary["transport_path_length"]),
+            initial_shannon_entropy=float(summary["initial_shannon_entropy"]),
+            terminal_shannon_entropy=float(summary["terminal_shannon_entropy"]),
+            entropy_delta=float(summary["entropy_delta"]),
+            terminal_top_record_index=int(summary["terminal_top_record_index"]),
+            terminal_top_record_mass=float(summary["terminal_top_record_mass"]),
+        )
+        for summary in payload["summaries"]
+    )
+    return RedifMeasureResult(
+        paths=paths,
+        record_count=int(payload["record_count"]),
+        neighbors=int(payload["neighbors"]),
+        iterations=int(payload["iterations"]),
+        euler_step=float(payload["euler_step"]),
+        adaptive_geometry=bool(payload["adaptive_geometry"]),
+        exact=bool(payload["exact"]),
+        operator_name=str(payload["operator_name"]),
+        strategy=str(payload["strategy"]),
+        representation=str(payload["representation"]),
+        initial_stationary=tuple(float(value) for value in payload["initial_stationary"]),
+        terminal_stationary=tuple(float(value) for value in payload["terminal_stationary"]),
+        entropy_diagnostics=tuple(dict(item) for item in payload["entropy_diagnostics"]),
+        operator_diagnostics=tuple(dict(item) for item in payload["operator_diagnostics"]),
+        step_diagnostics=tuple(dict(item) for item in payload["step_diagnostics"]),
+        transport_diagnostics=dict(payload["transport_diagnostics"]),
+        summaries=summaries,
+    )
+
+
+def _redif_strategy_values(strategy=None, **overrides):
+    from metric.strategies import RedifDynamics
+
+    if strategy is None:
+        strategy = RedifDynamics()
+    if not isinstance(strategy, RedifDynamics):
+        raise TypeError("Redif dynamics requires a RedifDynamics-compatible strategy")
+
+    values = {
+        "neighbors": strategy.neighbors,
+        "iterations": strategy.iterations,
+        "euler_step": strategy.euler_step,
+        "adaptive_geometry": strategy.adaptive_geometry,
+        "scale_policy": strategy.scale_policy,
+        "stability_tolerance": strategy.stability_tolerance,
+        "marginal_stability_tolerance": strategy.marginal_stability_tolerance,
+    }
+    for key, value in overrides.items():
+        if value is not None:
+            values[key] = value
+
+    values["neighbors"] = _normalize_positive_count(values["neighbors"], "neighbors")
+    values["iterations"] = _normalize_positive_count(values["iterations"], "iterations")
+    values["euler_step"] = float(values["euler_step"])
+    if not math.isfinite(values["euler_step"]) or values["euler_step"] <= 0.0:
+        raise ValueError("euler_step must be finite and positive")
+    if values["euler_step"] > 1.0:
+        raise ValueError("euler_step must be <= 1")
+    values["adaptive_geometry"] = _normalize_bool(values["adaptive_geometry"], "adaptive_geometry")
+    values["scale_policy"] = str(values["scale_policy"])
+    values["stability_tolerance"] = float(values["stability_tolerance"])
+    values["marginal_stability_tolerance"] = float(values["marginal_stability_tolerance"])
+    return values
+
+
+def _redif_native_arguments(
+    operation,
+    records,
+    metric,
+    strategy=None,
+    *,
+    representation="metric_space",
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+    **overrides,
+):
+    values = _redif_strategy_values(strategy, **overrides)
+    record_list, _plan = _materialize_records_for_dense_operation(
+        operation,
+        records,
+        intent="dynamics",
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+        distance_evaluation_multiplier=values["iterations"] + 8,
+    )
+    max_memory_bytes, max_distance_evaluations, max_dense_records = _normalize_dense_operation_budgets(
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    return (
+        record_list,
+        metric,
+        values["neighbors"],
+        values["iterations"],
+        values["euler_step"],
+        values["adaptive_geometry"],
+        values["scale_policy"],
+        values["stability_tolerance"],
+        values["marginal_stability_tolerance"],
+        max_dense_records,
+        max_memory_bytes,
+        max_distance_evaluations,
+        representation,
     )
 
 
@@ -1179,6 +1803,122 @@ class OutlierResult:
 
 
 @dataclass(frozen=True)
+class RedifMeasurePath:
+    """One atom-measure path produced by Redif dynamics."""
+
+    record_id: int
+    measures: tuple
+    step_transport: tuple
+    transport_path_length: float
+
+    @property
+    def terminal_measure(self):
+        if not self.measures:
+            raise MetricComputationError("RedifMeasurePath has no terminal measure")
+        return self.measures[-1]
+
+    def to_dict(self):
+        return {
+            "record_id": self.record_id,
+            "measures": self.measures,
+            "step_transport": self.step_transport,
+            "transport_path_length": self.transport_path_length,
+        }
+
+    def to_numpy(self):
+        return _numpy().asarray(self.measures, dtype=float)
+
+
+@dataclass(frozen=True)
+class RedifMeasureSummary:
+    """Compact terminal summary for one Redif atom path."""
+
+    record_id: int
+    transport_path_length: float
+    initial_shannon_entropy: float
+    terminal_shannon_entropy: float
+    entropy_delta: float
+    terminal_top_record_index: int
+    terminal_top_record_mass: float
+
+    def to_dict(self):
+        return {
+            "record_id": self.record_id,
+            "transport_path_length": self.transport_path_length,
+            "initial_shannon_entropy": self.initial_shannon_entropy,
+            "terminal_shannon_entropy": self.terminal_shannon_entropy,
+            "entropy_delta": self.entropy_delta,
+            "terminal_top_record_index": self.terminal_top_record_index,
+            "terminal_top_record_mass": self.terminal_top_record_mass,
+        }
+
+
+@dataclass(frozen=True)
+class RedifMeasureResult:
+    """Structured Redif dynamics result over atom measures."""
+
+    paths: tuple
+    record_count: int
+    neighbors: int
+    iterations: int
+    euler_step: float
+    adaptive_geometry: bool
+    exact: bool
+    operator_name: str
+    strategy: str
+    representation: str
+    initial_stationary: tuple
+    terminal_stationary: tuple
+    entropy_diagnostics: tuple
+    operator_diagnostics: tuple
+    step_diagnostics: tuple
+    transport_diagnostics: dict
+    summaries: tuple
+
+    def to_dict(self):
+        return {
+            "paths": [path.to_dict() for path in self.paths],
+            "record_count": self.record_count,
+            "neighbors": self.neighbors,
+            "iterations": self.iterations,
+            "euler_step": self.euler_step,
+            "adaptive_geometry": self.adaptive_geometry,
+            "exact": self.exact,
+            "operator_name": self.operator_name,
+            "strategy": self.strategy,
+            "representation": self.representation,
+            "initial_stationary": self.initial_stationary,
+            "terminal_stationary": self.terminal_stationary,
+            "entropy_diagnostics": self.entropy_diagnostics,
+            "operator_diagnostics": self.operator_diagnostics,
+            "step_diagnostics": self.step_diagnostics,
+            "transport_diagnostics": self.transport_diagnostics,
+            "summaries": [summary.to_dict() for summary in self.summaries],
+        }
+
+    def to_numpy(self):
+        return _numpy().asarray([path.measures for path in self.paths], dtype=float)
+
+    def to_pandas(self):
+        try:
+            import pandas as pd
+        except ModuleNotFoundError:
+            raise OptionalDependencyError(
+                "RedifMeasureResult.to_pandas() requires pandas. Install pandas or use to_dict()."
+            ) from None
+
+        rows = []
+        for summary in self.summaries:
+            row = summary.to_dict()
+            row["operator_name"] = self.operator_name
+            row["strategy"] = self.strategy
+            row["representation"] = self.representation
+            row["exact"] = self.exact
+            rows.append(row)
+        return pd.DataFrame.from_records(rows)
+
+
+@dataclass(frozen=True)
 class RepresentativeSet:
     """Representative-selection result with coverage diagnostics."""
 
@@ -1729,10 +2469,87 @@ def _refuse_dense_materialization(operation, plan):
     )
 
 
+def _refuse_exact_diagnostics(operation, plan):
+    fallback = ", ".join(plan.fallback)
+    raise MetricComputationError(
+        f"{operation} refused exact diagnostics before running metric calls: "
+        f"records={plan.record_count}, "
+        f"estimated_distance_evaluations={plan.estimated_distance_evaluations}, "
+        f"distance_evaluation_budget={plan.max_distance_evaluations}. "
+        f"Reason: {plan.reason}. Suggested fallback: {fallback}."
+    )
+
+
+def _refuse_exact_metric_work(operation, plan):
+    fallback = ", ".join(plan.fallback)
+    raise MetricComputationError(
+        f"{operation} refused exact metric work before running metric calls: "
+        f"records={plan.record_count}, "
+        f"estimated_distance_evaluations={plan.estimated_distance_evaluations}, "
+        f"distance_evaluation_budget={plan.max_distance_evaluations}. "
+        f"Reason: {plan.reason}. Suggested fallback: {fallback}."
+    )
+
+
+def _ensure_exact_metric_work_allowed(
+    operation,
+    record_count,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+    query_count=1,
+    dense=False,
+    dense_cell_bytes=32,
+    distance_evaluation_multiplier=1,
+):
+    policy = _runtime_policy_or_none(runtime)
+    max_memory_bytes, max_distance_evaluations, max_dense_records = _resolve_runtime_budgets(
+        policy,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    from metric.spaces import _make_plan
+
+    if dense:
+        plan = _make_plan(
+            "matrix",
+            record_count,
+            exact=True,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            allow_approximate=False,
+            allow_chunking=False,
+            dense_cell_bytes=dense_cell_bytes,
+            distance_evaluation_multiplier=distance_evaluation_multiplier,
+        )
+    else:
+        plan = _make_plan(
+            "neighbors",
+            record_count,
+            query_count=query_count,
+            exact=True,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            allow_approximate=False,
+            allow_chunking=False,
+        )
+    if plan.decision == "refused":
+        if dense:
+            _refuse_dense_materialization(operation, plan)
+        _refuse_exact_metric_work(operation, plan)
+    return plan
+
+
 def pairwise_distance_matrix(
     records,
     metric,
     *,
+    runtime=None,
     max_memory_bytes=None,
     max_distance_evaluations=None,
     max_dense_records=None,
@@ -1743,21 +2560,15 @@ def pairwise_distance_matrix(
     metric callable for each pair after the dense materialization budget accepts
     the requested matrix.
     """
-    record_list = list(records)
-    from metric.spaces import _make_plan
-
-    plan = _make_plan(
-        "pairwise_distances",
-        len(record_list),
-        exact=True,
+    record_list, _plan = _materialize_records_for_dense_operation(
+        "pairwise_distance_matrix(...)",
+        records,
+        intent="pairwise_distances",
+        runtime=runtime,
         max_memory_bytes=max_memory_bytes,
         max_distance_evaluations=max_distance_evaluations,
         max_dense_records=max_dense_records,
-        allow_approximate=False,
-        allow_chunking=False,
     )
-    if plan.decision == "refused":
-        _refuse_dense_materialization("pairwise_distance_matrix(...)", plan)
     return _native_metric_module().pairwise_distance_matrix(record_list, metric)
 
 
@@ -1838,14 +2649,23 @@ def nearest_neighbors(
     *,
     representation="metric_space",
     provenance=None,
+    runtime=None,
     exact=True,
+    max_memory_bytes=None,
     max_distance_evaluations=None,
+    max_dense_records=None,
     allow_approximate=True,
 ):
     """Exact-scan k-nearest-neighbor search through the native C++ binding."""
-    record_list = list(records)
     requested = _normalize_neighbor_count(k, count)
-    budget = _normalize_optional_distance_budget(max_distance_evaluations)
+    record_list, budget = _materialize_records_for_live_scan_operation(
+        "nearest_neighbors(...)",
+        records,
+        runtime=runtime,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+        exact=exact or not allow_approximate,
+    )
     if budget is not None and len(record_list) > budget:
         if exact or not allow_approximate:
             _refuse_over_budget_neighbor_helper("nearest_neighbors(...)", len(record_list), budget)
@@ -1919,13 +2739,22 @@ def range_neighbors(
     *,
     representation="metric_space",
     provenance=None,
+    runtime=None,
     exact=True,
+    max_memory_bytes=None,
     max_distance_evaluations=None,
+    max_dense_records=None,
     allow_approximate=True,
 ):
     """Exact-scan radius neighbor search through the native C++ binding."""
-    record_list = list(records)
-    budget = _normalize_optional_distance_budget(max_distance_evaluations)
+    record_list, budget = _materialize_records_for_live_scan_operation(
+        "range_neighbors(...)",
+        records,
+        runtime=runtime,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+        exact=exact or not allow_approximate,
+    )
     if budget is not None and len(record_list) > budget:
         if exact or not allow_approximate:
             _refuse_over_budget_neighbor_helper("range_neighbors(...)", len(record_list), budget)
@@ -2031,63 +2860,315 @@ def graph_stretch_diagnostics(records, metric, graph):
     _require_native_binding("graph_stretch_diagnostics(...)", "graph shortest-path stretch analysis")
 
 
-def kmedoids(records, metric, groups, max_iterations=100, *, representation="metric_space"):
+def kmedoids(
+    records,
+    metric,
+    groups,
+    max_iterations=100,
+    *,
+    representation="metric_space",
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Deterministic k-medoids grouping through the native C++ binding."""
+    groups = _normalize_positive_count(groups, "groups")
+    max_iterations = _normalize_positive_count(max_iterations, "max_iterations")
+    record_list, _plan = _materialize_records_for_exact_metric_work(
+        "kmedoids(...)",
+        records,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+        query_count=groups * max_iterations,
+    )
     return _clustering_result_from_payload(
         _native_metric_module().kmedoids(
-            list(records),
+            record_list,
             metric,
-            _normalize_positive_count(groups, "groups"),
-            _normalize_positive_count(max_iterations, "max_iterations"),
+            groups,
+            max_iterations,
             representation,
         )
     )
 
 
-def dbscan(records, metric, radius, min_points, *, representation="metric_space"):
+def dbscan(
+    records,
+    metric,
+    radius,
+    min_points,
+    *,
+    representation="metric_space",
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Deterministic DBSCAN grouping through the native C++ binding."""
+    min_points = _normalize_positive_count(min_points, "min_points")
+    record_list, _plan = _materialize_records_for_dense_operation(
+        "dbscan(...)",
+        records,
+        intent="matrix",
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
     return _clustering_result_from_payload(
         _native_metric_module().dbscan(
-            list(records),
+            record_list,
             metric,
             radius,
-            _normalize_positive_count(min_points, "min_points"),
+            min_points,
             representation,
         )
     )
 
 
-def find_groups(records, metric, strategy, *, representation="metric_space"):
+def find_groups(
+    records,
+    metric,
+    strategy,
+    *,
+    representation="metric_space",
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Group records through a promoted native clustering strategy."""
     from metric.strategies import DBSCAN, KMedoids
 
     if isinstance(strategy, int):
-        return kmedoids(records, metric, strategy, representation=representation)
+        return kmedoids(
+            records,
+            metric,
+            strategy,
+            representation=representation,
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
     if isinstance(strategy, KMedoids):
-        return kmedoids(records, metric, strategy.groups, strategy.max_iterations, representation=representation)
+        return kmedoids(
+            records,
+            metric,
+            strategy.groups,
+            strategy.max_iterations,
+            representation=representation,
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
     if isinstance(strategy, DBSCAN):
-        return dbscan(records, metric, strategy.radius, strategy.min_points, representation=representation)
+        return dbscan(
+            records,
+            metric,
+            strategy.radius,
+            strategy.min_points,
+            representation=representation,
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
     _require_native_binding("find_groups(...)", f"{type(strategy).__name__} clustering")
 
 
-def find_outliers(records, metric, strategy, *, representation="metric_space"):
+def remove_noise_space(
+    records,
+    metric,
+    strategy=None,
+    *,
+    representation="metric_space",
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+    neighbors=None,
+    iterations=None,
+    euler_step=None,
+    adaptive_geometry=None,
+    scale_policy=None,
+    stability_tolerance=None,
+    marginal_stability_tolerance=None,
+):
+    """Run inverse Redif dynamics and return atom-measure paths."""
+    args = _redif_native_arguments(
+        "remove_noise_space(...)",
+        records,
+        metric,
+        strategy,
+        representation=representation,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+        neighbors=neighbors,
+        iterations=iterations,
+        euler_step=euler_step,
+        adaptive_geometry=adaptive_geometry,
+        scale_policy=scale_policy,
+        stability_tolerance=stability_tolerance,
+        marginal_stability_tolerance=marginal_stability_tolerance,
+    )
+    return _redif_measure_result_from_payload(_native_metric_module().redif_remove_noise(*args))
+
+
+def add_noise_space(
+    records,
+    metric,
+    strategy=None,
+    *,
+    representation="metric_space",
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+    neighbors=None,
+    iterations=None,
+    euler_step=None,
+    adaptive_geometry=None,
+    scale_policy=None,
+    stability_tolerance=None,
+    marginal_stability_tolerance=None,
+):
+    """Run forward metric-induced Redif dynamics and return atom-measure paths."""
+    args = _redif_native_arguments(
+        "add_noise_space(...)",
+        records,
+        metric,
+        strategy,
+        representation=representation,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+        neighbors=neighbors,
+        iterations=iterations,
+        euler_step=euler_step,
+        adaptive_geometry=adaptive_geometry,
+        scale_policy=scale_policy,
+        stability_tolerance=stability_tolerance,
+        marginal_stability_tolerance=marginal_stability_tolerance,
+    )
+    return _redif_measure_result_from_payload(_native_metric_module().redif_add_noise(*args))
+
+
+def redif_dynamics(
+    records,
+    metric,
+    strategy=None,
+    *,
+    direction="inverse",
+    representation="metric_space",
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+    **overrides,
+):
+    """Run Redif metric dynamics in the requested direction."""
+    from metric.strategies import ForwardDynamics, InverseDynamics
+
+    if isinstance(strategy, ForwardDynamics):
+        direction = "forward"
+    elif isinstance(strategy, InverseDynamics):
+        direction = "inverse"
+    direction = str(direction).strip().lower().replace("-", "_")
+    if direction in {"forward", "add_noise", "noise"}:
+        return add_noise_space(
+            records,
+            metric,
+            strategy,
+            representation=representation,
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            **overrides,
+        )
+    if direction in {"inverse", "remove_noise", "reverse"}:
+        return remove_noise_space(
+            records,
+            metric,
+            strategy,
+            representation=representation,
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            **overrides,
+        )
+    raise ValueError("direction must be 'forward' or 'inverse'")
+
+
+def find_outliers(
+    records,
+    metric,
+    strategy,
+    *,
+    representation="metric_space",
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Find unusual records through a promoted native scoring strategy."""
-    from metric.strategies import DBSCAN
+    from metric.strategies import DBSCAN, TransportPath
 
     if isinstance(strategy, DBSCAN):
+        min_points = _normalize_positive_count(strategy.min_points, "min_points")
+        record_list, _plan = _materialize_records_for_dense_operation(
+            "find_outliers(...)",
+            records,
+            intent="matrix",
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         return _outlier_result_from_payload(
             _native_metric_module().dbscan_outliers(
-                list(records),
+                record_list,
                 metric,
                 strategy.radius,
-                _normalize_positive_count(strategy.min_points, "min_points"),
+                min_points,
                 representation,
             )
         )
+    if isinstance(strategy, TransportPath):
+        args = _redif_native_arguments(
+            "find_outliers(...)",
+            records,
+            metric,
+            strategy,
+            representation=representation,
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
+        return _outlier_result_from_payload(_native_metric_module().redif_transport_path_outliers(*args))
     if isinstance(strategy, int):
+        record_list, _plan = _materialize_records_for_dense_operation(
+            "find_outliers(...)",
+            records,
+            intent="matrix",
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         return _outlier_result_from_payload(
             _native_metric_module().nearest_neighbor_outliers(
-                list(records),
+                record_list,
                 metric,
                 _normalize_neighbor_count(strategy, None),
                 representation,
@@ -2096,7 +3177,17 @@ def find_outliers(records, metric, strategy, *, representation="metric_space"):
     _require_native_binding("find_outliers(...)", f"{type(strategy).__name__} outlier detection")
 
 
-def density_filter_space(records, metric, strategy, *, representation="metric_space"):
+def density_filter_space(
+    records,
+    metric,
+    strategy,
+    *,
+    representation="metric_space",
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Filter DBSCAN-unassigned records into a derived finite metric space."""
     from metric.strategies import DBSCAN
     from metric.spaces import Space
@@ -2104,8 +3195,26 @@ def density_filter_space(records, metric, strategy, *, representation="metric_sp
     if not isinstance(strategy, DBSCAN):
         _require_native_binding("density_filter_space(...)", f"{type(strategy).__name__} density filtering")
 
-    record_list = list(records)
-    clustering = dbscan(record_list, metric, strategy.radius, strategy.min_points, representation=representation)
+    record_list, _plan = _materialize_records_for_dense_operation(
+        "density_filter_space(...)",
+        records,
+        intent="matrix",
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    clustering = dbscan(
+        record_list,
+        metric,
+        strategy.radius,
+        strategy.min_points,
+        representation=representation,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
     unassigned = set(clustering.unassigned_records)
     kept_ids = tuple(index for index in range(len(record_list)) if index not in unassigned)
     filtered = [record_list[index] for index in kept_ids]
@@ -2117,6 +3226,8 @@ def density_filter_space(records, metric, strategy, *, representation="metric_sp
         space=Space(
             filtered,
             metric,
+            validate="none",
+            cache="none",
             metadata={
                 "mapping": "density_filter",
                 "strategy": "dbscan_density_filter",
@@ -2142,7 +3253,20 @@ def density_filter_space(records, metric, strategy, *, representation="metric_sp
     )
 
 
-def _resample_space(records, metric, count=None, strategy=None, *, radius=None, representation="metric_space", mapping="thin"):
+def _resample_space(
+    records,
+    metric,
+    count=None,
+    strategy=None,
+    *,
+    radius=None,
+    representation="metric_space",
+    mapping="thin",
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     from metric.strategies import PreserveDistribution, UniformDensity
     from metric.spaces import Space
 
@@ -2157,7 +3281,6 @@ def _resample_space(records, metric, count=None, strategy=None, *, radius=None, 
     if not isinstance(strategy, (PreserveDistribution, UniformDensity)):
         _require_native_binding("thin_space(...)", f"{type(strategy).__name__} thinning")
 
-    record_list = list(records)
     diagnostics = None
     assignments = ()
     nearest_distances = ()
@@ -2168,7 +3291,27 @@ def _resample_space(records, metric, count=None, strategy=None, *, radius=None, 
     if isinstance(strategy, UniformDensity):
         if count is not None:
             raise ValueError("uniform-density thinning chooses the representative count; omit count")
-        selected = _radius_coverage_representative_indices(record_list, metric, strategy.radius)
+        operation = "equalize_space(...)" if mapping == "equalize" else "thin_space(...)"
+        record_list, _plan = _materialize_records_for_dense_operation(
+            operation,
+            records,
+            intent="matrix",
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            distance_evaluation_multiplier=8,
+        )
+        selected = _radius_coverage_representative_indices(
+            record_list,
+            metric,
+            strategy.radius,
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            operation=operation,
+        )
         if mapping == "equalize":
             validity = (
                 "density-equalizing deterministic thinning by maximal metric radius net; kept records are an "
@@ -2182,7 +3325,17 @@ def _resample_space(records, metric, count=None, strategy=None, *, radius=None, 
                 "is intentionally flattened"
             )
         strategy_name = "uniform_density_radius_net"
-        diagnostics = _uniform_density_diagnostics(record_list, metric, selected, strategy.radius)
+        diagnostics = _uniform_density_diagnostics(
+            record_list,
+            metric,
+            selected,
+            strategy.radius,
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            operation=operation,
+        )
         assignments = diagnostics["assignments"]
         nearest_distances = diagnostics["nearest_representative_distances"]
         representative_multiplicities = diagnostics["representative_multiplicities"]
@@ -2190,10 +3343,19 @@ def _resample_space(records, metric, count=None, strategy=None, *, radius=None, 
         coverage_radius = diagnostics["coverage_radius"]
         average_assignment_distance = diagnostics["average_assignment_distance"]
     else:
+        operation = "equalize_space(...)" if mapping == "equalize" else "thin_space(...)"
         if mapping == "equalize":
             raise ValueError("equalize requires UniformDensity(...) or radius=")
         if count is None:
             raise ValueError("preserve-distribution thinning requires count")
+        record_list = _materialize_records_for_mapping(
+            operation,
+            records,
+            runtime=None,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         selected = _regular_thin_indices(len(record_list), count, strategy.offset)
         representative_multiplicities = tuple(1 for _ in selected)
         representative_weights = (
@@ -2211,6 +3373,8 @@ def _resample_space(records, metric, count=None, strategy=None, *, radius=None, 
         space=Space(
             [record_list[index] for index in selected],
             metric,
+            validate="none",
+            cache="none",
             metadata={
                 "mapping": mapping,
                 "strategy": strategy_name,
@@ -2244,7 +3408,19 @@ def _resample_space(records, metric, count=None, strategy=None, *, radius=None, 
     )
 
 
-def thin_space(records, metric, count=None, strategy=None, *, radius=None, representation="metric_space"):
+def thin_space(
+    records,
+    metric,
+    count=None,
+    strategy=None,
+    *,
+    radius=None,
+    representation="metric_space",
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Distribution-preserving deterministic thinning by regular source order."""
     return _resample_space(
         records,
@@ -2254,22 +3430,77 @@ def thin_space(records, metric, count=None, strategy=None, *, radius=None, repre
         radius=radius,
         representation=representation,
         mapping="thin",
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
     )
 
 
-def distribution_sample_space(records, metric, count, strategy=None, *, representation="metric_space"):
+def distribution_sample_space(
+    records,
+    metric,
+    count,
+    strategy=None,
+    *,
+    representation="metric_space",
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Alias for distribution-preserving thinning."""
-    return thin_space(records, metric, count, strategy=strategy, representation=representation)
+    return thin_space(
+        records,
+        metric,
+        count,
+        strategy=strategy,
+        representation=representation,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
 
 
-def uniform_density_sample_space(records, metric, radius, *, representation="metric_space"):
+def uniform_density_sample_space(
+    records,
+    metric,
+    radius,
+    *,
+    representation="metric_space",
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Alias for uniform-density thinning by maximal radius net."""
     from metric.strategies import UniformDensity
 
-    return thin_space(records, metric, strategy=UniformDensity(radius), representation=representation)
+    return thin_space(
+        records,
+        metric,
+        strategy=UniformDensity(radius),
+        representation=representation,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
 
 
-def equalize_space(records, metric, radius=None, strategy=None, *, representation="metric_space"):
+def equalize_space(
+    records,
+    metric,
+    radius=None,
+    strategy=None,
+    *,
+    representation="metric_space",
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Density-equalizing thinning by maximal metric radius net."""
     from metric.strategies import UniformDensity
 
@@ -2284,29 +3515,83 @@ def equalize_space(records, metric, radius=None, strategy=None, *, representatio
         radius=radius,
         representation=representation,
         mapping="equalize",
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
     )
 
 
-def representative_indices(records, metric, k, seed_index=0):
+def representative_indices(
+    records,
+    metric,
+    k,
+    seed_index=0,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Farthest-first representative selection by index through the native C++ binding."""
+    requested = _normalize_neighbor_count(k, None)
+    seed_index = _normalize_neighbor_count(seed_index, None)
+    record_list, _plan = _materialize_records_for_exact_metric_work(
+        "representative_indices(...)",
+        records,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+        query_count=requested,
+    )
     return tuple(
         _native_metric_module().representative_indices(
-            list(records),
+            record_list,
             metric,
-            _normalize_neighbor_count(k, None),
-            _normalize_neighbor_count(seed_index, None),
+            requested,
+            seed_index,
         )
     )
 
 
-def find_representatives(records, metric, k=None, strategy=None, *, count=None, representation="metric_space"):
+def find_representatives(
+    records,
+    metric,
+    k=None,
+    strategy=None,
+    *,
+    count=None,
+    representation="metric_space",
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Representative selection result through the native C++ binding."""
-    record_list = list(records)
     requested_count = _normalize_neighbor_count(k, count)
+    record_list, _plan = _materialize_records_for_exact_metric_work(
+        "find_representatives(...)",
+        records,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+        query_count=2 * requested_count,
+    )
     if record_list and requested_count == 0:
         raise ValueError("representative count must be positive for a non-empty record set")
     seed_index, strategy_name = _representative_strategy_seed(strategy)
-    selected = representative_indices(record_list, metric, requested_count, seed_index=seed_index)
+    selected = representative_indices(
+        record_list,
+        metric,
+        requested_count,
+        seed_index=seed_index,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
     assignments, distances = _assign_to_representatives(record_list, metric, selected)
     coverage_radius, average_nearest_distance = _representative_diagnostics(len(record_list), distances)
     return RepresentativeSet(
@@ -2322,18 +3607,46 @@ def find_representatives(records, metric, k=None, strategy=None, *, count=None, 
     )
 
 
-def reduce_space(records, metric, count=None, strategy=None, *, representation="metric_space"):
+def reduce_space(
+    records,
+    metric,
+    count=None,
+    strategy=None,
+    *,
+    representation="metric_space",
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Reduce a finite metric space to representative records through the native C++ binding."""
-    record_list = list(records)
     requested_count = _normalize_neighbor_count(count, None)
     seed_index, strategy_name = _representative_strategy_seed(strategy)
-    selected = representative_indices(record_list, metric, requested_count, seed_index=seed_index)
+    record_list, _plan = _materialize_records_for_exact_metric_work(
+        "reduce_space(...)",
+        records,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+        query_count=2 * requested_count,
+    )
+    selected = representative_indices(
+        record_list,
+        metric,
+        requested_count,
+        seed_index=seed_index,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
     assignments, distances = _assign_to_representatives(record_list, metric, selected)
 
     from metric.spaces import Space
 
     return ReductionResult(
-        space=Space([record_list[index] for index in selected], metric),
+        space=Space([record_list[index] for index in selected], metric, validate="none", cache="none"),
         source_record_ids=selected,
         assignments=assignments,
         nearest_representative_distances=distances,
@@ -2347,11 +3660,22 @@ def reduce_space(records, metric, count=None, strategy=None, *, representation="
     )
 
 
-def compress_space(records, metric, count=None, strategy=None, *, radius=None, representation="metric_space"):
+def compress_space(
+    records,
+    metric,
+    count=None,
+    strategy=None,
+    *,
+    radius=None,
+    representation="metric_space",
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Compress a finite metric space by retaining representatives through the native C++ binding."""
     from metric.strategies import KMedoids, RadiusCoverage
 
-    record_list = list(records)
     if radius is not None:
         if isinstance(strategy, RadiusCoverage) and strategy.radius != radius:
             raise ValueError("use either radius= or RadiusCoverage(...), not conflicting radii")
@@ -2362,7 +3686,26 @@ def compress_space(records, metric, count=None, strategy=None, *, radius=None, r
     if isinstance(strategy, RadiusCoverage):
         if count is not None:
             raise ValueError("radius_coverage compression chooses the representative count; omit count")
-        selected = _radius_coverage_representative_indices(record_list, metric, strategy.radius)
+        record_list, _plan = _materialize_records_for_dense_operation(
+            "compress_space(...)",
+            records,
+            intent="matrix",
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            distance_evaluation_multiplier=2,
+        )
+        selected = _radius_coverage_representative_indices(
+            record_list,
+            metric,
+            strategy.radius,
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            operation="compress_space(...)",
+        )
         assignments, distances = _assign_to_representatives(record_list, metric, selected)
         multiplicities, weights = _compression_representative_measure(
             assignments,
@@ -2378,6 +3721,8 @@ def compress_space(records, metric, count=None, strategy=None, *, radius=None, r
             space=Space(
                 [record_list[index] for index in selected],
                 metric,
+                validate="none",
+                cache="none",
                 metadata={
                     "operator_name": "compress",
                     "strategy": "radius_coverage",
@@ -2407,12 +3752,27 @@ def compress_space(records, metric, count=None, strategy=None, *, radius=None, r
     if isinstance(strategy, KMedoids):
         if count is not None and count != strategy.groups:
             raise ValueError("use either count= or KMedoids(groups=...), not conflicting group counts")
+        groups_count = _normalize_positive_count(strategy.groups, "groups")
+        max_iterations = _normalize_positive_count(strategy.max_iterations, "max_iterations")
+        record_list, _plan = _materialize_records_for_exact_metric_work(
+            "compress_space(...)",
+            records,
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+            query_count=(groups_count * max_iterations) + groups_count,
+        )
         groups = kmedoids(
             record_list,
             metric,
-            strategy.groups,
-            strategy.max_iterations,
+            groups_count,
+            max_iterations,
             representation=representation,
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
         )
         selected = groups.medoids
         assignments, distances = _assign_to_representatives(record_list, metric, selected)
@@ -2430,6 +3790,8 @@ def compress_space(records, metric, count=None, strategy=None, *, radius=None, r
             space=Space(
                 [record_list[index] for index in selected],
                 metric,
+                validate="none",
+                cache="none",
                 metadata={
                     "operator_name": "compress",
                     "strategy": "k_medoids",
@@ -2456,7 +3818,27 @@ def compress_space(records, metric, count=None, strategy=None, *, radius=None, r
             validity=validity,
         )
 
-    reduction = reduce_space(record_list, metric, count=count, strategy=strategy, representation=representation)
+    requested_count = _normalize_neighbor_count(count, None)
+    record_list, _plan = _materialize_records_for_exact_metric_work(
+        "compress_space(...)",
+        records,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+        query_count=2 * requested_count,
+    )
+    reduction = reduce_space(
+        record_list,
+        metric,
+        count=count,
+        strategy=strategy,
+        representation=representation,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
     ratio = (reduction.reduced_record_count / reduction.source_record_count) if reduction.source_record_count else 0.0
     multiplicities, weights = _compression_representative_measure(
         reduction.assignments,
@@ -2485,7 +3867,19 @@ def compress_space(records, metric, count=None, strategy=None, *, radius=None, r
     )
 
 
-def map_space(records, transform, metric, *, representation="metric_space", source_ids=None):
+def map_space(
+    records,
+    transform,
+    metric,
+    *,
+    representation="metric_space",
+    source_ids=None,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+    operation="map_space(...)",
+):
     """Map records through a caller-supplied deterministic transform.
 
     Adapter: this applies the caller's own ``transform`` callable to each record
@@ -2499,14 +3893,16 @@ def map_space(records, transform, metric, *, representation="metric_space", sour
     if not callable(metric):
         raise TypeError("metric must be callable")
 
-    records = list(records)
+    records = _materialize_records_for_mapping(
+        operation,
+        records,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    source_ids = _materialize_source_ids_for_mapping(operation, source_ids, len(records))
     mapped_records = [transform(record) for record in records]
-    if source_ids is None:
-        source_ids = tuple(range(len(records)))
-    else:
-        source_ids = tuple(source_ids)
-    if len(source_ids) != len(records):
-        raise ValueError("source_ids must match the mapped record count")
 
     from metric.spaces import Space
     validity = (
@@ -2519,6 +3915,8 @@ def map_space(records, transform, metric, *, representation="metric_space", sour
             mapped_records,
             metric,
             ids=source_ids,
+            validate="none",
+            cache="none",
             metadata={
                 "mapping": "deterministic_transform",
                 "strategy": "deterministic_transform",
@@ -2549,55 +3947,220 @@ def embed_space(records, metric, dimensions=2, strategy=None, *, representation=
     _require_native_binding("embed_space(...)", "metric-space embedding (e.g. classical MDS)")
 
 
-def representatives(records, metric, k, seed_index=0):
+def representatives(
+    records,
+    metric,
+    k,
+    seed_index=0,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Farthest-first representative records through the native C++ binding."""
-    record_list = list(records)
-    return tuple(record_list[index] for index in representative_indices(record_list, metric, k, seed_index))
+    requested = _normalize_neighbor_count(k, None)
+    record_list, _plan = _materialize_records_for_exact_metric_work(
+        "representatives(...)",
+        records,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+        query_count=requested,
+    )
+    return tuple(
+        record_list[index]
+        for index in representative_indices(
+            record_list,
+            metric,
+            requested,
+            seed_index,
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
+    )
 
 
-def medoid_index(records, metric):
+def medoid_index(
+    records,
+    metric,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Index of the record with the smallest total distance through the native C++ binding."""
-    return _native_metric_module().medoid_index(list(records), metric)
+    record_list, _plan = _materialize_records_for_dense_operation(
+        "medoid_index(...)",
+        records,
+        intent="matrix",
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    return _native_metric_module().medoid_index(record_list, metric)
 
 
-def medoid(records, metric):
+def medoid(
+    records,
+    metric,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Record with the smallest total distance to all records through the native C++ binding."""
-    record_list = list(records)
-    return record_list[medoid_index(record_list, metric)]
+    record_list, _plan = _materialize_records_for_dense_operation(
+        "medoid(...)",
+        records,
+        intent="matrix",
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    return record_list[
+        medoid_index(
+            record_list,
+            metric,
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
+    ]
 
 
-def separated_representative_indices(records, metric, minimum_distance):
+def separated_representative_indices(
+    records,
+    metric,
+    minimum_distance,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Greedy minimum-distance separated representatives by index through the native C++ binding."""
+    record_list, _plan = _materialize_records_for_dense_operation(
+        "separated_representative_indices(...)",
+        records,
+        intent="matrix",
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
     return tuple(
         _native_metric_module().separated_representative_indices(
-            list(records),
+            record_list,
             metric,
             minimum_distance,
         )
     )
 
 
-def separated_representatives(records, metric, minimum_distance):
+def separated_representatives(
+    records,
+    metric,
+    minimum_distance,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Greedy minimum-distance separated representative records through the native C++ binding."""
-    record_list = list(records)
-    return tuple(record_list[index] for index in separated_representative_indices(record_list, metric, minimum_distance))
+    record_list, _plan = _materialize_records_for_dense_operation(
+        "separated_representatives(...)",
+        records,
+        intent="matrix",
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    return tuple(
+        record_list[index]
+        for index in separated_representative_indices(
+            record_list,
+            metric,
+            minimum_distance,
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
+    )
 
 
-def coverage_representative_indices(records, metric, radius):
+def coverage_representative_indices(
+    records,
+    metric,
+    radius,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Greedy radius-cover representatives by index through the native C++ binding."""
+    record_list, _plan = _materialize_records_for_dense_operation(
+        "coverage_representative_indices(...)",
+        records,
+        intent="matrix",
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
     return tuple(
         _native_metric_module().coverage_representative_indices(
-            list(records),
+            record_list,
             metric,
             radius,
         )
     )
 
 
-def coverage_representatives(records, metric, radius):
+def coverage_representatives(
+    records,
+    metric,
+    radius,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Greedy radius-cover representative records through the native C++ binding."""
-    record_list = list(records)
-    return tuple(record_list[index] for index in coverage_representative_indices(record_list, metric, radius))
+    record_list, _plan = _materialize_records_for_dense_operation(
+        "coverage_representatives(...)",
+        records,
+        intent="matrix",
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    return tuple(
+        record_list[index]
+        for index in coverage_representative_indices(
+            record_list,
+            metric,
+            radius,
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
+    )
 
 
 def compare_spaces(
@@ -2614,6 +4177,10 @@ def compare_spaces(
     dropped_left_ids=(),
     dropped_right_ids=(),
     p_value=None,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
 ):
     """Compare aligned finite metric spaces by distance-profile correlation.
 
@@ -2634,10 +4201,64 @@ def compare_spaces(
             "compare_spaces(...)", f"{align!r}-aligned cross-space distance-profile correlation"
         )
 
-    left = list(left_records)
-    right = list(right_records)
+    left, _left_plan = _materialize_records_for_dense_operation(
+        "compare_spaces(...)",
+        left_records,
+        intent="compare",
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+        distance_evaluation_multiplier=2,
+    )
+    right, _right_plan = _materialize_records_for_dense_operation(
+        "compare_spaces(...)",
+        right_records,
+        intent="compare",
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+        distance_evaluation_multiplier=2,
+    )
     _require_aligned_record_counts(len(left), len(right))
+    policy = _runtime_policy_or_none(runtime)
+    max_memory_bytes = _resolve_runtime_budget(policy, max_memory_bytes, "max_memory_bytes")
+    max_distance_evaluations = _resolve_runtime_budget(
+        policy,
+        max_distance_evaluations,
+        "max_distance_evaluations",
+    )
+    max_dense_records = _resolve_runtime_budget(policy, max_dense_records, "max_dense_records")
+    from metric.spaces import _make_plan
 
+    plan = _make_plan(
+        "compare",
+        len(left),
+        exact=True,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+        allow_approximate=False,
+        allow_chunking=False,
+        dense_cell_bytes=64,
+        distance_evaluation_multiplier=2,
+    )
+    if plan.decision == "refused":
+        _refuse_dense_materialization("compare_spaces(...)", plan)
+
+    normalized_max_dense_records = plan.max_dense_records
+    matched = _materialize_matched_ids_for_compare(matched_ids, len(left), normalized_max_dense_records)
+    dropped_left = _materialize_bounded_compare_ids(
+        dropped_left_ids,
+        "dropped_left_ids",
+        normalized_max_dense_records,
+    )
+    dropped_right = _materialize_bounded_compare_ids(
+        dropped_right_ids,
+        "dropped_right_ids",
+        normalized_max_dense_records,
+    )
     payload = _native_metric_module().distance_profile_correlation(
         left,
         left_metric,
@@ -2646,12 +4267,11 @@ def compare_spaces(
         left_representation,
         right_representation,
     )
-    matched = tuple(range(len(left))) if matched_ids is None else tuple(matched_ids)
     return _correlation_result_from_payload(
         payload,
         matched_ids=matched,
-        dropped_left_ids=dropped_left_ids,
-        dropped_right_ids=dropped_right_ids,
+        dropped_left_ids=dropped_left,
+        dropped_right_ids=dropped_right,
         align=align,
         p_value=p_value,
     )
@@ -2666,6 +4286,10 @@ def correlate_spaces(
     *,
     left_representation="records",
     right_representation="records",
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
 ):
     """Correlate aligned finite metric spaces by distance-profile correlation.
 
@@ -2681,17 +4305,54 @@ def correlate_spaces(
         left_representation=left_representation,
         right_representation=right_representation,
         align="position",
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
     )
 
 
-def intrinsic_dimension(records, metric):
+def intrinsic_dimension(
+    records,
+    metric,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Estimate intrinsic expansion dimension through the native C++ binding."""
-    return float(_native_metric_module().intrinsic_dimension(list(records), metric))
+    record_list, _plan = _materialize_records_for_exact_diagnostics(
+        "intrinsic_dimension(...)",
+        records,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    return float(_native_metric_module().intrinsic_dimension(record_list, metric))
 
 
-def describe_structure(records, metric, *, representation="metric_space"):
+def describe_structure(
+    records,
+    metric,
+    *,
+    representation="metric_space",
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Describe exact finite-space structure through the native C++ binding."""
-    payload = _native_metric_module().describe_structure(list(records), metric, representation)
+    record_list, _plan = _materialize_records_for_exact_diagnostics(
+        "describe_structure(...)",
+        records,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    payload = _native_metric_module().describe_structure(record_list, metric, representation)
     return StructureDescription(
         record_count=int(payload["record_count"]),
         pair_count=int(payload["pair_count"]),
@@ -2708,9 +4369,166 @@ def describe_structure(records, metric, *, representation="metric_space"):
     )
 
 
-def intrinsic_dimension_from_distances(distances):
+def _precomputed_distance_matrix_budget(
+    operation,
+    record_count,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_dense_records=None,
+):
+    policy = _runtime_policy_or_none(runtime)
+    max_memory_bytes = _resolve_runtime_budget(policy, max_memory_bytes, "max_memory_bytes")
+    max_dense_records = _resolve_runtime_budget(policy, max_dense_records, "max_dense_records")
+
+    from metric.spaces import (
+        _DEFAULT_MAX_DENSE_RECORDS,
+        _DEFAULT_MAX_MEMORY_BYTES,
+        _PYTHON_DISTANCE_CELL_BYTES,
+        _dense_memory_estimate,
+        _normalize_optional_budget,
+    )
+
+    record_count = operator.index(record_count)
+    max_memory_bytes = _normalize_optional_budget(
+        max_memory_bytes,
+        "max_memory_bytes",
+        _DEFAULT_MAX_MEMORY_BYTES,
+    )
+    max_dense_records = _normalize_optional_budget(
+        max_dense_records,
+        "max_dense_records",
+        _DEFAULT_MAX_DENSE_RECORDS,
+    )
+    memory_bytes = _dense_memory_estimate(record_count, cell_bytes=_PYTHON_DISTANCE_CELL_BYTES)
+    reasons = []
+    if memory_bytes > max_memory_bytes:
+        reasons.append(f"estimated memory {memory_bytes} bytes exceeds budget {max_memory_bytes} bytes")
+    if record_count > max_dense_records:
+        reasons.append(f"dense record count {record_count} exceeds budget {max_dense_records}")
+    if reasons:
+        raise MetricComputationError(
+            f"{operation} refused precomputed dense distance matrix materialization: "
+            f"records={record_count}, "
+            f"estimated_bytes={memory_bytes}, "
+            f"budget_bytes={max_memory_bytes}, "
+            f"max_dense_records={max_dense_records}. "
+            f"Reason: {'; '.join(reasons)}. "
+            "Suggested fallback: pass a bounded precomputed matrix sample, "
+            "raise max_memory_bytes or max_dense_records, or use intrinsic_dimension(...) "
+            "with a bounded runtime policy."
+        )
+    return max_memory_bytes, max_dense_records
+
+
+def _materialize_precomputed_distance_row(operation, row, row_index, expected_count, max_dense_records):
+    try:
+        known_count = len(row)
+    except TypeError:
+        materialized = []
+        for value in row:
+            if len(materialized) >= expected_count:
+                raise MetricComputationError(
+                    f"{operation} refused precomputed distance row materialization: "
+                    f"row={row_index}, observed_columns={len(materialized) + 1}, "
+                    f"expected_columns={expected_count}, max_dense_records={max_dense_records}. "
+                    "Suggested fallback: pass a bounded square distance matrix sample "
+                    "or raise max_dense_records explicitly."
+                )
+            materialized.append(value)
+    else:
+        if known_count > max_dense_records:
+            raise MetricComputationError(
+                f"{operation} refused precomputed distance row materialization: "
+                f"row={row_index}, columns={known_count}, max_dense_records={max_dense_records}. "
+                "Suggested fallback: pass a bounded square distance matrix sample "
+                "or raise max_dense_records explicitly."
+            )
+        materialized = list(row)
+
+    if len(materialized) != expected_count:
+        raise ValueError(
+            f"{operation} requires a square distance matrix; row {row_index} has "
+            f"{len(materialized)} columns for {expected_count} records"
+        )
+    return materialized
+
+
+def _materialize_precomputed_distance_matrix(
+    operation,
+    distances,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_dense_records=None,
+):
+    try:
+        record_count = len(distances)
+    except TypeError:
+        rows = []
+        for row in distances:
+            rows.append(row)
+            _precomputed_distance_matrix_budget(
+                operation,
+                len(rows),
+                runtime=runtime,
+                max_memory_bytes=max_memory_bytes,
+                max_dense_records=max_dense_records,
+            )
+        _, dense_record_budget = _precomputed_distance_matrix_budget(
+            operation,
+            len(rows),
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_dense_records=max_dense_records,
+        )
+        return [
+            _materialize_precomputed_distance_row(
+                operation,
+                row,
+                row_index,
+                len(rows),
+                dense_record_budget,
+            )
+            for row_index, row in enumerate(rows)
+        ]
+
+    _, dense_record_budget = _precomputed_distance_matrix_budget(
+        operation,
+        record_count,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_dense_records=max_dense_records,
+    )
+    rows = list(distances)
+    return [
+        _materialize_precomputed_distance_row(
+            operation,
+            row,
+            row_index,
+            record_count,
+            dense_record_budget,
+        )
+        for row_index, row in enumerate(rows)
+    ]
+
+
+def intrinsic_dimension_from_distances(
+    distances,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_dense_records=None,
+):
     """Estimate intrinsic expansion dimension from a precomputed distance matrix."""
-    return float(_native_metric_module().intrinsic_dimension_from_distances(list(distances)))
+    distance_matrix = _materialize_precomputed_distance_matrix(
+        "intrinsic_dimension_from_distances(...)",
+        distances,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_dense_records=max_dense_records,
+    )
+    return float(_native_metric_module().intrinsic_dimension_from_distances(distance_matrix))
 
 
 __all__ = [
@@ -2730,9 +4548,13 @@ __all__ = [
     "NeighborResult",
     "Outlier",
     "OutlierResult",
+    "RedifMeasurePath",
+    "RedifMeasureResult",
+    "RedifMeasureSummary",
     "RepresentativeSet",
     "ReductionResult",
     "StructureDescription",
+    "add_noise_space",
     "compare_spaces",
     "correlate_spaces",
     "compress_space",
@@ -2767,9 +4589,11 @@ __all__ = [
     "prune_graph_out_degree",
     "nearest_neighbors",
     "range_neighbors",
+    "redif_dynamics",
     "reduce_space",
     "representative_indices",
     "representatives",
+    "remove_noise_space",
     "separated_representative_indices",
     "separated_representatives",
     "symmetrize_graph",

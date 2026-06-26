@@ -11,6 +11,18 @@ auto absolute_distance(double lhs, double rhs) -> double { return std::abs(lhs -
 
 auto close(double lhs, double rhs, double tolerance = 1.0e-12) -> bool { return std::abs(lhs - rhs) <= tolerance; }
 
+struct CountingAbsoluteDistance {
+	std::size_t *calls{};
+
+	auto operator()(double lhs, double rhs) const -> double
+	{
+		if (calls != nullptr) {
+			++*calls;
+		}
+		return std::abs(lhs - rhs);
+	}
+};
+
 } // namespace
 
 int main()
@@ -95,6 +107,31 @@ int main()
 	assert(close(multi.average_row_recall, 0.7));
 	assert(multi.minimum_row_recall == 0.0);
 	assert(multi.maximum_row_recall == 1.0);
+
+	constexpr std::size_t large_count = 1000;
+	std::vector<double> large_records(large_count);
+	for (std::size_t index = 0; index < large_records.size(); ++index) {
+		large_records[index] = static_cast<double>(index);
+	}
+	std::size_t large_source_calls = 0;
+	std::size_t large_mapped_calls = 0;
+	auto large_space = mtrc::make_space(large_records, CountingAbsoluteDistance{&large_source_calls});
+	auto large_mapping =
+		mtrc::map(large_space, [](double value) { return value; }, CountingAbsoluteDistance{&large_mapped_calls});
+	const auto sampled = mtrc::modify::map::neighbor_preservation(large_space, large_mapping, 1);
+	assert(!sampled.exact);
+	assert(sampled.evaluated_rows < large_records.size());
+	assert(sampled.evaluated_rows > 0);
+	assert(sampled.max_distance_evaluations ==
+		   mtrc::modify::map::default_mapping_diagnostic_max_distance_evaluations);
+	assert(!sampled.reason.empty());
+	assert(sampled.source_representation == "metric_space_sample");
+	assert(sampled.mapped_representation == "metric_space_sample");
+	assert(sampled.source_distance_evaluations + sampled.mapped_distance_evaluations <=
+		   mtrc::modify::map::default_mapping_diagnostic_max_distance_evaluations);
+	assert(large_source_calls == sampled.source_distance_evaluations);
+	assert(large_mapped_calls == sampled.mapped_distance_evaluations);
+	assert(sampled.recall == 1.0);
 
 	return 0;
 }

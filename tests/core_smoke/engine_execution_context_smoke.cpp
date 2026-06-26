@@ -45,6 +45,21 @@ struct SlowCountingAbsoluteDistance {
 	}
 };
 
+struct CountingDirectedDistance {
+	std::shared_ptr<std::size_t> calls;
+
+	explicit CountingDirectedDistance(std::shared_ptr<std::size_t> call_counter)
+		: calls(std::move(call_counter))
+	{
+	}
+
+	auto operator()(int lhs, int rhs) const -> int
+	{
+		++(*calls);
+		return lhs <= rhs ? rhs - lhs : (lhs - rhs) + 1;
+	}
+};
+
 namespace mtrc::core {
 template <> struct metric_traits<CountingAbsoluteDistance> {
 	static constexpr auto law = metric_law::metric;
@@ -54,6 +69,12 @@ template <> struct metric_traits<CountingAbsoluteDistance> {
 
 template <> struct metric_traits<SlowCountingAbsoluteDistance> {
 	static constexpr auto law = metric_law::metric;
+	static constexpr auto records = record_kind::custom;
+	static constexpr bool thread_safe = true;
+};
+
+template <> struct metric_traits<CountingDirectedDistance> {
+	static constexpr auto law = metric_law::distance;
 	static constexpr auto records = record_kind::custom;
 	static constexpr bool thread_safe = true;
 };
@@ -300,11 +321,32 @@ int main()
 		mtrc::space::storage::using_distance_table(), 1, 0);
 	assert_representation_error([&] {
 		(void)mtrc::space::execution_context(refusing_space, refusing_policy);
-	}, "max_dense_records");
-	assert(*refusing_calls == 0);
+		}, "max_dense_records");
+		assert(*refusing_calls == 0);
 
-	auto assert_runtime_cancelled = [](auto operation, const std::shared_ptr<std::size_t> &calls,
-									   std::size_t full_work_calls) {
+		const auto eval_refusing_calls = std::make_shared<std::size_t>(0);
+		auto eval_refusing_space = mtrc::make_space(
+			std::vector<int>{0, 2, 5, 9}, CountingAbsoluteDistance(eval_refusing_calls));
+		const auto eval_refusing_policy = mtrc::space::storage::with_distance_evaluation_budget(
+			mtrc::space::storage::using_distance_table(), symmetric_slots - 1);
+		assert_representation_error([&] {
+			(void)mtrc::space::execution_context(eval_refusing_space, eval_refusing_policy);
+		}, "max_distance_evaluations");
+		assert(*eval_refusing_calls == 0);
+
+		const auto directed_refusing_calls = std::make_shared<std::size_t>(0);
+		auto directed_refusing_space = mtrc::make_space(
+			std::vector<int>{0, 2, 5, 9}, CountingDirectedDistance(directed_refusing_calls));
+		const auto directed_dense_slots = directed_refusing_space.size() * directed_refusing_space.size();
+		const auto directed_refusing_policy = mtrc::space::storage::with_distance_evaluation_budget(
+			mtrc::space::storage::using_distance_table(), directed_dense_slots - 1);
+		assert_representation_error([&] {
+			(void)mtrc::space::execution_context(directed_refusing_space, directed_refusing_policy);
+		}, "max_distance_evaluations");
+		assert(*directed_refusing_calls == 0);
+
+		auto assert_runtime_cancelled = [](auto operation, const std::shared_ptr<std::size_t> &calls,
+										   std::size_t full_work_calls) {
 		*calls = 0;
 		bool cancelled = false;
 		try {

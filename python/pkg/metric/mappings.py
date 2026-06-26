@@ -10,13 +10,15 @@ import copy
 import json
 import operator
 
-from metric.exceptions import MetricInputError, StrategyUnavailableError
+from metric.exceptions import MetricComputationError, MetricInputError, StrategyUnavailableError
 
 
 STABILITY = "beta"
 _NATIVE_MAPPING_ARTIFACT_FORMATS = frozenset({
     "metric.parametric_diffusion_coordinate_artifact",
 })
+_PARAMETRIC_DIFFUSION_DENSE_CELL_BYTES = 64
+_CLUSTERED_SPACE_DENSE_CELL_BYTES = 32
 
 
 @dataclass(frozen=True)
@@ -94,9 +96,36 @@ class ClusteredSpaceMapping:
     """Mapping adapter from a ClusteringResult into a clustered Space."""
 
     clustering: object
+    runtime: object = None
+    max_memory_bytes: object = None
+    max_distance_evaluations: object = None
+    max_dense_records: object = None
 
-    def derive_from(self, space):
-        return _build_clustered_space_derivation(space, self.clustering)
+    def derive_from(
+        self,
+        space,
+        *,
+        runtime=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+    ):
+        return _build_clustered_space_derivation(
+            space,
+            self.clustering,
+            runtime=self.runtime if runtime is None else runtime,
+            max_memory_bytes=(
+                self.max_memory_bytes if max_memory_bytes is None else max_memory_bytes
+            ),
+            max_distance_evaluations=(
+                self.max_distance_evaluations
+                if max_distance_evaluations is None
+                else max_distance_evaluations
+            ),
+            max_dense_records=(
+                self.max_dense_records if max_dense_records is None else max_dense_records
+            ),
+        )
 
 
 @dataclass(frozen=True)
@@ -263,10 +292,42 @@ class ParametricDiffusionCoordinateArtifact:
     def transform_supported(self):
         return True
 
-    def transform(self, records):
+    def transform(
+        self,
+        records,
+        *,
+        runtime=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+    ):
+        records = _preflight_parametric_diffusion_records(
+            "ParametricDiffusionCoordinateArtifact.transform(...)",
+            records,
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         return self._artifact.transform(records)
 
-    def inverse_transform(self, latent_records):
+    def inverse_transform(
+        self,
+        latent_records,
+        *,
+        runtime=None,
+        max_memory_bytes=None,
+        max_distance_evaluations=None,
+        max_dense_records=None,
+    ):
+        latent_records = _preflight_parametric_diffusion_records(
+            "ParametricDiffusionCoordinateArtifact.inverse_transform(...)",
+            latent_records,
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
         return self._artifact.inverse_transform(latent_records)
 
     def calibration_report(self):
@@ -295,9 +356,130 @@ def _load_native_engine_module():
     return native_metric
 
 
-def derive_from(mapping, space):
+def _preflight_parametric_diffusion_records(
+    operation,
+    records,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
+    from metric.operators import _ensure_exact_metric_work_allowed
+
+    try:
+        record_count = len(records)
+    except TypeError:
+        materialized = []
+        for record in records:
+            observed = len(materialized) + 1
+            _ensure_exact_metric_work_allowed(
+                operation,
+                observed,
+                runtime=runtime,
+                max_memory_bytes=max_memory_bytes,
+                max_distance_evaluations=max_distance_evaluations,
+                max_dense_records=max_dense_records,
+                dense=True,
+                dense_cell_bytes=_PARAMETRIC_DIFFUSION_DENSE_CELL_BYTES,
+            )
+            materialized.append(record)
+        records = materialized
+        record_count = len(records)
+
+    _ensure_exact_metric_work_allowed(
+        operation,
+        record_count,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+        dense=True,
+        dense_cell_bytes=_PARAMETRIC_DIFFUSION_DENSE_CELL_BYTES,
+    )
+    return records
+
+
+def _parametric_diffusion_native_budgets(
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
+    from metric.operators import _resolve_runtime_budgets, _runtime_policy_or_none
+    from metric.spaces import (
+        _DEFAULT_MAX_DENSE_RECORDS,
+        _DEFAULT_MAX_DISTANCE_EVALUATIONS,
+        _DEFAULT_MAX_MEMORY_BYTES,
+        _normalize_optional_budget,
+    )
+
+    policy = _runtime_policy_or_none(runtime)
+    max_memory_bytes, max_distance_evaluations, max_dense_records = _resolve_runtime_budgets(
+        policy,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    return {
+        "max_memory_bytes": _normalize_optional_budget(
+            max_memory_bytes,
+            "max_memory_bytes",
+            _DEFAULT_MAX_MEMORY_BYTES,
+        ),
+        "max_distance_evaluations": _normalize_optional_budget(
+            max_distance_evaluations,
+            "max_distance_evaluations",
+            _DEFAULT_MAX_DISTANCE_EVALUATIONS,
+        ),
+        "max_dense_records": _normalize_optional_budget(
+            max_dense_records,
+            "max_dense_records",
+            _DEFAULT_MAX_DENSE_RECORDS,
+        ),
+    }
+
+
+def _call_native_with_optional_diffusion_budgets(function, records, native_kwargs):
+    native_kwargs = dict(native_kwargs)
+    optional_budget_keys = (
+        "max_memory_bytes",
+        "max_distance_evaluations",
+        "max_dense_records",
+    )
+    while True:
+        try:
+            return function(records, **native_kwargs)
+        except TypeError as exc:
+            unsupported_key = _unsupported_optional_budget_keyword(
+                str(exc),
+                native_kwargs,
+                optional_budget_keys,
+            )
+            if unsupported_key is None:
+                raise
+            native_kwargs.pop(unsupported_key)
+
+
+def _unsupported_optional_budget_keyword(message, native_kwargs, optional_budget_keys):
+    lowered = message.lower()
+    signature_mismatch = (
+        "unexpected keyword" in lowered
+        or "invalid keyword" in lowered
+        or "incompatible function arguments" in lowered
+    )
+    if not signature_mismatch:
+        return None
+    for key in optional_budget_keys:
+        if key in native_kwargs and key in message:
+            return key
+    return None
+
+
+def derive_from(mapping, space, **kwargs):
     """Derive a mapping artifact from a finite metric space."""
-    return mapping.derive_from(space)
+    return mapping.derive_from(space, **kwargs)
 
 
 def transform(mapping_artifact, space=None):
@@ -351,6 +533,10 @@ def derive_parametric_diffusion_coordinates(
     distance_provider="exact_metric_space_distance_provider",
     affinity_kernel="gaussian_affinity_kernel",
     diffusion_operator="row_normalized_diffusion_operator",
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
 ):
     """Derive a native C++ parametric diffusion coordinate artifact.
 
@@ -361,6 +547,15 @@ def derive_parametric_diffusion_coordinates(
     The native path is deterministic by construction: a given input always
     yields the same coordinates.
     """
+
+    records = _preflight_parametric_diffusion_records(
+        "derive_parametric_diffusion_coordinates(...)",
+        records,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
 
     native_metric = _load_native_engine_module()
     if native_metric is None:
@@ -376,20 +571,30 @@ def derive_parametric_diffusion_coordinates(
             "Python must not reimplement the metric-space dynamics."
         )
 
+    native_kwargs = {
+        "dimensions": dimensions,
+        "calibration_steps": calibration_steps,
+        "step_size": step_size,
+        "diffusion_steps": diffusion_steps,
+        "kernel_scale": kernel_scale,
+        "reconstruction_weight": reconstruction_weight,
+        "geometry_weight": geometry_weight,
+        "seed": seed,
+        "distance_provider": distance_provider,
+        "affinity_kernel": affinity_kernel,
+        "diffusion_operator": diffusion_operator,
+        **_parametric_diffusion_native_budgets(
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        ),
+    }
     try:
-        artifact = derive_vectors(
+        artifact = _call_native_with_optional_diffusion_budgets(
+            derive_vectors,
             records,
-            dimensions=dimensions,
-            calibration_steps=calibration_steps,
-            step_size=step_size,
-            diffusion_steps=diffusion_steps,
-            kernel_scale=kernel_scale,
-            reconstruction_weight=reconstruction_weight,
-            geometry_weight=geometry_weight,
-            seed=seed,
-            distance_provider=distance_provider,
-            affinity_kernel=affinity_kernel,
-            diffusion_operator=diffusion_operator,
+            native_kwargs,
         )
     except ValueError as exc:
         message = str(exc)
@@ -408,31 +613,91 @@ def derive_parametric_diffusion_coordinates(
     )
 
 
-def make_clustered_space_mapping(clustering):
+def make_clustered_space_mapping(
+    clustering,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Create a mapping adapter from an engine-style clustering result."""
-    return ClusteredSpaceMapping(clustering)
+    return ClusteredSpaceMapping(
+        clustering,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
 
 
-def clustered_space(space, clustering):
+def clustered_space(
+    space,
+    clustering,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Derive a cluster-level Space from a source Space and clustering result."""
-    return make_clustered_space_mapping(clustering).derive_from(space).transform(space)
+    return (
+        make_clustered_space_mapping(
+            clustering,
+            runtime=runtime,
+            max_memory_bytes=max_memory_bytes,
+            max_distance_evaluations=max_distance_evaluations,
+            max_dense_records=max_dense_records,
+        )
+        .derive_from(space)
+        .transform(space)
+    )
 
 
-def _build_clustered_space_derivation(space, clustering):
+def _build_clustered_space_derivation(
+    space,
+    clustering,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     record_count = _coerce_count(getattr(clustering, "record_count", None), "record_count")
     if record_count != len(space):
         raise ValueError("clustering record count does not match source space")
-
-    assignments = tuple(getattr(clustering, "assignments", ()))
-    if len(assignments) != record_count:
-        raise ValueError("clustering assignments do not match record count")
 
     cluster_count = _coerce_count(getattr(clustering, "cluster_count", None), "cluster_count")
     if cluster_count == 0:
         raise ValueError("cannot derive a clustered space without clusters")
 
+    from metric.operators import _ensure_exact_metric_work_allowed
+
+    _ensure_exact_metric_work_allowed(
+        "clustered_space(...)",
+        cluster_count,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+        dense=True,
+        dense_cell_bytes=_CLUSTERED_SPACE_DENSE_CELL_BYTES,
+    )
+
+    assignments = _materialize_clustered_sequence(
+        "assignments",
+        getattr(clustering, "assignments", ()),
+        record_count,
+        "record_count",
+    )
+    if len(assignments) != record_count:
+        raise ValueError("clustering assignments do not match record count")
+
     unassigned_label = getattr(clustering, "unassigned_label", -1)
-    source_ids = tuple(getattr(space, "ids", tuple(range(record_count))))
+    source_ids = getattr(space, "ids", None)
+    if source_ids is None:
+        source_ids = tuple(range(record_count))
+    source_id_positions = _source_id_position_index(space, source_ids)
     source_records = [[] for _ in range(cluster_count)]
 
     for index, label in enumerate(assignments):
@@ -443,7 +708,12 @@ def _build_clustered_space_derivation(space, clustering):
             raise ValueError("clustering assignment references an unknown cluster")
         source_records[label].append(source_ids[index])
 
-    medoids = tuple(getattr(clustering, "medoids", ()))
+    medoids = _materialize_clustered_sequence(
+        "medoids",
+        getattr(clustering, "medoids", ()),
+        cluster_count,
+        "cluster_count",
+    )
     representative_positions = []
     representative_records = []
     records = []
@@ -454,11 +724,19 @@ def _build_clustered_space_derivation(space, clustering):
         if label < len(medoids):
             medoid = _coerce_count(medoids[label], "cluster medoid")
             try:
-                representative_position = _position_for_source_id(space, medoid)
+                representative_position = _position_for_source_id(
+                    source_id_positions,
+                    source_ids,
+                    medoid,
+                )
             except ValueError:
                 representative_position = medoid
         else:
-            representative_position = _position_for_source_id(space, members[0])
+            representative_position = _position_for_source_id(
+                source_id_positions,
+                source_ids,
+                members[0],
+            )
         if representative_position >= record_count:
             raise ValueError("clustering medoid references an unknown source record")
         representative_positions.append(representative_position)
@@ -492,6 +770,30 @@ def _coerce_count(value, name):
     if value < 0:
         raise ValueError(f"{name} must be non-negative")
     return value
+
+
+def _materialize_clustered_sequence(name, values, max_count, max_count_name):
+    try:
+        known_count = len(values)
+    except TypeError:
+        materialized = []
+        for value in values:
+            if len(materialized) >= max_count:
+                raise MetricComputationError(
+                    f"clustered_space(...) refused {name} materialization: "
+                    f"observed_{name}>{max_count}, {max_count_name}={max_count}. "
+                    "Suggested fallback: pass a bounded clustering result sequence."
+                )
+            materialized.append(value)
+        return tuple(materialized)
+
+    if known_count > max_count:
+        raise MetricComputationError(
+            f"clustered_space(...) refused {name} materialization: "
+            f"{name}={known_count}, {max_count_name}={max_count}. "
+            "Suggested fallback: pass a bounded clustering result sequence."
+        )
+    return tuple(values)
 
 
 def _coerce_manifest(value, name):
@@ -544,10 +846,25 @@ def _nested(mapping, path, default=None):
     return value
 
 
-def _position_for_source_id(space, source_id):
+def _source_id_position_index(space, source_ids):
+    position_index = getattr(space, "_id_to_index", None)
+    if position_index is not None:
+        return position_index
     try:
-        return space.ids.index(source_id)
-    except ValueError:
+        return {record_id: index for index, record_id in enumerate(source_ids)}
+    except TypeError:
+        return None
+
+
+def _position_for_source_id(position_index, source_ids, source_id):
+    if position_index is not None:
+        try:
+            return position_index[source_id]
+        except (KeyError, TypeError):
+            raise ValueError("cluster source record is not present in the source space") from None
+    try:
+        return source_ids.index(source_id)
+    except (AttributeError, ValueError):
         raise ValueError("cluster source record is not present in the source space") from None
 
 

@@ -32,6 +32,22 @@ struct DoubleAbsoluteDistance {
 	}
 };
 
+struct CountingDoubleAbsoluteDistance {
+	explicit CountingDoubleAbsoluteDistance(std::shared_ptr<std::size_t> calls)
+		: calls(calls)
+	{
+	}
+
+	auto operator()(double lhs, double rhs) const -> double
+	{
+		++(*calls);
+		const auto difference = lhs - rhs;
+		return difference < 0.0 ? -difference : difference;
+	}
+
+	std::shared_ptr<std::size_t> calls;
+};
+
 struct StatefulLengthDistance {
 	auto operator()(const std::string &lhs, const std::string &rhs) const -> int
 	{
@@ -82,6 +98,12 @@ template <> struct metric_traits<StatefulLengthDistance> {
 };
 
 template <> struct metric_traits<DoubleAbsoluteDistance> {
+	static constexpr auto law = metric_law::metric;
+	static constexpr auto records = record_kind::custom;
+	static constexpr bool thread_safe = true;
+};
+
+template <> struct metric_traits<CountingDoubleAbsoluteDistance> {
 	static constexpr auto law = metric_law::metric;
 	static constexpr auto records = record_kind::custom;
 	static constexpr bool thread_safe = true;
@@ -288,6 +310,25 @@ int main()
 	assert_refused_before_operator_work([&] {
 		(void)mtrc::compress(counting_space, 2, refusing_materialized_policy);
 	});
+
+	const auto describe_limited_policy =
+		mtrc::space::storage::with_distance_evaluation_budget(mtrc::space::storage::exact(), 1);
+	const auto describe_limited_plan =
+		mtrc::space::storage::estimate_cost(counting_space, "describe", describe_limited_policy);
+	assert(describe_limited_plan.refused);
+	assert(describe_limited_plan.reason.find("max_distance_evaluations") != std::string::npos);
+	*materialized_refusal_calls = 0;
+	bool rejected_live_describe_budget = false;
+	try {
+		(void)mtrc::describe_structure(counting_space, describe_limited_policy);
+	} catch (const mtrc::RepresentationError &error) {
+		rejected_live_describe_budget = true;
+		const std::string message = error.what();
+		assert(message.find("describe_structure") != std::string::npos);
+		assert(message.find("distance_evaluation_budget") != std::string::npos);
+	}
+	assert(rejected_live_describe_budget);
+	assert(*materialized_refusal_calls == 0);
 
 	const auto blocked_materialized_policy = mtrc::space::storage::allow_chunking_fallback(
 		mtrc::space::storage::with_distance_table_budget(
@@ -671,12 +712,15 @@ int main()
 	const auto tree_policy = mtrc::space::storage::using_cover_tree();
 	assert(tree_policy.name() == "exact_materialized_serial");
 	assert(tree_policy.representation_preference() == "cover_tree_index");
-	const auto tree_diagnostics = mtrc::space::storage::diagnostics(tree_policy, {}, "neighbors");
-	assert(tree_diagnostics.materialized);
-	assert(tree_diagnostics.representation == "cover_tree_index");
-	auto edit_space =
-		mtrc::make_space(std::vector<std::string>{"metric", "metrics", "matrix", "tree"}, mtrc::Edit<char>{});
-	const auto edit_lazy_neighbors = mtrc::find_neighbors(edit_space, std::string("metricks"), 2, lazy_policy);
+		const auto tree_diagnostics = mtrc::space::storage::diagnostics(tree_policy, {}, "neighbors");
+		assert(tree_diagnostics.materialized);
+		assert(tree_diagnostics.representation == "cover_tree_index");
+		const auto tree_plan = mtrc::space::storage::estimate_cost(space, "neighbors", tree_policy);
+		assert(tree_plan.estimated_distance_evaluations >= space.size() * space.size());
+		assert(tree_plan.memory_bytes_estimate > 0);
+		auto edit_space =
+			mtrc::make_space(std::vector<std::string>{"metric", "metrics", "matrix", "tree"}, mtrc::Edit<char>{});
+		const auto edit_lazy_neighbors = mtrc::find_neighbors(edit_space, std::string("metricks"), 2, lazy_policy);
 	const auto tree_query_neighbors = mtrc::find_neighbors(edit_space, std::string("metricks"), 2, tree_policy);
 	assert(tree_query_neighbors.representation == "cover_tree_index");
 	assert(tree_query_neighbors[0].id == edit_lazy_neighbors[0].id);
@@ -687,11 +731,51 @@ int main()
 	const auto edit_lazy_id_neighbors = mtrc::find_neighbors(edit_space, edit_space.id(0), 2, lazy_policy);
 	assert(tree_id_neighbors[0].id == edit_lazy_id_neighbors[0].id);
 	assert(tree_id_neighbors[0].distance == edit_lazy_id_neighbors[0].distance);
-	const auto empty_tree_id_neighbors = mtrc::find_neighbors(edit_space, edit_space.id(0), 0, tree_policy);
-	assert(empty_tree_id_neighbors.representation == "cover_tree_index");
-	assert(empty_tree_id_neighbors.empty());
+		const auto empty_tree_id_neighbors = mtrc::find_neighbors(edit_space, edit_space.id(0), 0, tree_policy);
+		assert(empty_tree_id_neighbors.representation == "cover_tree_index");
+		assert(empty_tree_id_neighbors.empty());
+		const auto cover_tree_refusal_calls = std::make_shared<std::size_t>(0);
+		auto cover_tree_counting_space = mtrc::make_space(
+			std::vector<double>{0.0, 1.0, 2.0, 3.0}, CountingDoubleAbsoluteDistance(cover_tree_refusal_calls));
+		const auto cover_tree_build_limited_policy = mtrc::space::storage::with_distance_evaluation_budget(
+			mtrc::space::storage::using_cover_tree(), cover_tree_counting_space.size());
+		const auto cover_tree_build_limited_plan =
+			mtrc::space::storage::estimate_cost(cover_tree_counting_space, "neighbors",
+												cover_tree_build_limited_policy);
+		assert(cover_tree_build_limited_plan.refused);
+		assert(cover_tree_build_limited_plan.estimated_distance_evaluations >=
+			   cover_tree_counting_space.size() * cover_tree_counting_space.size());
+		assert(cover_tree_build_limited_plan.reason.find("max_distance_evaluations") != std::string::npos);
+		auto assert_cover_tree_eval_refused_before_metric_calls = [&](auto operation) {
+			*cover_tree_refusal_calls = 0;
+			bool rejected = false;
+			try {
+				operation();
+			} catch (const mtrc::RepresentationError &error) {
+				rejected = true;
+				const std::string message = error.what();
+				assert(message.find("max_distance_evaluations") != std::string::npos);
+			}
+			assert(rejected);
+			assert(*cover_tree_refusal_calls == 0);
+		};
+		assert_cover_tree_eval_refused_before_metric_calls([&] {
+			(void)mtrc::find_neighbors(cover_tree_counting_space, 1.5, 2, cover_tree_build_limited_policy);
+		});
+		assert_cover_tree_eval_refused_before_metric_calls([&] {
+			(void)mtrc::find_neighbors(cover_tree_counting_space, cover_tree_counting_space.id(0), 2,
+									   cover_tree_build_limited_policy);
+		});
+		assert_cover_tree_eval_refused_before_metric_calls([&] {
+			(void)mtrc::stats::search::range(cover_tree_counting_space, 1.5, 1.0,
+											 cover_tree_build_limited_policy);
+		});
+		assert_cover_tree_eval_refused_before_metric_calls([&] {
+			(void)mtrc::stats::search::range(cover_tree_counting_space, cover_tree_counting_space.id(0), 1.0,
+											 cover_tree_build_limited_policy);
+		});
 
-	const auto graph_policy = mtrc::space::storage::using_knn_graph(2);
+		const auto graph_policy = mtrc::space::storage::using_knn_graph(2);
 	assert(graph_policy.name() == "exact_materialized_serial");
 	assert(graph_policy.graph_neighbors() == 2);
 	assert(graph_policy.representation_preference() == "knn_graph_index");

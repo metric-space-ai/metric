@@ -129,6 +129,65 @@ derived spaces and reports source lineage where the operation supports it.
 space: it returns the profile, metric-law/admission status, one deterministic
 neighbor check, and k-NN outlier scores without mutating the source space.
 
+## Redif Metric Dynamics
+
+Redif treats noise as dynamics over atom measures of a finite metric space. The
+public C++ surface lives in `<metric/engine.hpp>` and
+`<metric/modify/dynamics/redif.hpp>`:
+
+```cpp
+mtrc::redif_options options;
+options.neighbors = 2;
+options.iterations = 4;
+options.euler_step = 0.25;
+options.adaptive_geometry = true;
+options.scale_policy = mtrc::redif_scale_policy::mean_local_distance;
+
+auto removed = mtrc::redif_remove_noise(space, options);
+auto added = mtrc::redif_add_noise(space, options);
+auto ranked = mtrc::redif_outliers(space, options);
+```
+
+`redif_remove_noise` returns inverse metric dynamics as measure paths over the
+original atoms. `redif_add_noise` runs the forward metric-induced dynamics over
+the same operator family. The result carries inspectable stationarity, operator
+diagnostics, entropy diagnostics, per-step stability, exact transport metadata,
+and compact path summaries.
+`RedifOperatorDiagnostics` includes degree/scale/affinity ranges, connected
+component count, reversibility, transition row-sum bounds, and
+`spectral_gap_proxy="minimum_transition_escape_probability"` with its numeric
+proxy value. This proxy is an audit signal, not an exact eigenvalue gap.
+
+For adapter layers that already own a distance matrix, use
+`redif_remove_noise_from_distance_matrix(...)`,
+`redif_add_noise_from_distance_matrix(...)`, and
+`redif_operator_from_distance_matrix(...)`. They are still exact dense Redif
+routes and honor the same dense-budget and stability options.
+
+For exact local-relation providers, use
+`redif_sparse_operator_from_exact_local_relation(...)` or
+`redif_sparse_operator_from_exact_neighbor_provider(...)`. The provider must
+return exactly the directed `k` local relation that dense Redif would derive.
+`RedifSparseOperator` stores sparse affinity/transition rows and can be converted
+with `redif_operator_from_sparse_operator(...)` for dense-reference parity tests.
+`RedifLocalRelationDiagnostics` and `RedifOperatorDiagnostics` report relation
+representation, exactness, relation entry counts, and relation distance
+evaluations.
+
+For explicitly non-exact bounded candidate relations,
+`redif_remove_noise_from_sampled_distance_matrix(...)` accepts
+`redif_sampled_relation_options`. Its result is marked non-exact when the
+candidate set is smaller than the finite space; diagnostics report candidate
+count, candidate universe, candidate fraction, chunk size, chunk count, and
+local relation distance evaluations. This path approximates only the local
+relation.
+
+Transport path work is governed by `max_transport_problems`. Optional support
+truncation requires `allow_transport_support_truncation=true` plus
+`max_transport_support_atoms` or `transport_support_mass_floor`; when positive
+mass is discarded, `RedifTransportDiagnostics` marks the path non-exact and
+reports discarded mass.
+
 ## Record Import And Mixed Records
 
 `mtrc::record` owns the computer-side record shape before any metric is chosen.

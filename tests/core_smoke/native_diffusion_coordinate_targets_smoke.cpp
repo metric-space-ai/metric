@@ -37,6 +37,8 @@ template <typename Targets> auto assert_same_targets(const Targets &lhs, const T
 	assert(lhs.record_count == rhs.record_count);
 	assert(lhs.dense_distance_evaluations == rhs.dense_distance_evaluations);
 	assert(lhs.max_dense_records == rhs.max_dense_records);
+	assert(lhs.max_memory_bytes == rhs.max_memory_bytes);
+	assert(lhs.max_distance_evaluations == rhs.max_distance_evaluations);
 	assert(lhs.kernel_scale == rhs.kernel_scale);
 	assert(lhs.method == rhs.method);
 	assert(lhs.pairwise_distances == rhs.pairwise_distances);
@@ -91,6 +93,8 @@ int main()
 	assert(targets.record_count == records.size());
 	assert(targets.dense_distance_evaluations == records.size() * records.size());
 	assert(targets.max_dense_records == records.size());
+	assert(targets.max_memory_bytes == spec.max_memory_bytes);
+	assert(targets.max_distance_evaluations == spec.max_distance_evaluations);
 	assert(targets.kernel_scale == spec.kernel_scale);
 	assert(targets.method == "diffusion_potential_anchor_coordinates");
 	assert(targets.pairwise_distances == "exact_space_distances");
@@ -143,6 +147,27 @@ int main()
 				oversized_space, default_guard_spec);
 		}));
 		assert(*default_guard_calls == 0);
+	}
+
+	{
+		const auto budget_guard_calls = std::make_shared<std::size_t>(0);
+		auto counted_space = mtrc::make_space(records, CountingVectorDistance{budget_guard_calls});
+
+		auto evaluation_limited = spec;
+		evaluation_limited.max_distance_evaluations = records.size() * records.size() - 1;
+		assert(rejects([&] {
+			(void)mtrc::modify::map::diffusion_coordinate_targets<decltype(counted_space), double>(
+				counted_space, evaluation_limited);
+		}));
+		assert(*budget_guard_calls == 0);
+
+		auto memory_limited = spec;
+		memory_limited.max_memory_bytes = 1;
+		assert(rejects([&] {
+			(void)mtrc::modify::map::diffusion_coordinate_targets<decltype(counted_space), double>(
+				counted_space, memory_limited);
+		}));
+		assert(*budget_guard_calls == 0);
 	}
 
 	mtrc::modify::map::DiffusionCoordinateSpec<double> repeated_anchor_spec;

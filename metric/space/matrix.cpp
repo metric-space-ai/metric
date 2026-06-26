@@ -37,6 +37,7 @@ template <typename RecType, typename Metric> auto Matrix<RecType, Metric>::size(
 template <typename RecType, typename Metric> auto Matrix<RecType, Metric>::insert(const RecType &item) -> std::size_t
 {
 	std::size_t old_size = data_.size();
+	(void)matrix_detail::require_matrix_space_budget(old_size + 1, options_, "Matrix::insert");
 	D_.resize(old_size + 1, old_size + 1, true);
 	for (std::size_t i = 0; i < old_size; i++) {
 		D_.insert(i, old_size, metric_(data_[i], item));
@@ -50,6 +51,7 @@ template <typename Container, typename>
 auto Matrix<RecType, Metric>::insert(const Container &items) -> std::vector<std::size_t>
 {
 	std::vector<std::size_t> ids;
+	(void)matrix_detail::require_matrix_space_budget(data_.size() + items.size(), options_, "Matrix::insert");
 	ids.reserve(items.size());
 	for (auto &i : items) {
 		auto id = insert(i);

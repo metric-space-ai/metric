@@ -7,10 +7,214 @@ fixtures, cost models, and promotion review.
 
 from dataclasses import dataclass
 import math
+import operator
+
+from metric.exceptions import MetricComputationError, StrategyUnavailableError
 
 
 def _pair_count(record_count):
     return 0 if record_count < 2 else record_count * (record_count - 1) // 2
+
+
+def _runtime_policy_or_none(runtime):
+    if runtime is None:
+        return None
+    from metric.runtime import runtime_policy
+
+    return runtime_policy(runtime)
+
+
+def _resolve_runtime_budget(policy, value, name):
+    if value is not None or policy is None:
+        return value
+    return getattr(policy, name)
+
+
+def _effective_budgets(
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
+    policy = _runtime_policy_or_none(runtime)
+    max_memory_bytes = _resolve_runtime_budget(policy, max_memory_bytes, "max_memory_bytes")
+    max_distance_evaluations = _resolve_runtime_budget(
+        policy,
+        max_distance_evaluations,
+        "max_distance_evaluations",
+    )
+    max_dense_records = _resolve_runtime_budget(policy, max_dense_records, "max_dense_records")
+
+    from metric.spaces import (
+        _DEFAULT_MAX_DENSE_RECORDS,
+        _DEFAULT_MAX_DISTANCE_EVALUATIONS,
+        _DEFAULT_MAX_MEMORY_BYTES,
+        _normalize_optional_budget,
+    )
+
+    return (
+        policy,
+        _normalize_optional_budget(
+            max_memory_bytes,
+            "max_memory_bytes",
+            _DEFAULT_MAX_MEMORY_BYTES,
+        ),
+        _normalize_optional_budget(
+            max_distance_evaluations,
+            "max_distance_evaluations",
+            _DEFAULT_MAX_DISTANCE_EVALUATIONS,
+        ),
+        _normalize_optional_budget(
+            max_dense_records,
+            "max_dense_records",
+            _DEFAULT_MAX_DENSE_RECORDS,
+        ),
+    )
+
+
+def _runtime_exact(policy):
+    return True if policy is None else policy.exact
+
+
+def _require_exact_policy(operation, policy):
+    if not _runtime_exact(policy):
+        raise StrategyUnavailableError(
+            f"{operation} has no promoted approximate strategy yet. "
+            "Use RuntimePolicy(exact=True), pass an operation-specific sample, "
+            "or use a promoted bounded operator."
+        )
+
+
+def _record_count_or_none(records):
+    try:
+        return operator.index(len(records))
+    except TypeError:
+        return None
+
+
+def _refuse_record_materialization(operation, observed_record_count, budgets):
+    raise MetricComputationError(
+        f"{operation} refused record materialization before running metric calls: "
+        f"observed_records={observed_record_count}, "
+        f"max_dense_records={budgets[3]}. "
+        "Reason: source records exceed the bounded materialization budget. "
+        "Suggested fallback: pass a bounded sample, lower query_indices/sketch_indices, "
+        "or raise max_dense_records explicitly."
+    )
+
+
+def _materialize_records(
+    operation,
+    records,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
+    budgets = _effective_budgets(
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    record_count = _record_count_or_none(records)
+    if record_count is not None:
+        if record_count > budgets[3]:
+            _refuse_record_materialization(operation, record_count, budgets)
+        return list(records), budgets
+
+    record_list = []
+    for record in records:
+        if len(record_list) >= budgets[3]:
+            _refuse_record_materialization(operation, len(record_list) + 1, budgets)
+        record_list.append(record)
+    return record_list, budgets
+
+
+def _ensure_distance_work_allowed(operation, record_count, estimated_distance_evaluations, budgets):
+    if estimated_distance_evaluations <= budgets[2]:
+        return
+    raise MetricComputationError(
+        f"{operation} refused exact metric work before running metric calls: "
+        f"records={record_count}, "
+        f"estimated_distance_evaluations={estimated_distance_evaluations}, "
+        f"distance_evaluation_budget={budgets[2]}. "
+        "Reason: estimated exact metric calls exceed the runtime budget. "
+        "Suggested fallback: pass sample_count/query_indices/sketch_indices, "
+        "choose a promoted approximate operator, or raise max_distance_evaluations."
+    )
+
+
+def _ensure_dense_work_allowed(operation, record_count, budgets, *, dense_cell_bytes=32):
+    from metric.spaces import _make_plan
+
+    plan = _make_plan(
+        "matrix",
+        record_count,
+        exact=True,
+        max_memory_bytes=budgets[1],
+        max_distance_evaluations=budgets[2],
+        max_dense_records=budgets[3],
+        allow_approximate=False,
+        allow_chunking=False,
+        dense_cell_bytes=dense_cell_bytes,
+    )
+    if plan.decision != "refused":
+        return
+    fallback = ", ".join(plan.fallback)
+    raise MetricComputationError(
+        f"{operation} refused dense all-pairs materialization before running metric calls: "
+        f"records={plan.record_count}, "
+        f"estimated_bytes={plan.memory_bytes_estimate}, "
+        f"budget_bytes={plan.max_memory_bytes}, "
+        f"estimated_distance_evaluations={plan.estimated_distance_evaluations}, "
+        f"distance_evaluation_budget={plan.max_distance_evaluations}, "
+        f"max_dense_records={plan.max_dense_records}. "
+        f"Reason: {plan.reason}. Suggested fallback: {fallback}."
+    )
+
+
+def _sample_count_for_policy(pair_total, sample_count, policy, budgets):
+    if sample_count is not None:
+        return sample_count
+    if _runtime_exact(policy) or pair_total <= budgets[2]:
+        return None
+    return max(1, budgets[2])
+
+
+def _sample_counts_for_drift(source_pair_total, target_pair_total, sample_count, policy, budgets):
+    if sample_count is not None:
+        return sample_count, sample_count
+    total_pairs = source_pair_total + target_pair_total
+    if _runtime_exact(policy) or total_pairs <= budgets[2]:
+        return None, None
+    budget = budgets[2]
+    if budget <= 0:
+        return 0, 0
+    if source_pair_total <= 0:
+        return 0, min(target_pair_total, budget)
+    if target_pair_total <= 0:
+        return min(source_pair_total, budget), 0
+    source_budget = max(1, min(source_pair_total, budget * source_pair_total // total_pairs))
+    target_budget = max(1, min(target_pair_total, budget - source_budget))
+    while source_budget + target_budget > budget:
+        if source_budget >= target_budget and source_budget > 1:
+            source_budget -= 1
+        elif target_budget > 1:
+            target_budget -= 1
+        else:
+            break
+    return source_budget, target_budget
+
+
+def _estimated_sampled_pair_count(pair_total, sample_count):
+    if sample_count is None or sample_count >= pair_total:
+        return pair_total
+    if sample_count <= 0:
+        return sample_count
+    return sample_count
 
 
 _PROMOTION_PREFLIGHT_RULE = (
@@ -43,21 +247,30 @@ def _sampled_pair_ordinals(pair_count, sample_count):
     if pair_count == 0:
         return ()
     if sample_count is None or sample_count >= pair_count:
-        return tuple(range(pair_count))
+        return range(pair_count)
     if sample_count <= 0:
         raise ValueError("sample_count must be positive")
-    return tuple((index * pair_count) // sample_count for index in range(sample_count))
+    return ((index * pair_count) // sample_count for index in range(sample_count))
 
 
 def _pair_for_ordinal(record_count, ordinal):
-    row = 0
-    row_start = 0
-    while row + 1 < record_count:
-        row_pairs = record_count - row - 1
-        if ordinal < row_start + row_pairs:
-            return row, row + 1 + (ordinal - row_start)
-        row_start += row_pairs
-        row += 1
+    if ordinal < 0 or ordinal >= _pair_count(record_count):
+        raise IndexError("pair ordinal is outside the finite space")
+
+    lower = 0
+    upper = record_count - 1
+    while lower < upper:
+        middle = (lower + upper) // 2
+        next_row_start = (middle + 1) * (2 * record_count - middle - 2) // 2
+        if ordinal < next_row_start:
+            upper = middle
+        else:
+            lower = middle + 1
+    row = lower
+    row_start = row * (2 * record_count - row - 1) // 2
+    column = row + 1 + (ordinal - row_start)
+    if column < record_count:
+        return row, column
     raise IndexError("pair ordinal is outside the finite space")
 
 
@@ -70,8 +283,7 @@ def _finite_distance(value):
     return numeric
 
 
-def _pair_distances(records, metric, sample_count=None):
-    record_list = list(records)
+def _pair_distances(record_list, metric, sample_count=None):
     pair_total = _pair_count(len(record_list))
     ordinals = _sampled_pair_ordinals(pair_total, sample_count)
     values = []
@@ -79,6 +291,102 @@ def _pair_distances(records, metric, sample_count=None):
         lhs, rhs = _pair_for_ordinal(len(record_list), ordinal)
         values.append(_finite_distance(metric(record_list[lhs], record_list[rhs])))
     return record_list, pair_total, values
+
+
+def _ensure_pair_value_memory_allowed(operation, evaluated_pair_count, budgets):
+    estimated_bytes = int(evaluated_pair_count) * 32
+    if budgets[1] == 0 or estimated_bytes <= budgets[1]:
+        return
+    raise MetricComputationError(
+        f"{operation} refused distance-distribution value materialization before metric calls: "
+        f"evaluated_pair_count={evaluated_pair_count}, estimated_bytes={estimated_bytes}, "
+        f"budget_bytes={budgets[1]}. "
+        "Suggested fallback: pass sample_count, lower max_dense_records, or raise max_memory_bytes."
+    )
+
+
+def _ensure_spanner_pair_memory_allowed(operation, pair_count, budgets):
+    estimated_bytes = int(pair_count) * 192
+    if budgets[1] == 0 or estimated_bytes <= budgets[1]:
+        return
+    raise MetricComputationError(
+        f"{operation} refused spanner pair materialization before running metric calls: "
+        f"pair_count={pair_count}, estimated_bytes={estimated_bytes}, "
+        f"budget_bytes={budgets[1]}. "
+        "Reason: greedy spanner construction sorts all finite metric pairs. "
+        "Suggested fallback: pass a bounded sample to an approximate graph routine, "
+        "lower max_dense_records, or raise max_memory_bytes explicitly."
+    )
+
+
+def _ensure_spanner_work_allowed(operation, record_count, pair_count, budgets):
+    metric_distance_evaluations = pair_count
+    shortest_path_checks = pair_count * 2
+    shortest_path_work = shortest_path_checks * record_count * record_count
+    estimated_spanner_work = metric_distance_evaluations + shortest_path_work
+    if estimated_spanner_work <= budgets[2]:
+        return
+    raise MetricComputationError(
+        f"{operation} refused exact spanner work before running metric calls: "
+        f"records={record_count}, pair_count={pair_count}, "
+        f"estimated_metric_distance_evaluations={metric_distance_evaluations}, "
+        f"estimated_shortest_path_checks={shortest_path_checks}, "
+        f"estimated_shortest_path_work={shortest_path_work}, "
+        f"estimated_spanner_work={estimated_spanner_work}, "
+        f"distance_evaluation_budget={budgets[2]}. "
+        "Reason: greedy graph spanner construction performs exact pair sorting plus repeated shortest-path checks. "
+        "Suggested fallback: use a bounded approximate graph routine, lower max_dense_records, "
+        "or raise max_distance_evaluations explicitly."
+    )
+
+
+def _distance_distribution_from_values(
+    record_count,
+    pair_total,
+    values,
+    *,
+    quantile_probabilities,
+    bucket_count,
+    histogram_range=None,
+):
+    sorted_values = sorted(values)
+    evaluated = len(sorted_values)
+    exact = evaluated == pair_total
+    if evaluated == 0:
+        quantiles = tuple(0.0 for _ in quantile_probabilities)
+        edges, counts = _histogram(sorted_values, bucket_count, histogram_range)
+        return DistanceDistributionSketch(
+            record_count=record_count,
+            pair_count=pair_total,
+            evaluated_pair_count=0,
+            sample_count=0,
+            exact=exact,
+            minimum=0.0,
+            maximum=0.0,
+            mean=0.0,
+            median=0.0,
+            quantile_probabilities=tuple(quantile_probabilities),
+            quantile_values=quantiles,
+            histogram_edges=edges,
+            histogram_counts=counts,
+        )
+    quantiles = tuple(_quantile(sorted_values, probability) for probability in quantile_probabilities)
+    edges, counts = _histogram(sorted_values, bucket_count, histogram_range)
+    return DistanceDistributionSketch(
+        record_count=record_count,
+        pair_count=pair_total,
+        evaluated_pair_count=evaluated,
+        sample_count=evaluated,
+        exact=exact,
+        minimum=float(sorted_values[0]),
+        maximum=float(sorted_values[-1]),
+        mean=sum(sorted_values) / evaluated,
+        median=_quantile(sorted_values, 0.5),
+        quantile_probabilities=tuple(quantile_probabilities),
+        quantile_values=quantiles,
+        histogram_edges=edges,
+        histogram_counts=counts,
+    )
 
 
 def _quantile(sorted_values, probability):
@@ -231,14 +539,13 @@ class DistanceDistributionDrift:
         source_evaluations = self.source.evaluated_pair_count
         target_evaluations = self.target.evaluated_pair_count
         return _cost_model(
-            distance_evaluations=2 * (source_evaluations + target_evaluations),
+            distance_evaluations=source_evaluations + target_evaluations,
             pair_count=self.source.pair_count + self.target.pair_count,
             dense_matrix_materialized=False,
-            policy="distance_distribution_drift_two_pass",
+            policy="distance_distribution_drift_shared_histogram_pass",
             exact=self.source.exact and self.target.exact,
             notes=(
-                "current prototype computes raw pair ranges once for shared histogram range "
-                "and once for each sketch",
+                "raw pair distances are computed once per side and reused for the shared histogram range",
             ),
         )
 
@@ -745,7 +1052,11 @@ def _normalized_weights(records, weights, name):
         if record_count == 0:
             return ()
         return tuple(1.0 / record_count for _ in range(record_count))
-    raw = tuple(float(weight) for weight in weights)
+    raw = []
+    for index, weight in enumerate(weights):
+        if index >= record_count:
+            raise ValueError(f"{name} weights must match record count")
+        raw.append(float(weight))
     if len(raw) != record_count:
         raise ValueError(f"{name} weights must match record count")
     for weight in raw:
@@ -763,9 +1074,22 @@ def _normalized_weights(records, weights, name):
     return tuple(weight / total for weight in raw)
 
 
-def _validate_radii(radii):
+def _validate_radii(radii, *, operation="metric.experimental", max_count=None, budgets=None):
     normalized = []
     for radius in radii:
+        if max_count is not None and len(normalized) >= max_count:
+            budget_text = ""
+            if budgets is not None:
+                budget_text = (
+                    f", distance_evaluation_budget={budgets[2]}, "
+                    f"max_dense_records={budgets[3]}"
+                )
+            raise MetricComputationError(
+                f"{operation} refused radii materialization before running metric calls: "
+                f"observed_radii={len(normalized) + 1}, max_radii={max_count}{budget_text}. "
+                "Reason: radii exceed the bounded work/materialization budget. "
+                "Suggested fallback: pass fewer radii, use a bounded sample, or raise budgets explicitly."
+            )
         numeric = float(radius)
         if not math.isfinite(numeric):
             raise ValueError("radii must be finite")
@@ -773,6 +1097,15 @@ def _validate_radii(radii):
             raise ValueError("radii must be non-negative")
         normalized.append(numeric)
     return tuple(normalized)
+
+
+def _max_radii_for_distance_budget(record_count, budgets, multiplier):
+    if record_count == 0:
+        return budgets[3]
+    per_radius = record_count * record_count * multiplier
+    if per_radius == 0:
+        return budgets[3]
+    return min(budgets[3], budgets[2] // per_radius)
 
 
 def _nearest_indices(records, metric, query_index, candidate_indices, count):
@@ -997,12 +1330,41 @@ def _assignment_summary(records, metric, representative_indices):
     )
 
 
-def hierarchical_metric_net(records, metric, radii):
+def hierarchical_metric_net(
+    records,
+    metric,
+    radii,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Build a deterministic nested radius net from finite metric distances."""
 
-    record_list = list(records)
-    requested_radii = _validate_radii(radii)
+    record_list, budgets = _materialize_records(
+        "hierarchical_metric_net(...)",
+        records,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    _require_exact_policy("hierarchical_metric_net(...)", budgets[0])
+    requested_radii = _validate_radii(
+        radii,
+        operation="hierarchical_metric_net(...)",
+        max_count=_max_radii_for_distance_budget(len(record_list), budgets, 3),
+        budgets=budgets,
+    )
     normalized_radii = tuple(sorted(requested_radii, reverse=True))
+    estimated_evaluations = len(normalized_radii) * len(record_list) * len(record_list) * 3
+    _ensure_distance_work_allowed(
+        "hierarchical_metric_net(...)",
+        len(record_list),
+        estimated_evaluations,
+        budgets,
+    )
     previous_representatives = ()
     levels = []
 
@@ -1055,11 +1417,35 @@ def hierarchical_metric_net(records, metric, radii):
     )
 
 
-def adaptive_density_equalization(records, metric, radius):
+def adaptive_density_equalization(
+    records,
+    metric,
+    radius,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Thin a finite metric space by sparse-first local-volume priority."""
 
     radius = _validate_radius(radius)
-    record_list = list(records)
+    record_list, budgets = _materialize_records(
+        "adaptive_density_equalization(...)",
+        records,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    _require_exact_policy("adaptive_density_equalization(...)", budgets[0])
+    estimated_evaluations = 4 * len(record_list) * len(record_list)
+    _ensure_distance_work_allowed(
+        "adaptive_density_equalization(...)",
+        len(record_list),
+        estimated_evaluations,
+        budgets,
+    )
     local_volume_counts = _local_volume_counts(record_list, metric, radius)
     priority = tuple(
         index for index, _ in sorted(enumerate(local_volume_counts), key=lambda item: (item[1], item[0]))
@@ -1120,11 +1506,37 @@ def metric_measure_drift(
     target_metric=None,
     source_weights=None,
     target_weights=None,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
 ):
     """Compare finite metric-measure spaces by weighted pair-distance observables."""
 
-    source_list = list(source_records)
-    target_list = list(target_records)
+    source_list, budgets = _materialize_records(
+        "metric_measure_drift(... source_records)",
+        source_records,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    target_list, target_budgets = _materialize_records(
+        "metric_measure_drift(... target_records)",
+        target_records,
+        runtime=None,
+        max_memory_bytes=budgets[1],
+        max_distance_evaluations=budgets[2],
+        max_dense_records=budgets[3],
+    )
+    _require_exact_policy("metric_measure_drift(...)", budgets[0])
+    estimated_evaluations = len(source_list) * len(source_list) + len(target_list) * len(target_list)
+    _ensure_distance_work_allowed(
+        "metric_measure_drift(...)",
+        len(source_list) + len(target_list),
+        estimated_evaluations,
+        target_budgets,
+    )
     target_metric = metric if target_metric is None else target_metric
     source_weights = _normalized_weights(source_list, source_weights, "source")
     target_weights = _normalized_weights(target_list, target_weights, "target")
@@ -1149,12 +1561,39 @@ def metric_measure_drift(
     )
 
 
-def density_hierarchy_quotient(records, metric, radii):
+def density_hierarchy_quotient(
+    records,
+    metric,
+    radii,
+    *,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Build a research-only hierarchy of radius-component medoid quotients."""
 
-    record_list = list(records)
-    requested_radii = _validate_radii(radii)
+    record_list, budgets = _materialize_records(
+        "density_hierarchy_quotient(...)",
+        records,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    _require_exact_policy("density_hierarchy_quotient(...)", budgets[0])
+    requested_radii = _validate_radii(
+        radii,
+        operation="density_hierarchy_quotient(...)",
+        max_count=budgets[3],
+        budgets=budgets,
+    )
     normalized_radii = tuple(sorted(requested_radii, reverse=True))
+    _ensure_dense_work_allowed(
+        "density_hierarchy_quotient(...)",
+        len(record_list),
+        budgets,
+    )
     distance_matrix = _finite_distance_matrix(record_list, metric)
     parent_groups = ()
     levels = []
@@ -1174,15 +1613,40 @@ def density_hierarchy_quotient(records, metric, radii):
     )
 
 
-def metric_graph_spanner(records, metric, *, stretch=2.0):
+def metric_graph_spanner(
+    records,
+    metric,
+    *,
+    stretch=2.0,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Build a deterministic greedy graph spanner over finite metric distances."""
 
     stretch_bound = float(stretch)
     if not math.isfinite(stretch_bound) or stretch_bound < 1.0:
         raise ValueError("stretch must be finite and >= 1.0")
 
-    record_list = list(records)
+    record_list, budgets = _materialize_records(
+        "metric_graph_spanner(...)",
+        records,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    _require_exact_policy("metric_graph_spanner(...)", budgets[0])
+    _ensure_dense_work_allowed(
+        "metric_graph_spanner(...)",
+        len(record_list),
+        budgets,
+    )
     record_count = len(record_list)
+    pair_count = record_count * (record_count - 1) // 2
+    _ensure_spanner_pair_memory_allowed("metric_graph_spanner(...)", pair_count, budgets)
+    _ensure_spanner_work_allowed("metric_graph_spanner(...)", record_count, pair_count, budgets)
     pair_distances = []
     for lhs in range(record_count):
         for rhs in range(lhs + 1, record_count):
@@ -1227,7 +1691,18 @@ def metric_graph_spanner(records, metric, *, stretch=2.0):
     )
 
 
-def knn_recall_sketch(records, metric, sketch_indices, *, count=1, query_indices=None):
+def knn_recall_sketch(
+    records,
+    metric,
+    sketch_indices,
+    *,
+    count=1,
+    query_indices=None,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
+):
     """Compare source kNN behavior with kNN behavior inside a source-record subset."""
 
     if isinstance(count, bool):
@@ -1242,13 +1717,30 @@ def knn_recall_sketch(records, metric, sketch_indices, *, count=1, query_indices
     if neighbor_count <= 0:
         raise ValueError("count must be positive")
 
-    record_list = list(records)
+    record_list, budgets = _materialize_records(
+        "knn_recall_sketch(...)",
+        records,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    _require_exact_policy("knn_recall_sketch(...)", budgets[0])
     source_indices = tuple(range(len(record_list)))
     sketch_indices = _validate_indices(sketch_indices, len(record_list), "sketch")
     if query_indices is None:
         query_indices = source_indices
     else:
         query_indices = _validate_indices(query_indices, len(record_list), "query")
+    estimated_evaluations = len(query_indices) * (
+        max(0, len(record_list) - 1) + len(sketch_indices)
+    )
+    _ensure_distance_work_allowed(
+        "knn_recall_sketch(...)",
+        len(record_list),
+        estimated_evaluations,
+        budgets,
+    )
 
     rows = []
     for query_index in query_indices:
@@ -1289,47 +1781,43 @@ def distance_distribution_sketch(
     bucket_count=10,
     sample_count=None,
     histogram_range=None,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
 ):
     """Sketch unordered pairwise distances of a finite metric space."""
 
-    record_list, pair_total, values = _pair_distances(records, metric, sample_count)
-    sorted_values = sorted(values)
-    evaluated = len(sorted_values)
-    exact = evaluated == pair_total
-    if evaluated == 0:
-        quantiles = tuple(0.0 for _ in quantile_probabilities)
-        edges, counts = _histogram(sorted_values, bucket_count, histogram_range)
-        return DistanceDistributionSketch(
-            record_count=len(record_list),
-            pair_count=pair_total,
-            evaluated_pair_count=0,
-            sample_count=0,
-            exact=exact,
-            minimum=0.0,
-            maximum=0.0,
-            mean=0.0,
-            median=0.0,
-            quantile_probabilities=tuple(quantile_probabilities),
-            quantile_values=quantiles,
-            histogram_edges=edges,
-            histogram_counts=counts,
-        )
-    quantiles = tuple(_quantile(sorted_values, probability) for probability in quantile_probabilities)
-    edges, counts = _histogram(sorted_values, bucket_count, histogram_range)
-    return DistanceDistributionSketch(
-        record_count=len(record_list),
-        pair_count=pair_total,
-        evaluated_pair_count=evaluated,
-        sample_count=evaluated,
-        exact=exact,
-        minimum=float(sorted_values[0]),
-        maximum=float(sorted_values[-1]),
-        mean=sum(sorted_values) / evaluated,
-        median=_quantile(sorted_values, 0.5),
-        quantile_probabilities=tuple(quantile_probabilities),
-        quantile_values=quantiles,
-        histogram_edges=edges,
-        histogram_counts=counts,
+    record_list, budgets = _materialize_records(
+        "distance_distribution_sketch(...)",
+        records,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    pair_total = _pair_count(len(record_list))
+    sample_count = _sample_count_for_policy(pair_total, sample_count, budgets[0], budgets)
+    estimated_evaluations = _estimated_sampled_pair_count(pair_total, sample_count)
+    _ensure_distance_work_allowed(
+        "distance_distribution_sketch(...)",
+        len(record_list),
+        estimated_evaluations,
+        budgets,
+    )
+    _ensure_pair_value_memory_allowed(
+        "distance_distribution_sketch(...)",
+        estimated_evaluations,
+        budgets,
+    )
+    record_list, pair_total, values = _pair_distances(record_list, metric, sample_count)
+    return _distance_distribution_from_values(
+        len(record_list),
+        pair_total,
+        values,
+        quantile_probabilities=quantile_probabilities,
+        bucket_count=bucket_count,
+        histogram_range=histogram_range,
     )
 
 
@@ -1342,28 +1830,89 @@ def distance_distribution_drift(
     quantile_probabilities=(0.0, 0.25, 0.5, 0.75, 1.0),
     bucket_count=10,
     sample_count=None,
+    runtime=None,
+    max_memory_bytes=None,
+    max_distance_evaluations=None,
+    max_dense_records=None,
 ):
     """Compare source and target spaces by pairwise distance-distribution drift."""
 
     target_metric = metric if target_metric is None else target_metric
-    source_values = _pair_distances(source_records, metric, sample_count)[2]
-    target_values = _pair_distances(target_records, target_metric, sample_count)[2]
-    combined = source_values + target_values
-    histogram_range = None if not combined else (min(combined), max(combined))
-    source = distance_distribution_sketch(
+    source_list, budgets = _materialize_records(
+        "distance_distribution_drift(... source_records)",
         source_records,
+        runtime=runtime,
+        max_memory_bytes=max_memory_bytes,
+        max_distance_evaluations=max_distance_evaluations,
+        max_dense_records=max_dense_records,
+    )
+    target_list, target_budgets = _materialize_records(
+        "distance_distribution_drift(... target_records)",
+        target_records,
+        runtime=None,
+        max_memory_bytes=budgets[1],
+        max_distance_evaluations=budgets[2],
+        max_dense_records=budgets[3],
+    )
+    source_pair_total = _pair_count(len(source_list))
+    target_pair_total = _pair_count(len(target_list))
+    source_sample_count, target_sample_count = _sample_counts_for_drift(
+        source_pair_total,
+        target_pair_total,
+        sample_count,
+        budgets[0],
+        budgets,
+    )
+    estimated_evaluations = (
+        _estimated_sampled_pair_count(source_pair_total, source_sample_count)
+        + _estimated_sampled_pair_count(target_pair_total, target_sample_count)
+    )
+    _ensure_distance_work_allowed(
+        "distance_distribution_drift(...)",
+        len(source_list) + len(target_list),
+        estimated_evaluations,
+        target_budgets,
+    )
+    _ensure_pair_value_memory_allowed(
+        "distance_distribution_drift(...)",
+        estimated_evaluations,
+        target_budgets,
+    )
+    source_list, source_pair_total, source_values = _pair_distances(
+        source_list,
         metric,
+        source_sample_count,
+    )
+    target_list, target_pair_total, target_values = _pair_distances(
+        target_list,
+        target_metric,
+        target_sample_count,
+    )
+    if source_values and target_values:
+        histogram_range = (
+            min(min(source_values), min(target_values)),
+            max(max(source_values), max(target_values)),
+        )
+    elif source_values:
+        histogram_range = (min(source_values), max(source_values))
+    elif target_values:
+        histogram_range = (min(target_values), max(target_values))
+    else:
+        histogram_range = None
+    source = _distance_distribution_from_values(
+        len(source_list),
+        source_pair_total,
+        source_values,
         quantile_probabilities=quantile_probabilities,
         bucket_count=bucket_count,
-        sample_count=sample_count,
         histogram_range=histogram_range,
     )
-    target = distance_distribution_sketch(
-        target_records,
-        target_metric,
+    target = _distance_distribution_from_values(
+        len(target_list),
+        target_pair_total,
+        target_values,
         quantile_probabilities=quantile_probabilities,
         bucket_count=bucket_count,
-        sample_count=sample_count,
         histogram_range=histogram_range,
     )
     quantile_drifts = [

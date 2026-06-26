@@ -314,11 +314,13 @@ auto uniform_density_mapping_from_representatives(
 
 template <typename Space, typename Radius>
 auto uniform_density_mapping(const Space &space, uniform_density<Radius> strategy, std::string mapping,
-							 std::string strategy_name, std::string validity)
+							 std::string strategy_name, std::string validity,
+							 ::mtrc::space::select::exact_representative_work_options representative_work_options)
 	-> MappingResult<MetricSpace<typename Space::record_type, typename Space::metric_type>>
 {
 	::mtrc::space::storage::LiveDistances<Space> provider(space);
-	auto representatives = find_representatives(provider, ::mtrc::space::select::radius_coverage{strategy.radius});
+	auto representatives = find_representatives(
+		provider, ::mtrc::space::select::radius_coverage{strategy.radius}, representative_work_options);
 	representatives.representation = "metric_space";
 	return uniform_density_mapping_from_representatives(
 		space, provider, std::move(representatives), strategy, std::move(mapping), std::move(strategy_name),
@@ -399,7 +401,8 @@ auto uniform_density_mapping(const Space &space, uniform_density<Radius> strateg
 		return ::mtrc::space::storage::with_materialized_distance_provider(
 			space, runtime_policy, "resample", [&](const auto &provider, const auto &materialized_plan) {
 				auto representatives = find_representatives(
-					provider, ::mtrc::space::select::radius_coverage{strategy.radius});
+					provider, ::mtrc::space::select::radius_coverage{strategy.radius},
+					::mtrc::space::select::representative_detail::unbounded_exact_representative_work());
 				representatives.representation =
 					::mtrc::space::storage::materialized_operator_representation(materialized_plan);
 				return uniform_density_mapping_from_representatives(
@@ -409,7 +412,8 @@ auto uniform_density_mapping(const Space &space, uniform_density<Radius> strateg
 	}
 
 	auto result = uniform_density_mapping(
-		space, strategy, std::move(mapping), std::move(strategy_name), std::move(validity));
+		space, strategy, std::move(mapping), std::move(strategy_name), std::move(validity),
+		::mtrc::space::select::representative_detail::exact_representative_work_for_policy(runtime_policy));
 	result.representation = ::mtrc::space::storage::execution_representation(runtime_policy);
 	return result;
 }
@@ -456,7 +460,8 @@ auto thin(const Space &space, uniform_density<Radius> strategy)
 		space, strategy, "thin", "uniform_density_radius_net",
 		"uniform-density deterministic thinning by maximal metric radius net; kept records are an unmodified "
 		"radius-separated and radius-covering subset under the source metric; empirical density is intentionally "
-		"flattened");
+		"flattened",
+		::mtrc::space::select::representative_detail::unbounded_exact_representative_work());
 }
 
 template <typename Space, typename Radius, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
@@ -498,7 +503,8 @@ auto equalize(const Space &space, uniform_density<Radius> strategy)
 		space, strategy, "equalize", "uniform_density_radius_net",
 		"density-equalizing deterministic thinning by maximal metric radius net; kept records are an unmodified "
 		"radius-separated and radius-covering subset under the source metric; empirical density is intentionally "
-		"normalized toward uniform metric coverage");
+		"normalized toward uniform metric coverage",
+		::mtrc::space::select::representative_detail::unbounded_exact_representative_work());
 }
 
 template <typename Space, typename Radius, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>

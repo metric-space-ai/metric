@@ -9,11 +9,14 @@
 
 namespace mtrc::stats::sample {
 
+inline constexpr std::size_t default_sample_max_distance_evaluations = 100'000'000;
+
 struct farthest_first_options {
 	farthest_first_options() = default;
 	explicit farthest_first_options(std::size_t seed_index) : seed_index(seed_index) {}
 
 	std::size_t seed_index{};
+	std::size_t max_distance_evaluations{default_sample_max_distance_evaluations};
 };
 
 struct metric_walk_options {
@@ -21,6 +24,7 @@ struct metric_walk_options {
 	explicit metric_walk_options(std::size_t seed_index) : seed_index(seed_index) {}
 
 	std::size_t seed_index{};
+	std::size_t max_distance_evaluations{default_sample_max_distance_evaluations};
 };
 
 } // namespace mtrc::stats::sample

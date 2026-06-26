@@ -28,6 +28,7 @@ const PRIMITIVE_FAMILY = Object.freeze({
   CurveRibbonLayer: "line",
   CurveTubeMeshLayer: "line",
   RelationMatrixLayer: "field",
+  BillboardLabelLayer: "sample",
 });
 
 const PRIMITIVE_ROLE = Object.freeze({
@@ -42,6 +43,7 @@ const PRIMITIVE_ROLE = Object.freeze({
   CurveRibbonLayer: MINIATURE_LAYER_ROLES.edge,
   CurveTubeMeshLayer: MINIATURE_LAYER_ROLES.edge,
   RelationMatrixLayer: MINIATURE_LAYER_ROLES.field,
+  BillboardLabelLayer: MINIATURE_LAYER_ROLES.label,
 });
 
 /**

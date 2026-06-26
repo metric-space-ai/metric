@@ -8,12 +8,15 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <limits>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
 #include <metric/core/concepts.hpp>
+#include <metric/core/errors.hpp>
 #include <metric/record/id.hpp>
 #include <metric/core/result.hpp>
 #include <metric/space/storage/implicit.hpp>
@@ -24,6 +27,65 @@ namespace mtrc::stats::structural_analysis {
 namespace engine_detail {
 
 constexpr std::size_t max_default_exact_metric_space_clustering_records = 4096;
+constexpr std::size_t max_default_exact_clustering_distance_evaluations = 100'000'000;
+
+inline auto checked_clustering_work_multiply(std::size_t lhs, std::size_t rhs, const char *operation)
+	-> std::size_t
+{
+	if (rhs != 0 && lhs > std::numeric_limits<std::size_t>::max() / rhs) {
+		throw RepresentationError(std::string(operation) + " distance-evaluation estimate exceeds size_t capacity");
+	}
+	return lhs * rhs;
+}
+
+inline auto checked_clustering_work_add(std::size_t lhs, std::size_t rhs, const char *operation) -> std::size_t
+{
+	if (lhs > std::numeric_limits<std::size_t>::max() - rhs) {
+		throw RepresentationError(std::string(operation) + " distance-evaluation estimate exceeds size_t capacity");
+	}
+	return lhs + rhs;
+}
+
+inline auto require_default_provider_clustering_work(const char *operation, std::size_t record_count,
+													 std::size_t estimated_distance_evaluations) -> void
+{
+	if (record_count > max_default_exact_metric_space_clustering_records) {
+		throw RepresentationError(
+			std::string(operation) + " refused exact provider clustering before metric calls: records=" +
+			std::to_string(record_count) +
+			", max_exact_records=" + std::to_string(max_default_exact_metric_space_clustering_records) +
+			". Use find_groups(...) with sampled/chunked fallback or pass a smaller explicit provider.");
+	}
+	if (estimated_distance_evaluations > max_default_exact_clustering_distance_evaluations) {
+		throw RepresentationError(
+			std::string(operation) + " refused exact provider clustering before metric calls: records=" +
+			std::to_string(record_count) +
+			", estimated_distance_evaluations=" + std::to_string(estimated_distance_evaluations) +
+			", max_distance_evaluations=" +
+			std::to_string(max_default_exact_clustering_distance_evaluations) +
+			". Use find_groups(...) with sampled/chunked fallback or reduce the iteration/count parameters.");
+	}
+}
+
+inline auto estimate_kmedoids_distance_evaluations(std::size_t record_count, std::size_t cluster_count,
+												   std::size_t max_iterations) -> std::size_t
+{
+	const auto dense_scan =
+		checked_clustering_work_multiply(record_count, record_count, "kmedoids");
+	const auto assignment_scan =
+		checked_clustering_work_multiply(record_count, cluster_count, "kmedoids");
+	const auto initial_work = checked_clustering_work_add(dense_scan, assignment_scan, "kmedoids");
+	const auto per_iteration_work = checked_clustering_work_add(dense_scan, assignment_scan, "kmedoids");
+	const auto iteration_work =
+		checked_clustering_work_multiply(per_iteration_work, max_iterations, "kmedoids");
+	return checked_clustering_work_add(initial_work, iteration_work, "kmedoids");
+}
+
+inline auto estimate_dbscan_distance_evaluations(std::size_t record_count) -> std::size_t
+{
+	const auto dense_scan = checked_clustering_work_multiply(record_count, record_count, "dbscan");
+	return checked_clustering_work_multiply(dense_scan, 2, "dbscan");
+}
 
 inline auto require_default_exact_metric_space_clustering(std::size_t record_count) -> void
 {
@@ -33,6 +95,18 @@ inline auto require_default_exact_metric_space_clustering(std::size_t record_cou
 			"use find_groups(...) for default large-space behavior or pass a pairwise distance provider for explicit "
 			"exact execution");
 	}
+}
+
+inline auto require_default_affinity_dense_matrices(std::size_t record_count) -> void
+{
+	if (record_count <= max_default_exact_metric_space_clustering_records) {
+		return;
+	}
+	throw RepresentationError(
+		std::string("affinity_propagation refused dense n x n message-passing matrices before allocation: records=") +
+		std::to_string(record_count) +
+		", max_dense_records=" + std::to_string(max_default_exact_metric_space_clustering_records) +
+		". Use find_groups(...) with a sampled/chunked policy or pass a smaller explicit provider.");
 }
 
 template <typename Provider>
@@ -357,6 +431,10 @@ auto kmedoids(const Provider &provider, std::size_t cluster_count, std::size_t m
 	if (cluster_count > provider.record_count()) {
 		throw std::invalid_argument("cluster_count cannot exceed record_count");
 	}
+	engine_detail::require_default_provider_clustering_work(
+		"kmedoids", provider.record_count(),
+		engine_detail::estimate_kmedoids_distance_evaluations(provider.record_count(), cluster_count,
+															  max_iterations));
 
 	auto medoids = engine_detail::initialize_medoids(provider, cluster_count);
 	auto assignment_state = engine_detail::assign_to_medoids(provider, medoids);
@@ -412,6 +490,8 @@ auto dbscan(const Provider &provider, Radius radius, std::size_t min_points)
 		throw std::invalid_argument("cannot cluster an empty distance provider");
 	}
 	engine_detail::validate_dbscan_parameters(radius, min_points);
+	engine_detail::require_default_provider_clustering_work(
+		"dbscan", provider.record_count(), engine_detail::estimate_dbscan_distance_evaluations(provider.record_count()));
 
 	std::vector<std::size_t> assignments(provider.record_count(), unassigned_label);
 	std::vector<bool> assigned(provider.record_count(), false);
@@ -479,6 +559,7 @@ auto affinity_propagation(const Provider &provider, double preference = 0.5, int
 			std::vector<std::size_t>{0}, std::vector<RecordId>{provider.id(0)}, {}, {}, std::vector<std::size_t>{1}, 0,
 			true, "affinity_propagation", "pairwise_distances");
 	}
+	engine_detail::require_default_affinity_dense_matrices(provider.record_count());
 
 	const auto preference_value = static_cast<distance_type>(preference);
 	const auto tolerance_value = static_cast<distance_type>(tolerance);

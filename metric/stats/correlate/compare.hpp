@@ -83,7 +83,9 @@ inline auto ensure_supported_materialized_plan(const space::storage::execution_p
 inline auto bounded_mgc_estimate_options(std::size_t record_count, stats::correlate::mgc_options strategy)
 	-> stats::correlate::mgc_options
 {
-	if (record_count > max_default_exact_mgc_records && strategy.sample_count >= record_count) {
+	if ((record_count > max_default_exact_mgc_records ||
+		 record_count > stats::correlate::detail::max_default_exact_mgc_scratch_records) &&
+		strategy.sample_count >= record_count) {
 		strategy.sample_count = std::min(stats::correlate::mgc_options{}.sample_count, record_count - 1);
 	}
 	return strategy;
@@ -228,6 +230,10 @@ auto chunked_mgc_estimate(const LeftSpace &left_space, const RightSpace &right_s
 template <typename LeftSpace, typename RightSpace>
 auto should_use_default_mgc_estimate(const LeftSpace &left_space, const RightSpace &right_space) -> bool
 {
+	if (left_space.size() > stats::correlate::detail::max_default_exact_mgc_scratch_records ||
+		right_space.size() > stats::correlate::detail::max_default_exact_mgc_scratch_records) {
+		return true;
+	}
 	const auto runtime_policy = default_mgc_compare_preflight_policy();
 	const auto left_plan = space::storage::estimate_cost(left_space, "compare", runtime_policy);
 	const auto right_plan = space::storage::estimate_cost(right_space, "compare", runtime_policy);
@@ -262,6 +268,10 @@ auto compare_with_materialized_providers(const LeftSpace &left_space, const Righ
 		}
 		return result;
 	}
+	stats::correlate::detail::require_default_exact_mgc_scratch_records(
+		left_space.size(), "compare(..., materialized policy)");
+	stats::correlate::detail::require_default_exact_mgc_scratch_records(
+		right_space.size(), "compare(..., materialized policy)");
 
 	const auto use_blocked_provider =
 		space::storage::uses_blocked_exact_fallback(left_plan) ||

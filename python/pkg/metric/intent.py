@@ -1,6 +1,7 @@
 """Semantic intent facade for the revived Python engine API."""
 
 from .operators import (
+    add_noise_space,
     compress_space,
     compare_spaces,
     correlate_spaces,
@@ -14,9 +15,12 @@ from .operators import (
     map_space,
     nearest_neighbors,
     range_neighbors,
+    redif_dynamics,
     reduce_space,
+    remove_noise_space,
 )
 
+add_noise = add_noise_space
 find_neighbors = nearest_neighbors
 within_radius = range_neighbors
 compress = compress_space
@@ -24,15 +28,19 @@ compare = compare_spaces
 correlate = correlate_spaces
 density_filter = density_filter_space
 describe = describe_structure
+dynamics = redif_dynamics
 equalize = equalize_space
 embed = embed_space
 groups = find_groups
 map = map_space
 outliers = find_outliers
 reduce = reduce_space
+remove_noise = remove_noise_space
 representatives = find_representatives
 
 __all__ = [
+    "add_noise",
+    "add_noise_space",
     "compress",
     "compress_space",
     "compare",
@@ -43,6 +51,7 @@ __all__ = [
     "density_filter_space",
     "describe",
     "describe_structure",
+    "dynamics",
     "equalize",
     "equalize_space",
     "embed",
@@ -55,8 +64,11 @@ __all__ = [
     "map",
     "map_space",
     "outliers",
+    "redif_dynamics",
     "reduce",
     "reduce_space",
+    "remove_noise",
+    "remove_noise_space",
     "representatives",
     "within_radius",
 ]

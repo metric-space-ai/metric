@@ -16,17 +16,37 @@ template <typename Sample, typename Distance, typename WeightType, bool isDense,
 template <typename Container, typename>
 KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(const Container &samples, size_t neighbors_num,
 																	   size_t max_bruteforce_size, int max_iterations,
-																	   double update_range)
+																	   double update_range,
+																	   legacy_knn_graph_options options)
 	: Graph<WeightType, isDense, isSymmetric>(samples.size()), _nodes(samples), _neighbors_num(neighbors_num),
-	  _max_bruteforce_size(max_bruteforce_size), _max_iterations(max_iterations), _update_range(update_range)
+	  _max_bruteforce_size(max_bruteforce_size), _max_iterations(max_iterations), _update_range(update_range),
+	  _options(options)
 {
 	construct(samples);
 }
 
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 template <typename Container, typename>
+KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(
+	const Container &samples, size_t neighbors_num, size_t max_bruteforce_size, legacy_knn_graph_options options)
+	: KNNGraph(samples, neighbors_num, max_bruteforce_size, 100, 0.02, options)
+{
+}
+
+template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
+template <typename Container, typename>
+KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(
+	const Container &samples, size_t neighbors_num, size_t max_bruteforce_size, int max_iterations,
+	legacy_knn_graph_options options)
+	: KNNGraph(samples, neighbors_num, max_bruteforce_size, max_iterations, 0.02, options)
+{
+}
+
+template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
+template <typename Container, typename>
 void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::calculate_distance_matrix(const Container &samples)
 {
+	knn_graph_detail::require_legacy_knn_graph_budget(samples.size(), _options, "KNNGraph");
 	Distance distance;
 
 	// construct() is called again by insert()/insert_if()/erase(); without clearing, every rebuild appends a
@@ -347,6 +367,7 @@ std::vector<size_t> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 std::size_t KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::insert(const Sample &p)
 {
+	knn_graph_detail::require_legacy_knn_graph_budget(_nodes.size() + 1, _options, "KNNGraph::insert");
 	_nodes.push_back(p);
 	construct(_nodes);
 	return _nodes.size() - 1;
@@ -356,6 +377,7 @@ template <typename Sample, typename Distance, typename WeightType, bool isDense,
 template <typename Container, typename>
 std::vector<std::size_t> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::insert(const Container &p)
 {
+	knn_graph_detail::require_legacy_knn_graph_budget(_nodes.size() + p.size(), _options, "KNNGraph::insert");
 	auto sz = _nodes.size();
 	_nodes.insert(_nodes.end(), std::begin(p), std::end(p));
 	construct(_nodes);
@@ -369,6 +391,7 @@ std::pair<std::size_t, bool>
 KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::insert_if(const Sample &p,
 																		typename Distance::distance_type threshold)
 {
+	knn_graph_detail::require_legacy_knn_graph_budget(_nodes.size() + 1, _options, "KNNGraph::insert_if");
 	auto nn = gnnn_search(p, 1);
 	Distance metric;
 	// an empty graph has no neighbour within the threshold, so the point is always inserted
@@ -384,6 +407,8 @@ std::vector<std::pair<std::size_t, bool>>
 KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::insert_if(const Container &items,
 																		typename Distance::distance_type threshold)
 {
+	knn_graph_detail::require_legacy_knn_graph_budget(_nodes.size() + items.size(), _options,
+													   "KNNGraph::insert_if");
 	Distance metric;
 	std::vector<std::pair<std::size_t, bool>> v;
 	v.reserve(items.size());
@@ -410,6 +435,8 @@ KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::insert_if(const Co
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::erase(std::size_t idx)
 {
+	knn_graph_detail::require_legacy_knn_graph_budget(_nodes.size() == 0 ? 0 : _nodes.size() - 1, _options,
+													   "KNNGraph::erase");
 	auto p = _nodes.begin();
 	std::advance(p, idx);
 	_nodes.erase(p);

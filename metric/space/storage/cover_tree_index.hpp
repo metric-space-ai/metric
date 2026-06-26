@@ -6,6 +6,7 @@
 #define _METRIC_REPRESENTATIONS_COVER_TREE_INDEX_HPP
 
 #include <cstddef>
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -19,8 +20,47 @@
 #include <metric/record/id.hpp>
 #include <metric/space/tree.hpp>
 #include "diagnostics.hpp"
+#include "policy.hpp"
 
 namespace mtrc::space::storage {
+
+inline constexpr std::size_t default_cover_tree_max_build_distance_evaluations = 100'000'000;
+inline constexpr std::size_t default_cover_tree_max_memory_bytes = 512ULL * 1024ULL * 1024ULL;
+
+struct cover_tree_index_options {
+	// Set either budget to 0 only when the caller intentionally opts into an unbounded exact index build.
+	std::size_t max_build_distance_evaluations{default_cover_tree_max_build_distance_evaluations};
+	std::size_t max_memory_bytes{default_cover_tree_max_memory_bytes};
+	runtime_guard runtime;
+};
+
+inline auto estimate_cover_tree_build_distance_evaluations(std::size_t record_count) -> std::size_t
+{
+	if (record_count != 0 && record_count > std::numeric_limits<std::size_t>::max() / record_count) {
+		throw RepresentationError("cover tree build distance-evaluation estimate exceeds size_t capacity");
+	}
+	return record_count * record_count;
+}
+
+template <typename Record> inline auto estimate_cover_tree_index_memory_bytes(std::size_t record_count) -> std::size_t
+{
+	const auto per_record_bytes = sizeof(RecordId) + sizeof(Record) + (8 * sizeof(void *));
+	if (record_count != 0 && per_record_bytes > std::numeric_limits<std::size_t>::max() / record_count) {
+		throw RepresentationError("cover tree memory estimate exceeds size_t capacity");
+	}
+	return record_count * per_record_bytes;
+}
+
+inline auto cover_tree_index_options_from_policy(policy runtime_policy, runtime_guard runtime = {})
+	-> cover_tree_index_options
+{
+	return cover_tree_index_options{
+		runtime_policy.max_distance_evaluations() == 0 ? default_cover_tree_max_build_distance_evaluations
+													   : runtime_policy.max_distance_evaluations(),
+		runtime_policy.max_memory_bytes() == 0 ? default_cover_tree_max_memory_bytes
+											   : runtime_policy.max_memory_bytes(),
+		runtime};
+}
 
 template <typename Space> class CoverTreeIndex {
   public:
@@ -31,14 +71,19 @@ template <typename Space> class CoverTreeIndex {
 	using neighbor_type = Neighbor<distance_type>;
 	using tree_type = Tree<record_type, metric_type>;
 
-	explicit CoverTreeIndex(const space_type &space)
+	explicit CoverTreeIndex(const space_type &space, cover_tree_index_options options = {})
 		: space_(&space), record_count_(space.size()), version_(space.version()),
-		  metric_key_(core::metric_cache_key(space.metric()))
+		  metric_key_(core::metric_cache_key(space.metric())),
+		  max_build_distance_evaluations_(options.max_build_distance_evaluations),
+		  max_memory_bytes_(options.max_memory_bytes)
 	{
 		require_true_metric_law();
+		enforce_build_budget(options);
+		options.runtime.throw_if_cancelled("cover_tree index snapshot");
 		ids_ = mtrc::record_ids(space);
 		records_ = mtrc::records_for_record_ids(space, ids_);
 		cache_key_ = representation_cache_key("cover_tree_index", metric_key_, version_, ids_);
+		options.runtime.throw_if_cancelled("cover_tree index construction");
 		if (records_.empty()) {
 			tree_ = std::make_unique<tree_type>(-1, space.metric());
 		} else {
@@ -91,6 +136,8 @@ template <typename Space> class CoverTreeIndex {
 	auto is_stale() const -> bool { return space_->version() != version_; }
 	auto metric_key() const -> const std::string & { return metric_key_; }
 	auto cache_key() const -> const std::string & { return cache_key_; }
+	auto max_build_distance_evaluations() const -> std::size_t { return max_build_distance_evaluations_; }
+	auto max_memory_bytes() const -> std::size_t { return max_memory_bytes_; }
 	auto source_record_ids() const -> const std::vector<RecordId> & { return ids_; }
 	auto stats() const -> cover_tree_stats
 	{
@@ -134,19 +181,46 @@ template <typename Space> class CoverTreeIndex {
 		}
 	}
 
+	auto enforce_build_budget(const cover_tree_index_options &options) const -> void
+	{
+		const auto estimated_distance_evaluations = estimate_cover_tree_build_distance_evaluations(record_count_);
+		if (options.max_build_distance_evaluations > 0 &&
+			estimated_distance_evaluations > options.max_build_distance_evaluations) {
+			throw RepresentationError(
+				"cover tree index refused exact build before metric calls: records=" +
+				std::to_string(record_count_) +
+				" estimated_distance_evaluations=" + std::to_string(estimated_distance_evaluations) +
+				" distance_evaluation_budget=" + std::to_string(options.max_build_distance_evaluations) +
+				". Use a sampled/Landmark representation, reduce records, or pass cover_tree_index_options{0, 0} "
+				"only when unbounded exact construction is intentional.");
+		}
+		const auto estimated_memory_bytes = estimate_cover_tree_index_memory_bytes<record_type>(record_count_);
+		if (options.max_memory_bytes > 0 && estimated_memory_bytes > options.max_memory_bytes) {
+			throw RepresentationError(
+				"cover tree index refused exact build before allocation: records=" + std::to_string(record_count_) +
+				" estimated_bytes=" + std::to_string(estimated_memory_bytes) +
+				" budget_bytes=" + std::to_string(options.max_memory_bytes) +
+				". Use a sampled/Landmark representation, reduce records, or pass cover_tree_index_options{0, 0} "
+				"only when unbounded exact construction is intentional.");
+		}
+	}
+
 	const space_type *space_;
 	std::size_t record_count_;
 	std::size_t version_;
 	std::string metric_key_;
 	std::string cache_key_;
+	std::size_t max_build_distance_evaluations_;
+	std::size_t max_memory_bytes_;
 	std::vector<RecordId> ids_;
 	std::vector<record_type> records_;
 	std::unique_ptr<tree_type> tree_;
 };
 
-template <typename Space> auto cover_tree(const Space &space) -> CoverTreeIndex<Space>
+template <typename Space>
+auto cover_tree(const Space &space, cover_tree_index_options options = {}) -> CoverTreeIndex<Space>
 {
-	return CoverTreeIndex<Space>(space);
+	return CoverTreeIndex<Space>(space, options);
 }
 
 } // namespace mtrc::space::storage

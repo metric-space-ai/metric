@@ -462,6 +462,16 @@ auto compress_from_medoid_groups(const Space &space, const Provider &provider, c
 			  "metric; assignment is exact to the sampled medoids; not dimension reduction");
 }
 
+inline auto throw_compress_plan_refusal(const space::storage::execution_plan &plan) -> void
+{
+	auto message = plan.reason.empty() ? std::string("compression runtime policy refused by resource budget")
+									   : plan.reason;
+	if (!plan.fallback_hint.empty()) {
+		message += "; fallback: " + plan.fallback_hint;
+	}
+	throw RepresentationError(message);
+}
+
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto identity_compression(const Space &space)
 	-> CompressionResult<MetricSpace<typename Space::record_type, typename Space::metric_type>>
@@ -538,15 +548,13 @@ template <typename Space, typename Radius, typename std::enable_if<MetricSpaceLi
 auto compress(const Space &space, space::select::radius_coverage<Radius> strategy)
 	-> CompressionResult<MetricSpace<typename Space::record_type, typename Space::metric_type>>
 {
-	if (space.empty()) {
-		throw std::invalid_argument("cannot compress an empty metric space");
+		if (space.empty()) {
+			throw std::invalid_argument("cannot compress an empty metric space");
+		}
+		space::storage::LiveDistances<Space> provider(space);
+		const auto representatives = find_representatives(space, strategy);
+		return detail::compress_from_representatives(space, provider, representatives);
 	}
-	space::storage::LiveDistances<Space> provider(space);
-	const auto representatives = find_representatives(provider, strategy);
-	auto result = detail::compress_from_representatives(space, provider, representatives);
-	result.representation = "metric_space";
-	return result;
-}
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto compress(const Space &space, stats::structural_analysis::k_medoids_options strategy)
@@ -568,6 +576,9 @@ auto compress(const Space &space, std::size_t count, space::select::farthest_fir
 	if (count == 0) {
 		throw std::invalid_argument("compression count must be positive");
 	}
+	if (count == space.size()) {
+		return detail::identity_compression(space);
+	}
 
 	space::storage::require_parallel_metric<typename Space::metric_type>(runtime_policy);
 	if (runtime_policy.is_approximate()) {
@@ -577,22 +588,28 @@ auto compress(const Space &space, std::size_t count, space::select::farthest_fir
 	}
 
 	space::storage::require_exact_compress(runtime_policy);
+	auto plan = space::storage::estimate_cost(space, "compress", runtime_policy, count);
 	if (runtime_policy.uses_materialization()) {
-		auto plan = space::storage::estimate_cost(space, "compress", runtime_policy);
 		if (!plan.refused && !space::storage::uses_distance_table_materialization(runtime_policy)) {
-			plan = space::storage::estimate_cost(space, "compress", space::storage::using_distance_table(runtime_policy));
+			plan = space::storage::estimate_cost(
+				space, "compress", space::storage::using_distance_table(runtime_policy), count);
 		}
-		if (plan.allowed && plan.downgraded && !plan.exact && plan.representation == "chunked_space_view") {
-			space::storage::LiveDistances<Space> provider(space);
-			auto representatives = detail::chunked_farthest_first_representatives(space, count, strategy, plan);
-			return detail::compress_from_representatives(space, provider, representatives);
-		}
-		if (plan.allowed && plan.downgraded && !plan.exact && plan.representation == "sampled_metric_space") {
-			space::storage::LiveDistances<Space> provider(space);
-			auto representatives =
-				detail::sampled_farthest_first_representatives(provider, count, strategy, runtime_policy);
-			return detail::compress_from_representatives(space, provider, representatives);
-		}
+	}
+	if (plan.refused) {
+		detail::throw_compress_plan_refusal(plan);
+	}
+	if (plan.allowed && plan.downgraded && !plan.exact && plan.representation == "chunked_space_view") {
+		space::storage::LiveDistances<Space> provider(space);
+		auto representatives = detail::chunked_farthest_first_representatives(space, count, strategy, plan);
+		return detail::compress_from_representatives(space, provider, representatives);
+	}
+	if (plan.allowed && plan.downgraded && !plan.exact && plan.representation == "sampled_metric_space") {
+		space::storage::LiveDistances<Space> provider(space);
+		auto representatives =
+			detail::sampled_farthest_first_representatives(provider, count, strategy, runtime_policy);
+		return detail::compress_from_representatives(space, provider, representatives);
+	}
+	if (runtime_policy.uses_materialization()) {
 		return space::storage::with_materialized_distance_provider(
 			space, runtime_policy, "compress", [&](const auto &provider, const auto &plan) {
 				auto representatives = find_representatives(provider, count, strategy);
@@ -601,9 +618,10 @@ auto compress(const Space &space, std::size_t count, space::select::farthest_fir
 			});
 	}
 
-	auto result = compress(space, count, strategy);
-	result.representation = space::storage::compression_representation(runtime_policy);
-	return result;
+	space::storage::LiveDistances<Space> provider(space);
+	auto representatives = find_representatives(provider, count, strategy);
+	representatives.representation = space::storage::compression_representation(runtime_policy);
+	return detail::compress_from_representatives(space, provider, representatives);
 }
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
@@ -642,21 +660,26 @@ auto compress(const Space &space, space::select::radius_coverage<Radius> strateg
 	}
 
 	space::storage::require_exact_compress(runtime_policy);
+	auto plan = space::storage::estimate_cost(space, "compress", runtime_policy);
 	if (runtime_policy.uses_materialization()) {
-		auto plan = space::storage::estimate_cost(space, "compress", runtime_policy);
 		if (!plan.refused && !space::storage::uses_distance_table_materialization(runtime_policy)) {
 			plan = space::storage::estimate_cost(space, "compress", space::storage::using_distance_table(runtime_policy));
 		}
-		if (plan.allowed && plan.downgraded && !plan.exact && plan.representation == "chunked_space_view") {
-			space::storage::LiveDistances<Space> provider(space);
-			auto representatives = detail::chunked_radius_coverage_representatives(space, strategy, plan);
-			return detail::compress_from_representatives(space, provider, representatives);
-		}
-		if (plan.allowed && plan.downgraded && !plan.exact && plan.representation == "sampled_metric_space") {
-			space::storage::LiveDistances<Space> provider(space);
-			auto representatives = detail::sampled_radius_coverage_representatives(space, strategy, runtime_policy);
-			return detail::compress_from_representatives(space, provider, representatives);
-		}
+	}
+	if (plan.refused) {
+		detail::throw_compress_plan_refusal(plan);
+	}
+	if (plan.allowed && plan.downgraded && !plan.exact && plan.representation == "chunked_space_view") {
+		space::storage::LiveDistances<Space> provider(space);
+		auto representatives = detail::chunked_radius_coverage_representatives(space, strategy, plan);
+		return detail::compress_from_representatives(space, provider, representatives);
+	}
+	if (plan.allowed && plan.downgraded && !plan.exact && plan.representation == "sampled_metric_space") {
+		space::storage::LiveDistances<Space> provider(space);
+		auto representatives = detail::sampled_radius_coverage_representatives(space, strategy, runtime_policy);
+		return detail::compress_from_representatives(space, provider, representatives);
+	}
+	if (runtime_policy.uses_materialization()) {
 		return space::storage::with_materialized_distance_provider(
 			space, runtime_policy, "compress", [&](const auto &provider, const auto &plan) {
 				auto representatives = find_representatives(provider, strategy);
@@ -665,9 +688,10 @@ auto compress(const Space &space, space::select::radius_coverage<Radius> strateg
 			});
 	}
 
-	auto result = compress(space, strategy);
-	result.representation = space::storage::compression_representation(runtime_policy);
-	return result;
+	space::storage::LiveDistances<Space> provider(space);
+	auto representatives = find_representatives(provider, strategy);
+	representatives.representation = space::storage::compression_representation(runtime_policy);
+	return detail::compress_from_representatives(space, provider, representatives);
 }
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
@@ -679,18 +703,23 @@ auto compress(const Space &space, stats::structural_analysis::k_medoids_options 
 		throw std::invalid_argument("cannot compress an empty metric space");
 	}
 	space::storage::require_parallel_metric<typename Space::metric_type>(runtime_policy);
+	auto plan = space::storage::estimate_cost(space, "compress", runtime_policy);
 	if (runtime_policy.uses_materialization()) {
-		auto plan = space::storage::estimate_cost(space, "compress", runtime_policy);
 		if (!plan.refused && !space::storage::uses_distance_table_materialization(runtime_policy)) {
 			plan = space::storage::estimate_cost(space, "compress", space::storage::using_distance_table(runtime_policy));
 		}
-		if (plan.allowed && plan.downgraded && !plan.exact &&
-			(plan.representation == "sampled_metric_space" || plan.representation == "chunked_space_view")) {
-			space::storage::LiveDistances<Space> provider(space);
-			const auto groups =
-				stats::structural_analysis::find_groups(space, strategy, space::storage::approximate());
-			return detail::compress_from_medoid_groups(space, provider, groups, groups.representation);
-		}
+	}
+	if (plan.refused) {
+		detail::throw_compress_plan_refusal(plan);
+	}
+	if (plan.allowed && plan.downgraded && !plan.exact &&
+		(plan.representation == "sampled_metric_space" || plan.representation == "chunked_space_view")) {
+		space::storage::LiveDistances<Space> provider(space);
+		const auto groups =
+			stats::structural_analysis::find_groups(space, strategy, space::storage::approximate());
+		return detail::compress_from_medoid_groups(space, provider, groups, groups.representation);
+	}
+	if (runtime_policy.uses_materialization()) {
 		const auto groups = stats::structural_analysis::find_groups(space, strategy, runtime_policy);
 		return space::storage::with_materialized_distance_provider(
 			space, runtime_policy, "compress", [&](const auto &provider, const auto &plan) {

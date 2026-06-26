@@ -1,5 +1,7 @@
 #include <cassert>
+#include <cstddef>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <vector>
 
@@ -14,6 +16,34 @@ struct DoubleAbsoluteDistance {
 	{
 		const auto difference = lhs - rhs;
 		return difference < 0.0 ? -difference : difference;
+	}
+};
+
+struct LargeCountingDoubleProvider {
+	using distance_type = double;
+
+	std::size_t count{};
+	std::size_t *calls{};
+
+	auto record_count() const -> std::size_t { return count; }
+	auto id(std::size_t position) const -> mtrc::RecordId { return mtrc::RecordId::from_index(position); }
+	auto contains(mtrc::RecordId id) const -> bool { return id.index() < count; }
+	auto position_of(mtrc::RecordId id) const -> std::size_t
+	{
+		if (!contains(id)) {
+			throw std::out_of_range("unknown large provider id");
+		}
+		return id.index();
+	}
+	auto version() const -> std::size_t { return 1; }
+	auto is_stale() const -> bool { return false; }
+	auto distance(mtrc::RecordId lhs, mtrc::RecordId rhs) const -> distance_type
+	{
+		++(*calls);
+		const auto lhs_position = lhs.index();
+		const auto rhs_position = rhs.index();
+		return lhs_position > rhs_position ? static_cast<double>(lhs_position - rhs_position)
+										   : static_cast<double>(rhs_position - lhs_position);
 	}
 };
 
@@ -54,6 +84,38 @@ int main()
 	}
 	assert(rejected_too_many_clusters);
 
+	std::size_t kmedoids_distance_calls = 0;
+	const LargeCountingDoubleProvider large_kmedoids_provider{
+		mtrc::stats::structural_analysis::engine_detail::max_default_exact_metric_space_clustering_records + 1,
+		&kmedoids_distance_calls};
+	bool refused_large_kmedoids_provider = false;
+	try {
+		(void)mtrc::stats::structural_analysis::kmedoids(large_kmedoids_provider, 2);
+	} catch (const mtrc::RepresentationError &error) {
+		refused_large_kmedoids_provider = true;
+		const std::string message = error.what();
+		assert(message.find("kmedoids") != std::string::npos);
+		assert(message.find("max_exact_records") != std::string::npos);
+	}
+	assert(refused_large_kmedoids_provider);
+	assert(kmedoids_distance_calls == 0);
+
+	std::size_t dbscan_distance_calls = 0;
+	const LargeCountingDoubleProvider large_dbscan_provider{
+		mtrc::stats::structural_analysis::engine_detail::max_default_exact_metric_space_clustering_records + 1,
+		&dbscan_distance_calls};
+	bool refused_large_dbscan_provider = false;
+	try {
+		(void)mtrc::stats::structural_analysis::dbscan(large_dbscan_provider, 1.0, 2);
+	} catch (const mtrc::RepresentationError &error) {
+		refused_large_dbscan_provider = true;
+		const std::string message = error.what();
+		assert(message.find("dbscan") != std::string::npos);
+		assert(message.find("max_exact_records") != std::string::npos);
+	}
+	assert(refused_large_dbscan_provider);
+	assert(dbscan_distance_calls == 0);
+
 	auto continuous_space = mtrc::make_space(std::vector<double>{0.0, 0.1, 10.0, 10.1}, DoubleAbsoluteDistance{});
 	const auto affinity_groups = mtrc::stats::structural_analysis::affinity_propagation(continuous_space, 0.7);
 	static_assert(std::is_same<decltype(affinity_groups)::distance_type, double>::value);
@@ -82,6 +144,22 @@ int main()
 		rejected_invalid_preference = true;
 	}
 	assert(rejected_invalid_preference);
+
+	std::size_t affinity_distance_calls = 0;
+	const LargeCountingDoubleProvider large_affinity_provider{
+		mtrc::stats::structural_analysis::engine_detail::max_default_exact_metric_space_clustering_records + 1,
+		&affinity_distance_calls};
+	bool refused_large_affinity_provider = false;
+	try {
+		(void)mtrc::stats::structural_analysis::affinity_propagation(large_affinity_provider, 0.5);
+	} catch (const mtrc::RepresentationError &error) {
+		refused_large_affinity_provider = true;
+		const std::string message = error.what();
+		assert(message.find("affinity_propagation") != std::string::npos);
+		assert(message.find("max_dense_records") != std::string::npos);
+	}
+	assert(refused_large_affinity_provider);
+	assert(affinity_distance_calls == 0);
 
 	return 0;
 }

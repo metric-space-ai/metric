@@ -87,6 +87,9 @@ int main()
 	bridge_options.adaptive_geometry = false;
 	const auto bridge_ranked = mtrc::redif_outliers(bridge, bridge_options);
 	assert(bridge_ranked[0].id == bridge.id(3));
+	const auto density_ranked =
+		mtrc::find_outliers(bridge, mtrc::stats::structural_analysis::dbscan_options(4.0, 2));
+	assert(density_ranked.empty());
 
 	// The path functional is defined over atom measures, so the records do not
 	// need vector coordinates.

@@ -7,16 +7,46 @@
 
 #include <cstddef>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 
+#include <metric/core/errors.hpp>
 #include <metric/core/result.hpp>
 #include <metric/correlation/mgc.hpp>
 #include <metric/space/storage/distance_matrix.hpp>
+#include <metric/space/storage/implicit.hpp>
 #include <metric/stats/correlate/options.hpp>
 
 namespace mtrc::stats::correlate {
 
 namespace detail {
+
+inline constexpr std::size_t max_default_exact_mgc_records = 4096;
+inline constexpr std::size_t max_default_exact_mgc_scratch_records = 2886;
+
+inline auto require_default_exact_mgc_records(std::size_t record_count, const char *operation) -> void
+{
+	if (record_count <= max_default_exact_mgc_records) {
+		return;
+	}
+	throw RepresentationError(
+		std::string(operation) + " refused exact MGC before metric calls: records=" +
+		std::to_string(record_count) +
+		", max_exact_records=" + std::to_string(max_default_exact_mgc_records) +
+		". Use compare(...), correlate(...), or mgc_estimate(...) with a bounded sample_count for large spaces.");
+}
+
+inline auto require_default_exact_mgc_scratch_records(std::size_t record_count, const char *operation) -> void
+{
+	if (record_count <= max_default_exact_mgc_scratch_records) {
+		return;
+	}
+	throw RepresentationError(
+		std::string(operation) + " refused exact MGC scratch work before metric calls: records=" +
+		std::to_string(record_count) +
+		", max_scratch_records=" + std::to_string(max_default_exact_mgc_scratch_records) +
+		". Use compare(...), correlate(...), or mgc_estimate(...) with a bounded sample_count for large spaces.");
+}
 
 inline auto effective_mgc_sample_count(std::size_t record_count, mgc_options options) -> std::size_t
 {
@@ -74,6 +104,8 @@ auto mgc(const LeftContainer &left_records, const LeftMetric &left_metric, const
 	if (left_records.size() < 2) {
 		throw std::invalid_argument("MGC requires at least two paired records");
 	}
+	detail::require_default_exact_mgc_records(left_records.size(), "mgc(...)");
+	detail::require_default_exact_mgc_scratch_records(left_records.size(), "mgc(...)");
 
 	mtrc::MGC<LeftRecord, LeftMetric, RightRecord, RightMetric> estimator(left_metric, right_metric);
 
@@ -101,6 +133,8 @@ auto mgc_estimate(const LeftContainer &left_records, const LeftMetric &left_metr
 	const auto sample_iterations = detail::effective_mgc_iterations(left_records.size(), sample_count, options);
 
 	if (sample_count >= left_records.size()) {
+		detail::require_default_exact_mgc_records(left_records.size(), "mgc_estimate(...)");
+		detail::require_default_exact_mgc_scratch_records(left_records.size(), "mgc_estimate(...)");
 		auto result = core::make_correlation_result(estimator(left_records, right_records), left_records.size(),
 												 right_records.size(), "mgc", "records", "records", true);
 		result.sample_count = sample_count;
@@ -128,6 +162,7 @@ auto mgc(const LeftProvider &left_provider, const RightProvider &right_provider)
 	if (left_provider.record_count() < 2) {
 		throw std::invalid_argument("MGC requires at least two paired records");
 	}
+	detail::require_default_exact_mgc_scratch_records(left_provider.record_count(), "mgc(provider, provider)");
 
 	auto left_distances = space::storage::provider_symmetric_distance_matrix<double>(left_provider);
 	auto right_distances = space::storage::provider_symmetric_distance_matrix<double>(right_provider);
@@ -141,7 +176,18 @@ template <typename LeftSpace, typename RightSpace,
 		  typename std::enable_if<MetricSpaceLike_v<LeftSpace> && MetricSpaceLike_v<RightSpace>, int>::type = 0>
 auto mgc(const LeftSpace &left_space, const RightSpace &right_space) -> CorrelationResult<double>
 {
-	auto result = mgc(left_space.records(), left_space.metric(), right_space.records(), right_space.metric());
+	if (left_space.size() != right_space.size()) {
+		throw std::invalid_argument("MGC requires spaces with the same record count");
+	}
+	if (left_space.size() < 2) {
+		throw std::invalid_argument("MGC requires at least two paired records");
+	}
+	detail::require_default_exact_mgc_records(left_space.size(), "mgc(metric_space, metric_space)");
+	detail::require_default_exact_mgc_scratch_records(left_space.size(), "mgc(metric_space, metric_space)");
+
+	space::storage::LiveDistances<LeftSpace> left_provider(left_space);
+	space::storage::LiveDistances<RightSpace> right_provider(right_space);
+	auto result = mgc(left_provider, right_provider);
 	result.left_representation = "metric_space";
 	result.right_representation = "metric_space";
 	return result;

@@ -4,15 +4,14 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  adaptMetricEvidenceV1,
   createMiniatureHeroSceneBundle,
   createMiniatureHeroStage,
   createMiniaturePhotographicRigContract,
   createMiniatureRigReport,
   createMiniatureStyleMotionPreset,
-  createProcessCurveMiniatureLayerDescriptors,
   inspectMiniatureStyleContract,
   MINIATURE_CAMERA_DOF_FRAGMENT_SHADER,
+  ProcessCurveSceneView,
 } from "../src/index.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -23,17 +22,22 @@ async function main() {
   assertHeroHtmlContract(heroHtml);
   assertCameraDofShaderContract(MINIATURE_CAMERA_DOF_FRAGMENT_SHADER);
 
-  const evidencePath = path.join(root, "docs/examples/assets/process-curve-external/evidence.json");
-  const evidence = JSON.parse(await fs.readFile(evidencePath, "utf8"));
-  const document = adaptMetricEvidenceV1(evidence);
+  const evidencePath = path.join(root, "docs/examples/assets/process-curve-external/metric.visual.json");
+  const document = JSON.parse(await fs.readFile(evidencePath, "utf8"));
   const stage = createMiniatureHeroStage();
-  const sceneInput = createProcessCurveMiniatureLayerDescriptors(document, {
-    datasetId: "power_demand",
+  const view = ProcessCurveSceneView.fromVisualSpace(document, {
+    datasetId: "process-curve-external",
+    targetCoordinateId: "process-curve-external-landmark-3d",
+    labelPropertyId: "process-role",
+    relationId: "process-curve-external-aligned-metric",
+    graphId: "process-curve-external-knn",
     stage,
     groundY: stage.grounding?.groundY,
     morphLoop: true,
+    includeNeighborhood: true,
+    includeMatrix: true,
   });
-  const bundle = createMiniatureHeroSceneBundle(sceneInput.descriptors, {
+  const bundle = createMiniatureHeroSceneBundle(view.toLayerDescriptors(), {
     stage,
     fit: { targetSpan: 2.74 },
     ground: { groundY: stage.grounding?.groundY, padding: 0.66 },
@@ -75,6 +79,7 @@ async function main() {
   assert(report.ground.hasProjectionLayer === true, "miniature report must expose projection/contact layer", report.ground);
   assert(report.materials.styledDescriptorCount === report.materials.descriptorCount, "all report descriptors must carry miniature material styling", report.materials);
   assert(report.materials.litDescriptorCount > 0, "report must expose lit material response", report.materials);
+  assertMiniatureLabelContract(bundle);
   assert(report.motion.enabled === true, "miniature report must expose style or descriptor motion", report.motion);
   assert(report.motion.activeDomains?.focus === true, "miniature report must expose focus motion domain", report.motion);
   assert(report.motion.activeDomains?.camera === true, "miniature report must expose camera motion domain", report.motion);
@@ -110,6 +115,14 @@ async function main() {
     targetY: target,
   };
   console.log(JSON.stringify(result, null, 2));
+}
+
+function assertMiniatureLabelContract(bundle) {
+  const labelLayer = bundle.layers.find((layer) => layer?.primitive === "BillboardLabelLayer");
+  assert(labelLayer, "miniature rig fixture must contain in-scene labels");
+  assert(labelLayer.metadata?.miniature === true, "label descriptors must carry miniature styling", labelLayer.metadata);
+  assert(labelLayer.metadata?.miniatureRole === "miniature-label", "label descriptors must use the miniature label role", labelLayer.metadata);
+  assert(Number(labelLayer.metadata?.labelCount || labelLayer.labels?.length || 0) > 0, "label descriptors must expose label count", labelLayer.metadata);
 }
 
 function assertHeroHtmlContract(html) {

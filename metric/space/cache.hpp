@@ -15,6 +15,7 @@
 #include <metric/space/storage/exact_scan_index.hpp>
 #include <metric/space/storage/implicit.hpp>
 #include <metric/space/storage/knn_graph_index.hpp>
+#include <metric/space/storage/landmark_index.hpp>
 
 // Stale-representation detection and recovery for finite-space caches and indexes.
 //
@@ -79,15 +80,25 @@ auto rebuild(const storage::DistanceTable<Space> &table, const Space &space) -> 
 }
 
 template <typename Space>
-auto rebuild(const storage::CoverTreeIndex<Space> &, const Space &space) -> storage::CoverTreeIndex<Space>
+auto rebuild(const storage::CoverTreeIndex<Space> &index, const Space &space) -> storage::CoverTreeIndex<Space>
 {
-	return storage::CoverTreeIndex<Space>(space);
+	return storage::CoverTreeIndex<Space>(
+		space, storage::cover_tree_index_options{index.max_build_distance_evaluations(), index.max_memory_bytes()});
 }
 
 template <typename Space>
 auto rebuild(const storage::KnnGraphIndex<Space> &index, const Space &space) -> storage::KnnGraphIndex<Space>
 {
-	return storage::KnnGraphIndex<Space>(space, index.k());
+	return storage::KnnGraphIndex<Space>(
+		space, storage::knn_graph_index_options{index.k(), index.max_build_distance_evaluations()});
+}
+
+template <typename Space>
+auto rebuild(const storage::LandmarkIndex<Space> &index, const Space &space) -> storage::LandmarkIndex<Space>
+{
+	return storage::LandmarkIndex<Space>(
+		space, storage::landmark_index_options{index.requested_landmark_count(), index.candidate_limit(),
+											   index.max_build_distance_evaluations(), index.max_memory_bytes()});
 }
 
 template <typename Space>

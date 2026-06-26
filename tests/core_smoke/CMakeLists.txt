@@ -137,6 +137,21 @@ target_link_libraries(redif_canonical_spaces_smoke PRIVATE ${METRIC_TARGET_NAME}
 add_executable(redif_path_outlier_smoke redif_path_outlier_smoke.cpp)
 target_link_libraries(redif_path_outlier_smoke PRIVATE ${METRIC_TARGET_NAME})
 
+add_executable(redif_operator_kernel_smoke redif_operator_kernel_smoke.cpp)
+target_link_libraries(redif_operator_kernel_smoke PRIVATE ${METRIC_TARGET_NAME})
+
+add_executable(redif_stability_smoke redif_stability_smoke.cpp)
+target_link_libraries(redif_stability_smoke PRIVATE ${METRIC_TARGET_NAME})
+
+add_executable(redif_entropy_laws_smoke redif_entropy_laws_smoke.cpp)
+target_link_libraries(redif_entropy_laws_smoke PRIVATE ${METRIC_TARGET_NAME})
+
+add_executable(redif_multiscale_path_smoke redif_multiscale_path_smoke.cpp)
+target_link_libraries(redif_multiscale_path_smoke PRIVATE ${METRIC_TARGET_NAME})
+
+add_executable(redif_degenerate_spaces_smoke redif_degenerate_spaces_smoke.cpp)
+target_link_libraries(redif_degenerate_spaces_smoke PRIVATE ${METRIC_TARGET_NAME})
+
 add_executable(modify_level2_components_smoke modify_level2_components_smoke.cpp)
 target_link_libraries(modify_level2_components_smoke PRIVATE ${METRIC_TARGET_NAME})
 
@@ -419,6 +434,11 @@ add_test(NAME engine_density_filter_intent_smoke COMMAND engine_density_filter_i
 add_test(NAME redif_metric_dynamics_smoke COMMAND redif_metric_dynamics_smoke)
 add_test(NAME redif_canonical_spaces_smoke COMMAND redif_canonical_spaces_smoke)
 add_test(NAME redif_path_outlier_smoke COMMAND redif_path_outlier_smoke)
+add_test(NAME redif_operator_kernel_smoke COMMAND redif_operator_kernel_smoke)
+add_test(NAME redif_stability_smoke COMMAND redif_stability_smoke)
+add_test(NAME redif_entropy_laws_smoke COMMAND redif_entropy_laws_smoke)
+add_test(NAME redif_multiscale_path_smoke COMMAND redif_multiscale_path_smoke)
+add_test(NAME redif_degenerate_spaces_smoke COMMAND redif_degenerate_spaces_smoke)
 add_test(NAME modify_level2_components_smoke COMMAND modify_level2_components_smoke)
 add_test(NAME modify_thin_smoke COMMAND modify_thin_smoke)
 add_test(NAME modify_represent_smoke COMMAND modify_represent_smoke)

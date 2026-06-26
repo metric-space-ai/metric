@@ -19,6 +19,7 @@
 #include <metric/core/metric_traits.hpp>
 #include <metric/record/id.hpp>
 #include <metric/core/result.hpp>
+#include <metric/space/storage/execution.hpp>
 
 namespace mtrc::stats::search {
 
@@ -75,9 +76,29 @@ template <typename Result, typename Fn> auto run_parallel(std::size_t n, bool th
 		std::rethrow_exception(first_error);
 	}
 	return results;
-}
+	}
 
-} // namespace batch_detail
+	template <typename Space>
+	auto require_exact_batch_plan(const Space &space, const char *intent, std::size_t query_count,
+								  ::mtrc::space::storage::policy runtime_policy)
+		-> ::mtrc::space::storage::runtime_guard
+	{
+		::mtrc::space::storage::require_parallel_metric<typename Space::metric_type>(runtime_policy);
+		::mtrc::space::storage::require_exact_neighbors(runtime_policy);
+		const auto plan = ::mtrc::space::storage::estimate_cost(space, intent, query_count, runtime_policy);
+		if (!plan.allowed || !plan.exact || plan.downgraded) {
+			throw RepresentationError(
+				std::string("batch ") + intent +
+				" refused exact metric work before running metric calls: records=" +
+				std::to_string(plan.record_count) + " queries=" + std::to_string(query_count) +
+				" estimated_distance_evaluations=" + std::to_string(plan.estimated_distance_evaluations) +
+				" distance_evaluation_budget=" + std::to_string(plan.budget.max_distance_evaluations) +
+				". Reason: " + plan.reason + ". Suggested fallback: " + plan.fallback_hint);
+		}
+		return ::mtrc::space::storage::runtime_guard(runtime_policy);
+	}
+
+	} // namespace batch_detail
 
 // Level-1 search investigates an existing finite metric space; it never defines a metric
 // or modifies the space. knn() returns the k nearest records to a query (RecordId queries
@@ -243,6 +264,20 @@ auto knn_batch(const Space &space, const std::vector<typename Space::record_type
 }
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto knn_batch(const Space &space, const std::vector<typename Space::record_type> &queries, std::size_t k,
+			   ::mtrc::space::storage::policy runtime_policy)
+	-> std::vector<NeighborSet<typename Space::distance_type>>
+{
+	auto runtime = batch_detail::require_exact_batch_plan(space, "neighbors", queries.size(), runtime_policy);
+	using result_type = NeighborSet<typename Space::distance_type>;
+	constexpr bool thread_safe = core::metric_thread_safe_v<typename Space::metric_type>;
+	return batch_detail::run_parallel<result_type>(queries.size(), thread_safe, [&](std::size_t index) {
+		runtime.throw_if_cancelled("knn_batch");
+		return knn(space, queries[index], k);
+	});
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto knn_batch(const Space &space, const std::vector<RecordId> &query_ids, std::size_t k)
 	-> std::vector<NeighborSet<typename Space::distance_type>>
 {
@@ -250,6 +285,20 @@ auto knn_batch(const Space &space, const std::vector<RecordId> &query_ids, std::
 	constexpr bool thread_safe = core::metric_thread_safe_v<typename Space::metric_type>;
 	return batch_detail::run_parallel<result_type>(query_ids.size(), thread_safe,
 												   [&](std::size_t index) { return knn(space, query_ids[index], k); });
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto knn_batch(const Space &space, const std::vector<RecordId> &query_ids, std::size_t k,
+			   ::mtrc::space::storage::policy runtime_policy)
+	-> std::vector<NeighborSet<typename Space::distance_type>>
+{
+	auto runtime = batch_detail::require_exact_batch_plan(space, "neighbors", query_ids.size(), runtime_policy);
+	using result_type = NeighborSet<typename Space::distance_type>;
+	constexpr bool thread_safe = core::metric_thread_safe_v<typename Space::metric_type>;
+	return batch_detail::run_parallel<result_type>(query_ids.size(), thread_safe, [&](std::size_t index) {
+		runtime.throw_if_cancelled("knn_batch");
+		return knn(space, query_ids[index], k);
+	});
 }
 
 template <typename Provider, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>
@@ -276,6 +325,21 @@ auto range_batch(const Space &space, const std::vector<typename Space::record_ty
 }
 
 template <typename Space, typename Radius, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto range_batch(const Space &space, const std::vector<typename Space::record_type> &queries, Radius radius,
+				 ::mtrc::space::storage::policy runtime_policy)
+	-> std::vector<NeighborSet<typename Space::distance_type>>
+{
+	engine_detail::validate_radius(radius);
+	auto runtime = batch_detail::require_exact_batch_plan(space, "range", queries.size(), runtime_policy);
+	using result_type = NeighborSet<typename Space::distance_type>;
+	constexpr bool thread_safe = core::metric_thread_safe_v<typename Space::metric_type>;
+	return batch_detail::run_parallel<result_type>(queries.size(), thread_safe, [&](std::size_t index) {
+		runtime.throw_if_cancelled("range_batch");
+		return range(space, queries[index], radius);
+	});
+}
+
+template <typename Space, typename Radius, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto range_batch(const Space &space, const std::vector<RecordId> &query_ids, Radius radius)
 	-> std::vector<NeighborSet<typename Space::distance_type>>
 {
@@ -284,6 +348,21 @@ auto range_batch(const Space &space, const std::vector<RecordId> &query_ids, Rad
 	constexpr bool thread_safe = core::metric_thread_safe_v<typename Space::metric_type>;
 	return batch_detail::run_parallel<result_type>(query_ids.size(), thread_safe,
 												   [&](std::size_t index) { return range(space, query_ids[index], radius); });
+}
+
+template <typename Space, typename Radius, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto range_batch(const Space &space, const std::vector<RecordId> &query_ids, Radius radius,
+				 ::mtrc::space::storage::policy runtime_policy)
+	-> std::vector<NeighborSet<typename Space::distance_type>>
+{
+	engine_detail::validate_radius(radius);
+	auto runtime = batch_detail::require_exact_batch_plan(space, "range", query_ids.size(), runtime_policy);
+	using result_type = NeighborSet<typename Space::distance_type>;
+	constexpr bool thread_safe = core::metric_thread_safe_v<typename Space::metric_type>;
+	return batch_detail::run_parallel<result_type>(query_ids.size(), thread_safe, [&](std::size_t index) {
+		runtime.throw_if_cancelled("range_batch");
+		return range(space, query_ids[index], radius);
+	});
 }
 
 template <typename Provider, typename Radius, typename std::enable_if<PairwiseDistances_v<Provider>, int>::type = 0>

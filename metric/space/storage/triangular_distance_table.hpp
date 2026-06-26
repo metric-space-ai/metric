@@ -23,6 +23,25 @@
 
 namespace mtrc::space::storage {
 
+inline constexpr std::size_t default_symmetric_distance_table_max_dense_records = 4096;
+inline constexpr std::size_t default_symmetric_distance_table_max_memory_bytes = 512ULL * 1024ULL * 1024ULL;
+inline constexpr std::size_t default_symmetric_distance_table_max_distance_evaluations = 100'000'000;
+
+struct symmetric_distance_table_options {
+	// Set any budget to 0 only when the caller intentionally opts into unbounded exact materialization.
+	std::size_t max_dense_records{default_symmetric_distance_table_max_dense_records};
+	std::size_t max_memory_bytes{default_symmetric_distance_table_max_memory_bytes};
+	std::size_t max_distance_evaluations{default_symmetric_distance_table_max_distance_evaluations};
+	runtime_guard runtime;
+};
+
+inline auto symmetric_distance_table_options_with_runtime(runtime_guard runtime) -> symmetric_distance_table_options
+{
+	auto options = symmetric_distance_table_options{};
+	options.runtime = runtime;
+	return options;
+}
+
 namespace triangular_detail {
 
 using record_position_lookup_type = std::unordered_map<RecordId, std::size_t>;
@@ -59,11 +78,45 @@ inline auto record_id_storage_bytes(std::size_t record_count) -> std::size_t
 						   "triangular distance table memory estimate exceeds size_t capacity");
 }
 
-inline auto position_index_storage_bytes(std::size_t record_count) -> std::size_t
+	inline auto position_index_storage_bytes(std::size_t record_count) -> std::size_t
 {
 	return checked_product(record_count, sizeof(record_position_lookup_type::value_type),
 						   "triangular distance table memory estimate exceeds size_t capacity");
-}
+	}
+
+	inline auto require_symmetric_distance_table_budget(std::size_t record_count, std::size_t distance_slots,
+													   std::size_t memory_bytes,
+													   symmetric_distance_table_options options) -> void
+	{
+		if (options.max_dense_records > 0 && record_count > options.max_dense_records) {
+			throw RepresentationError(
+				"symmetric distance table refused exact materialization before allocation: records=" +
+				std::to_string(record_count) + " max_dense_records=" + std::to_string(options.max_dense_records) +
+				" estimated_bytes=" + std::to_string(memory_bytes) +
+				" estimated_distance_evaluations=" + std::to_string(distance_slots) +
+				". Use execution_context with chunking/blocking, use a live provider, or pass "
+				"symmetric_distance_table_options{0, 0, 0} only when unbounded exact materialization is intentional.");
+		}
+		if (options.max_memory_bytes > 0 && memory_bytes > options.max_memory_bytes) {
+			throw RepresentationError(
+				"symmetric distance table refused exact materialization before allocation: records=" +
+				std::to_string(record_count) + " estimated_bytes=" + std::to_string(memory_bytes) +
+				" budget_bytes=" + std::to_string(options.max_memory_bytes) +
+				" estimated_distance_evaluations=" + std::to_string(distance_slots) +
+				". Use execution_context with chunking/blocking, use a live provider, or pass "
+				"symmetric_distance_table_options{0, 0, 0} only when unbounded exact materialization is intentional.");
+		}
+		if (options.max_distance_evaluations > 0 && distance_slots > options.max_distance_evaluations) {
+			throw RepresentationError(
+				"symmetric distance table refused exact materialization before metric calls: records=" +
+				std::to_string(record_count) +
+				" estimated_distance_evaluations=" + std::to_string(distance_slots) +
+				" distance_evaluation_budget=" + std::to_string(options.max_distance_evaluations) +
+				" estimated_bytes=" + std::to_string(memory_bytes) +
+				". Use execution_context with chunking/blocking, use a live provider, or pass "
+				"symmetric_distance_table_options{0, 0, 0} only when unbounded exact materialization is intentional.");
+		}
+	}
 
 } // namespace triangular_detail
 
@@ -103,24 +156,31 @@ template <typename Space> class SymmetricDistanceTable {
 	using distance_type = typename space_type::distance_type;
 	static constexpr auto metric_type_law = core::metric_traits<metric_type>::law;
 
-	explicit SymmetricDistanceTable(const space_type &space, runtime_guard runtime = {})
-		: space_(&space), record_count_(space.size()), version_(space.version()),
-		  off_diagonal_slots_(triangular_distance_slot_count(record_count_)),
-		  memory_bytes_estimate_(estimate_triangular_distance_table_memory_bytes<distance_type>(record_count_)),
-		  metric_key_(core::metric_cache_key(space.metric()))
-	{
-		require_admitted_symmetric_metric();
-		ids_ = mtrc::record_ids(space);
-		id_positions_ = triangular_detail::make_record_position_lookup(ids_);
-		cache_key_ = representation_cache_key("symmetric_distance_table", metric_key_, version_, ids_);
-		distances_.reserve(off_diagonal_slots_);
-		for (std::size_t lhs = 0; lhs < record_count_; ++lhs) {
-			for (std::size_t rhs = lhs + 1; rhs < record_count_; ++rhs) {
-				runtime.throw_if_cancelled("symmetric_distance_table materialization");
-				distances_.push_back(compute_source_distance_at_position(lhs, rhs));
+		explicit SymmetricDistanceTable(const space_type &space, symmetric_distance_table_options options = {})
+			: space_(&space), record_count_(space.size()), version_(space.version()),
+			  off_diagonal_slots_(triangular_distance_slot_count(record_count_)),
+			  memory_bytes_estimate_(estimate_triangular_distance_table_memory_bytes<distance_type>(record_count_)),
+			  metric_key_(core::metric_cache_key(space.metric()))
+		{
+			require_admitted_symmetric_metric();
+			triangular_detail::require_symmetric_distance_table_budget(
+				record_count_, off_diagonal_slots_, memory_bytes_estimate_, options);
+			ids_ = mtrc::record_ids(space);
+			id_positions_ = triangular_detail::make_record_position_lookup(ids_);
+			cache_key_ = representation_cache_key("symmetric_distance_table", metric_key_, version_, ids_);
+			distances_.reserve(off_diagonal_slots_);
+			for (std::size_t lhs = 0; lhs < record_count_; ++lhs) {
+				for (std::size_t rhs = lhs + 1; rhs < record_count_; ++rhs) {
+					options.runtime.throw_if_cancelled("symmetric_distance_table materialization");
+					distances_.push_back(compute_source_distance_at_position(lhs, rhs));
+				}
 			}
 		}
-	}
+
+		explicit SymmetricDistanceTable(const space_type &space, runtime_guard runtime)
+			: SymmetricDistanceTable(space, symmetric_distance_table_options_with_runtime(runtime))
+		{
+		}
 
 	auto distance(RecordId lhs, RecordId rhs) const -> distance_type
 	{
@@ -247,9 +307,15 @@ template <typename Space> class SymmetricDistanceTable {
 	std::vector<distance_type> distances_;
 };
 
-template <typename Space> auto symmetric_distance_table(const Space &space) -> SymmetricDistanceTable<Space>
+template <typename Space>
+auto symmetric_distance_table(const Space &space, symmetric_distance_table_options options = {}) -> SymmetricDistanceTable<Space>
 {
-	return SymmetricDistanceTable<Space>(space);
+	return SymmetricDistanceTable<Space>(space, options);
+}
+
+template <typename Space> auto symmetric_distance_table(const Space &space, runtime_guard runtime) -> SymmetricDistanceTable<Space>
+{
+	return SymmetricDistanceTable<Space>(space, runtime);
 }
 
 } // namespace mtrc::space::storage

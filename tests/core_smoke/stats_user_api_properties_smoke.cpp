@@ -65,6 +65,16 @@ template <typename Function> auto throws_invalid_argument(Function run) -> bool
 	return false;
 }
 
+template <typename Function> auto throws_representation_error(Function run) -> bool
+{
+	try {
+		run();
+	} catch (const mtrc::RepresentationError &) {
+		return true;
+	}
+	return false;
+}
+
 void profile_summarizes_edge_spaces()
 {
 	namespace properties = mtrc::stats::properties;
@@ -267,6 +277,27 @@ void local_volume_samples_large_spaces()
 	assert(!sampled_volume.approximation_quality.reason.empty());
 
 	*calls = 0;
+	const auto provider = mtrc::space::storage::implicit(large_space);
+	const auto provider_sampled_volume = properties::local_volume(provider, 1);
+	assert(!provider_sampled_volume.exact);
+	assert(provider_sampled_volume.algorithm == "sampled_local_volume");
+	assert(provider_sampled_volume.representation == "sampled_metric_space");
+	assert(provider_sampled_volume.evaluated_distance_count == expected_sample_calls);
+	assert(*calls == expected_sample_calls);
+
+	*calls = 0;
+	properties::local_volume_options exact_only_options;
+	exact_only_options.allow_approximate = false;
+	assert(throws_representation_error([&] {
+		(void)properties::local_volume(provider, 1, exact_only_options);
+	}));
+	assert(*calls == 0);
+	assert(throws_representation_error([&] {
+		(void)properties::local_volume_profile(provider, std::vector<int>{1, 2}, exact_only_options);
+	}));
+	assert(*calls == 0);
+
+	*calls = 0;
 	properties::local_volume_options forced_sample_options;
 	forced_sample_options.max_exact_records = 0;
 	forced_sample_options.sample_count = 2;
@@ -274,6 +305,27 @@ void local_volume_samples_large_spaces()
 	assert(!forced_sampled_volume.exact);
 	assert(forced_sampled_volume.evaluated_distance_count == records.size() * forced_sample_options.sample_count);
 	assert(*calls == forced_sampled_volume.evaluated_distance_count);
+
+	*calls = 0;
+	const auto sampled_profile = properties::local_volume_profile(large_space, std::vector<int>{1, 2});
+	assert(!sampled_profile.exact);
+	assert(sampled_profile.algorithm == "sampled_local_volume_profile");
+	assert(sampled_profile.representation == "sampled_metric_space");
+	assert(sampled_profile.record_count == records.size());
+	assert(sampled_profile.size() == 2);
+	assert(sampled_profile.evaluated_distance_count == expected_sample_calls);
+	assert(sampled_profile.sample_count == default_options.sample_count);
+	assert(sampled_profile.sample_universe == records.size() - 1);
+	assert(*calls == sampled_profile.evaluated_distance_count);
+	assert(*calls < exact_call_count / 4);
+	assert(sampled_profile.approximation_quality.diagnostic == "local_volume_approximation");
+	assert(sampled_profile.approximation_quality.candidate_policy == "regular_target_sample");
+	assert(sampled_profile.approximation_quality.candidate_count == default_options.sample_count);
+	assert(sampled_profile.approximation_quality.candidate_universe == records.size() - 1);
+	assert(sampled_profile.approximation_quality.distance_evaluations == expected_sample_calls);
+	assert(sampled_profile.approximation_quality.sample_fraction > 0.0);
+	assert(sampled_profile.approximation_quality.sample_fraction < 0.11);
+	assert(!sampled_profile.approximation_quality.reason.empty());
 
 	*calls = 0;
 	properties::profile_options profile_options;

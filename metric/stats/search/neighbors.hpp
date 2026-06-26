@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -545,11 +546,11 @@ auto mark_landmark_search_recall(NeighborSet<Distance> &result,
 	result.approximation_quality.distance_evaluations += calibration.distance_evaluations;
 	result.approximation_quality.recall_measured = calibration.measured;
 	result.approximation_quality.recall = calibration.recall;
-	mark_recall_confidence_interval(
-		result.approximation_quality, calibration.matched_count, calibration.reference_count);
+	result.approximation_quality.standard_error = calibration.standard_error;
+	result.approximation_quality.confidence_radius_95 = calibration.confidence_radius_95;
 	result.approximation_quality.reason =
 		"approximate runtime policy selected landmark lower-bound candidates; recall calibrated against a bounded "
-		"holdout/reference window";
+		"holdout/reference window with query-level standard error";
 }
 
 template <typename Space, typename Distance>
@@ -1025,7 +1026,8 @@ auto approximate_landmark_neighbors(const Space &space, const typename Space::re
 	const auto candidate_limit = landmark_candidate_count(space.size(), runtime_policy, false, count);
 	runtime.throw_if_cancelled("landmark index construction");
 	space::storage::LandmarkIndex<Space> index(
-		space, landmark_count(space.size(), runtime_policy), candidate_limit, runtime);
+		space, space::storage::landmark_index_options_from_policy(
+				   landmark_count(space.size(), runtime_policy), candidate_limit, runtime_policy, runtime));
 	runtime.throw_if_cancelled("landmark neighbor search");
 	auto result = core::make_neighbor_set(
 		index.knn(query, count, candidate_limit, runtime), space.size(), count, "knn", "landmark_index", false);
@@ -1062,7 +1064,8 @@ auto approximate_landmark_neighbors(const Space &space, RecordId query_id, std::
 	const auto candidate_limit = landmark_candidate_count(space.size(), runtime_policy, true, count);
 	runtime.throw_if_cancelled("landmark index construction");
 	space::storage::LandmarkIndex<Space> index(
-		space, landmark_count(space.size(), runtime_policy), candidate_limit, runtime);
+		space, space::storage::landmark_index_options_from_policy(
+				   landmark_count(space.size(), runtime_policy), candidate_limit, runtime_policy, runtime));
 	runtime.throw_if_cancelled("landmark neighbor search");
 	auto result = core::make_neighbor_set(
 		index.knn(query_id, count, candidate_limit, runtime), space.size(), count, "knn", "landmark_index", false);
@@ -1084,7 +1087,8 @@ auto approximate_landmark_range(const Space &space, const typename Space::record
 	const auto candidate_limit = landmark_candidate_count(space.size(), runtime_policy);
 	runtime.throw_if_cancelled("landmark index construction");
 	space::storage::LandmarkIndex<Space> index(
-		space, landmark_count(space.size(), runtime_policy), candidate_limit, runtime);
+		space, space::storage::landmark_index_options_from_policy(
+				   landmark_count(space.size(), runtime_policy), candidate_limit, runtime_policy, runtime));
 	runtime.throw_if_cancelled("landmark range search");
 	auto result = core::range_neighbor_set(
 		index.range(query, radius, candidate_limit, runtime), space.size(), "landmark_index");
@@ -1108,7 +1112,8 @@ auto approximate_landmark_range(const Space &space, RecordId query_id, Radius ra
 	const auto candidate_limit = landmark_candidate_count(space.size(), runtime_policy, true);
 	runtime.throw_if_cancelled("landmark index construction");
 	space::storage::LandmarkIndex<Space> index(
-		space, landmark_count(space.size(), runtime_policy), candidate_limit, runtime);
+		space, space::storage::landmark_index_options_from_policy(
+				   landmark_count(space.size(), runtime_policy), candidate_limit, runtime_policy, runtime));
 	runtime.throw_if_cancelled("landmark range search");
 	auto result = core::range_neighbor_set(
 		index.range(query_id, radius, candidate_limit, runtime), space.size(), "landmark_index");
@@ -1131,6 +1136,35 @@ auto mapped_position_for_source_id(const MappingResult &mapping, RecordId source
 		}
 	}
 	throw std::out_of_range("source RecordId is not represented in the mapping result");
+}
+
+using mapped_source_position_index = std::unordered_map<RecordId, std::size_t>;
+
+template <typename MappingResult, typename std::enable_if<core::MappingResultLike_v<MappingResult>, int>::type = 0>
+auto build_mapped_source_position_index(const MappingResult &mapping) -> mapped_source_position_index
+{
+	std::size_t source_count = 0;
+	for (const auto &row : mapping.source_records) {
+		source_count += row.size();
+	}
+	mapped_source_position_index index;
+	index.reserve(source_count);
+	for (std::size_t position = 0; position < mapping.source_records.size(); ++position) {
+		for (const auto source_id : mapping.source_records[position]) {
+			index.emplace(source_id, position);
+		}
+	}
+	return index;
+}
+
+inline auto mapped_position_for_source_id(const mapped_source_position_index &index, RecordId source_id)
+	-> std::size_t
+{
+	const auto found = index.find(source_id);
+	if (found == index.end()) {
+		throw std::out_of_range("source RecordId is not represented in the mapping result");
+	}
+	return found->second;
 }
 
 template <typename MappingResult, typename Distance,
@@ -1325,10 +1359,35 @@ auto knn_batch(const Container &records, const Metric &metric, const std::vector
 template <typename Container, typename Metric,
 		  typename Record = typename std::decay<typename Container::value_type>::type,
 		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto knn_batch(const Container &records, const Metric &metric, const std::vector<Record> &queries, std::size_t count,
+			   ::mtrc::space::storage::policy runtime_policy)
+	-> std::vector<NeighborSet<metric_result_t<Metric, Record>>>
+{
+	auto space = core::make_space(records, metric);
+	auto results = stats::search::knn_batch(space, queries, count, runtime_policy);
+	for (auto &result : results) {
+		detail::set_search_representation(result, "records");
+	}
+	return results;
+}
+
+template <typename Container, typename Metric,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
 auto knn_batch(const Container &records, const Metric &metric, const std::vector<Record> &queries,
 			   ::mtrc::count requested) -> std::vector<NeighborSet<metric_result_t<Metric, Record>>>
 {
 	return knn_batch(records, metric, queries, requested.value);
+}
+
+template <typename Container, typename Metric,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto knn_batch(const Container &records, const Metric &metric, const std::vector<Record> &queries,
+			   ::mtrc::count requested, ::mtrc::space::storage::policy runtime_policy)
+	-> std::vector<NeighborSet<metric_result_t<Metric, Record>>>
+{
+	return knn_batch(records, metric, queries, requested.value, runtime_policy);
 }
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
@@ -1376,10 +1435,39 @@ template <typename MappingResult,
 auto knn_batch(const MappingResult &mapping, const std::vector<RecordId> &source_query_ids, std::size_t count)
 	-> std::vector<NeighborSet<typename MappingResult::space_type::distance_type>>
 {
+	core::require_mapping_result_contract(mapping, "knn_batch(mapping)");
+	const auto source_positions = detail::build_mapped_source_position_index(mapping);
 	std::vector<NeighborSet<typename MappingResult::space_type::distance_type>> results;
 	results.reserve(source_query_ids.size());
 	for (const auto source_query_id : source_query_ids) {
-		results.push_back(find_neighbors(mapping, source_query_id, count));
+		const auto target_position = detail::mapped_position_for_source_id(source_positions, source_query_id);
+		auto result = find_neighbors(mapping.space, mapping.space.id(target_position), count);
+		detail::annotate_mapped_search_result(mapping, source_query_id, result);
+		results.push_back(std::move(result));
+	}
+	return results;
+}
+
+template <typename MappingResult,
+		  typename std::enable_if<core::MappingResultLike_v<MappingResult> &&
+									  core::RecordMetricSpaceLike_v<typename MappingResult::space_type>,
+								  int>::type = 0>
+auto knn_batch(const MappingResult &mapping, const std::vector<RecordId> &source_query_ids, std::size_t count,
+			   ::mtrc::space::storage::policy runtime_policy)
+	-> std::vector<NeighborSet<typename MappingResult::space_type::distance_type>>
+{
+	core::require_mapping_result_contract(mapping, "knn_batch(mapping)");
+	auto runtime = batch_detail::require_exact_batch_plan(
+		mapping.space, "neighbors", source_query_ids.size(), runtime_policy);
+	const auto source_positions = detail::build_mapped_source_position_index(mapping);
+	std::vector<NeighborSet<typename MappingResult::space_type::distance_type>> results;
+	results.reserve(source_query_ids.size());
+	for (const auto source_query_id : source_query_ids) {
+		runtime.throw_if_cancelled("knn_batch(mapping)");
+		const auto target_position = detail::mapped_position_for_source_id(source_positions, source_query_id);
+		auto result = find_neighbors(mapping.space, mapping.space.id(target_position), count);
+		detail::annotate_mapped_search_result(mapping, source_query_id, result);
+		results.push_back(std::move(result));
 	}
 	return results;
 }
@@ -1706,7 +1794,8 @@ auto find_neighbors(const Space &space, const typename Space::record_type &query
 		throw InvalidRuntimePolicyError("materialized neighbor runtime policy requires a RecordId query");
 	case space::storage::representation::cover_tree: {
 		runtime.throw_if_cancelled("cover_tree index construction");
-		space::storage::CoverTreeIndex<Space> index(space);
+		space::storage::CoverTreeIndex<Space> index(
+			space, space::storage::cover_tree_index_options_from_policy(runtime_policy, runtime));
 		runtime.throw_if_cancelled("cover_tree knn search");
 		auto result = stats::search::knn(index, query, count);
 		detail::set_search_representation(result, space::storage::neighbor_representation(runtime_policy));
@@ -1794,7 +1883,8 @@ auto find_neighbors(const Space &space, RecordId query_id, std::size_t count, sp
 
 	if (runtime_policy.representation_mode() == space::storage::representation::cover_tree) {
 		runtime.throw_if_cancelled("cover_tree index construction");
-		space::storage::CoverTreeIndex<Space> index(space);
+		space::storage::CoverTreeIndex<Space> index(
+			space, space::storage::cover_tree_index_options_from_policy(runtime_policy, runtime));
 		NeighborSet<typename Space::distance_type> result;
 		result.record_count = index.record_count();
 		result.requested_count = count;
@@ -1863,8 +1953,12 @@ auto range(const Space &space, const typename Space::record_type &query, Radius 
 	case space::storage::representation::distance_table:
 		throw InvalidRuntimePolicyError("materialized range runtime policy requires a RecordId query");
 	case space::storage::representation::cover_tree: {
+		runtime.throw_if_cancelled("cover_tree index construction");
+		space::storage::CoverTreeIndex<Space> index(
+			space, space::storage::cover_tree_index_options_from_policy(runtime_policy, runtime));
 		runtime.throw_if_cancelled("cover_tree range search");
-		auto result = range(space, query, radius, stats::search::cover_tree{});
+		auto result = detail::range_from_neighbors(index.knn(query, index.record_count()), radius,
+												   index.record_count(), "cover_tree_index");
 		detail::set_search_representation(result, space::storage::neighbor_representation(runtime_policy));
 		return result;
 	}
@@ -1919,6 +2013,21 @@ auto range_batch(const Container &records, const Metric &metric, const std::vect
 	return results;
 }
 
+template <typename Container, typename Metric, typename Radius,
+		  typename Record = typename std::decay<typename Container::value_type>::type,
+		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
+auto range_batch(const Container &records, const Metric &metric, const std::vector<Record> &queries, Radius radius,
+				 ::mtrc::space::storage::policy runtime_policy)
+	-> std::vector<NeighborSet<metric_result_t<Metric, Record>>>
+{
+	auto space = core::make_space(records, metric);
+	auto results = stats::search::range_batch(space, queries, radius, runtime_policy);
+	for (auto &result : results) {
+		detail::set_search_representation(result, "records");
+	}
+	return results;
+}
+
 template <typename Container, typename Metric, typename Radius, typename Strategy,
 		  typename Record = typename std::decay<typename Container::value_type>::type,
 		  typename std::enable_if<MetricCallable_v<Metric, Record>, int>::type = 0>
@@ -1952,10 +2061,40 @@ auto range_batch(const MappingResult &mapping, const std::vector<RecordId> &sour
 	-> std::vector<NeighborSet<typename MappingResult::space_type::distance_type>>
 {
 	engine_detail::validate_radius(radius);
+	core::require_mapping_result_contract(mapping, "range_batch(mapping)");
+	const auto source_positions = detail::build_mapped_source_position_index(mapping);
 	std::vector<NeighborSet<typename MappingResult::space_type::distance_type>> results;
 	results.reserve(source_query_ids.size());
 	for (const auto source_query_id : source_query_ids) {
-		results.push_back(range(mapping, source_query_id, radius));
+		const auto target_position = detail::mapped_position_for_source_id(source_positions, source_query_id);
+		auto result = stats::search::range(mapping.space, mapping.space.id(target_position), radius);
+		detail::annotate_mapped_search_result(mapping, source_query_id, result);
+		results.push_back(std::move(result));
+	}
+	return results;
+}
+
+template <typename MappingResult, typename Radius,
+		  typename std::enable_if<core::MappingResultLike_v<MappingResult> &&
+									  core::RecordMetricSpaceLike_v<typename MappingResult::space_type>,
+								  int>::type = 0>
+auto range_batch(const MappingResult &mapping, const std::vector<RecordId> &source_query_ids, Radius radius,
+				 ::mtrc::space::storage::policy runtime_policy)
+	-> std::vector<NeighborSet<typename MappingResult::space_type::distance_type>>
+{
+	engine_detail::validate_radius(radius);
+	core::require_mapping_result_contract(mapping, "range_batch(mapping)");
+	auto runtime = batch_detail::require_exact_batch_plan(
+		mapping.space, "range", source_query_ids.size(), runtime_policy);
+	const auto source_positions = detail::build_mapped_source_position_index(mapping);
+	std::vector<NeighborSet<typename MappingResult::space_type::distance_type>> results;
+	results.reserve(source_query_ids.size());
+	for (const auto source_query_id : source_query_ids) {
+		runtime.throw_if_cancelled("range_batch(mapping)");
+		const auto target_position = detail::mapped_position_for_source_id(source_positions, source_query_id);
+		auto result = stats::search::range(mapping.space, mapping.space.id(target_position), radius);
+		detail::annotate_mapped_search_result(mapping, source_query_id, result);
+		results.push_back(std::move(result));
 	}
 	return results;
 }
@@ -2020,8 +2159,13 @@ auto range(const Space &space, RecordId query_id, Radius radius, space::storage:
 	}
 
 	if (runtime_policy.representation_mode() == space::storage::representation::cover_tree) {
+		runtime.throw_if_cancelled("cover_tree index construction");
+		space::storage::CoverTreeIndex<Space> index(
+			space, space::storage::cover_tree_index_options_from_policy(runtime_policy, runtime));
 		runtime.throw_if_cancelled("cover_tree range search");
-		auto result = range(space, query_id, radius, stats::search::cover_tree{});
+		auto neighbors = detail::exclude_neighbor_id(index.knn(space.record(query_id), index.record_count()), query_id);
+		auto result = detail::range_from_neighbors(std::move(neighbors), radius, index.record_count(),
+												   "cover_tree_index");
 		detail::set_search_representation(result, space::storage::neighbor_representation(runtime_policy));
 		return result;
 	}

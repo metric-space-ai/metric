@@ -76,8 +76,9 @@ template <typename Space> class basic_execution_context {
 			const auto provider_choice = approximate_provider_choice();
 			if (provider_choice.use_landmark) {
 				landmark_provider_.emplace(
-					space, provider_choice.landmark_count, provider_choice.candidate_limit,
-					storage::runtime_guard(runtime_policy_));
+					space, storage::landmark_index_options_from_policy(
+							   provider_choice.landmark_count, provider_choice.candidate_limit,
+							   runtime_policy_, storage::runtime_guard(runtime_policy_)));
 				provider_build_count_ = 1;
 			}
 			return;
@@ -533,38 +534,63 @@ template <typename Space> class basic_execution_context {
 	{
 		auto runtime = storage::runtime_guard(runtime_policy_);
 		if constexpr (supports_symmetric_distance_table()) {
-			const auto records = space.size();
-			if (runtime_policy_.max_dense_records() > 0 && records > runtime_policy_.max_dense_records()) {
-				handle_dense_budget_exceeded(
-					"symmetric distance table exceeds max_dense_records: records=" + std::to_string(records) +
+				const auto records = space.size();
+				const auto distance_slots = storage::triangular_distance_slot_count(records);
+				if (runtime_policy_.max_dense_records() > 0 && records > runtime_policy_.max_dense_records()) {
+					handle_dense_budget_exceeded(
+						"symmetric distance table exceeds max_dense_records: records=" + std::to_string(records) +
 					" max_dense_records=" + std::to_string(runtime_policy_.max_dense_records()),
-					space);
-				return;
-			}
-			const auto estimated_bytes =
-				storage::estimate_triangular_distance_table_memory_bytes<distance_type>(records);
-			if (runtime_policy_.max_memory_bytes() > 0 && estimated_bytes > runtime_policy_.max_memory_bytes()) {
+						space);
+					return;
+				}
+				if (runtime_policy_.max_distance_evaluations() > 0 &&
+					distance_slots > runtime_policy_.max_distance_evaluations()) {
+					handle_dense_budget_exceeded(
+						"symmetric distance table exceeds max_distance_evaluations: records=" +
+						std::to_string(records) +
+						" estimated_distance_evaluations=" + std::to_string(distance_slots) +
+						" max_distance_evaluations=" + std::to_string(runtime_policy_.max_distance_evaluations()),
+						space);
+					return;
+				}
+				const auto estimated_bytes =
+					storage::estimate_triangular_distance_table_memory_bytes<distance_type>(records);
+				if (runtime_policy_.max_memory_bytes() > 0 && estimated_bytes > runtime_policy_.max_memory_bytes()) {
 				handle_dense_budget_exceeded(
 					"symmetric distance table exceeds max_memory_bytes: records=" + std::to_string(records) +
 					" estimated_bytes=" + std::to_string(estimated_bytes) +
 					" max_memory_bytes=" + std::to_string(runtime_policy_.max_memory_bytes()),
-					space);
-				return;
-			}
-			symmetric_provider_.emplace(space, runtime);
-		} else {
-			const auto records = space.size();
-			if (runtime_policy_.max_dense_records() > 0 && records > runtime_policy_.max_dense_records()) {
-				handle_dense_budget_exceeded(
-					"distance table dense storage exceeds max_dense_records: records=" +
+						space);
+					return;
+				}
+				symmetric_provider_.emplace(
+					space, storage::symmetric_distance_table_options{
+							   runtime_policy_.max_dense_records(), runtime_policy_.max_memory_bytes(),
+							   runtime_policy_.max_distance_evaluations(), runtime});
+			} else {
+				const auto records = space.size();
+				const auto distance_slots = storage::detail::distance_table_dense_slot_count(records);
+				if (runtime_policy_.max_dense_records() > 0 && records > runtime_policy_.max_dense_records()) {
+					handle_dense_budget_exceeded(
+						"distance table dense storage exceeds max_dense_records: records=" +
 					std::to_string(records) +
 					" max_dense_records=" + std::to_string(runtime_policy_.max_dense_records()),
-					space);
-				return;
-			}
-			const auto estimated_bytes =
-				storage::estimate_distance_table_memory_bytes<distance_type>(records);
-			if (runtime_policy_.max_memory_bytes() > 0 && estimated_bytes > runtime_policy_.max_memory_bytes()) {
+						space);
+					return;
+				}
+				if (runtime_policy_.max_distance_evaluations() > 0 &&
+					distance_slots > runtime_policy_.max_distance_evaluations()) {
+					handle_dense_budget_exceeded(
+						"distance table dense storage exceeds max_distance_evaluations: records=" +
+						std::to_string(records) +
+						" estimated_distance_evaluations=" + std::to_string(distance_slots) +
+						" max_distance_evaluations=" + std::to_string(runtime_policy_.max_distance_evaluations()),
+						space);
+					return;
+				}
+				const auto estimated_bytes =
+					storage::estimate_distance_table_memory_bytes<distance_type>(records);
+				if (runtime_policy_.max_memory_bytes() > 0 && estimated_bytes > runtime_policy_.max_memory_bytes()) {
 				handle_dense_budget_exceeded(
 					"distance table dense storage exceeds max_memory_bytes: records=" +
 					std::to_string(records) + " estimated_bytes=" + std::to_string(estimated_bytes) +
