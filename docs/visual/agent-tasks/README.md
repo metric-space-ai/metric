@@ -29,7 +29,7 @@ set, and one validation path.
 | `mapping-dimensionality-exporter.md` | native mapping/dimensionality visual exporter | integrated |
 | `process-curve-external-visual-exporter.md` | native external UCR process-curve visual exporter and preview | integrated; preview-only |
 | `exporter-quality-audit.md` | read-only/patch-light audit of native exporters | ready to assign |
-| `visual-command-api-gallery-workstream.md` | public command API and gallery wiring | ready to assign |
+| `visual-command-api-gallery-workstream.md` | public command API and gallery wiring | integrated |
 | `relation-matrix-graph-grammar-workstream.md` | relation matrix, graph and pair-selection grammar | integrated |
 | `record-glyph-field-grammar-workstream.md` | typed record glyphs and property fields | integrated |
 | `mapping-dynamics-motion-grammar-workstream.md` | mapping, dynamics, timeline and solver-trace grammar | integrated |
@@ -40,7 +40,7 @@ set, and one validation path.
 | `relation-matrix-readability-workstream.md` | matrix readability, row/column/cell focus and large-matrix diagnostics | integrated |
 | `visual-acceptance-gates-workstream.md` | regression, performance and screenshot gates that cannot promote smoke tests to heroes | integrated |
 | `process-curve-scene-view-consolidation.md` | process-curve command/view consolidation into one semantic engine view | integrated |
-| `native-hero-scale-evidence-upgrade-plan.md` | concrete native evidence scale upgrade plan per preview | ready to assign |
+| `native-hero-scale-evidence-upgrade-plan.md` | concrete native evidence scale upgrade plan per preview | integrated |
 | `render-path-inventory-and-deletion-map.md` | read-only inventory of remaining noncanonical render paths | integrated |
 | `legacy-render-facade-deletion.md` | delete old `metric.evidence.v1` WebGL/2D render facade from public API | integrated |
 | `process-curve-descriptor-factory-quarantine.md` | remove process-curve descriptor-factory calls from example/public paths | integrated |
@@ -64,7 +64,10 @@ visual grammars and gallery assets, not from synthetic data or one-off pages:
 
 - keep the integrated visual-acceptance candidates review-pending until human
   screenshot review accepts their composition
-- harden the public command API so examples call semantic commands
+- continue the external process-curve scale-up task only with real licensed
+  source windows; if the current CSV assets are insufficient, record the exact
+  data blocker instead of inflating the preview synthetically
+- keep the public command API gate green so examples call semantic commands
 - continue the process-curve preview from the `showProcessCurves` command,
   not from generic matrix/point-cloud fallback code
 - consolidate native exporter writer code through `visual/cpp/mtrc_visual.hpp`
