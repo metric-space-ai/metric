@@ -245,6 +245,12 @@ Implemented native slices:
   `docs/visual/reports/condition-monitoring-composition-acceptance.md`,
   `docs/visual/reports/mapping-residual-composition-acceptance.md` and
   `docs/visual/reports/relation-matrix-composition-acceptance.md`.
+- the second composition-hardening wave for mixed records, cross-space
+  dependency and dynamics/noise is integrated in reusable view/layer modules.
+  The reports are
+  `docs/visual/reports/mixed-records-composition-acceptance.md`,
+  `docs/visual/reports/cross-space-composition-acceptance.md` and
+  `docs/visual/reports/dynamics-noise-composition-acceptance.md`.
 - GPU/CPU picking and record/pair preview coverage is documented in
   `docs/visual/reports/gpu-picking-preview-workstream.md`
 
@@ -276,7 +282,9 @@ Known gaps:
 - the six native public preview families now all have visual-acceptance
   candidate pages/reports. Condition monitoring, mapping/dimensionality and
   relation-matrix/neighborhood also have integrated composition-hardening
-  passes, but none has passed manual screenshot acceptance as a public hero.
+  passes. Mixed records, cross-space dependency and dynamics/noise now also
+  have integrated composition-hardening passes. None has passed manual
+  screenshot acceptance as a public hero.
 - relation matrix has native exported evidence and a reusable WebGL readability
   pass with block bands, tile/LOD metadata, block boundaries, row/column/cell
   focus, stronger focus/boundary defaults, explicit block shader capacity and

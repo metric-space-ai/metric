@@ -347,10 +347,10 @@ export class TrajectoryPathView extends BaseView {
           y: Number(position[1]) || 0,
           z: Number(position[2]) || 0,
           time: Number.isFinite(Number(state.time)) ? Number(state.time) : stepIndex,
-          color: this.colorMode === "timeline"
+          color: this.colorForRecord(recordId, stepIndex, this.stepStates.length, this.colorMode === "timeline"
             ? timelinePathColor(stepIndex, this.stepStates.length, this.alpha)
-            : this.color,
-          width: this.width,
+            : this.color),
+          width: this.widthForRecord(recordId, stepIndex, this.width),
         });
       }
       if (points.length >= 2) {

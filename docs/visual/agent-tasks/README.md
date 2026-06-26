@@ -75,9 +75,9 @@ set, and one validation path.
 | `condition-monitoring-composition-acceptance.md` | improve condition-monitoring field/trajectory composition through reusable engine views | integrated; still review-pending |
 | `mapping-residual-composition-acceptance.md` | make mapping morph and residual evidence readable without page-local rendering | integrated; still review-pending |
 | `relation-matrix-composition-acceptance.md` | improve relation-matrix readability, graph balance and pair preview placement | integrated; still review-pending |
-| `mixed-records-composition-acceptance.md` | make heterogeneous typed-glyph and cross-type relation structure readable | assigned to subagent `019f0419-0f52-77d3-bb06-16e3f3ded044` |
-| `cross-space-composition-acceptance.md` | make paired-space dependence bridges and linked selection readable | assigned to subagent `019f0419-0fbe-7b42-bd60-9430c870555e` |
-| `dynamics-noise-composition-acceptance.md` | make finite metric dynamics trajectory, field and timeline structure readable | assigned to subagent `019f0419-10bd-7882-b4a1-1bfdbaca55be` |
+| `mixed-records-composition-acceptance.md` | make heterogeneous typed-glyph and cross-type relation structure readable | integrated; still review-pending |
+| `cross-space-composition-acceptance.md` | make paired-space dependence bridges and linked selection readable | integrated; still review-pending |
+| `dynamics-noise-composition-acceptance.md` | make finite metric dynamics trajectory, field and timeline structure readable | integrated; still review-pending |
 
 ## Next Slots
 
@@ -122,10 +122,9 @@ visual grammars and gallery assets, not from synthetic data or one-off pages:
   residuals and relation matrix readability as the baseline for the next
   acceptance wave; each follow-up task must still improve reusable engine/view
   modules, not only page layout
-- work the next composition wave through `mixed-records-composition-acceptance`,
-  `cross-space-composition-acceptance` and
-  `dynamics-noise-composition-acceptance`; these are parallel engine-view tasks,
-  not requests for page-only visual tweaks
+- use the integrated composition task files for mixed records, cross-space
+  dependency and dynamics/noise as the baseline for later human visual review;
+  they remain review-pending until screenshot acceptance clears the blockers
 
 ## Shared Validation Commands
 

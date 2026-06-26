@@ -6,8 +6,18 @@ import {
   createStringChannel,
   resolveCollectionItem,
 } from "./view-utils.js";
+import {
+  pairSourceId,
+  pairTargetId,
+  pairValue,
+  relationPairs,
+} from "../relational/relation-source.js";
 
 const PAIRED_SPACE_VIEW_SCHEMA = "metric.visual.paired_space_view.v1";
+const DEFAULT_LEFT_OFFSET = Object.freeze([-1.42, 0, 0]);
+const DEFAULT_RIGHT_OFFSET = Object.freeze([1.42, 0, 0]);
+const DEFAULT_SOURCE_COLOR = Object.freeze([0.06, 0.45, 0.51, 1]);
+const DEFAULT_TARGET_COLOR = Object.freeze([0.78, 0.43, 0.17, 1]);
 
 /**
  * CrossSpaceView is the paired-space semantic grammar: two exported metric
@@ -26,16 +36,31 @@ export class CrossSpaceView extends BaseView {
     this.right = options.right || null;
     this.leftRole = options.leftRole || "source-space";
     this.rightRole = options.rightRole || "target-space";
-    this.leftOffset = vector3(options.leftOffset, [-1.18, 0, 0]);
-    this.rightOffset = vector3(options.rightOffset, [1.18, 0, 0]);
+    this.leftOffset = vector3(options.leftOffset, DEFAULT_LEFT_OFFSET);
+    this.rightOffset = vector3(options.rightOffset, DEFAULT_RIGHT_OFFSET);
     this.groundY = finiteNumber(options.groundY, -0.58);
     this.ground = options.ground !== false;
+    this.spaceLabels = options.spaceLabels !== false;
+    this.leftLabel = options.leftLabel || options.leftName || "source metric space";
+    this.rightLabel = options.rightLabel || options.rightName || "target metric space";
+    this.leftSubLabel = options.leftSubLabel || options.leftSubtitle || this.left?.spaceId || "";
+    this.rightSubLabel = options.rightSubLabel || options.rightSubtitle || this.right?.spaceId || "";
+    this.leftColor = color4(options.leftColor, DEFAULT_SOURCE_COLOR);
+    this.rightColor = color4(options.rightColor, DEFAULT_TARGET_COLOR);
     this.pairSetId = options.pairSetId || `${this.id}:linked-pairs`;
     this.dependencePropertyId = options.dependencePropertyId || options.scalarProperty || null;
     this.bridgeRelationId = options.bridgeRelationId || options.bridgeRelation || null;
     this.bridgeRelationName = options.bridgeRelationName || null;
     this.bridgeRelationType = options.bridgeRelationType || null;
     this.bridgeGraphId = options.bridgeGraphId || options.graphId || this.pairSetId;
+    this.bridgeRelation = options.bridgeRelation || null;
+    this.bridgeRecords = normalizeBridgeRecords(options.bridgeRecords || options.bridgePairs || options.bridges, this.left, this.right);
+    if (!this.bridgeRecords.length) this.bridgeRecords = normalizeBridgeRelationRecords(this.bridgeRelation, this.left, this.right);
+    this.bridgeMaxCount = positiveIntegerOrNull(options.bridgeMaxCount || options.bridgeLimit || options.maxBridgeCount);
+    this.bridgeAlphaRange = range2(options.bridgeAlphaRange || options.bridgeAlpha, [0.12, 0.46]);
+    this.bridgeValueRange = options.bridgeValueRange || null;
+    this.bridgeColorLow = color4(options.bridgeColorLow, [0.18, 0.43, 0.58, 1]);
+    this.bridgeColorHigh = color4(options.bridgeColorHigh, [0.86, 0.34, 0.21, 1]);
     this.globalDependence = options.globalDependence || null;
     this.pairRecords = normalizePairRecords(options.pairRecords || options.pairs, this.left, this.right);
     if (!this.pairRecords.length) this.pairRecords = sharedRecordIdPairs(this.left, this.right);
@@ -108,6 +133,15 @@ export class CrossSpaceView extends BaseView {
       groundProjection: false,
       labels: false,
       targetRadius: options.targetRadius ?? 1.05,
+      pointMaterial: {
+        pointPixelScale: 8.4,
+        minPointSize: 2.3,
+        maxPointSize: 26,
+        alpha: 0.9,
+        focusBoost: 0.34,
+        ...(options.pointMaterial || {}),
+        ...(options.leftPointMaterial || {}),
+      },
       metadata: {
         ...(options.leftMetadata || {}),
         role: "paired-space-side",
@@ -125,6 +159,15 @@ export class CrossSpaceView extends BaseView {
       groundProjection: false,
       labels: false,
       targetRadius: options.targetRadius ?? 1.05,
+      pointMaterial: {
+        pointPixelScale: 8.4,
+        minPointSize: 2.3,
+        maxPointSize: 26,
+        alpha: 0.9,
+        focusBoost: 0.34,
+        ...(options.pointMaterial || {}),
+        ...(options.rightPointMaterial || {}),
+      },
       metadata: {
         ...(options.rightMetadata || {}),
         role: "paired-space-side",
@@ -132,8 +175,8 @@ export class CrossSpaceView extends BaseView {
       },
     });
 
-    left.positions = translatePositionMap(left.positions, left.recordIds, vector3(options.leftOffset, [-1.18, 0, 0]));
-    right.positions = translatePositionMap(right.positions, right.recordIds, vector3(options.rightOffset, [1.18, 0, 0]));
+    left.positions = translatePositionMap(left.positions, left.recordIds, vector3(options.leftOffset, DEFAULT_LEFT_OFFSET));
+    right.positions = translatePositionMap(right.positions, right.recordIds, vector3(options.rightOffset, DEFAULT_RIGHT_OFFSET));
 
     return new CrossSpaceView({
       ...options,
@@ -147,6 +190,7 @@ export class CrossSpaceView extends BaseView {
       bridgeGraphId,
       bridgeRelationName: bridgeRelation?.name || null,
       bridgeRelationType: bridgeRelation?.relation_type || bridgeRelation?.relationType || null,
+      bridgeRelation,
       globalDependence: options.globalDependence
         || findCrossSpaceDependenceDiagnostic(document, left.spaceId, right.spaceId, pairedView?.diagnosticId || pairedView?.diagnostic_id),
     });
@@ -158,6 +202,7 @@ export class CrossSpaceView extends BaseView {
       schema: this.contractSchema,
       pairSetId: this.pairSetId,
       pairCount,
+      visibleBridgeCount: this.visibleBridgeRecords().length,
       pairModel: "exported-paired-record-ids",
       primaryGrammar: "paired-space",
       linkedSelection: {
@@ -178,6 +223,7 @@ export class CrossSpaceView extends BaseView {
         global: this.globalDependence,
         bridgeRelationId: this.bridgeRelationId,
         bridgeGraphId: this.bridgeGraphId,
+        bridgeEvidence: this.bridgeEvidenceSummary(),
       },
     };
   }
@@ -223,6 +269,7 @@ export class CrossSpaceView extends BaseView {
       },
       pairSetId: this.pairSetId,
       pairCount: this.pairRecords.length,
+      visibleBridgeCount: this.visibleBridgeRecords().length,
     };
   }
 
@@ -231,6 +278,10 @@ export class CrossSpaceView extends BaseView {
     if (this.ground) descriptors.push(this.sharedGroundDescriptor());
     descriptors.push(...this.sideDescriptors(this.left, this.leftRole));
     descriptors.push(...this.sideDescriptors(this.right, this.rightRole));
+    if (this.spaceLabels) {
+      const labels = this.spaceLabelDescriptor();
+      if (labels) descriptors.push(labels);
+    }
     const bridge = this.bridgeDescriptor();
     if (bridge) descriptors.push(bridge);
     return descriptors;
@@ -272,8 +323,8 @@ export class CrossSpaceView extends BaseView {
       source: { viewId: this.id, viewKind: this.kind, role: "shared-paired-space-stage" },
       channels: {},
       geometry: {
-        width: 5.2,
-        depth: 3.2,
+        width: Math.max(5.4, Math.abs(this.rightOffset[0] - this.leftOffset[0]) + 2.6),
+        depth: 3.35,
         y: this.groundY,
         gridScale: 8,
       },
@@ -281,6 +332,10 @@ export class CrossSpaceView extends BaseView {
         alpha: 0.62,
         gridAlpha: 0.28,
         axisAlpha: 0.2,
+        baseColor: [0.86, 0.9, 0.87],
+        gridColor: [0.32, 0.44, 0.43],
+        axisXColor: [0.16, 0.47, 0.5],
+        axisZColor: [0.58, 0.45, 0.28],
       },
       metadata: {
         role: "shared-ground",
@@ -289,50 +344,115 @@ export class CrossSpaceView extends BaseView {
     }).toDescriptor();
   }
 
+  spaceLabelDescriptor() {
+    const labels = [
+      {
+        id: "left-space-anchor",
+        text: this.leftLabel,
+        subtext: this.leftSubLabel,
+        position: [
+          this.leftOffset[0],
+          this.groundY + 0.64,
+          -1.18,
+        ],
+        color: this.leftColor,
+        background: [0.96, 0.99, 0.98, 0.86],
+        border: [this.leftColor[0], this.leftColor[1], this.leftColor[2], 0.32],
+        size: 0.19,
+      },
+      {
+        id: "right-space-anchor",
+        text: this.rightLabel,
+        subtext: this.rightSubLabel,
+        position: [
+          this.rightOffset[0],
+          this.groundY + 0.64,
+          -1.18,
+        ],
+        color: this.rightColor,
+        background: [0.99, 0.97, 0.94, 0.86],
+        border: [this.rightColor[0], this.rightColor[1], this.rightColor[2], 0.32],
+        size: 0.19,
+      },
+    ].filter((label) => label.text);
+
+    if (!labels.length) return null;
+    return new VisualLayer({
+      id: `${this.id}:space-labels`,
+      kind: "paired-space-anchors",
+      primitive: "BillboardLabelLayer",
+      order: 28,
+      source: {
+        viewId: this.id,
+        viewKind: this.kind,
+        role: "paired-space-label-anchors",
+        labels,
+      },
+      channels: {},
+      geometry: {
+        fontSize: 26,
+        textureScale: 2,
+      },
+      material: {
+        alpha: 0.9,
+        fontSize: 26,
+        fontWeight: "760",
+        paddingX: 14,
+        paddingY: 8,
+        maxAtlasRowWidth: 1536,
+      },
+      metadata: {
+        role: "paired-space-label-anchors",
+        labelCount: labels.length,
+        pairedSpaceContract: this.semanticContract(),
+        anchors: labels.map((label) => ({
+          id: label.id,
+          text: label.text,
+          subtext: label.subtext,
+          position: label.position,
+        })),
+      },
+    }).toDescriptor();
+  }
+
   bridgeDescriptor() {
-    const pairs = this.validPairs();
+    const pairs = this.visibleBridgeRecords();
     if (!pairs.length) return null;
     const sourcePosition = new Float32Array(pairs.length * 3);
     const targetPosition = new Float32Array(pairs.length * 3);
     const color = new Float32Array(pairs.length * 4);
     const values = new Float32Array(pairs.length);
-    const edgeIds = [];
-    const sourceIds = [];
-    const targetIds = [];
-    const pairIds = [];
-    const graphEdges = [];
+    const edgeEmphasis = new Float32Array(pairs.length);
+    const edgeIds = pairs.map((pair) => `${this.pairSetId}:${pair.pairId}`);
+    const pairIds = this.pairRecords.map((pair) => pair.pairId);
+    const sourceIds = this.pairRecords.map((pair) => pair.sourceRecordId);
+    const targetIds = this.pairRecords.map((pair) => pair.targetRecordId);
+    const graphEdges = this.graphBridgeEdges();
+    const renderedValueRange = numericRange(pairs.map((pair) => dependenceValue(this.left, this.right, pair)), this.bridgeValueRange);
 
     for (let index = 0; index < pairs.length; index += 1) {
       const pair = pairs[index];
       const source = getPosition(this.left.positions, pair.sourceRecordId);
       const target = getPosition(this.right.positions, pair.targetRecordId);
       const value = dependenceValue(this.left, this.right, pair);
+      const t = normalizeValue(value, renderedValueRange);
+      const rgba = pair.color || bridgeColor(t, {
+        low: this.bridgeColorLow,
+        high: this.bridgeColorHigh,
+        alphaRange: this.bridgeAlphaRange,
+      });
       sourcePosition.set(source, index * 3);
       targetPosition.set(target, index * 3);
-      color.set(pair.color || [0.28, 0.43, 0.62, 0.18], index * 4);
+      color.set(rgba, index * 4);
       values[index] = Number.isFinite(Number(value)) ? Number(value) : 0;
-      const edgeId = `${this.pairSetId}:${pair.pairId}`;
-      edgeIds.push(edgeId);
-      sourceIds.push(pair.sourceRecordId);
-      targetIds.push(pair.targetRecordId);
-      pairIds.push(pair.pairId);
-      graphEdges.push({
-        id: edgeId,
-        pairId: pair.pairId,
-        source: pair.sourceRecordId,
-        target: pair.targetRecordId,
-        rowId: pair.sourceRecordId,
-        columnId: pair.targetRecordId,
-        sourceSpaceId: this.left?.spaceId || null,
-        targetSpaceId: this.right?.spaceId || null,
-        sourceCoordinateId: this.left?.coordinateId || null,
-        targetCoordinateId: this.right?.coordinateId || null,
-        value: Number.isFinite(Number(value)) ? Number(value) : null,
-        properties: pair.properties || pairProperties(this.dependencePropertyId, value),
-        present: true,
-      });
+      edgeEmphasis[index] = 0.22 + t * 0.56;
     }
 
+    const bridgeEvidence = this.bridgeEvidenceSummary({
+      renderedCount: pairs.length,
+      graphEdgeCount: graphEdges.length,
+      valueRange: renderedValueRange,
+    });
     const graph = {
       kind: "paired-space-linked-pairs",
       id: this.bridgeGraphId || this.pairSetId,
@@ -341,14 +461,17 @@ export class CrossSpaceView extends BaseView {
       relationName: this.bridgeRelationName,
       relationType: this.bridgeRelationType,
       edge_relation_id: this.bridgeRelationId,
-      recordIds: pairs.map((pair) => pair.sourceRecordId),
+      recordIds: this.pairRecords.map((pair) => pair.sourceRecordId),
       edges: graphEdges,
+      edgeCount: graphEdges.length,
+      visibleEdgeIds: edgeIds,
       diagnostics: {
-        pairCount: pairs.length,
+        pairCount: this.pairRecords.length,
         pairModel: "exported-paired-record-ids",
         dependencePropertyId: this.dependencePropertyId,
         bridgeRelationId: this.bridgeRelationId,
         bridgeGraphId: this.bridgeGraphId,
+        bridgeEvidence,
       },
     };
 
@@ -378,14 +501,25 @@ export class CrossSpaceView extends BaseView {
         relationValue: createChannel(values, 1, this.dependencePropertyId || "paired-evidence-value", {
           propertyId: this.dependencePropertyId,
         }),
+        edgeEmphasis: createChannel(edgeEmphasis, 1, "bridge-emphasis"),
         color: createChannel(color, 4, "rgba"),
       },
-      geometry: { width: 1 },
-      material: { alpha: 0.58, transparent: true, depthWrite: false },
+      geometry: {
+        width: 1,
+        pickWidth: 7,
+      },
+      material: {
+        alpha: 0.82,
+        transparent: true,
+        depthWrite: false,
+        emphasisStrength: 0.5,
+      },
       metadata: {
         role: "dependence bridge",
         primaryGrammar: "paired-space",
-        edgeCount: pairs.length,
+        edgeCount: graphEdges.length,
+        visibleEdgeCount: pairs.length,
+        bridgeEvidence,
         linkedBrushing: true,
         relationId: this.bridgeRelationId,
         relationName: this.bridgeRelationName,
@@ -413,6 +547,74 @@ export class CrossSpaceView extends BaseView {
       getPosition(this.left?.positions, pair.sourceRecordId)
       && getPosition(this.right?.positions, pair.targetRecordId)
     ));
+  }
+
+  validBridgeRecords() {
+    const candidates = this.bridgeRecords.length ? this.bridgeRecords : this.validPairs();
+    return candidates.filter((pair) => (
+      getPosition(this.left?.positions, pair.sourceRecordId)
+      && getPosition(this.right?.positions, pair.targetRecordId)
+    ));
+  }
+
+  visibleBridgeRecords() {
+    const records = this.validBridgeRecords();
+    if (!this.bridgeMaxCount || records.length <= this.bridgeMaxCount) return records;
+    return records.slice(0, this.bridgeMaxCount);
+  }
+
+  graphBridgeEdges() {
+    const explicitByPair = new Map(this.bridgeRecords.map((pair) => [pairKey(pair.sourceRecordId, pair.targetRecordId), pair]));
+    return this.validPairs().map((pair, index) => {
+      const explicit = explicitByPair.get(pairKey(pair.sourceRecordId, pair.targetRecordId));
+      const value = dependenceValue(this.left, this.right, explicit || pair);
+      return {
+        id: `${this.pairSetId}:${pair.pairId}`,
+        pairId: pair.pairId,
+        source: pair.sourceRecordId,
+        target: pair.targetRecordId,
+        rowId: pair.sourceRecordId,
+        columnId: pair.targetRecordId,
+        sourceSpaceId: this.left?.spaceId || null,
+        targetSpaceId: this.right?.spaceId || null,
+        sourceCoordinateId: this.left?.coordinateId || null,
+        targetCoordinateId: this.right?.coordinateId || null,
+        value: Number.isFinite(Number(value)) ? Number(value) : null,
+        properties: explicit?.properties || pair.properties || pairProperties(this.dependencePropertyId, value),
+        present: Boolean(explicit || !this.bridgeRecords.length),
+        visibleBridge: Boolean(explicit || !this.bridgeRecords.length),
+        sourceIndex: index,
+        targetIndex: index,
+      };
+    });
+  }
+
+  bridgeEvidenceSummary(overrides = {}) {
+    const candidateCount = this.validPairs().length;
+    const exportedRelationCount = this.bridgeRecords.length;
+    const validBridgeCount = this.validBridgeRecords().length;
+    const renderedCount = overrides.renderedCount ?? this.visibleBridgeRecords().length;
+    const capped = Boolean(this.bridgeMaxCount && validBridgeCount > this.bridgeMaxCount);
+    return {
+      schema: "metric.visual.cross_space_bridge_sampling.v1",
+      source: exportedRelationCount ? "exported-relation-values" : "paired-record-fallback",
+      relationId: this.bridgeRelationId,
+      graphId: this.bridgeGraphId,
+      candidatePairCount: candidateCount,
+      exportedBridgeCount: exportedRelationCount || candidateCount,
+      validBridgeCount,
+      renderedBridgeCount: renderedCount,
+      graphEdgeCount: overrides.graphEdgeCount ?? candidateCount,
+      visibleBridgeStrategy: exportedRelationCount
+        ? (capped ? "first-exported-relation-values-limit" : "exported-relation-values")
+        : "all-paired-records",
+      bridgeLimit: this.bridgeMaxCount,
+      capped,
+      valueRange: overrides.valueRange || numericRange(this.validBridgeRecords().map((pair) => dependenceValue(this.left, this.right, pair)), this.bridgeValueRange),
+      selectionGraph: "full-paired-record-ids",
+      nativeEvidenceOnly: true,
+      syntheticEvidence: false,
+    };
   }
 }
 
@@ -498,6 +700,53 @@ function normalizePairRecord(record, index) {
   };
 }
 
+function normalizeBridgeRecords(records, left, right) {
+  if (!Array.isArray(records)) return [];
+  const out = [];
+  for (let index = 0; index < records.length; index += 1) {
+    const pair = normalizePairRecord(records[index], index);
+    if (pair) out.push(pair);
+  }
+  return filterBridgeRecords(out, left, right);
+}
+
+function normalizeBridgeRelationRecords(relation, left, right) {
+  if (!relation) return [];
+  const recordIds = (relation.record_ids || relation.recordIds || []).map(String);
+  const pairs = [];
+  const values = relationPairs(relation);
+  for (let index = 0; index < values.length; index += 1) {
+    const value = values[index];
+    const source = pairSourceId(value, recordIds);
+    const target = pairTargetId(value, recordIds) || source;
+    if (!source || !target) continue;
+    const exportedValue = pairValue(value);
+    pairs.push({
+      pairId: String(value?.pairId ?? value?.pair_id ?? value?.id ?? source),
+      sourceRecordId: String(source),
+      targetRecordId: String(target),
+      value: Number.isFinite(exportedValue) ? exportedValue : value?.value,
+      properties: pairPropertiesFromRelationValue(value),
+    });
+  }
+  return filterBridgeRecords(pairs, left, right);
+}
+
+function filterBridgeRecords(records, left, right) {
+  const leftIds = new Set((left?.recordIds || []).map(String));
+  const rightIds = new Set((right?.recordIds || []).map(String));
+  return records.filter((pair) => (
+    (!leftIds.size || leftIds.has(String(pair.sourceRecordId)))
+    && (!rightIds.size || rightIds.has(String(pair.targetRecordId)))
+  ));
+}
+
+function pairPropertiesFromRelationValue(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  if (Array.isArray(value.properties)) return value.properties;
+  return null;
+}
+
 function sharedRecordIdPairs(left, right) {
   const rightIds = new Set((right?.recordIds || []).map(String));
   const pairs = [];
@@ -545,6 +794,77 @@ function dependenceValue(left, right, pair) {
 function pairProperties(propertyId, value) {
   if (!propertyId || !Number.isFinite(Number(value))) return null;
   return [{ id: propertyId, label: propertyId, value: Number(value) }];
+}
+
+function pairKey(sourceId, targetId) {
+  return `${String(sourceId)}\u0000${String(targetId)}`;
+}
+
+function numericRange(values, explicitRange = null) {
+  if (Array.isArray(explicitRange) && explicitRange.length >= 2) {
+    const min = Number(explicitRange[0]);
+    const max = Number(explicitRange[1]);
+    if (Number.isFinite(min) && Number.isFinite(max) && max > min) return [min, max];
+  }
+  let min = Infinity;
+  let max = -Infinity;
+  for (const value of values || []) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) continue;
+    min = Math.min(min, number);
+    max = Math.max(max, number);
+  }
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return [0, 1];
+  if (min === max) return [min - 0.5, max + 0.5];
+  return [min, max];
+}
+
+function normalizeValue(value, range) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return 0;
+  const min = Number(range?.[0]);
+  const max = Number(range?.[1]);
+  if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) return 0;
+  return Math.max(0, Math.min(1, (number - min) / (max - min)));
+}
+
+function bridgeColor(t, options = {}) {
+  const low = options.low || [0.18, 0.43, 0.58, 1];
+  const high = options.high || [0.86, 0.34, 0.21, 1];
+  const alphaRange = options.alphaRange || [0.12, 0.46];
+  return [
+    mix(low[0], high[0], t),
+    mix(low[1], high[1], t),
+    mix(low[2], high[2], t),
+    mix(alphaRange[0], alphaRange[1], t),
+  ];
+}
+
+function mix(a, b, t) {
+  return (Number(a) || 0) * (1 - t) + (Number(b) || 0) * t;
+}
+
+function color4(value, fallback) {
+  const source = Array.isArray(value) || ArrayBuffer.isView(value) ? value : fallback;
+  return [
+    finiteNumber(source[0], fallback[0]),
+    finiteNumber(source[1], fallback[1]),
+    finiteNumber(source[2], fallback[2]),
+    finiteNumber(source[3], fallback[3]),
+  ];
+}
+
+function range2(value, fallback) {
+  const source = Array.isArray(value) || ArrayBuffer.isView(value) ? value : fallback;
+  return [
+    finiteNumber(source[0], fallback[0]),
+    finiteNumber(source[1], fallback[1]),
+  ];
+}
+
+function positiveIntegerOrNull(value) {
+  const number = Math.floor(Number(value));
+  return Number.isFinite(number) && number > 0 ? number : null;
 }
 
 function findCrossSpaceViewDeclaration(document, viewId = null) {

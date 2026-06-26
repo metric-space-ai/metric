@@ -2891,3 +2891,52 @@ Corrected status:
 - It does not close the remaining final-evidence stress requirement: accepted
   heroes still need larger real evidence where the application claim requires
   it and human screenshot acceptance.
+
+## Implementation Checkpoint: Second Composition Acceptance Wave
+
+Status date: 2026-06-26
+
+Implemented:
+
+- Mixed records now renders type-specific glyph, ground projection and relation
+  edge composition through `MixedRecordView`. Exported record types use stable
+  type colors/labels, native relation edges carry type-pair and relation-value
+  emphasis metadata, and the page only passes command options to
+  `showMixedRecords()`.
+- Cross-space dependency now renders separated metric-space domains and
+  exported bridge relation evidence through `CrossSpaceView`. The view keeps
+  all 512 paired observations in the linked selection model while showing the
+  96 exported high-contribution bridge records as visible bridge geometry.
+- Dynamics/noise now renders trajectory thinning, exported property color/width
+  encoding, lifted field metadata and timeline state-history context through
+  `DynamicsView` plus `TrajectoryPathView`. The page only passes engine options
+  to `showDynamics()`.
+- The task registry marks `mixed-records-composition-acceptance`,
+  `cross-space-composition-acceptance` and
+  `dynamics-noise-composition-acceptance` as integrated while keeping them
+  review-pending.
+
+Verified:
+
+- `node visual/tools/check-mixed-record-composition.mjs`
+- `node visual/tools/check-glyph-record-grammar.mjs`
+- `node visual/tools/check-mixed-glyph-geometry.mjs`
+- `node visual/tools/check-cross-space-composition.mjs`
+- `node visual/tools/check-cross-space-linked-selection.mjs`
+- `node visual/tools/check-linked-selection-presentation.mjs`
+- `node visual/tools/check-dynamics-composition.mjs`
+- `node visual/tools/check-dynamics-motion-grammar.mjs`
+- `node visual/tools/check-dynamics-timeline-control.mjs`
+- `node visual/tools/check-timeline-motion-contract.mjs`
+- `node visual/tools/check-trajectory-path-view.mjs`
+- `node visual/tools/check-visual-command-api.mjs`
+- `node visual/tools/check-views.mjs`
+- `node visual/tools/check-visual-agent-tasks.mjs`
+
+Corrected status:
+
+- GRAE10/MNIST remains the only accepted public hero.
+- Mixed records, cross-space dependency and dynamics/noise are stronger
+  review-pending candidates, not accepted public heroes.
+- Final acceptance still requires full public browser regression, screenshot
+  review and human visual acceptance.

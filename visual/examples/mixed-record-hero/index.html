@@ -42,12 +42,12 @@
     const EVIDENCE_URL = "../../../docs/examples/assets/mixed-records/metric.visual.json";
     const RECORD_TYPE_PROPERTY = "record_type";
     const RECORD_TYPE_LABELS = {
-      text_code_record: "text code",
-      histogram_spectrum_record: "histogram spectrum",
-      process_curve_record: "process curve",
-      numeric_vitals_record: "numeric vitals",
+      text_code_record: "Text code",
+      histogram_spectrum_record: "Histogram spectrum",
+      process_curve_record: "Process curve",
+      numeric_vitals_record: "Numeric vitals",
     };
-    const PALETTE = ["#3389c6", "#f28a2e", "#765ab8", "#1aab99", "#e0474f", "#8a9a2a"];
+    const RECORD_TYPE_PALETTE = ["#2f86b7", "#d97924", "#6f58b5", "#169f8b", "#cf4a57", "#7d9342"];
     let TYPE_COLORS = {};
     let RECORD_TYPES = [];
 
@@ -76,8 +76,8 @@
           for (const v of p.values) typeById.set(String(v.record_id), v.value);
         }
       }
-      RECORD_TYPES = Array.from(new Set(typeById.values())).sort();
-      TYPE_COLORS = Object.fromEntries(RECORD_TYPES.map((name, index) => [name, PALETTE[index % PALETTE.length]]));
+      RECORD_TYPES = Array.from(new Set(typeById.values()));
+      TYPE_COLORS = Object.fromEntries(RECORD_TYPES.map((name, index) => [name, RECORD_TYPE_PALETTE[index % RECORD_TYPE_PALETTE.length]]));
       buildLegend();
 
       const visual = await createMetricVisual({
@@ -88,7 +88,9 @@
       visual.showMixedRecords({
         coordinateId: "mixed-finite-records-family-severity-3d",
         glyphBy: RECORD_TYPE_PROPERTY,
-        labels: "channel",
+        labels: RECORD_TYPE_PROPERTY,
+        labelMap: RECORD_TYPE_LABELS,
+        typePalette: RECORD_TYPE_PALETTE,
         relationId: "mixed-finite-records-composite-metric",
         crossTypeProperty: RECORD_TYPE_PROPERTY,
         crossTypeRelations: true,
@@ -105,8 +107,13 @@
           },
         },
         pointSize: 2.05,
-        edgeAlpha: 0.30,
-        edgeWidth: 0.82,
+        labelFontSize: 19,
+        labelLift: 0.62,
+        labelOffsetRadius: 0.78,
+        groundProjectionAlpha: 0.32,
+        groundProjectionSize: 1.16,
+        edgeAlpha: 0.22,
+        edgeWidth: 0.68,
         material: {
           pointPixelScale: 20,
           minPointSize: 8,

@@ -126,16 +126,16 @@
     <canvas id="scene" aria-label="Paired metric spaces with dependence bridge"></canvas>
     <div class="space-band a" aria-hidden="true"></div>
     <div class="space-band b" aria-hidden="true"></div>
-    <div class="tag a"><strong>event-log space</strong><span>edit-distance finite metric</span></div>
-    <div class="tag b"><strong>process-curve space</strong><span>TWED finite metric</span></div>
+    <div class="tag a"><strong>event-log space</strong><span>512 paired records</span></div>
+    <div class="tag b"><strong>process-curve space</strong><span>512 paired records</span></div>
     <section class="hud">
       <h1>Cross-space dependency</h1>
-      <p>Two native metric spaces over the same paired records are compared as spaces, not forced into one shared coordinate system. Color is exported local dependence contribution. <span class="stat" id="stat"></span></p>
+      <p>Matched observations stay in separate finite metric spaces while the exported bridge relation highlights high-contribution paired evidence. <span class="stat" id="stat"></span></p>
     </section>
     <div class="evidence" aria-label="Exported cross-space evidence">
       <div class="side a"><strong id="pairCount">512</strong><span>paired observations</span></div>
-      <div class="pair-chip" id="pairChip"><strong>obs-000 ↔ obs-000</strong><br><span>selected exported bridge evidence</span></div>
-      <div class="side b"><strong id="bridgeCount">96</strong><span>native bridge contributors</span></div>
+      <div class="pair-chip" id="pairChip"><strong>obs-000 ↔ obs-000</strong><br><span>selected bridge evidence</span></div>
+      <div class="side b"><strong id="bridgeCount">96</strong><span>exported bridge relation</span></div>
     </div>
     <div class="legend"><span>independent</span><div class="ramp"></div><span>dependent</span></div>
     <div class="loading" id="loading">Loading paired-space evidence…</div>
@@ -183,9 +183,16 @@
         dependenceProperty: "local-dependence-contribution",
         bridgeRelationId: "cross-space-dependence-bridge-relation",
         bridgeGraphId: "cross-space-dependence-bridges",
-        leftOffset: [-1.42, 0, 0],
-        rightOffset: [1.42, 0, 0],
-        targetRadius: 1.08,
+        leftOffset: [-1.56, 0, 0],
+        rightOffset: [1.56, 0, 0],
+        leftLabel: "event-log metric space",
+        rightLabel: "process-curve metric space",
+        leftSubLabel: "edit-distance geometry",
+        rightSubLabel: "TWED geometry",
+        leftColor: [0.06, 0.45, 0.51, 1],
+        rightColor: [0.78, 0.43, 0.17, 1],
+        bridgeAlphaRange: [0.16, 0.54],
+        targetRadius: 1.02,
         linkedBrushing: true,
         preview: "paired records",
       });
@@ -208,16 +215,22 @@
 
       document.documentElement.dataset.metricCrossSpaceHero = "ready";
       const crossSpace = visual.views[0];
+      const bridgeDescriptor = visual.descriptors.find((descriptor) => descriptor.kind === "paired-space-dependence");
+      const bridgeSampling = bridgeDescriptor?.metadata?.bridgeEvidence
+        ?? crossSpace?.metadata?.contract?.dependence?.bridgeEvidence
+        ?? null;
       const recordCount = crossSpace?.pairRecords?.length
         ?? crossSpace?.metadata?.contract?.pairCount
         ?? document_.records.length;
-      const bridgeEvidence = document_.diagnostics?.find((entry) => entry.id === "cross-space-bridge-evidence");
       const selectedValue = exportedRecordPropertyValue(document_, "local-dependence-contribution", selectedRecordId);
-      const bridgeContributorCount = bridgeEvidence?.selected_bridge_count ?? bridgeEvidence?.selectedBridgeCount;
+      const bridgeContributorCount = bridgeSampling?.renderedBridgeCount
+        ?? bridgeSampling?.exportedBridgeCount
+        ?? document_.diagnostics?.find((entry) => entry.id === "cross-space-bridge-evidence")?.selected_bridge_count
+        ?? document_.diagnostics?.find((entry) => entry.id === "cross-space-bridge-evidence")?.selectedBridgeCount;
       pairCount.textContent = new Intl.NumberFormat("en-US").format(recordCount);
       if (Number.isFinite(Number(bridgeContributorCount))) bridgeCount.textContent = new Intl.NumberFormat("en-US").format(Number(bridgeContributorCount));
-      pairChip.innerHTML = `<strong>${selectedRecordId} ↔ ${selectedRecordId}</strong><br><span>local contribution ${Number(selectedValue).toFixed(3)} from native evidence</span>`;
       document.documentElement.dataset.metricRecordCount = String(recordCount);
+      document.documentElement.dataset.metricVisibleBridgeCount = String(bridgeContributorCount ?? "");
       document.documentElement.dataset.metricSelectedPair = `${selectedRecordId}:${selectedRecordId}`;
       document.documentElement.dataset.metricSelectedPairValue = Number.isFinite(Number(selectedValue)) ? Number(selectedValue).toFixed(6) : "";
       window.metricCrossSpaceHero = { visual, runtime: visual.runtime, getState: () => visual.getState() };
@@ -241,6 +254,12 @@
         sourceCoordinateId: "event-log-landmark-3d",
         targetCoordinateId: "process-curve-landmark-3d",
       }, { source: "cross-space-acceptance-candidate" });
+      const selectedState = visual.getState();
+      const selectedBridge = selectedState.runtime?.selectionPresentation?.pairedSpaceBridges?.[0];
+      const selectedBridgeValue = selectedBridge?.value ?? selectedValue;
+      const featureCount = selectedState.runtime?.selectionPresentation?.counts?.features ?? 0;
+      pairChip.innerHTML = `<strong>${selectedBridge?.rowId || selectedRecordId} ↔ ${selectedBridge?.columnId || selectedRecordId}</strong><br><span>local contribution ${Number(selectedBridgeValue).toFixed(3)} via shared pair preview</span>`;
+      document.documentElement.dataset.metricSelectionFeatureCount = String(featureCount);
       addEventListener("resize", () => { const r = canvas.getBoundingClientRect(); visual.runtime.resize(Math.max(1, Math.floor(r.width)), Math.max(1, Math.floor(r.height))); });
     } catch (error) {
       console.error(error);

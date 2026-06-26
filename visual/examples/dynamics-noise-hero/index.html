@@ -78,10 +78,6 @@
       const response = await fetch("../../../docs/examples/assets/dynamics-noise/metric.visual.json");
       if (!response.ok) throw new Error(`evidence ${response.status}`);
       const document_ = await response.json();
-      const timeline = document_.timelines.find((t) => t.id === "reverse-reconstruction");
-      const steps = timeline?.steps || [];
-      const states = steps.map((s) => s.coordinate_id);
-
       const visual = await createMetricVisual({
         canvas,
         evidence: document_,
@@ -96,49 +92,95 @@
         timelineProgress: staticFlow ?? undefined,
         timelineDurationMs: 14400,
         timelineFieldPropertyId: "reverse-mse-to-clean",
+        fieldPropertyId: "best-reconstruction-error",
         timelineControl: { root: canvas.parentElement },
         fieldMode: "lifted",
-        fieldAlpha: 0.46,
-        fieldRadius: 0.18,
-        fieldLift: 0.5,
-        fieldMaterial: { contour: 0.18, glow: 0.14 },
-        pathWidth: 4.1,
-        pathAlpha: 0.72,
-        pointSize: 1.92,
+        fieldAlpha: 0.42,
+        fieldRadius: 0.2,
+        fieldLift: 0.58,
+        fieldMaterial: { contour: 0.22, glow: 0.16 },
+        pathColorPropertyId: "reconstruction-improvement",
+        pathWidthPropertyId: "best-reconstruction-error",
+        trajectoryPathLimit: 192,
+        trajectoryPathSelection: "deterministic-record-stride",
+        timelineContext: true,
+        timelineContextStops: [0, 0.5, 1],
+        timelineContextAlpha: 0.24,
+        timelineContextPointSize: 1.18,
+        pathWidth: 5.2,
+        pathAlpha: 0.82,
+        pointSize: 2.08,
       });
       const state = visual.getState();
       const layerIds = state.descriptors.map((descriptor) => descriptor.id);
       const pathLayers = state.descriptors.filter((descriptor) => descriptor.metadata?.evidenceRole === "trajectory/path");
-      updateStateReadout(staticFlow ?? 0);
+      const initial = currentDynamicsState();
+      updateStateReadout(initial.view?.timelineState || initial.timelineControl?.state);
       visual.runtime.on?.("timelinecontrolchange", ({ state: timelineState }) => {
-        updateStateReadout(Number(timelineState?.normalized ?? timelineState?.value ?? 0));
+        updateStateReadout(timelineState);
       });
 
       document.documentElement.dataset.metricDynamicsHero = "ready";
       document.documentElement.dataset.metricRecordCount = String(visual.views[0].recordIds.length);
-      document.documentElement.dataset.metricStates = String(states.length);
+      document.documentElement.dataset.metricStates = String(initial.timelineEvidence?.stepCount ?? visual.views[0].fittedStates.length);
       document.documentElement.dataset.metricTimelineIds = "reverse-reconstruction";
-      document.documentElement.dataset.metricCoordinateIds = states.join(",");
+      document.documentElement.dataset.metricCoordinateIds = (initial.timelineEvidence?.coordinateIds || []).join(",");
       document.documentElement.dataset.metricLayerIds = layerIds.join(",");
       document.documentElement.dataset.metricPathLayers = pathLayers.map((descriptor) => descriptor.id).join(",");
+      document.documentElement.dataset.metricPathCount = String(initial.trajectory?.metadata?.selectedTrajectoryCount ?? initial.trajectory?.metadata?.pathCount ?? "");
+      document.documentElement.dataset.metricPathCandidates = String(initial.trajectory?.metadata?.nativeTrajectoryCandidateCount ?? initial.trajectory?.metadata?.recordCount ?? "");
+      document.documentElement.dataset.metricFieldProperty = initial.field?.metadata?.activeFieldPropertyId || "";
+      document.documentElement.dataset.metricTimelineControlSchema = initial.timelineControl?.schema || "";
+      document.documentElement.dataset.metricTimelineControlRoles = (initial.timelineControl?.controls || []).map((control) => control.role).join(",");
+      document.documentElement.dataset.metricComposition = "dynamics-view-trajectory-field-timeline-context";
       document.documentElement.dataset.metricMotion = staticFlow == null ? "timeline-coordinate-morph-loop" : `static-${staticFlow}`;
       window.metricDynamicsHero = { visual, runtime: visual.runtime, getState: () => visual.getState() };
 
       loading.remove();
       addEventListener("resize", () => { const r = canvas.getBoundingClientRect(); visual.runtime.resize(Math.max(1, Math.floor(r.width)), Math.max(1, Math.floor(r.height))); });
 
-      function updateStateReadout(progress) {
-        const clamped = Math.max(0, Math.min(1, Number(progress) || 0));
-        const index = Math.round(clamped * Math.max(0, steps.length - 1));
-        const step = steps[index] || steps[0] || {};
-        const mse = Number(step.mse_to_clean);
-        const stepLabel = Number.isFinite(Number(step.index)) ? `Step ${step.index}` : "Step";
-        phaseEl.textContent = clamped < 0.2 ? "noisy start" : clamped > 0.8 ? "representatives" : "reverse flow";
-        stateLabel.textContent = `${stepLabel} - ${step.coordinate_id || "exported state"}`;
+      function currentDynamicsState() {
+        const current = visual.getState();
+        const view = current.views.find((entry) => entry?.kind === "dynamics") || current.views[0];
+        const trajectory = current.descriptors.find((descriptor) => descriptor.metadata?.evidenceRole === "trajectory/path");
+        const field = current.descriptors.find((descriptor) => descriptor.primitive === "HeatFieldLayer"
+          && descriptor.metadata?.evidenceRole === "timeline-ground-field");
+        const point = current.descriptors.find((descriptor) => descriptor.metadata?.role === "current-timeline-state")
+          || current.descriptors.find((descriptor) => descriptor.primitive === "InstancedPointLayer");
+        const timelineEvidence = trajectory?.metadata?.timelineEvidence
+          || field?.metadata?.timelineEvidence
+          || point?.metadata?.timelineEvidence
+          || view?.timelineEvidence;
+        const timelineControl = point?.metadata?.timelineControl
+          || trajectory?.metadata?.timelineControl
+          || view?.timelineControl;
+        return { view, trajectory, field, point, timelineEvidence, timelineControl };
+      }
+
+      function updateStateReadout(timelineState) {
+        const current = currentDynamicsState();
+        const view = current.view;
+        const stateSample = timelineState?.exportedTimelineState || timelineState || view?.timelineState || {};
+        const normalized = Math.max(0, Math.min(1, Number(stateSample.normalized ?? stateSample.value ?? 0) || 0));
+        const stepOrder = Number.isFinite(Number(stateSample.activeStepOrder))
+          ? Number(stateSample.activeStepOrder)
+          : Math.round(normalized * Math.max(0, (current.timelineEvidence?.stepCount || view?.fittedStates?.length || 1) - 1));
+        const propertySample = stateSample.activePropertySample
+          || stateSample.activePropertySamples?.[0]
+          || view?.timelineFieldState
+          || current.field?.metadata?.timelineFieldState
+          || null;
+        const mse = Number(propertySample?.value);
+        const coordinateId = stateSample.activeCoordinateId
+          || view?.fittedStates?.[view.activeStep || 0]?.coordinateId
+          || "";
+        const stepLabel = Number.isFinite(stepOrder) ? `Step ${stepOrder}` : "Step";
+        phaseEl.textContent = normalized < 0.2 ? "noisy start" : normalized > 0.8 ? "representatives" : "reverse flow";
+        stateLabel.textContent = `${stepLabel} - ${coordinateId || "exported state"}`;
         stateValue.textContent = Number.isFinite(mse) ? `${mse.toFixed(5)} MSE` : "MSE unavailable";
-        stateMeta.textContent = `${steps.length} timeline states - ${visual.views[0].recordIds.length} trajectory paths`;
-        document.documentElement.dataset.metricActiveTimelineStep = String(step.index ?? index);
-        document.documentElement.dataset.metricActiveTimelineCoordinate = step.coordinate_id || "";
+        stateMeta.textContent = `${current.timelineEvidence?.stepCount || view?.fittedStates?.length || 0} timeline states - ${current.trajectory?.metadata?.selectedTrajectoryCount ?? current.trajectory?.metadata?.pathCount ?? 0} displayed paths`;
+        document.documentElement.dataset.metricActiveTimelineStep = String(stepOrder);
+        document.documentElement.dataset.metricActiveTimelineCoordinate = coordinateId;
         document.documentElement.dataset.metricActiveTimelineMse = Number.isFinite(mse) ? mse.toFixed(7) : "";
       }
     } catch (error) {
