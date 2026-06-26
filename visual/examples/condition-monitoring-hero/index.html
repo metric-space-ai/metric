@@ -26,7 +26,7 @@
     <canvas id="scene" aria-label="Condition-monitoring metric space sculpture"></canvas>
     <section class="caption" aria-hidden="true">
       <h1>Condition monitoring</h1>
-      <p>528 native process windows · exported anomaly field · transition trajectory</p>
+      <p>528 native process windows · exported anomaly field · density support · transition trajectory</p>
     </section>
     <div class="legend"><span>low anomaly</span><div class="ramp"></div><span>high anomaly</span></div>
     <div class="loading" id="loading">Loading native condition evidence…</div>
@@ -64,20 +64,34 @@
         includeMatrix: false,
         trackMode: "ribbon",
         trackWidth: 3.7,
+        trackWidthRange: [2.2, 4.9],
         trackAlpha: 0.78,
         pointSize: 1.2,
         pointAlpha: 0.62,
         fieldAlpha: 0.54,
         fieldRadius: 0.3,
-        labelFontSize: 20,
-        labelLift: 0.52,
-        labelOffsetRadius: 0.34,
+        fieldPointPixelScale: 70,
+        propertyFieldContour: 0.24,
+        propertyFieldGlow: 0.18,
+        projectionAlpha: 0.28,
+        projectionSize: 2.1,
+        labelFontSize: 18,
+        labelLift: 0.38,
+        labelOffsetRadius: 0.28,
+        labelSize: 0.16,
         labelMap: {
           normal: "healthy",
           drift: "drift",
           fault: "fault",
           recovery: "recovery",
           signature: "signature",
+        },
+        camera: {
+          fov: 35,
+          target: [-0.04, 0.04, -0.03],
+          yaw: -0.62,
+          pitch: 0.34,
+          radius: 9.2,
         },
         preview: "time-series",
       });

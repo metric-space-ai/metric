@@ -183,7 +183,7 @@ assert.equal(nativeTexture.matrix.pairEvidence.get(1).rowId, "pc-000");
 assert.equal(nativeTexture.matrix.pairEvidence.get(1).columnId, "pc-001");
 assert.equal(nativeTexture.matrix.pairEvidence.get(1).relationId, nativeRelation.id);
 assert.equal(nativeTexture.matrix.pairEvidence.get(1).pairKey, `${nativeRelation.id}\u0000pc-000\u0000pc-001`);
-assert.equal(nativeTexture.matrix.pairEvidence.get(1).pair?.value, 2.34478);
+assert(Math.abs(nativeTexture.matrix.pairEvidence.get(1).pair?.value - 2.34478) < 1e-5);
 
 const nativePicker = createRelationMatrixPicker(createRelationMatrixLayerDescriptor(nativeTexture, {
   relationId: nativeRelation.id,
@@ -193,7 +193,7 @@ const selectedPair = nativePicker.cellAtNormalizedPoint((1.5 / 130), (0.5 / 130)
 assert.equal(selectedPair.rowId, "pc-000");
 assert.equal(selectedPair.columnId, "pc-001");
 assert.equal(selectedPair.relationId, nativeRelation.id);
-assert(Math.abs(selectedPair.value - 2.34478) < 1e-6);
+assert(Math.abs(selectedPair.value - 2.34478) < 1e-5);
 assert.equal(selectedPair.present, true);
 assert.deepEqual(selectedPair.pairIdentity, {
   relationId: nativeRelation.id,

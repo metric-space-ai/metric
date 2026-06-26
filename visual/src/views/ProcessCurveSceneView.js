@@ -11,7 +11,7 @@ import { NeighborhoodGraphView } from "./NeighborhoodGraphView.js";
 import { PropertyFieldView } from "./PropertyFieldView.js";
 import { RelationMatrixView } from "./RelationMatrixView.js";
 import { TrajectoryPathView } from "./TrajectoryPathView.js";
-import { createChannel } from "./view-utils.js";
+import { createChannel, extractPropertyValues } from "./view-utils.js";
 
 export class ProcessCurveSceneView extends BaseView {
   constructor(options = {}) {
@@ -474,16 +474,37 @@ function createProcessCurveMorphDescriptor(document, inputs, options) {
 }
 
 function createProcessCurveProjectionDescriptor(document, inputs, options) {
+  const primaryField = resolveProcessCurveScalarProperty(document, inputs.datasetId, options);
+  const supportField = resolveProcessCurveSupportScalarProperty(document, inputs.datasetId, options, primaryField);
+  const property = supportField || inputs.labelProperty;
   const view = GroundProjectionView.fromVisualSpace(document, {
     datasetId: inputs.datasetId,
     coordinateId: inputs.targetCoordinate.id,
-    propertyId: inputs.labelProperty.id,
+    propertyId: property.id,
     groundY: finiteNumber(options.groundY, -0.52),
-    size: finiteNumber(options.projectionSize, 2.65),
-    alpha: finiteNumber(options.projectionAlpha, 0.34),
+    size: finiteNumber(options.projectionSize, supportField ? 2.18 : 2.65),
+    alpha: finiteNumber(options.projectionAlpha, supportField ? 0.24 : 0.34),
     material: {
       transparent: true,
+      pointPixelScale: finiteNumber(options.projectionPointPixelScale, supportField ? 14 : 12),
+      softness: supportField ? finiteNumber(options.projectionSoftness, 0.74) : undefined,
+      colorMix: supportField ? finiteNumber(options.projectionColorMix, 0.42) : undefined,
+      shadowDensity: supportField ? finiteNumber(options.projectionShadowDensity, 0.86) : undefined,
+      coreDensity: supportField ? finiteNumber(options.projectionCoreDensity, 0.2) : undefined,
+      edgeTint: supportField ? finiteNumber(options.projectionEdgeTint, 0.32) : undefined,
       ...(options.projectionMaterial || {}),
+    },
+    metadata: {
+      role: supportField ? "density-support-projection" : "state-ground-projection",
+      visualGrammar: "process-curves",
+      propertyId: property.id,
+      propertySemantic: supportField ? scalarPropertySemantic(property) : "categorical-regime",
+      processCurveProjection: {
+        source: supportField ? "exported-support-scalar-property" : "label-property",
+        propertyId: property.id,
+        primaryFieldPropertyId: primaryField?.id || null,
+        algorithmicComputation: false,
+      },
     },
   });
   const descriptor = view.toLayerDescriptors()[0];
@@ -494,6 +515,8 @@ function createProcessCurveProjectionDescriptor(document, inputs, options) {
 function createProcessCurvePropertyFieldDescriptor(document, inputs, options) {
   const property = resolveProcessCurveScalarProperty(document, inputs.datasetId, options);
   if (!property) return null;
+  const semantic = scalarPropertySemantic(property);
+  const role = semantic === "anomaly" ? "dominant-anomaly-field" : "property-field";
   const view = PropertyFieldView.fromVisualSpace(document, {
     datasetId: inputs.datasetId,
     coordinateId: inputs.targetCoordinate.id,
@@ -504,17 +527,23 @@ function createProcessCurvePropertyFieldDescriptor(document, inputs, options) {
     fieldMode: options.propertyFieldMode || options.fieldMode || "ground",
     order: -22,
     material: {
-      contour: 0.14,
-      glow: 0.08,
+      pointPixelScale: finiteNumber(options.propertyFieldPointPixelScale, options.fieldPointPixelScale, 58),
+      minPointSize: finiteNumber(options.propertyFieldMinPointSize, 2),
+      maxPointSize: finiteNumber(options.propertyFieldMaxPointSize, 340),
+      contour: finiteNumber(options.propertyFieldContour, 0.22),
+      glow: finiteNumber(options.propertyFieldGlow, 0.16),
+      selectionColor: options.propertyFieldSelectionColor || [0.98, 0.76, 0.28],
       depthWrite: false,
       ...(options.propertyFieldMaterial || options.fieldMaterial || {}),
     },
     metadata: {
-      role: "semantic-ground-field",
+      role,
       visualGrammar: "process-curves",
       processCurveField: {
         source: "PropertyFieldView",
         propertyId: property.id,
+        dominant: semantic === "anomaly",
+        algorithmicComputation: false,
       },
     },
   });
@@ -528,11 +557,13 @@ function createProcessCurvePropertyFieldDescriptor(document, inputs, options) {
   };
   descriptor.metadata = {
     ...(descriptor.metadata || {}),
-    role: "property-field",
+    role,
     processCurveField: {
       source: "PropertyFieldView",
       propertyId: property.id,
       propertyName: property.name || property.id,
+      dominant: semantic === "anomaly",
+      algorithmicComputation: false,
     },
     visualGrammar: "process-curves",
   };
@@ -699,6 +730,14 @@ function createProcessCurveGraphTrackDescriptor(document, inputs, options) {
   const relation = resolveProcessCurveRelation(document, inputs.datasetId, options);
   const graph = resolveProcessCurveGraph(document, inputs.datasetId, relation, options);
   if (!graph && !relation) return null;
+  const trackProperty = resolveProcessCurveTrackScalarProperty(document, inputs.datasetId, options);
+  const trackValues = trackProperty
+    ? extractPropertyValues(trackProperty, {
+      records: inputs.records,
+      recordIds: inputs.records.map((record) => record.id),
+    })
+    : null;
+  const width = finiteNumber(options.trackWidth, 3.15);
   const view = TrajectoryPathView.fromVisualSpace(document, {
     datasetId: inputs.datasetId,
     coordinateId: inputs.targetCoordinate.id,
@@ -711,25 +750,44 @@ function createProcessCurveGraphTrackDescriptor(document, inputs, options) {
     descriptorKind: "record-track",
     sourceViewKind: "record-track",
     mode: options.trackMode || "ribbon",
-    width: finiteNumber(options.trackWidth, 3.15),
+    width,
     alpha: finiteNumber(options.trackAlpha, 0.72),
     color: options.trackColor || [0.12, 0.36, 0.42, finiteNumber(options.trackAlpha, 0.72)],
+    colorValues: trackValues,
+    widthValues: trackValues,
+    pathColorPropertyId: trackProperty?.id || null,
+    pathWidthPropertyId: trackProperty?.id || null,
+    pathColorRamp: scalarPropertySemantic(trackProperty),
+    pathWidthRange: options.trackWidthRange || [
+      Math.max(1.8, width * 0.58),
+      Math.max(2.4, width * 1.32),
+    ],
     order: -8,
     edgeMode: options.trackEdgeMode || "auto",
     curveOptions: {
       radius: finiteNumber(options.trackRadius, 0.018),
       radialSegments: Math.max(3, Math.floor(finiteNumber(options.trackRadialSegments, 8))),
       useWidthsAsRadius: options.trackUseWidthsAsRadius === true,
-      emission: finiteNumber(options.trackEmission, 0.14),
-      rimLight: finiteNumber(options.trackRimLight, 0.36),
-      coreGlow: finiteNumber(options.trackCoreGlow, 0.2),
-      flowStrength: finiteNumber(options.trackFlowStrength, 0.1),
+      emission: finiteNumber(options.trackEmission, 0.2),
+      rimLight: finiteNumber(options.trackRimLight, 0.44),
+      coreGlow: finiteNumber(options.trackCoreGlow, 0.24),
+      flowStrength: finiteNumber(options.trackFlowStrength, 0.18),
+      flowScale: finiteNumber(options.trackFlowScale, 3.8),
+      flowSpeed: finiteNumber(options.trackFlowSpeed, 0.22),
+      edgeFeather: finiteNumber(options.trackEdgeFeather, 0.22),
       depthWrite: options.trackMode === "tube" ? true : false,
       resample: false,
       ...(options.trackCurveOptions || {}),
     },
     metadata: {
       visualGrammar: "process-curves",
+      motionGrammar: {
+        source: graph ? "exported-graph-transition" : "exported-transition-relation",
+        relationId: relation?.id || null,
+        graphId: graph?.id || null,
+        visualEncodingPropertyId: trackProperty?.id || null,
+        algorithmicComputation: false,
+      },
     },
   });
   return view.toLayerDescriptors()[0];
@@ -739,6 +797,7 @@ function createProcessCurveLabelDescriptor(document, inputs, options) {
   if (options.labels === false || options.showLabels === false) return null;
   const positionsByRecord = new Map((inputs.targetCoordinate.record_positions || []).map((entry) => [entry.record_id, entry.position || []]));
   const labelsByRecord = new Map((inputs.labelProperty.values || []).map((entry) => [entry.record_id, entry.value]));
+  const scene = scenePositionStats(positionsByRecord);
   const groups = new Map();
   for (const record of inputs.records) {
     const position = positionsByRecord.get(record.id);
@@ -746,12 +805,34 @@ function createProcessCurveLabelDescriptor(document, inputs, options) {
     const label = labelsByRecord.get(record.id) ?? record.label;
     const key = String(label || "").trim();
     if (!key) continue;
-    if (!groups.has(key)) groups.set(key, { count: 0, x: 0, y: 0, z: 0 });
+    if (!groups.has(key)) {
+      groups.set(key, {
+        count: 0,
+        x: 0,
+        y: 0,
+        z: 0,
+        minX: Infinity,
+        maxX: -Infinity,
+        minY: Infinity,
+        maxY: -Infinity,
+        minZ: Infinity,
+        maxZ: -Infinity,
+      });
+    }
     const group = groups.get(key);
+    const x = Number(position[0]) || 0;
+    const y = Number(position[1]) || 0;
+    const z = Number(position[2] ?? position[1]) || 0;
     group.count += 1;
-    group.x += Number(position[0]) || 0;
-    group.y += Number(position[1]) || 0;
-    group.z += Number(position[2] ?? position[1]) || 0;
+    group.x += x;
+    group.y += y;
+    group.z += z;
+    group.minX = Math.min(group.minX, x);
+    group.maxX = Math.max(group.maxX, x);
+    group.minY = Math.min(group.minY, y);
+    group.maxY = Math.max(group.maxY, y);
+    group.minZ = Math.min(group.minZ, z);
+    group.maxZ = Math.max(group.maxZ, z);
   }
   const labelEntries = Array.from(groups.entries())
     .filter(([, group]) => group.count > 0)
@@ -761,19 +842,35 @@ function createProcessCurveLabelDescriptor(document, inputs, options) {
   const fontSize = Math.max(14, Math.floor(finiteNumber(options.labelFontSize, 22)));
   const color = options.labelColor || [0.12, 0.16, 0.18, 0.92];
   const labels = labelEntries.map(([category, group], index) => {
-    const offset = labelOffset(index, labelEntries.length, finiteNumber(options.labelOffsetRadius, 0.14));
+    const centroid = [group.x / group.count, group.y / group.count, group.z / group.count];
+    const offset = labelStructureOffset({
+      centroid,
+      group,
+      scene,
+      index,
+      count: labelEntries.length,
+      radius: finiteNumber(options.labelOffsetRadius, 0.14),
+    });
     return {
       id: `label:${inputs.datasetId}:${category}`,
       text: labelText(category, options.labelMap),
       position: [
-        group.x / group.count + offset[0],
-        group.y / group.count + labelLift,
-        group.z / group.count + offset[1],
+        centroid[0] + offset[0],
+        group.maxY + labelLift,
+        centroid[2] + offset[1],
       ],
       color,
-      background: options.labelBackground || [1, 1, 1, 0.72],
-      border: options.labelBorder || [0.1, 0.14, 0.16, 0.12],
-      size: finiteNumber(options.labelSize, 0.2),
+      background: options.labelBackground || [0.98, 0.98, 0.94, 0.58],
+      border: options.labelBorder || [0.1, 0.14, 0.16, 0.18],
+      size: finiteNumber(options.labelSize, 0.17),
+      anchor: {
+        mode: "regime-structure-boundary",
+        centroid,
+        bounds: {
+          min: [group.minX, group.minY, group.minZ],
+          max: [group.maxX, group.maxY, group.maxZ],
+        },
+      },
     };
   });
   return {
@@ -799,6 +896,7 @@ function createProcessCurveLabelDescriptor(document, inputs, options) {
       viewClass: "ProcessCurveSceneView",
       labelCount: labels.length,
       propertyId: inputs.labelProperty.id,
+      labelAnchorMode: "regime-structure-boundary",
       algorithmicComputation: false,
     },
   };
@@ -940,36 +1038,122 @@ function resolveProcessCurveGraph(document, datasetId, relation, options = {}) {
 }
 
 function resolveProcessCurveScalarProperty(document, datasetId, options = {}) {
-  const propertyRef = options.propertyFieldId
-    || options.fieldPropertyId
-    || options.scalarPropertyId
-    || options.scalarProperty
-    || (typeof options.propertyField === "string" ? options.propertyField : null)
-    || (typeof options.groundField === "string" ? options.groundField : null)
-    || null;
   const properties = Array.isArray(document?.properties) ? document.properties : [];
-  const isScalar = (entry) => {
-    const valueType = entry?.value_type ?? entry?.valueType;
-    return valueType === "scalar" || valueType === "rank" || valueType === "number";
-  };
-  if (propertyRef) {
-    const property = properties.find((entry) => (
-      String(entry.id ?? entry.name) === String(propertyRef) ||
-      String(entry.name ?? entry.id) === String(propertyRef)
-    ));
-    if (!property || !isScalar(property)) return null;
-    return property;
+  const explicitRefs = [
+    options.propertyFieldId,
+    options.fieldPropertyId,
+    options.scalarPropertyId,
+    options.scalarProperty,
+    typeof options.propertyField === "string" ? options.propertyField : null,
+    typeof options.colorBy === "string" ? options.colorBy : null,
+    typeof options.groundField === "string" ? options.groundField : null,
+  ].filter(Boolean);
+  for (const ref of explicitRefs) {
+    const property = resolveScalarPropertyReference(properties, datasetId, ref);
+    if (property) return property;
   }
-  const preferred = ["local-density", "density", "metric-anomaly-severity", "anomaly", "entropy"];
+  const preferred = [
+    "metric-anomaly-severity",
+    "anomaly",
+    "fault",
+    "outlier",
+    "condition-severity",
+    "severity",
+    "nearest-healthy-distance",
+    "residual",
+    "local-density",
+    "density",
+    "entropy",
+  ];
   for (const needle of preferred) {
     const property = properties.find((entry) => (
       matchesDataset(entry, datasetId) &&
-      isScalar(entry) &&
+      isScalarProperty(entry) &&
       `${entry.id || ""} ${entry.name || ""}`.toLowerCase().includes(needle)
     ));
     if (property) return property;
   }
-  return properties.find((entry) => matchesDataset(entry, datasetId) && isScalar(entry)) || null;
+  return properties.find((entry) => matchesDataset(entry, datasetId) && isScalarProperty(entry)) || null;
+}
+
+function resolveProcessCurveSupportScalarProperty(document, datasetId, options = {}, primaryProperty = null) {
+  const properties = Array.isArray(document?.properties) ? document.properties : [];
+  const explicitRefs = [
+    options.supportFieldId,
+    options.supportPropertyId,
+    options.densityPropertyId,
+    options.entropyPropertyId,
+    typeof options.supportField === "string" ? options.supportField : null,
+    typeof options.groundField === "string" ? options.groundField : null,
+  ].filter(Boolean);
+  for (const ref of explicitRefs) {
+    const property = resolveScalarPropertyReference(properties, datasetId, ref);
+    if (property && property.id !== primaryProperty?.id) return property;
+  }
+  const preferred = ["local-density", "density", "entropy", "dbscan-density-outlier-flag", "outlier"];
+  for (const needle of preferred) {
+    const property = properties.find((entry) => (
+      matchesDataset(entry, datasetId) &&
+      isScalarProperty(entry) &&
+      entry.id !== primaryProperty?.id &&
+      `${entry.id || ""} ${entry.name || ""}`.toLowerCase().includes(needle)
+    ));
+    if (property) return property;
+  }
+  return null;
+}
+
+function resolveProcessCurveTrackScalarProperty(document, datasetId, options = {}) {
+  const properties = Array.isArray(document?.properties) ? document.properties : [];
+  const explicitRefs = [
+    options.trackPropertyId,
+    options.trackColorPropertyId,
+    options.pathColorPropertyId,
+    options.propertyFieldId,
+    typeof options.propertyField === "string" ? options.propertyField : null,
+    typeof options.colorBy === "string" ? options.colorBy : null,
+  ].filter(Boolean);
+  for (const ref of explicitRefs) {
+    const property = resolveScalarPropertyReference(properties, datasetId, ref);
+    if (property) return property;
+  }
+  return resolveProcessCurveScalarProperty(document, datasetId, options);
+}
+
+function resolveScalarPropertyReference(properties, datasetId, ref) {
+  if (!ref) return null;
+  const needle = String(ref).toLowerCase();
+  const compactNeedle = needle.replace(/[^a-z0-9]/g, "");
+  const exact = properties.find((entry) => (
+    matchesDataset(entry, datasetId) &&
+    isScalarProperty(entry) &&
+    (
+      String(entry.id ?? "").toLowerCase() === needle ||
+      String(entry.name ?? "").toLowerCase() === needle
+    )
+  ));
+  if (exact) return exact;
+  return properties.find((entry) => {
+    if (!matchesDataset(entry, datasetId) || !isScalarProperty(entry)) return false;
+    const haystack = `${entry.id || ""} ${entry.name || ""}`.toLowerCase();
+    const compact = haystack.replace(/[^a-z0-9]/g, "");
+    return haystack.includes(needle) || compact.includes(compactNeedle);
+  }) || null;
+}
+
+function isScalarProperty(entry) {
+  const valueType = entry?.value_type ?? entry?.valueType;
+  return valueType === "scalar" || valueType === "rank" || valueType === "number";
+}
+
+function scalarPropertySemantic(property) {
+  const text = `${property?.id || ""} ${property?.name || ""}`.toLowerCase();
+  if (/outlier/.test(text)) return "outlier";
+  if (/anomaly|fault|severity/.test(text)) return "anomaly";
+  if (/density/.test(text)) return "density";
+  if (/entropy|uncertainty/.test(text)) return "entropy";
+  if (/residual|error|distance/.test(text)) return "residual";
+  return "scalar";
 }
 
 function matchesDataset(entry, datasetId) {
@@ -1014,6 +1198,51 @@ function labelOffset(index, count, radius) {
   if (!radius || count <= 1) return [0, 0];
   const angle = (index / Math.max(1, count)) * Math.PI * 2;
   return [Math.cos(angle) * radius, Math.sin(angle) * radius];
+}
+
+function labelStructureOffset({ centroid, group, scene, index, count, radius }) {
+  const fallback = labelOffset(index, count, radius);
+  const dx = centroid[0] - scene.center[0];
+  const dz = centroid[2] - scene.center[2];
+  const length = Math.hypot(dx, dz);
+  const direction = length > 0.0001
+    ? [dx / length, dz / length]
+    : [
+      fallback[0] / Math.max(0.0001, Math.hypot(fallback[0], fallback[1])),
+      fallback[1] / Math.max(0.0001, Math.hypot(fallback[0], fallback[1])),
+    ];
+  const spread = Math.max(group.maxX - group.minX, group.maxZ - group.minZ, 0);
+  const distance = Math.max(0, radius) + Math.min(0.42, spread * 0.18);
+  return [direction[0] * distance, direction[1] * distance];
+}
+
+function scenePositionStats(positionsByRecord) {
+  const stats = {
+    count: 0,
+    min: [Infinity, Infinity, Infinity],
+    max: [-Infinity, -Infinity, -Infinity],
+    center: [0, 0, 0],
+  };
+  for (const position of positionsByRecord.values()) {
+    const point = [
+      Number(position[0]) || 0,
+      Number(position[1]) || 0,
+      Number(position[2] ?? position[1]) || 0,
+    ];
+    stats.count += 1;
+    for (let axis = 0; axis < 3; axis += 1) {
+      stats.min[axis] = Math.min(stats.min[axis], point[axis]);
+      stats.max[axis] = Math.max(stats.max[axis], point[axis]);
+      stats.center[axis] += point[axis];
+    }
+  }
+  if (stats.count > 0) {
+    stats.center = stats.center.map((value) => value / stats.count);
+  } else {
+    stats.min = [0, 0, 0];
+    stats.max = [0, 0, 0];
+  }
+  return stats;
 }
 
 function labelValue(label) {

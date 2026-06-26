@@ -65,9 +65,9 @@ set, and one validation path.
 | `project-site-copy-contract.md` | public project-page copy reads as visual portfolio, not an internal review log | integrated |
 | `redif-preview-integration.md` | native Redif visual evidence rendered through `showDynamics()` as a review-pending engine preview | integrated |
 | `process-curve-real-data-inventory.md` | read-only local inventory for real UCR source windows | integrated; blocker confirmed |
-| `condition-monitoring-composition-acceptance.md` | improve condition-monitoring field/trajectory composition through reusable engine views | assigned to subagent `019f03f7-2a87-7b73-8826-1a38cfaee3d6` |
-| `mapping-residual-composition-acceptance.md` | make mapping morph and residual evidence readable without page-local rendering | assigned to subagent `019f03f7-2b2b-75e2-938a-8073dde83c4c` |
-| `relation-matrix-composition-acceptance.md` | improve relation-matrix readability, graph balance and pair preview placement | assigned to subagent `019f03f7-2bae-7270-a57d-b1b63a442abc` |
+| `condition-monitoring-composition-acceptance.md` | improve condition-monitoring field/trajectory composition through reusable engine views | integrated; still review-pending |
+| `mapping-residual-composition-acceptance.md` | make mapping morph and residual evidence readable without page-local rendering | integrated; still review-pending |
+| `relation-matrix-composition-acceptance.md` | improve relation-matrix readability, graph balance and pair preview placement | integrated; still review-pending |
 
 ## Next Slots
 
@@ -108,9 +108,10 @@ visual grammars and gallery assets, not from synthetic data or one-off pages:
 - process-curve external scale remains blocked until real licensed source
   windows are available locally or supplied externally; the current inventory
   found only 48 real source windows
-- work the next visual-acceptance wave through the composition task files for
-  condition monitoring, mapping residuals and relation matrix readability; each
-  task must improve reusable engine/view modules, not only page layout
+- use the integrated composition task files for condition monitoring, mapping
+  residuals and relation matrix readability as the baseline for the next
+  acceptance wave; each follow-up task must still improve reusable engine/view
+  modules, not only page layout
 
 ## Shared Validation Commands
 

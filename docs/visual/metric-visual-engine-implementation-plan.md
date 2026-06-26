@@ -2812,3 +2812,53 @@ Corrected status:
   `docs/visual/reports/process-curve-real-data-inventory.md` confirms that no
   full UCR 2021 archive or extracted source tree is available locally, so this
   blocker cannot be cleared without external real data.
+
+## Implementation Checkpoint: Composition Acceptance Wave
+
+Status date: 2026-06-26
+
+Implemented:
+
+- Condition monitoring now separates exported anomaly evidence from density
+  support evidence inside `ProcessCurveSceneView`. Its transition path uses
+  `TrajectoryPathView` with exported graph/transition evidence and does not add
+  page-local trajectory rendering.
+- Mapping/dimensionality now renders representative residual vectors inside
+  `MappingView` from the native `local-mapping-distortion` evidence. The page
+  only passes command options to `showMapping()`.
+- Relation-matrix/neighborhood now makes the dense matrix the primary visual
+  object via `RelationMatrixView` and `RelationMatrixLayer` diagnostics:
+  matrix composition metadata, block coverage, block truncation and pair-preview
+  placement are exposed without a DOM/SVG/2D matrix fallback.
+- The task registry marks
+  `condition-monitoring-composition-acceptance`,
+  `mapping-residual-composition-acceptance` and
+  `relation-matrix-composition-acceptance` as integrated while keeping them
+  review-pending.
+
+Verified:
+
+- `node visual/tools/check-condition-monitoring-composition.mjs`
+- `node visual/tools/check-mapping-composition.mjs`
+- `node visual/tools/check-relation-matrix-composition.mjs`
+- `node visual/tools/check-relation-matrix-picker.mjs`
+- `node visual/tools/check-relation-matrix-readability.mjs`
+- `node visual/tools/check-mapping-motion-grammar.mjs`
+- `node visual/tools/check-trajectory-path-view.mjs`
+- `node visual/tools/check-views.mjs`
+- `node visual/tools/check-public-gallery-evidence.mjs`
+- `node visual/tools/check-project-site-copy-contract.mjs`
+- `node visual/tools/check-visual-regression-public-examples.mjs`
+- `node visual/tools/check-hero-screenshot-review.mjs`
+- `node visual/tools/check-visual-performance-large-scenes.mjs`
+- `node visual/tools/check-grae10-golden.mjs`
+
+Corrected status:
+
+- GRAE10/MNIST remains the only accepted public hero.
+- The composition wave improves reusable engine/view modules and strengthens
+  review-pending candidates. It does not accept condition monitoring,
+  mapping/dimensionality or relation-matrix/neighborhood as public heroes.
+- The next acceptance bottlenecks are still human visual acceptance, larger
+  real evidence where needed and stricter grammar-specific stress budgets at
+  final hero scale.

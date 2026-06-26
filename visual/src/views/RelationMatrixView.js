@@ -138,6 +138,16 @@ export class RelationMatrixView extends BaseView {
       relationType: this.relationType,
       relationId: this.relationId,
       relationName: this.relation?.name || null,
+      composition: {
+        role: "primary-relation-matrix",
+        matrixRect: this.rect.slice(),
+        centerRegion: matrixCenterRegion(this.rect),
+        previewPlacement: {
+          strategy: "avoid-matrix-center",
+          defaultAnchor: defaultPreviewAnchorForRect(this.rect),
+          excludedRegion: matrixCenterRegion(this.rect),
+        },
+      },
       focusModel: {
         source: "relation-matrix-view",
         selectedFeatures: ["row", "column", "cell"],
@@ -150,6 +160,7 @@ export class RelationMatrixView extends BaseView {
     descriptor.metadata.selectionModel = {
       ...(descriptor.metadata.selectionModel || {}),
       focusPresentation: descriptor.metadata.focusModel,
+      previewPlacement: descriptor.metadata.composition.previewPlacement,
     };
     return [descriptor];
   }
@@ -189,4 +200,23 @@ function inferSymmetry(relation) {
 function finiteOption(value, fallback) {
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;
+}
+
+function matrixCenterRegion(rect) {
+  const [x, y, width, height] = Array.isArray(rect) ? rect : [0, 0, 1, 1];
+  const insetX = width * 0.28;
+  const insetY = height * 0.28;
+  return [
+    x + insetX,
+    y + insetY,
+    Math.max(0, width - insetX * 2),
+    Math.max(0, height - insetY * 2),
+  ];
+}
+
+function defaultPreviewAnchorForRect(rect) {
+  const [x, y, width, height] = Array.isArray(rect) ? rect : [0, 0, 1, 1];
+  const matrixCenterX = x + width * 0.5;
+  const anchorX = matrixCenterX < 0.5 ? Math.min(0.86, x + width + 0.11) : Math.max(0.14, x - 0.24);
+  return [anchorX, Math.max(0.12, Math.min(0.72, y + height * 0.18))];
 }

@@ -42,9 +42,20 @@ export class TrajectoryPathView extends BaseView {
     this.width = finiteNumber(options.width, options.pathWidth, options.trackWidth, 4);
     this.alpha = finiteNumber(options.alpha, options.pathAlpha, options.trackAlpha, 0.78);
     this.color = options.color || options.pathColor || options.defaultColor || [0.14, 0.36, 0.46, this.alpha];
+    this.colorValues = normalizeValueLookup(options.colorValues || options.pathColorValues || null);
+    this.widthValues = normalizeValueLookup(options.widthValues || options.pathWidthValues || null);
+    this.pathColorPropertyId = options.pathColorPropertyId || options.colorPropertyId || options.colorProperty || null;
+    this.pathWidthPropertyId = options.pathWidthPropertyId || options.widthPropertyId || options.widthProperty || this.pathColorPropertyId;
+    this.pathColorRamp = options.pathColorRamp || options.colorRamp || options.propertySemantic || "scalar";
+    this.pathColorDomain = normalizeNumericDomain(options.pathColorDomain || options.colorDomain, this.colorValues);
+    this.pathWidthDomain = normalizeNumericDomain(options.pathWidthDomain || options.widthDomain, this.widthValues || this.colorValues);
+    this.pathWidthRange = normalizeNumberRange(options.pathWidthRange || options.widthRange, [
+      Math.max(1, this.width * 0.58),
+      Math.max(1, this.width * 1.24),
+    ]);
     this.pathCount = Math.max(1, Math.floor(finiteNumber(options.pathCount, 1)));
     this.defaultWidth = finiteNumber(options.defaultWidth, this.width);
-    this.colorMode = options.colorMode || (this.stepStates.length > 1 ? "timeline" : "constant");
+    this.colorMode = options.colorMode || (this.colorValues ? "property" : this.stepStates.length > 1 ? "timeline" : "constant");
     this.evidenceRole = options.evidenceRole || "trajectory/path";
     this.motionGrammar = options.motionGrammar || null;
     this.nativeEvidence = options.nativeEvidence || createNativeEvidenceReference(options.document, {
@@ -222,6 +233,9 @@ export class TrajectoryPathView extends BaseView {
       coordinateId: this.coordinateId || null,
       coordinateIds: this.metadata?.coordinateIds || evidence.coordinateIds || undefined,
       timelineId: this.metadata?.timelineId || this.nativeEvidence?.timelineId || null,
+      pathVisualEncoding: this.pathVisualEncodingMetadata(),
+      pathColorPropertyId: this.pathColorPropertyId || null,
+      pathWidthPropertyId: this.pathWidthPropertyId || null,
       motionGrammar: this.motionGrammar || this.metadata?.motionGrammar,
       algorithmicComputation: false,
     };
@@ -391,15 +405,16 @@ export class TrajectoryPathView extends BaseView {
     const points = [];
     const recordIds = normalizeIds(ids);
     for (let index = 0; index < recordIds.length; index += 1) {
-      const position = positionFor(this.positions, recordIds[index]);
+      const recordId = recordIds[index];
+      const position = positionFor(this.positions, recordId);
       if (!position) continue;
       points.push({
         x: Number(position[0]) || 0,
         y: Number(position[1]) || 0,
         z: Number(position[2]) || 0,
         time: index,
-        color: options.color || this.color,
-        width: finiteNumber(options.width, this.width),
+        color: this.colorForRecord(recordId, index, recordIds.length, options.color || this.color),
+        width: this.widthForRecord(recordId, index, options.width),
       });
     }
     if (points.length < 2) return null;
@@ -414,6 +429,38 @@ export class TrajectoryPathView extends BaseView {
         sourceView: this.id,
         recordIds,
       },
+    };
+  }
+
+  colorForRecord(recordId, index, count, fallback) {
+    const value = lookupValue(this.colorValues, recordId, index);
+    if (Number.isFinite(Number(value))) {
+      return scalarRampColor(Number(value), this.pathColorDomain, this.pathColorRamp, this.alpha);
+    }
+    if (this.colorMode === "timeline") return timelinePathColor(index, count, this.alpha);
+    return fallback || this.color;
+  }
+
+  widthForRecord(recordId, index, fallback) {
+    const value = lookupValue(this.widthValues || this.colorValues, recordId, index);
+    if (Number.isFinite(Number(value))) {
+      const t = normalizeDomainValue(Number(value), this.pathWidthDomain);
+      return this.pathWidthRange[0] + (this.pathWidthRange[1] - this.pathWidthRange[0]) * t;
+    }
+    return finiteNumber(fallback, this.width);
+  }
+
+  pathVisualEncodingMetadata() {
+    if (!this.colorValues && !this.widthValues) return undefined;
+    return {
+      source: "exported-record-property",
+      colorPropertyId: this.pathColorPropertyId || null,
+      widthPropertyId: this.pathWidthPropertyId || null,
+      colorRamp: this.pathColorRamp,
+      colorDomain: this.pathColorDomain,
+      widthDomain: this.pathWidthDomain,
+      widthRange: this.pathWidthRange,
+      algorithmicComputation: false,
     };
   }
 }
@@ -594,6 +641,95 @@ function countPathRecords(paths) {
 
 function countUnique(values) {
   return new Set(normalizeIds(values)).size;
+}
+
+function normalizeValueLookup(value) {
+  if (!value) return null;
+  if (value instanceof Map) {
+    return new Map(Array.from(value.entries()).map(([key, entry]) => [String(key), entry]));
+  }
+  if (ArrayBuffer.isView(value)) return value;
+  if (Array.isArray(value)) {
+    if (!value.length) return value;
+    if (typeof value[0] === "object") {
+      const map = new Map();
+      for (const entry of value) {
+        const recordId = entry?.record_id ?? entry?.recordId ?? entry?.id;
+        if (recordId != null) map.set(String(recordId), entry.value ?? entry.scalar ?? entry.score);
+      }
+      return map.size ? map : value;
+    }
+    return value;
+  }
+  if (typeof value === "object") {
+    return new Map(Object.entries(value).map(([key, entry]) => [String(key), entry]));
+  }
+  return null;
+}
+
+function lookupValue(values, recordId, index) {
+  if (!values) return null;
+  if (values instanceof Map) return values.get(String(recordId));
+  if (ArrayBuffer.isView(values) || Array.isArray(values)) return values[index];
+  return null;
+}
+
+function normalizeNumericDomain(domain, values) {
+  const min = Number(domain?.min ?? domain?.[0]);
+  const max = Number(domain?.max ?? domain?.[1]);
+  if (Number.isFinite(min) && Number.isFinite(max) && max > min) return { min, max };
+  const entries = values instanceof Map
+    ? Array.from(values.values())
+    : ArrayBuffer.isView(values) || Array.isArray(values)
+      ? Array.from(values)
+      : [];
+  let nextMin = Infinity;
+  let nextMax = -Infinity;
+  for (const entry of entries) {
+    const value = Number(entry);
+    if (!Number.isFinite(value)) continue;
+    nextMin = Math.min(nextMin, value);
+    nextMax = Math.max(nextMax, value);
+  }
+  return Number.isFinite(nextMin) && Number.isFinite(nextMax) && nextMax > nextMin
+    ? { min: nextMin, max: nextMax }
+    : { min: 0, max: 1 };
+}
+
+function normalizeNumberRange(value, fallback) {
+  const source = Array.isArray(value) || ArrayBuffer.isView(value) ? value : fallback;
+  const min = Number(source?.[0]);
+  const max = Number(source?.[1]);
+  return Number.isFinite(min) && Number.isFinite(max) && max >= min ? [min, max] : fallback.slice();
+}
+
+function normalizeDomainValue(value, domain) {
+  const min = Number.isFinite(Number(domain?.min)) ? Number(domain.min) : 0;
+  const max = Number.isFinite(Number(domain?.max)) ? Number(domain.max) : 1;
+  const span = Math.max(0.000001, max - min);
+  return Math.max(0, Math.min(1, (Number(value) - min) / span));
+}
+
+function scalarRampColor(value, domain, semantic = "scalar", alpha = 1) {
+  const t = normalizeDomainValue(value, domain);
+  const ramp = String(semantic || "").toLowerCase();
+  if (/anomaly|fault|outlier/.test(ramp)) {
+    return rampColor(t, [0.08, 0.23, 0.31], [0.9, 0.56, 0.2], [0.82, 0.08, 0.13], alpha);
+  }
+  if (/density/.test(ramp)) {
+    return rampColor(t, [0.1, 0.22, 0.32], [0.12, 0.52, 0.48], [0.76, 0.84, 0.56], alpha);
+  }
+  if (/entropy|uncertainty/.test(ramp)) {
+    return rampColor(t, [0.18, 0.22, 0.42], [0.46, 0.38, 0.65], [0.9, 0.7, 0.28], alpha);
+  }
+  return rampColor(t, [0.12, 0.26, 0.42], [0.2, 0.56, 0.54], [0.92, 0.58, 0.22], alpha);
+}
+
+function rampColor(t, low, mid, high, alpha) {
+  const color = t < 0.55
+    ? mixColor(low, mid, t / 0.55)
+    : mixColor(mid, high, (t - 0.55) / 0.45);
+  return [color[0], color[1], color[2], alpha];
 }
 
 function timelinePathColor(stepIndex, stepCount, alpha) {

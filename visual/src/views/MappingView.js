@@ -54,6 +54,21 @@ export class MappingView extends BaseView {
     this.residualVectorWidth = Number.isFinite(Number(options.residualVectorWidth))
       ? Number(options.residualVectorWidth)
       : 1;
+    this.residualVectorOrder = Number.isFinite(Number(options.residualVectorOrder))
+      ? Number(options.residualVectorOrder)
+      : 36;
+    this.residualVectorLimit = positiveInteger(
+      options.residualVectorLimit ?? options.residualVectorSampleLimit ?? options.residualSampleLimit,
+      Infinity,
+    );
+    this.residualVectorBucketCount = positiveInteger(options.residualVectorBucketCount ?? options.residualBuckets, 5);
+    this.residualVectorSectorCount = positiveInteger(options.residualVectorSectorCount ?? options.residualSectors, 16);
+    this.residualVectorRadialBuckets = positiveInteger(options.residualVectorRadialBuckets ?? options.residualRadialBuckets, 3);
+    this.residualVectorLengthScale = positiveNumber(options.residualVectorLengthScale ?? options.vectorLengthScale, 1);
+    this.residualVectorMaxLength = positiveFiniteNumberOrNull(options.residualVectorMaxLength ?? options.vectorMaxLength);
+    this.residualVectorMinLength = positiveNumber(options.residualVectorMinLength ?? options.vectorMinLength, 0);
+    this.residualVectorScaleByMagnitude = options.residualVectorScaleByMagnitude === true
+      || options.scaleResidualVectorsByMagnitude === true;
     this.motionTiming = normalizeMappingMotionTiming(options.motionTiming || options.mappingMotionTiming || options.morphTiming, options);
     const hasNamedResidualProperty = hasNonEmptyId(this.propertyId) && this.residualValues;
     this.space = new MetricSpaceView({
@@ -254,41 +269,80 @@ export class MappingView extends BaseView {
   residualVectorDescriptor() {
     if (!this.showResidualVectors || !this.space?.targetPositions || !this.hasResidualEvidence()) return null;
     const ids = this.recordIds || this.space.recordIds || [];
-    const sourcePosition = new Float32Array(ids.length * 3);
-    const targetPosition = new Float32Array(ids.length * 3);
-    const color = new Float32Array(ids.length * 4);
-    const residualMagnitude = new Float32Array(ids.length);
-    const residualRecordIds = [];
-    const finiteResiduals = ids
-      .map((id, index) => Number(valueForId(this.residualValues, id, index)))
-      .filter((value) => Number.isFinite(value));
-    const domain = inferScalarDomain(finiteResiduals);
+    const candidates = [];
     let count = 0;
     for (let index = 0; index < ids.length; index += 1) {
       const id = ids[index];
       const source = positionFor(this.space.positions, id);
       const target = positionFor(this.space.targetPositions, id);
       if (!source || !target) continue;
-      sourcePosition.set(source, count * 3);
-      targetPosition.set(target, count * 3);
       const residual = Number(valueForId(this.residualValues, id, index));
+      if (!Number.isFinite(residual)) continue;
+      const length = distance3(source, target);
+      if (!Number.isFinite(length)) continue;
+      candidates.push({
+        id: String(id),
+        index,
+        source,
+        target,
+        residual,
+        length,
+      });
+    }
+    if (!candidates.length) return null;
+    const finiteResiduals = candidates.map((candidate) => candidate.residual);
+    const domain = inferScalarDomain(finiteResiduals);
+    const selected = selectResidualVectorRepresentatives(candidates, {
+      limit: this.residualVectorLimit,
+      bucketCount: this.residualVectorBucketCount,
+      sectorCount: this.residualVectorSectorCount,
+      radialBuckets: this.residualVectorRadialBuckets,
+      domain,
+    });
+    const sourcePosition = new Float32Array(selected.length * 3);
+    const targetPosition = new Float32Array(selected.length * 3);
+    const color = new Float32Array(selected.length * 4);
+    const residualMagnitude = new Float32Array(selected.length);
+    const residualRecordIds = [];
+    for (const candidate of selected) {
+      const normalizedResidual = normalizeScalar(candidate.residual, domain);
+      const vectorAlpha = residualAlphaFor(normalizedResidual, this.residualVectorAlpha);
+      sourcePosition.set(candidate.source, count * 3);
+      targetPosition.set(this.residualVectorEndpoint(candidate, normalizedResidual), count * 3);
       const nextColor = this.residualVectorColor
-        ? normalizeRgba(this.residualVectorColor, this.residualVectorAlpha)
-        : Number.isFinite(residual)
-          ? scalarColor(residual, domain, this.residualVectorAlpha)
-          : [0.8, 0.22, 0.12, this.residualVectorAlpha];
+        ? normalizeRgba(this.residualVectorColor, vectorAlpha)
+        : scalarColor(candidate.residual, domain, vectorAlpha);
       color.set(nextColor, count * 4);
-      residualMagnitude[count] = Number.isFinite(residual) ? residual : 0;
-      residualRecordIds.push(String(id));
+      residualMagnitude[count] = candidate.residual;
+      residualRecordIds.push(candidate.id);
       count += 1;
     }
     if (!count) return null;
-    const mappingEvidence = this.mappingMotionEvidenceDescriptor({ residualVectorCount: count });
+    const residualSelection = residualSelectionMetadata({
+      candidateCount: candidates.length,
+      selectedCount: count,
+      limit: this.residualVectorLimit,
+      bucketCount: this.residualVectorBucketCount,
+      sectorCount: this.residualVectorSectorCount,
+      radialBuckets: this.residualVectorRadialBuckets,
+    });
+    const residualVectorLength = {
+      scale: this.residualVectorLengthScale,
+      maxLength: this.residualVectorMaxLength,
+      minLength: this.residualVectorMinLength,
+      scaleByMagnitude: this.residualVectorScaleByMagnitude,
+    };
+    const mappingEvidence = this.mappingMotionEvidenceDescriptor({
+      residualVectorCount: count,
+      nativeResidualRecordCount: candidates.length,
+      residualSelection,
+      residualVectorLength,
+    });
     return new VisualLayer({
       id: `${this.id}:residual-vectors`,
       kind: "residual/error-vectors",
       primitive: "RelationEdgeLayer",
-      order: 36,
+      order: this.residualVectorOrder,
       source: {
         viewId: this.id,
         viewKind: "mapping",
@@ -304,7 +358,11 @@ export class MappingView extends BaseView {
         residual: createChannel(residualMagnitude.subarray(0, count), 1, "residual-magnitude", { domain }),
         color: createChannel(color.subarray(0, count * 4), 4, "rgba"),
       },
-      geometry: { width: this.residualVectorWidth },
+      geometry: {
+        width: this.residualVectorWidth,
+        representativeResiduals: residualSelection.strategy,
+        lengthClamp: this.residualVectorMaxLength,
+      },
       material: { alpha: 1, transparent: true, depthWrite: false },
       metadata: {
         ...this.metadata,
@@ -323,9 +381,31 @@ export class MappingView extends BaseView {
         targetCoordinateId: this.targetCoordinateId,
         residualPropertyId: this.propertyId,
         residualDomain: domain,
+        nativeResidualRecordCount: candidates.length,
+        residualSelection,
+        residualVectorLength,
         algorithmicComputation: false,
       },
     }).toDescriptor();
+  }
+
+  residualVectorEndpoint(candidate, normalizedResidual) {
+    const scaleByMagnitude = this.residualVectorScaleByMagnitude
+      ? Math.max(0.16, Math.sqrt(clamp01(normalizedResidual)))
+      : 1;
+    const scaledLength = candidate.length * this.residualVectorLengthScale * scaleByMagnitude;
+    const maxLength = this.residualVectorMaxLength;
+    const minLength = Math.max(0, this.residualVectorMinLength);
+    const clampedLength = maxLength == null
+      ? Math.max(minLength, scaledLength)
+      : Math.max(minLength, Math.min(maxLength, scaledLength));
+    if (!(candidate.length > 0) || !Number.isFinite(clampedLength)) return candidate.target;
+    const ratio = clampedLength / candidate.length;
+    return [
+      candidate.source[0] + (candidate.target[0] - candidate.source[0]) * ratio,
+      candidate.source[1] + (candidate.target[1] - candidate.source[1]) * ratio,
+      candidate.source[2] + (candidate.target[2] - candidate.source[2]) * ratio,
+    ];
   }
 
   mappingMotionEvidenceDescriptor(extra = {}) {
@@ -456,6 +536,17 @@ function positiveNumber(value, fallback) {
   return Number.isFinite(number) && number > 0 ? number : fallback;
 }
 
+function positiveInteger(value, fallback) {
+  if (value === Infinity) return Infinity;
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? Math.floor(number) : fallback;
+}
+
+function positiveFiniteNumberOrNull(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : null;
+}
+
 function hasNonEmptyId(value) {
   return value != null && String(value).trim().length > 0;
 }
@@ -475,6 +566,143 @@ function normalizeRgba(color, fallbackAlpha) {
     clamp01((Number(source[2]) || 0) / divisor),
     clamp01(source[3] == null ? fallbackAlpha : Number(source[3])),
   ];
+}
+
+function selectResidualVectorRepresentatives(candidates, options = {}) {
+  const limit = options.limit === Infinity ? Infinity : positiveInteger(options.limit, Infinity);
+  if (limit === Infinity || candidates.length <= limit) return candidates;
+  const bucketCount = positiveInteger(options.bucketCount, 5);
+  const sectorCount = positiveInteger(options.sectorCount, 16);
+  const radialBuckets = positiveInteger(options.radialBuckets, 3);
+  const centroid = sourceCentroid(candidates);
+  const maxRadius = maxSourceRadius(candidates, centroid);
+  const maxLength = maxCandidateLength(candidates);
+  const groups = new Map();
+
+  for (const candidate of candidates) {
+    const residualT = normalizeScalar(candidate.residual, options.domain);
+    const residualBucket = Math.min(bucketCount - 1, Math.floor(residualT * bucketCount));
+    const dx = candidate.source[0] - centroid[0];
+    const dz = candidate.source[2] - centroid[1];
+    const angle = Math.atan2(dz, dx) + Math.PI;
+    const sector = Math.min(sectorCount - 1, Math.floor((angle / (Math.PI * 2)) * sectorCount));
+    const radiusT = clamp01(distance2(dx, dz) / maxRadius);
+    const radialBucket = Math.min(radialBuckets - 1, Math.floor(radiusT * radialBuckets));
+    const key = `${residualBucket}:${sector}:${radialBucket}`;
+    const score = residualT + clamp01(candidate.length / maxLength) * 0.18;
+    const previous = groups.get(key);
+    if (!previous || score > previous.score || (score === previous.score && candidate.id < previous.candidate.id)) {
+      groups.set(key, { candidate, score, residualBucket });
+    }
+  }
+
+  const byBucket = new Map();
+  for (const entry of groups.values()) {
+    if (!byBucket.has(entry.residualBucket)) byBucket.set(entry.residualBucket, []);
+    byBucket.get(entry.residualBucket).push(entry);
+  }
+  for (const entries of byBucket.values()) {
+    entries.sort((a, b) => b.score - a.score || a.candidate.id.localeCompare(b.candidate.id));
+  }
+
+  const selected = [];
+  const selectedIds = new Set();
+  const bucketOrder = Array.from({ length: bucketCount }, (_, index) => bucketCount - index - 1);
+  while (selected.length < limit) {
+    let advanced = false;
+    for (const bucket of bucketOrder) {
+      const entries = byBucket.get(bucket);
+      const entry = entries?.shift();
+      if (!entry) continue;
+      selected.push(entry.candidate);
+      selectedIds.add(entry.candidate.id);
+      advanced = true;
+      if (selected.length >= limit) break;
+    }
+    if (!advanced) break;
+  }
+
+  if (selected.length < limit) {
+    const fallback = candidates
+      .filter((candidate) => !selectedIds.has(candidate.id))
+      .map((candidate) => ({
+        candidate,
+        score: normalizeScalar(candidate.residual, options.domain) + clamp01(candidate.length / maxLength) * 0.18,
+      }))
+      .sort((a, b) => b.score - a.score || a.candidate.id.localeCompare(b.candidate.id));
+    for (const entry of fallback) {
+      selected.push(entry.candidate);
+      if (selected.length >= limit) break;
+    }
+  }
+
+  return selected.sort((a, b) => a.index - b.index);
+}
+
+function residualSelectionMetadata(options = {}) {
+  const selectedCount = Number(options.selectedCount) || 0;
+  const candidateCount = Number(options.candidateCount) || 0;
+  const limit = options.limit === Infinity ? null : Number(options.limit) || null;
+  return {
+    strategy: selectedCount < candidateCount ? "representative-residual-buckets" : "complete-native-residuals",
+    candidateCount,
+    selectedCount,
+    limit,
+    residualBucketCount: options.bucketCount,
+    angularSectorCount: options.sectorCount,
+    radialBucketCount: options.radialBuckets,
+  };
+}
+
+function sourceCentroid(candidates) {
+  if (!candidates.length) return [0, 0];
+  const sum = candidates.reduce((acc, candidate) => {
+    acc[0] += candidate.source[0];
+    acc[1] += candidate.source[2];
+    return acc;
+  }, [0, 0]);
+  return [sum[0] / candidates.length, sum[1] / candidates.length];
+}
+
+function maxSourceRadius(candidates, centroid) {
+  let maxRadius = 1;
+  for (const candidate of candidates) {
+    const radius = distance2(candidate.source[0] - centroid[0], candidate.source[2] - centroid[1]);
+    if (radius > maxRadius) maxRadius = radius;
+  }
+  return maxRadius;
+}
+
+function maxCandidateLength(candidates) {
+  let maxLength = 1;
+  for (const candidate of candidates) {
+    if (Number.isFinite(candidate.length) && candidate.length > maxLength) maxLength = candidate.length;
+  }
+  return maxLength;
+}
+
+function normalizeScalar(value, domain = {}) {
+  const min = Number.isFinite(domain.min) ? domain.min : 0;
+  const max = Number.isFinite(domain.max) ? domain.max : 1;
+  if (max === min) return 0.5;
+  return clamp01((Number(value) - min) / (max - min));
+}
+
+function residualAlphaFor(normalizedResidual, maxAlpha) {
+  const alpha = Number.isFinite(Number(maxAlpha)) ? Number(maxAlpha) : 1;
+  return clamp01(alpha * (0.28 + 0.72 * Math.sqrt(clamp01(normalizedResidual))));
+}
+
+function distance3(a, b) {
+  return Math.hypot(
+    Number(b?.[0]) - Number(a?.[0]),
+    Number(b?.[1]) - Number(a?.[1]),
+    Number(b?.[2]) - Number(a?.[2]),
+  );
+}
+
+function distance2(x, y) {
+  return Math.hypot(Number(x) || 0, Number(y) || 0);
 }
 
 function resolveMappingTimeline(document, ref, options = {}) {

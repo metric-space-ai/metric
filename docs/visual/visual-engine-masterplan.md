@@ -234,8 +234,14 @@ Implemented native slices:
 - condition monitoring, mixed records, cross-space dependency,
   mapping/dimensionality, dynamics/noise and relation-matrix/neighborhood now
   have concrete review-pending acceptance reports and screenshots under
-  `visual/reports/` and `visual/output/`; none is promoted to accepted-hero
+  `docs/visual/reports/` and `output/visual/`; none is promoted to accepted-hero
   status
+- the first composition-hardening wave for condition monitoring, mapping
+  residuals and relation-matrix readability is integrated in reusable
+  view/layer modules. The reports are
+  `docs/visual/reports/condition-monitoring-composition-acceptance.md`,
+  `docs/visual/reports/mapping-residual-composition-acceptance.md` and
+  `docs/visual/reports/relation-matrix-composition-acceptance.md`.
 - GPU/CPU picking and record/pair preview coverage is documented in
   `docs/visual/reports/gpu-picking-preview-workstream.md`
 
@@ -265,8 +271,9 @@ Known gaps:
   available locally.
 - no full visual gallery for every METRIC algorithm family yet
 - the six native public preview families now all have visual-acceptance
-  candidate pages/reports, but none has passed manual screenshot acceptance as a
-  public hero
+  candidate pages/reports. Condition monitoring, mapping/dimensionality and
+  relation-matrix/neighborhood also have integrated composition-hardening
+  passes, but none has passed manual screenshot acceptance as a public hero.
 - relation matrix has native exported evidence and a reusable WebGL readability
   pass with block bands, tile/LOD metadata, block boundaries, row/column/cell
   focus, stronger focus/boundary defaults, explicit block shader capacity and

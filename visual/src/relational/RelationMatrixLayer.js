@@ -279,6 +279,8 @@ export class RelationMatrixLayer extends BaseLayer {
       linkedGraph: diagnostics.linkedGraph,
       readability: profile,
       diagnostics,
+      blockCoverage: diagnostics.blocks?.coverage || profile?.blocks?.coverage || null,
+      blockTruncation: diagnostics.blockTruncation,
       tileSummary: this.tileSummaryPayload ? {
         width: this.tileSummaryPayload.width,
         height: this.tileSummaryPayload.height,
@@ -306,6 +308,8 @@ export class RelationMatrixLayer extends BaseLayer {
       selectedPair: this.selectionDetails?.kind === "pair" ? this.selectionDetails : null,
       linkedGraph: this.selectionDetails?.linkedGraph || null,
       shaderCapacity: { ...this.blockShaderCapacity },
+      blockCoverage: diagnostics.blocks?.coverage || profile?.blocks?.coverage || null,
+      blockTruncation: describeBlockTruncation(this.blockShaderCapacity),
     };
   }
 }
@@ -548,6 +552,23 @@ function collectBlockShaderInputStats(ranges, size) {
     if (end > 0 && end < size) boundaries.add(end);
   }
   return { rangeCount, boundaryCount: boundaries.size };
+}
+
+function describeBlockTruncation(capacity = {}) {
+  return {
+    rangeLimit: integerOption(capacity.rangeLimit, MAX_BLOCK_RANGES),
+    boundaryLimit: integerOption(capacity.boundaryLimit, MAX_BLOCK_BOUNDARIES),
+    rangeCount: integerOption(capacity.rangeCount, 0),
+    boundaryCount: integerOption(capacity.boundaryCount, 0),
+    truncatedRangeCount: integerOption(capacity.truncatedRangeCount, 0),
+    truncatedBoundaryCount: integerOption(capacity.truncatedBoundaryCount, 0),
+    truncated: capacity.truncated === true,
+  };
+}
+
+function integerOption(value, fallback) {
+  const number = Number(value);
+  return Number.isInteger(number) ? number : fallback;
 }
 
 const QUAD_VERTICES = new Float32Array([
