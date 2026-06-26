@@ -22,6 +22,12 @@ import { dirname, extname, join, resolve } from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
+import {
+  isExplicitNativeMetricVisualExport,
+  isNativeMetricVisualDocument,
+  isSyntheticMetricVisualEvidence,
+} from "../src/data/provenance.js";
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..", "..");
 const SITE = resolve(ROOT, "docs", "site", "index.html");
@@ -1011,8 +1017,8 @@ async function summarizeEvidence(name, indexSource) {
         entry.coordinateCount = Array.isArray(document?.coordinates) ? document.coordinates.length : null;
         entry.viewKinds = (document?.views || []).map((view) => view?.kind).filter(Boolean);
         entry.diagnosticCount = Array.isArray(document?.diagnostics) ? document.diagnostics.length : 0;
-        entry.synthetic = provenance.synthetic === true || provenance.synthetic_js === true;
-        entry.nativeExportExplicit = provenance.native_export === true || provenance.nativeExport === true;
+        entry.synthetic = isSyntheticMetricVisualEvidence(provenance);
+        entry.nativeExportExplicit = isExplicitNativeMetricVisualExport(provenance);
         entry.native = isNativeMetricVisualDocument(document);
         entry.provenance = summarizeProvenance(provenance);
         if (entry.synthetic) syntheticEvidence.push(entry);
@@ -1074,13 +1080,6 @@ async function summarizeGrae10Evidence() {
       recordCount,
     },
   };
-}
-
-function isNativeMetricVisualDocument(document) {
-  if (document?.schema !== "metric.visual.v1") return false;
-  const provenance = document.provenance || {};
-  if (provenance.synthetic === true || provenance.synthetic_js === true) return false;
-  return provenance.native_export === true || provenance.nativeExport === true;
 }
 
 function countRecordTypes(records) {
@@ -1147,7 +1146,7 @@ async function discoverSyntheticFixtures() {
     if (!existsSync(evidencePath)) continue;
     try {
       const document = JSON.parse(await readFile(evidencePath, "utf8"));
-      if (document?.provenance?.synthetic === true) {
+      if (isSyntheticMetricVisualEvidence(document?.provenance)) {
         fixtures.push({
           example: entry.name,
           path: relativeFromRoot(evidencePath),

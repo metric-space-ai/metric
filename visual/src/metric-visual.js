@@ -1,4 +1,10 @@
 import { loadVisualDocument, normalizeVisualInput, VisualSpace } from "./data/index.js";
+import {
+  explicitNativeMetricVisualExportSignal,
+  isExplicitNativeMetricVisualExport as hasExplicitNativeMetricVisualExport,
+  isNativeMetricVisualDocument,
+  isSyntheticMetricVisualEvidence,
+} from "./data/provenance.js";
 import { createLayerFromDescriptor } from "./layers/index.js";
 import { MetricVisualRuntime } from "./runtime/index.js";
 import { createMiniatureHeroRuntimeOptions } from "./style/miniature/index.js";
@@ -955,7 +961,7 @@ function describeMetricVisualContext(options = {}) {
 }
 
 function createMetricVisualDocumentWarnings(document, context = {}) {
-  if (document?.provenance?.synthetic !== true || !context.publicGalleryLike) return [];
+  if (!isSyntheticMetricVisualEvidence(document?.provenance) || !context.publicGalleryLike) return [];
   return [{
     code: "synthetic_evidence_in_public_gallery_context",
     severity: "warning",
@@ -970,13 +976,14 @@ function createMetricVisualDocumentWarnings(document, context = {}) {
 export function classifyMetricVisualEvidence(document) {
   const provenance = document?.provenance || {};
   const signals = [];
-  const syntheticFixture = provenance.synthetic === true || provenance.synthetic_fixture === true;
+  const syntheticFixture = isSyntheticMetricVisualEvidence(provenance);
   if (provenance.synthetic === true) signals.push("provenance.synthetic");
   if (provenance.synthetic_fixture === true) signals.push("provenance.synthetic_fixture");
-  const explicitNativeExport = isExplicitNativeMetricVisualExport(provenance);
-  const native = !syntheticFixture && explicitNativeExport;
+  if (provenance.synthetic_js === true) signals.push("provenance.synthetic_js");
+  const explicitNativeExport = hasExplicitNativeMetricVisualExport(provenance);
+  const native = isNativeMetricVisualDocument(document);
   if (native) {
-    signals.push(provenance.native_export === true ? "provenance.native_export" : "provenance.nativeExport");
+    signals.push(`provenance.${explicitNativeMetricVisualExportSignal(provenance)}`);
   }
   const documentedReference = !syntheticFixture && !native && (
     provenance.documented_reference === true
@@ -1040,8 +1047,9 @@ function summarizeMetricVisualProvenance(provenance = {}) {
     runtime: provenance.runtime || provenance.computation || null,
     source: provenance.source || provenance.source_example || provenance.source_document || null,
     status: provenance.status || null,
-    nativeExport: isExplicitNativeMetricVisualExport(provenance),
-    synthetic: provenance.synthetic === true || provenance.synthetic_fixture === true,
+    nativeExport: hasExplicitNativeMetricVisualExport(provenance),
+    nativeExportSignal: explicitNativeMetricVisualExportSignal(provenance),
+    synthetic: isSyntheticMetricVisualEvidence(provenance),
     syntheticJs: provenance.synthetic_js === true,
     publicHeroReady: provenance.public_hero_ready === true,
     nativeChecksPass: provenance.native_checks_pass === true,
@@ -1049,7 +1057,7 @@ function summarizeMetricVisualProvenance(provenance = {}) {
 }
 
 export function isExplicitNativeMetricVisualExport(provenance = {}) {
-  return provenance.native_export === true || provenance.nativeExport === true;
+  return hasExplicitNativeMetricVisualExport(provenance);
 }
 
 function inferMetricVisualViewKind(views) {

@@ -30,6 +30,10 @@ import {
   showPreview,
   captureHeroFrame,
 } from "../src/index.js";
+import {
+  EXPLICIT_NATIVE_METRIC_VISUAL_EXPORT_KEYS,
+  isExplicitNativeMetricVisualExport,
+} from "../src/data/provenance.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..", "..");
@@ -73,6 +77,10 @@ const PUBLIC_REFERENCE_EXEMPTIONS = new Set([
   "grae10-metric-engine",
 ]);
 
+const PUBLIC_COMMAND_EXEMPTIONS = new Set([
+  ...PUBLIC_REFERENCE_EXEMPTIONS,
+]);
+
 const PUBLIC_EXAMPLE_EXPECTED_COMMANDS = new Map([
   ["condition-monitoring-hero", "showConditionMonitoring"],
   ["process-curve-external-hero", "showProcessCurves"],
@@ -111,6 +119,7 @@ async function main() {
   const commandResults = [];
 
   checkExportSurface(failures);
+  checkNativeProvenanceHelper(failures);
   await checkDescriptorInjectionBoundary(failures);
   commandResults.push(...await checkCommandDiagnostics(failures));
   await checkPublicExamples(failures);
@@ -146,6 +155,41 @@ function checkExportSurface(failures) {
   if (captured !== "metric-hero-frame" || delegatedOptions?.at !== "target-hold") {
     failures.push("src/index.js: captureHeroFrame must delegate to the visual surface method");
   }
+}
+
+function checkNativeProvenanceHelper(failures) {
+  assert(
+    failures,
+    "native provenance helper documents accepted spellings",
+    EXPLICIT_NATIVE_METRIC_VISUAL_EXPORT_KEYS.includes("native_export")
+      && EXPLICIT_NATIVE_METRIC_VISUAL_EXPORT_KEYS.includes("nativeExport")
+      && EXPLICIT_NATIVE_METRIC_VISUAL_EXPORT_KEYS.length === 2,
+    EXPLICIT_NATIVE_METRIC_VISUAL_EXPORT_KEYS,
+  );
+  assert(
+    failures,
+    "native provenance helper accepts current snake_case writer flag",
+    isExplicitNativeMetricVisualExport({ native_export: true }) === true,
+  );
+  assert(
+    failures,
+    "native provenance helper accepts only the centralized camelCase equivalent",
+    isExplicitNativeMetricVisualExport({ nativeExport: true }) === true,
+  );
+  assert(
+    failures,
+    "native provenance helper rejects truthy strings",
+    isExplicitNativeMetricVisualExport({ native_export: "true", nativeExport: "true" }) === false,
+  );
+  assert(
+    failures,
+    "native provenance helper ignores writer/runtime/computation text hints",
+    isExplicitNativeMetricVisualExport({
+      writer: "examples/engine/native_visual_export.cpp",
+      runtime: "native-c++",
+      computation: "native METRIC C++",
+    }) === false,
+  );
 }
 
 async function checkDescriptorInjectionBoundary(failures) {
@@ -437,8 +481,23 @@ async function checkCommandDiagnostics(failures) {
 async function checkPublicExamples(failures) {
   const site = await readText(SITE);
   const publicExamples = extractPublicExampleNames(site);
+  const missingCommandCoverage = publicExamples.filter((name) => (
+    !PUBLIC_COMMAND_EXEMPTIONS.has(name)
+      && !PUBLIC_EXAMPLE_EXPECTED_COMMANDS.has(name)
+  ));
+  assert(
+    failures,
+    "docs/site public examples are covered by the expected command map",
+    missingCommandCoverage.length === 0,
+    {
+      missingCommandCoverage,
+      publicExamples,
+      exemptions: Array.from(PUBLIC_COMMAND_EXEMPTIONS).sort(),
+      configuredExamples: Array.from(PUBLIC_EXAMPLE_EXPECTED_COMMANDS.keys()).sort(),
+    },
+  );
   for (const name of publicExamples) {
-    if (PUBLIC_REFERENCE_EXEMPTIONS.has(name)) continue;
+    if (PUBLIC_COMMAND_EXEMPTIONS.has(name)) continue;
     const relativePath = `visual/examples/${name}/index.html`;
     const text = await readText(resolve(ROOT, relativePath));
     const expectedCommand = PUBLIC_EXAMPLE_EXPECTED_COMMANDS.get(name);
@@ -464,6 +523,7 @@ async function checkPublicExamples(failures) {
     }
     assert(failures, `${relativePath}: createMetricVisual is not used as a view-only renderer`, !createMetricVisualViewOptionPattern().test(text));
     assert(failures, `${relativePath}: owns at most one render canvas`, canvasCount <= 1, { canvasCount });
+    assertPageLocalEvidenceMutation(failures, relativePath, text);
 
     for (const [label, pattern] of PUBLIC_EXAMPLE_FORBIDDEN) {
       assert(failures, `${relativePath}: does not use ${label}`, !pattern.test(text));
@@ -544,6 +604,111 @@ function surfaceCommandPattern(variableName, command) {
 
 function createMetricVisualViewOptionPattern() {
   return /\bcreateMetricVisual\s*\(\s*\{[\s\S]*?\bview\s*:/;
+}
+
+const VISUAL_DOCUMENT_FIELDS = [
+  "schema",
+  "provenance",
+  "datasets",
+  "records",
+  "relations",
+  "spaces",
+  "properties",
+  "graphs",
+  "coordinates",
+  "timelines",
+  "events",
+  "views",
+  "diagnostics",
+];
+
+const VISUAL_DOCUMENT_ARRAY_FIELDS = VISUAL_DOCUMENT_FIELDS.filter((field) => (
+  field !== "schema" && field !== "provenance"
+));
+
+function assertPageLocalEvidenceMutation(failures, relativePath, html) {
+  const script = extractInlineScriptText(html);
+  const evidenceUses = createMetricVisualEvidenceUses(script);
+  assert(
+    failures,
+    `${relativePath}: createMetricVisual receives a direct fetched evidence variable`,
+    evidenceUses.length > 0,
+    { evidenceUses },
+  );
+  for (const use of evidenceUses) {
+    const binding = findJsonBindingForVariable(script, use.variable, use.index);
+    assert(
+      failures,
+      `${relativePath}: ${use.variable} is bound directly from response.json() before createMetricVisual`,
+      Boolean(binding),
+      { variable: use.variable, evidenceProperty: use.property },
+    );
+    if (!binding) continue;
+    const segment = script.slice(binding.end, use.index);
+    const mutations = findMaterialEvidenceMutations(segment, use.variable);
+    assert(
+      failures,
+      `${relativePath}: ${use.variable} is not materially rewritten before createMetricVisual`,
+      mutations.length === 0,
+      { variable: use.variable, mutations },
+    );
+  }
+}
+
+function extractInlineScriptText(html) {
+  return Array.from(html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi), (match) => match[1]).join("\n");
+}
+
+function createMetricVisualEvidenceUses(script) {
+  const uses = [];
+  const createPattern = /\bcreateMetricVisual\s*\(/g;
+  for (const match of script.matchAll(createPattern)) {
+    const window = script.slice(match.index, match.index + 5000);
+    const property = /\b(evidence|document|input)\s*:\s*([A-Za-z_$][\w$]*)\b/.exec(window);
+    if (!property) continue;
+    uses.push({
+      property: property[1],
+      variable: property[2],
+      index: match.index + property.index,
+    });
+  }
+  return uses;
+}
+
+function findJsonBindingForVariable(script, variable, beforeIndex) {
+  const bindingPattern = /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*await\s+([A-Za-z_$][\w$]*)\.json\s*\(\s*\)\s*;?/g;
+  let found = null;
+  for (const match of script.matchAll(bindingPattern)) {
+    if (match[1] !== variable || match.index >= beforeIndex) continue;
+    found = {
+      variable: match[1],
+      responseVariable: match[2],
+      index: match.index,
+      end: match.index + match[0].length,
+    };
+  }
+  return found;
+}
+
+function findMaterialEvidenceMutations(segment, variable) {
+  const fieldAccess = fieldAccessPattern(variable, VISUAL_DOCUMENT_FIELDS);
+  const arrayAccess = fieldAccessPattern(variable, VISUAL_DOCUMENT_ARRAY_FIELDS);
+  const checks = [
+    ["top-level field assignment", new RegExp(`${fieldAccess}\\s*=`, "m")],
+    ["top-level field deletion", new RegExp(`\\bdelete\\s+${fieldAccess}`, "m")],
+    ["top-level array entry assignment", new RegExp(`${arrayAccess}\\s*\\[[^\\]]+\\]\\s*=`, "m")],
+    ["top-level array item field assignment", new RegExp(`${arrayAccess}\\s*\\[[^\\]]+\\]\\s*(?:\\.\\s*[A-Za-z_$][\\w$]*|\\[\\s*["'][^"']+["']\\s*\\])\\s*=`, "m")],
+    ["top-level array mutation", new RegExp(`${arrayAccess}\\s*\\.\\s*(?:copyWithin|fill|pop|push|reverse|shift|sort|splice|unshift)\\s*\\(`, "m")],
+    ["object mutation helper", new RegExp(`\\bObject\\.(?:assign|defineProperties|defineProperty)\\s*\\(\\s*${escapeRegExp(variable)}\\b`, "m")],
+  ];
+  return checks
+    .filter(([, pattern]) => pattern.test(segment))
+    .map(([label]) => label);
+}
+
+function fieldAccessPattern(variable, fields) {
+  const fieldAlternation = fields.map(escapeRegExp).join("|");
+  return `\\b${escapeRegExp(variable)}\\s*(?:\\.\\s*(?:${fieldAlternation})|\\[\\s*["'](?:${fieldAlternation})["']\\s*\\])`;
 }
 
 function extractPublicExampleNames(text) {

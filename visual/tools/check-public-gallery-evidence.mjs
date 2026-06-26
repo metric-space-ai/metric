@@ -15,6 +15,11 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  isExplicitNativeMetricVisualExport,
+  isSyntheticMetricVisualEvidence,
+} from "../src/data/provenance.js";
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..", "..");
 const SITE = resolve(ROOT, "docs", "site", "index.html");
@@ -22,6 +27,7 @@ const PROGRESS = resolve(ROOT, "docs", "visual", "metric-visual-progress.md");
 const EXAMPLES = resolve(ROOT, "visual", "examples");
 const GRAE_INDEX = resolve(EXAMPLES, "grae10-metric-engine", "index.html");
 const GRAE_BASELINE = resolve(ROOT, "visual", "regression-baselines", "grae10-metric-engine.sha256");
+const PUBLIC_REFERENCE_EXEMPTIONS = new Set(["grae10-metric-engine"]);
 
 async function maybeRead(path) {
   try {
@@ -48,7 +54,7 @@ async function syntheticExamples() {
     const evidencePath = join(EXAMPLES, entry.name, "evidence.json");
     if (!(await fileExists(evidencePath))) continue;
     const evidence = JSON.parse(await readFile(evidencePath, "utf8"));
-    if (evidence?.provenance?.synthetic === true) {
+    if (isSyntheticMetricVisualEvidence(evidence?.provenance)) {
       result.push(entry.name);
     }
   }
@@ -59,16 +65,36 @@ function sha256(text) {
   return createHash("sha256").update(text).digest("hex");
 }
 
-function includesExampleReference(text, name) {
-  return text.includes(`visual/examples/${name}/`)
-    || text.includes(`visual/examples/${name}/index.html`)
-    || text.includes(`../examples/${name}/`)
-    || text.includes(`../../visual/examples/${name}/`);
+function extractPublicExampleNames(text) {
+  return Array.from(
+    new Set(Array.from(text.matchAll(/visual\/examples\/([^/"']+)\/index\.html/g), (match) => match[1])),
+  ).sort();
 }
 
-async function exampleLoadsLocalSyntheticEvidence(name) {
+function resolveExampleFetchTarget(name, target) {
+  if (!target || /^https?:\/\//.test(target)) return null;
+  if (target.startsWith("/")) return resolve(ROOT, `.${target}`);
+  return resolve(EXAMPLES, name, target);
+}
+
+async function publicSyntheticEvidenceReferencesForExample(name) {
   const index = await maybeRead(resolve(EXAMPLES, name, "index.html"));
-  return extractFetchTargets(index).some((target) => target === "./evidence.json");
+  const references = [];
+  for (const target of extractFetchTargets(index)) {
+    if (!/\.json(?:[?#].*)?$/i.test(target)) continue;
+    const assetPath = resolveExampleFetchTarget(name, target);
+    if (!assetPath || !assetPath.startsWith(ROOT) || !(await fileExists(assetPath))) continue;
+    try {
+      const document = JSON.parse(await readFile(assetPath, "utf8"));
+      if (isSyntheticMetricVisualEvidence(document?.provenance)) {
+        references.push({ target, path: assetPath });
+      }
+    } catch {
+      // Unreadable JSON is reported by the native asset pass if it is a public
+      // native target. Non-native JSON is outside this evidence gate.
+    }
+  }
+  return references;
 }
 
 function extractFetchTargets(index) {
@@ -96,8 +122,8 @@ async function publicNativeAssetsForExample(name) {
   const assets = [];
   for (const target of targets) {
     if (!/docs\/examples\/assets\/.+\/metric\.visual\.json$/.test(target)) continue;
-    const assetPath = resolve(EXAMPLES, name, target);
-    if (!assetPath.startsWith(ROOT)) continue;
+    const assetPath = resolveExampleFetchTarget(name, target);
+    if (!assetPath || !assetPath.startsWith(ROOT)) continue;
     assets.push({ target, assetPath });
   }
   return assets;
@@ -107,6 +133,7 @@ async function main() {
   const issues = [];
   const site = await maybeRead(SITE);
   const progress = await maybeRead(PROGRESS);
+  const publicExamples = extractPublicExampleNames(site).filter((name) => !PUBLIC_REFERENCE_EXEMPTIONS.has(name));
 
   const expectedHash = (await maybeRead(GRAE_BASELINE)).trim().split(/\s+/)[0] || "";
   const actualHash = sha256(await readFile(GRAE_INDEX));
@@ -124,11 +151,16 @@ async function main() {
   const synthetic = await syntheticExamples();
   const publicSynthetic = [];
   const publicNativeAssets = [];
-  for (const name of synthetic) {
-    if (!includesExampleReference(site, name)) continue;
-    if (await exampleLoadsLocalSyntheticEvidence(name)) {
-      publicSynthetic.push(name);
-      continue;
+  for (const name of publicExamples) {
+    const syntheticReferences = await publicSyntheticEvidenceReferencesForExample(name);
+    for (const reference of syntheticReferences) {
+      publicSynthetic.push({ example: name, target: reference.target });
+      issues.push({
+        code: "synthetic_example_on_public_site",
+        example: name,
+        evidence: reference.target,
+        page: "docs/site/index.html",
+      });
     }
     const nativeAssets = await publicNativeAssetsForExample(name);
     if (!nativeAssets.length) {
@@ -151,14 +183,14 @@ async function main() {
             schema: document?.schema ?? null,
           });
         }
-        if (document?.provenance?.synthetic === true) {
+        if (isSyntheticMetricVisualEvidence(document?.provenance)) {
           issues.push({
             code: "public_native_asset_marked_synthetic",
             example: name,
             target: asset.target,
           });
         }
-        if (!isExplicitNativeExport(document?.provenance)) {
+        if (!isExplicitNativeMetricVisualExport(document?.provenance)) {
           issues.push({
             code: "public_native_asset_missing_explicit_native_export",
             example: name,
@@ -174,14 +206,6 @@ async function main() {
         });
       }
     }
-  }
-  for (const name of publicSynthetic) {
-    issues.push({
-      code: "synthetic_example_on_public_site",
-      example: name,
-      evidence: `visual/examples/${name}/evidence.json`,
-      page: "docs/site/index.html",
-    });
   }
 
   const syntheticDone = synthetic.filter((name) => {
@@ -204,6 +228,7 @@ async function main() {
   console.log(JSON.stringify({
     ok,
     grae10Hash: actualHash,
+    publicExamples,
     syntheticExamples: synthetic,
     publicSynthetic,
     publicNativeAssets,
@@ -211,10 +236,6 @@ async function main() {
     issues,
   }, null, 2));
   if (!ok) process.exitCode = 1;
-}
-
-function isExplicitNativeExport(provenance = {}) {
-  return provenance.native_export === true || provenance.nativeExport === true;
 }
 
 main().catch((error) => {

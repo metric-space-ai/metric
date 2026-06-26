@@ -16,6 +16,13 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  explicitNativeMetricVisualExportSignal,
+  isExplicitNativeMetricVisualExport,
+  isNativeMetricVisualDocument,
+  isSyntheticMetricVisualEvidence,
+} from "../src/data/provenance.js";
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..", "..");
 const EXAMPLES_DIR = resolve(ROOT, "visual", "examples");
@@ -150,7 +157,7 @@ function summarizeAsset(exampleId, target, assetPath, document) {
     target,
     path: assetPath,
     schema: document?.schema ?? null,
-    synthetic: document?.provenance?.synthetic === true,
+    synthetic: isSyntheticMetricVisualEvidence(document?.provenance),
     recordCount: records.length,
     scaleRecordCount,
     scaleRecordCountSource: scaleRecordCount === records.length ? "records" : "metric-relation-record-ids",
@@ -160,13 +167,14 @@ function summarizeAsset(exampleId, target, assetPath, document) {
     viewKinds: Array.isArray(document?.views) ? document.views.map((view) => view?.kind).filter(Boolean) : [],
     recordTypeCount: countRecordTypes(records),
     native: isNativeMetricVisualDocument(document),
-    nativeExportExplicit: document?.provenance?.native_export === true || document?.provenance?.nativeExport === true,
+    nativeExportExplicit: isExplicitNativeMetricVisualExport(document?.provenance),
     provenance: {
       writer: document?.provenance?.writer ?? null,
       runtime: document?.provenance?.runtime ?? null,
       computation: document?.provenance?.computation ?? null,
       sourceExample: document?.provenance?.source_example ?? null,
-      nativeExport: document?.provenance?.native_export === true || document?.provenance?.nativeExport === true,
+      nativeExport: isExplicitNativeMetricVisualExport(document?.provenance),
+      nativeExportSignal: explicitNativeMetricVisualExportSignal(document?.provenance),
     },
   };
 }
@@ -189,12 +197,6 @@ function maxRelationRecordCount(document) {
     }
   }
   return maxNumber(counts);
-}
-
-function isNativeMetricVisualDocument(document) {
-  const provenance = document?.provenance || {};
-  if (provenance.synthetic === true || provenance.synthetic_js === true) return false;
-  return provenance.native_export === true || provenance.nativeExport === true;
 }
 
 function countRecordTypes(records) {
