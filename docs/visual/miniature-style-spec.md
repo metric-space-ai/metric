@@ -441,6 +441,11 @@ Primitive-to-family mapping is generic:
 - `BillboardLabelLayer` -> `sample` with the dedicated `miniature-label`
   role
 
+`RelationMatrixLayer` is a field-family relation grammar, but it renders in the
+runtime `screen-readable-overlay` phase by default. The photographic 3D scene is
+rendered first; the matrix is then composited as a crisp WebGL data layer in
+the final frame so camera-depth DoF cannot turn dense pair values into blur.
+
 The presence of `InstancedBoxLayer` in the mapping is renderer compatibility,
 not a public box subject API.
 
@@ -606,7 +611,8 @@ Current native layer support:
   but renders indexed world-space tube geometry with normals. It uses the same
   material vocabulary to produce lit miniature path bodies instead of flat
   annotations.
-- `RelationMatrixLayer` is classified as a field-family relation layer.
+- `RelationMatrixLayer` is classified as a field-family relation layer and uses
+  the `screen-readable-overlay` render phase for dense analytical readability.
 - `inspectMiniatureStyleContract()` validates the runtime post-FX contract:
   required photographic passes are present, the stack has no unsized active
   passes, and the reported pass size matches the renderer drawing buffer.

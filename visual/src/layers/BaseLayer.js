@@ -51,6 +51,7 @@ export class BaseLayer {
     this.picking = this.descriptor.picking;
     this.metadata = this.descriptor.metadata;
     this.bounds = this.descriptor.bounds;
+    this.renderPhase = resolveRenderPhase(this.descriptor);
     this.needsUpload = true;
 
     if (this.scene && previousId !== undefined) {
@@ -108,6 +109,15 @@ export class BaseLayer {
     this.disposed = true;
     this.enabled = false;
   }
+}
+
+export function resolveRenderPhase(descriptor = {}) {
+  return descriptor.renderPhase
+    || descriptor.metadata?.renderPhase
+    || descriptor.metadata?.postprocessGroup
+    || descriptor.material?.renderPhase
+    || descriptor.material?.postprocessGroup
+    || "scene";
 }
 
 export function normalizeLayerDescriptor(descriptor = {}) {

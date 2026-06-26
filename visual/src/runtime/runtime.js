@@ -32,6 +32,7 @@ import { MetricPostFxStack } from "../postfx/index.js";
 import { buildLinkedSelectionPresentation } from "../selection/index.js";
 
 const RUNTIME_RENDER_PASS = "Scene(RenderPass)";
+const RUNTIME_SCREEN_READABLE_PASS = "ScreenReadableOverlayPass";
 const RUNTIME_COMPATIBILITY_PASS_ORDER = Object.freeze(["FxaaPass", "TiltShiftPass"]);
 
 export const DEFAULT_RUNTIME_OPTIONS = Object.freeze({
@@ -251,6 +252,7 @@ export class RuntimePostProcessPipeline {
     const postFxEnabledOrder = this.postFxStack?.enabled !== false
       ? postFxOrder.filter((name) => this.postFxStack?.[name]?.enabled !== false)
       : [];
+    const screenReadableOverlay = hasRenderPhaseLayers(this.lastContext?.scene, "screen-readable-overlay");
     return {
       enabled: this.enabled,
       length: this.length,
@@ -260,11 +262,13 @@ export class RuntimePostProcessPipeline {
         RUNTIME_RENDER_PASS,
         ...compatibilityPasses,
         ...postFxEnabledOrder.map((name) => `postFx.${name}`),
+        ...(screenReadableOverlay ? [RUNTIME_SCREEN_READABLE_PASS] : []),
       ],
       pipelinePhases: {
         scene: RUNTIME_RENDER_PASS,
         compatibility: compatibilityPasses,
         postFx: postFxEnabledOrder,
+        screenReadableOverlay: screenReadableOverlay ? RUNTIME_SCREEN_READABLE_PASS : null,
       },
       sceneDepthTexture: Boolean(this.native?.sceneTarget?.depthTexture),
       sceneDepthEncoding: this.native?.sceneTarget?.depthEncoding || null,
@@ -306,8 +310,10 @@ export class RuntimePostProcessPipeline {
   }
 
   render(context) {
+    this.lastContext = context;
     if (!this.enabled || this.length === 0) {
       context.renderer.renderScene(null);
+      renderScreenReadableOverlay(context);
       return null;
     }
 
@@ -325,7 +331,7 @@ export class RuntimePostProcessPipeline {
     const width = context.size.drawingBufferWidth;
     const height = context.size.drawingBufferHeight;
     this.native.renderScene((sceneContext) => {
-      context.renderer.renderScene(sceneContext.target || null);
+      context.renderer.renderScene(sceneContext.target || null, { phase: "scene" });
     }, {
       width,
       height,
@@ -333,12 +339,47 @@ export class RuntimePostProcessPipeline {
       focusState: this.focusState,
       camera: context.camera || context.renderer?.camera || null,
     });
+    renderScreenReadableOverlay(context);
     return null;
   }
 
   dispose() {
     if (this.native) this.native.dispose();
   }
+}
+
+function renderScreenReadableOverlay(context) {
+  if (!hasRenderPhaseLayers(context?.renderer?.scene || context?.scene, "screen-readable-overlay")) return;
+  if (typeof context.renderer?.renderScenePhase === "function") {
+    context.renderer.renderScenePhase("screen-readable-overlay", null, {
+      clear: false,
+      clearDepth: false,
+    });
+    return;
+  }
+  context.renderer?.renderScene?.(null, {
+    phase: "screen-readable-overlay",
+    clear: false,
+    clearDepth: false,
+  });
+}
+
+function hasRenderPhaseLayers(scene, phase) {
+  if (!scene || !Array.isArray(scene.children)) return false;
+  return scene.children.some((child) => {
+    if (!child || child.enabled === false || child.visible === false) return false;
+    return resolveLayerRenderPhase(child) === phase;
+  });
+}
+
+function resolveLayerRenderPhase(layer) {
+  return layer.renderPhase
+    || layer.descriptor?.renderPhase
+    || layer.descriptor?.metadata?.renderPhase
+    || layer.descriptor?.metadata?.postprocessGroup
+    || layer.descriptor?.material?.renderPhase
+    || layer.descriptor?.material?.postprocessGroup
+    || "scene";
 }
 
 export class MetricVisualRuntime {
@@ -1291,6 +1332,7 @@ export class MetricVisualRuntime {
       layerDescriptorCount: this.layerDescriptors.length,
       layerInstanceCount: this.layers.length,
       layerState: { ...this.layerState },
+      renderPhases: collectRuntimeRenderPhases(this.layers),
       layerDiagnostics: collectRuntimeLayerDiagnostics(this.layers),
       postprocess: this.postprocess?.getState?.() || null,
       warnings: this.warnings.slice(),
@@ -2777,6 +2819,7 @@ function collectRuntimeLayerDiagnostics(layers = []) {
       primitive: layer.primitive || layer.descriptor?.primitive || layer.descriptor?.kind || null,
       visible: layer.visible !== false,
       enabled: layer.enabled !== false,
+      renderPhase: resolveLayerRenderPhase(layer),
       resourceCount: Array.isArray(layer.resources) ? layer.resources.length : 0,
     };
     try {
@@ -2803,6 +2846,20 @@ function collectRuntimeLayerDiagnostics(layers = []) {
     diagnostics.push(entry);
   }
   return diagnostics;
+}
+
+function collectRuntimeRenderPhases(layers = []) {
+  const counts = {};
+  for (const layer of layers || []) {
+    if (!layer || layer.enabled === false || layer.visible === false) continue;
+    const phase = resolveLayerRenderPhase(layer);
+    counts[phase] = (counts[phase] || 0) + 1;
+  }
+  return {
+    phases: Object.keys(counts).sort(),
+    counts,
+    screenReadableOverlay: counts["screen-readable-overlay"] || 0,
+  };
 }
 
 function clonePlainObject(value) {

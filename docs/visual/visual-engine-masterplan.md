@@ -177,6 +177,11 @@ Implemented native slices:
 - relation-matrix readability diagnostics for matrix dimensions, block count,
   tile count/source, missing-value count, selected row/column/cell state and
   graph relation identity
+- reusable screen-readable render phase for analytical layer grammars such as
+  relation matrices. The runtime now renders the 3D scene through the
+  photographic post-FX stack first, then renders `screen-readable-overlay`
+  layers into the final frame without camera-depth DoF, CSS/DOM fallbacks or
+  page-local renderer code.
 - relation-matrix diagnostics expose exported metric-law references from native
   evidence, including operator, finite/diagonal/symmetry/triangle checks, pair
   count and triangle-triplet count

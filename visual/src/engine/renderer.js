@@ -315,6 +315,10 @@ export class VisualRenderer {
       this.pipeline.render(this.context, null);
     } else {
       this.renderScene(null);
+      this.renderScenePhase("screen-readable-overlay", null, {
+        clear: false,
+        clearDepth: false,
+      });
     }
 
     this.emit("afterRender", this.context);
@@ -331,14 +335,25 @@ export class VisualRenderer {
     return this.context;
   }
 
-  renderScene(target = null) {
+  renderScene(target = null, options = {}) {
     this.context.target = target;
+    const previousRenderPhase = this.context.renderPhase;
+    const phase = options.phase || "scene";
+    this.context.renderPhase = phase;
     bindRenderTarget(this.gl, target, this.size.drawingBufferWidth, this.size.drawingBufferHeight);
-    if (this.autoClear) {
-      clearCurrentTarget(this.gl, this.clearColor || this.scene.backgroundColor, true);
+    if (options.clear !== false && this.autoClear) {
+      clearCurrentTarget(this.gl, this.clearColor || this.scene.backgroundColor, options.clearDepth !== false);
     }
-    this.scene.render(this.context);
+    this.scene.render(this.context, { phase });
+    this.context.renderPhase = previousRenderPhase;
     return this;
+  }
+
+  renderScenePhase(phase, target = null, options = {}) {
+    return this.renderScene(target, {
+      ...options,
+      phase,
+    });
   }
 
   clear(color = this.clearColor || this.scene.backgroundColor, target = null, clearDepth = true) {

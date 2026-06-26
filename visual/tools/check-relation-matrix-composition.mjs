@@ -63,6 +63,13 @@ assert.equal(matrixDescriptor.metadata.matrix.size, 130);
 assert.equal(matrixDescriptor.metadata.role, "primary-relation-matrix");
 assert.equal(matrixDescriptor.metadata.composition.role, "primary-relation-matrix");
 assert.equal(matrixDescriptor.metadata.selectionModel.previewPlacement.strategy, "avoid-matrix-center");
+assert.equal(matrixDescriptor.renderPhase, "screen-readable-overlay");
+assert.equal(matrixDescriptor.material.postprocessGroup, "screen-readable-overlay");
+assert.equal(matrixDescriptor.material.screenReadable, true);
+assert.equal(matrixDescriptor.material.cameraDof, "bypass");
+assert.equal(matrixDescriptor.metadata.postprocessGroup, "screen-readable-overlay");
+assert.equal(matrixDescriptor.metadata.screenReadable, true);
+assert.equal(matrixDescriptor.metadata.cameraDof, "bypass");
 
 const readability = matrixDescriptor.metadata.readabilityDiagnostics;
 assert(readability.blockCount >= 2, "matrix readability has at least two blocks");
@@ -83,6 +90,7 @@ const selectedCell = picker.cellAtNormalizedPoint(
 assert(selectedCell, "interaction probe selects a matrix cell");
 
 const layer = new RelationMatrixLayer(matrixDescriptor);
+assert.equal(layer.renderPhase, "screen-readable-overlay");
 layer.updateBlockBoundaries(matrixDescriptor.source.texture);
 layer.setSelection({ pair: selectedCell });
 const layerDiagnostics = layer.getDiagnostics();

@@ -29,6 +29,7 @@ export function createRelationMatrixLayerDescriptor(source, options = {}) {
     id: options.id || "relation-matrix",
     kind: "RelationMatrixLayer",
     primitive: "RelationMatrixLayer",
+    renderPhase: options.renderPhase || "screen-readable-overlay",
     order: options.order ?? 0,
     visible: options.visible !== false,
     source: {
@@ -43,6 +44,10 @@ export function createRelationMatrixLayerDescriptor(source, options = {}) {
     },
     material: {
       alpha: resolveMaterialAlpha(options),
+      postprocessGroup: options.postprocessGroup || "screen-readable-overlay",
+      renderPhase: options.renderPhase || "screen-readable-overlay",
+      screenReadable: true,
+      cameraDof: "bypass",
       missingAlpha: options.missingAlpha ?? 0,
       background: options.background || [0.02, 0.025, 0.03, 1],
       smoothingCellPixels: denseCellSmoothing.smoothingCellPixels,
@@ -82,6 +87,10 @@ export function createRelationMatrixLayerDescriptor(source, options = {}) {
     },
     metadata: {
       relationVisualization: "matrix",
+      postprocessGroup: options.postprocessGroup || "screen-readable-overlay",
+      renderPhase: options.renderPhase || "screen-readable-overlay",
+      screenReadable: true,
+      cameraDof: "bypass",
       diagnostics: {
         ...texture.diagnostics,
         blockCount: readabilityDiagnostics.blockCount,

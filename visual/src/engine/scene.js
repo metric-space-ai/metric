@@ -55,12 +55,14 @@ export class VisualScene {
     return this;
   }
 
-  render(context) {
+  render(context, options = {}) {
     if (this.needsSort) {
       this.sort();
     }
+    const phase = options.phase || context.renderPhase || "scene";
     for (const child of this.children) {
       if (child.enabled === false || child.visible === false) continue;
+      if (phase !== "all" && resolveChildRenderPhase(child) !== phase) continue;
       if (typeof child.render === "function") {
         child.render(context);
       }
@@ -79,4 +81,14 @@ export class VisualScene {
     this.clear({ dispose: true });
     this.disposed = true;
   }
+}
+
+function resolveChildRenderPhase(child) {
+  return child.renderPhase
+    || child.descriptor?.renderPhase
+    || child.descriptor?.metadata?.renderPhase
+    || child.descriptor?.metadata?.postprocessGroup
+    || child.descriptor?.material?.renderPhase
+    || child.descriptor?.material?.postprocessGroup
+    || "scene";
 }

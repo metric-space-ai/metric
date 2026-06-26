@@ -84,6 +84,11 @@ This plan is authoritative only with the following current-state constraints:
   WebGL tile-summary LOD texture derived from already exported matrix texture
   values. This reduces dense-matrix aliasing without adding DOM/SVG fallbacks,
   page-local canvas renderers or JavaScript relation computation.
+- Relation matrices now render through the reusable `screen-readable-overlay`
+  runtime phase. The matrix remains a WebGL layer and semantic relation view,
+  but it is composited after the photographic 3D/post-FX pass so camera-depth
+  DoF cannot blur a dense analytical matrix. This phase is an engine feature,
+  not a page overlay or one-off exception.
 - The mapping grammar must render residual/error evidence through
   `MappingView` descriptors. `MetricVisualSurface.showMapping()` must not add
   page-level residual fallbacks that can hide missing native residual
@@ -3038,9 +3043,12 @@ The next parallel work is engine/view capability work, not new page HTML:
 1. Relation-matrix readability:
    `RelationMatrixView`, `RelationMatrixLayer` and relation descriptors must
    make a 130x130 native matrix readable as a primary visual, with crisp block
-   boundaries, row/column/cell focus and graph/matrix z-order rules. This
-   clears the explicit `matrix-readability-not-human-accepted` blocker before
-   relation-matrix/neighborhood can become an accepted hero.
+   boundaries, row/column/cell focus and graph/matrix z-order rules. The first
+   reusable engine slice is implemented: `RelationMatrixLayer` descriptors now
+   run in the `screen-readable-overlay` phase after photographic post-FX, and
+   browser regression reports `ScreenReadableOverlayPass`. Remaining work is
+   screenshot acceptance, stronger large-matrix evidence where required, and
+   any further matrix-scale tiling needed by that evidence.
 2. Trajectory/field hierarchy:
    `TrajectoryPathView`, `PropertyFieldView`, `DynamicsView` and
    `ProcessCurveSceneView` must give path, scalar field, current state and
