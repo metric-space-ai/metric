@@ -223,26 +223,24 @@
       window.metricCrossSpaceHero = { visual, runtime: visual.runtime, getState: () => visual.getState() };
 
       loading.remove();
-      requestAnimationFrame(() => {
-        visual.runtime.selectPair({
-          relationId: "cross-space-dependence-bridge-relation",
-          relationName: "high-contribution paired-space bridge strength",
-          relationType: "custom",
-          graphId: "cross-space-dependence-bridges",
-          pairSetId: crossSpace?.pairSetId || "cross-space:linked-pairs",
-          rowId: selectedRecordId,
-          columnId: selectedRecordId,
-          value: selectedValue,
-          present: true,
-          properties: [
-            { id: "local-dependence-contribution", label: "local dependence contribution", value: selectedValue },
-          ],
-          sourceSpaceId: "event-log-space",
-          targetSpaceId: "process-curve-space",
-          sourceCoordinateId: "event-log-landmark-3d",
-          targetCoordinateId: "process-curve-landmark-3d",
-        }, { source: "cross-space-acceptance-candidate" });
-      });
+      visual.runtime.selectPair({
+        relationId: "cross-space-dependence-bridge-relation",
+        relationName: "high-contribution paired-space bridge strength",
+        relationType: "custom",
+        graphId: "cross-space-dependence-bridges",
+        pairSetId: crossSpace?.pairSetId || "cross-space:linked-pairs",
+        rowId: selectedRecordId,
+        columnId: selectedRecordId,
+        value: selectedValue,
+        present: true,
+        properties: [
+          { id: "local-dependence-contribution", label: "local dependence contribution", value: selectedValue },
+        ],
+        sourceSpaceId: "event-log-space",
+        targetSpaceId: "process-curve-space",
+        sourceCoordinateId: "event-log-landmark-3d",
+        targetCoordinateId: "process-curve-landmark-3d",
+      }, { source: "cross-space-acceptance-candidate" });
       addEventListener("resize", () => { const r = canvas.getBoundingClientRect(); visual.runtime.resize(Math.max(1, Math.floor(r.width)), Math.max(1, Math.floor(r.height))); });
     } catch (error) {
       console.error(error);
