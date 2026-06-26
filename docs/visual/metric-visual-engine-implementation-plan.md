@@ -2615,10 +2615,11 @@ Verified:
 Known gate note:
 
 - `node visual/tools/check-visual-examples.mjs` is not the public hero gate. It
-  still includes `record-preview-contract`, a contract page without a canvas,
-  and therefore reports one `no-canvas` failure. Public example regression is
-  covered by `check-visual-regression-public-examples.mjs`, which passed with
-  `total: 8`, `failed: 0`.
+  includes `record-preview-contract`, a DOM-only preview-contract page without a
+  canvas. The checker now classifies that explicit contract page separately
+  instead of treating it as a failed canvas render. Public example regression is
+  still covered by `check-visual-regression-public-examples.mjs`, which passed
+  with `total: 8`, `failed: 0`.
 
 Corrected status:
 

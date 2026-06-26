@@ -148,11 +148,23 @@ async function discoverExamples() {
 // console-error checks below.
 const RENDER_PROBE = () => {
   const canvas = document.querySelector("canvas");
-  if (!canvas) return { ready: false, reason: "no-canvas" };
+  const datasetKeys = Object.keys(document.documentElement.dataset).filter((key) => key.toLowerCase().startsWith("metric"));
+  if (!canvas) {
+    if (document.documentElement.dataset.metricPreviewContract === "ready") {
+      return {
+        ready: true,
+        reason: "dom-preview-contract",
+        width: document.documentElement.clientWidth || document.body?.clientWidth || 0,
+        height: document.documentElement.clientHeight || document.body?.clientHeight || 0,
+        canvasCount: 0,
+        datasetKeys,
+      };
+    }
+    return { ready: false, reason: "no-canvas", canvasCount: 0, datasetKeys };
+  }
   const width = canvas.clientWidth || canvas.width;
   const height = canvas.clientHeight || canvas.height;
   if (!width || !height) return { ready: false, reason: "zero-size" };
-  const datasetKeys = Object.keys(document.documentElement.dataset).filter((key) => key.toLowerCase().startsWith("metric"));
   return {
     ready: true,
     reason: "ok",
