@@ -251,7 +251,10 @@ Known gaps:
   relation matrix, finite dynamics/noise and mapping/dimensionality. They remain
   review-pending previews until screenshot review accepts the visual grammar and
   composition. The external UCR process-curve preview remains explicitly blocked
-  by source-record count and must not be inflated with synthetic windows.
+  by source-record count: the checked-in real UCR slices currently provide 48
+  source windows plus 16 query records, while the hero target is 500 real source
+  windows. The blocker is `missing-real-source-windows-for-500-record-hero` and
+  must not be bypassed with synthetic windows or query padding.
 - no full visual gallery for every METRIC algorithm family yet
 - the six native public preview families now all have visual-acceptance
   candidate pages/reports, but none has passed manual screenshot acceptance as a

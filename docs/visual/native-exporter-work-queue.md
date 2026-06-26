@@ -71,9 +71,11 @@ exporter still blocked by source-record count.
 The UCR process-curve export has real native evidence, query outcomes and
 baseline comparison outside the browser renderer, but it is not yet a scale
 candidate for public hero acceptance. The checked-in UCR-derived slices contain
-48 real source windows plus query records, below the 500-source-record target.
-Do not scale this hero with synthetic windows or query padding. The blocker is
-tracked in:
+48 real source windows plus 16 query records; the source-source metric relation
+and coordinate state cover only those 48 source windows, below the
+500-source-record target. Do not scale this hero with synthetic windows or query
+padding. The exact current blocker is
+`missing-real-source-windows-for-500-record-hero` and is tracked in:
 
 ```text
 docs/visual/reports/process-curve-external-scale-exporter.md

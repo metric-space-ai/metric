@@ -2775,3 +2775,8 @@ Corrected status:
 - The next acceptance bottleneck is visual curation/manual screenshot review,
   stricter grammar-specific stress budgets at final hero scale and richer
   process-curve external evidence, not more synthetic page fixtures.
+- The external process-curve preview remains explicitly record-count-blocked:
+  the checked-in real UCR slices contain 48 source windows plus 16 query records,
+  below the 500-source-record hero target. The exact blocker is
+  `missing-real-source-windows-for-500-record-hero` and is documented in
+  `docs/visual/reports/process-curve-external-scale-exporter.md`.
