@@ -18,9 +18,9 @@ A public hero is ready only when all of these are true:
 Synthetic visual fixtures may exist under `visual/examples/*/evidence.json`.
 They are engine development fixtures only. They are not public heroes.
 
-Native generated fixtures may be linked as public previews when their
+Native generated evidence documents may be linked as public previews when their
 `metric.visual.v1` export is native, schema-valid, and explicit about its
-fixture/foundation status. A public preview is not a hero acceptance claim.
+foundation status. A public preview is not a hero acceptance claim.
 
 ## Checks
 
@@ -115,10 +115,10 @@ accepted hero because it is protected by the native 60k reference and golden
 hash. The seven native preview pages remain review-pending.
 
 The hero visual-brief gate now records the visual claim and blocker state for
-all seven review-pending previews. Six previews are explicitly blocked by
-record count below the hero minimum. `relation-matrix-neighborhood` satisfies
-the current matrix evidence-size target but remains blocked by human visual
-composition and matrix readability acceptance.
+all seven review-pending previews. The native scale gate reports all seven
+preview families as native-scale-ready with no current record-count blockers.
+Remaining blockers are human visual composition review for every preview and
+matrix readability review for `relation-matrix-neighborhood`.
 
 ### Grammar Integration Slice - 2026-06-25
 
@@ -275,12 +275,12 @@ pair-property endpoints. The negative cases are covered by
 | --- | --- | --- |
 | MNIST dimension reduction | live | Full 60k visual reference exists and is protected by C++ integrity plus hash checks. |
 | UCR process curves | public preview, not hero-accepted | Real dataset, native C++ export, checked public assets and a command-backed process-curve visual page exist. Screenshot acceptance and final hero composition are still pending. |
-| Mixed records | public preview, not hero-accepted | Native `metric.visual.v1` evidence exists, the page loads it, and the project page links it. Screenshot acceptance, larger public data and the required four record types are still pending. |
+| Mixed records | public preview, not hero-accepted | Native `metric.visual.v1` evidence exists, the page loads it, and the project page links it. The native scale gate verifies the required record count and four record types. Screenshot acceptance and typed-glyph composition/readability are still pending. |
 | Cross-space dependence | public preview, not hero-accepted | Native `metric.visual.v1` evidence exists, the page loads it, and the project page links it. Screenshot acceptance and stronger visual curation are still pending. |
 | Condition monitoring | public preview, not hero-accepted | Native `metric.visual.v1` evidence exists, the page loads it, and the project page links it. Screenshot acceptance and a curated proof that does not regress the existing UCR proof are still pending. |
 | Relation matrix/neighborhood | public preview, not hero-accepted | Native `metric.visual.v1` evidence exists, the page loads it, and the project page links it. Engine diagnostics now prove named block readability metadata in headless checks and browser regression. Screenshot acceptance and human matrix readability review are still pending. |
 | Dynamics/noise | public preview, not hero-accepted | Native `metric.visual.v1` evidence exists, the page loads it, and the project page links it. Screenshot acceptance and trajectory readability review are still pending. |
-| Mapping/dimensionality | public preview, not hero-accepted | Native `metric.visual.v1` evidence exists, the page loads it, and the project page links it. The public browser gate now requires the native residual/error layer. Screenshot acceptance, larger public data and morph readability review are still pending. |
+| Mapping/dimensionality | public preview, not hero-accepted | Native `metric.visual.v1` evidence exists, the page loads it, and the project page links it. The public browser gate now requires the native residual/error layer. Screenshot acceptance and morph readability review are still pending. |
 | Metric discovery | not live | Needs native metric-admission evidence and rejected-candidate documentation. |
 
 ## Synthetic Development Fixtures
@@ -302,8 +302,9 @@ files remain only as renderer development inputs:
 The native exporter foundation now exists for the planned visual families, and
 the project page contains public preview links for those native views. The next
 production step is not more exporter scaffolding and not custom hero HTML; it is
-to turn each preview into an accepted hero through screenshot review, stronger
-visual grammar and larger public evidence where needed:
+to turn each preview into an accepted hero through screenshot review and
+stronger visual grammar. Current native scale gates are green for all seven
+public previews, so record count is not the active blocker:
 
 1. keep each public page on native `docs/examples/assets/*/metric.visual.json`
    evidence through `createMetricVisual`
@@ -311,7 +312,7 @@ visual grammar and larger public evidence where needed:
    glyphs, paired-space dependence, relation matrix/neighborhood, dynamics
    trajectory, or mapping/morph
 3. run browser screenshot review against the visual brief for that grammar
-4. replace small native fixtures with larger public evidence where the current
-   record count does not yet prove application value
+4. add larger final-scale stress inputs only if future acceptance criteria or
+   performance budgets require them
 5. mark a preview as hero-accepted only after evidence gate, grammar check,
    visual document check and screenshot review pass

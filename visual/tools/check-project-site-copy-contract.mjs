@@ -72,6 +72,8 @@ const VISIBLE_FORBIDDEN = [
   ["Visual:", /\bVisual:/],
   ["Evidence:", /\bEvidence:/],
   ["Notes:", /\bNotes:/],
+  ["scale-blocked", /\bscale[- ]blocked\b/i],
+  ["scale-limited", /\bscale[- ]limited\b/i],
   ["prompt", /\bprompt\b/i],
   ["TODO", /\bTODO\b/],
   ["placeholder", /\bplaceholder\b/i],
@@ -161,6 +163,13 @@ async function main() {
         issues.push({ code: "missing-non-grae-status", item: item.id });
       } else if (/\baccepted\b/i.test(status)) {
         issues.push({ code: "non-grae-item-marked-accepted", item: item.id, status });
+      } else if (status !== "review-pending") {
+        issues.push({
+          code: "non-grae-item-not-review-pending",
+          item: item.id,
+          expected: "review-pending",
+          actual: status,
+        });
       }
     }
   }

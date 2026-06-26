@@ -45,8 +45,8 @@ Review-pending native previews:
 - mapping/dimensionality
 - finite dynamics/noise
 - relation matrix/neighborhood
-- process-curve external, with its source-record-count blocker visible in
-  maintainer docs, not as marketing copy
+- process-curve external, native-scale-ready and still review-pending for
+  visual composition, not source record count
 
 ## Hard Stop Rules
 

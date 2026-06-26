@@ -297,12 +297,13 @@ Known gaps:
   process-curve evidence now contains 576 real source windows in the native
   source-source relation plus 161 native contrast-query records.
 - no full visual gallery for every METRIC algorithm family yet
-- the six native public preview families now all have visual-acceptance
-  candidate pages/reports. Condition monitoring, mapping/dimensionality and
-  relation-matrix/neighborhood also have integrated composition-hardening
-  passes. Mixed records, cross-space dependency and dynamics/noise now also
-  have integrated composition-hardening passes. None has passed manual
-  screenshot acceptance as a public hero.
+- all seven native public preview families now have checked native evidence and
+  review-pending briefs. Condition monitoring, mapping/dimensionality and
+  relation-matrix/neighborhood have integrated composition-hardening passes;
+  mixed records, cross-space dependency and dynamics/noise also have integrated
+  composition-hardening passes. The external UCR process-curve preview is real
+  native evidence at scale. None has passed manual screenshot acceptance as a
+  public hero.
 - relation matrix has native exported evidence and a reusable WebGL readability
   pass with block bands, tile/LOD metadata, block boundaries, row/column/cell
   focus, stronger focus/boundary defaults, explicit block shader capacity and

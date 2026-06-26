@@ -35,13 +35,14 @@ Current gate results:
   `464f6a90c36c1e9c6b4ec90068500dc226740d65b251918aca567f99d64d3d5e`,
   no public synthetic evidence, no synthetic example marked done.
 - `check-visual-performance-large-scenes`: `ok: true`, seven Visual Brief rows
-  matched, including the scale-blocked `process-curve-external-hero` preview.
+  matched, including the native-scale-ready `process-curve-external-hero`
+  preview.
 
 ## Top Blockers
 
 | Blocker | Concrete implication |
 | --- | --- |
-| Six previews are scale-ready but not screenshot-accepted | `condition-monitoring-hero`, `mixed-record-hero`, `cross-space-dependency-hero`, `dynamics-noise-hero`, `mapping-dimensionality-hero` and `relation-matrix-neighborhood` now meet their current native scale thresholds, but remain preview-only until screenshot review accepts their visual grammar and composition. |
+| Native previews are scale-ready but not screenshot-accepted | `condition-monitoring-hero`, `mixed-record-hero`, `cross-space-dependency-hero`, `dynamics-noise-hero`, `mapping-dimensionality-hero`, `relation-matrix-neighborhood` and `process-curve-external-hero` now meet their current native scale thresholds, but remain preview-only until screenshot review accepts their visual grammar and composition. |
 | `relation-matrix-neighborhood` is scale-ready but not visually accepted | Its remaining gate blockers are human screenshot/readability blockers, not count blockers. The reusable matrix grammar now exposes stronger focus defaults and explicit shader-capacity diagnostics, but human review still has to accept the final screenshot. |
 | `process-curve-external-hero` is scale-ready but not visually accepted | The checked-in native evidence now contains 576 real source windows, 161 query records, a 576-by-576 dense source relation, query/winner evidence and graph evidence. Its remaining blocker is visual composition acceptance, not source scale. |
 

@@ -129,12 +129,13 @@ This plan is authoritative only with the following current-state constraints:
   the protected METRIC-owned 60k GRAE10 engine page.
 - The large-scene performance gate reads the public Visual-Brief manifest,
   covers all seven native public preview rows, reports minimum record targets
-  and blockers per preview, and keeps `process-curve-external-hero` visibly
-  scale-blocked while still testing its process-curve grammar performance.
+  and blockers per preview. All seven current rows are native-scale-ready;
+  `process-curve-external-hero` now meets its native scale target and remains
+  review-pending for screenshot/composition acceptance.
 - The next production step is to harden each native public preview into an
-  accepted hero through larger evidence where required, grammar-specific
-  performance budgets and screenshot review, not more hand-written hero HTML
-  and not more synthetic fixture scenes.
+  accepted hero through grammar-specific performance budgets and screenshot
+  review, not more hand-written hero HTML and not more synthetic fixture
+  scenes.
 - Browser load success means only `loads` or `renders`; it never means
   `hero-ready`.
 - Every public preview must have a checked visual brief in
@@ -165,8 +166,8 @@ heroes. They load native `docs/examples/assets/*/metric.visual.json` evidence
 through distinct reusable visual grammars and pass
 `visual/tools/check-public-gallery-evidence.mjs` plus the browser public
 regression gate, but still need screenshot acceptance and stronger public
-evidence where the current native fixture is too small to prove application
-value.
+composition/readability before they can prove application value as accepted
+heroes.
 
 The integrated exporter-contract wave is tracked in:
 
@@ -452,8 +453,9 @@ The current synthetic development fixtures are:
 - `relation-matrix-neighborhood`
 
 These fixtures are allowed for engine development only. They must not be used
-to prove METRIC's application value. Replace each one with native C++ exported
-evidence before moving it into the public gallery.
+to prove METRIC's application value. The matching public preview pages must
+continue to load native `docs/examples/assets/*/metric.visual.json` evidence
+instead of these page-local fixtures.
 
 ### How To Read W4-W8
 
@@ -2145,14 +2147,15 @@ Browser check:
 1. Keep `visual/examples/grae10-metric-engine/index.html` byte-stable against
    `visual/regression-baselines/grae10-metric-engine.sha256`.
 2. Keep the public project page limited to checked native evidence:
-   60k MNIST/GRAE10 and UCR process curves.
+   the accepted 60k MNIST/GRAE10 reference plus review-pending native preview
+   rows. Do not publish synthetic page fixtures as live results.
 3. Use the checked native `metric.visual.v1` assets as the only evidence source
    for the preview heroes; do not add page-local `evidence.json` fixtures.
 4. Polish each native preview into a distinct visual grammar through
    `createMetricVisual` or semantic views.
 5. Add or strengthen browser screenshot checks for each native preview grammar.
-6. Add a hero to the public page only after the evidence gate and screenshot
-   checks pass.
+6. Promote a preview to accepted hero status only after the evidence gate and
+   screenshot checks pass.
 
 Current follow-up status:
 
@@ -2219,10 +2222,9 @@ Verified:
 
 Corrected status:
 
-- The six former public preview families now have native `metric.visual.v1`
-  evidence at their configured scale thresholds: condition monitoring, mixed
-  records, cross-space dependency, relation-matrix/neighborhood, dynamics and
-  mapping.
+- The native public preview rows now have `metric.visual.v1` evidence at their
+  configured scale thresholds. Together with the external UCR/process-curve
+  native export, all seven current public preview rows are native-scale-ready.
 - They are still not accepted as public heroes until screenshot review accepts
   the visual grammar and composition.
 - They prove native export coverage and scale only; they are not evidence that
@@ -2830,7 +2832,7 @@ Corrected status:
 - The next acceptance bottleneck is visual curation/manual screenshot review
   and stricter grammar-specific stress budgets at final hero scale, not more
   synthetic page fixtures.
-- The external process-curve preview is no longer record-count-blocked. The
+- The external process-curve preview now meets its record-count target. The
   checked-in real UCR slices contain 576 source windows plus 161 contrast-query
   records, and this is documented in
   `docs/visual/reports/process-curve-external-scale-exporter.md`.

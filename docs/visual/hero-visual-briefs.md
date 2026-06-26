@@ -58,15 +58,11 @@ report has a matching brief. For each brief it checks:
 
 Current checked previews: `7`.
 
-Record-count blocked previews:
+Native scale status: all seven current public previews meet their manifest
+evidence targets. `check-native-hero-evidence-scale.mjs` reports
+`nativeScaleReadyCount: 7` and `blockedByRecordCount: []`.
 
-- `condition-monitoring-hero`
-- `mixed-record-hero`
-- `cross-space-dependency-hero`
-- `dynamics-noise-hero`
-- `mapping-dimensionality-hero`
-- `process-curve-external-hero`
-
-`relation-matrix-neighborhood` currently satisfies its minimum matrix evidence
-size, but it remains blocked by human visual composition and matrix readability
-acceptance.
+Remaining acceptance blockers are visual review blockers, not scale blockers.
+All seven previews remain blocked by `visual-composition-not-human-accepted`.
+`relation-matrix-neighborhood` also remains blocked by
+`matrix-readability-not-human-accepted`.
