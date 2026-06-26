@@ -2862,3 +2862,32 @@ Corrected status:
 - The next acceptance bottlenecks are still human visual acceptance, larger
   real evidence where needed and stricter grammar-specific stress budgets at
   final hero scale.
+
+## Implementation Checkpoint: Grammar-Specific Performance Budgets
+
+Status date: 2026-06-26
+
+Implemented:
+
+- `visual/tools/check-visual-performance-large-scenes.mjs` now reports and
+  enforces grammar-specific budgets for every current public preview grammar
+  row.
+- The grammar rows now carry an explicit `performanceBudget` object in the JSON
+  report, covering median frame time, P95 frame time, minimum frame samples,
+  minimum GPU draw calls and minimum GPU buffer uploads.
+- The gate still treats these rows as public previews, not accepted heroes; the
+  performance budget is necessary evidence for engine health, not visual
+  acceptance.
+
+Verified:
+
+- `node --check visual/tools/check-visual-performance-large-scenes.mjs`
+- `node visual/tools/check-visual-performance-large-scenes.mjs`
+
+Corrected status:
+
+- This closes the missing grammar-specific budget contract for the current
+  preview rows.
+- It does not close the remaining final-evidence stress requirement: accepted
+  heroes still need larger real evidence where the application claim requires
+  it and human screenshot acceptance.

@@ -28,10 +28,22 @@ const COUNTS = parseCounts(process.env.METRIC_VISUAL_PERF_COUNTS || "1000,10000,
 const VIEWPORT = parseViewport(process.env.METRIC_VISUAL_PERF_VIEWPORT || "1000x700");
 const READY_TIMEOUT_MS = Number(process.env.METRIC_VISUAL_PERF_READY_TIMEOUT_MS || 90000);
 const DEFAULT_MEDIAN_BUDGET_MS = Number(process.env.METRIC_VISUAL_PERF_MEDIAN_BUDGET_MS || 150);
+const DEFAULT_P95_BUDGET_MS = Number(process.env.METRIC_VISUAL_PERF_P95_BUDGET_MS || 240);
 const DEFAULT_MIN_FRAMES = Number(process.env.METRIC_VISUAL_PERF_MIN_FRAMES || 10);
 const GRAMMAR_FRAME_SAMPLE_TARGET = Number(process.env.METRIC_VISUAL_PERF_GRAMMAR_FRAME_SAMPLES || 45);
 const GRAMMAR_MEDIAN_BUDGET_MS = Number(process.env.METRIC_VISUAL_PERF_GRAMMAR_MEDIAN_BUDGET_MS || DEFAULT_MEDIAN_BUDGET_MS);
+const GRAMMAR_P95_BUDGET_MS = Number(process.env.METRIC_VISUAL_PERF_GRAMMAR_P95_BUDGET_MS || DEFAULT_P95_BUDGET_MS);
 const FORCE_SWIFTSHADER = process.env.METRIC_VISUAL_FORCE_SWIFTSHADER === "1";
+
+const GRAMMAR_PERFORMANCE_BUDGETS = {
+  field: { medianFrameMs: 70, p95FrameMs: 140, minGpuDrawCalls: 1, minBufferUploads: 1 },
+  glyph: { medianFrameMs: 70, p95FrameMs: 140, minGpuDrawCalls: 1, minBufferUploads: 1 },
+  "matrix+graph": { medianFrameMs: 70, p95FrameMs: 140, minGpuDrawCalls: 1, minBufferUploads: 1 },
+  dynamics: { medianFrameMs: 70, p95FrameMs: 140, minGpuDrawCalls: 1, minBufferUploads: 1 },
+  mapping: { medianFrameMs: 70, p95FrameMs: 140, minGpuDrawCalls: 1, minBufferUploads: 1 },
+  graph: { medianFrameMs: 70, p95FrameMs: 140, minGpuDrawCalls: 1, minBufferUploads: 1 },
+  "process-curve": { medianFrameMs: 80, p95FrameMs: 160, minGpuDrawCalls: 1, minBufferUploads: 1 },
+};
 
 const GRAMMAR_CASES = [
   {
@@ -402,7 +414,9 @@ async function main() {
       requiredGpuDrawCalls: 1,
       requiredBufferUploads: 1,
       grammarMedianFrameMs: GRAMMAR_MEDIAN_BUDGET_MS,
+      grammarP95FrameMs: GRAMMAR_P95_BUDGET_MS,
       grammarFrameSamples: GRAMMAR_FRAME_SAMPLE_TARGET,
+      grammarSpecificBudgets: GRAMMAR_PERFORMANCE_BUDGETS,
     },
     heroAcceptancePolicy: {
       protectedAcceptedHero: "grae10-metric-engine",
@@ -527,6 +541,7 @@ async function checkGrammarCase(browser, url, grammarCase, visualBrief = null) {
   ]));
   const missingPrimitives = expectedPrimitives.filter((primitive) => !primitives.includes(primitive));
   const layerDiagnostics = Array.isArray(runtime.layerDiagnostics) ? runtime.layerDiagnostics : [];
+  const budget = grammarBudgetFor(grammarCase, visualBrief);
   const minimumEvidence = visualBrief?.minimumEvidence && typeof visualBrief.minimumEvidence === "object"
     ? visualBrief.minimumEvidence
     : {};
@@ -565,14 +580,25 @@ async function checkGrammarCase(browser, url, grammarCase, visualBrief = null) {
       issues.push({ code: "missing-relation-matrix-tile-summary-diagnostics", tileSummary: tileSummary || null });
     }
   }
-  if ((frameTiming?.frames || 0) < DEFAULT_MIN_FRAMES) {
-    issues.push({ code: "insufficient-frame-sample", min: DEFAULT_MIN_FRAMES, actual: frameTiming?.frames || 0 });
+  if ((frameTiming?.frames || 0) < budget.minFrames) {
+    issues.push({ code: "insufficient-frame-sample", min: budget.minFrames, actual: frameTiming?.frames || 0 });
   }
-  if (!Number.isFinite(frameTiming?.medianMs) || frameTiming.medianMs > GRAMMAR_MEDIAN_BUDGET_MS) {
-    issues.push({ code: "grammar-median-frame-budget-exceeded", budgetMs: GRAMMAR_MEDIAN_BUDGET_MS, actualMs: frameTiming?.medianMs ?? null });
+  if (!Number.isFinite(frameTiming?.medianMs) || frameTiming.medianMs > budget.medianFrameMs) {
+    issues.push({ code: "grammar-median-frame-budget-exceeded", budgetMs: budget.medianFrameMs, actualMs: frameTiming?.medianMs ?? null });
   }
-  if ((gpu.bufferDataCalls || 0) < 1 || (gpu.totalBufferBytes || 0) < 1) issues.push({ code: "missing-gpu-buffer-diagnostics" });
-  if ((gpu.drawCalls || 0) < 1) issues.push({ code: "missing-gpu-draw-diagnostics" });
+  if (!Number.isFinite(frameTiming?.p95Ms) || frameTiming.p95Ms > budget.p95FrameMs) {
+    issues.push({ code: "grammar-p95-frame-budget-exceeded", budgetMs: budget.p95FrameMs, actualMs: frameTiming?.p95Ms ?? null });
+  }
+  if ((gpu.bufferDataCalls || 0) < budget.minBufferUploads || (gpu.totalBufferBytes || 0) < 1) {
+    issues.push({
+      code: "missing-gpu-buffer-diagnostics",
+      minBufferUploads: budget.minBufferUploads,
+      actualBufferUploads: gpu.bufferDataCalls || 0,
+    });
+  }
+  if ((gpu.drawCalls || 0) < budget.minGpuDrawCalls) {
+    issues.push({ code: "missing-gpu-draw-diagnostics", minDrawCalls: budget.minGpuDrawCalls, actualDrawCalls: gpu.drawCalls || 0 });
+  }
   if (page?.consoleErrors?.length) issues.push({ code: "console-errors", count: page.consoleErrors.length, messages: page.consoleErrors });
   if (page?.pageErrors?.length) issues.push({ code: "page-errors", count: page.pageErrors.length, messages: page.pageErrors });
 
@@ -600,6 +626,7 @@ async function checkGrammarCase(browser, url, grammarCase, visualBrief = null) {
     descriptorPrimitives: primitives,
     layerDiagnostics,
     expectedPrimitives,
+    performanceBudget: budget,
     frameTimingSample: frameTiming,
     renderer: {
       ...renderer,
@@ -936,6 +963,31 @@ function parseViewport(value) {
 function finiteNumberOrNull(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
+}
+
+function grammarBudgetFor(grammarCase, visualBrief) {
+  const override = GRAMMAR_PERFORMANCE_BUDGETS[grammarCase.grammar] || {};
+  const briefBudget = visualBrief?.performanceBudget && typeof visualBrief.performanceBudget === "object"
+    ? visualBrief.performanceBudget
+    : {};
+  return {
+    medianFrameMs: positiveNumber(briefBudget.medianFrameMs, override.medianFrameMs ?? GRAMMAR_MEDIAN_BUDGET_MS),
+    p95FrameMs: positiveNumber(briefBudget.p95FrameMs, override.p95FrameMs ?? GRAMMAR_P95_BUDGET_MS),
+    minFrames: positiveInteger(briefBudget.minFrames, DEFAULT_MIN_FRAMES),
+    minGpuDrawCalls: positiveInteger(briefBudget.minGpuDrawCalls, override.minGpuDrawCalls ?? 1),
+    minBufferUploads: positiveInteger(briefBudget.minBufferUploads, override.minBufferUploads ?? 1),
+    source: briefBudget && Object.keys(briefBudget).length ? "visual-brief" : "grammar-default",
+  };
+}
+
+function positiveNumber(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : fallback;
+}
+
+function positiveInteger(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? Math.floor(number) : fallback;
 }
 
 function sleep(ms) {

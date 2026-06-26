@@ -198,6 +198,9 @@ Implemented native slices:
   current public preview grammar rows for field, glyph, relation-matrix/graph,
   dynamics, mapping, cross-space and process-curve scenes:
   `visual/tools/check-visual-performance-large-scenes.mjs`
+- the large-scene performance gate now reports and enforces grammar-specific
+  median/P95 frame budgets, frame-sample minimums and GPU diagnostic minimums
+  for every current public preview grammar row
 - the large-scene performance gate now reads
   `visual/hero-visual-briefs.manifest.json`, reports Visual-Brief coverage,
   per-preview minimum record targets, current acceptance blockers and keeps
@@ -303,8 +306,10 @@ Known gaps:
   layer-specific GPU work is matrix GPU picking only if the semantic picker is
   not sufficient at larger tiled scales.
 - performance gates exist for large point-cloud workloads and all seven current
-  public preview grammar rows; matrix, graph, field, glyph, dynamics and mapping
-  still need stricter stress-size budgets at realistic final hero evidence sizes
+  public preview grammar rows, including grammar-specific median/P95 frame
+  budgets and GPU diagnostic minimums. Matrix, graph, field, glyph, dynamics
+  and mapping still need larger final-evidence stress inputs before public hero
+  acceptance.
 - exporter-contract hardening is integrated for Process-Curve, Solver-Trace,
   Redif and relation-matrix evidence. The completed work is tracked in
   `docs/visual/agent-tasks/visual-exporter-cli-contract.md`,
