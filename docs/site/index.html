@@ -8,7 +8,7 @@
       content="METRIC is a native C++ framework for finite metric spaces and visual evidence over records, metrics, relations, mappings and dynamics."
     />
     <link rel="icon" href="data:," />
-    <title>METRIC | Finite Metric Spaces</title>
+    <title>METRIC | Visual Evidence Portfolio</title>
     <style>
       :root {
         color-scheme: light;
@@ -19,9 +19,10 @@
         --paper: oklch(0.955 0.020 96);
         --field: oklch(0.91 0.030 138);
         --panel: oklch(0.985 0.010 96);
-        --accent: oklch(0.46 0.100 205);
-        --green: oklch(0.55 0.085 155);
-        --warm: oklch(0.66 0.120 58);
+        --accent: oklch(0.45 0.105 205);
+        --accepted: oklch(0.50 0.090 155);
+        --pending: oklch(0.62 0.125 62);
+        --blocked: oklch(0.52 0.095 35);
         font-family:
           Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
           "Segoe UI", sans-serif;
@@ -49,8 +50,7 @@
         color: inherit;
       }
 
-      code,
-      pre {
+      code {
         font-family: "SFMono-Regular", ui-monospace, "Cascadia Code", monospace;
       }
 
@@ -58,38 +58,41 @@
         position: fixed;
         inset: 0 0 auto;
         z-index: 20;
-        border-bottom: 1px solid color-mix(in oklch, var(--ink), transparent 86%);
-        background: color-mix(in oklch, var(--paper), transparent 10%);
+        border-bottom: 1px solid color-mix(in oklch, var(--ink), transparent 88%);
+        background: color-mix(in oklch, var(--paper), transparent 8%);
         backdrop-filter: blur(14px);
       }
 
       .wrap {
-        width: min(1440px, calc(100% - 44px));
+        width: min(1460px, calc(100% - 40px));
         margin: 0 auto;
       }
 
       .top .wrap {
         display: flex;
-        min-height: 64px;
+        min-height: 58px;
         align-items: center;
         justify-content: space-between;
-        gap: 20px;
+        gap: 18px;
       }
 
       .brand {
+        font-size: 15px;
         font-weight: 900;
-        letter-spacing: 0.10em;
+        letter-spacing: 0;
       }
 
       nav {
         display: flex;
-        gap: 20px;
+        gap: 18px;
         align-items: center;
         color: var(--muted);
         font-size: 14px;
       }
 
-      nav a {
+      nav a,
+      .links a,
+      .button {
         text-decoration: none;
       }
 
@@ -98,12 +101,16 @@
         min-height: 40px;
         align-items: center;
         justify-content: center;
-        padding: 0 16px;
+        padding: 0 15px;
         border: 1px solid color-mix(in oklch, var(--ink), transparent 78%);
         background: color-mix(in oklch, var(--panel), transparent 6%);
         color: var(--ink);
+        font-size: 14px;
         font-weight: 780;
-        text-decoration: none;
+        transition:
+          transform 180ms ease-out,
+          border-color 180ms ease-out,
+          background 180ms ease-out;
       }
 
       .button.primary {
@@ -112,62 +119,71 @@
         color: oklch(0.98 0.006 95);
       }
 
+      .button:hover {
+        transform: translateY(-1px);
+        border-color: color-mix(in oklch, var(--accent), var(--ink) 26%);
+      }
+
       .hero {
-        min-height: 100svh;
-        padding-top: 64px;
+        min-height: calc(100svh - 28px);
+        padding: 74px 0 24px;
         overflow: hidden;
       }
 
       .hero-stage {
         display: grid;
-        min-height: calc(100svh - 64px);
-        grid-template-rows: auto minmax(560px, 1fr);
-        gap: 22px;
-        padding: clamp(26px, 4svh, 54px) 0 38px;
+        min-height: calc(100svh - 126px);
+        grid-template-columns: minmax(310px, 0.34fr) minmax(0, 0.66fr);
+        gap: clamp(18px, 3vw, 42px);
+        align-items: stretch;
       }
 
       .hero-copy {
-        display: grid;
-        grid-template-columns: minmax(280px, 0.62fr) minmax(260px, 0.38fr);
-        gap: 30px;
-        align-items: end;
+        display: flex;
+        min-height: 100%;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 28px;
+        padding: clamp(8px, 1vw, 16px) 0 10px;
+        animation: rise-in 540ms cubic-bezier(0.22, 1, 0.36, 1) both;
       }
 
       .eyebrow {
-        margin: 0 0 14px;
+        margin: 0 0 13px;
         color: var(--muted);
         font-size: 12px;
         font-weight: 850;
-        letter-spacing: 0.14em;
+        letter-spacing: 0;
         text-transform: uppercase;
       }
 
       h1,
       h2,
-      h3 {
+      h3,
+      p {
         margin: 0;
         letter-spacing: 0;
       }
 
       h1 {
-        max-width: 1000px;
-        font-size: clamp(58px, 9vw, 132px);
-        line-height: 0.86;
+        max-width: 560px;
+        font-size: clamp(64px, 7.2vw, 104px);
+        line-height: 0.84;
       }
 
       .lead {
-        max-width: 590px;
-        margin: 0;
+        max-width: 560px;
         color: var(--text);
         font-size: clamp(20px, 2.2vw, 31px);
-        line-height: 1.28;
+        line-height: 1.2;
       }
 
       .hero-actions,
-      .links {
+      .links,
+      .path-links {
         display: flex;
         flex-wrap: wrap;
-        gap: 12px;
+        gap: 10px;
       }
 
       .hero-actions {
@@ -175,22 +191,42 @@
       }
 
       .hero-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 16px;
+        display: grid;
+        gap: 9px;
+        max-width: 420px;
         color: var(--muted);
         font-size: 13px;
-        font-weight: 760;
+        line-height: 1.42;
       }
 
-      .hero-visual,
-      .visual {
+      .hero-meta strong {
+        color: var(--text);
+        font-weight: 850;
+      }
+
+      .hero-visual {
         position: relative;
+        min-height: 620px;
         overflow: hidden;
-        border: 1px solid color-mix(in oklch, var(--ink), transparent 80%);
-        background: oklch(0.85 0.025 136);
-        box-shadow: 0 28px 90px oklch(0.24 0.028 145 / 0.16);
+        border: 1px solid color-mix(in oklch, var(--ink), transparent 78%);
+        background: oklch(0.86 0.025 136);
+        box-shadow: 0 30px 90px oklch(0.24 0.028 145 / 0.17);
+        animation: visual-in 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+
+      .hero-visual::after {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        height: 112px;
+        background: linear-gradient(
+          to top,
+          oklch(0.18 0.030 230 / 0.30),
+          transparent
+        );
+        content: "";
+        pointer-events: none;
       }
 
       iframe {
@@ -206,154 +242,149 @@
       }
 
       .section {
-        padding: 74px 0;
+        padding: clamp(52px, 8vw, 96px) 0;
       }
 
       .section-head {
         display: grid;
-        grid-template-columns: minmax(0, 0.68fr) minmax(280px, 0.32fr);
+        grid-template-columns: minmax(0, 0.62fr) minmax(280px, 0.38fr);
         gap: 36px;
         align-items: end;
-        margin-bottom: 34px;
+        margin-bottom: 30px;
       }
 
       h2 {
         max-width: 900px;
-        font-size: clamp(40px, 5.4vw, 82px);
+        font-size: clamp(38px, 5.2vw, 76px);
         line-height: 0.96;
       }
 
       .section-head p,
-      .card p,
-      .concept p {
-        margin: 0;
+      .portfolio-copy,
+      .concept p,
+      .source-note {
         color: var(--muted);
-        font-size: 16px;
+        font-size: 15px;
         line-height: 1.52;
       }
 
-      .gallery {
+      .accepted-reference {
         display: grid;
-        gap: 18px;
+        grid-template-columns: minmax(250px, 0.30fr) minmax(0, 0.70fr);
+        gap: 26px;
+        align-items: end;
+        margin-bottom: 14px;
+        padding: 24px;
+        border: 1px solid color-mix(in oklch, var(--accepted), var(--line) 52%);
+        background: color-mix(in oklch, var(--field), var(--panel) 58%);
       }
 
-      .card {
+      .accepted-reference h3 {
+        margin-top: 14px;
+        font-size: clamp(28px, 3.2vw, 48px);
+        line-height: 0.98;
+      }
+
+      .portfolio {
         display: grid;
-        grid-template-columns: minmax(460px, 0.63fr) minmax(320px, 0.37fr);
-        min-height: 520px;
+        gap: 10px;
+      }
+
+      .portfolio-item {
+        display: grid;
+        grid-template-columns: minmax(220px, 0.24fr) minmax(230px, 0.27fr) minmax(0, 0.49fr);
+        gap: 18px;
+        align-items: stretch;
         border: 1px solid color-mix(in oklch, var(--ink), transparent 84%);
         background: color-mix(in oklch, var(--panel), transparent 3%);
+        transition:
+          border-color 180ms ease-out,
+          transform 180ms ease-out,
+          background 180ms ease-out;
       }
 
-      .card.accepted {
-        min-height: 680px;
-        grid-template-columns: minmax(560px, 0.72fr) minmax(330px, 0.28fr);
+      .portfolio-item:hover {
+        transform: translateY(-2px);
+        border-color: color-mix(in oklch, var(--accent), var(--ink) 30%);
+        background: color-mix(in oklch, var(--panel), var(--field) 14%);
       }
 
-      .visual {
-        min-height: 100%;
-        border: 0;
-        box-shadow: none;
+      .preview {
+        min-height: 178px;
+        overflow: hidden;
+        border-right: 1px solid color-mix(in oklch, var(--ink), transparent 86%);
+        background: oklch(0.86 0.026 138);
       }
 
-      .card-body {
+      .portfolio-main {
         display: grid;
-        align-content: start;
-        gap: 18px;
-        padding: clamp(22px, 3vw, 34px);
-        border-left: 1px solid color-mix(in oklch, var(--ink), transparent 86%);
+        align-content: center;
+        gap: 13px;
+        padding: 20px 0;
+      }
+
+      .portfolio-main h3 {
+        font-size: clamp(24px, 2.4vw, 38px);
+        line-height: 1;
+      }
+
+      .portfolio-detail {
+        display: grid;
+        align-content: center;
+        gap: 14px;
+        padding: 18px 22px 18px 0;
       }
 
       .status {
         width: fit-content;
         border: 1px solid color-mix(in oklch, var(--ink), transparent 78%);
-        padding: 5px 9px;
+        padding: 5px 8px;
         color: var(--text);
         font-size: 11px;
         font-weight: 850;
-        letter-spacing: 0.10em;
+        letter-spacing: 0;
         text-transform: uppercase;
       }
 
       .status.accepted {
-        border-color: color-mix(in oklch, var(--green), var(--ink) 20%);
-        color: color-mix(in oklch, var(--green), var(--ink) 35%);
+        border-color: color-mix(in oklch, var(--accepted), var(--ink) 20%);
+        color: color-mix(in oklch, var(--accepted), var(--ink) 32%);
       }
 
       .status.pending {
-        border-color: color-mix(in oklch, var(--warm), var(--ink) 20%);
-        color: color-mix(in oklch, var(--warm), var(--ink) 38%);
+        border-color: color-mix(in oklch, var(--pending), var(--ink) 22%);
+        color: color-mix(in oklch, var(--pending), var(--ink) 40%);
       }
 
-      .evidence-row {
-        display: grid;
-        grid-template-columns: minmax(280px, 0.42fr) minmax(320px, 0.58fr);
-        gap: 26px;
-        margin-bottom: 18px;
-        padding: clamp(22px, 3vw, 34px);
-        border: 1px solid color-mix(in oklch, var(--ink), transparent 84%);
-        background: color-mix(in oklch, var(--panel), transparent 3%);
+      .status.blocked {
+        border-color: color-mix(in oklch, var(--blocked), var(--ink) 24%);
+        color: color-mix(in oklch, var(--blocked), var(--ink) 42%);
       }
 
-      .evidence-row h3 {
-        margin-top: 14px;
-        font-size: clamp(28px, 3.4vw, 50px);
-        line-height: 0.98;
-      }
-
-      .evidence-row p {
-        margin: 0;
-        color: var(--muted);
-        font-size: 16px;
-        line-height: 1.52;
-      }
-
-      .gallery-group {
-        margin-top: 38px;
-      }
-
-      .gallery-group > h3 {
-        margin: 0 0 18px;
-        color: var(--text);
-        font-size: 18px;
-        font-weight: 900;
-        letter-spacing: 0.10em;
-        text-transform: uppercase;
-      }
-
-      .card h3 {
-        font-size: clamp(30px, 3.4vw, 52px);
-        line-height: 0.98;
-      }
-
-      .links a {
+      .links a,
+      .path-links a {
         color: var(--accent);
         font-size: 14px;
         font-weight: 830;
-        text-decoration: none;
       }
 
-      details {
-        border: 1px solid color-mix(in oklch, var(--ink), transparent 84%);
-        background: color-mix(in oklch, var(--paper), transparent 14%);
-      }
-
-      summary {
-        cursor: pointer;
-        padding: 12px 14px;
-        color: var(--text);
-        font-size: 13px;
-        font-weight: 850;
-      }
-
-      pre {
-        margin: 0;
-        overflow: auto;
-        padding: 0 14px 14px;
+      .path-list {
+        display: grid;
+        gap: 8px;
         color: var(--text);
         font-size: 12px;
-        line-height: 1.55;
-        white-space: pre-wrap;
+        line-height: 1.45;
+      }
+
+      .path-list a {
+        display: block;
+        overflow-wrap: anywhere;
+        color: inherit;
+        text-decoration-color: color-mix(in oklch, var(--accent), transparent 45%);
+      }
+
+      .source-note {
+        margin-top: 18px;
       }
 
       .concept-grid {
@@ -365,40 +396,89 @@
       }
 
       .concept {
-        min-height: 190px;
-        padding: 24px;
+        min-height: 170px;
+        padding: 22px;
         background: color-mix(in oklch, var(--panel), transparent 5%);
       }
 
       .concept strong {
         display: block;
-        margin-bottom: 12px;
-        font-size: 20px;
+        margin-bottom: 10px;
+        font-size: 18px;
       }
 
       footer {
-        padding: 34px 0;
+        padding: 32px 0;
         color: var(--muted);
         font-size: 14px;
       }
 
-      @media (max-width: 1020px) {
-        .hero-copy,
+      @keyframes rise-in {
+        from {
+          opacity: 0;
+          transform: translateY(14px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes visual-in {
+        from {
+          opacity: 0;
+          transform: translateY(18px) scale(0.992);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 1ms !important;
+          scroll-behavior: auto !important;
+          transition-duration: 1ms !important;
+        }
+      }
+
+      @media (max-width: 1100px) {
+        .hero-stage,
         .section-head,
-        .evidence-row,
-        .card,
-        .card.accepted,
+        .accepted-reference,
+        .portfolio-item,
         .concept-grid {
           grid-template-columns: 1fr;
         }
 
-        .card-body {
-          border-left: 0;
-          border-top: 1px solid color-mix(in oklch, var(--ink), transparent 86%);
+        .hero-stage {
+          min-height: auto;
         }
 
-        .hero-stage {
-          grid-template-rows: auto 520px;
+        .hero-copy {
+          min-height: auto;
+        }
+
+        .hero-visual {
+          min-height: 540px;
+        }
+
+        .preview {
+          min-height: 280px;
+          border-right: 0;
+          border-bottom: 1px solid color-mix(in oklch, var(--ink), transparent 86%);
+        }
+
+        .portfolio-main,
+        .portfolio-detail {
+          padding: 22px;
+        }
+
+        .portfolio-detail {
+          padding-top: 0;
         }
       }
 
@@ -413,16 +493,33 @@
           flex-direction: column;
         }
 
+        nav {
+          gap: 10px;
+          padding-bottom: 14px;
+        }
+
         .hero {
-          padding-top: 0;
+          padding-top: 26px;
         }
 
         h1 {
-          font-size: 54px;
+          font-size: clamp(54px, 18vw, 80px);
         }
 
-        .hero-stage {
-          grid-template-rows: auto 420px;
+        .lead {
+          font-size: 20px;
+        }
+
+        .hero-visual {
+          min-height: 440px;
+        }
+
+        .preview {
+          min-height: 220px;
+        }
+
+        .wrap {
+          width: min(100% - 28px, 1460px);
         }
       }
     </style>
@@ -441,43 +538,34 @@
     </header>
 
     <main>
-      <section class="hero" aria-label="METRIC hero">
+      <section class="hero" aria-label="METRIC visual reference">
         <div class="wrap hero-stage">
           <div class="hero-copy">
             <div>
-              <p class="eyebrow">MNIST dimension reduction</p>
+              <p class="eyebrow">Accepted 60k MNIST reference</p>
               <h1>METRIC</h1>
             </div>
             <div>
               <p class="lead">
-                60,000 handwritten digits become one finite metric space. The
-                GRAE10 view is a derived coordinate scene, rendered live from
-                METRIC evidence.
+                Finite records, native metrics and browser-rendered evidence.
+                The accepted GRAE10 view shows all 60,000 MNIST records as a
+                METRIC visual reference.
               </p>
               <div class="hero-actions">
-                <a class="button primary" href="#gallery">Explore visuals</a>
-                <a class="button" href="../../README.md">Read README</a>
+                <a class="button primary" href="#gallery">Open gallery</a>
+                <a class="button" href="../../examples/engine/mnist_grae10_integrity.cpp">C++ evidence path</a>
               </div>
               <div class="hero-meta">
-                <span>60,000 MNIST records</span>
-                <span>10 digit classes</span>
-                <span>native METRIC evidence</span>
+                <span><strong>Visual:</strong> visual/examples/grae10-metric-engine/index.html</span>
+                <span><strong>Evidence:</strong> visual/examples/grae10-metric-engine/grae10-data.json</span>
+                <span><strong>Notes:</strong> docs/examples/mnist-grae10-gallery.md</span>
               </div>
-              <div class="links" style="margin-top: 16px">
-                <a href="../../examples/engine/mnist_grae10_integrity.cpp">integrity check</a>
-                <a href="../../docs/examples/mnist-grae10-gallery.md">MNIST notes</a>
-              </div>
-              <details style="margin-top: 16px">
-                <summary>Reproduce check</summary>
-                <pre>cmake --build build/core --target engine_mnist_grae10_integrity
-build/core/examples/engine/engine_mnist_grae10_integrity</pre>
-              </details>
             </div>
           </div>
 
           <div class="hero-visual">
             <iframe
-              title="MNIST dimension reduction, 60k GRAE10 metric-space view"
+              title="Accepted 60k MNIST GRAE10 metric-space visual reference"
               src="../../visual/examples/grae10-metric-engine/index.html"
               loading="eager"></iframe>
           </div>
@@ -488,243 +576,234 @@ build/core/examples/engine/engine_mnist_grae10_integrity</pre>
         <div class="wrap">
           <div class="section-head">
             <div>
-              <p class="eyebrow">Examples</p>
-              <h2>Application gallery.</h2>
+              <p class="eyebrow">Visual portfolio</p>
+              <h2>Evidence first, status visible.</h2>
             </div>
             <p>
-              Open each scene, inspect the exported evidence and read the
-              native source that produced it. MNIST/GRAE10 is the accepted
-              full-scale reference; the other examples remain under visual
-              review.
+              Each item links to the live visual and the native C++ source path
+              that produced its evidence. GRAE10 is the accepted hero reference;
+              the other public pages are native evidence previews.
             </p>
           </div>
 
-          <div class="evidence-row" aria-label="Accepted visual evidence">
+          <div class="accepted-reference" data-gallery-item="grae10-metric-engine" data-evidence-status="accepted">
             <div>
-              <span class="status accepted">accepted reference</span>
-              <h3>MNIST dimension reduction</h3>
+              <span class="status accepted">Accepted reference</span>
+              <h3>MNIST GRAE10</h3>
             </div>
             <div>
-              <p>
-                The 60k GRAE10/MNIST scene shown above is the current
-                full-scale reference. It is linked here as evidence, not
-                repeated as a second iframe.
+              <p class="portfolio-copy">
+                The first viewport embeds this protected 60k reference once.
+                This row provides the live link and source paths without
+                duplicating the hero visual.
               </p>
-              <div class="links" style="margin-top: 16px">
-                <a href="../../visual/examples/grae10-metric-engine/index.html">open visual</a>
-                <a href="../../examples/engine/mnist_grae10_integrity.cpp">integrity check</a>
-                <a href="../../docs/examples/mnist-grae10-gallery.md">reference notes</a>
+              <div class="path-links" style="margin-top: 14px">
+                <a href="../../visual/examples/grae10-metric-engine/index.html">Open visual</a>
+                <a href="../../examples/engine/mnist_grae10_integrity.cpp">C++ path</a>
+                <a href="../../docs/examples/mnist-grae10-gallery.md">Reference notes</a>
+              </div>
+              <div class="path-list" style="margin-top: 14px">
+                <a href="../../examples/engine/mnist_grae10_integrity.cpp"><code>examples/engine/mnist_grae10_integrity.cpp</code></a>
+                <a href="../../visual/examples/grae10-metric-engine/grae10-data.json"><code>visual/examples/grae10-metric-engine/grae10-data.json</code></a>
               </div>
             </div>
           </div>
 
-          <div class="gallery-group" aria-label="Application examples">
-            <h3>Application examples</h3>
-            <div class="gallery">
-              <article class="card">
-                <div class="visual">
-                  <iframe
-                    title="Condition monitoring visual"
-                    src="../../visual/examples/condition-monitoring-hero/index.html"
-                    loading="lazy"></iframe>
+          <div class="portfolio" aria-label="Native preview gallery">
+            <article class="portfolio-item" data-gallery-item="condition-monitoring-hero" data-evidence-status="review-pending">
+              <div class="preview">
+                <iframe
+                  title="Condition monitoring native preview"
+                  src="../../visual/examples/condition-monitoring-hero/index.html"
+                  loading="lazy"></iframe>
+              </div>
+              <div class="portfolio-main">
+                <span class="status pending">Native preview</span>
+                <h3>Condition monitoring</h3>
+                <p class="portfolio-copy">
+                  Operating windows, anomaly evidence, density structure and
+                  trajectory context rendered from a native export.
+                </p>
+              </div>
+              <div class="portfolio-detail">
+                <div class="links">
+                  <a href="../../visual/examples/condition-monitoring-hero/index.html">Open visual</a>
+                  <a href="../../docs/examples/assets/condition-monitoring/metric.visual.json">Evidence JSON</a>
                 </div>
-                <div class="card-body">
-                  <span class="status pending">review pending</span>
-                  <h3>Condition monitoring</h3>
-                  <p>
-                    Process windows become a finite metric space with operating
-                    regimes, anomaly evidence, density structure and trajectory
-                    context.
-                  </p>
-                  <div class="links">
-                    <a href="../../visual/examples/condition-monitoring-hero/index.html">open visual</a>
-                    <a href="../../examples/engine/condition_monitoring_visual_export.cpp">native source</a>
-                    <a href="../../docs/examples/assets/condition-monitoring/metric.visual.json">visual evidence</a>
-                  </div>
-                  <details>
-                    <summary>Reproduce evidence</summary>
-                    <pre>cmake --build build/core --target engine_condition_monitoring_visual_export
-build/core/examples/engine/engine_condition_monitoring_visual_export \
-  --export-dir docs/examples/assets/condition-monitoring</pre>
-                  </details>
+                <div class="path-list">
+                  <a href="../../examples/engine/condition_monitoring_visual_export.cpp"><code>examples/engine/condition_monitoring_visual_export.cpp</code></a>
+                  <a href="../../docs/examples/assets/condition-monitoring/metric.visual.json"><code>docs/examples/assets/condition-monitoring/metric.visual.json</code></a>
                 </div>
-              </article>
+              </div>
+            </article>
 
-              <article class="card">
-                <div class="visual">
-                  <iframe
-                    title="Mixed records visual"
-                    src="../../visual/examples/mixed-record-hero/index.html"
-                    loading="lazy"></iframe>
+            <article class="portfolio-item" data-gallery-item="mixed-record-hero" data-evidence-status="review-pending">
+              <div class="preview">
+                <iframe
+                  title="Mixed records native preview"
+                  src="../../visual/examples/mixed-record-hero/index.html"
+                  loading="lazy"></iframe>
+              </div>
+              <div class="portfolio-main">
+                <span class="status pending">Native preview</span>
+                <h3>Mixed records</h3>
+                <p class="portfolio-copy">
+                  Strings, curves, distributions and structured rows stay
+                  typed while relation evidence connects them in one space.
+                </p>
+              </div>
+              <div class="portfolio-detail">
+                <div class="links">
+                  <a href="../../visual/examples/mixed-record-hero/index.html">Open visual</a>
+                  <a href="../../docs/examples/assets/mixed-records/metric.visual.json">Evidence JSON</a>
                 </div>
-                <div class="card-body">
-                  <span class="status pending">review pending</span>
-                  <h3>Mixed records</h3>
-                  <p>
-                    Typed records keep their source form while relation evidence
-                    connects strings, curves, distributions and structured rows
-                    in one finite-space workflow.
-                  </p>
-                  <div class="links">
-                    <a href="../../visual/examples/mixed-record-hero/index.html">open visual</a>
-                    <a href="../../examples/engine/mixed_finite_records_visual_export.cpp">native source</a>
-                    <a href="../../docs/examples/assets/mixed-records/metric.visual.json">visual evidence</a>
-                  </div>
-                  <details>
-                    <summary>Reproduce evidence</summary>
-                    <pre>cmake --build build/core --target engine_mixed_finite_records_visual_export
-build/core/examples/engine/engine_mixed_finite_records_visual_export \
-  --export-dir docs/examples/assets/mixed-records</pre>
-                  </details>
+                <div class="path-list">
+                  <a href="../../examples/engine/mixed_finite_records_visual_export.cpp"><code>examples/engine/mixed_finite_records_visual_export.cpp</code></a>
+                  <a href="../../docs/examples/assets/mixed-records/metric.visual.json"><code>docs/examples/assets/mixed-records/metric.visual.json</code></a>
                 </div>
-              </article>
+              </div>
+            </article>
 
-              <article class="card">
-                <div class="visual">
-                  <iframe
-                    title="Cross-space dependency visual"
-                    src="../../visual/examples/cross-space-dependency-hero/index.html"
-                    loading="lazy"></iframe>
+            <article class="portfolio-item" data-gallery-item="cross-space-dependency-hero" data-evidence-status="review-pending">
+              <div class="preview">
+                <iframe
+                  title="Cross-space dependency native preview"
+                  src="../../visual/examples/cross-space-dependency-hero/index.html"
+                  loading="lazy"></iframe>
+              </div>
+              <div class="portfolio-main">
+                <span class="status pending">Native preview</span>
+                <h3>Cross-space dependency</h3>
+                <p class="portfolio-copy">
+                  Paired metric spaces remain separate while linked selection
+                  and dependence diagnostics show how records move together.
+                </p>
+              </div>
+              <div class="portfolio-detail">
+                <div class="links">
+                  <a href="../../visual/examples/cross-space-dependency-hero/index.html">Open visual</a>
+                  <a href="../../docs/examples/assets/cross-space-dependency/metric.visual.json">Evidence JSON</a>
                 </div>
-                <div class="card-body">
-                  <span class="status pending">review pending</span>
-                  <h3>Cross-space dependency</h3>
-                  <p>
-                    Two paired metric spaces stay separate while linked selection
-                    and dependence evidence show how their record relations move
-                    together.
-                  </p>
-                  <div class="links">
-                    <a href="../../visual/examples/cross-space-dependency-hero/index.html">open visual</a>
-                    <a href="../../examples/engine/cross_space_dependency_visual_export.cpp">native source</a>
-                    <a href="../../docs/examples/assets/cross-space-dependency/metric.visual.json">visual evidence</a>
-                  </div>
-                  <details>
-                    <summary>Reproduce evidence</summary>
-                    <pre>cmake --build build/core --target engine_cross_space_dependency_visual_export
-build/core/examples/engine/engine_cross_space_dependency_visual_export \
-  --export-dir docs/examples/assets/cross-space-dependency</pre>
-                  </details>
+                <div class="path-list">
+                  <a href="../../examples/engine/cross_space_dependency_visual_export.cpp"><code>examples/engine/cross_space_dependency_visual_export.cpp</code></a>
+                  <a href="../../docs/examples/assets/cross-space-dependency/metric.visual.json"><code>docs/examples/assets/cross-space-dependency/metric.visual.json</code></a>
                 </div>
-              </article>
+              </div>
+            </article>
 
-              <article class="card">
-                <div class="visual">
-                  <iframe
-                    title="Mapping and dimensionality visual"
-                    src="../../visual/examples/mapping-dimensionality-hero/index.html"
-                    loading="lazy"></iframe>
+            <article class="portfolio-item" data-gallery-item="mapping-dimensionality-hero" data-evidence-status="review-pending">
+              <div class="preview">
+                <iframe
+                  title="Mapping and dimensionality native preview"
+                  src="../../visual/examples/mapping-dimensionality-hero/index.html"
+                  loading="lazy"></iframe>
+              </div>
+              <div class="portfolio-main">
+                <span class="status pending">Native preview</span>
+                <h3>Mapping and dimensionality</h3>
+                <p class="portfolio-copy">
+                  A coordinate state is shown as a derived view, with residual
+                  and preservation evidence attached to the native mapping.
+                </p>
+              </div>
+              <div class="portfolio-detail">
+                <div class="links">
+                  <a href="../../visual/examples/mapping-dimensionality-hero/index.html">Open visual</a>
+                  <a href="../../docs/examples/assets/mapping-dimensionality/metric.visual.json">Evidence JSON</a>
                 </div>
-                <div class="card-body">
-                  <span class="status pending">review pending</span>
-                  <h3>Mapping and dimensionality</h3>
-                  <p>
-                    A coordinate view is treated as a derived state of a source
-                    metric space, with morph timing and residual evidence showing
-                    what is preserved or distorted.
-                  </p>
-                  <div class="links">
-                    <a href="../../visual/examples/mapping-dimensionality-hero/index.html">open visual</a>
-                    <a href="../../examples/engine/mapping_dimensionality_visual_export.cpp">native source</a>
-                    <a href="../../docs/examples/assets/mapping-dimensionality/metric.visual.json">visual evidence</a>
-                  </div>
-                  <details>
-                    <summary>Reproduce evidence</summary>
-                    <pre>cmake --build build/core --target engine_mapping_dimensionality_visual_export
-build/core/examples/engine/engine_mapping_dimensionality_visual_export \
-  --export-dir docs/examples/assets/mapping-dimensionality</pre>
-                  </details>
+                <div class="path-list">
+                  <a href="../../examples/engine/mapping_dimensionality_visual_export.cpp"><code>examples/engine/mapping_dimensionality_visual_export.cpp</code></a>
+                  <a href="../../docs/examples/assets/mapping-dimensionality/metric.visual.json"><code>docs/examples/assets/mapping-dimensionality/metric.visual.json</code></a>
                 </div>
-              </article>
+              </div>
+            </article>
 
-              <article class="card">
-                <div class="visual">
-                  <iframe
-                    title="Dynamics visual"
-                    src="../../visual/examples/dynamics-noise-hero/index.html"
-                    loading="lazy"></iframe>
+            <article class="portfolio-item" data-gallery-item="dynamics-noise-hero" data-evidence-status="review-pending">
+              <div class="preview">
+                <iframe
+                  title="Finite dynamics native preview"
+                  src="../../visual/examples/dynamics-noise-hero/index.html"
+                  loading="lazy"></iframe>
+              </div>
+              <div class="portfolio-main">
+                <span class="status pending">Native preview</span>
+                <h3>Finite dynamics</h3>
+                <p class="portfolio-copy">
+                  Timeline states, transitions and path evidence make diffusion
+                  and reverse reconstruction visible over the finite space.
+                </p>
+              </div>
+              <div class="portfolio-detail">
+                <div class="links">
+                  <a href="../../visual/examples/dynamics-noise-hero/index.html">Open visual</a>
+                  <a href="../../docs/examples/assets/dynamics-noise/metric.visual.json">Evidence JSON</a>
                 </div>
-                <div class="card-body">
-                  <span class="status pending">review pending</span>
-                  <h3>Finite dynamics</h3>
-                  <p>
-                    Timeline states, transition structure and path evidence make
-                    diffusion and reverse reconstruction visible over the finite
-                    metric space.
-                  </p>
-                  <div class="links">
-                    <a href="../../visual/examples/dynamics-noise-hero/index.html">open visual</a>
-                    <a href="../../examples/engine/finite_metric_dynamics_visual_export.cpp">native source</a>
-                    <a href="../../docs/examples/assets/dynamics-noise/metric.visual.json">visual evidence</a>
-                  </div>
-                  <details>
-                    <summary>Reproduce evidence</summary>
-                    <pre>cmake --build build/core --target engine_finite_metric_dynamics_visual_export
-build/core/examples/engine/engine_finite_metric_dynamics_visual_export \
-  --export-dir docs/examples/assets/dynamics-noise</pre>
-                  </details>
+                <div class="path-list">
+                  <a href="../../examples/engine/finite_metric_dynamics_visual_export.cpp"><code>examples/engine/finite_metric_dynamics_visual_export.cpp</code></a>
+                  <a href="../../docs/examples/assets/dynamics-noise/metric.visual.json"><code>docs/examples/assets/dynamics-noise/metric.visual.json</code></a>
                 </div>
-              </article>
+              </div>
+            </article>
 
-              <article class="card">
-                <div class="visual">
-                  <iframe
-                    title="Relation matrix visual"
-                    src="../../visual/examples/relation-matrix-neighborhood/index.html"
-                    loading="lazy"></iframe>
+            <article class="portfolio-item" data-gallery-item="relation-matrix-neighborhood" data-evidence-status="review-pending">
+              <div class="preview">
+                <iframe
+                  title="Relation matrix native preview"
+                  src="../../visual/examples/relation-matrix-neighborhood/index.html"
+                  loading="lazy"></iframe>
+              </div>
+              <div class="portfolio-main">
+                <span class="status pending">Native preview</span>
+                <h3>Relation matrix</h3>
+                <p class="portfolio-copy">
+                  Blocks, neighborhoods and selected cells connect pair values
+                  back to records and pair-level evidence.
+                </p>
+              </div>
+              <div class="portfolio-detail">
+                <div class="links">
+                  <a href="../../visual/examples/relation-matrix-neighborhood/index.html">Open visual</a>
+                  <a href="../../docs/examples/assets/relation-matrix/metric.visual.json">Evidence JSON</a>
                 </div>
-                <div class="card-body">
-                  <span class="status pending">review pending</span>
-                  <h3>Relation matrix</h3>
-                  <p>
-                    Pair values are evidence in their own right: blocks,
-                    neighborhoods and selected cells connect the matrix back to
-                    records and pair previews.
-                  </p>
-                  <div class="links">
-                    <a href="../../visual/examples/relation-matrix-neighborhood/index.html">open visual</a>
-                    <a href="../../examples/engine/relation_matrix_visual_export.cpp">native source</a>
-                    <a href="../../docs/examples/assets/relation-matrix/metric.visual.json">visual evidence</a>
-                  </div>
-                  <details>
-                    <summary>Reproduce evidence</summary>
-                    <pre>cmake --build build/core --target engine_relation_matrix_visual_export
-build/core/examples/engine/engine_relation_matrix_visual_export \
-  --export-dir docs/examples/assets/relation-matrix</pre>
-                  </details>
+                <div class="path-list">
+                  <a href="../../examples/engine/relation_matrix_visual_export.cpp"><code>examples/engine/relation_matrix_visual_export.cpp</code></a>
+                  <a href="../../docs/examples/assets/relation-matrix/metric.visual.json"><code>docs/examples/assets/relation-matrix/metric.visual.json</code></a>
                 </div>
-              </article>
+              </div>
+            </article>
 
-              <article class="card">
-                <div class="visual">
-                  <iframe
-                    title="External process-curve visual"
-                    src="../../visual/examples/process-curve-external-hero/index.html"
-                    loading="lazy"></iframe>
+            <article class="portfolio-item" data-gallery-item="process-curve-external-hero" data-evidence-status="review-pending scale-blocked">
+              <div class="preview">
+                <iframe
+                  title="External process-curve native preview"
+                  src="../../visual/examples/process-curve-external-hero/index.html"
+                  loading="lazy"></iframe>
+              </div>
+              <div class="portfolio-main">
+                <span class="status blocked">Native preview</span>
+                <h3>UCR process curves</h3>
+                <p class="portfolio-copy">
+                  Real process-curve windows are rendered from native evidence
+                  with aligned metric and baseline comparison.
+                </p>
+              </div>
+              <div class="portfolio-detail">
+                <div class="links">
+                  <a href="../../visual/examples/process-curve-external-hero/index.html">Open visual</a>
+                  <a href="../../docs/examples/assets/process-curve-external/metric.visual.json">Evidence JSON</a>
                 </div>
-                <div class="card-body">
-                  <span class="status pending">review pending</span>
-                  <h3>UCR process curves</h3>
-                  <p>
-                    Real process-curve windows are compared as curves, with
-                    relation evidence and curve previews exported from the native
-                    C++ example.
-                  </p>
-                  <div class="links">
-                    <a href="../../visual/examples/process-curve-external-hero/index.html">open visual</a>
-                    <a href="../../examples/engine/process_curve_external_visual_export.cpp">native source</a>
-                    <a href="../../docs/examples/assets/process-curve-external/metric.visual.json">visual evidence</a>
-                  </div>
-                  <details>
-                    <summary>Reproduce evidence</summary>
-                    <pre>cmake --build build/core --target engine_process_curve_external_visual_export
-build/core/examples/engine/engine_process_curve_external_visual_export \
-  --export-dir docs/examples/assets/process-curve-external</pre>
-                  </details>
+                <div class="path-list">
+                  <a href="../../examples/engine/process_curve_external_visual_export.cpp"><code>examples/engine/process_curve_external_visual_export.cpp</code></a>
+                  <a href="../../docs/examples/assets/process-curve-external/metric.visual.json"><code>docs/examples/assets/process-curve-external/metric.visual.json</code></a>
                 </div>
-              </article>
-            </div>
+              </div>
+            </article>
           </div>
+
+          <p class="source-note">
+            The gallery contains one accepted reference and seven native
+            previews backed by exported C++ evidence.
+          </p>
         </div>
       </section>
 
@@ -736,9 +815,9 @@ build/core/examples/engine/engine_process_curve_external_visual_export \
               <h2>Records first. Metrics make them computable.</h2>
             </div>
             <p>
-              METRIC starts from finite records and true pair metrics. Coordinate
-              views, embeddings, graphs, fields and dynamics are derived views
-              over that finite relation structure.
+              METRIC starts from finite records and true pair metrics.
+              Coordinate views, graphs, fields and dynamics are derived from
+              that finite relation structure.
             </p>
           </div>
           <div class="concept-grid">
