@@ -3042,8 +3042,9 @@ Corrected status:
   previews. It does not prove that a preview is visually accepted.
 - GRAE10/MNIST remains the only accepted public hero.
 - The next production work is visual acceptance and public portfolio quality
-  for each grammar, plus real-data scale-up for the external process-curve
-  preview.
+  for each grammar. The external process-curve preview is already scaled with
+  real UCR source windows; its remaining work is visual composition acceptance,
+  not additional source padding.
 
 ## Next Engine Acceptance Slices
 
