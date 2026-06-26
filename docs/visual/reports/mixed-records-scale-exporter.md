@@ -62,15 +62,19 @@ Every exported record still has a native `MixedRecord` metric domain in C++ with
 - `build/core/examples/engine/engine_mixed_finite_records_visual_export --export-dir docs/examples/assets/mixed-records` - two early full-matrix/index attempts were interrupted; final bounded native candidate exporter passed and wrote the asset.
 - `node visual/tools/check-visual-document.mjs docs/examples/assets/mixed-records/metric.visual.json` - passed.
 - `ctest --test-dir build/core -R 'visual_(export|validate)' --output-on-failure` - passed, `14/14` tests.
-- `node visual/tools/check-native-hero-evidence-scale.mjs` - exited `1`; mixed-record row is scale-ready with `recordCount: 2000`, `recordTypeCount: 4`, but the manifest still lists stale record-count/type blockers.
+- Historical `node visual/tools/check-native-hero-evidence-scale.mjs` result
+  from this isolated task: exited `1`; mixed-record row was already
+  scale-ready with `recordCount: 2000`, `recordTypeCount: 4`, but the
+  then-out-of-scope manifest still listed stale record-count/type blockers. The
+  current parent gate has since been refreshed and passes for this row.
 - `node visual/tools/check-public-gallery-evidence.mjs` - passed.
 - `node visual/tools/check-visual-regression-public-examples.mjs` - passed, `8/8` examples, mixed-record preview `ok: true`.
 
 ## Remaining Blocker
 
-The mixed-record native scale gate counts now satisfy the task: `recordCount >= 2000` and `recordTypeCount >= 4`.
+The mixed-record native scale gate counts satisfy the task:
+`recordCount >= 2000` and `recordTypeCount >= 4`.
 
-Remaining blockers are outside this task's owned files:
-
-- `visual/hero-visual-briefs.manifest.json` still lists `record-count-below-hero-minimum` and `record-type-count-below-hero-minimum` for `mixed-record-hero`, so `check-native-hero-evidence-scale.mjs` reports stale blocker issues.
-- `visual-composition-not-human-accepted` remains in the manifest. Browser visual regression passed, but that is not the same as human screenshot acceptance.
+The active remaining blocker is `visual-composition-not-human-accepted`.
+Browser visual regression passed, but that is not the same as human screenshot
+acceptance.

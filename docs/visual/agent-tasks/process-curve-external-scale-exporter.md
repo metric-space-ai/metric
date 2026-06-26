@@ -1,5 +1,10 @@
 # Agent Task: Scale External Process-Curve Native Evidence
 
+Status: completed in the parent worktree. The current exporter publishes 576
+real source windows, 161 query records, a 576-by-576 dense source relation and
+native query/winner evidence. Keep this task as the implementation contract for
+future regression work, not as an open scale blocker.
+
 ## Owner Scope
 
 You own only:

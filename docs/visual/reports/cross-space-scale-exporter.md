@@ -55,11 +55,17 @@ The exporter adds:
 - `/usr/bin/time -p build/core/examples/engine/engine_cross_space_dependency_visual_export --export-dir docs/examples/assets/cross-space-dependency` passed in 47.15 seconds for the final exporter.
 - `node visual/tools/check-visual-document.mjs docs/examples/assets/cross-space-dependency/metric.visual.json` passed.
 - `ctest --test-dir build/core -R 'visual_(export|validate)' --output-on-failure` passed, 14/14 tests.
-- `node visual/tools/check-native-hero-evidence-scale.mjs` failed overall. The cross-space row is native-scale-ready with 512 records and 3 relations, but `visual/hero-visual-briefs.manifest.json` still lists `record-count-below-hero-minimum`, which is outside this task's owner scope.
+- Historical `node visual/tools/check-native-hero-evidence-scale.mjs` result
+  from this isolated task: failed overall. The cross-space row was already
+  native-scale-ready with 512 records and 3 relations, but the then-out-of-scope
+  visual-brief manifest still listed a stale record-count blocker. The current
+  parent gate has since been refreshed and passes for this row.
 - `node visual/tools/check-public-gallery-evidence.mjs` passed.
 - `node visual/tools/check-visual-regression-public-examples.mjs` failed before rendering examples because the Chrome DevTools endpoint did not start; the process then hung in cleanup and was interrupted.
 
 ## Remaining Blockers
 
-- `cross-space-dependency-hero` now passes the evidence scale condition in the native-scale report, but the full native-scale gate does not pass because the out-of-scope visual brief manifest still has the stale `record-count-below-hero-minimum` blocker for this row.
-- Browser screenshot/composition review is still blocked: the public regression runner failed to start Chrome DevTools, and the manifest still carries `visual-composition-not-human-accepted`.
+- `cross-space-dependency-hero` passes the evidence scale condition in the
+  current native-scale gate.
+- Browser screenshot/composition review still remains required; the active
+  blocker is `visual-composition-not-human-accepted`.

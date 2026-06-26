@@ -247,6 +247,11 @@ is the CLI default behavior.
 
 ## Docs Asset Validation Summary
 
+This table is a historical subagent audit snapshot. The current
+`process-curve-external` asset has since been regenerated and scaled; use
+`docs/visual/reports/process-curve-external-scale-exporter.md` and
+`visual/tools/check-native-hero-evidence-scale.mjs` as the current authority.
+
 | Asset | Records | Relations | Spaces | Coordinates | Properties | Diagnostics | Native | Synthetic | Result |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |
 | `condition-monitoring` | 528 | 2 | 1 | 2 | 10 | 2 | true | false | PASS |
@@ -254,7 +259,7 @@ is the CLI default behavior.
 | `dynamics-noise` | 512 | 2 | 1 | 48 | 12 | 25 | true | false | PASS |
 | `mapping-dimensionality` | 1000 | 2 | 2 | 3 | 9 | 4 | true | false | PASS |
 | `mixed-records` | 2000 | 1 | 1 | 2 | 11 | 10 | true | false | PASS |
-| `process-curve-external` | 64 | 1 | 1 | 1 | 11 | 1 | true | false | PASS |
+| `process-curve-external` | historical pre-scale snapshot | 1 | 1 | 1 | 11 | 1 | true | false | PASS |
 | `relation-matrix` | 130 | 1 | 1 | 1 | 7 | 1 | true | false | PASS |
 | `solver-trace` | 12 | 1 | 1 | 1 | 6 | 2 | true | false | PASS |
 

@@ -77,7 +77,7 @@ preview.
 | `mapping-dimensionality-hero` | public-preview-only | no | pass | pass | pass | pass | pass | 1,000 |
 | `dynamics-noise-hero` | public-preview-only | no | pass | pass | pass | pass | pass | 512 |
 | `relation-matrix-neighborhood` | public-preview-only | no | pass | pass | pass | pass | pass | 130 |
-| `process-curve-external-hero` | public-preview-only | no | pass | pass | pass | pass | pass | 64 |
+| `process-curve-external-hero` | public-preview-only | no | pass | pass | pass | pass | pass | 737 total / 576 source |
 
 Detected synthetic development fixtures remain fixtures and are not promoted:
 
@@ -88,9 +88,9 @@ Detected synthetic development fixtures remain fixtures and are not promoted:
 - `mixed-record-hero`
 - `relation-matrix-neighborhood`
 
-No public preview was blocked by missing native evidence in this run. The
-process-curve preview remains preview-only because it is below the hero record
-minimum in the performance/brief gate.
+No public preview was blocked by missing native evidence or record count in
+this run. The process-curve preview remains preview-only only because manual
+visual composition acceptance has not promoted it to an accepted hero.
 
 ## Large-Scene Performance
 
@@ -116,17 +116,22 @@ all 7 required preview rows.
 | `dynamics-noise-hero` | dynamics | pass | public-preview-only | 512 | 500 | 3 | 8.3 ms | 933 | `visual-composition-not-human-accepted` |
 | `mapping-dimensionality-hero` | mapping | pass | public-preview-only | 1,000 | 1,000 | 5 | 8.3 ms | 1,055 | `visual-composition-not-human-accepted` |
 | `cross-space-dependency-hero` | graph | pass | public-preview-only | 512 | 500 | 4 | 8.3 ms | 1,022 | `visual-composition-not-human-accepted` |
-| `process-curve-external-hero` | process-curve | pass | public-preview-only | 64 | 500 | 9 | 8.3 ms | 1,431 | `record-count-below-hero-minimum`, `visual-composition-not-human-accepted` |
+| `process-curve-external-hero` | process-curve | pass | public-preview-only | 737 total / 576 source | 500 | 9 | 8.3 ms | 1,431 | `visual-composition-not-human-accepted` |
 
 ## Generated Artifacts
 
 Transient local artifacts produced by this run:
 
 - `output/visual/check-visual-regression-public-examples/results.json`
-- `output/visual/check-visual-regression-public-examples/*.png`
+- `output/visual/check-visual-regression-public-examples/*.canvas.png`
 - `output/visual/check-visual-performance-large-scenes/results.json`
 
 These files are not documented as baselines and should not be committed.
+
+The browser regression gate proves render output from canvas PNG pixels. On
+the current macOS/headless Chromium setup, CDP full-page `Page.captureScreenshot`
+can time out on WebGL scenes; this is recorded as a non-blocking artifact error
+when the canvas PNG is captured and nonblank.
 
 ## Remaining Gaps
 
@@ -134,5 +139,5 @@ These files are not documented as baselines and should not be committed.
   taste.
 - Public previews other than protected GRAE10 remain review-pending until
   explicit screenshot acceptance.
-- `process-curve-external-hero` remains blocked from hero acceptance by the
-  real source-record minimum.
+- `process-curve-external-hero` now meets the real source-record minimum and
+  remains blocked only by visual composition acceptance.

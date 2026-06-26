@@ -333,4 +333,46 @@ assert.equal(graphDescriptor.metadata.selectionModel.graphId, nativeGraph.id);
 assert.equal(graphDescriptor.metadata.selectionModel.pairSource, "native-graph-evidence");
 assert.deepEqual(graphDescriptor.metadata.selectionModel.respondsTo, ["record", "pair"]);
 
+const flatDenseRelation = {
+  id: "flat-row-major-metric",
+  name: "Flat row-major metric",
+  relation_type: "metric",
+  storage: "dense_matrix",
+  record_ids: ["r0", "r1", "r2"],
+  values: [
+    0, 4, 7,
+    4, 0, 2,
+    7, 2, 0,
+  ],
+  metadata: {
+    encoding: "row-major flat dense matrix",
+    symmetric: true,
+  },
+};
+const flatTexture = buildRelationMatrixTextureData(flatDenseRelation, {
+  recordIds: flatDenseRelation.record_ids,
+  symmetric: "mirror",
+});
+assert.equal(flatTexture.matrix.size, 3);
+assert.equal(flatTexture.matrix.presentValueCount, 9);
+assert.equal(flatTexture.matrix.missingValueCount, 0);
+assert.equal(flatTexture.matrix.values[1], 4);
+assert.equal(flatTexture.matrix.values[5], 2);
+assert.equal(flatTexture.matrix.diagnostics.denseEncoding, "row-major flat dense matrix");
+assert.equal(flatTexture.matrix.diagnostics.symmetric.isSymmetric, true);
+assert.equal(flatTexture.matrix.pairEvidence.get(5).rowId, "r1");
+assert.equal(flatTexture.matrix.pairEvidence.get(5).columnId, "r2");
+assert.equal(flatTexture.matrix.pairEvidence.get(5).pair.value, 2);
+
+const flatPicker = createRelationMatrixPicker(createRelationMatrixLayerDescriptor(flatTexture, {
+  relationId: flatDenseRelation.id,
+  relationName: flatDenseRelation.name,
+}));
+const flatCell = flatPicker.cellAtNormalizedPoint(2.5 / 3, 1.5 / 3);
+assert.equal(flatCell.rowId, "r1");
+assert.equal(flatCell.columnId, "r2");
+assert.equal(flatCell.value, 2);
+assert.equal(flatCell.present, true);
+assert.equal(flatCell.nativePair.value, 2);
+
 console.log("Relation matrix picker contract passed.");

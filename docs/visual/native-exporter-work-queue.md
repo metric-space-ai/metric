@@ -37,7 +37,7 @@ ctest --test-dir build/core -L 'metric_application_evidence|metric_diffusion_coo
 | Relation matrix exporter | `examples/engine/relation_matrix_visual_export.cpp` | integrated in CMake/CTest | `docs/examples/assets/relation-matrix/metric.visual.json` |
 | Condition monitoring exporter | `examples/engine/condition_monitoring_visual_export.cpp` | integrated in CMake/CTest | `docs/examples/assets/condition-monitoring/metric.visual.json` |
 | Mapping/dimensionality exporter | `examples/engine/mapping_dimensionality_visual_export.cpp` | integrated in CMake/CTest | `docs/examples/assets/mapping-dimensionality/metric.visual.json` |
-| Process-curve external exporter | `examples/engine/process_curve_external_visual_export.cpp` | integrated in CMake/CTest; stdout/file-output contract normalized; preview-only; blocked for hero scale until more real UCR source windows are available | `docs/examples/assets/process-curve-external/metric.visual.json` |
+| Process-curve external exporter | `examples/engine/process_curve_external_visual_export.cpp` | integrated in CMake/CTest; stdout/file-output contract normalized; native-scale-ready with real UCR source windows; preview-only pending visual acceptance | `docs/examples/assets/process-curve-external/metric.visual.json` |
 | Solver-trace exporter | `examples/engine/solver_trace_visual_export.cpp` | integrated in CMake/CTest; stdout/file-output contract normalized | `docs/examples/assets/solver-trace/metric.visual.json` |
 | Redif metric dynamics exporter | `examples/engine/redif_metric_dynamics_visual_export.cpp` | integrated in CMake/CTest; native non-synthetic public asset and checker enforced | `docs/examples/assets/redif-metric-dynamics/metric.visual.json` |
 
@@ -65,21 +65,16 @@ assets directly against the public visual briefs before browser screenshot
 review. It verifies native provenance, reports which previews meet native scale
 requirements and enforces that missing record-count or record-type diversity is
 represented by explicit acceptance blockers rather than silently passing as a
-hero candidate. Current state: condition monitoring, mixed records,
-cross-space dependency, finite dynamics/noise, relation matrix and
-mapping/dimensionality all meet their native scale thresholds. They remain
-preview-only until screenshot review accepts the visual grammar and
-composition. The external UCR process-curve preview is the only current native
-exporter still blocked by source-record count.
+hero candidate. Current state: all seven public preview families meet their
+native scale thresholds. They remain preview-only until screenshot review
+accepts the visual grammar and composition.
 
 The UCR process-curve export has real native evidence, query outcomes and
-baseline comparison outside the browser renderer, but it is not yet a scale
-candidate for public hero acceptance. The checked-in UCR-derived slices contain
-48 real source windows plus 16 query records; the source-source metric relation
-and coordinate state cover only those 48 source windows, below the
-500-source-record target. Do not scale this hero with synthetic windows or query
-padding. The exact current blocker is
-`missing-real-source-windows-for-500-record-hero` and is tracked in:
+baseline comparison outside the browser renderer. The checked-in UCR-derived
+slices now contain 576 real source windows plus 161 contrast-query records; the
+source-source metric relation and coordinate state cover 576 source windows.
+The old `missing-real-source-windows-for-500-record-hero` blocker is cleared and
+tracked in:
 
 ```text
 docs/visual/reports/process-curve-external-scale-exporter.md
@@ -112,10 +107,8 @@ inventory:
 docs/visual/reports/process-curve-real-data-inventory.md
 ```
 
-The inventory found only the existing 48 real UCR-derived source windows. No
-full local UCR archive or extracted source tree was found in the required local
-search roots, so `missing-real-source-windows-for-500-record-hero` remains
-active.
+The inventory report is retained as historical context for the earlier blocker;
+the follow-up scale exporter report supersedes its blocker state.
 
 Scale-up implementation contracts for the native preview families are tracked
 in:

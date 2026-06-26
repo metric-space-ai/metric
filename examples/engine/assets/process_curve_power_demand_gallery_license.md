@@ -1,6 +1,6 @@
-# Process Curve Power Demand Gallery Slice
+# Process Curve Power Demand Hero-Scale Slice
 
-This directory contains a small derived gallery slice from the external UCR
+This directory contains a derived hero-scale window slice from the external UCR
 Time Series Anomaly Detection datasets (2021) mirror on Figshare.
 
 Source dataset:
@@ -10,6 +10,11 @@ Source dataset:
 - Figshare article: https://figshare.com/articles/dataset/UCR_Time_Series_Anomaly_Detection_datasets_2021_/26410744
 - Source archive file id: `48036268`
 - Source archive MD5: `4740e64e7a3242773b4570c1537095c1`
+- Direct archive used for expansion:
+  https://www.cs.ucr.edu/~eamonn/time_series_data_2018/UCR_TimeSeriesAnomalyDatasets2021.zip
+- Direct archive SHA-256:
+  `ac4b991c701e620ae9cc5ebd57ae45593a36cc9c0b6ed5e3c4b7e466cf4783d4`
+- Direct archive MD5: `11d539351d37c6fe3013e828ab89574a`
 - License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
 - Citation: Lee, Daesoo (2024). UCR Time Series Anomaly Detection datasets
   (2021). figshare. Dataset. https://doi.org/10.6084/m9.figshare.26410744.v1
@@ -24,12 +29,11 @@ Derived files:
 Derivation:
 
 - source members:
-  - `AnomalyDatasets_2021/UCR_TimeSeriesAnomalyDatasets2021/FilesAreInHere/UCR_Anomaly_FullData/044_UCR_Anomaly_DISTORTEDPowerDemand1_9000_18485_18821.txt`
-  - `AnomalyDatasets_2021/UCR_TimeSeriesAnomalyDatasets2021/FilesAreInHere/UCR_Anomaly_FullData/045_UCR_Anomaly_DISTORTEDPowerDemand2_14000_23357_23717.txt`
-  - `AnomalyDatasets_2021/UCR_TimeSeriesAnomalyDatasets2021/FilesAreInHere/UCR_Anomaly_FullData/046_UCR_Anomaly_DISTORTEDPowerDemand3_16000_23405_23477.txt`
-  - `AnomalyDatasets_2021/UCR_TimeSeriesAnomalyDatasets2021/FilesAreInHere/UCR_Anomaly_FullData/047_UCR_Anomaly_DISTORTEDPowerDemand4_18000_24005_24077.txt`
-- 24 36-sample windows were extracted by source index
+  - all `*PowerDemand*.txt` members under
+    `AnomalyDatasets_2021/UCR_TimeSeriesAnomalyDatasets2021/FilesAreInHere/UCR_Anomaly_FullData/`
+- 8 source files were used
+- 128 36-sample windows were extracted by deterministic source index
 - values are copied without smoothing or rescaling
-- labels identify the source window role for gallery narration only
+- labels identify source-window role for visual evidence and query contrast
 
-The full 94 MB source archive is intentionally not checked into this repository.
+The full source archive is intentionally not checked into this repository.

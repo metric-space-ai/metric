@@ -255,12 +255,22 @@ export function resolveProcessCurveSceneInputs(document, options = {}) {
   if (!datasetId) throw new Error("Process-curve scene requires a dataset id.");
   if (!targetCoordinate) throw new Error(`Process-curve scene could not find target coordinate for ${datasetId}.`);
   if (!labelProperty) throw new Error(`Process-curve scene could not find label property for ${datasetId}.`);
+  const coordinateRecordIds = new Set(
+    (targetCoordinate.record_positions || [])
+      .map((entry) => entry?.record_id)
+      .filter((id) => id != null)
+      .map(String),
+  );
+  const datasetRecords = (document?.records || []).filter((record) => record.dataset_id === datasetId);
+  const records = coordinateRecordIds.size
+    ? datasetRecords.filter((record) => coordinateRecordIds.has(String(record.id)))
+    : datasetRecords;
   return {
     datasetId,
     sourceCoordinate,
     targetCoordinate,
     labelProperty,
-    records: (document?.records || []).filter((record) => record.dataset_id === datasetId),
+    records,
   };
 }
 

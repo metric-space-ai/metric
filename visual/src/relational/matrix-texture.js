@@ -28,7 +28,10 @@ const DEFAULT_MISSING_VALUE = Number.NaN;
  * @returns {object}
  */
 export function buildDenseRelationMatrix(source, options = {}) {
-  const sourceRecordIds = collectRecordIds(source, options);
+  const denseValues = resolveDenseMatrixValues(source);
+  const sourceRecordIds = denseValues
+    ? collectDenseMatrixRecordIds(source, options)
+    : collectRecordIds(source, options);
   const recordIds = resolveMatrixRecordIds(sourceRecordIds, source, options);
   const size = recordIds.length;
   const indexById = indexRecordIds(recordIds);
@@ -60,52 +63,66 @@ export function buildDenseRelationMatrix(source, options = {}) {
   let duplicatePairCount = 0;
   let skippedPairCount = 0;
 
-  for (const pair of relationPairs(source)) {
-    pairCount += 1;
-    const sourceId = pairSourceId(pair, sourceRecordIds);
-    const targetId = pairTargetId(pair, sourceRecordIds);
-    const sourceIndex = indexById.get(sourceId);
-    const targetIndex = indexById.get(targetId);
-    const value = pairValue(pair, options.valueKey);
+  if (denseValues) {
+    const counters = fillFromDenseMatrixValues({
+      denseValues,
+      sourceRecordIds,
+      recordIds,
+      values,
+      present,
+      missingValue,
+    });
+    pairCount = counters.pairCount;
+    acceptedPairCount = counters.acceptedPairCount;
+    skippedPairCount = counters.skippedPairCount;
+  } else {
+    for (const pair of relationPairs(source)) {
+      pairCount += 1;
+      const sourceId = pairSourceId(pair, sourceRecordIds);
+      const targetId = pairTargetId(pair, sourceRecordIds);
+      const sourceIndex = indexById.get(sourceId);
+      const targetIndex = indexById.get(targetId);
+      const value = pairValue(pair, options.valueKey);
 
-    if (sourceIndex == null || targetIndex == null || !Number.isFinite(value)) {
-      skippedPairCount += 1;
-      continue;
-    }
+      if (sourceIndex == null || targetIndex == null || !Number.isFinite(value)) {
+        skippedPairCount += 1;
+        continue;
+      }
 
-    const offset = sourceIndex * size + targetIndex;
-    if (present[offset]) duplicatePairCount += 1;
-    values[offset] = value;
-    present[offset] = 1;
-    pairEvidence.set(offset, describePairEvidence(pair, {
-      rowId: sourceId,
-      columnId: targetId,
-      row: sourceIndex,
-      column: targetIndex,
-      offset,
-      value,
-      mirrored: false,
-      relationId,
-      relationName,
-    }));
-    acceptedPairCount += 1;
-
-    if (symmetric === "mirror" && sourceIndex !== targetIndex) {
-      const reverseOffset = targetIndex * size + sourceIndex;
-      if (present[reverseOffset]) duplicatePairCount += 1;
-      values[reverseOffset] = value;
-      present[reverseOffset] = 1;
-      pairEvidence.set(reverseOffset, describePairEvidence(pair, {
-        rowId: targetId,
-        columnId: sourceId,
-        row: targetIndex,
-        column: sourceIndex,
-        offset: reverseOffset,
+      const offset = sourceIndex * size + targetIndex;
+      if (present[offset]) duplicatePairCount += 1;
+      values[offset] = value;
+      present[offset] = 1;
+      pairEvidence.set(offset, describePairEvidence(pair, {
+        rowId: sourceId,
+        columnId: targetId,
+        row: sourceIndex,
+        column: targetIndex,
+        offset,
         value,
-        mirrored: true,
+        mirrored: false,
         relationId,
         relationName,
       }));
+      acceptedPairCount += 1;
+
+      if (symmetric === "mirror" && sourceIndex !== targetIndex) {
+        const reverseOffset = targetIndex * size + sourceIndex;
+        if (present[reverseOffset]) duplicatePairCount += 1;
+        values[reverseOffset] = value;
+        present[reverseOffset] = 1;
+        pairEvidence.set(reverseOffset, describePairEvidence(pair, {
+          rowId: targetId,
+          columnId: sourceId,
+          row: targetIndex,
+          column: sourceIndex,
+          offset: reverseOffset,
+          value,
+          mirrored: true,
+          relationId,
+          relationName,
+        }));
+      }
     }
   }
 
@@ -127,7 +144,18 @@ export function buildDenseRelationMatrix(source, options = {}) {
     || source?.diagnostics?.lawCheck
     || null;
   const ordering = describeMatrixOrdering(sourceRecordIds, recordIds, source, options, blockRanges);
-  const symmetryDiagnostics = diagnoseRelationSymmetry(source, { ...options, recordIds: sourceRecordIds });
+  const symmetryDiagnostics = denseValues
+    ? diagnoseDenseMatrixSymmetry(recordIds, values, present, options)
+    : diagnoseRelationSymmetry(source, { ...options, recordIds: sourceRecordIds });
+  const resolvedPairEvidence = denseValues
+    ? createDenseMatrixPairEvidenceLookup({
+      recordIds,
+      values,
+      present,
+      relationId,
+      relationName,
+    })
+    : pairEvidence;
 
   return {
     kind: "dense-relation-matrix",
@@ -140,7 +168,7 @@ export function buildDenseRelationMatrix(source, options = {}) {
     relationName,
     values,
     present,
-    pairEvidence,
+    pairEvidence: resolvedPairEvidence,
     missingValue,
     diagonalValue,
     symmetric,
@@ -167,6 +195,7 @@ export function buildDenseRelationMatrix(source, options = {}) {
       metricLawDiagnostic,
       relationId,
       relationName,
+      denseEncoding: denseValues?.kind || null,
     },
   };
 }
@@ -229,6 +258,205 @@ export function buildRelationMatrixTextureData(source, options = {}) {
     scaler,
     palette,
     diagnostics: matrix.diagnostics,
+  };
+}
+
+function resolveDenseMatrixValues(source) {
+  const values = source?.values;
+  if (!Array.isArray(values) || !values.length) return null;
+  if (Array.isArray(values[0])) {
+    return { kind: "row-array dense matrix", values, size: values.length };
+  }
+  if (values.every((entry) => entry == null || typeof entry !== "object")) {
+    const recordIds = Array.isArray(source?.record_ids)
+      ? source.record_ids
+      : Array.isArray(source?.recordIds)
+        ? source.recordIds
+        : [];
+    const size = recordIds.length || Math.sqrt(values.length);
+    if (Number.isInteger(size) && size > 0 && values.length === size * size) {
+      return { kind: "row-major flat dense matrix", values, size };
+    }
+  }
+  return null;
+}
+
+function collectDenseMatrixRecordIds(source, options) {
+  const explicit = Array.isArray(source?.record_ids)
+    ? source.record_ids
+    : Array.isArray(source?.recordIds)
+      ? source.recordIds
+      : null;
+  if (explicit?.length) return explicit.map((id) => String(id));
+  return collectRecordIds(source, options);
+}
+
+function fillFromDenseMatrixValues(input) {
+  const {
+    denseValues,
+    sourceRecordIds,
+    recordIds,
+    values,
+    present,
+    missingValue,
+  } = input;
+  const sourceIndexById = indexRecordIds(sourceRecordIds);
+  let pairCount = 0;
+  let acceptedPairCount = 0;
+  let skippedPairCount = 0;
+
+  for (let row = 0; row < recordIds.length; row += 1) {
+    const sourceRow = sourceIndexById.get(recordIds[row]);
+    for (let column = 0; column < recordIds.length; column += 1) {
+      const sourceColumn = sourceIndexById.get(recordIds[column]);
+      const offset = row * recordIds.length + column;
+      pairCount += 1;
+      if (sourceRow == null || sourceColumn == null) {
+        values[offset] = missingValue;
+        present[offset] = 0;
+        skippedPairCount += 1;
+        continue;
+      }
+      const value = Number(readDenseMatrixValue(denseValues, sourceRow, sourceColumn));
+      if (!Number.isFinite(value)) {
+        values[offset] = missingValue;
+        present[offset] = 0;
+        skippedPairCount += 1;
+        continue;
+      }
+      values[offset] = value;
+      present[offset] = 1;
+      acceptedPairCount += 1;
+    }
+  }
+
+  return { pairCount, acceptedPairCount, skippedPairCount };
+}
+
+function readDenseMatrixValue(denseValues, row, column) {
+  if (denseValues.kind === "row-array dense matrix") return denseValues.values[row]?.[column];
+  return denseValues.values[row * denseValues.size + column];
+}
+
+function createDenseMatrixPairEvidenceLookup(input) {
+  const { recordIds, values, present, relationId, relationName } = input;
+  return {
+    get(offset) {
+      const index = Number(offset);
+      const size = recordIds.length;
+      if (!Number.isInteger(index) || index < 0 || index >= size * size) return null;
+      if (present && present[index] !== 1) return null;
+      const row = Math.floor(index / size);
+      const column = index % size;
+      const rowId = recordIds[row];
+      const columnId = recordIds[column];
+      const value = values[index];
+      return describePairEvidence({
+        row_id: rowId,
+        column_id: columnId,
+        value,
+      }, {
+        rowId,
+        columnId,
+        row,
+        column,
+        offset: index,
+        value,
+        mirrored: false,
+        relationId,
+        relationName,
+      });
+    },
+  };
+}
+
+function diagnoseDenseMatrixSymmetry(recordIds, values, present, options = {}) {
+  const tolerance = Number.isFinite(options.tolerance) ? Math.max(0, options.tolerance) : 1e-9;
+  const missingReciprocals = [];
+  const mismatches = [];
+  const asymmetricPairs = [];
+  let presentPairCount = 0;
+  let reciprocalCount = 0;
+  let comparedCount = 0;
+  let directedOnlyCount = 0;
+  let identicalReciprocalCount = 0;
+  let maxDelta = 0;
+  const size = recordIds.length;
+
+  for (let row = 0; row < size; row += 1) {
+    for (let column = 0; column < size; column += 1) {
+      const offset = row * size + column;
+      if (present && present[offset] !== 1) continue;
+      presentPairCount += 1;
+      if (row === column) continue;
+      const reverseOffset = column * size + row;
+      const hasReverse = !present || present[reverseOffset] === 1;
+      const value = values[offset];
+      if (!hasReverse) {
+        directedOnlyCount += 1;
+        missingReciprocals.push({ source: recordIds[row], target: recordIds[column], value });
+        continue;
+      }
+      reciprocalCount += 1;
+      const delta = Math.abs(value - values[reverseOffset]);
+      if (delta <= tolerance) identicalReciprocalCount += 1;
+      if (delta > maxDelta) maxDelta = delta;
+      if (row < column) {
+        comparedCount += 1;
+        if (delta > tolerance) {
+          const mismatch = {
+            source: recordIds[row],
+            target: recordIds[column],
+            value,
+            reverseValue: values[reverseOffset],
+            delta,
+          };
+          mismatches.push(mismatch);
+          asymmetricPairs.push(mismatch);
+        }
+      } else if (delta > tolerance) {
+        asymmetricPairs.push({
+          source: recordIds[row],
+          target: recordIds[column],
+          value,
+          reverseValue: values[reverseOffset],
+          delta,
+        });
+      }
+    }
+  }
+
+  const symmetric = {
+    kind: "symmetric-relation-check",
+    recordCount: size,
+    pairCount: presentPairCount,
+    reciprocalCount,
+    comparedCount,
+    tolerance,
+    maxDelta,
+    missingReciprocalCount: missingReciprocals.length,
+    mismatchCount: mismatches.length,
+    isSymmetric: missingReciprocals.length === 0 && mismatches.length === 0,
+    missingReciprocals,
+    mismatches,
+  };
+  const asymmetric = {
+    kind: "asymmetric-relation-check",
+    pairCount: presentPairCount,
+    reciprocalCount,
+    directedOnlyCount,
+    identicalReciprocalCount,
+    asymmetricPairCount: asymmetricPairs.length,
+    tolerance,
+    maxDelta,
+    hasDirectedEvidence: directedOnlyCount > 0 || asymmetricPairs.length > 0,
+    asymmetricPairs,
+  };
+  return {
+    kind: "relation-symmetry-diagnostics",
+    symmetric,
+    asymmetric,
+    recommendedMatrixMode: symmetric.isSymmetric ? "symmetric" : "directed",
   };
 }
 

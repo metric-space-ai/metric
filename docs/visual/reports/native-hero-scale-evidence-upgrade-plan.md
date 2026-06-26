@@ -28,9 +28,9 @@ node visual/tools/check-public-gallery-evidence.mjs
 
 Current gate results:
 
-- `check-native-hero-evidence-scale`: `ok: true`, seven rows inspected, six
-  native-scale-ready rows. The only current record-count blocker is
-  `process-curve-external-hero`.
+- `check-native-hero-evidence-scale`: `ok: true`, seven rows inspected, seven
+  native-scale-ready rows. There are no current public-preview
+  record-count blockers.
 - `check-public-gallery-evidence`: `ok: true`, GRAE10 hash
   `464f6a90c36c1e9c6b4ec90068500dc226740d65b251918aca567f99d64d3d5e`,
   no public synthetic evidence, no synthetic example marked done.
@@ -43,7 +43,7 @@ Current gate results:
 | --- | --- |
 | Six previews are scale-ready but not screenshot-accepted | `condition-monitoring-hero`, `mixed-record-hero`, `cross-space-dependency-hero`, `dynamics-noise-hero`, `mapping-dimensionality-hero` and `relation-matrix-neighborhood` now meet their current native scale thresholds, but remain preview-only until screenshot review accepts their visual grammar and composition. |
 | `relation-matrix-neighborhood` is scale-ready but not visually accepted | Its remaining gate blockers are human screenshot/readability blockers, not count blockers. The reusable matrix grammar now exposes stronger focus defaults and explicit shader-capacity diagnostics, but human review still has to accept the final screenshot. |
-| `process-curve-external-hero` count is inflated by query records | The gate sees 64 total records, but the metric relation and coordinates cover 48 source records. Scaling must add real source windows and query evidence, not query-only padding. |
+| `process-curve-external-hero` is scale-ready but not visually accepted | The checked-in native evidence now contains 576 real source windows, 161 query records, a 576-by-576 dense source relation, query/winner evidence and graph evidence. Its remaining blocker is visual composition acceptance, not source scale. |
 
 ## Preview Tickets
 
@@ -147,17 +147,17 @@ Current gate results:
 
 | Field | Plan |
 | --- | --- |
-| Current counts | `recordCount: 64`, `relationCount: 1`, `recordTypeCount: 2`. Note: the current metric relation and coordinate state cover 48 source records; the other 16 records are query previews. |
+| Current counts | `recordCount: 737`, `relationCount: 1`, `recordTypeCount: 2`. The current metric relation and coordinate state cover 576 real source records; the other 161 records are native contrast-query previews. |
 | Native/synthetic status | Native `metric.visual.v1`; `provenance.native_export: true`; `provenance.synthetic` absent/false. Asset: `docs/examples/assets/process-curve-external/metric.visual.json`. |
-| Exact blocker text from gate | `record-count-below-hero-minimum`; `visual-composition-not-human-accepted` |
+| Exact blocker text from gate | `visual-composition-not-human-accepted` |
 | Minimum evidence target from brief | At least 500 records and at least 1 relation. Required evidence: real UCR process-curve records, native aligned metric relation, metric-space winner evidence, baseline mismatch evidence, original time-series preview payloads. |
 | C++ exporter file to change | `examples/engine/process_curve_external_visual_export.cpp` |
-| Dataset or deterministic native fixture source | Use the real UCR-derived CSV assets already named by the exporter: `examples/engine/assets/process_curve_power_demand_gallery.csv` and `examples/engine/assets/process_curve_internal_bleeding_gallery.csv`, both sourced from `UCR_Time_Series_Anomaly_Detection_2021`. To meet the brief, provide at least 500 real source windows across these files or additional licensed UCR domains, plus query windows derived from held-out/downsampled source windows. If those expanded CSV windows are not available, this hero remains blocked on minimum real evidence. |
+| Dataset or deterministic native fixture source | Integrated. The exporter now uses expanded real UCR-derived CSV assets already named by the exporter: `examples/engine/assets/process_curve_power_demand_gallery.csv` and `examples/engine/assets/process_curve_internal_bleeding_gallery.csv`, sourced from `UCR_Time_Series_Anomaly_Detection_2021`. |
 | Native C++ metric computations | Keep aligned curve metric distances, pointwise padded Euclidean baseline distances, nearest-neighbor winner selection, metric margin, correctness/mismatch flags, dense source relation, kNN graph, landmark coordinates and summary diagnostics in C++. JavaScript must not compute winners, margins, baseline mismatches or aligned distances. |
-| Required exported properties, relations, coordinates, timelines and previews | Relations: grow `process-curve-external-aligned-metric` to at least 500 real source windows. Add a query-to-source assignment relation or graph if query records remain outside the source-source relation. Graphs: grow `process-curve-external-knn`. Coordinates: grow `process-curve-external-landmark-3d`; include query positions or explicit query-edge overlays if queries are shown in the same scene. Timelines: none required. Properties: keep/grow `process-role`, `process-domain`, `source-curve-mean`, `query-expected-role`, `query-metric-winner-role`, `query-vector-baseline-winner-role`, `query-metric-distance`, `query-vector-baseline-distance`, `query-metric-margin`, `query-metric-correct`, `query-vector-baseline-mismatch`. Previews: source and query records keep original time-series snippets, UCR file/source window indices and expected/winner labels. |
+| Required exported properties, relations, coordinates, timelines and previews | Integrated for scale. Relation `process-curve-external-aligned-metric` covers 576 real source windows. Graph `process-curve-external-knn` covers 2,304 native edges. Coordinate state `process-curve-external-landmark-3d` covers 576 source records. Properties are preserved/grown: `process-role`, `process-domain`, `source-curve-mean`, `query-expected-role`, `query-metric-winner-role`, `query-vector-baseline-winner-role`, `query-metric-distance`, `query-vector-baseline-distance`, `query-metric-margin`, `query-metric-correct`, `query-vector-baseline-mismatch`. Previews preserve original source and query time-series snippets, UCR file/source window indices and expected/winner labels. |
 | Expected visual grammar | Primary process trajectory plus relation matrix and curve preview; supporting `RelationEdgeLayer`, `RelationMatrixLayer`, `CurveTubeMeshLayer`/curve preview and query-winner emphasis. |
 | Acceptance commands | `cmake --build build/core --target engine_process_curve_external_visual_export -- -j4`; `ctest --test-dir build/core -R 'visual_(export|validate)' --output-on-failure`; `node visual/tools/check-visual-document.mjs docs/examples/assets/process-curve-external/metric.visual.json`; `node visual/tools/check-native-hero-evidence-scale.mjs`; `node visual/tools/check-public-gallery-evidence.mjs` after public gallery wiring includes this preview; browser screenshot review for query/winner/baseline mismatch composition. |
-| Risk if scaled naively | Adding query records can make the gate count rise while the metric relation remains under-scaled. The exporter must scale real source windows and keep query-source winner evidence connected to the scene; otherwise the page proves only a small relation matrix with detached query annotations. |
+| Risk if scaled naively | Closed for the record-count gate: the gate counts source relation record ids, not total records, and now sees 576 real source windows. Remaining risk is visual composition: the page can still fail if query/winner/baseline evidence is not legible in the process-curve grammar. |
 
 ## Queue Update
 

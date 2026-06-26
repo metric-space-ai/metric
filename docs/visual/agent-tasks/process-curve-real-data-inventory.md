@@ -1,5 +1,11 @@
 # Process-Curve Real Data Inventory
 
+Status: superseded by
+`docs/visual/reports/process-curve-external-scale-exporter.md`. The follow-up
+scale exporter now derives 576 real UCR source windows and clears the previous
+source-record blocker. This task remains only as the historical read-only
+inventory contract.
+
 ## Purpose
 
 Determine whether this machine already has enough real licensed process-curve
@@ -37,8 +43,7 @@ The report must state:
 - exact files found, sizes and record/window counts where inspectable;
 - whether the files look like full UCR source data, derived slices, or unrelated
   examples;
-- whether the current blocker
-  `missing-real-source-windows-for-500-record-hero` can be cleared locally;
+- whether the then-current source-window blocker could be cleared locally;
 - the exact next implementation step if enough data exists;
 - the exact external data requirement if enough data does not exist.
 

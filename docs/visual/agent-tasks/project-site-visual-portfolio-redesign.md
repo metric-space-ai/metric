@@ -60,8 +60,8 @@ Review-pending native previews:
 - `mapping-dimensionality-hero`
 - `dynamics-noise-hero`
 - `relation-matrix-neighborhood`
-- `process-curve-external-hero` remains scale-blocked in maintainer docs; do
-  not market it as an accepted hero.
+- `process-curve-external-hero` is native-scale-ready but still review-pending;
+  do not market it as an accepted hero.
 
 ## Validation
 

@@ -124,13 +124,12 @@ Implemented native slices:
 - browser-verified miniature look gallery at
   `visual/examples/miniature-look-gallery/index.html`
 - native `metric.visual.v1` exporter assets for condition monitoring, mixed
-  records, cross-space dependency, dynamics/noise, relation matrix and
-  mapping/dimensionality under `docs/examples/assets/*/metric.visual.json`
+  records, cross-space dependency, dynamics/noise, relation matrix,
+  mapping/dimensionality and external UCR process curves under
+  `docs/examples/assets/*/metric.visual.json`
 - native hero-scale evidence for condition monitoring, mixed records,
-  cross-space dependency, finite dynamics/noise, relation matrix and
-  mapping/dimensionality; the external UCR process-curve preview remains below
-  the hero-scale source-record threshold because the checked-in licensed slice
-  contains only 48 real source windows plus query records
+  cross-space dependency, finite dynamics/noise, relation matrix,
+  mapping/dimensionality and external UCR process curves
 - header-only C++ writer foundation under `visual/cpp/mtrc_visual.hpp`
 - runtime inspection with shared picking and preview state for records,
   relation-matrix cells, graph edges and deterministic projected-record
@@ -227,9 +226,8 @@ Implemented native slices:
   for every current public preview grammar row
 - the large-scene performance gate now reads
   `visual/hero-visual-briefs.manifest.json`, reports Visual-Brief coverage,
-  per-preview minimum record targets, current acceptance blockers and keeps
-  `process-curve-external-hero` explicitly scale-blocked instead of silently
-  treating a render pass as hero readiness
+  per-preview minimum record targets and current acceptance blockers, so a
+  render pass cannot be silently treated as hero readiness
 - command-fidelity guards that keep public examples on one semantic engine
   command, verify `showConditionMonitoring()` as the final condition grammar,
   prevent residual/error mapping layers without explicit residual evidence and
@@ -290,18 +288,13 @@ Known gaps:
   `createMetricVisual(...).showDynamics(...)` from
   `docs/examples/assets/redif-metric-dynamics/metric.visual.json`; it is not a
   public hero
-- six public preview families now meet their native hero evidence scale
+- all seven public preview families now meet their native hero evidence scale
   thresholds: condition monitoring, mixed records, cross-space dependency,
-  relation matrix, finite dynamics/noise and mapping/dimensionality. They remain
-  review-pending previews until screenshot review accepts the visual grammar and
-  composition. The external UCR process-curve preview remains explicitly blocked
-  by source-record count: the checked-in real UCR slices currently provide 48
-  source windows plus 16 query records, while the hero target is 500 real source
-  windows. The blocker is `missing-real-source-windows-for-500-record-hero` and
-  must not be bypassed with synthetic windows or query padding. The local data
-  inventory in `docs/visual/reports/process-curve-real-data-inventory.md`
-  confirms that no full UCR 2021 archive or extracted source tree is currently
-  available locally.
+  relation matrix, finite dynamics/noise, mapping/dimensionality and external
+  UCR process curves. They remain review-pending previews until screenshot
+  review accepts the visual grammar and composition. The external UCR
+  process-curve evidence now contains 576 real source windows in the native
+  source-source relation plus 161 native contrast-query records.
 - no full visual gallery for every METRIC algorithm family yet
 - the six native public preview families now all have visual-acceptance
   candidate pages/reports. Condition monitoring, mapping/dimensionality and

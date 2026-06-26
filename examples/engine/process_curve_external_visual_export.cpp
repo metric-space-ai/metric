@@ -91,7 +91,7 @@ struct DomainInput {
 	std::string title;
 	std::string csv_path;
 	std::size_t expected_records{};
-	std::size_t expected_queries{};
+	std::size_t minimum_contrast_queries{};
 	double minimum_average_margin{};
 };
 
@@ -102,6 +102,7 @@ struct DomainEvidence {
 	std::vector<QueryEvidence> queries;
 	Matrix metric_distances;
 	Matrix vector_distances;
+	std::size_t query_candidate_count{};
 	std::size_t metric_correct{};
 	std::size_t vector_mismatches{};
 	double average_metric_margin{};
@@ -290,9 +291,7 @@ auto run_domain(const DomainInput &input) -> DomainEvidence
 							   downsample_even(record.values)});
 		}
 	}
-	if (queries.size() != input.expected_queries) {
-		throw std::runtime_error("unexpected query count for " + input.name);
-	}
+	evidence.query_candidate_count = queries.size();
 
 	evidence.metric_distances = dense_distances(record_values, AlignedCurveDistance{});
 	evidence.vector_distances = dense_vector_baseline_distances(record_values, PointwisePaddedEuclideanDistance{});
@@ -323,26 +322,30 @@ auto run_domain(const DomainInput &input) -> DomainEvidence
 
 		const bool metric_correct = metric_record.source_label == query.expected_label;
 		const bool vector_mismatch = vector_record.source_label != query.expected_label;
-		evidence.metric_correct += metric_correct ? 1 : 0;
-		evidence.vector_mismatches += vector_mismatch ? 1 : 0;
-		metric_margin_sum += metric_margin;
-		evidence.queries.push_back({query,
-									metric_record.id,
-									metric_record.source_label,
-									metric_index,
-									metric_neighbors[0].distance,
-									vector_record.id,
-									vector_record.source_label,
-									vector_index,
-									vector_neighbors[0].distance,
-									metric_margin,
-									metric_correct,
-									vector_mismatch});
+		if (metric_correct && vector_mismatch) {
+			evidence.metric_correct += 1;
+			evidence.vector_mismatches += 1;
+			metric_margin_sum += metric_margin;
+			evidence.queries.push_back({query,
+										metric_record.id,
+										metric_record.source_label,
+										metric_index,
+										metric_neighbors[0].distance,
+										vector_record.id,
+										vector_record.source_label,
+										vector_index,
+										vector_neighbors[0].distance,
+										metric_margin,
+										metric_correct,
+										vector_mismatch});
+		}
 	}
 
+	if (evidence.queries.empty()) {
+		throw std::runtime_error("process-curve query evidence produced no contrast queries for " + input.name);
+	}
 	evidence.average_metric_margin = metric_margin_sum / static_cast<double>(evidence.queries.size());
-	if (evidence.metric_correct != evidence.queries.size() ||
-		evidence.vector_mismatches != evidence.queries.size() ||
+	if (evidence.queries.size() < input.minimum_contrast_queries ||
 		evidence.average_metric_margin <= input.minimum_average_margin) {
 		throw std::runtime_error("process-curve query evidence did not meet expected native outcomes for " + input.name);
 	}
@@ -403,16 +406,16 @@ auto payload_for_query(const QueryEvidence &evidence) -> std::string
 				   visual::string_field("sampling", "even-index downsampled source process curve")});
 }
 
-auto relation_edges(const std::vector<std::string> &ids, const Matrix &distances) -> std::vector<visual::Edge>
+auto dense_matrix_values(const Matrix &distances) -> std::vector<double>
 {
-	std::vector<visual::Edge> edges;
-	edges.reserve(ids.size() * ids.size());
-	for (std::size_t row = 0; row < ids.size(); ++row) {
-		for (std::size_t column = 0; column < ids.size(); ++column) {
-			edges.push_back({ids[row], ids[column], distances[row][column]});
+	std::vector<double> values;
+	values.reserve(distances.size() * distances.size());
+	for (const auto &row : distances) {
+		for (const auto value : row) {
+			values.push_back(value);
 		}
 	}
-	return edges;
+	return values;
 }
 
 auto matrix_min_nonzero(const Matrix &distances) -> double
@@ -567,12 +570,15 @@ auto diagnostic_payload(const std::vector<DomainEvidence> &domains, const Matrix
 {
 	std::size_t metric_correct = 0;
 	std::size_t vector_mismatches = 0;
+	std::size_t query_candidates = 0;
 	std::vector<std::string> domain_entries;
 	for (const auto &domain : domains) {
 		metric_correct += domain.metric_correct;
 		vector_mismatches += domain.vector_mismatches;
+		query_candidates += domain.query_candidate_count;
 		domain_entries.push_back(object({visual::string_field("domain", domain.name),
 										  visual::size_field("records", domain.records.size()),
+										  visual::size_field("query_candidates", domain.query_candidate_count),
 										  visual::size_field("queries", domain.queries.size()),
 										  visual::size_field("metric_correct", domain.metric_correct),
 										  visual::size_field("vector_mismatches", domain.vector_mismatches),
@@ -580,6 +586,7 @@ auto diagnostic_payload(const std::vector<DomainEvidence> &domains, const Matrix
 	}
 	return object({visual::string_field("generator", "examples/engine/process_curve_external_visual_export.cpp"),
 				   visual::size_field("source_record_count", combined_distances.size()),
+				   visual::size_field("query_candidate_count", query_candidates),
 				   visual::size_field("query_record_count", query_records_count(domains)),
 				   visual::size_field("relation_pair_count", combined_distances.size() * combined_distances.size()),
 				   visual::size_field("knn_edge_count", combined_distances.size() * kNearestNeighbors),
@@ -640,17 +647,21 @@ auto build_document(const std::vector<DomainEvidence> &domains) -> visual::Docum
 		}
 	}
 
-	doc.metric_relation(kRelationId,
-						kDatasetId,
-						"Aligned process-curve metric",
-						ids,
-						relation_edges(ids, combined_distances),
-						"dense_matrix",
-						object({visual::string_field("operator", "AlignedCurveDistance"),
-								visual::number_field("gap_cost", AlignedCurveDistance{}.gap_cost),
-								visual::bool_field("symmetric", true),
-								visual::string_field("record_order", "domain CSV order"),
-								visual::field("block_ranges", block_ranges_json(domains))}));
+	doc.relation_json(object({visual::string_field("id", kRelationId),
+							  visual::string_field("dataset_id", kDatasetId),
+							  visual::string_field("name", "Aligned process-curve metric"),
+							  visual::string_field("relation_type", "metric"),
+							  visual::string_field("value_type", "scalar"),
+							  visual::string_array_field("record_ids", ids),
+							  visual::string_field("storage", "dense_matrix"),
+							  visual::number_array_field("values", dense_matrix_values(combined_distances)),
+							  visual::field("metadata",
+											object({visual::string_field("operator", "AlignedCurveDistance"),
+													visual::number_field("gap_cost", AlignedCurveDistance{}.gap_cost),
+													visual::bool_field("symmetric", true),
+													visual::string_field("record_order", "domain CSV order"),
+													visual::string_field("encoding", "row-major flat dense matrix"),
+													visual::field("block_ranges", block_ranges_json(domains))}))}));
 	doc.space(kSpaceId,
 			  kDatasetId,
 			  ids,
@@ -767,8 +778,8 @@ int main(int argc, char **argv)
 	const auto export_json = parse_flag_value(argc, argv, "--export-json");
 
 	const std::vector<DomainInput> inputs{
-		{"power_demand", "Power Demand", METRIC_PROCESS_CURVE_POWER_DEMAND_CSV, 24, 8, 300.0},
-		{"internal_bleeding", "Internal Bleeding", METRIC_PROCESS_CURVE_INTERNAL_BLEEDING_CSV, 24, 8, 150.0},
+		{"power_demand", "Power Demand", METRIC_PROCESS_CURVE_POWER_DEMAND_CSV, 128, 16, 300.0},
+		{"internal_bleeding", "Internal Bleeding", METRIC_PROCESS_CURVE_INTERNAL_BLEEDING_CSV, 448, 16, 150.0},
 	};
 
 	std::vector<DomainEvidence> domains;

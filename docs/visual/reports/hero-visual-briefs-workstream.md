@@ -1,6 +1,6 @@
 # Hero Visual Briefs Workstream
 
-Status date: 2026-06-25
+Status date: 2026-06-26
 
 ## Scope
 
@@ -22,14 +22,17 @@ browser regression report.
 
 Current public preview count: `7`.
 
-Record-count blocked previews:
+Record-count blocked previews: none.
 
-- `condition-monitoring-hero`: `15` records, hero target `500`
-- `mixed-record-hero`: `20` records, hero target `2000`
-- `cross-space-dependency-hero`: `48` records, hero target `500`
-- `dynamics-noise-hero`: `28` records, hero target `500`
-- `mapping-dimensionality-hero`: `15` records, hero target `1000`
-- `process-curve-external-hero`: `64` records, hero target `500`
+Current review-pending native previews:
+
+- `condition-monitoring-hero`: `528` records, hero target `500`
+- `mixed-record-hero`: `2,000` records, hero target `2,000`
+- `cross-space-dependency-hero`: `512` records, hero target `500`
+- `dynamics-noise-hero`: `512` records, hero target `500`
+- `mapping-dimensionality-hero`: `1,000` records, hero target `1,000`
+- `process-curve-external-hero`: `737` records total, `576` source records,
+  hero target `500` source records
 
 `relation-matrix-neighborhood` has `130` records and satisfies the current
 matrix-size target of `128`, but remains blocked by human visual composition

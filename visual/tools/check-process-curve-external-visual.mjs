@@ -56,8 +56,8 @@ requireEqual(document_.provenance?.writer, "examples/engine/process_curve_extern
 
 const sourceRecords = document_.records.filter((record) => record.record_type === "process_curve_source");
 const queryRecords = document_.records.filter((record) => record.record_type === "process_curve_query");
-requireEqual(sourceRecords.length, 48, "unexpected source record count");
-requireEqual(queryRecords.length, 16, "unexpected query record count");
+requireAtLeast(sourceRecords.length, 500, "source relation must contain hero-scale real process windows");
+requireAtLeast(queryRecords.length, 16, "query evidence must preserve at least the original contrast-query scale");
 for (const record of sourceRecords) {
   requireEqual(record.payload?.kind, "time_series", "source record payload must be a time series");
   requireEqual(record.payload?.series?.length, 36, "source record must preserve original 36-sample snippet");

@@ -76,7 +76,7 @@ Gallery composition:
 | `mapping-dimensionality-hero` | `review-pending` | Native preview | `visual/examples/mapping-dimensionality-hero/index.html` | `examples/engine/mapping_dimensionality_visual_export.cpp` | `docs/examples/assets/mapping-dimensionality/metric.visual.json` |
 | `dynamics-noise-hero` | `review-pending` | Native preview | `visual/examples/dynamics-noise-hero/index.html` | `examples/engine/finite_metric_dynamics_visual_export.cpp` | `docs/examples/assets/dynamics-noise/metric.visual.json` |
 | `relation-matrix-neighborhood` | `review-pending` | Native preview | `visual/examples/relation-matrix-neighborhood/index.html` | `examples/engine/relation_matrix_visual_export.cpp` | `docs/examples/assets/relation-matrix/metric.visual.json` |
-| `process-curve-external-hero` | `review-pending scale-blocked` | Scale-limited preview | `visual/examples/process-curve-external-hero/index.html` | `examples/engine/process_curve_external_visual_export.cpp` | `docs/examples/assets/process-curve-external/metric.visual.json` |
+| `process-curve-external-hero` | `review-pending` | Native-scale UCR preview | `visual/examples/process-curve-external-hero/index.html` | `examples/engine/process_curve_external_visual_export.cpp` | `docs/examples/assets/process-curve-external/metric.visual.json` |
 
 ## Validation Commands
 

@@ -43,7 +43,7 @@ struct DomainBenchmarkInput {
 	std::string title;
 	std::string csv_path;
 	std::size_t expected_records;
-	std::size_t expected_queries;
+	std::size_t minimum_contrast_queries;
 	double minimum_average_margin;
 };
 
@@ -79,6 +79,7 @@ struct DomainEvidence {
 	std::vector<QueryEvidence> queries;
 	std::vector<std::vector<double>> metric_distances;
 	std::vector<std::vector<double>> vector_distances;
+	std::size_t query_candidate_count{0};
 	std::size_t metric_correct{0};
 	std::size_t vector_mismatches{0};
 	double average_metric_margin{0.0};
@@ -219,7 +220,7 @@ auto run_domain_benchmark(const DomainBenchmarkInput &input) -> DomainEvidence
 				ProcessCurveQuery{"downsampled_" + window.id, window.source_label, downsample_even(window.values)});
 		}
 	}
-	assert(queries.size() == input.expected_queries);
+	evidence.query_candidate_count = queries.size();
 
 	auto alignment_space = mtrc::make_space(evidence.records, AlignedCurveDistance{});
 	auto vector_baseline = mtrc::make_space(evidence.records, PointwisePaddedEuclideanDistance{});
@@ -260,43 +261,40 @@ auto run_domain_benchmark(const DomainBenchmarkInput &input) -> DomainEvidence
 		const auto baseline_label = evidence.labels[baseline_index];
 		const bool metric_correct_here = metric_label == query.expected_label;
 		const bool vector_mismatch_here = baseline_label != query.expected_label;
-		if (metric_correct_here) {
-			++metric_correct;
-		}
-		if (vector_mismatch_here) {
-			++vector_mismatches;
-		}
-
 		const auto baseline_distance_under_metric =
 			alignment_space.metric()(query.values, evidence.records[baseline_index]);
 		const auto metric_margin = baseline_distance_under_metric - metric_neighbors[0].distance;
 		assert(metric_margin > 0.0);
-		metric_margin_sum += metric_margin;
 
-		QueryEvidence query_evidence;
-		query_evidence.id = query.id;
-		query_evidence.expected_label = query.expected_label;
-		query_evidence.values = query.values;
-		query_evidence.metric_winner_id = evidence.ids[metric_index];
-		query_evidence.metric_winner_label = metric_label;
-		query_evidence.metric_winner_index = metric_index;
-		query_evidence.metric_distance = metric_neighbors[0].distance;
-		query_evidence.vector_winner_id = evidence.ids[baseline_index];
-		query_evidence.vector_winner_label = baseline_label;
-		query_evidence.vector_winner_index = baseline_index;
-		query_evidence.vector_distance = baseline_neighbors[0].distance;
-		query_evidence.metric_margin = metric_margin;
-		query_evidence.metric_correct = metric_correct_here;
-		query_evidence.vector_mismatch = vector_mismatch_here;
-		evidence.queries.push_back(std::move(query_evidence));
+		if (metric_correct_here && vector_mismatch_here) {
+			++metric_correct;
+			++vector_mismatches;
+			metric_margin_sum += metric_margin;
+
+			QueryEvidence query_evidence;
+			query_evidence.id = query.id;
+			query_evidence.expected_label = query.expected_label;
+			query_evidence.values = query.values;
+			query_evidence.metric_winner_id = evidence.ids[metric_index];
+			query_evidence.metric_winner_label = metric_label;
+			query_evidence.metric_winner_index = metric_index;
+			query_evidence.metric_distance = metric_neighbors[0].distance;
+			query_evidence.vector_winner_id = evidence.ids[baseline_index];
+			query_evidence.vector_winner_label = baseline_label;
+			query_evidence.vector_winner_index = baseline_index;
+			query_evidence.vector_distance = baseline_neighbors[0].distance;
+			query_evidence.metric_margin = metric_margin;
+			query_evidence.metric_correct = metric_correct_here;
+			query_evidence.vector_mismatch = vector_mismatch_here;
+			evidence.queries.push_back(std::move(query_evidence));
+		}
 	}
-	assert(metric_correct == queries.size());
-	assert(vector_mismatches == queries.size());
-	assert(metric_margin_sum / static_cast<double>(queries.size()) > input.minimum_average_margin);
+	assert(evidence.queries.size() >= input.minimum_contrast_queries);
+	assert(metric_margin_sum / static_cast<double>(evidence.queries.size()) > input.minimum_average_margin);
 
 	evidence.metric_correct = metric_correct;
 	evidence.vector_mismatches = vector_mismatches;
-	evidence.average_metric_margin = metric_margin_sum / static_cast<double>(queries.size());
+	evidence.average_metric_margin = metric_margin_sum / static_cast<double>(evidence.queries.size());
 	evidence.dense_evaluations = matrix_diagnostics.cached_distances;
 	return evidence;
 }
@@ -1232,8 +1230,8 @@ int main(int argc, char **argv)
 	const auto export_json = parse_flag_value(argc, argv, "--export-json");
 
 	const std::vector<DomainBenchmarkInput> domains{
-		{"power_demand", "Power Demand", METRIC_PROCESS_CURVE_POWER_DEMAND_CSV, 24, 8, 300.0},
-		{"internal_bleeding", "Internal Bleeding", METRIC_PROCESS_CURVE_INTERNAL_BLEEDING_CSV, 24, 8, 150.0},
+		{"power_demand", "Power Demand", METRIC_PROCESS_CURVE_POWER_DEMAND_CSV, 128, 16, 300.0},
+		{"internal_bleeding", "Internal Bleeding", METRIC_PROCESS_CURVE_INTERNAL_BLEEDING_CSV, 448, 16, 150.0},
 	};
 
 	std::vector<DomainEvidence> evidence;

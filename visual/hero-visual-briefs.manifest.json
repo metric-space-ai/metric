@@ -237,7 +237,6 @@
         "original time-series preview payloads"
       ],
       "acceptanceBlockers": [
-        "record-count-below-hero-minimum",
         "visual-composition-not-human-accepted"
       ]
     }

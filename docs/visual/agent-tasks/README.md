@@ -58,7 +58,7 @@ set, and one validation path.
 | `mapping-dimensionality-visual-acceptance.md` | visual acceptance candidate for native mapping preview | review-pending candidate integrated |
 | `dynamics-noise-visual-acceptance.md` | visual acceptance candidate for native dynamics preview | review-pending candidate integrated |
 | `relation-matrix-visual-acceptance.md` | visual acceptance candidate for native relation-matrix preview | review-pending candidate integrated |
-| `process-curve-external-scale-exporter.md` | scale external process-curve preview only with real licensed source windows | blocked: missing real source windows |
+| `process-curve-external-scale-exporter.md` | scale external process-curve preview only with real licensed source windows | integrated; review-pending visual composition |
 | `native-provenance-command-contract-hardening.md` | harden explicit native provenance and public command coverage | integrated |
 | `evidence-strictness-trajectory-property-residual.md` | prevent record-order, scalar-default and residual fallback evidence claims | integrated |
 | `project-site-visual-portfolio-redesign.md` | reshape project page as visual-first native evidence portfolio | integrated |
@@ -130,9 +130,8 @@ visual grammars and gallery assets, not from synthetic data or one-off pages:
 - keep the Redif preview on native `metric.visual.v1` evidence and
   `showDynamics()`; do not promote it to a public hero without a separate
   visual brief, gallery decision and screenshot review
-- process-curve external scale remains blocked until real licensed source
-  windows are available locally or supplied externally; the current inventory
-  found only 48 real source windows
+- process-curve external scale is now integrated with 576 real licensed source
+  windows; remaining work is visual composition acceptance, not source padding
 - use the integrated composition task files for condition monitoring, mapping
   residuals and relation matrix readability as the baseline for the next
   acceptance wave; each follow-up task must still improve reusable engine/view

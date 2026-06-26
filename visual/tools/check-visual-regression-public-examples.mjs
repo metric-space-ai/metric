@@ -37,6 +37,8 @@ const VIEWPORT = parseViewport(process.env.METRIC_VISUAL_VIEWPORT || "1280x820")
 const NAV_TIMEOUT_MS = Number(process.env.METRIC_VISUAL_NAV_TIMEOUT_MS || 45000);
 const READY_TIMEOUT_MS = Number(process.env.METRIC_VISUAL_READY_TIMEOUT_MS || 45000);
 const FRAME_SAMPLE_TARGET = Number(process.env.METRIC_VISUAL_FRAME_SAMPLES || 45);
+const SCREENSHOT_TIMEOUT_MS = Number(process.env.METRIC_VISUAL_SCREENSHOT_TIMEOUT_MS || 20000);
+const DEBUG = process.env.METRIC_VISUAL_REGRESSION_DEBUG === "1";
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -737,16 +739,23 @@ async function checkExample(browser, baseUrl, name) {
   let screenshot = null;
   let canvasScreenshot = null;
   let canvasPixels = null;
+  let screenshotError = null;
+  let canvasScreenshotError = null;
 
   try {
     page = await browser.newPage();
     page.consoleErrors = [];
     page.pageErrors = [];
+    debugLog(name, "prepare");
     await page.prepare();
+    debugLog(name, "navigate", url);
     await page.navigate(url);
+    debugLog(name, "waitForProbe");
     probe = await waitForProbe(page);
+    debugLog(name, "probe-ready");
     if (process.env.METRIC_VISUAL_REGRESSION_FRAME_SAMPLE === "1") {
       try {
+        debugLog(name, "frame-sample");
         await evaluate(page, `window.__metricVisualFrameSampleTarget = ${JSON.stringify(FRAME_SAMPLE_TARGET)}`, { timeoutMs: 30000 });
         frameTiming = await evaluate(page, FRAME_SAMPLE_SCRIPT, { timeoutMs: 30000 });
       } catch (error) {
@@ -755,12 +764,36 @@ async function checkExample(browser, baseUrl, name) {
     } else {
       frameTiming = { skipped: "covered-by-check-visual-performance-large-scenes" };
     }
+    debugLog(name, "interaction");
     interaction = await performBasicInteraction(page, probe);
+    debugLog(name, "probe-after-interaction");
     probe = await evaluate(page, PAGE_PROBE_SCRIPT, { timeoutMs: 30000 });
-    screenshot = await captureScreenshot(page, join(OUT_DIR, `${name}.png`));
     if (probe?.largestCanvas) {
-      canvasScreenshot = await captureScreenshot(page, join(OUT_DIR, `${name}.canvas.png`), { clip: clipFromCanvas(probe.largestCanvas) });
-      canvasPixels = analyzePng(await readFile(canvasScreenshot));
+      debugLog(name, "canvas-screenshot");
+      try {
+        canvasScreenshot = await captureCanvasElement(page, join(OUT_DIR, `${name}.canvas.png`), probe.largestCanvas);
+      } catch (canvasError) {
+        canvasScreenshotError = canvasError instanceof Error ? canvasError.message : String(canvasError);
+        debugLog(name, "canvas-dataurl-failed", canvasScreenshotError);
+      }
+      if (!canvasScreenshot) {
+        try {
+          canvasScreenshot = await captureScreenshot(page, join(OUT_DIR, `${name}.canvas.png`), { clip: clipFromCanvas(probe.largestCanvas) });
+        } catch (error) {
+          canvasScreenshotError = error instanceof Error ? error.message : String(error);
+          debugLog(name, "canvas-screenshot-failed", canvasScreenshotError);
+        }
+      }
+      if (canvasScreenshot) {
+        canvasPixels = analyzePng(await readFile(canvasScreenshot));
+      }
+    }
+    debugLog(name, "screenshot");
+    try {
+      screenshot = await captureScreenshot(page, join(OUT_DIR, `${name}.png`));
+    } catch (error) {
+      screenshotError = error instanceof Error ? error.message : String(error);
+      debugLog(name, "screenshot-failed", screenshotError);
     }
   } catch (error) {
     issues.push({ code: "browser-check-failed", message: error instanceof Error ? error.message : String(error) });
@@ -780,6 +813,8 @@ async function checkExample(browser, baseUrl, name) {
     pixelSummary: canvasPixels,
     screenshot,
     canvasScreenshot,
+    screenshotError,
+    canvasScreenshotError,
   };
   const runtime = {
     state: probe?.runtimeState || null,
@@ -884,6 +919,12 @@ async function checkExample(browser, baseUrl, name) {
     gpuCurvePickingProbe: probe?.gpuCurvePickingProbe || null,
     issues,
   };
+}
+
+function debugLog(name, step, detail = "") {
+  if (!DEBUG) return;
+  const suffix = detail ? ` ${detail}` : "";
+  console.error(`[visual-regression:${name}] ${step}${suffix}`);
 }
 
 function requiresGpuPicking(runtimeState) {
@@ -1215,10 +1256,50 @@ async function performBasicInteraction(page, probe) {
 }
 
 async function captureScreenshot(page, path, options = {}) {
-  const params = { format: "png", captureBeyondViewport: false, fromSurface: true };
-  if (options.clip) params.clip = options.clip;
-  const response = await page.send("Page.captureScreenshot", params);
+  const baseParams = { format: "png", captureBeyondViewport: false };
+  if (options.clip) baseParams.clip = options.clip;
+  const attempts = [
+    { ...baseParams, fromSurface: true },
+    { ...baseParams, fromSurface: false },
+  ];
+  let lastError = null;
+  let response = null;
+  for (const params of attempts) {
+    try {
+      response = await page.sendWithTimeout("Page.captureScreenshot", params, SCREENSHOT_TIMEOUT_MS);
+      break;
+    } catch (error) {
+      lastError = error;
+      debugLog("screenshot", "capture-attempt-failed", `${params.fromSurface ? "surface" : "view"} ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  if (!response) {
+    throw new Error(`Page.captureScreenshot failed after ${attempts.length} attempts: ${lastError instanceof Error ? lastError.message : String(lastError)}`);
+  }
   await writeFile(path, Buffer.from(response.data, "base64"));
+  return path;
+}
+
+async function captureCanvasElement(page, path, canvas = {}) {
+  const canvasId = canvas.id || null;
+  const expression = `
+    (() => {
+      const candidates = Array.from(document.querySelectorAll("canvas"));
+      const canvas = ${JSON.stringify(canvasId)}
+        ? candidates.find((entry) => entry.id === ${JSON.stringify(canvasId)})
+        : candidates.sort((a, b) => {
+            const ar = a.getBoundingClientRect();
+            const br = b.getBoundingClientRect();
+            return (br.width * br.height) - (ar.width * ar.height);
+          })[0];
+      if (!canvas) throw new Error("No canvas element available for fallback screenshot");
+      return canvas.toDataURL("image/png");
+    })()
+  `;
+  const dataUrl = await evaluate(page, expression, { timeoutMs: SCREENSHOT_TIMEOUT_MS });
+  const match = /^data:image\/png;base64,(.+)$/.exec(String(dataUrl || ""));
+  if (!match) throw new Error("Canvas fallback did not return a PNG data URL");
+  await writeFile(path, Buffer.from(match[1], "base64"));
   return path;
 }
 
@@ -1466,6 +1547,31 @@ class CdpPage {
     return promise;
   }
 
+  sendWithTimeout(method, params = {}, timeoutMs = 10000) {
+    const id = this.nextId++;
+    const message = JSON.stringify({ id, method, params });
+    let timer = null;
+    const promise = new Promise((resolveSend, rejectSend) => {
+      this.pending.set(id, {
+        method,
+        resolve: (value) => {
+          if (timer) clearTimeout(timer);
+          resolveSend(value);
+        },
+        reject: (error) => {
+          if (timer) clearTimeout(timer);
+          rejectSend(error);
+        },
+      });
+      timer = setTimeout(() => {
+        this.pending.delete(id);
+        rejectSend(new Error(`${method} timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+    });
+    this.socket.send(message);
+    return promise;
+  }
+
   on(method, handler) {
     if (!this.listeners.has(method)) this.listeners.set(method, new Set());
     this.listeners.get(method).add(handler);
@@ -1490,7 +1596,7 @@ class CdpPage {
 
   async close() {
     if (!this.closed) this.socket.close();
-    await fetch(`http://127.0.0.1:${this.port}/json/close/${this.targetId}`).catch(() => {});
+    await fetchWithTimeout(`http://127.0.0.1:${this.port}/json/close/${this.targetId}`, 1200).catch(() => {});
   }
 }
 
@@ -1661,6 +1767,16 @@ function clamp(value, min, max) {
 
 function sleep(ms) {
   return new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
+}
+
+async function fetchWithTimeout(url, timeoutMs = 1000, options = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 main().catch((error) => {

@@ -1,25 +1,31 @@
 # Process-Curve Real Data Inventory
 
 Date: 2026-06-26
-Scope: read-only inspection, except this report.
+Scope: historical read-only inspection report.
+
+Status: superseded by
+`docs/visual/reports/process-curve-external-scale-exporter.md`.
 
 ## Result
 
-The local machine does not currently have enough distinct real UCR source
-windows to clear `missing-real-source-windows-for-500-record-hero`.
+This report documents the earlier local inventory state before the external
+process-curve native exporter was scaled. It is no longer the current authority
+for `process-curve-external-hero` scale readiness.
 
-Inspectable local source evidence is still the checked-in 48-window derived
-slice:
+Current authoritative state:
 
-- 24 Power Demand source windows
-- 24 Internal Bleeding source windows
-- 16 derived downsampled query windows
+- `examples/engine/assets/process_curve_power_demand_gallery.csv` and
+  `examples/engine/assets/process_curve_internal_bleeding_gallery.csv` now
+  contain larger UCR-derived source slices.
+- `docs/examples/assets/process-curve-external/metric.visual.json` now contains
+  737 total records: 576 source records and 161 query records.
+- The native visual document contains a 576-by-576 dense source relation
+  (331,776 row-major values), query/winner evidence and native graph evidence.
+- The previous source-record blocker is cleared. The remaining blocker is human
+  visual-composition acceptance.
 
-The required 500 real source windows are not available locally from the searched
-locations. The sibling metric worktrees contain duplicate copies of the same two
-24-row gallery slice CSVs; they are not additional real source windows.
-
-No datasets were synthesized, copied, extracted, or changed.
+The original inventory below is retained only to show the pre-scale search
+result and must not be used as the current project status.
 
 ## Search Roots
 
@@ -38,8 +44,8 @@ These are derived gallery slices, not the full UCR source archive.
 
 | Path | Size | Inspectable count | Classification |
 | --- | ---: | ---: | --- |
-| `/Users/michaelwelsch/Documents/metric/examples/engine/assets/process_curve_power_demand_gallery.csv` | 10,622 bytes | 24 rows, 24 source windows, 36 samples/window | Derived UCR gallery slice |
-| `/Users/michaelwelsch/Documents/metric/examples/engine/assets/process_curve_internal_bleeding_gallery.csv` | 9,940 bytes | 24 rows, 24 source windows, 36 samples/window | Derived UCR gallery slice |
+| `/Users/michaelwelsch/Documents/metric/examples/engine/assets/process_curve_power_demand_gallery.csv` | superseded by current file | historical pre-scale slice | Derived UCR gallery slice |
+| `/Users/michaelwelsch/Documents/metric/examples/engine/assets/process_curve_internal_bleeding_gallery.csv` | superseded by current file | historical pre-scale slice | Derived UCR gallery slice |
 | `/Users/michaelwelsch/Documents/metric/examples/engine/assets/process_curve_power_demand_gallery_license.md` | 1,918 bytes | metadata only | Attribution/license sidecar |
 | `/Users/michaelwelsch/Documents/metric/examples/engine/assets/process_curve_internal_bleeding_gallery_license.md` | 1,881 bytes | metadata only | Attribution/license sidecar |
 
@@ -60,9 +66,9 @@ queries. They are useful for inspection but do not add source windows.
 | `/Users/michaelwelsch/Documents/metric/docs/examples/assets/process-curve-external/queries.csv` | 5,855 bytes | 16 query rows, 18 samples/query | Derived query export |
 | `/Users/michaelwelsch/Documents/metric/docs/examples/assets/process-curve-external/distances.csv` | 277,625 bytes | 2,304 pair-distance rows | Derived metric/baseline evidence |
 | `/Users/michaelwelsch/Documents/metric/docs/examples/assets/process-curve-external/query-winners.csv` | 18,718 bytes | 48 curve rows; query, metric winner, baseline winner per query | Derived query-winner evidence |
-| `/Users/michaelwelsch/Documents/metric/docs/examples/assets/process-curve-external/metric.visual.json` | 411,768 bytes | 64 total records: 48 source, 16 query; 1 relation over 48 source ids; 2,304 relation values | Derived native visual evidence |
+| `/Users/michaelwelsch/Documents/metric/docs/examples/assets/process-curve-external/metric.visual.json` | superseded by current file | Current file contains 737 total records: 576 source, 161 query; 331,776 dense relation values | Native visual evidence |
 
-Native diagnostic payload in `metric.visual.json` reports:
+Historical pre-scale native diagnostic payload in `metric.visual.json` reported:
 
 - `source_record_count`: 48
 - `query_record_count`: 16
@@ -109,16 +115,15 @@ The initial broad searches also found many unrelated CSV/ZIP examples under
 Downloads, Documents, and CloudStorage. They did not contain UCR/process-curve
 candidate filenames and were not counted.
 
-## Blocker Decision
+## Superseded Blocker Decision
 
-`missing-real-source-windows-for-500-record-hero` cannot be cleared locally.
+The earlier inventory concluded that the source-window blocker could not be
+cleared from then-local files. That conclusion is superseded by the scaled
+native exporter and checked-in UCR-derived source slices.
 
-Reason: only 48 distinct real source windows are inspectable. The hero needs at
-least 500 real source windows in the native source relation. The current
-evidence is short by at least 452 distinct real source windows.
-
-Do not clear acceptance, mark the hero scale-ready, pad with queries, duplicate
-existing windows, or synthesize curves.
+Do not use this historical report to reintroduce a source-record blocker. The
+current gate authority is `visual/tools/check-native-hero-evidence-scale.mjs`
+plus `docs/visual/reports/process-curve-external-scale-exporter.md`.
 
 ## Next Step If Enough Data Exists Later
 

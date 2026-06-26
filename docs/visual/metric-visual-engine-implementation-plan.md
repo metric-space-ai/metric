@@ -2166,9 +2166,9 @@ Current follow-up status:
   `showDynamics()` from the native
   `docs/examples/assets/redif-metric-dynamics/metric.visual.json` asset. This
   is an engine preview, not a public hero promotion.
-- `process-curve-real-data-inventory` is integrated. The local machine has only
-  48 distinct real UCR-derived source windows, so
-  `missing-real-source-windows-for-500-record-hero` remains the correct blocker.
+- `process-curve-external-scale-exporter` is integrated. The external UCR
+  process-curve native asset now contains 576 real source windows and clears the
+  old `missing-real-source-windows-for-500-record-hero` blocker.
 
 ## Implementation Checkpoint: Engine Command Layer
 
@@ -2498,9 +2498,9 @@ Corrected status:
   relation-matrix/neighborhood, dynamics and mapping remain native
   `public-preview-only` examples pending screenshot acceptance.
 - The external UCR/process-curve preview has a native `metric.visual.v1` export
-  and command-backed preview, but remains explicitly blocked by source-record
-  count until more real licensed source windows are available. It must not be
-  promoted by synthetic padding.
+  and command-backed preview with 576 real source windows. It remains
+  review-pending until screenshot acceptance, not because of source-record
+  count.
 
 ## Implementation Checkpoint: Command Fidelity And Residual Evidence Guards
 
@@ -2826,18 +2826,17 @@ Corrected status:
   review-pending visual candidates, not accepted public heroes.
 - The full public browser regression passes in the main worktree with 8
   examples and 0 failures.
-- The next acceptance bottleneck is visual curation/manual screenshot review,
-  stricter grammar-specific stress budgets at final hero scale and richer
-  process-curve external evidence, not more synthetic page fixtures.
-- The external process-curve preview remains explicitly record-count-blocked:
-  the checked-in real UCR slices contain 48 source windows plus 16 query records,
-  below the 500-source-record hero target. The exact blocker is
-  `missing-real-source-windows-for-500-record-hero` and is documented in
+- The next acceptance bottleneck is visual curation/manual screenshot review
+  and stricter grammar-specific stress budgets at final hero scale, not more
+  synthetic page fixtures.
+- The external process-curve preview is no longer record-count-blocked. The
+  checked-in real UCR slices contain 576 source windows plus 161 contrast-query
+  records, and this is documented in
   `docs/visual/reports/process-curve-external-scale-exporter.md`.
-- The follow-up local inventory in
-  `docs/visual/reports/process-curve-real-data-inventory.md` confirms that no
-  full UCR 2021 archive or extracted source tree is available locally, so this
-  blocker cannot be cleared without external real data.
+- The earlier local-inventory blocker is superseded: the checked-in source
+  slices are derived from the real UCR 2021 archive and the full archive is not
+  required in the repository. The next process-curve blocker is visual
+  composition acceptance, not source scale.
 
 ## Implementation Checkpoint: Composition Acceptance Wave
 
@@ -3083,10 +3082,10 @@ The next parallel work is engine/view capability work, not new page HTML:
    work is visual acceptance and, where necessary, grammar-specific bundling or
    ranking for edge-heavy public previews.
 4. External process-curve scale:
-   `process-curve-external-hero` remains blocked until at least 500 distinct
-   real licensed source windows are available. The current local inventory has
-   only 48 real source windows plus 16 queries, and those queries must not be
-   counted as source-scale padding.
+   `process-curve-external-hero` now meets the source-scale requirement with
+   576 distinct real licensed source windows. Remaining work is visual
+   composition acceptance and process-curve view hardening if screenshot review
+   finds issues.
 
 Each slice must modify reusable engine/view/layer code, update or add a
 checker/report, and keep GRAE10 golden plus public gallery evidence green.

@@ -69,13 +69,16 @@ Results:
 - `check-visual-document`: passed for `docs/examples/assets/condition-monitoring/metric.visual.json`.
 - `check-public-gallery-evidence`: passed.
 - `check-visual-regression-public-examples`: passed, 8/8 examples, condition-monitoring render nonblank with native evidence.
-- `check-native-hero-evidence-scale`: command exited 1. The condition-monitoring row is `nativeScaleReady: true` with 528 records and 2 relations, but the out-of-scope `visual/hero-visual-briefs.manifest.json` still lists `record-count-below-hero-minimum`, so the gate reports `stale-record-count-blocker`.
+- Historical `check-native-hero-evidence-scale` result from this isolated
+  task: command exited 1 because the then-out-of-scope visual-brief manifest
+  still carried a stale record-count blocker. The current parent gate has since
+  been refreshed and passes for this row.
 
 ## Remaining Blocker
 
-The native condition-monitoring evidence now meets the scale threshold. The remaining blocker is manifest/review state, not C++ evidence generation:
+The native condition-monitoring evidence meets the scale threshold. The active
+remaining blocker is `visual-composition-not-human-accepted`, which remains
+until human screenshot review accepts the preview composition.
 
-- `condition-monitoring-hero` still carries the stale `record-count-below-hero-minimum` acceptance blocker in `visual/hero-visual-briefs.manifest.json`.
-- `visual-composition-not-human-accepted` remains until human screenshot review accepts the preview composition.
-
-The manifest is outside this task's owner scope, so it was not edited.
+The manifest was outside this task's owner scope at the time of the historical
+run.

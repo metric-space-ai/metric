@@ -55,12 +55,17 @@ Results:
 - Export: passed and wrote `docs/examples/assets/mapping-dimensionality/metric.visual.json`.
 - CTest visual export/validate: passed, 14/14 tests.
 - Visual document check: passed, records 1,000, relations 2, coordinates 3, properties 9, timelines 1.
-- Native scale gate: failed globally because the public brief manifest still lists stale `record-count-below-hero-minimum` blockers. The mapping row itself is `nativeScaleReady: true` with `recordCount: 1000`.
+- Historical native scale gate result from this isolated task: failed globally
+  because the then-out-of-scope public brief manifest still listed stale
+  record-count blockers. The mapping row itself was already
+  `nativeScaleReady: true` with `recordCount: 1000`; the current parent gate
+  has since been refreshed and passes for this row.
 - Public gallery evidence: passed.
 - Public visual regression: passed, 8/8 examples.
 
 ## Remaining Blocker
 
-`node visual/tools/check-native-hero-evidence-scale.mjs` still exits nonzero because `visual/hero-visual-briefs.manifest.json` contains `record-count-below-hero-minimum` for `mapping-dimensionality-hero` even though the regenerated native asset has `recordCount: 1000` and meets `minRecordCountForHero: 1000`.
-
-That manifest is outside this task's owner scope. The mapping row also still carries `visual-composition-not-human-accepted`, so human screenshot/composition acceptance remains a separate blocker.
+The regenerated native asset has `recordCount: 1000` and meets
+`minRecordCountForHero: 1000`. The active remaining blocker is
+`visual-composition-not-human-accepted`, so human screenshot/composition
+acceptance remains required.

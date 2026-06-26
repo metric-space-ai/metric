@@ -94,12 +94,11 @@ native checks passing.
 node visual/tools/check-native-hero-evidence-scale.mjs
 ```
 
-Result: full command failed. The `dynamics-noise-hero` row is native-scale-ready
-with 512 records and 2 relations, but the command exits 1 because
-`visual/hero-visual-briefs.manifest.json` still contains
-`record-count-below-hero-minimum` for `dynamics-noise-hero`. The same unowned
-manifest also has stale record-count blockers for `condition-monitoring-hero`
-and `cross-space-dependency-hero`.
+Result from this historical isolated task: full command failed. The
+`dynamics-noise-hero` row was already native-scale-ready with 512 records and 2
+relations, but the then-unowned visual-brief manifest still carried stale
+record-count blockers. The current parent gate has since been refreshed and
+passes for this row.
 
 ```bash
 node visual/tools/check-public-gallery-evidence.mjs
