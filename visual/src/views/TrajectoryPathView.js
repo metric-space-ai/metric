@@ -36,6 +36,9 @@ export class TrajectoryPathView extends BaseView {
     this.targetRadius = finiteNumber(options.targetRadius, 1.6);
     this.mode = options.mode || options.trackMode || "ribbon";
     this.descriptorFactory = options.descriptorFactory || (this.mode === "tube" ? "tube-ribbon" : "trajectory-bundle");
+    this.semanticOverlay = options.semanticOverlay
+      ?? options.trajectorySemanticOverlay
+      ?? this.mode !== "tube";
     this.descriptorKind = options.descriptorKind || options.layerKind || this.kind;
     this.sourceViewKind = options.sourceViewKind || this.kind;
     this.order = finiteNumber(options.order, 30);
@@ -95,6 +98,11 @@ export class TrajectoryPathView extends BaseView {
       "maxSegmentLength",
       "samples",
     ]);
+    if (this.semanticOverlay && this.mode !== "tube") {
+      if (this.curveOptions.depthTest === undefined) this.curveOptions.depthTest = false;
+      if (this.curveOptions.depthWrite === undefined) this.curveOptions.depthWrite = false;
+      if (this.curveOptions.depthBias === undefined) this.curveOptions.depthBias = -0.0015;
+    }
 
     if (this.fitEnabled && this.positions && !this.stepStates.length && !this.paths.length) {
       this.fit = computePositionFit(this.positions, this.recordIds, {
@@ -237,6 +245,14 @@ export class TrajectoryPathView extends BaseView {
       pathColorPropertyId: this.pathColorPropertyId || null,
       pathWidthPropertyId: this.pathWidthPropertyId || null,
       motionGrammar: this.motionGrammar || this.metadata?.motionGrammar,
+      visualPriority: {
+        role: "trajectory/path",
+        semanticOverlay: Boolean(this.semanticOverlay && this.mode !== "tube"),
+        depthTest: descriptor.material?.depthTest ?? null,
+        depthWrite: descriptor.material?.depthWrite ?? null,
+        depthBias: descriptor.material?.depthBias ?? null,
+        purpose: "keep exported trajectory evidence readable over support fields and current states",
+      },
       algorithmicComputation: false,
     };
     return [descriptor];

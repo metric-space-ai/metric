@@ -446,6 +446,14 @@ runtime `screen-readable-overlay` phase by default. The photographic 3D scene is
 rendered first; the matrix is then composited as a crisp WebGL data layer in
 the final frame so camera-depth DoF cannot turn dense pair values into blur.
 
+Spatial grammars also use central semantic render priority before material
+styling is applied. `HeatFieldLayer` and `GroundProjectionLayer` form the
+lowest evidence band, semantic `CurveRibbonLayer` and `CurveTubeMeshLayer`
+paths render above them, current-state point layers render above paths, and
+`BillboardLabelLayer` descriptors render last. A scene may still use local
+`order` values inside each band, but page code must not rebuild the hierarchy
+with custom render paths.
+
 The presence of `InstancedBoxLayer` in the mapping is renderer compatibility,
 not a public box subject API.
 

@@ -89,6 +89,12 @@ This plan is authoritative only with the following current-state constraints:
   but it is composited after the photographic 3D/post-FX pass so camera-depth
   DoF cannot blur a dense analytical matrix. This phase is an engine feature,
   not a page overlay or one-off exception.
+- Trajectory, field, current-state and label layers now have central semantic
+  render priority in `VisualScene.sort()`. Field/projection evidence renders
+  under semantic path evidence, current records render above paths, and
+  billboard labels remain the final scene-readable layer. Ribbon trajectories
+  emitted by `TrajectoryPathView` carry semantic overlay metadata and bypass
+  point-cloud depth rejection where the path is the primary evidence.
 - The mapping grammar must render residual/error evidence through
   `MappingView` descriptors. `MetricVisualSurface.showMapping()` must not add
   page-level residual fallbacks that can hide missing native residual
@@ -3054,6 +3060,12 @@ The next parallel work is engine/view capability work, not new page HTML:
    `ProcessCurveSceneView` must give path, scalar field, current state and
    labels predictable visual priority. Condition monitoring and finite dynamics
    currently pass grammar gates but still read too much like blended clusters.
+   The first reusable engine slice is implemented: `VisualScene.sort()` now
+   applies semantic priority bands for fields/projections, paths, current
+   states and labels, while `TrajectoryPathView` exposes semantic overlay
+   metadata and ribbon depth behavior. Remaining work is screenshot acceptance,
+   visual curation of the affected previews and any grammar-specific evidence
+   changes needed to make the path/field relationship read immediately.
 3. Relation-edge legibility:
    `RelationEdgeLayer`, `MixedRecordView`, `CrossSpaceView` and `MappingView`
    must lane, bundle, sample or otherwise rank relation edges and residual

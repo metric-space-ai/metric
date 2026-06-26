@@ -171,6 +171,8 @@ function curveMaterial(options, defaults) {
     "flowSpeed",
     "saturation",
     "depthShade",
+    "depthBias",
+    "pickDepthBias",
     "shadowTint",
     "highlightColor",
   ]);

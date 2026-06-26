@@ -182,6 +182,11 @@ Implemented native slices:
   photographic post-FX stack first, then renders `screen-readable-overlay`
   layers into the final frame without camera-depth DoF, CSS/DOM fallbacks or
   page-local renderer code.
+- reusable semantic render hierarchy in `VisualScene.sort()` for field,
+  projection, trajectory, current-state and label evidence. The condition and
+  dynamics grammars now have a central engine contract that keeps scalar
+  fields below paths, paths below current records and labels above both,
+  instead of depending on page-local ordering.
 - relation-matrix diagnostics expose exported metric-law references from native
   evidence, including operator, finite/diagonal/symmetry/triangle checks, pair
   count and triangle-triplet count

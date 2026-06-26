@@ -468,6 +468,12 @@ function createProcessCurveMorphDescriptor(document, inputs, options) {
       phasePulse: 0.04,
       ...(options.pointMaterial || {}),
     },
+    metadata: {
+      role: "current-state-records",
+      visualGrammar: "process-curves",
+      visualComposition: "process-current-records-over-field-and-trajectory",
+      algorithmicComputation: false,
+    },
     animation,
   });
   return view.toLayerDescriptors()[0];
