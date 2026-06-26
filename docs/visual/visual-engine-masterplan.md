@@ -203,6 +203,14 @@ Implemented native slices:
   removed; raw descriptor installation is internal-only, while public callers
   use semantic `show*` commands or semantic view objects with
   `toLayerDescriptors()`
+- the old `metric.evidence.v1` browser render facade is removed from the
+  public surface; process-curve pages now load native `metric.visual.v1`
+  evidence and render through semantic commands/views
+- direct `MetricVisualRuntime` harnesses are quarantined to protected GRAE10
+  references and explicitly internal diagnostics; accepted/public examples may
+  not bypass `createMetricVisual()` and semantic `show*` commands
+- direct process-curve descriptor-factory calls are removed from public/example
+  pages; `ProcessCurveSceneView` owns process-curve descriptor assembly
 - the old embedded Babyplots/Babylon MNIST standalone page was deleted from
   active visual examples; MNIST dimension reduction is represented by the
   protected METRIC-owned 60k GRAE10 engine page

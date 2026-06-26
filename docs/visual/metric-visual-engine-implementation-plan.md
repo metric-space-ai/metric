@@ -2511,3 +2511,54 @@ Corrected status:
 - GRAE10 remains the only accepted public hero. Other native examples remain
   review-pending previews until screenshot review and public-page composition
   acceptance are explicitly granted.
+
+## Implementation Checkpoint: Render Facade And Harness Quarantine
+
+Status date: 2026-06-26
+
+Implemented:
+
+- The old `metric.evidence.v1` browser render facade is removed from the public
+  METRIC Visual surface. `visual/src/metric-visual.js` no longer exports the old
+  WebGL scene renderer, record gallery, heatmap, query inspector, selection
+  helper or process-curve app facade.
+- `visual/examples/process-curve-condition-monitoring/index.html` now loads
+  native `metric.visual.v1` process-curve evidence and renders through
+  `createMetricVisual(...).showProcessCurves(...)` rather than direct runtime or
+  page-local renderer setup.
+- `createProcessCurveMiniatureLayerDescriptors()` is quarantined behind
+  `ProcessCurveSceneView`; public/example pages no longer import or call the
+  descriptor factory directly.
+- Direct `MetricVisualRuntime` and `createLayerFromDescriptor()` usage is
+  allow-listed only for protected GRAE10 references and explicitly internal
+  diagnostics. Accepted public examples may not bypass the semantic command
+  surface.
+- `visual/tools/check-runtime-picking-preview.mjs` now follows the current
+  native cross-space evidence IDs (`obs-000`, `obs-001`) instead of stale
+  two-digit IDs, so record and pair previews are tested against the checked
+  native export.
+
+Verified:
+
+- `node visual/tools/check-runtime-picking-preview.mjs`
+- `node visual/tools/check-direct-runtime-harness-quarantine.mjs`
+- `node visual/tools/check-legacy-render-facade-deletion.mjs`
+- `node visual/tools/check-process-curve-descriptor-factory-quarantine.mjs`
+- `node visual/tools/check-process-curve-scene-view.mjs`
+- `node visual/tools/check-relation-matrix-picker.mjs`
+- `node visual/tools/check-visual-command-api.mjs`
+- `node visual/tools/check-views.mjs`
+- `node visual/tools/check-single-render-pipeline.mjs`
+- `node visual/tools/check-public-gallery-evidence.mjs`
+- `node visual/tools/check-visual-regression-public-examples.mjs`
+- `node visual/tools/check-grae10-golden.mjs`
+
+Corrected status:
+
+- `legacy-render-facade-deletion`,
+  `process-curve-descriptor-factory-quarantine`,
+  `direct-runtime-harness-quarantine` and
+  `process-curve-scene-view-consolidation` are integrated in the agent-task
+  registry.
+- This checkpoint narrows the public API and engine render path. It does not
+  promote any preview to hero-accepted status.
