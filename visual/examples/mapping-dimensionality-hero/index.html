@@ -46,6 +46,7 @@
     const params = new URLSearchParams(location.search);
     const SOURCE_COORDINATE_ID = "source-coordinate-layout-3d";
     const TARGET_COORDINATE_ID = "parametric-coordinate-latent-2d";
+    const TIMELINE_ID = "mapping-coordinate-morph";
     const RESIDUAL_PROPERTY_ID = "local-mapping-distortion";
     const LABEL_PROPERTY_ID = "process-family";
     const MAPPING_MOTION_TIMING = Object.freeze({
@@ -93,6 +94,7 @@
         document.documentElement.dataset.metricMorphProgress = progress.toFixed(3);
       });
       visual.showMapping({
+        timelineId: TIMELINE_ID,
         sourceCoordinateId: SOURCE_COORDINATE_ID,
         targetCoordinateId: TARGET_COORDINATE_ID,
         residualProperty: RESIDUAL_PROPERTY_ID,
@@ -117,7 +119,7 @@
       document.documentElement.dataset.metricMappingHero = "ready";
       document.documentElement.dataset.metricRecordCount = String(visual.views[0].recordIds.length);
       document.documentElement.dataset.metricCoordinateIds = `${SOURCE_COORDINATE_ID},${TARGET_COORDINATE_ID}`;
-      document.documentElement.dataset.metricTimelineIds = "mapping-coordinate-morph";
+      document.documentElement.dataset.metricTimelineIds = TIMELINE_ID;
       document.documentElement.dataset.metricLayerIds = layerIds.join(",");
       document.documentElement.dataset.metricResidualLayers = residualLayers.map((descriptor) => descriptor.id).join(",");
       document.documentElement.dataset.metricResidualProperty = RESIDUAL_PROPERTY_ID;

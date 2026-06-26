@@ -2,6 +2,12 @@ import { BaseView } from "./BaseView.js";
 import { MetricSpaceView, defaultCoordinateId } from "./MetricSpaceView.js";
 import { VisualLayer } from "./VisualLayer.js";
 import {
+  createTimelineAnimationDescriptor,
+  createTimelineControlDescriptor,
+  createTimelineEvidenceDescriptor,
+  createTimelineModel,
+} from "../timeline/index.js";
+import {
   createChannel,
   createStringChannel,
   extractCoordinatePositions,
@@ -35,6 +41,11 @@ export class MappingView extends BaseView {
     this.recordIds = options.recordIds || [];
     this.sourceCoordinateId = options.sourceCoordinateId || options.coordinateId || null;
     this.targetCoordinateId = options.targetCoordinateId || null;
+    this.timelineId = options.timelineId || options.timeline_id || options.metadata?.timelineId || null;
+    this.timelineEvidence = options.timelineEvidence || options.mappingTimelineEvidence || options.metadata?.timelineEvidence || null;
+    this.timelineAnimation = options.timelineAnimation || options.metadata?.timelineAnimation || null;
+    this.timelineControl = options.timelineControl || options.metadata?.timelineControl || null;
+    this.timelineCoordinateIds = options.timelineCoordinateIds || options.metadata?.timelineCoordinateIds || [];
     this.showResidualVectors = options.residualVectors !== false;
     this.residualVectorColor = options.residualVectorColor || options.vectorColor || null;
     this.residualVectorAlpha = Number.isFinite(Number(options.residualVectorAlpha))
@@ -63,10 +74,29 @@ export class MappingView extends BaseView {
       required: spaceRef != null,
       label: "space",
     });
+    const explicitTimelineRef = options.timeline ?? options.timelineId ?? options.timeline_id;
     const explicitSourceRef = options.sourceCoordinate ?? options.sourceCoordinateId;
     const explicitTargetRef = options.targetCoordinate ?? options.targetCoordinateId;
-    const sourceRef = explicitSourceRef ?? defaultCoordinateId(document, space, { dimension: 2 });
-    const targetRef = explicitTargetRef ?? defaultCoordinateId(document, space, { dimension: 3 });
+    const shouldUseTimeline = explicitTimelineRef != null || (explicitSourceRef == null && explicitTargetRef == null);
+    const timeline = shouldUseTimeline
+      ? resolveMappingTimeline(document, explicitTimelineRef, {
+        required: explicitTimelineRef != null,
+        datasetId: options.datasetId ?? options.dataset_id ?? space?.dataset_id,
+      })
+      : null;
+    const timelineModel = timeline
+      ? createTimelineModel(document, {
+        timelineId: timeline.id,
+        loop: options.loop ?? true,
+        playbackRate: options.playbackRate,
+        easing: options.easing,
+      })
+      : null;
+    const timelineSteps = timelineModel?.steps || [];
+    const firstTimelineStep = timelineSteps[0] || null;
+    const lastTimelineStep = timelineSteps[timelineSteps.length - 1] || null;
+    const sourceRef = explicitSourceRef ?? firstTimelineStep?.coordinateId ?? defaultCoordinateId(document, space, { dimension: 2 });
+    const targetRef = explicitTargetRef ?? lastTimelineStep?.coordinateId ?? defaultCoordinateId(document, space, { dimension: 3 });
     const sourceCoordinate = resolveCollectionItem(document, "coordinates", sourceRef, {
       required: sourceRef != null,
       label: explicitSourceRef != null ? "source coordinate" : "default source coordinate",
@@ -75,9 +105,15 @@ export class MappingView extends BaseView {
       required: targetRef != null,
       label: explicitTargetRef != null ? "target coordinate" : "default target coordinate",
     });
-    const residualPropertyRef = options.residualProperty || options.residualPropertyId || options.scalarProperty;
+    const residualPropertyRef = options.residualProperty
+      || options.residualPropertyId
+      || options.scalarProperty
+      || inferTimelineResidualPropertyRef(document, timelineSteps);
     const colorPropertyRef = options.colorProperty || options.colorPropertyId;
-    const labelPropertyRef = options.labelProperty || options.labelPropertyId || (typeof options.labels === "string" ? options.labels : undefined);
+    const labelPropertyRef = options.labelProperty
+      || options.labelPropertyId
+      || (typeof options.labels === "string" ? options.labels : undefined)
+      || inferTimelineLabelPropertyRef(document, timelineSteps);
     const residualProperty = resolveCollectionItem(document, "properties", residualPropertyRef, {
       required: residualPropertyRef != null,
       label: "residual property",
@@ -101,6 +137,31 @@ export class MappingView extends BaseView {
     const source = extractCoordinatePositions(sourceCoordinate, { records, recordIds: options.recordIds || space?.record_ids });
     const target = extractCoordinatePositions(targetCoordinate, { records, recordIds: source.ids });
     const residualValues = residualProperty ? extractPropertyValues(residualProperty, { records, recordIds: source.ids }) : null;
+    const timelineAnimation = timelineModel
+      ? createTimelineAnimationDescriptor(timelineModel, {
+        mode: "mapping-coordinate-morph",
+        loop: options.loop ?? true,
+        direction: options.direction || "alternate",
+        durationMs: options.timelineDurationMs ?? options.durationMs ?? options.totalMs ?? options.morphDurationMs,
+        minDurationMs: 5200,
+        maxDurationMs: 18000,
+      })
+      : null;
+    const timelineControl = timelineModel
+      ? createTimelineControlDescriptor(timelineModel, {
+        loop: options.loop ?? true,
+        direction: options.direction || "alternate",
+        label: options.timelineLabel || timeline?.name || "Mapping timeline",
+      })
+      : null;
+    const timelineEvidence = timelineModel
+      ? createTimelineEvidenceDescriptor(timelineModel, {
+        loop: options.loop ?? true,
+        direction: options.direction || "alternate",
+        animation: timelineAnimation,
+        control: timelineControl,
+      })
+      : null;
 
     return new MappingView({
       ...options,
@@ -117,6 +178,19 @@ export class MappingView extends BaseView {
       sourceCoordinateId: sourceCoordinate?.id,
       targetCoordinateId: targetCoordinate?.id,
       propertyId: residualProperty?.id,
+      timelineId: timeline?.id ?? options.timelineId,
+      timelineCoordinateIds: timelineSteps.map((step) => step.coordinateId).filter(Boolean),
+      timelineAnimation,
+      timelineControl,
+      timelineEvidence,
+      metadata: {
+        ...(options.metadata || {}),
+        timelineId: timeline?.id ?? options.timelineId ?? null,
+        timelineCoordinateIds: timelineSteps.map((step) => step.coordinateId).filter(Boolean),
+        timelineEvidence,
+        timelineAnimation,
+        timelineControl,
+      },
     });
   }
 
@@ -141,6 +215,10 @@ export class MappingView extends BaseView {
           motionGrammar: "mapping-coordinate-morph",
           mappingEvidence,
           mappingMotionTiming: this.motionTiming,
+          timelineId: this.timelineId,
+          timelineEvidence: this.timelineEvidence,
+          timelineAnimation: this.timelineAnimation,
+          timelineControl: this.timelineControl,
           sourceCoordinateId: this.sourceCoordinateId,
           targetCoordinateId: this.targetCoordinateId,
           residualPropertyId: this.propertyId,
@@ -236,6 +314,10 @@ export class MappingView extends BaseView {
         motionGrammar: "mapping-residual-error-scene",
         mappingEvidence,
         mappingMotionTiming: this.motionTiming,
+        timelineId: this.timelineId,
+        timelineEvidence: this.timelineEvidence,
+        timelineAnimation: this.timelineAnimation,
+        timelineControl: this.timelineControl,
         recordCount: count,
         sourceCoordinateId: this.sourceCoordinateId,
         targetCoordinateId: this.targetCoordinateId,
@@ -260,6 +342,9 @@ export class MappingView extends BaseView {
       sourceCoordinateId: this.sourceCoordinateId,
       targetCoordinateId: this.targetCoordinateId,
       residualPropertyId: this.propertyId,
+      timelineId: this.timelineId,
+      timelineCoordinateIds: this.timelineCoordinateIds,
+      timelineEvidenceSchema: this.timelineEvidence?.schema || null,
       motionContract: {
         mode: "coordinate-morph",
         channel: "targetPosition",
@@ -267,7 +352,10 @@ export class MappingView extends BaseView {
         timingProfile: this.motionTiming.profile,
         timingPhases: this.motionTiming.phases,
         controlledBy: "descriptor-animation",
+        timelineId: this.timelineId,
+        timelineSchema: this.timelineEvidence?.schema || null,
       },
+      timelineEvidence: this.timelineEvidence,
       motionTiming: this.motionTiming,
       preservationSummary: this.preservationSummary(),
       algorithmicComputation: false,
@@ -387,6 +475,56 @@ function normalizeRgba(color, fallbackAlpha) {
     clamp01((Number(source[2]) || 0) / divisor),
     clamp01(source[3] == null ? fallbackAlpha : Number(source[3])),
   ];
+}
+
+function resolveMappingTimeline(document, ref, options = {}) {
+  if (ref != null) {
+    return resolveCollectionItem(document, "timelines", ref, {
+      required: options.required,
+      label: "mapping timeline",
+    });
+  }
+  const timelines = Array.isArray(document?.timelines) ? document.timelines : [];
+  const datasetId = options.datasetId;
+  return timelines.find((timeline) => (
+    (datasetId == null || String(timeline.dataset_id ?? timeline.datasetId) === String(datasetId))
+    && /mapping|morph|coordinate|dimensional/i.test(`${timeline.id || ""} ${timeline.name || ""}`)
+  )) || null;
+}
+
+function inferTimelineResidualPropertyRef(document, steps = []) {
+  for (let index = steps.length - 1; index >= 0; index -= 1) {
+    const propertyId = steps[index]?.propertyId;
+    const property = resolveCollectionItem(document, "properties", propertyId);
+    if (property && isRecordScalarProperty(property) && propertyLooksResidual(property)) return property.id;
+  }
+  return null;
+}
+
+function inferTimelineLabelPropertyRef(document, steps = []) {
+  for (const step of steps) {
+    const property = resolveCollectionItem(document, "properties", step?.propertyId);
+    if (property && isRecordLabelProperty(property)) return property.id;
+  }
+  return null;
+}
+
+function isRecordScalarProperty(property) {
+  const target = String(property?.target_type ?? property?.targetType ?? property?.target ?? "record").replace(/-/g, "_");
+  const valueType = String(property?.value_type ?? property?.valueType ?? "").toLowerCase();
+  return target === "record" && (!valueType || /scalar|number|float|double/.test(valueType));
+}
+
+function isRecordLabelProperty(property) {
+  const target = String(property?.target_type ?? property?.targetType ?? property?.target ?? "record").replace(/-/g, "_");
+  const valueType = String(property?.value_type ?? property?.valueType ?? "").toLowerCase();
+  if (target !== "record") return false;
+  if (/categorical|category|label|string|enum/.test(valueType)) return true;
+  return /label|class|family|category|cluster|type/.test(`${property?.id || ""} ${property?.name || ""}`);
+}
+
+function propertyLooksResidual(property) {
+  return /residual|error|distortion|preservation|loss|mse|objective/.test(`${property?.id || ""} ${property?.name || ""}`.toLowerCase());
 }
 
 function clamp01(value) {

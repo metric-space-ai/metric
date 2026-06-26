@@ -65,7 +65,8 @@
       });
       visual.showDynamics({
         timelineId: "reverse-reconstruction",
-        propertyField: "best-reconstruction-error",
+        field: true,
+        scalarProperty: "best-reconstruction-error",
         preview: "state-history",
         loop: staticFlow == null,
         progress: staticFlow ?? undefined,

@@ -30,10 +30,10 @@ set, and one validation path.
 | `process-curve-external-visual-exporter.md` | native external UCR process-curve visual exporter and preview | integrated; preview-only |
 | `exporter-quality-audit.md` | read-only/patch-light audit of native exporters | ready to assign |
 | `visual-command-api-gallery-workstream.md` | public command API and gallery wiring | ready to assign |
-| `relation-matrix-graph-grammar-workstream.md` | relation matrix, graph and pair-selection grammar | ready to assign |
-| `record-glyph-field-grammar-workstream.md` | typed record glyphs and property fields | ready to assign |
-| `mapping-dynamics-motion-grammar-workstream.md` | mapping, dynamics, timeline and solver-trace grammar | ready to assign |
-| `visual-regression-performance-workstream.md` | browser regression and performance gates | ready to assign |
+| `relation-matrix-graph-grammar-workstream.md` | relation matrix, graph and pair-selection grammar | integrated |
+| `record-glyph-field-grammar-workstream.md` | typed record glyphs and property fields | integrated |
+| `mapping-dynamics-motion-grammar-workstream.md` | mapping, dynamics, timeline and solver-trace grammar | integrated |
+| `visual-regression-performance-workstream.md` | browser regression and performance gates | integrated |
 | `cpp-visual-export-core-workstream.md` | reusable C++ `metric.visual.v1` writer core and single-exporter refactor rules | integrated |
 | `gpu-picking-preview-workstream.md` | GPU/CPU picking, record preview and pair preview contracts | ready to assign |
 | `preview-panel-presentation-workstream.md` | bounded record/pair preview presentation for exported payloads | integrated |

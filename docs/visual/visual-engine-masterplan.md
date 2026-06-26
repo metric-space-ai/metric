@@ -157,9 +157,15 @@ Implemented native slices:
 - `MappingView` owns mapping residual/error descriptors; `showMapping()` no
   longer adds a page-level residual fallback, and public browser regression
   requires residual magnitudes from native mapping evidence
+- `MappingView` can consume exported mapping timelines to infer source/target
+  coordinate states, residual/error properties, label properties and reusable
+  timeline evidence without computing mapping results in JavaScript
 - user-facing timeline-control metadata for scrubber/playback/reset controls
   plus active ground/field state descriptors from exported timeline-step
   properties
+- `DynamicsView` consumes exported trajectory/path collections when present and
+  otherwise renders path history from exported timeline coordinate states,
+  keeping motion visual-only and non-algorithmic in JavaScript
 - native solver-trace evidence under
   `docs/examples/assets/solver-trace/metric.visual.json`, exported by
   `examples/engine/solver_trace_visual_export.cpp`; `showSolverTrace()` now
@@ -171,6 +177,9 @@ Implemented native slices:
 - relation-matrix readability diagnostics for matrix dimensions, block count,
   tile count/source, missing-value count, selected row/column/cell state and
   graph relation identity
+- relation-matrix diagnostics expose exported metric-law references from native
+  evidence, including operator, finite/diagonal/symmetry/triangle checks, pair
+  count and triangle-triplet count
 - stricter `metric.visual.v1` validation for dense relation shapes, relation
   value endpoints, coordinate-position dimensions and pair-property endpoints
 - browser-backed public regression gate for the accepted GRAE10 reference and

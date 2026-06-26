@@ -233,6 +233,12 @@ reported matrix dimensions `130 x 130`, missing value count `0`, native graph
 edge count `650`, five named matrix blocks and metric-law diagnostic references
 from the native relation export.
 
+`RelationMatrixLayer.getDiagnostics()` now exposes those exported metric-law
+diagnostic references directly (`operator`, finite/diagonal/symmetry/triangle
+flags, pair count and triangle triplets), and
+`visual/tools/check-relation-matrix-picker.mjs` protects the contract against
+the native relation-matrix fixture.
+
 The current follow-up also exposes exported block labels as engine diagnostics,
 not as page-local overlay text. The native process-curve relation matrix now
 reports five named blocks (`normal reference`, `flat hold`, `late ramp`,

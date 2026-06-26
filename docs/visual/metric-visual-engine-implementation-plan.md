@@ -2562,3 +2562,71 @@ Corrected status:
   registry.
 - This checkpoint narrows the public API and engine render path. It does not
   promote any preview to hero-accepted status.
+
+## Implementation Checkpoint: Grammar Workstreams And Regression Gates
+
+Status date: 2026-06-26
+
+Implemented:
+
+- Relation-matrix diagnostics now carry exported metric-law diagnostics and a
+  compact reference summary (`operator`, finite/diagonal/symmetry/triangle
+  flags, pair count and triangle triplets). The relation picker check protects
+  the native relation-matrix fixture and verifies that matrix selection remains
+  tied to the native graph and pair preview.
+- Mixed-record and condition-monitoring grammar checks prove that typed glyphs,
+  cross-type relation edges, property fields and trajectory context are already
+  first-class engine grammar. No code changes were needed in this slice.
+- `MappingView` can consume exported mapping timelines to infer source/target
+  coordinates, residual properties, label properties and timeline evidence.
+  Mapping animation remains an engine/runtime motion contract instead of
+  page-local state mutation.
+- `DynamicsView` prefers explicit exported trajectory/path collections when
+  present and otherwise uses exported timeline coordinate states. Dynamics
+  fields now flow through the semantic view as timeline-aware `HeatFieldLayer`
+  descriptors. JavaScript still does not compute solver, diffusion, PDC or
+  Redif results.
+- The regression/performance workstream report now records that the browser
+  regression and large-scene performance gates execute successfully with
+  generated artifacts kept under `output/visual/` and no GRAE10 baseline
+  regeneration.
+- The public project page gallery copy was tightened to product/evidence
+  language: live METRIC scene, C++ exporter, generated evidence document. It no
+  longer describes non-user-facing hardening status.
+
+Verified:
+
+- `node visual/tools/check-glyph-record-grammar.mjs`
+- `node visual/tools/check-field-property-grammar.mjs`
+- `node visual/tools/check-mapping-motion-grammar.mjs`
+- `node visual/tools/check-dynamics-motion-grammar.mjs`
+- `node visual/tools/check-dynamics-timeline-control.mjs`
+- `node visual/tools/check-timeline-motion-contract.mjs`
+- `node visual/tools/check-relation-matrix-picker.mjs`
+- `node visual/tools/check-views.mjs`
+- `node visual/tools/check-hero-grammar-contract.mjs`
+- `node visual/tools/check-single-render-pipeline.mjs`
+- `node visual/tools/check-public-gallery-evidence.mjs`
+- `node visual/tools/check-visual-command-api.mjs`
+- `node visual/tools/check-visual-performance-large-scenes.mjs`
+- `node visual/tools/check-visual-regression-public-examples.mjs`
+- `node visual/tools/check-grae10-golden.mjs`
+
+Known gate note:
+
+- `node visual/tools/check-visual-examples.mjs` is not the public hero gate. It
+  still includes `record-preview-contract`, a contract page without a canvas,
+  and therefore reports one `no-canvas` failure. Public example regression is
+  covered by `check-visual-regression-public-examples.mjs`, which passed with
+  `total: 8`, `failed: 0`.
+
+Corrected status:
+
+- `relation-matrix-graph-grammar-workstream`,
+  `record-glyph-field-grammar-workstream`,
+  `mapping-dynamics-motion-grammar-workstream` and
+  `visual-regression-performance-workstream` are integrated in the task
+  registry.
+- This checkpoint advances reusable engine grammar and gates. It does not
+  promote condition monitoring, mixed records, cross-space dependency, mapping,
+  dynamics, relation matrix or external process curves to hero-accepted status.

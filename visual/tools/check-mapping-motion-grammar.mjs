@@ -47,6 +47,21 @@ async function main() {
   const noResidualDescriptors = noResidualView.toLayerDescriptors();
   const noResidualPoint = noResidualDescriptors.find((descriptor) => descriptor.primitive === "InstancedPointLayer" || descriptor.primitive === "InstancedGlyphLayer");
   const noResidualLayer = noResidualDescriptors.find((descriptor) => descriptor.metadata?.role === "residual/error");
+  const timelineView = MappingView.fromVisualSpace(document, {
+    timelineId: "mapping-coordinate-morph",
+    motionTiming: {
+      profile: "source-hold-quick-transition-target-hold",
+      sourceHoldMs: 1600,
+      transitionMs: 720,
+      targetHoldMs: 1700,
+      resetHoldMs: 360,
+      totalMs: 5200,
+    },
+  });
+  const timelineDescriptors = timelineView.toLayerDescriptors();
+  const timelinePoint = timelineDescriptors.find((descriptor) => descriptor.primitive === "InstancedPointLayer" || descriptor.primitive === "InstancedGlyphLayer");
+  const timelineResidual = timelineDescriptors.find((descriptor) => descriptor.metadata?.role === "residual/error");
+  const timelineLabels = timelineDescriptors.find((descriptor) => descriptor.primitive === "BillboardLabelLayer");
   const timing = point?.metadata?.mappingMotionTiming;
   const transitionFrame = timing
     ? mappingMotionProgressAt(timing.sourceHoldMs + timing.transitionMs * 0.5, timing)
@@ -74,6 +89,13 @@ async function main() {
     ["mapping without residual property emits no residual/error vectors", !noResidualLayer, noResidualLayer],
     ["mapping without residual property reports no residual motion layer", noResidualPoint?.metadata?.mappingEvidence?.motionContract?.residualLayer === null, noResidualPoint?.metadata?.mappingEvidence],
     ["mapping without residual property reports no preservation summary", noResidualView.preservationSummary().count === 0, noResidualView.preservationSummary()],
+    ["mapping timeline infers source coordinate from first exported state", timelineView.sourceCoordinateId === "source-coordinate-layout-3d", timelineView.sourceCoordinateId],
+    ["mapping timeline infers target coordinate from last exported state", timelineView.targetCoordinateId === "parametric-coordinate-latent-2d", timelineView.targetCoordinateId],
+    ["mapping timeline infers residual property from exported target step", timelineView.propertyId === residualPropertyId, timelineView.propertyId],
+    ["mapping timeline infers exported label property", timelineLabels?.metadata?.labelCount > 0, timelineLabels?.metadata],
+    ["mapping timeline descriptor carries timeline evidence", timelinePoint?.metadata?.timelineEvidence?.schema === "metric.visual.timeline_evidence.v1" && timelinePoint?.metadata?.mappingEvidence?.timelineId === "mapping-coordinate-morph", timelinePoint?.metadata?.mappingEvidence],
+    ["mapping timeline evidence lists morph coordinate states", timelinePoint?.metadata?.mappingEvidence?.timelineCoordinateIds?.join(",") === "source-coordinate-layout-3d,diffusion-coordinate-target-2d,parametric-coordinate-latent-2d", timelinePoint?.metadata?.mappingEvidence?.timelineCoordinateIds],
+    ["mapping timeline residual layer remains native evidence", timelineResidual?.metadata?.mappingEvidence?.timelineId === "mapping-coordinate-morph" && timelineResidual?.metadata?.recordCount === 1000, timelineResidual?.metadata],
   ];
   report(checks);
 }

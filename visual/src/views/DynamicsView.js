@@ -1,4 +1,5 @@
 import { BaseView } from "./BaseView.js";
+import { normalizePathEvidence } from "../curves/index.js";
 import { PointCloudView } from "./PointCloudView.js";
 import { TrajectoryPathView } from "./TrajectoryPathView.js";
 import { VisualLayer } from "./VisualLayer.js";
@@ -40,6 +41,11 @@ export class DynamicsView extends BaseView {
     this.timelineControl = options.timelineControl || null;
     this.timelineFieldState = options.timelineFieldState || selectTimelineFieldState(this.timelineState, options);
     this.nativeEvidence = options.nativeEvidence || options.metadata?.nativeEvidence || null;
+    this.trajectoryPathEvidence = options.trajectoryPathEvidence || options.pathEvidence || options.metadata?.trajectoryPathEvidence || null;
+    this.trajectoryPaths = normalizeDynamicsPathRecords(
+      options.trajectoryPaths || options.paths || options.trajectories || this.trajectoryPathEvidence?.paths || [],
+      this.trajectoryPathEvidence,
+    );
     const sampledStep = Number.isFinite(Number(this.timelineState?.activeStepOrder))
       ? Number(this.timelineState.activeStepOrder)
       : 0;
@@ -176,7 +182,8 @@ export class DynamicsView extends BaseView {
         scalarValues: property ? extractPropertyValues(property, { records, recordIds: positions.ids }) : null,
       };
     });
-    const nativeEvidence = createDynamicsTrajectoryEvidenceReference(document, timeline, stepStates);
+    const trajectoryPathEvidence = resolveDynamicsTrajectoryPathEvidence(document, timeline, options, datasetId);
+    const nativeEvidence = createDynamicsTrajectoryEvidenceReference(document, timeline, stepStates, trajectoryPathEvidence);
 
     return new DynamicsView({
       ...options,
@@ -194,6 +201,8 @@ export class DynamicsView extends BaseView {
       fieldPropertyId: explicitFieldPropertyRef,
       timelineAnimation,
       timelineEvidence,
+      trajectoryPathEvidence,
+      trajectoryPaths: trajectoryPathEvidence?.paths || options.trajectoryPaths || options.paths || options.trajectories,
       nativeEvidence,
       metadata: {
         ...(options.metadata || {}),
@@ -203,6 +212,7 @@ export class DynamicsView extends BaseView {
         timelineControl,
         timelineState,
         timelineEvidence,
+        trajectoryPathEvidence,
         nativeEvidence,
       },
     });
@@ -369,6 +379,10 @@ export class DynamicsView extends BaseView {
   }
 
   trajectoryDescriptor() {
+    const trajectoryPaths = this.fittedTrajectoryPaths();
+    const trajectorySource = trajectoryPaths.length
+      ? this.trajectoryPathEvidence?.source || "exported-trajectory-path-evidence"
+      : "exported-timeline-states";
     const [descriptor] = new TrajectoryPathView({
       id: `${this.id}:trajectory`,
       kind: "dynamics-trajectory",
@@ -378,6 +392,8 @@ export class DynamicsView extends BaseView {
       spaceId: this.spaceId,
       recordIds: this.recordIds,
       stepStates: this.fittedStates,
+      paths: trajectoryPaths,
+      pathSource: trajectorySource,
       width: this.pathWidth,
       alpha: this.pathAlpha,
       order: 28,
@@ -416,6 +432,7 @@ export class DynamicsView extends BaseView {
         timelineId: this.timelineId,
         timelineFieldState: this.timelineFieldState,
         coordinateIds: this.fittedStates.map((state) => state.coordinateId).filter(Boolean),
+        trajectoryPathEvidence: this.trajectoryPathEvidence,
         algorithmicComputation: false,
       },
     }).toLayerDescriptors();
@@ -466,6 +483,35 @@ export class DynamicsView extends BaseView {
     }
     return animation;
   }
+
+  fittedTrajectoryPaths() {
+    if (!this.trajectoryPaths.length) return [];
+    const normalized = normalizePathEvidence(this.trajectoryPaths, {
+      defaultWidth: this.pathWidth,
+      defaultColor: [0.14, 0.36, 0.46, this.pathAlpha],
+    }).paths;
+    if (!this.fit?.transform) return normalized;
+    return normalized.map((path) => {
+      const points = new Float32Array(path.points);
+      for (let offset = 0; offset < points.length; offset += 3) {
+        const fitted = this.fit.transform([points[offset], points[offset + 1], points[offset + 2]]);
+        points[offset] = fitted[0];
+        points[offset + 1] = fitted[1];
+        points[offset + 2] = fitted[2];
+      }
+      return {
+        ...path,
+        points,
+        metadata: {
+          ...path.metadata,
+          visualFit: {
+            source: "DynamicsView.shared-coordinate-fit",
+            evidenceMutation: false,
+          },
+        },
+      };
+    });
+  }
 }
 
 export function createDynamicsView(options) {
@@ -492,10 +538,13 @@ function firstTimeline(document) {
   return timelines[0] || null;
 }
 
-function createDynamicsTrajectoryEvidenceReference(document, timeline, stepStates = []) {
+function createDynamicsTrajectoryEvidenceReference(document, timeline, stepStates = [], trajectoryPathEvidence = null) {
   return {
     schema: "metric.visual.trajectory_path_evidence_ref.v1",
-    source: "exported-timeline-states",
+    source: trajectoryPathEvidence?.source || "exported-timeline-states",
+    pathEvidenceId: trajectoryPathEvidence?.id || null,
+    pathEvidenceCollection: trajectoryPathEvidence?.collection || null,
+    pathCount: trajectoryPathEvidence?.pathCount ?? null,
     documentSchema: document?.schema || null,
     provenance: document?.provenance ? {
       writer: document.provenance.writer || null,
@@ -513,6 +562,131 @@ function createDynamicsTrajectoryEvidenceReference(document, timeline, stepState
     graphId: null,
     timelineId: timeline?.id || null,
   };
+}
+
+function resolveDynamicsTrajectoryPathEvidence(document, timeline, options = {}, datasetId = null) {
+  const explicit = options.trajectoryPathEvidence
+    || options.pathEvidence
+    || options.trajectoryPaths
+    || options.paths
+    || options.trajectories
+    || options.routes;
+  if (explicit) {
+    return createTrajectoryPathEvidence("provided-trajectory-path-evidence", explicit, {
+      id: explicit.id,
+      collection: "options",
+      timelineId: timeline?.id || null,
+      datasetId,
+    });
+  }
+
+  for (const collection of ["trajectory_path_evidence", "trajectoryPaths", "path_evidence", "pathEvidence", "trajectories", "paths", "routes", "curves"]) {
+    const value = document?.[collection];
+    const entries = Array.isArray(value) ? value : (value ? [value] : []);
+    if (!entries.length) continue;
+
+    const matchedPaths = [];
+    let evidenceId = null;
+    for (const entry of entries) {
+      if (!dynamicsPathEvidenceMatches(entry, timeline, datasetId)) continue;
+      if (evidenceId == null) evidenceId = entry?.id ?? entry?.name ?? null;
+      matchedPaths.push(...extractDynamicsPathRecords(entry));
+    }
+    if (matchedPaths.length) {
+      return createTrajectoryPathEvidence(`exported-${collection}`, matchedPaths, {
+        id: evidenceId,
+        collection,
+        timelineId: timeline?.id || null,
+        datasetId,
+      });
+    }
+  }
+  return null;
+}
+
+function createTrajectoryPathEvidence(source, value, options = {}) {
+  const paths = normalizeDynamicsPathRecords(extractDynamicsPathRecords(value), {
+    id: options.id || null,
+    source,
+    timelineId: options.timelineId || null,
+    datasetId: options.datasetId || null,
+  });
+  if (!paths.length) return null;
+  return {
+    schema: "metric.visual.trajectory_path_evidence_ref.v1",
+    id: options.id || null,
+    source,
+    collection: options.collection || null,
+    timelineId: options.timelineId || null,
+    datasetId: options.datasetId || null,
+    pathCount: paths.length,
+    paths,
+    algorithmicComputation: false,
+  };
+}
+
+function extractDynamicsPathRecords(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value.paths)) return value.paths;
+  if (Array.isArray(value.trajectories)) return value.trajectories;
+  if (Array.isArray(value.routes)) return value.routes;
+  if (Array.isArray(value.curves)) return value.curves;
+  if (hasPathGeometry(value) || value.record_id != null || value.recordId != null || value.recordIds || value.record_ids) return [value];
+  return [];
+}
+
+function normalizeDynamicsPathRecords(paths, evidence = null) {
+  if (!Array.isArray(paths)) return [];
+  return paths.map((path, index) => {
+    if (Array.isArray(path) || ArrayBuffer.isView(path)) return path;
+    if (!path || typeof path !== "object") return path;
+    const recordIds = normalizePathRecordIds(path);
+    return {
+      ...path,
+      id: path.id || `${evidence?.id || "trajectory"}:path-${index}`,
+      recordIds: recordIds.length ? recordIds : path.recordIds,
+      metadata: {
+        ...(path.metadata || {}),
+        evidenceType: path.evidenceType || path.type || "exported-dynamics-trajectory",
+        pathEvidenceId: evidence?.id || null,
+        pathEvidenceSource: evidence?.source || null,
+        timelineId: path.timelineId || path.timeline_id || evidence?.timelineId || path.metadata?.timelineId || null,
+        recordIds: recordIds.length ? recordIds : path.metadata?.recordIds,
+      },
+    };
+  });
+}
+
+function normalizePathRecordIds(path) {
+  const ids = path.recordIds || path.record_ids || path.ids || path.metadata?.recordIds;
+  if (Array.isArray(ids)) return ids.filter((id) => id != null).map(String);
+  const single = path.record_id ?? path.recordId ?? path.metadata?.recordId;
+  return single == null ? [] : [String(single)];
+}
+
+function dynamicsPathEvidenceMatches(entry, timeline, datasetId = null) {
+  const timelineId = timeline?.id;
+  const entryTimelineIds = [
+    entry?.timeline_id,
+    entry?.timelineId,
+    entry?.source_timeline_id,
+    entry?.sourceTimelineId,
+    entry?.metadata?.timelineId,
+    entry?.metadata?.timeline_id,
+  ].filter((value) => value != null).map(String);
+  if (timelineId != null && entryTimelineIds.length && !entryTimelineIds.includes(String(timelineId))) return false;
+
+  const entryDatasetId = entry?.dataset_id ?? entry?.datasetId ?? entry?.metadata?.datasetId ?? entry?.metadata?.dataset_id;
+  if (datasetId != null && entryDatasetId != null && String(entryDatasetId) !== String(datasetId)) return false;
+
+  if (entryTimelineIds.length) return true;
+  const text = `${entry?.id || ""} ${entry?.name || ""} ${entry?.kind || ""} ${entry?.type || ""} ${entry?.metadata?.evidenceType || ""}`;
+  return /trajectory|path|history|timeline|dynamics|diffusion|reverse|flow/i.test(text);
+}
+
+function hasPathGeometry(value) {
+  return Boolean(value?.points || value?.positions || value?.coordinates || value?.coords || value?.path);
 }
 
 function resolveTimelineSamplingOptions(options = {}) {

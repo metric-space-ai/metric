@@ -14,6 +14,21 @@ async function main() {
     resolve(ROOT, "docs/examples/assets/dynamics-noise/metric.visual.json"),
     "utf8",
   ));
+  const explicitPathDocument = JSON.parse(JSON.stringify(document));
+  explicitPathDocument.trajectories = [{
+    id: "native-reverse-trajectory-paths",
+    timeline_id: "reverse-reconstruction",
+    dataset_id: "finite-metric-dynamics",
+    paths: document.records.slice(0, 2).map((record, index) => ({
+      record_id: record.id,
+      points: [
+        [0, 0, index * 0.12],
+        [0.14 + index * 0.06, 0.18, 0.34 + index * 0.09],
+        [0.28 + index * 0.08, 0.08, 0.52 + index * 0.1],
+      ],
+      times: [0, 0.5, 1],
+    })),
+  }];
   const view = DynamicsView.fromVisualSpace(document, {
     timelineId: "reverse-reconstruction",
     propertyField: "best-reconstruction-error",
@@ -46,6 +61,12 @@ async function main() {
       state: sampledPoint?.metadata?.timelineState,
     };
   });
+  const explicitPathView = DynamicsView.fromVisualSpace(explicitPathDocument, {
+    timelineId: "reverse-reconstruction",
+    propertyField: "best-reconstruction-error",
+  });
+  const explicitPathTrajectory = explicitPathView.toLayerDescriptors()
+    .find((descriptor) => descriptor.metadata?.evidenceRole === "trajectory/path");
   const checks = [
     ["dynamics consumes reverse timeline", view.timelineId === "reverse-reconstruction", view.timelineId],
     ["dynamics consumes all exported timeline states", view.fittedStates.length === 41, view.fittedStates.length],
@@ -72,6 +93,12 @@ async function main() {
       && sample.sampledCoordinateId === sample.expectedCoordinateId
       && sample.state?.selection === "nearest-exported-step"
     )), sampledStates],
+    ["dynamics consumes explicit exported trajectory/path evidence when present", explicitPathView.trajectoryPathEvidence?.id === "native-reverse-trajectory-paths" && explicitPathTrajectory?.metadata?.pathSource === "exported-trajectories", {
+      evidence: explicitPathView.trajectoryPathEvidence,
+      trajectory: explicitPathTrajectory?.metadata,
+    }],
+    ["dynamics explicit path evidence overrides synthesized state-history paths", explicitPathTrajectory?.metadata?.pathCount === 2 && explicitPathTrajectory?.metadata?.nativeEvidence?.pathCount === 2, explicitPathTrajectory?.metadata],
+    ["dynamics explicit path evidence remains visual-only and non-algorithmic", explicitPathTrajectory?.metadata?.algorithmicComputation === false && explicitPathTrajectory?.metadata?.trajectoryPathEvidence?.algorithmicComputation === false, explicitPathTrajectory?.metadata],
   ];
   report(checks);
 }

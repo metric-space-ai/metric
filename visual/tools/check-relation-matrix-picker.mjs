@@ -235,6 +235,8 @@ assert.deepEqual(graphLinkedLayer.getDiagnostics().linkedGraph.edgeIds, ["proces
 
 const nativeLayer = new RelationMatrixLayer({ metadata: { matrix: nativeTexture.matrix } });
 nativeLayer.updateBlockBoundaries(nativeTexture);
+assert.equal(nativeLayer.getDiagnostics().metricLawDiagnostic.triangle, true);
+assert.equal(nativeLayer.getDiagnostics().metricLawDiagnosticReferences.pairCount, 8385);
 assert.equal(nativeLayer.blockBoundaryCount, 4);
 assert.equal(nativeLayer.blockRangeCount, 5);
 assert.deepEqual(
@@ -275,6 +277,9 @@ assert.equal(layerDescriptor.metadata.readability.blocks.coverage.state, "full")
 assert.equal(layerDescriptor.metadata.readability.lod.denseCellSmoothing.kernel, "weighted-3x3");
 assert.equal(layerDescriptor.metadata.readability.tiles.kind, "relation-matrix-logical-tile-grid");
 assert.equal(layerDescriptor.metadata.readabilityDiagnostics.blockLabelCount, 5);
+assert.equal(layerDescriptor.metadata.readabilityDiagnostics.metricLawDiagnostic.triangle, true);
+assert.equal(layerDescriptor.metadata.readabilityDiagnostics.metricLawDiagnosticReferences.operator, "AlignedCurveDistance");
+assert.equal(layerDescriptor.metadata.readabilityDiagnostics.metricLawDiagnosticReferences.triangle, true);
 assert.deepEqual(layerDescriptor.metadata.readabilityDiagnostics.blocks.labels, [
   "normal reference",
   "flat hold",

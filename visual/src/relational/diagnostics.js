@@ -177,6 +177,7 @@ export function createRelationMatrixDiagnostics(input = {}) {
     ?? readability?.lod?.tileSummaryLod?.source
     ?? null;
   const blocks = blockDiagnostics(matrix, readability, dimensions);
+  const metricLawDiagnostic = metricLawDiagnosticFor(matrix);
 
   return {
     schema: RELATION_MATRIX_READABILITY_DIAGNOSTICS_SCHEMA,
@@ -195,6 +196,8 @@ export function createRelationMatrixDiagnostics(input = {}) {
       width: integerOrNull(input.tileSummary.width),
       height: integerOrNull(input.tileSummary.height),
     } : null,
+    metricLawDiagnostic,
+    metricLawDiagnosticReferences: metricLawReferenceSummary(metricLawDiagnostic),
     missingValueCount: integerOrNull(matrix.missingValueCount),
     presentValueCount: integerOrNull(matrix.presentValueCount),
     selected: normalizeSelectionState(input.selection, dimensions),
@@ -205,6 +208,28 @@ export function createRelationMatrixDiagnostics(input = {}) {
       graphEdgeCount: integerOrNull(graph.edgeCount ?? graph.graphEdgeCount ?? graph.edges?.length),
       native: graph.native === true,
     } : null,
+  };
+}
+
+function metricLawDiagnosticFor(matrix = {}) {
+  return matrix?.metricLawDiagnostic
+    || matrix?.diagnostics?.metricLawDiagnostic
+    || matrix?.metadata?.law_check
+    || matrix?.metadata?.lawCheck
+    || null;
+}
+
+function metricLawReferenceSummary(diagnostic) {
+  if (!diagnostic || typeof diagnostic !== "object" || Array.isArray(diagnostic)) return null;
+  return {
+    checked: diagnostic.checked ?? null,
+    operator: diagnostic.operator ?? null,
+    finite: diagnostic.finite === true,
+    diagonalZero: diagnostic.diagonal_zero ?? diagnostic.diagonalZero ?? null,
+    symmetric: diagnostic.symmetric ?? null,
+    triangle: diagnostic.triangle ?? null,
+    pairCount: integerOrNull(diagnostic.pair_count ?? diagnostic.pairCount),
+    triangleTriplets: integerOrNull(diagnostic.triangle_triplets ?? diagnostic.triangleTriplets),
   };
 }
 
