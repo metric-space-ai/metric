@@ -261,14 +261,6 @@ auto uniform_density_mapping_from_representatives(
 	const std::vector<RecordId> &diagnostic_record_ids = {})
 	-> MappingResult<MetricSpace<typename Space::record_type, typename Space::metric_type>>
 {
-	auto assignment = core::assign_records_to_representatives(
-		provider, representatives.representatives, "uniform-density representatives must not be empty",
-		"uniform-density representative id is outside provider");
-	const auto assignment_summary = summarize_nearest_distances(assignment.nearest_distances);
-	auto representative_multiplicities =
-		core::compression_representative_multiplicities(assignment.assignments, representatives.representatives.size());
-	auto representative_weights =
-		core::compression_representative_weights(representative_multiplicities, space.size());
 	core::ModificationDiagnostics diagnostics;
 	diagnostics.diagnostic = "uniform_density_thinning";
 	diagnostics.policy = "maximal_radius_net";
@@ -279,6 +271,27 @@ auto uniform_density_mapping_from_representatives(
 	diagnostics.source_record_count = space.size();
 	diagnostics.target_record_count = representatives.representatives.size();
 	diagnostics.radius = static_cast<double>(strategy.radius);
+	diagnostics.empirical_density_preserved = false;
+	diagnostics.populated = true;
+
+	if (representatives.representatives.empty()) {
+		if (space.size() != 0) {
+			throw std::invalid_argument("uniform-density representatives must not be empty");
+		}
+		return subset_mapping_from_record_ids(
+			space, std::vector<RecordId>{}, std::move(mapping), std::move(strategy_name), std::move(validity),
+			representatives.representation, std::move(diagnostics), {}, {}, {}, {}, typename Space::distance_type{},
+			0.0, true);
+	}
+
+	auto assignment = core::assign_records_to_representatives(
+		provider, representatives.representatives, "uniform-density representatives must not be empty",
+		"uniform-density representative id is outside provider");
+	const auto assignment_summary = summarize_nearest_distances(assignment.nearest_distances);
+	auto representative_multiplicities =
+		core::compression_representative_multiplicities(assignment.assignments, representatives.representatives.size());
+	auto representative_weights =
+		core::compression_representative_weights(representative_multiplicities, space.size());
 	diagnostics.coverage_radius = static_cast<double>(assignment_summary.first);
 	diagnostics.average_assignment_distance = assignment_summary.second;
 	diagnostics.source_average_nearest_neighbor_distance =
@@ -302,8 +315,6 @@ auto uniform_density_mapping_from_representatives(
 	diagnostics.target_average_local_volume_density = target_local_volume.second;
 	diagnostics.local_volume_density_drift =
 		diagnostics.target_average_local_volume_density - diagnostics.source_average_local_volume_density;
-	diagnostics.empirical_density_preserved = false;
-	diagnostics.populated = true;
 	return subset_mapping_from_record_ids(
 		space, std::move(representatives.representatives), std::move(mapping), std::move(strategy_name),
 		std::move(validity), representatives.representation, std::move(diagnostics),
