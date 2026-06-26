@@ -1,6 +1,6 @@
 # MNIST Babyplots Standalone Quarantine
 
-Status: ready to assign
+Status: integrated
 
 ## Owner Scope
 

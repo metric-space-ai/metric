@@ -1,6 +1,6 @@
 # Descriptor Injection Hardening
 
-Status: ready to assign
+Status: integrated
 
 ## Owner Scope
 

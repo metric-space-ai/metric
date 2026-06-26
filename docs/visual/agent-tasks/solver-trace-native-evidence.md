@@ -1,6 +1,6 @@
 # Solver Trace Native Evidence
 
-Status: ready to assign
+Status: integrated
 
 ## Owner Scope
 
