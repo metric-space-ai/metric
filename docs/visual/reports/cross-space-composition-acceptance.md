@@ -88,3 +88,36 @@ ReferenceError: firstPropertyRef is not defined
 
 The cross-space composition-specific checks and browser regression pass. The
 preview remains review-pending and was not marked accepted.
+
+## Relation-Edge Legibility Update
+
+Date: 2026-06-26
+
+Updated the reusable paired-space bridge descriptor path without changing the
+native bridge relation, the full 512-record linked selection graph, or the
+public page.
+
+Additional descriptor evidence now exposed by `CrossSpaceView`:
+
+- visible bridge geometry remains the 96 exported high-contribution bridge
+  relation values;
+- the linked selection graph remains all 512 paired records;
+- bridge channels include `endpointEmphasis` from exported dependence values;
+- `edgeLegibility.rank` declares deterministic native dependence-value ranking;
+- `edgeLegibility.laneBundle` declares paired-observation lanes using
+  `sourceId:targetId:pairSetId`;
+- `edgeLegibility.sampling` explicitly records 96 rendered bridges from 512
+  source graph edges, with `preservesSelectionGraph: true`;
+- `RelationEdgeLayer.getDiagnostics()` can report applied alpha, lane and
+  emphasis summaries for runtime checkers.
+
+Verification run for this update:
+
+```bash
+node visual/tools/check-linked-edge-emphasis.mjs
+node visual/tools/check-cross-space-linked-selection.mjs
+node visual/tools/check-cross-space-composition.mjs
+```
+
+All passed. The acceptance blocker remains
+`visual-composition-not-human-accepted`.

@@ -304,6 +304,7 @@ export class MappingView extends BaseView {
     const targetPosition = new Float32Array(selected.length * 3);
     const color = new Float32Array(selected.length * 4);
     const residualMagnitude = new Float32Array(selected.length);
+    const endpointEmphasis = new Float32Array(selected.length);
     const residualRecordIds = [];
     for (const candidate of selected) {
       const normalizedResidual = normalizeScalar(candidate.residual, domain);
@@ -315,6 +316,7 @@ export class MappingView extends BaseView {
         : scalarColor(candidate.residual, domain, vectorAlpha);
       color.set(nextColor, count * 4);
       residualMagnitude[count] = candidate.residual;
+      endpointEmphasis[count] = 0.18 + Math.sqrt(clamp01(normalizedResidual)) * 0.82;
       residualRecordIds.push(candidate.id);
       count += 1;
     }
@@ -357,6 +359,10 @@ export class MappingView extends BaseView {
         sourcePosition: createChannel(sourcePosition.subarray(0, count * 3), 3, "source-position"),
         targetPosition: createChannel(targetPosition.subarray(0, count * 3), 3, "target-position"),
         residual: createChannel(residualMagnitude.subarray(0, count), 1, "residual-magnitude", { domain }),
+        endpointEmphasis: createChannel(endpointEmphasis.subarray(0, count), 1, "residual-endpoint-emphasis", {
+          domain: [0, 1],
+          source: "native-residual-magnitude",
+        }),
         color: createChannel(color.subarray(0, count * 4), 4, "rgba"),
       },
       geometry: {
@@ -389,13 +395,54 @@ export class MappingView extends BaseView {
       },
     }).toDescriptor();
 
-    return applyRelationEdgeLegibilityDescriptor(descriptor, {
+    const legible = applyRelationEdgeLegibilityDescriptor(descriptor, {
       role: "residual/error",
       edgeCount: count,
       sourceEdgeCount: candidates.length,
       laneOffsetScale: 0,
       laneModulo: 1,
     });
+    const edgeLegibility = enrichResidualLegibilityProfile(legible.metadata?.edgeLegibility, {
+      rankAlphaBoost: 0.34,
+      rank: {
+        strategy: "native-residual-magnitude-representative-rank",
+        source: "native-residual-magnitude",
+        channel: "endpointEmphasis",
+        direction: "high-value-important",
+      },
+      laneBundle: {
+        strategy: residualSelection.strategy,
+        bundleKey: "residualBucket:angularSector:radialBucket",
+      },
+      endpointEmphasis: {
+        strategy: "residual-endpoint-magnitude",
+        source: "residual-vector-endpoints",
+        channel: "endpointEmphasis",
+      },
+      sampling: {
+        strategy: residualSelection.strategy,
+        sourceEdgeCount: candidates.length,
+        renderedEdgeCount: count,
+        sampled: candidates.length > count,
+        preservesSelectionGraph: false,
+      },
+    });
+    return {
+      ...legible,
+      geometry: {
+        ...(legible.geometry || {}),
+        edgeBundleKey: edgeLegibility.laneBundle.bundleKey,
+        edgeBundleStrategy: edgeLegibility.laneBundle.strategy,
+      },
+      material: {
+        ...(legible.material || {}),
+        edgeRankAlphaBoost: edgeLegibility.rankAlphaBoost,
+      },
+      metadata: {
+        ...(legible.metadata || {}),
+        edgeLegibility,
+      },
+    };
   }
 
   residualVectorEndpoint(candidate, normalizedResidual) {
@@ -766,4 +813,41 @@ function propertyLooksResidual(property) {
 
 function clamp01(value) {
   return Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0));
+}
+
+function enrichResidualLegibilityProfile(profile = {}, options = {}) {
+  const rank = {
+    ...(options.rank || {}),
+    deterministic: true,
+    tieBreak: "stable-edge-id-then-index",
+    usedFor: ["alpha-emphasis", "selection-legibility"],
+  };
+  const laneBundle = {
+    ...(options.laneBundle || {}),
+    laneStrategy: profile.laneStrategy || "none",
+    laneCount: profile.laneStrategy === "none" ? 1 : Math.max(1, Number(profile.laneModulo) || 1),
+    laneModulo: Math.max(1, Number(profile.laneModulo) || 1),
+    laneOffsetScale: Number(profile.laneOffsetScale) || 0,
+    deterministic: true,
+    preservesTopology: true,
+    geometryOnly: true,
+  };
+  return {
+    ...profile,
+    rankAlphaBoost: Number.isFinite(Number(options.rankAlphaBoost)) ? Number(options.rankAlphaBoost) : 0,
+    alphaTransfer: "density-scale-with-rank-boost",
+    rankSource: rank.source || profile.rankSource,
+    rank,
+    laneBundle,
+    endpointEmphasis: {
+      ...(options.endpointEmphasis || {}),
+      affectsPicking: false,
+      preservesEndpointIdentity: true,
+    },
+    sampling: {
+      ...(options.sampling || {}),
+      deterministic: true,
+      syntheticEdges: false,
+    },
+  };
 }

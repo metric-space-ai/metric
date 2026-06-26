@@ -42,6 +42,10 @@ export function createRelationMatrixReadabilityProfile(matrix, options = {}) {
     renderer: {
       primitive: "RelationMatrixLayer",
       path: "webgl-texture-layer",
+      renderPhase: "screen-readable-overlay",
+      postprocessGroup: "screen-readable-overlay",
+      cameraDof: "bypass",
+      zOrderRule: "graph-first-matrix-overlay",
       webglOnly: true,
       domFallback: false,
       svgFallback: false,
@@ -57,6 +61,11 @@ export function createRelationMatrixReadabilityProfile(matrix, options = {}) {
       coverage: blockCoverage,
       shaderRangeLimit: 32,
       shaderBoundaryLimit: 32,
+      boundaryPresentation: {
+        core: "shader-crisp-core",
+        halo: "subpixel-soft-halo",
+        source: "exported-block-ranges",
+      },
     },
     tiles,
     lod: {
@@ -78,6 +87,10 @@ export function createRelationMatrixReadabilityProfile(matrix, options = {}) {
         tileSize,
         tileCount: tiles.count,
         strength: tileSummaryStrength,
+      },
+      tileBoundaryPresentation: {
+        source: "logical-tile-grid",
+        role: "subtle-lod-reference",
       },
       levels: [
         {
@@ -112,6 +125,7 @@ export function createRelationMatrixReadabilityProfile(matrix, options = {}) {
       selectedFeatures: ["row", "column", "cell"],
       row: { source: "pair.rowId|recordId", overlay: "horizontal-band" },
       column: { source: "pair.columnId|recordId", overlay: "vertical-band" },
+      rowColumnGuides: { overlay: "band-edge-guides" },
       cell: { source: "pair.rowId+pair.columnId", overlay: "cell-fill-and-outline" },
     },
   };

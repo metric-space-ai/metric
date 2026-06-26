@@ -123,3 +123,36 @@ not edited. The remaining state is intentionally:
 ```text
 visual-composition-not-human-accepted
 ```
+
+## Relation-Edge Legibility Update
+
+Date: 2026-06-26
+
+Updated the reusable mapping residual vector descriptor path without changing
+native residual evidence or adding a residual fallback.
+
+Additional descriptor evidence now exposed by `MappingView`:
+
+- residual vectors include `endpointEmphasis` derived from exported residual
+  magnitude;
+- `edgeLegibility.rank` declares deterministic native residual-magnitude
+  representative ranking;
+- `edgeLegibility.laneBundle` keeps residual lanes disabled while naming the
+  representative residual bucket grouping;
+- `edgeLegibility.sampling` records 120 rendered representatives from 1,000
+  native residual candidates for the composition preview;
+- residual vectors still require explicit `local-mapping-distortion` evidence,
+  and the no-residual case still emits no residual/error layer;
+- `RelationEdgeLayer.getDiagnostics()` can report applied alpha and emphasis
+  summaries for runtime checkers.
+
+Verification run for this update:
+
+```bash
+node visual/tools/check-linked-edge-emphasis.mjs
+node visual/tools/check-mapping-motion-grammar.mjs
+node visual/tools/check-mapping-composition.mjs
+```
+
+All passed. The acceptance blocker remains
+`visual-composition-not-human-accepted`.

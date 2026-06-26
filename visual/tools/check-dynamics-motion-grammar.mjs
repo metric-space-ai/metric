@@ -8,6 +8,7 @@ import { DynamicsView } from "../src/views/DynamicsView.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..", "..");
+const HIERARCHY_SCHEMA = "metric.visual.layer_hierarchy.v1";
 
 async function main() {
   const document = JSON.parse(await readFile(
@@ -36,6 +37,8 @@ async function main() {
   });
   const descriptors = view.toLayerDescriptors();
   const trajectory = descriptors.find((descriptor) => descriptor.metadata?.evidenceRole === "trajectory/path");
+  const field = descriptors.find((descriptor) => descriptor.primitive === "HeatFieldLayer"
+    && descriptor.metadata?.evidenceRole === "timeline-ground-field");
   const point = descriptors.find((descriptor) => descriptor.primitive === "InstancedPointLayer");
   const animation = point?.animation || {};
   const timelineSamples = point?.metadata?.timelineSamples || [];
@@ -74,6 +77,9 @@ async function main() {
     ["dynamics path layer uses reusable curve grammar", trajectory?.primitive === "CurveRibbonLayer", trajectory?.primitive],
     ["dynamics path count matches records", trajectory?.metadata?.pathCount === 512, trajectory?.metadata],
     ["dynamics path metadata preserves coordinate ids", trajectory?.metadata?.coordinateIds?.length === 41, trajectory?.metadata?.coordinateIds?.length],
+    ["dynamics path declares trajectory hierarchy", isHierarchy(trajectory, "trajectory-path") && trajectory.metadata?.visualHierarchy?.drawsAbove?.includes("support-field") && trajectory.metadata?.visualHierarchy?.drawsBelow?.includes("current-state"), trajectory?.metadata?.visualHierarchy],
+    ["dynamics field declares support hierarchy", isHierarchy(field, "support-field") && field.metadata?.visualHierarchy?.drawsBelow?.includes("trajectory-path") && field.metadata?.visualHierarchy?.drawsBelow?.includes("current-state"), field?.metadata?.visualHierarchy],
+    ["dynamics current state declares current-state hierarchy", isHierarchy(point, "current-state") && point.metadata?.visualHierarchy?.drawsAbove?.includes("trajectory-path"), point?.metadata?.visualHierarchy],
     ["dynamics point layer carries targetPosition", point?.channels?.targetPosition?.count === 512, point?.channels?.targetPosition?.count],
     ["dynamics declares timeline animation schema", animation.schema === "metric.visual.timeline_animation.v1", animation],
     ["dynamics animation is render-loop driven", animation.clock === "render-loop", animation],
@@ -101,6 +107,13 @@ async function main() {
     ["dynamics explicit path evidence remains visual-only and non-algorithmic", explicitPathTrajectory?.metadata?.algorithmicComputation === false && explicitPathTrajectory?.metadata?.trajectoryPathEvidence?.algorithmicComputation === false, explicitPathTrajectory?.metadata],
   ];
   report(checks);
+}
+
+function isHierarchy(descriptor, band) {
+  const hierarchy = descriptor?.metadata?.visualHierarchy;
+  return hierarchy?.schema === HIERARCHY_SCHEMA
+    && hierarchy.band === band
+    && hierarchy.algorithmicComputation === false;
 }
 
 function report(checks) {

@@ -48,18 +48,18 @@ export class RelationMatrixView extends BaseView {
     this.valueKey = options.valueKey || ["value", "distance", "weight", "score"];
     this.readabilityCellPixels = finiteOption(options.readabilityCellPixels ?? options.smoothingCellPixels, 4.25);
     this.smoothingStrength = finiteOption(options.smoothingStrength ?? options.valueSmoothing, 0.72);
-    this.selectionAlpha = finiteOption(options.selectionAlpha, 0.54);
-    this.selectionCellAlpha = finiteOption(options.selectionCellAlpha, 0.9);
+    this.selectionAlpha = finiteOption(options.selectionAlpha, 0.64);
+    this.selectionCellAlpha = finiteOption(options.selectionCellAlpha, 0.96);
     this.selectionOutlineAlpha = finiteOption(options.selectionOutlineAlpha, 1);
-    this.selectionOutlinePixels = finiteOption(options.selectionOutlinePixels, 2.2);
-    this.focusBackdropAlpha = finiteOption(options.focusBackdropAlpha, 0.38);
-    this.focusBlockAlpha = finiteOption(options.focusBlockAlpha, 0.14);
-    this.blockBandAlpha = finiteOption(options.blockBandAlpha, 0.11);
-    this.blockLineAlpha = finiteOption(options.blockLineAlpha, 0.64);
-    this.blockLineWidthCells = finiteOption(options.blockLineWidthCells, 1.15);
-    this.tileBoundaryAlpha = finiteOption(options.tileBoundaryAlpha, 0.2);
-    this.tileBoundaryWidthCells = finiteOption(options.tileBoundaryWidthCells, 0.5);
-    this.outerBorderAlpha = finiteOption(options.outerBorderAlpha, 0.7);
+    this.selectionOutlinePixels = finiteOption(options.selectionOutlinePixels, 2.8);
+    this.focusBackdropAlpha = finiteOption(options.focusBackdropAlpha, 0.46);
+    this.focusBlockAlpha = finiteOption(options.focusBlockAlpha, 0.18);
+    this.blockBandAlpha = finiteOption(options.blockBandAlpha, 0.13);
+    this.blockLineAlpha = finiteOption(options.blockLineAlpha, 0.82);
+    this.blockLineWidthCells = finiteOption(options.blockLineWidthCells, 1.45);
+    this.tileBoundaryAlpha = finiteOption(options.tileBoundaryAlpha, 0.14);
+    this.tileBoundaryWidthCells = finiteOption(options.tileBoundaryWidthCells, 0.38);
+    this.outerBorderAlpha = finiteOption(options.outerBorderAlpha, 0.88);
   }
 
   static fromVisualSpace(document, options = {}) {
@@ -143,6 +143,7 @@ export class RelationMatrixView extends BaseView {
         role: "primary-relation-matrix",
         matrixRect: this.rect.slice(),
         centerRegion: matrixCenterRegion(this.rect),
+        renderHierarchy: relationMatrixRenderHierarchy(),
         previewPlacement: {
           strategy: "avoid-matrix-center",
           defaultAnchor: defaultPreviewAnchorForRect(this.rect),
@@ -157,11 +158,13 @@ export class RelationMatrixView extends BaseView {
         linkedGraph: "selection-presentation-graph-edge-emphasis",
         pairPreview: "runtime-selected-pair-preview",
       },
+      zOrderRules: relationMatrixRenderHierarchy(),
     };
     descriptor.metadata.selectionModel = {
       ...(descriptor.metadata.selectionModel || {}),
       focusPresentation: descriptor.metadata.focusModel,
       previewPlacement: descriptor.metadata.composition.previewPlacement,
+      zOrderRules: descriptor.metadata.zOrderRules,
     };
     return [descriptor];
   }
@@ -220,4 +223,17 @@ function defaultPreviewAnchorForRect(rect) {
   const matrixCenterX = x + width * 0.5;
   const anchorX = matrixCenterX < 0.5 ? Math.min(0.86, x + width + 0.11) : Math.max(0.14, x - 0.24);
   return [anchorX, Math.max(0.12, Math.min(0.72, y + height * 0.18))];
+}
+
+function relationMatrixRenderHierarchy() {
+  return {
+    matrixRole: "primary-relation-matrix",
+    matrixRenderPhase: "screen-readable-overlay",
+    matrixPostprocessGroup: "screen-readable-overlay",
+    matrixCameraDof: "bypass",
+    matrixDepthTest: false,
+    graphRole: "supporting-neighborhood-graph",
+    graphExpectedRenderPhase: "scene",
+    rule: "graph-first-matrix-overlay",
+  };
 }

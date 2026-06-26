@@ -12,6 +12,51 @@ import {
   resolveCollectionItem,
 } from "./view-utils.js";
 
+export const VISUAL_LAYER_HIERARCHY_SCHEMA = "metric.visual.layer_hierarchy.v1";
+
+export const VISUAL_LAYER_HIERARCHY_BANDS = Object.freeze({
+  supportField: "support-field",
+  groundProjection: "ground-projection",
+  trajectoryPath: "trajectory-path",
+  stateHistoryContext: "state-history-context",
+  currentState: "current-state",
+  sceneLabels: "scene-labels",
+});
+
+const VISUAL_LAYER_HIERARCHY_SORT_PRIORITY = Object.freeze({
+  [VISUAL_LAYER_HIERARCHY_BANDS.supportField]: -120,
+  [VISUAL_LAYER_HIERARCHY_BANDS.groundProjection]: -120,
+  [VISUAL_LAYER_HIERARCHY_BANDS.trajectoryPath]: 20,
+  [VISUAL_LAYER_HIERARCHY_BANDS.stateHistoryContext]: 20,
+  [VISUAL_LAYER_HIERARCHY_BANDS.currentState]: 100,
+  [VISUAL_LAYER_HIERARCHY_BANDS.sceneLabels]: 300,
+});
+
+export function createVisualLayerHierarchy(options = {}) {
+  const band = options.band || VISUAL_LAYER_HIERARCHY_BANDS.trajectoryPath;
+  const sortPriority = finiteHierarchyNumber(
+    options.sortPriority ?? options.semanticPriority ?? VISUAL_LAYER_HIERARCHY_SORT_PRIORITY[band],
+    0,
+  );
+  const order = finiteHierarchyNumber(options.order, null);
+  return {
+    schema: VISUAL_LAYER_HIERARCHY_SCHEMA,
+    source: options.source || "semantic-view-descriptor",
+    viewClass: options.viewClass || null,
+    role: options.role || band,
+    band,
+    sortPriority,
+    order,
+    effectiveOrderHint: order == null ? null : sortPriority + order * 0.001,
+    renderPhase: options.renderPhase || "scene",
+    drawsAbove: normalizeHierarchyList(options.drawsAbove),
+    drawsBelow: normalizeHierarchyList(options.drawsBelow),
+    depthPolicy: normalizeHierarchyDepthPolicy(options.depthPolicy),
+    purpose: options.purpose || "predictable semantic render hierarchy",
+    algorithmicComputation: false,
+  };
+}
+
 /**
  * TrajectoryPathView is the reusable trajectory/path grammar for METRIC Visual.
  * It translates explicit record-id paths, graph/transition
@@ -207,6 +252,27 @@ export class TrajectoryPathView extends BaseView {
     const descriptor = this.descriptorFactory === "tube-ribbon" || this.mode === "tube"
       ? createTubeRibbonPathLayerDescriptor({ paths: evidence.paths }, descriptorOptions)
       : createTrajectoryBundleLayerDescriptor({ paths: evidence.paths }, descriptorOptions);
+    const visualHierarchy = createVisualLayerHierarchy({
+      band: VISUAL_LAYER_HIERARCHY_BANDS.trajectoryPath,
+      role: "trajectory/path",
+      viewClass: "TrajectoryPathView",
+      order: descriptor.order ?? this.order,
+      drawsAbove: [
+        VISUAL_LAYER_HIERARCHY_BANDS.supportField,
+        VISUAL_LAYER_HIERARCHY_BANDS.groundProjection,
+      ],
+      drawsBelow: [
+        VISUAL_LAYER_HIERARCHY_BANDS.currentState,
+        VISUAL_LAYER_HIERARCHY_BANDS.sceneLabels,
+      ],
+      depthPolicy: {
+        semanticOverlay: Boolean(this.semanticOverlay && this.mode !== "tube"),
+        depthTest: descriptor.material?.depthTest ?? null,
+        depthWrite: descriptor.material?.depthWrite ?? null,
+        depthBias: descriptor.material?.depthBias ?? null,
+      },
+      purpose: "keep exported trajectory evidence readable over support fields and below current states",
+    });
 
     descriptor.kind = this.descriptorKind;
     descriptor.source = {
@@ -245,14 +311,9 @@ export class TrajectoryPathView extends BaseView {
       pathColorPropertyId: this.pathColorPropertyId || null,
       pathWidthPropertyId: this.pathWidthPropertyId || null,
       motionGrammar: this.motionGrammar || this.metadata?.motionGrammar,
-      visualPriority: {
-        role: "trajectory/path",
-        semanticOverlay: Boolean(this.semanticOverlay && this.mode !== "tube"),
-        depthTest: descriptor.material?.depthTest ?? null,
-        depthWrite: descriptor.material?.depthWrite ?? null,
-        depthBias: descriptor.material?.depthBias ?? null,
-        purpose: "keep exported trajectory evidence readable over support fields and current states",
-      },
+      visualPriority: visualHierarchy,
+      visualHierarchy,
+      semanticRenderPriority: visualHierarchy.sortPriority,
       algorithmicComputation: false,
     };
     return [descriptor];
@@ -805,4 +866,26 @@ function finiteNumber(...values) {
     if (Number.isFinite(number)) return number;
   }
   return 0;
+}
+
+function finiteHierarchyNumber(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function normalizeHierarchyList(values) {
+  if (!values) return [];
+  const source = Array.isArray(values) ? values : [values];
+  return source
+    .filter((value) => value != null && String(value).trim())
+    .map((value) => String(value));
+}
+
+function normalizeHierarchyDepthPolicy(policy = {}) {
+  return {
+    semanticOverlay: policy.semanticOverlay === true,
+    depthTest: policy.depthTest ?? null,
+    depthWrite: policy.depthWrite ?? null,
+    depthBias: Number.isFinite(Number(policy.depthBias)) ? Number(policy.depthBias) : null,
+  };
 }

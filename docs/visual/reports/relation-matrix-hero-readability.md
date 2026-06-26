@@ -1,123 +1,110 @@
 # Relation Matrix Hero Readability
 
-Date: 2026-06-25
-Branch: `codex/visual-engine-evidence-exporters`
+Date: 2026-06-26
 
-Status note, 2026-06-26: this is a historical readability execution report.
-The current authoritative scale/gate state is
-`docs/visual/reports/native-hero-scale-evidence-upgrade-plan.md` and
-`docs/visual/reports/visual-regression-performance-workstream.md`. The stale
-record-count blocker context described below has since been superseded; the
-active relation-matrix blockers are screenshot/composition acceptance and human
-matrix-readability acceptance.
+## Scope
+
+This pass stayed inside the reusable relation-matrix engine slice. It did not
+edit public page code, GRAE10, native exporters, project site files, DOM/SVG
+fallbacks, or fake data.
 
 ## Changed Files
 
 - `visual/src/views/RelationMatrixView.js`
 - `visual/src/relational/RelationMatrixLayer.js`
+- `visual/src/relational/matrix-readability.js`
+- `visual/src/relational/diagnostics.js`
+- `visual/src/relational/descriptors.js`
 - `visual/tools/check-relation-matrix-readability.mjs`
 - `visual/tools/check-relation-matrix-picker.mjs`
 - `docs/visual/reports/relation-matrix-hero-readability.md`
 
-Note: the active engine matrix layer in this tree is
-`visual/src/relational/RelationMatrixLayer.js`; the older task path
-`visual/src/layers/RelationMatrixLayer.js` is not present.
+Note: the active matrix layer in this tree is
+`visual/src/relational/RelationMatrixLayer.js`.
 
-## Engine-Level Readability Improvements
+## Engine-Level Improvements
 
-- Strengthened the reusable `RelationMatrixView` focus defaults for selected
-  row, column and cell states: stronger cell fill, clearer outline, stronger
-  block boundaries, softer tile boundaries and a visible outer border.
-- Added matrix focus material metadata from the view:
-  `focusBackdropAlpha`, `focusBlockAlpha` and a descriptor `focusModel` that
-  declares row/column/cell focus, runtime pair preview and linked graph
-  emphasis.
-- Extended the WebGL relation matrix shader to dim unfocused cells during
-  selection and add selected row/column block-context bands. This reduces
-  dense texture noise around a selected pair without adding DOM, SVG or canvas
-  fallback rendering.
-- Extended layer diagnostics with `selectedFocus`, `selectedPair` and
-  `linkedGraph` metadata. When the selected pair is present in the native graph
-  selection presentation, diagnostics now expose matching graph edge ids.
-- Evidence counts and native pair identity were not changed. JavaScript still
-  only encodes exported matrix values, builds render textures/LOD summaries and
-  displays existing native pair/graph evidence.
+- Tightened `RelationMatrixView` and descriptor defaults for selected
+  row/column/cell focus: stronger focus backdrop, block context, cell fill,
+  cell outline and outer border.
+- Made block boundaries read more crisply in `RelationMatrixLayer` by drawing a
+  separate shader boundary core and soft halo instead of one blended boundary.
+- Added selected row and column edge guides in the shader so row/column focus is
+  readable as a band plus boundary, not only as a tint.
+- Reduced default tile-boundary emphasis so logical tiles still diagnose LOD
+  behavior without competing with exported block structure.
+- Extended readability metadata and diagnostics with block-boundary geometry,
+  tile-summary coverage, focus presentation semantics and the graph-first,
+  screen-readable matrix overlay rule.
+- Preserved native pair identity. JavaScript still encodes exported relation
+  values into GPU texture/LOD data and does not compute metric values,
+  neighborhoods or synthetic evidence.
 
-## Commands Run
+## Checks
 
 Passed:
 
 ```bash
 node --check visual/src/views/RelationMatrixView.js
 node --check visual/src/relational/RelationMatrixLayer.js
+node --check visual/src/relational/matrix-readability.js
+node --check visual/src/relational/diagnostics.js
+node --check visual/src/relational/descriptors.js
 node --check visual/tools/check-relation-matrix-readability.mjs
 node --check visual/tools/check-relation-matrix-picker.mjs
 node visual/tools/check-relation-matrix-readability.mjs
 node visual/tools/check-relation-matrix-picker.mjs
-node visual/tools/check-visual-regression-public-examples.mjs
-node visual/tools/check-hero-screenshot-review.mjs
-node visual/tools/check-visual-performance-large-scenes.mjs
+node visual/tools/check-public-gallery-evidence.mjs
+node visual/tools/check-hero-visual-briefs.mjs
+METRIC_VISUAL_EXAMPLES=relation-matrix-neighborhood METRIC_VISUAL_OUT=output/visual/relation-matrix-readability-regression node visual/tools/check-visual-regression-public-examples.mjs
 ```
 
-Failed for unrelated preview manifest/assets outside this task scope:
+The required `check-hero-visual-briefs` gate used the existing full public
+regression report at
+`output/visual/check-visual-regression-public-examples/results.json`, generated
+at `2026-06-26T19:08:30.788Z`, with all 8 public rows present.
+
+Attempted but stopped:
 
 ```bash
-node visual/tools/check-native-hero-evidence-scale.mjs
+node visual/tools/check-visual-regression-public-examples.mjs
 ```
 
-Failure details: `condition-monitoring-hero`, `cross-space-dependency-hero`
-and `dynamics-noise-hero` now exceed their minimum record counts but still carry
-`record-count-below-hero-minimum` blockers. The `relation-matrix-neighborhood`
-row itself remained native-scale-ready with `recordCount: 130`,
-`relationCount: 1`, and blockers limited to human visual acceptance.
+The full public browser regression produced no output for roughly five minutes,
+so it was stopped with `SIGINT` (`exit 130`). To verify this slice's pixel path
+without replacing the full report, the targeted relation-matrix regression was
+run in `output/visual/relation-matrix-readability-regression` and passed.
 
-## Readability And Picker Gate Results
+## Current Contract Evidence
 
-- `check-relation-matrix-readability`: passed.
-- `check-relation-matrix-picker`: passed.
-- Matrix diagnostics still report `130 x 130`, `5` labeled blocks, full block
-  coverage, `25` logical tiles, tile summary source
-  `exported-relation-texture-downsample`, and `0` missing values.
-- Picker proof still selects native pair `pc-000 -> pc-001` with value
-  `2.34478`, native pair identity and pair key
-  `process-curve-aligned-metric\0pc-000\0pc-001`.
-- Added picker proof for a selected native graph pair, including matrix cell
-  metadata plus linked graph edge diagnostics.
+- Readability checker: `130 x 130` dense matrix, 5 labelled blocks, full block
+  coverage, 25 logical tiles, tile summary source
+  `exported-relation-texture-downsample`, 0 missing values.
+- Picker checker: native cell `pc-000 -> pc-001` resolves with value
+  `2.34478`, pair key
+  `process-curve-aligned-metric\0pc-000\0pc-001`, and native pair evidence.
+- Targeted browser regression: `relation-matrix-neighborhood` passed as
+  `public-preview-only` with `InstancedPointLayer`, `RelationEdgeLayer` and
+  `RelationMatrixLayer`; `ScreenReadableOverlayPass` remained present.
+- Brief gate: `relation-matrix-neighborhood` remains review-pending with
+  blockers `visual-composition-not-human-accepted` and
+  `matrix-readability-not-human-accepted`.
 
-## Browser Gate Results
+## Artifacts
 
-- `check-visual-regression-public-examples`: passed, `8` examples, `0` failed.
-- `relation-matrix-neighborhood`: `public-preview-only`, render green,
-  `3` runtime layers, primitives `InstancedPointLayer`, `RelationEdgeLayer`,
-  `RelationMatrixLayer`.
-- Runtime relation-matrix readability summary: `5` labeled blocks, full block
-  coverage, `25` tiles, tile summary source
-  `exported-relation-texture-downsample`.
-- Browser interaction selected graph pair `pc-025 -> pc-076`; the runtime pair
-  preview exposed pair value `0.642375`, row/column record ids, block/order
-  properties, and linked graph selection presentation.
-- `check-hero-screenshot-review`: passed. `relation-matrix-neighborhood`
-  remains `review-pending`, not hero accepted.
-- `check-visual-performance-large-scenes`: passed. Relation matrix grammar row:
-  `recordCount: 130`, `descriptorCount: 3`, `runtimeLayerCount: 3`,
-  median frame `8.3 ms`, `120.5 fps`, `0` issues.
+- Current targeted canvas screenshot:
+  `output/visual/relation-matrix-readability-regression/relation-matrix-neighborhood.canvas.png`
+- Targeted browser report:
+  `output/visual/relation-matrix-readability-regression/results.json`
+- Brief report:
+  `output/visual/check-hero-visual-briefs/results.json`
+- Gallery evidence report:
+  terminal output from `node visual/tools/check-public-gallery-evidence.mjs`
 
-## Screenshot Paths
+## Remaining Blocker
 
-- `/Users/michaelwelsch/Documents/metric/output/visual/check-visual-regression-public-examples/relation-matrix-neighborhood.png`
-- `/Users/michaelwelsch/Documents/metric/output/visual/check-visual-regression-public-examples/relation-matrix-neighborhood.canvas.png`
-- Browser report:
-  `/Users/michaelwelsch/Documents/metric/output/visual/check-visual-regression-public-examples/results.json`
-- Screenshot review report:
-  `/Users/michaelwelsch/Documents/metric/output/visual/check-hero-screenshot-review/results.json`
-- Performance report:
-  `/Users/michaelwelsch/Documents/metric/output/visual/check-visual-performance-large-scenes/results.json`
-
-## Remaining Human Screenshot Blocker
-
-The remaining blocker is manual screenshot acceptance. Automated gates prove
-native evidence, relation-matrix readability metadata, pair preview, graph
-linkage, screenshots and performance, but `relation-matrix-neighborhood` still
-has no human acceptance record clearing `visual-composition-not-human-accepted`
-and `matrix-readability-not-human-accepted`. GRAE10 remains the only accepted
-public hero.
+The remaining blocker is human screenshot acceptance. Automated gates now prove
+the WebGL-only matrix readability contract, block/tile diagnostics,
+row/column/cell focus semantics, native pair picking and graph/matrix render
+hierarchy, but the preview is still not hero accepted. GRAE10 remains the only
+accepted public hero.

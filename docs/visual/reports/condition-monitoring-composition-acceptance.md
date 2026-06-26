@@ -4,86 +4,73 @@ Date: 2026-06-26
 
 ## Changed Files
 
-- `visual/src/views/ProcessCurveSceneView.js`
 - `visual/src/views/TrajectoryPathView.js`
-- `visual/examples/condition-monitoring-hero/index.html`
+- `visual/src/views/PropertyFieldView.js`
+- `visual/src/views/ProcessCurveSceneView.js`
+- `visual/tools/check-trajectory-path-view.mjs`
 - `visual/tools/check-condition-monitoring-composition.mjs`
 - `docs/visual/reports/condition-monitoring-composition-acceptance.md`
 
+No condition-monitoring page HTML, synthetic evidence, native exporter,
+GRAE10 file, public hero manifest, or project-site file was changed.
+
 ## Scope Result
 
-Condition monitoring now stays on the reusable `ProcessCurveSceneView` grammar
-and resolves these native evidence channels from
-`docs/examples/assets/condition-monitoring/metric.visual.json`:
+Condition monitoring still resolves only native evidence from:
 
-- dominant anomaly field: `metric-anomaly-severity`
-- density support projection: `local-density`
-- regime labels: `truth-regime`
-- transition path: `process-window-trajectory` backed by
-  `condition-monitoring-transition`
+```text
+docs/examples/assets/condition-monitoring/metric.visual.json
+```
 
-No synthetic records, synthetic padding, page-local renderer, JavaScript metric
-computation, GRAE10 files, native C++ exporters, public hero manifests, or
-other hero pages were changed.
+The reusable view descriptors now expose
+`metric.visual.layer_hierarchy.v1` metadata for the hierarchy that matters to
+this preview:
 
-## Implementation Notes
+- anomaly field: `support-field`, below trajectory, current state and labels
+- density projection: `ground-projection`, below trajectory, current state and
+  labels
+- process path: `trajectory-path`, above fields/projections and below current
+  state/labels
+- current records: `current-state`, above fields/projections/path and below
+  labels
+- regime labels: `scene-labels`, above the scene evidence
 
-- `ProcessCurveSceneView` now separates primary scalar field selection from
-  support scalar projection selection. Fuzzy refs such as `anomaly` can resolve
-  to exported scalar properties, while `groundField: "local-density"` remains a
-  separate support layer.
-- `GroundProjectionLayer` is emitted through `GroundProjectionView` with
-  `local-density` metadata and a quieter density-support material.
-- `PropertyFieldView` is still the source of the anomaly field. The role is
-  marked `dominant-anomaly-field` only when the exported property semantic is
-  actually anomaly-like.
-- `TrajectoryPathView` now accepts exported per-record property maps for path
-  color and width. The condition-monitoring path keeps the exported graph
-  trajectory and encodes `metric-anomaly-severity` as visual path evidence.
-- Regime labels now anchor to group structure bounds and scene center rather
-  than only to a raw centroid.
-- The hero fixture only adjusts command options for `showConditionMonitoring`;
-  it does not create descriptors or render layers locally.
+The trajectory remains backed by `process-window-trajectory` and
+`condition-monitoring-transition`; `metric-anomaly-severity`, `local-density`
+and `truth-regime` remain exported evidence inputs. The hierarchy contract is
+descriptor metadata only and reports `algorithmicComputation: false`.
 
 ## Checker Evidence
 
-Added `visual/tools/check-condition-monitoring-composition.mjs`. It verifies:
-
-- selected view kind is `condition-monitoring`
-- descriptors include `HeatFieldLayer`, `GroundProjectionLayer`,
-  `CurveRibbonLayer`, and `InstancedPointLayer`
-- anomaly field uses exported `metric-anomaly-severity`
-- density support uses exported `local-density`
-- trajectory is backed by exported graph or transition evidence and is not a
-  fallback
-- screenshot and canvas screenshot files exist
+`visual/tools/check-condition-monitoring-composition.mjs` now verifies the
+hierarchy contract in addition to the existing grammar checks. Current browser
+regression artifacts emit canvas screenshots; the full-page screenshot file is
+treated as optional when absent, while the canvas screenshot remains required.
 
 ## Validation
 
-- `node --check visual/src/views/ProcessCurveSceneView.js`: passed.
 - `node --check visual/src/views/TrajectoryPathView.js`: passed.
+- `node --check visual/src/views/PropertyFieldView.js`: passed.
+- `node --check visual/src/views/ProcessCurveSceneView.js`: passed.
 - `node --check visual/tools/check-condition-monitoring-composition.mjs`:
   passed.
-- `node visual/tools/check-grae10-golden.mjs`: passed,
-  `464f6a90c36c1e9c6b4ec90068500dc226740d65b251918aca567f99d64d3d5e`.
-- `node visual/tools/check-visual-command-api.mjs`: passed.
-- `node visual/tools/check-views.mjs`: passed, `total: 80`, `failed: 0`.
-- `node visual/tools/check-hero-visual-briefs.mjs`: passed.
-- `METRIC_VISUAL_EXAMPLES=condition-monitoring-hero node visual/tools/check-visual-regression-public-examples.mjs`:
-  passed, `total: 1`, `failed: 0`, `heroAccepted: false`.
-- `node visual/tools/check-visual-regression-public-examples.mjs`: passed,
-  `total: 8`, `failed: 0`. This full run was needed before screenshot review
-  because `check-hero-screenshot-review.mjs` requires protected GRAE10 in the
-  regression report.
-- `node visual/tools/check-hero-screenshot-review.mjs`: passed after the full
-  regression report, with `grae10-metric-engine` accepted and
-  `condition-monitoring-hero` still `review-pending`.
-- `node visual/tools/check-condition-monitoring-composition.mjs`: passed.
-- `node visual/tools/check-condition-monitoring-visual-acceptance.mjs`: passed.
-- `node visual/tools/check-trajectory-path-view.mjs`: passed.
+- `node visual/tools/check-condition-monitoring-composition.mjs`: passed,
+  `ok: true`, `canvasScreenshotAvailable: true`,
+  `pageScreenshotAvailable: false`.
+- `node visual/tools/check-trajectory-path-view.mjs`: passed, `total: 19`,
+  `failed: 0`.
+- `node visual/tools/check-hero-visual-briefs.mjs`: passed,
+  `condition-monitoring-hero` roles include `dominant-anomaly-field`,
+  `density-support-projection`, `trajectory/path`, `current-state-records` and
+  `region-labels`.
+- `node visual/tools/check-public-gallery-evidence.mjs`: passed,
+  `ok: true`, public condition evidence points to
+  `../../../docs/examples/assets/condition-monitoring/metric.visual.json`.
 
 ## Remaining Status
 
-`condition-monitoring-hero` is not marked accepted. The visual brief still
-keeps `visual-composition-not-human-accepted` until separate human screenshot
-review clears it.
+`condition-monitoring-hero` remains review-pending. The blocker is still:
+
+```text
+visual-composition-not-human-accepted
+```

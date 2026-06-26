@@ -2,6 +2,10 @@ import { BaseView } from "./BaseView.js";
 import { defaultCoordinateId } from "./MetricSpaceView.js";
 import { SpacePropertiesView } from "./SpacePropertiesView.js";
 import {
+  VISUAL_LAYER_HIERARCHY_BANDS,
+  createVisualLayerHierarchy,
+} from "./TrajectoryPathView.js";
+import {
   extractCoordinatePositions,
   extractPropertyValues,
   recordsFor,
@@ -138,6 +142,23 @@ export class PropertyFieldView extends BaseView {
     const descriptor = this.toSpacePropertiesFieldDescriptor();
     if (!descriptor) return [];
     descriptor.order = this.order;
+    const visualHierarchy = createVisualLayerHierarchy({
+      band: VISUAL_LAYER_HIERARCHY_BANDS.supportField,
+      role: "property-field",
+      viewClass: "PropertyFieldView",
+      order: descriptor.order,
+      drawsBelow: [
+        VISUAL_LAYER_HIERARCHY_BANDS.trajectoryPath,
+        VISUAL_LAYER_HIERARCHY_BANDS.currentState,
+        VISUAL_LAYER_HIERARCHY_BANDS.sceneLabels,
+      ],
+      depthPolicy: {
+        depthTest: descriptor.material?.depthTest ?? null,
+        depthWrite: descriptor.material?.depthWrite ?? false,
+        depthBias: descriptor.material?.depthBias ?? null,
+      },
+      purpose: "keep exported scalar support fields below paths, current states and labels",
+    });
     descriptor.source = {
       ...(descriptor.source || {}),
       viewId: this.id,
@@ -159,6 +180,9 @@ export class PropertyFieldView extends BaseView {
       coordinateId: this.coordinateId,
       recordCount: this.recordIds.length,
       nativeEvidence: this.nativeEvidence,
+      visualPriority: visualHierarchy,
+      visualHierarchy,
+      semanticRenderPriority: visualHierarchy.sortPriority,
     };
     return [descriptor];
   }

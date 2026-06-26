@@ -9,6 +9,7 @@ import { TrajectoryPathView } from "../src/views/index.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..", "..");
+const HIERARCHY_SCHEMA = "metric.visual.layer_hierarchy.v1";
 
 async function readJson(path) {
   return JSON.parse(await readFile(resolve(ROOT, path), "utf8"));
@@ -32,6 +33,7 @@ async function main() {
     assert(checks, "graph transition comes from TrajectoryPathView", descriptor?.metadata?.viewClass === "TrajectoryPathView", descriptor?.metadata);
     assert(checks, "graph transition preserves native graph evidence", descriptor?.metadata?.nativeEvidence?.graphId === "process-window-trajectory", descriptor?.metadata?.nativeEvidence);
     assert(checks, "graph transition reports record/path counts", descriptor?.metadata?.recordCount === 528 && descriptor?.metadata?.pathCount === 1, descriptor?.metadata);
+    assert(checks, "graph transition declares reusable trajectory hierarchy", isTrajectoryHierarchy(descriptor?.metadata?.visualHierarchy), descriptor?.metadata?.visualHierarchy);
     assert(checks, "graph transition does not claim JS algorithmic computation", descriptor?.metadata?.algorithmicComputation === false, descriptor?.metadata);
   }
 
@@ -60,6 +62,7 @@ async function main() {
     const descriptor = trajectoryDescriptor(surface.descriptors, "CurveRibbonLayer");
     assert(checks, "showConditionMonitoring uses TrajectoryPathView", descriptor?.metadata?.viewClass === "TrajectoryPathView", descriptor?.metadata);
     assert(checks, "showConditionMonitoring keeps trajectory/path metadata", descriptor?.metadata?.role === "trajectory/path" && descriptor?.metadata?.nativeEvidence?.graphId === "process-window-trajectory", descriptor?.metadata);
+    assert(checks, "showConditionMonitoring trajectory keeps field/current/label hierarchy", isTrajectoryHierarchy(descriptor?.metadata?.visualHierarchy), descriptor?.metadata?.visualHierarchy);
   }
 
   {
@@ -73,6 +76,7 @@ async function main() {
     assert(checks, "showDynamics uses TrajectoryPathView", descriptor?.metadata?.viewClass === "TrajectoryPathView", descriptor?.metadata);
     assert(checks, "showDynamics emits one path per record through the engine pipeline", descriptor?.metadata?.pathCount === 512 && descriptor?.metadata?.recordCount === 512, descriptor?.metadata);
     assert(checks, "showDynamics preserves timeline native evidence", descriptor?.metadata?.nativeEvidence?.timelineId === "reverse-reconstruction", descriptor?.metadata?.nativeEvidence);
+    assert(checks, "showDynamics trajectory keeps field/current/label hierarchy", isTrajectoryHierarchy(descriptor?.metadata?.visualHierarchy), descriptor?.metadata?.visualHierarchy);
   }
 
   {
@@ -88,7 +92,7 @@ async function main() {
     const descriptor = trajectoryDescriptor(surface.descriptors, "CurveTubeMeshLayer");
     assert(checks, "showProcessCurves uses TrajectoryPathView tube grammar", descriptor?.metadata?.viewClass === "TrajectoryPathView", descriptor?.metadata);
     assert(checks, "showProcessCurves keeps record-track engine view kind", descriptor?.source?.viewKind === "record-track", descriptor?.source);
-    assert(checks, "showProcessCurves reports native record/path counts", descriptor?.metadata?.recordCount === 48 && descriptor?.metadata?.pathCount > 0, descriptor?.metadata);
+    assert(checks, "showProcessCurves reports current native record/path counts", descriptor?.metadata?.recordCount === 576 && descriptor?.metadata?.pathCount > 0, descriptor?.metadata);
   }
 
   report(checks);
@@ -100,6 +104,16 @@ function trajectoryDescriptor(descriptors, primitive) {
     descriptor?.metadata?.role === "trajectory/path" &&
     descriptor?.metadata?.viewClass === "TrajectoryPathView"
   ));
+}
+
+function isTrajectoryHierarchy(hierarchy) {
+  return hierarchy?.schema === HIERARCHY_SCHEMA
+    && hierarchy.band === "trajectory-path"
+    && hierarchy.sortPriority === 20
+    && hierarchy.drawsAbove?.includes("support-field")
+    && hierarchy.drawsBelow?.includes("current-state")
+    && hierarchy.drawsBelow?.includes("scene-labels")
+    && hierarchy.algorithmicComputation === false;
 }
 
 function createHeadlessSurface(document) {

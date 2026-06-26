@@ -10,7 +10,11 @@ import { MorphView } from "./MorphView.js";
 import { NeighborhoodGraphView } from "./NeighborhoodGraphView.js";
 import { PropertyFieldView } from "./PropertyFieldView.js";
 import { RelationMatrixView } from "./RelationMatrixView.js";
-import { TrajectoryPathView } from "./TrajectoryPathView.js";
+import {
+  VISUAL_LAYER_HIERARCHY_BANDS,
+  TrajectoryPathView,
+  createVisualLayerHierarchy,
+} from "./TrajectoryPathView.js";
 import { createChannel, extractPropertyValues } from "./view-utils.js";
 
 export class ProcessCurveSceneView extends BaseView {
@@ -453,6 +457,24 @@ function createProcessCurveMorphDescriptor(document, inputs, options) {
   const loop = options.morphLoop === true;
   const hasProgress = Number.isFinite(Number(options.morphProgress));
   const progress = hasProgress ? Math.max(0, Math.min(1, Number(options.morphProgress))) : 1;
+  const visualHierarchy = createVisualLayerHierarchy({
+    band: VISUAL_LAYER_HIERARCHY_BANDS.currentState,
+    role: "current-state-records",
+    viewClass: "ProcessCurveSceneView",
+    order: 0,
+    drawsAbove: [
+      VISUAL_LAYER_HIERARCHY_BANDS.supportField,
+      VISUAL_LAYER_HIERARCHY_BANDS.groundProjection,
+      VISUAL_LAYER_HIERARCHY_BANDS.trajectoryPath,
+    ],
+    drawsBelow: [VISUAL_LAYER_HIERARCHY_BANDS.sceneLabels],
+    depthPolicy: {
+      depthTest: options.pointMaterial?.depthTest ?? null,
+      depthWrite: options.pointMaterial?.depthWrite ?? null,
+      depthBias: options.pointMaterial?.depthBias ?? null,
+    },
+    purpose: "keep current process-window records above scalar fields and trajectory support",
+  });
   const animation = createMiniatureAnimationPreset("coordinate-morph", {
     loop,
     progress,
@@ -482,6 +504,9 @@ function createProcessCurveMorphDescriptor(document, inputs, options) {
       role: "current-state-records",
       visualGrammar: "process-curves",
       visualComposition: "process-current-records-over-field-and-trajectory",
+      visualPriority: visualHierarchy,
+      visualHierarchy,
+      semanticRenderPriority: visualHierarchy.sortPriority,
       algorithmicComputation: false,
     },
     animation,
@@ -525,6 +550,29 @@ function createProcessCurveProjectionDescriptor(document, inputs, options) {
   });
   const descriptor = view.toLayerDescriptors()[0];
   descriptor.order = -28;
+  const visualHierarchy = createVisualLayerHierarchy({
+    band: VISUAL_LAYER_HIERARCHY_BANDS.groundProjection,
+    role: supportField ? "density-support-projection" : "state-ground-projection",
+    viewClass: "ProcessCurveSceneView",
+    order: descriptor.order,
+    drawsBelow: [
+      VISUAL_LAYER_HIERARCHY_BANDS.trajectoryPath,
+      VISUAL_LAYER_HIERARCHY_BANDS.currentState,
+      VISUAL_LAYER_HIERARCHY_BANDS.sceneLabels,
+    ],
+    depthPolicy: {
+      depthTest: descriptor.material?.depthTest ?? null,
+      depthWrite: descriptor.material?.depthWrite ?? false,
+      depthBias: descriptor.material?.depthBias ?? null,
+    },
+    purpose: "keep exported density or state projections below trajectory, current records and labels",
+  });
+  descriptor.metadata = {
+    ...(descriptor.metadata || {}),
+    visualPriority: visualHierarchy,
+    visualHierarchy,
+    semanticRenderPriority: visualHierarchy.sortPriority,
+  };
   return descriptor;
 }
 
@@ -566,6 +614,23 @@ function createProcessCurvePropertyFieldDescriptor(document, inputs, options) {
   const descriptor = view.toLayerDescriptors()[0];
   if (!descriptor) return null;
   descriptor.order = -22;
+  const visualHierarchy = createVisualLayerHierarchy({
+    band: VISUAL_LAYER_HIERARCHY_BANDS.supportField,
+    role,
+    viewClass: "PropertyFieldView",
+    order: descriptor.order,
+    drawsBelow: [
+      VISUAL_LAYER_HIERARCHY_BANDS.trajectoryPath,
+      VISUAL_LAYER_HIERARCHY_BANDS.currentState,
+      VISUAL_LAYER_HIERARCHY_BANDS.sceneLabels,
+    ],
+    depthPolicy: {
+      depthTest: descriptor.material?.depthTest ?? null,
+      depthWrite: descriptor.material?.depthWrite ?? false,
+      depthBias: descriptor.material?.depthBias ?? null,
+    },
+    purpose: "keep the exported anomaly scalar field as support below process paths and current records",
+  });
   descriptor.source = {
     ...(descriptor.source || {}),
     processCurveViewClass: "ProcessCurveSceneView",
@@ -582,6 +647,9 @@ function createProcessCurvePropertyFieldDescriptor(document, inputs, options) {
       algorithmicComputation: false,
     },
     visualGrammar: "process-curves",
+    visualPriority: visualHierarchy,
+    visualHierarchy,
+    semanticRenderPriority: visualHierarchy.sortPriority,
   };
   return descriptor;
 }
@@ -634,6 +702,29 @@ function createProcessCurveStateFieldDescriptor(document, inputs, options) {
   });
   const descriptor = view.toLayerDescriptors()[0];
   descriptor.order = -22;
+  const visualHierarchy = createVisualLayerHierarchy({
+    band: VISUAL_LAYER_HIERARCHY_BANDS.supportField,
+    role: "semantic-ground-field",
+    viewClass: "DenseFieldView",
+    order: descriptor.order,
+    drawsBelow: [
+      VISUAL_LAYER_HIERARCHY_BANDS.trajectoryPath,
+      VISUAL_LAYER_HIERARCHY_BANDS.currentState,
+      VISUAL_LAYER_HIERARCHY_BANDS.sceneLabels,
+    ],
+    depthPolicy: {
+      depthTest: descriptor.material?.depthTest ?? null,
+      depthWrite: descriptor.material?.depthWrite ?? false,
+      depthBias: descriptor.material?.depthBias ?? null,
+    },
+    purpose: "keep fallback state field below process paths, current records and labels",
+  });
+  descriptor.metadata = {
+    ...(descriptor.metadata || {}),
+    visualPriority: visualHierarchy,
+    visualHierarchy,
+    semanticRenderPriority: visualHierarchy.sortPriority,
+  };
   return descriptor;
 }
 
@@ -857,6 +948,24 @@ function createProcessCurveLabelDescriptor(document, inputs, options) {
   const labelLift = finiteNumber(options.labelLift, 0.42);
   const fontSize = Math.max(14, Math.floor(finiteNumber(options.labelFontSize, 22)));
   const color = options.labelColor || [0.12, 0.16, 0.18, 0.92];
+  const visualHierarchy = createVisualLayerHierarchy({
+    band: VISUAL_LAYER_HIERARCHY_BANDS.sceneLabels,
+    role: "region-labels",
+    viewClass: "ProcessCurveSceneView",
+    order: 62,
+    drawsAbove: [
+      VISUAL_LAYER_HIERARCHY_BANDS.supportField,
+      VISUAL_LAYER_HIERARCHY_BANDS.groundProjection,
+      VISUAL_LAYER_HIERARCHY_BANDS.trajectoryPath,
+      VISUAL_LAYER_HIERARCHY_BANDS.currentState,
+    ],
+    depthPolicy: {
+      depthTest: false,
+      depthWrite: false,
+      depthBias: null,
+    },
+    purpose: "keep regime labels scene-readable after field, path and current-state rendering",
+  });
   const labels = labelEntries.map(([category, group], index) => {
     const centroid = [group.x / group.count, group.y / group.count, group.z / group.count];
     const offset = labelStructureOffset({
@@ -913,6 +1022,9 @@ function createProcessCurveLabelDescriptor(document, inputs, options) {
       labelCount: labels.length,
       propertyId: inputs.labelProperty.id,
       labelAnchorMode: "regime-structure-boundary",
+      visualPriority: visualHierarchy,
+      visualHierarchy,
+      semanticRenderPriority: visualHierarchy.sortPriority,
       algorithmicComputation: false,
     },
   };

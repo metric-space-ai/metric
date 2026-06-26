@@ -24,6 +24,7 @@ export function createRelationMatrixLayerDescriptor(source, options = {}) {
     readability,
     relationId,
     relationName,
+    renderHierarchy: relationMatrixRenderHierarchy(options),
   });
 
   return {
@@ -56,27 +57,27 @@ export function createRelationMatrixLayerDescriptor(source, options = {}) {
       lodSmoothingStrength: denseCellSmoothing.lodSmoothingStrength,
       lodSmoothingStartCellPixels: denseCellSmoothing.startCellPixels,
       lodSmoothingFullCellPixels: denseCellSmoothing.fullCellPixels,
-      selectionAlpha: options.selectionAlpha ?? 0.54,
-      selectionRowAlpha: options.selectionRowAlpha ?? options.selectionAlpha ?? 0.54,
-      selectionColumnAlpha: options.selectionColumnAlpha ?? options.selectionAlpha ?? 0.54,
-      selectionCellAlpha: options.selectionCellAlpha ?? 0.9,
+      selectionAlpha: options.selectionAlpha ?? 0.64,
+      selectionRowAlpha: options.selectionRowAlpha ?? options.selectionAlpha ?? 0.64,
+      selectionColumnAlpha: options.selectionColumnAlpha ?? options.selectionAlpha ?? 0.64,
+      selectionCellAlpha: options.selectionCellAlpha ?? 0.96,
       selectionOutlineAlpha: options.selectionOutlineAlpha ?? 1,
-      selectionOutlinePixels: options.selectionOutlinePixels ?? 2.2,
+      selectionOutlinePixels: options.selectionOutlinePixels ?? 2.8,
       selectionColor: options.selectionColor || [1, 0.86, 0.42, 1],
       selectionRowColor: options.selectionRowColor || options.selectionColor || [1, 0.86, 0.42, 1],
       selectionColumnColor: options.selectionColumnColor || [0.42, 0.66, 1, 1],
       selectionCellColor: options.selectionCellColor || options.selectionColor || [1, 0.92, 0.56, 1],
-      focusBackdropAlpha: options.focusBackdropAlpha ?? 0.38,
-      focusBlockAlpha: options.focusBlockAlpha ?? 0.14,
-      blockBandAlpha: options.blockBandAlpha ?? 0.11,
+      focusBackdropAlpha: options.focusBackdropAlpha ?? 0.46,
+      focusBlockAlpha: options.focusBlockAlpha ?? 0.18,
+      blockBandAlpha: options.blockBandAlpha ?? 0.13,
       blockBandColor: options.blockBandColor || [1, 0.95, 0.72, 1],
-      blockLineAlpha: options.blockLineAlpha ?? 0.64,
+      blockLineAlpha: options.blockLineAlpha ?? 0.82,
       blockLineColor: options.blockLineColor || [1, 1, 1, 1],
-      blockLineWidthCells: options.blockLineWidthCells ?? 1.15,
-      outerBorderAlpha: options.outerBorderAlpha ?? 0.7,
+      blockLineWidthCells: options.blockLineWidthCells ?? 1.45,
+      outerBorderAlpha: options.outerBorderAlpha ?? 0.88,
       tileSize: readability.tiles.tileSize,
-      tileBoundaryAlpha: options.tileBoundaryAlpha ?? 0.2,
-      tileBoundaryWidthCells: options.tileBoundaryWidthCells ?? 0.5,
+      tileBoundaryAlpha: options.tileBoundaryAlpha ?? 0.14,
+      tileBoundaryWidthCells: options.tileBoundaryWidthCells ?? 0.38,
       tileBoundaryColor: options.tileBoundaryColor || [0.72, 0.84, 1, 1],
     },
     picking: {
@@ -105,6 +106,7 @@ export function createRelationMatrixLayerDescriptor(source, options = {}) {
       readabilityDiagnostics,
       relationId,
       relationName,
+      zOrderRules: relationMatrixRenderHierarchy(options),
       selectionModel: {
         relationId,
         recordIds: texture.recordIds,
@@ -266,4 +268,19 @@ function resolveMaterialAlpha(options = {}) {
   if (Number.isFinite(explicit)) return explicit;
   const alpha = Number(options.alpha);
   return Number.isFinite(alpha) && alpha >= 0 && alpha <= 1 ? alpha : 1;
+}
+
+function relationMatrixRenderHierarchy(options = {}) {
+  const phase = options.renderPhase || "screen-readable-overlay";
+  const postprocessGroup = options.postprocessGroup || phase;
+  return {
+    matrixRole: "primary-relation-matrix",
+    matrixRenderPhase: phase,
+    matrixPostprocessGroup: postprocessGroup,
+    matrixCameraDof: "bypass",
+    matrixDepthTest: false,
+    graphRole: "supporting-neighborhood-graph",
+    graphExpectedRenderPhase: "scene",
+    rule: phase === "screen-readable-overlay" ? "graph-first-matrix-overlay" : "custom-render-phase",
+  };
 }

@@ -14,6 +14,7 @@ import { DynamicsView } from "../src/views/DynamicsView.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..", "..");
+const HIERARCHY_SCHEMA = "metric.visual.layer_hierarchy.v1";
 
 async function main() {
   const document = JSON.parse(await readFile(
@@ -42,9 +43,10 @@ async function main() {
       propertyField: "best-reconstruction-error",
     });
     const descriptors = view.toLayerDescriptors();
-    const point = descriptors.find((descriptor) => descriptor.primitive === "InstancedPointLayer");
     const field = descriptors.find((descriptor) => descriptor.primitive === "HeatFieldLayer"
       && descriptor.metadata?.evidenceRole === "timeline-ground-field");
+    const point = descriptors.find((descriptor) => descriptor.primitive === "InstancedPointLayer"
+      && descriptor.metadata?.role === "current-timeline-state");
     const timelineScalar = field?.channels?.timelineScalar?.array?.[0];
     return {
       normalized: state.normalized,
@@ -52,6 +54,8 @@ async function main() {
       pointCoordinateId: point?.metadata?.activeCoordinateId,
       fieldCoordinateId: field?.metadata?.activeCoordinateId,
       fieldPrimitive: field?.primitive,
+      fieldHierarchy: field?.metadata?.visualHierarchy,
+      pointHierarchy: point?.metadata?.visualHierarchy,
       fieldState: field?.metadata?.timelineFieldState,
       fieldStateSource: field?.metadata?.fieldStateSource,
       activeFieldPropertyId: field?.metadata?.activeFieldPropertyId,
@@ -79,6 +83,8 @@ async function main() {
     ["timeline states select exported property samples", states.every((state) => state.activePropertySample?.propertyId === "reverse-mse-to-clean" && state.activePropertySample.source === "exported-property"), states],
     ["dynamics sampled views select exported start/middle/end coordinates", sampledViews.map((sample) => sample.pointCoordinateId).join(",") === "coord-reverse-00,coord-reverse-20,coord-reverse-40", sampledViews],
     ["dynamics field descriptors are reusable HeatFieldLayer descriptors", sampledViews.every((sample) => sample.fieldPrimitive === "HeatFieldLayer" && sample.recordCount === 512), sampledViews],
+    ["dynamics sampled field descriptors keep support hierarchy", sampledViews.every((sample) => isHierarchy(sample.fieldHierarchy, "support-field") && sample.fieldHierarchy.drawsBelow?.includes("trajectory-path") && sample.fieldHierarchy.drawsBelow?.includes("current-state")), sampledViews.map((sample) => sample.fieldHierarchy)],
+    ["dynamics sampled current-state descriptors keep current hierarchy", sampledViews.every((sample) => isHierarchy(sample.pointHierarchy, "current-state") && sample.pointHierarchy.drawsAbove?.includes("support-field") && sample.pointHierarchy.drawsBelow?.includes("scene-labels")), sampledViews.map((sample) => sample.pointHierarchy)],
     ["dynamics field state follows exported reverse MSE samples", roughly(fieldValues[0], 0.0153362) && roughly(fieldValues[1], 0.0050846) && roughly(fieldValues[2], 0.0103288), fieldValues],
     ["dynamics field scalar channel changes with timeline state", sampledViews.map((sample) => Number(sample.timelineScalar).toFixed(7)).join(",") === "0.0153362,0.0050846,0.0103288", sampledViews],
     ["dynamics field uses selected exported record property without recomputing dynamics", sampledViews.every((sample) => sample.activeFieldPropertyId === "best-reconstruction-error" && sample.algorithmicComputation === false), sampledViews],
@@ -89,6 +95,12 @@ async function main() {
 
 function roughly(actual, expected) {
   return Math.abs(Number(actual) - expected) < 0.0000005;
+}
+
+function isHierarchy(hierarchy, band) {
+  return hierarchy?.schema === HIERARCHY_SCHEMA
+    && hierarchy.band === band
+    && hierarchy.algorithmicComputation === false;
 }
 
 function report(checks) {

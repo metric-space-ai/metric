@@ -92,3 +92,36 @@ checks.
 ## Preview Status
 
 The mixed-record preview remains review-pending.
+
+## Relation-Edge Legibility Update
+
+Date: 2026-06-26
+
+Updated the reusable mixed-record relation edge descriptor path without
+changing native evidence, graph topology, record counts or the public page.
+
+Additional descriptor evidence now exposed by `MixedRecordView`:
+
+- `RelationEdgeLayer` channels include `endpointEmphasis` alongside native
+  `edgeEmphasis` and `edgeTypePair`.
+- `edgeLegibility.rank` declares deterministic
+  `native-relation-value-cross-type-rank` from the exported relation value
+  emphasis channel.
+- `edgeLegibility.laneBundle` declares `type-pair-lanes` with
+  `edgeTypePair:sourceId:targetId`, 13 deterministic lanes and geometry-only
+  offsets.
+- `edgeLegibility.endpointEmphasis` declares
+  `cross-type-endpoint-relation-value` and preserves endpoint identity.
+- `RelationEdgeLayer.getDiagnostics()` now reports applied alpha, lane and
+  emphasis summaries for checker/runtime assertions.
+
+Verification run for this update:
+
+```bash
+node visual/tools/check-linked-edge-emphasis.mjs
+node visual/tools/check-mixed-glyph-geometry.mjs
+node visual/tools/check-mixed-record-composition.mjs
+```
+
+All passed. The acceptance blocker remains
+`visual-composition-not-human-accepted`.

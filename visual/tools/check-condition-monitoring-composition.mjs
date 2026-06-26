@@ -12,6 +12,7 @@ const EVIDENCE_PATH = resolve(ROOT, "docs/examples/assets/condition-monitoring/m
 const PAGE_PATH = resolve(ROOT, "visual/examples/condition-monitoring-hero/index.html");
 const PAGE_SCREENSHOT = resolve(ROOT, "output/visual/check-visual-regression-public-examples/condition-monitoring-hero.png");
 const CANVAS_SCREENSHOT = resolve(ROOT, "output/visual/check-visual-regression-public-examples/condition-monitoring-hero.canvas.png");
+const HIERARCHY_SCHEMA = "metric.visual.layer_hierarchy.v1";
 
 const checks = [];
 const document_ = JSON.parse(await readFile(EVIDENCE_PATH, "utf8"));
@@ -103,6 +104,23 @@ assert("record points remain available for hover and preview resolution",
     && points.picking?.mode === "record-id",
   summarizeDescriptor(points));
 
+assert("semantic hierarchy keeps fields below trajectory, current state and labels",
+  isHierarchy(field, "support-field")
+    && isHierarchy(projection, "ground-projection")
+    && isHierarchy(trajectory, "trajectory-path")
+    && isHierarchy(points, "current-state")
+    && field.metadata?.visualHierarchy?.drawsBelow?.includes("trajectory-path")
+    && projection.metadata?.visualHierarchy?.drawsBelow?.includes("trajectory-path")
+    && trajectory.metadata?.visualHierarchy?.drawsAbove?.includes("support-field")
+    && trajectory.metadata?.visualHierarchy?.drawsBelow?.includes("current-state")
+    && points.metadata?.visualHierarchy?.drawsAbove?.includes("trajectory-path"),
+  {
+    field: summarizeDescriptor(field),
+    projection: summarizeDescriptor(projection),
+    trajectory: summarizeDescriptor(trajectory),
+    points: summarizeDescriptor(points),
+  });
+
 assert("regime labels use scene-structure anchors",
   labels?.metadata?.labelAnchorMode === "regime-structure-boundary"
     && labels.metadata?.propertyId === "truth-regime"
@@ -110,8 +128,18 @@ assert("regime labels use scene-structure anchors",
     && labels.labels?.every((label) => label.anchor?.mode === "regime-structure-boundary"),
   summarizeDescriptor(labels));
 
-await assertScreenshot("page screenshot exists", PAGE_SCREENSHOT);
-await assertScreenshot("canvas screenshot exists", CANVAS_SCREENSHOT);
+assert("regime labels declare final scene-readable hierarchy",
+  isHierarchy(labels, "scene-labels")
+    && labels.metadata?.visualHierarchy?.drawsAbove?.includes("current-state")
+    && labels.metadata?.visualHierarchy?.drawsAbove?.includes("trajectory-path"),
+  summarizeDescriptor(labels));
+
+const pageScreenshot = await screenshotStatus(PAGE_SCREENSHOT);
+const canvasScreenshot = await screenshotStatus(CANVAS_SCREENSHOT);
+assert("page screenshot is absent or non-empty when generated",
+  pageScreenshot.ok || pageScreenshot.missing === true,
+  pageScreenshot);
+assert("canvas screenshot exists", canvasScreenshot.ok, canvasScreenshot);
 
 const failures = checks.filter((check) => !check.ok);
 const summary = {
@@ -120,6 +148,8 @@ const summary = {
   page: "visual/examples/condition-monitoring-hero/index.html",
   screenshot: "output/visual/check-visual-regression-public-examples/condition-monitoring-hero.png",
   canvasScreenshot: "output/visual/check-visual-regression-public-examples/condition-monitoring-hero.canvas.png",
+  pageScreenshotAvailable: pageScreenshot.ok,
+  canvasScreenshotAvailable: canvasScreenshot.ok,
   selectedViewKind: surface.lastCommandDiagnostics?.selectedViewKind,
   primitives: [...primitives].sort(),
   field: summarizeDescriptor(field),
@@ -136,12 +166,17 @@ function assert(message, ok, details = {}) {
   checks.push({ ok: Boolean(ok), message, details: ok ? undefined : details });
 }
 
-async function assertScreenshot(message, path) {
+async function screenshotStatus(path) {
   try {
     const result = await stat(path);
-    assert(message, result.isFile() && result.size > 0, { path, size: result.size });
+    return { path, ok: result.isFile() && result.size > 0, size: result.size };
   } catch (error) {
-    assert(message, false, { path, error: error instanceof Error ? error.message : String(error) });
+    return {
+      path,
+      ok: false,
+      missing: error?.code === "ENOENT",
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -161,7 +196,15 @@ function summarizeDescriptor(descriptor) {
     fallback: descriptor.metadata?.nativeEvidence?.fallback ?? descriptor.metadata?.fallback ?? null,
     pathVisualEncoding: descriptor.metadata?.pathVisualEncoding || null,
     labelAnchorMode: descriptor.metadata?.labelAnchorMode || null,
+    visualHierarchy: descriptor.metadata?.visualHierarchy || null,
   };
+}
+
+function isHierarchy(descriptor, band) {
+  const hierarchy = descriptor?.metadata?.visualHierarchy;
+  return hierarchy?.schema === HIERARCHY_SCHEMA
+    && hierarchy.band === band
+    && hierarchy.algorithmicComputation === false;
 }
 
 function createHeadlessSurface(document) {

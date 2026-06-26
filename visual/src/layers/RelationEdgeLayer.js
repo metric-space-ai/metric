@@ -32,6 +32,7 @@ export class RelationEdgeLayer extends BaseLayer {
     this.edgeEmphasis = new Float32Array();
     this.selection = null;
     this.selectionActive = false;
+    this.legibilityDiagnostics = null;
     this.pickColorRegistry = null;
     this.pickColorRegistrySize = -1;
   }
@@ -48,24 +49,31 @@ export class RelationEdgeLayer extends BaseLayer {
   upload() {
     const edgeCount = inferEdgeCount(this.channels);
     const legibility = edgeLegibilityOptions(this.descriptor, edgeCount);
-    const positions = applyEdgeLaneOffsets(
-      buildEdgePositions(this.channels, edgeCount),
+    const positions = buildEdgePositions(this.channels, edgeCount);
+    const laneDiagnostics = applyEdgeLaneOffsets(
+      positions,
       this.channels,
       edgeCount,
       this.descriptor,
-      legibility,
-    );
-    const colors = applyEdgeAlphaLegibility(
-      buildEdgeColors(this.channels, edgeCount),
-      edgeCount,
       legibility,
     );
     this.edgeCount = edgeCount;
     this.vertexCount = edgeCount * 2;
     this.edgeEntries = buildEdgeEntries(this.channels, edgeCount, this.descriptor);
     this.baseEmphasis = buildBaseEdgeEmphasis(this.channels, edgeCount);
+    const colors = buildEdgeColors(this.channels, edgeCount);
+    const alphaDiagnostics = applyEdgeAlphaLegibility(colors, edgeCount, legibility, this.baseEmphasis);
     this.edgeEmphasis = this.selectionEmphasisData();
     const emphasis = buildVertexEdgeEmphasis(this.edgeEmphasis);
+    this.legibilityDiagnostics = buildLegibilityRuntimeDiagnostics(this.descriptor, {
+      edgeCount,
+      vertexCount: this.vertexCount,
+      legibility,
+      lanes: laneDiagnostics,
+      alpha: alphaDiagnostics,
+      baseEmphasis: this.baseEmphasis,
+      edgeEmphasis: this.edgeEmphasis,
+    });
     this.pickColorRegistry = null;
     this.pickColorRegistrySize = -1;
     this.replaceBuffer("position", positions);
@@ -185,7 +193,25 @@ export class RelationEdgeLayer extends BaseLayer {
       return this;
     }
     this.replaceBuffer("emphasis", buildVertexEdgeEmphasis(this.edgeEmphasis));
+    if (this.legibilityDiagnostics) {
+      this.legibilityDiagnostics.emphasis = summarizeScalarArray(this.edgeEmphasis);
+      this.legibilityDiagnostics.selectionActive = this.selectionActive;
+    }
     return this;
+  }
+
+  getDiagnostics() {
+    return {
+      schema: "metric.visual.relation_edge_runtime_diagnostics.v1",
+      layerId: this.id,
+      role: this.metadata?.role || this.source?.role || null,
+      edgeCount: this.edgeCount,
+      vertexCount: this.vertexCount,
+      selectionActive: this.selectionActive,
+      selectedEdgeCount: countPositive(this.edgeEmphasis, 0.001),
+      edgeLegibility: this.descriptor?.metadata?.edgeLegibility || null,
+      legibility: this.legibilityDiagnostics,
+    };
   }
 
   replaceBuffer(name, data) {
@@ -262,27 +288,70 @@ function buildEdgeColors(channels, edgeCount) {
   return out;
 }
 
-function applyEdgeAlphaLegibility(colors, edgeCount, legibility = {}) {
+function applyEdgeAlphaLegibility(colors, edgeCount, legibility = {}, emphasis = null) {
   const alphaScale = Number.isFinite(Number(legibility.alphaScale)) ? Number(legibility.alphaScale) : 1;
   const minimumAlpha = Math.max(0, Math.min(1, Number(legibility.minimumAlpha) || 0));
-  if (alphaScale === 1 && minimumAlpha <= 0) return colors;
+  const rankAlphaBoost = Math.max(0, Math.min(1, Number(legibility.rankAlphaBoost) || 0));
+  const diagnostics = {
+    alphaScale,
+    minimumAlpha,
+    rankAlphaBoost,
+    alphaTransfer: legibility.alphaTransfer || "density-scale-with-rank-boost",
+    alphaSource: legibility.alphaSource || "per-edge-color-alpha-scaled-before-global-material-alpha",
+    edgeCount,
+    changedCount: 0,
+    min: 1,
+    max: 0,
+    mean: 0,
+  };
+  if (edgeCount <= 0) {
+    diagnostics.min = 0;
+    return diagnostics;
+  }
+  let sum = 0;
   for (let index = 0; index < edgeCount; index += 1) {
-    const alpha = Math.max(minimumAlpha, Math.min(1, colors[index * 8 + 3] * alphaScale));
+    const baseAlpha = colors[index * 8 + 3];
+    const rank = clamp01(emphasis?.[index] ?? 0);
+    const rankedScale = 1 + rankAlphaBoost * Math.sqrt(rank);
+    const alpha = Math.max(minimumAlpha, Math.min(1, baseAlpha * alphaScale * rankedScale));
     colors[index * 8 + 3] = alpha;
     colors[index * 8 + 7] = alpha;
+    if (Math.abs(alpha - baseAlpha) > 1e-6) diagnostics.changedCount += 1;
+    diagnostics.min = Math.min(diagnostics.min, alpha);
+    diagnostics.max = Math.max(diagnostics.max, alpha);
+    sum += alpha;
   }
-  return colors;
+  diagnostics.mean = sum / edgeCount;
+  return diagnostics;
 }
 
 function applyEdgeLaneOffsets(positions, channels, edgeCount, descriptor = {}, legibility = {}) {
   const laneOffsetScale = Number(legibility.laneOffsetScale);
   const laneModulo = Math.max(1, Math.floor(Number(legibility.laneModulo) || 1));
-  if (!(laneOffsetScale > 0) || laneModulo <= 1 || edgeCount <= 1) return positions;
+  const diagnostics = {
+    laneStrategy: legibility.laneStrategy || (laneOffsetScale > 0 ? "deterministic-edge-id-world-offset" : "none"),
+    laneModulo,
+    laneOffsetScale: Number.isFinite(laneOffsetScale) ? laneOffsetScale : 0,
+    laneCount: laneOffsetScale > 0 && laneModulo > 1 ? laneModulo : 1,
+    edgeCount,
+    nonZeroOffsetCount: 0,
+    minOffset: 0,
+    maxOffset: 0,
+    deterministic: true,
+  };
+  if (!(laneOffsetScale > 0) || laneModulo <= 1 || edgeCount <= 1) return diagnostics;
   const edgeIds = getChannelArray(getChannel(channels, ["edgeId", "edge_id", "id"]));
   const sourceIds = getChannelArray(getChannel(channels, ["sourceId", "source_id", "rowId", "row_id"]));
   const targetIds = getChannelArray(getChannel(channels, ["targetId", "target_id", "columnId", "column_id"]));
+  let sawOffset = false;
   for (let index = 0; index < edgeCount; index += 1) {
     const offset = laneOffsetForEdge(index, laneModulo, laneOffsetScale, descriptor, edgeIds, sourceIds, targetIds);
+    if (offset !== 0) {
+      diagnostics.nonZeroOffsetCount += 1;
+      diagnostics.minOffset = sawOffset ? Math.min(diagnostics.minOffset, offset) : offset;
+      diagnostics.maxOffset = sawOffset ? Math.max(diagnostics.maxOffset, offset) : offset;
+      sawOffset = true;
+    }
     if (offset === 0) continue;
     const base = index * 6;
     const sx = positions[base];
@@ -299,7 +368,7 @@ function applyEdgeLaneOffsets(positions, channels, edgeCount, descriptor = {}, l
     positions[base + 3] += nx * offset;
     positions[base + 5] += nz * offset;
   }
-  return positions;
+  return diagnostics;
 }
 
 function laneOffsetForEdge(index, laneModulo, laneOffsetScale, descriptor = {}, edgeIds, sourceIds, targetIds) {
@@ -313,10 +382,19 @@ function edgeLegibilityOptions(descriptor = {}, edgeCount = 0) {
   const profile = descriptor.metadata?.edgeLegibility || descriptor.geometry?.edgeLegibility || {};
   return {
     edgeCount,
+    role: profile.role || descriptor.metadata?.role || descriptor.source?.role || null,
+    alphaSource: profile.alphaSource,
+    alphaTransfer: profile.alphaTransfer,
     alphaScale: numberOption(descriptor.material?.edgeDensityAlphaScale, profile.alphaScale, 1),
     minimumAlpha: numberOption(descriptor.material?.edgeMinimumAlpha, profile.minimumAlpha, 0),
+    rankAlphaBoost: numberOption(descriptor.material?.edgeRankAlphaBoost, profile.rankAlphaBoost, 0),
     laneOffsetScale: numberOption(descriptor.geometry?.laneOffsetScale, profile.laneOffsetScale, 0),
     laneModulo: numberOption(descriptor.geometry?.laneModulo, profile.laneModulo, 1),
+    laneStrategy: profile.laneStrategy,
+    rank: profile.rank || null,
+    laneBundle: profile.laneBundle || null,
+    endpointEmphasis: profile.endpointEmphasis || null,
+    sampling: profile.sampling || null,
   };
 }
 
@@ -331,7 +409,17 @@ function stableHash(value) {
 }
 
 function buildBaseEdgeEmphasis(channels, edgeCount) {
-  return combineScalarChannels(channels, ["edgeEmphasis", "emphasis", "focusWeight", "focus", "selection"], edgeCount, 0);
+  return combineScalarChannels(channels, [
+    "edgeEmphasis",
+    "emphasis",
+    "focusWeight",
+    "focus",
+    "selection",
+    "endpointEmphasis",
+    "endpointWeight",
+    "endpointScore",
+    "rank",
+  ], edgeCount, 0);
 }
 
 function buildVertexEdgeEmphasis(perEdge) {
@@ -546,6 +634,55 @@ function toStringArray(value) {
 
 function clamp01(value) {
   return Math.max(0, Math.min(1, Number(value) || 0));
+}
+
+function buildLegibilityRuntimeDiagnostics(descriptor = {}, options = {}) {
+  const profile = descriptor.metadata?.edgeLegibility || null;
+  return {
+    schema: "metric.visual.relation_edge_runtime_legibility.v1",
+    descriptorId: descriptor.id || null,
+    role: options.legibility?.role || descriptor.metadata?.role || descriptor.source?.role || null,
+    edgeCount: options.edgeCount || 0,
+    vertexCount: options.vertexCount || 0,
+    densityClass: profile?.densityClass || null,
+    rank: profile?.rank || options.legibility?.rank || null,
+    laneBundle: profile?.laneBundle || options.legibility?.laneBundle || null,
+    endpointEmphasis: profile?.endpointEmphasis || options.legibility?.endpointEmphasis || null,
+    sampling: profile?.sampling || options.legibility?.sampling || null,
+    alpha: options.alpha || null,
+    lanes: options.lanes || null,
+    baseEmphasis: summarizeScalarArray(options.baseEmphasis),
+    emphasis: summarizeScalarArray(options.edgeEmphasis),
+    selectionActive: false,
+    algorithmicComputation: false,
+  };
+}
+
+function summarizeScalarArray(values) {
+  const count = values?.length || 0;
+  if (!count) return { count: 0, min: 0, max: 0, mean: 0, positiveCount: 0 };
+  let min = Infinity;
+  let max = -Infinity;
+  let sum = 0;
+  let positiveCount = 0;
+  for (const value of values) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) continue;
+    min = Math.min(min, number);
+    max = Math.max(max, number);
+    sum += number;
+    if (number > 0.001) positiveCount += 1;
+  }
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return { count, min: 0, max: 0, mean: 0, positiveCount };
+  return { count, min, max, mean: sum / count, positiveCount };
+}
+
+function countPositive(values, threshold = 0) {
+  let count = 0;
+  for (const value of values || []) {
+    if (Number(value) > threshold) count += 1;
+  }
+  return count;
 }
 
 function encodePickIdRGBAFloatLocal(id, out = [0, 0, 0, 0], offset = 0) {

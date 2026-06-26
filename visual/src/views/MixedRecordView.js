@@ -304,6 +304,31 @@ export class MixedRecordView extends BaseView {
       sourceEdgeCount: Array.isArray(this.graph?.edges) ? this.graph.edges.length : undefined,
     });
     const edgeVisualChannels = this.createRelationEdgeVisualChannels(descriptor.metadata?.graph || graph);
+    const edgeLegibility = enrichEdgeLegibilityProfile(descriptor.metadata?.edgeLegibility, {
+      rankAlphaBoost: 0.2,
+      rank: {
+        strategy: "native-relation-value-cross-type-rank",
+        source: "native-relation-value-with-cross-type-pair-emphasis",
+        channel: "edgeEmphasis",
+        direction: "high-emphasis-important",
+      },
+      laneBundle: {
+        strategy: "type-pair-lanes",
+        bundleKey: "edgeTypePair:sourceId:targetId",
+      },
+      endpointEmphasis: {
+        strategy: "cross-type-endpoint-relation",
+        source: "cross-type-endpoint-relation-value",
+        channel: "endpointEmphasis",
+      },
+      sampling: {
+        strategy: "none",
+        sourceEdgeCount: edgeVisualChannels.metadata.edgeCount,
+        renderedEdgeCount: edgeVisualChannels.metadata.edgeCount,
+        sampled: false,
+        preservesSelectionGraph: true,
+      },
+    });
     return {
       ...descriptor,
       kind: "cross-type-relation-edges",
@@ -322,11 +347,14 @@ export class MixedRecordView extends BaseView {
         ...descriptor.geometry,
         width: this.edgeWidth,
         semantic: "native-cross-type-relation-structure",
+        edgeBundleKey: edgeLegibility.laneBundle.bundleKey,
+        edgeBundleStrategy: edgeLegibility.laneBundle.strategy,
       },
       material: {
         ...descriptor.material,
         alpha: this.edgeAlpha,
         emphasisStrength: 0.34,
+        edgeRankAlphaBoost: edgeLegibility.rankAlphaBoost,
       },
       metadata: {
         ...descriptor.metadata,
@@ -342,6 +370,7 @@ export class MixedRecordView extends BaseView {
           relationValueSource: "native-relation-or-native-graph-edge-value",
         },
         relationStructureEncoding: edgeVisualChannels.metadata,
+        edgeLegibility,
       },
     };
   }
@@ -411,6 +440,11 @@ export class MixedRecordView extends BaseView {
           relationKind: this.relationKind,
           domain: valueDomain,
         }),
+        endpointEmphasis: createChannel(emphasis, 1, "cross-type-endpoint-emphasis", {
+          relationKind: this.relationKind,
+          domain: valueDomain,
+          source: "native-relation-value-emphasis",
+        }),
         edgeTypePair: createStringChannel(typePairs, "record-type-pair"),
       },
       metadata: {
@@ -419,6 +453,8 @@ export class MixedRecordView extends BaseView {
         typePairs: uniqueTypePairs,
         color: "source-target-record-type-blend",
         emphasis: "native-relation-value-rank",
+        endpointEmphasis: "cross-type-endpoint-relation-value",
+        deterministicRank: "native-relation-value-then-edge-id",
       },
     };
   }
@@ -696,4 +732,41 @@ function endpointId(edge, side) {
     return edge.source ?? edge.source_id ?? edge.sourceId ?? edge.row_id ?? edge.rowId ?? edge.a ?? edge.i ?? null;
   }
   return edge.target ?? edge.target_id ?? edge.targetId ?? edge.column_id ?? edge.columnId ?? edge.b ?? edge.j ?? null;
+}
+
+function enrichEdgeLegibilityProfile(profile = {}, options = {}) {
+  const rank = {
+    ...(options.rank || {}),
+    deterministic: true,
+    tieBreak: "stable-edge-id-then-index",
+    usedFor: ["alpha-emphasis", "selection-legibility"],
+  };
+  const laneBundle = {
+    ...(options.laneBundle || {}),
+    laneStrategy: profile.laneStrategy || "none",
+    laneCount: profile.laneStrategy === "none" ? 1 : Math.max(1, Number(profile.laneModulo) || 1),
+    laneModulo: Math.max(1, Number(profile.laneModulo) || 1),
+    laneOffsetScale: Number(profile.laneOffsetScale) || 0,
+    deterministic: true,
+    preservesTopology: true,
+    geometryOnly: true,
+  };
+  return {
+    ...profile,
+    rankAlphaBoost: Number.isFinite(Number(options.rankAlphaBoost)) ? Number(options.rankAlphaBoost) : 0,
+    alphaTransfer: "density-scale-with-rank-boost",
+    rankSource: rank.source || profile.rankSource,
+    rank,
+    laneBundle,
+    endpointEmphasis: {
+      ...(options.endpointEmphasis || {}),
+      affectsPicking: false,
+      preservesEndpointIdentity: true,
+    },
+    sampling: {
+      ...(options.sampling || {}),
+      deterministic: true,
+      syntheticEdges: false,
+    },
+  };
 }

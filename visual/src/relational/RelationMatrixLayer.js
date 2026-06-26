@@ -118,30 +118,30 @@ export class RelationMatrixLayer extends BaseLayer {
       this.selection.columnActive ? this.selection.column : -1,
       this.selection.rowActive ? this.selection.row : -1,
     ]);
-    this.program.setUniform("uSelectionAlpha", numberOption(material.selectionAlpha, 0.54));
-    this.program.setUniform("uSelectionRowAlpha", numberOption(material.selectionRowAlpha, material.selectionAlpha, 0.54));
-    this.program.setUniform("uSelectionColumnAlpha", numberOption(material.selectionColumnAlpha, material.selectionAlpha, 0.54));
-    this.program.setUniform("uSelectionCellAlpha", numberOption(material.selectionCellAlpha, 0.9));
+    this.program.setUniform("uSelectionAlpha", numberOption(material.selectionAlpha, 0.64));
+    this.program.setUniform("uSelectionRowAlpha", numberOption(material.selectionRowAlpha, material.selectionAlpha, 0.64));
+    this.program.setUniform("uSelectionColumnAlpha", numberOption(material.selectionColumnAlpha, material.selectionAlpha, 0.64));
+    this.program.setUniform("uSelectionCellAlpha", numberOption(material.selectionCellAlpha, 0.96));
     this.program.setUniform("uSelectionOutlineAlpha", numberOption(material.selectionOutlineAlpha, 1));
-    this.program.setUniform("uSelectionOutlinePixels", numberOption(material.selectionOutlinePixels, 2.2));
+    this.program.setUniform("uSelectionOutlinePixels", numberOption(material.selectionOutlinePixels, 2.8));
     this.program.setUniform("uSelectionColor", material.selectionColor || [1.0, 0.86, 0.42, 1]);
     this.program.setUniform("uSelectionRowColor", material.selectionRowColor || material.selectionColor || [1.0, 0.86, 0.42, 1]);
     this.program.setUniform("uSelectionColumnColor", material.selectionColumnColor || [0.42, 0.66, 1.0, 1]);
     this.program.setUniform("uSelectionCellColor", material.selectionCellColor || material.selectionColor || [1.0, 0.92, 0.56, 1]);
     this.program.setUniform("uFocusBackdropColor", material.focusBackdropColor || material.background || [0.02, 0.025, 0.03, 1]);
-    this.program.setUniform("uFocusBackdropAlpha", numberOption(material.focusBackdropAlpha, 0.38));
+    this.program.setUniform("uFocusBackdropAlpha", numberOption(material.focusBackdropAlpha, 0.46));
     this.program.setUniform("uFocusBlockColor", material.focusBlockColor || material.blockBandColor || [1.0, 0.95, 0.72, 1]);
-    this.program.setUniform("uFocusBlockAlpha", numberOption(material.focusBlockAlpha, 0.14));
+    this.program.setUniform("uFocusBlockAlpha", numberOption(material.focusBlockAlpha, 0.18));
     this.program.setUniform("uBlockRangeCount", this.blockRangeCount);
     this.program.setUniform("uBlockRanges", this.blockRanges);
     this.program.setUniform("uBlockBandColor", material.blockBandColor || [1.0, 0.95, 0.72, 1]);
-    this.program.setUniform("uBlockBandAlpha", numberOption(material.blockBandAlpha, 0.11));
+    this.program.setUniform("uBlockBandAlpha", numberOption(material.blockBandAlpha, 0.13));
     this.program.setUniform("uBlockBoundaryCount", this.blockBoundaryCount);
     this.program.setUniform("uBlockBoundaries", this.blockBoundaries);
     this.program.setUniform("uBlockLineColor", material.blockLineColor || [1.0, 1.0, 1.0, 1]);
-    this.program.setUniform("uBlockLineAlpha", numberOption(material.blockLineAlpha, 0.64));
-    this.program.setUniform("uBlockLineWidthCells", numberOption(material.blockLineWidthCells, 1.15));
-    this.program.setUniform("uOuterBorderAlpha", numberOption(material.outerBorderAlpha, 0.7));
+    this.program.setUniform("uBlockLineAlpha", numberOption(material.blockLineAlpha, 0.82));
+    this.program.setUniform("uBlockLineWidthCells", numberOption(material.blockLineWidthCells, 1.45));
+    this.program.setUniform("uOuterBorderAlpha", numberOption(material.outerBorderAlpha, 0.88));
     this.program.setUniform("uTileSize", numberOption(material.tileSize, this.readabilityProfile?.tiles?.tileSize, 0));
     this.program.setUniform("uTileSummaryGridSize", [
       this.tileSummaryPayload?.width || 0,
@@ -151,8 +151,8 @@ export class RelationMatrixLayer extends BaseLayer {
       "uTileSummaryStrength",
       numberOption(material.tileSummaryStrength, this.readabilityProfile?.lod?.tileSummaryLod?.strength, 0.68),
     );
-    this.program.setUniform("uTileBoundaryAlpha", numberOption(material.tileBoundaryAlpha, 0.2));
-    this.program.setUniform("uTileBoundaryWidthCells", numberOption(material.tileBoundaryWidthCells, 0.5));
+    this.program.setUniform("uTileBoundaryAlpha", numberOption(material.tileBoundaryAlpha, 0.14));
+    this.program.setUniform("uTileBoundaryWidthCells", numberOption(material.tileBoundaryWidthCells, 0.38));
     this.program.setUniform("uTileBoundaryColor", material.tileBoundaryColor || [0.72, 0.84, 1.0, 1]);
     bindAttribute(gl, this.program, this.capabilities, "aUnitPosition", this.buffers.quad, 2);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.vertexCount);
@@ -301,6 +301,7 @@ export class RelationMatrixLayer extends BaseLayer {
       tileSummary: this.tileSummaryPayload,
       relationId: this.source?.relationId || this.metadata?.relationId || matrix?.relationId || null,
       relationName: this.source?.relationName || this.metadata?.relationName || matrix?.relationName || null,
+      renderHierarchy: this.metadata?.zOrderRules || this.metadata?.composition?.renderHierarchy || null,
     });
     return {
       ...diagnostics,
@@ -696,6 +697,11 @@ void main() {
   float outlineWidthCells = clamp(uSelectionOutlinePixels / minCellPixels, 0.08, 0.48);
   float edgeDistance = min(min(cellLocal.x, 1.0 - cellLocal.x), min(cellLocal.y, 1.0 - cellLocal.y));
   float selectedCellOutline = cellHit * (1.0 - smoothstep(0.0, outlineWidthCells, edgeDistance));
+  float rowGuideDistance = min(cellLocal.y, 1.0 - cellLocal.y);
+  float columnGuideDistance = min(cellLocal.x, 1.0 - cellLocal.x);
+  float rowColumnGuideWidth = clamp(outlineWidthCells * 0.52, 0.06, 0.34);
+  float selectedRowGuideHit = rowOnlyHit * (1.0 - smoothstep(0.0, rowColumnGuideWidth, rowGuideDistance));
+  float selectedColumnGuideHit = columnOnlyHit * (1.0 - smoothstep(0.0, rowColumnGuideWidth, columnGuideDistance));
   float sameBlockHit = 0.0;
   float selectedBlockHit = 0.0;
   float selectedRowUnit = (uSelectedCell.y + 0.5) / max(uTextureSize.y, 1.0);
@@ -711,13 +717,16 @@ void main() {
       selectedBlockHit = max(selectedBlockHit, max(insideY * selectedRowInRange, insideX * selectedColumnInRange));
     }
   }
-  float boundaryHit = 0.0;
+  float boundaryHaloHit = 0.0;
+  float boundaryCoreHit = 0.0;
   float boundaryWidth = max(0.0006, uBlockLineWidthCells / max(uTextureSize.x, uTextureSize.y));
+  float boundaryCoreWidth = max(0.00025, boundaryWidth * 0.34);
   for (int index = 0; index < 32; index++) {
     if (index < uBlockBoundaryCount) {
       float boundary = uBlockBoundaries[index];
       float distanceToBoundary = min(abs(vUnit.x - boundary), abs(vUnit.y - boundary));
-      boundaryHit = max(boundaryHit, 1.0 - smoothstep(0.0, boundaryWidth, distanceToBoundary));
+      boundaryHaloHit = max(boundaryHaloHit, 1.0 - smoothstep(0.0, boundaryWidth, distanceToBoundary));
+      boundaryCoreHit = max(boundaryCoreHit, 1.0 - smoothstep(0.0, boundaryCoreWidth, distanceToBoundary));
     }
   }
   float tileBoundaryHit = 0.0;
@@ -737,18 +746,22 @@ void main() {
   color = mix(color, uBlockBandColor.rgb, sameBlockHit * uBlockBandAlpha);
   color = mix(color, uFocusBlockColor.rgb, selectedBlockHit * uFocusBlockAlpha);
   color = mix(color, uTileBoundaryColor.rgb, tileBoundaryHit * uTileBoundaryAlpha);
-  color = mix(color, uBlockLineColor.rgb, boundaryHit * uBlockLineAlpha);
+  color = mix(color, uBlockLineColor.rgb, boundaryHaloHit * uBlockLineAlpha * 0.42);
+  color = mix(color, uBlockLineColor.rgb, boundaryCoreHit * uBlockLineAlpha);
   color = mix(color, uSelectionRowColor.rgb, rowOnlyHit * uSelectionRowAlpha);
   color = mix(color, uSelectionColumnColor.rgb, columnOnlyHit * uSelectionColumnAlpha);
   color = mix(color, uSelectionColor.rgb, lineHit * uSelectionAlpha * 0.2);
+  color = mix(color, uSelectionRowColor.rgb, selectedRowGuideHit * max(uSelectionRowAlpha, uSelectionAlpha));
+  color = mix(color, uSelectionColumnColor.rgb, selectedColumnGuideHit * max(uSelectionColumnAlpha, uSelectionAlpha));
   color = mix(color, uSelectionCellColor.rgb, cellHit * uSelectionCellAlpha);
   color = mix(color, uSelectionCellColor.rgb, selectedCellOutline * uSelectionOutlineAlpha);
   color = mix(color, uBlockLineColor.rgb, borderHit * uOuterBorderAlpha);
   alpha = max(alpha, tileBoundaryHit * uTileBoundaryColor.a * uTileBoundaryAlpha * uAlpha);
   alpha = max(alpha, selectedBlockHit * uFocusBlockColor.a * uFocusBlockAlpha * uAlpha);
-  alpha = max(alpha, boundaryHit * uBlockLineColor.a * uBlockLineAlpha * uAlpha);
+  alpha = max(alpha, boundaryHaloHit * uBlockLineColor.a * uBlockLineAlpha * 0.48 * uAlpha);
+  alpha = max(alpha, boundaryCoreHit * uBlockLineColor.a * uBlockLineAlpha * uAlpha);
   alpha = max(alpha, borderHit * uBlockLineColor.a * uOuterBorderAlpha * uAlpha);
-  alpha = max(alpha, (lineHit * 0.44 + cellHit * 0.36 + selectedCellOutline * 0.72) * uAlpha);
+  alpha = max(alpha, (lineHit * 0.44 + cellHit * 0.36 + selectedCellOutline * 0.72 + selectedRowGuideHit * 0.42 + selectedColumnGuideHit * 0.42) * uAlpha);
   gl_FragColor = vec4(color, alpha);
 }
 `;

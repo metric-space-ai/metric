@@ -30,6 +30,9 @@ assert.equal(readability.kind, "relation-matrix-readability-profile");
 assert.equal(readability.matrixSize, 130);
 assert.equal(readability.densityClass, "dense");
 assert.equal(readability.renderer.primitive, "RelationMatrixLayer");
+assert.equal(readability.renderer.renderPhase, "screen-readable-overlay");
+assert.equal(readability.renderer.cameraDof, "bypass");
+assert.equal(readability.renderer.zOrderRule, "graph-first-matrix-overlay");
 assert.equal(readability.renderer.webglOnly, true);
 assert.equal(readability.renderer.domFallback, false);
 assert.equal(readability.renderer.svgFallback, false);
@@ -63,6 +66,11 @@ assert.deepEqual(readability.blocks.coverage, {
 });
 assert.equal(readability.blocks.shaderRangeLimit, 32);
 assert.equal(readability.blocks.shaderBoundaryLimit, 32);
+assert.deepEqual(readability.blocks.boundaryPresentation, {
+  core: "shader-crisp-core",
+  halo: "subpixel-soft-halo",
+  source: "exported-block-ranges",
+});
 
 assert.equal(readability.tiles.kind, "relation-matrix-logical-tile-grid");
 assert.equal(readability.tiles.tileSize, 32);
@@ -85,10 +93,15 @@ assert.equal(readability.lod.tileSummaryLod.strategy, "gpu-tile-summary-texture"
 assert.equal(readability.lod.tileSummaryLod.source, "exported-relation-texture-downsample");
 assert.equal(readability.lod.tileSummaryLod.tileSize, 32);
 assert.equal(readability.lod.tileSummaryLod.strength, 0.68);
+assert.deepEqual(readability.lod.tileBoundaryPresentation, {
+  source: "logical-tile-grid",
+  role: "subtle-lod-reference",
+});
 assert(
   readability.lod.levels.some((level) => level.id === "logical-tiles" && level.role === "tile-summary-texture"),
   "LOD metadata includes GPU tile-summary texture level",
 );
+assert.equal(readability.selection.rowColumnGuides.overlay, "band-edge-guides");
 
 assert.equal(descriptor.picking.mode, "semantic-matrix-picker");
 assert.equal(descriptor.picking.preservesNativePairIdentity, true);
@@ -126,10 +139,26 @@ assert.deepEqual(
   ],
 );
 assert.equal(descriptor.metadata.readabilityDiagnostics.blocks.coverage.state, "full");
+assert.deepEqual(
+  descriptor.metadata.readabilityDiagnostics.blockBoundaryDiagnostics.boundaries.map((boundary) => boundary.index),
+  [26, 52, 78, 104],
+);
+assert.equal(descriptor.metadata.readabilityDiagnostics.blockBoundaryDiagnostics.source, "exported-block-ranges");
+assert.equal(descriptor.metadata.readabilityDiagnostics.blockBoundaryDiagnostics.coverage.state, "full");
 assert.equal(descriptor.metadata.readabilityDiagnostics.tileCount, 25);
 assert.equal(descriptor.metadata.readabilityDiagnostics.tileSummarySource, "exported-relation-texture-downsample");
+assert.equal(descriptor.metadata.readabilityDiagnostics.tileDiagnostics.source, "exported-relation-texture-downsample");
+assert.equal(descriptor.metadata.readabilityDiagnostics.tileDiagnostics.strategy, "gpu-tile-summary-texture");
+assert.equal(descriptor.metadata.readabilityDiagnostics.tileDiagnostics.rows, 5);
+assert.equal(descriptor.metadata.readabilityDiagnostics.tileDiagnostics.columns, 5);
+assert.equal(descriptor.metadata.readabilityDiagnostics.tileDiagnostics.rowBoundaryCount, 4);
+assert.equal(descriptor.metadata.readabilityDiagnostics.tileDiagnostics.columnBoundaryCount, 4);
 assert.equal(descriptor.metadata.readabilityDiagnostics.missingValueCount, 0);
 assert.equal(descriptor.metadata.readabilityDiagnostics.selected.state, "none");
+assert.equal(descriptor.metadata.readabilityDiagnostics.focusDiagnostics.presentation.row, "horizontal-band-with-edge-guides");
+assert.equal(descriptor.metadata.readabilityDiagnostics.renderHierarchy.rule, "graph-first-matrix-overlay");
+assert.equal(descriptor.metadata.readabilityDiagnostics.renderHierarchy.matrixRenderPhase, "screen-readable-overlay");
+assert.equal(descriptor.metadata.readabilityDiagnostics.renderHierarchy.graphExpectedRenderPhase, "scene");
 assert.equal(descriptor.metadata.diagnostics.matrixReadability.schema, RELATION_MATRIX_READABILITY_DIAGNOSTICS_SCHEMA);
 
 const picker = createRelationMatrixPicker(descriptor);
@@ -163,6 +192,8 @@ assert.equal(layer.describeReadability().tileSummary.width, 5);
 assert.equal(layer.describeReadability().tileSummary.height, 5);
 assert.equal(layer.describeReadability().tileSummary.tileSize, 32);
 assert.equal(layer.describeReadability().tileSummary.source, "exported-relation-texture-downsample");
+assert.equal(layer.describeReadability().diagnostics.tileDiagnostics.summaryTexture.width, 5);
+assert.equal(layer.describeReadability().diagnostics.tileDiagnostics.summaryTexture.height, 5);
 assert(layer.tileSummaryPayload.data[3] > 0, "tile summary keeps visible alpha for dense native tiles");
 assert(layer.tileSummaryPayload.data[0] > 0 || layer.tileSummaryPayload.data[1] > 0 || layer.tileSummaryPayload.data[2] > 0, "tile summary carries alpha-weighted color");
 
@@ -187,6 +218,9 @@ assert.deepEqual(layer.getDiagnostics().blocks.labels, [
 assert.equal(layer.getDiagnostics().blocks.coverage.state, "full");
 assert.equal(layer.getDiagnostics().tileCount, 25);
 assert.equal(layer.getDiagnostics().tileSummarySource, "exported-relation-texture-downsample");
+assert.equal(layer.getDiagnostics().tileDiagnostics.summaryTexture.width, 5);
+assert.equal(layer.getDiagnostics().focusDiagnostics.selectedState, "cell");
+assert.equal(layer.getDiagnostics().renderHierarchy.rule, "graph-first-matrix-overlay");
 assert.equal(layer.getDiagnostics().missingValueCount, 0);
 assert.deepEqual(layer.getDiagnostics().selected, {
   row: { index: 0, active: true },
@@ -269,6 +303,10 @@ assert(MATRIX_FRAGMENT_SHADER.includes("uFocusBackdropAlpha"), "shader exposes s
 assert(MATRIX_FRAGMENT_SHADER.includes("focusBackdropHit"), "shader dims non-focused matrix texture noise during selection");
 assert(MATRIX_FRAGMENT_SHADER.includes("uFocusBlockAlpha"), "shader exposes selected-block context uniform");
 assert(MATRIX_FRAGMENT_SHADER.includes("selectedBlockHit"), "shader highlights selected row/column block context");
+assert(MATRIX_FRAGMENT_SHADER.includes("boundaryCoreHit"), "shader draws crisp block-boundary cores");
+assert(MATRIX_FRAGMENT_SHADER.includes("boundaryHaloHit"), "shader draws block-boundary halos separately");
+assert(MATRIX_FRAGMENT_SHADER.includes("selectedRowGuideHit"), "shader draws selected row edge guides");
+assert(MATRIX_FRAGMENT_SHADER.includes("selectedColumnGuideHit"), "shader draws selected column edge guides");
 assert(MATRIX_FRAGMENT_SHADER.includes("uSelectionRowColor"), "shader separates row selection color");
 assert(MATRIX_FRAGMENT_SHADER.includes("uSelectionColumnColor"), "shader separates column selection color");
 assert(MATRIX_FRAGMENT_SHADER.includes("uSelectionCellColor"), "shader separates cell selection color");

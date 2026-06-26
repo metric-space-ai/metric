@@ -255,9 +255,9 @@ const layerDescriptor = createRelationMatrixLayerDescriptor(nativeTexture, {
 assert.equal(layerDescriptor.material.alpha, 1);
 assert.equal(layerDescriptor.material.smoothingCellPixels, 4.25);
 assert.equal(layerDescriptor.material.lodSmoothingStrength, 0.46);
-assert.equal(layerDescriptor.material.blockBandAlpha, 0.11);
-assert.equal(layerDescriptor.material.blockLineAlpha, 0.64);
-assert.equal(layerDescriptor.material.blockLineWidthCells, 1.15);
+assert.equal(layerDescriptor.material.blockBandAlpha, 0.13);
+assert.equal(layerDescriptor.material.blockLineAlpha, 0.82);
+assert.equal(layerDescriptor.material.blockLineWidthCells, 1.45);
 assert.equal(layerDescriptor.material.tileSize, 32);
 assert.equal(layerDescriptor.picking.mode, "semantic-matrix-picker");
 assert.equal(layerDescriptor.picking.preservesNativePairIdentity, true);
@@ -265,6 +265,8 @@ assert.equal(layerDescriptor.picking.domFallback, false);
 assert.equal(layerDescriptor.picking.svgFallback, false);
 assert.equal(layerDescriptor.metadata.readability.kind, "relation-matrix-readability-profile");
 assert.equal(layerDescriptor.metadata.readability.renderer.webglOnly, true);
+assert.equal(layerDescriptor.metadata.readability.renderer.renderPhase, "screen-readable-overlay");
+assert.equal(layerDescriptor.metadata.readability.renderer.zOrderRule, "graph-first-matrix-overlay");
 assert.equal(layerDescriptor.metadata.readability.renderer.semanticPicker, "relation-matrix-picking");
 assert.deepEqual(layerDescriptor.metadata.readability.blocks.labels, [
   "normal reference",
@@ -290,6 +292,8 @@ assert.deepEqual(layerDescriptor.metadata.readabilityDiagnostics.blocks.labels, 
 assert.deepEqual(layerDescriptor.metadata.selectionModel.selectedFeatures, ["row", "column", "cell"]);
 assert.deepEqual(layerDescriptor.metadata.selectionModel.selectedFeatureSemantics.selectedFeatures, ["row", "column", "cell"]);
 assert.deepEqual(layerDescriptor.metadata.selectionModel.respondsTo, ["record", "pair"]);
+assert.equal(layerDescriptor.metadata.zOrderRules.rule, "graph-first-matrix-overlay");
+assert.equal(layerDescriptor.metadata.readabilityDiagnostics.renderHierarchy.matrixRenderPhase, "screen-readable-overlay");
 
 const matrixView = RelationMatrixView.fromVisualSpace(nativeDocument, {
   relationId: nativeRelation.id,
@@ -300,21 +304,23 @@ assert.equal(matrixViewDescriptor.source.texture.scaler.kind, "quantile");
 assert.equal(matrixViewDescriptor.source.relationId, nativeRelation.id);
 assert.equal(matrixViewDescriptor.metadata.relationId, nativeRelation.id);
 assert.equal(matrixViewDescriptor.material.smoothingStrength, 0.72);
-assert.equal(matrixViewDescriptor.material.selectionAlpha, 0.54);
-assert.equal(matrixViewDescriptor.material.selectionCellAlpha, 0.9);
+assert.equal(matrixViewDescriptor.material.selectionAlpha, 0.64);
+assert.equal(matrixViewDescriptor.material.selectionCellAlpha, 0.96);
 assert.equal(matrixViewDescriptor.material.selectionOutlineAlpha, 1);
-assert.equal(matrixViewDescriptor.material.selectionOutlinePixels, 2.2);
-assert.equal(matrixViewDescriptor.material.focusBackdropAlpha, 0.38);
-assert.equal(matrixViewDescriptor.material.focusBlockAlpha, 0.14);
-assert.equal(matrixViewDescriptor.material.blockBandAlpha, 0.11);
-assert.equal(matrixViewDescriptor.material.blockLineAlpha, 0.64);
-assert.equal(matrixViewDescriptor.material.blockLineWidthCells, 1.15);
-assert.equal(matrixViewDescriptor.material.tileBoundaryAlpha, 0.2);
-assert.equal(matrixViewDescriptor.material.tileBoundaryWidthCells, 0.5);
-assert.equal(matrixViewDescriptor.material.outerBorderAlpha, 0.7);
+assert.equal(matrixViewDescriptor.material.selectionOutlinePixels, 2.8);
+assert.equal(matrixViewDescriptor.material.focusBackdropAlpha, 0.46);
+assert.equal(matrixViewDescriptor.material.focusBlockAlpha, 0.18);
+assert.equal(matrixViewDescriptor.material.blockBandAlpha, 0.13);
+assert.equal(matrixViewDescriptor.material.blockLineAlpha, 0.82);
+assert.equal(matrixViewDescriptor.material.blockLineWidthCells, 1.45);
+assert.equal(matrixViewDescriptor.material.tileBoundaryAlpha, 0.14);
+assert.equal(matrixViewDescriptor.material.tileBoundaryWidthCells, 0.38);
+assert.equal(matrixViewDescriptor.material.outerBorderAlpha, 0.88);
 assert.equal(matrixViewDescriptor.metadata.focusModel.backdrop, "dim-unfocused-cells");
 assert.equal(matrixViewDescriptor.metadata.focusModel.linkedGraph, "selection-presentation-graph-edge-emphasis");
 assert.equal(matrixViewDescriptor.metadata.selectionModel.focusPresentation.pairPreview, "runtime-selected-pair-preview");
+assert.equal(matrixViewDescriptor.metadata.zOrderRules.rule, "graph-first-matrix-overlay");
+assert.equal(matrixViewDescriptor.metadata.composition.renderHierarchy.graphExpectedRenderPhase, "scene");
 
 const graphDescriptor = createRelationGraphEdgeLayerDescriptor(nativeRelation, {
   graph: nativeGraph,

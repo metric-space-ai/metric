@@ -4,11 +4,16 @@ Date: 2026-06-26
 
 ## Changed Files
 
-- `visual/src/views/DynamicsView.js`
 - `visual/src/views/TrajectoryPathView.js`
-- `visual/examples/dynamics-noise-hero/index.html`
-- `visual/tools/check-dynamics-composition.mjs`
+- `visual/src/views/PropertyFieldView.js`
+- `visual/src/views/DynamicsView.js`
+- `visual/tools/check-trajectory-path-view.mjs`
+- `visual/tools/check-dynamics-motion-grammar.mjs`
+- `visual/tools/check-dynamics-timeline-control.mjs`
 - `docs/visual/reports/dynamics-noise-composition-acceptance.md`
+
+No dynamics page HTML, synthetic evidence, native exporter, GRAE10 file,
+public hero manifest, or project-site file was changed.
 
 ## Scope Result
 
@@ -18,108 +23,60 @@ The dynamics/noise preview still uses only:
 docs/examples/assets/dynamics-noise/metric.visual.json
 ```
 
-No GRAE10 files, hero acceptance manifests, native exporters, synthetic
-evidence, or other hero pages were edited.
+The reusable dynamics descriptors now expose
+`metric.visual.layer_hierarchy.v1` metadata for:
 
-`DynamicsView` now owns the composition improvements:
+- propagation/uncertainty field: `support-field`, below history, path, current
+  state and labels
+- state-history context: `state-history-context`, above fields and below the
+  primary trajectory, current state and labels
+- trajectory path: `trajectory-path`, above fields/projections and below
+  current state/labels
+- current timeline state: `current-state`, above field, history context and
+  trajectory
 
-- deterministic trajectory display thinning with native candidate counts
-  preserved in metadata;
-- exported record-property color and width encoding for trajectory paths;
-- lifted field metadata that ties the record property field to exported
-  timeline-step state;
-- timeline state-history context point layers for past/future exported states;
-- current-state point metadata marked separately from context states.
-
-`TrajectoryPathView` now applies exported record-property color/width channels
-to paths generated from exported timeline states. The dynamics page only passes
-engine options to `showDynamics()` and reads timeline state from descriptor
-metadata for the readout.
+`TrajectoryPathView` owns the shared hierarchy schema and trajectory band.
+`PropertyFieldView` owns the reusable scalar-field band. `DynamicsView` applies
+the same contract to its timeline field, state-history context and current
+state descriptors. All hierarchy descriptors report
+`algorithmicComputation: false`.
 
 ## Descriptor Evidence
 
-The dynamics composition checker verifies the page and view emit:
+The finite-dynamics grammar still renders:
 
-- `CurveRibbonLayer`
-- `HeatFieldLayer`
-- `InstancedPointLayer`
+- `CurveRibbonLayer` for exported timeline-state paths
+- `HeatFieldLayer` for exported record/timeline scalar field evidence
+- `InstancedPointLayer` for current state and history context
 
-The trajectory descriptor reports `512` native timeline-state path candidates
-and `192` displayed paths via deterministic record stride. The trajectory path
-encoding uses exported record properties:
+The trajectory uses the exported reverse-reconstruction timeline with 512
+records and 41 coordinate states. Timeline controls remain metadata-driven via
+`metric.visual.timeline_control.v1`.
 
-- color: `reconstruction-improvement`
-- width: `best-reconstruction-error`
+## Validation
 
-The field descriptor uses exported `best-reconstruction-error` record values
-and exported `reverse-mse-to-clean` timeline-step samples. The timeline control
-is `metric.visual.timeline_control.v1` with state, playback and reset controls.
-
-## Acceptance Checks
-
-Passed:
-
-- `node --check visual/src/views/DynamicsView.js`
-- `node --check visual/src/views/TrajectoryPathView.js`
-- `node --check visual/tools/check-dynamics-composition.mjs`
-- `node visual/tools/check-dynamics-composition.mjs`
-  - `ok: true`
-  - `13` checks, `0` failures
-- `node visual/tools/check-grae10-golden.mjs`
-  - GRAE10 hash:
-    `464f6a90c36c1e9c6b4ec90068500dc226740d65b251918aca567f99d64d3d5e`
-- `node visual/tools/check-dynamics-motion-grammar.mjs`
-  - `ok: true`
-  - `23` checks, `0` failures
-- `node visual/tools/check-dynamics-timeline-control.mjs`
-  - `ok: true`
-  - `14` checks, `0` failures
-- `node visual/tools/check-timeline-motion-contract.mjs`
-  - `ok: true`
-  - `22` checks, `0` failures
-- `node visual/tools/check-trajectory-path-view.mjs`
-  - `ok: true`
-  - `16` checks, `0` failures
-- `node visual/tools/check-visual-command-api.mjs`
-  - `ok: true`
-- `node visual/tools/check-views.mjs`
-  - `ok: true`
-  - `80` checks, `0` failures
-- `METRIC_VISUAL_EXAMPLES=dynamics-noise-hero node visual/tools/check-visual-regression-public-examples.mjs`
-  - `ok: true`
-  - `1` example, `0` failures
-  - `dynamics-noise-hero` remains `heroAccepted: false`
-- `node visual/tools/check-visual-regression-public-examples.mjs`
-  - `ok: true`
-  - `8` examples, `0` failures
-- `node visual/tools/check-hero-visual-briefs.mjs`
-  - `ok: true`
-  - `dynamics-noise-hero` remains `review-pending`
-  - blocker remains `visual-composition-not-human-accepted`
-- `node visual/tools/check-hero-screenshot-review.mjs`
-  - `ok: true`
-  - accepted hero remains only `grae10-metric-engine`
-  - `dynamics-noise-hero` remains `review-pending`
-- `git diff --check -- visual/src/views/DynamicsView.js visual/src/views/TrajectoryPathView.js visual/examples/dynamics-noise-hero/index.html visual/tools/check-dynamics-composition.mjs docs/visual/reports/dynamics-noise-composition-acceptance.md`
-
-One early `node visual/tools/check-hero-visual-briefs.mjs` run failed because
-the existing regression artifact only contained a different scoped preview. A
-full `node visual/tools/check-visual-regression-public-examples.mjs` run
-refreshed the artifact, after which the brief gate passed.
+- `node --check visual/src/views/TrajectoryPathView.js`: passed.
+- `node --check visual/src/views/PropertyFieldView.js`: passed.
+- `node --check visual/src/views/DynamicsView.js`: passed.
+- `node --check visual/tools/check-dynamics-motion-grammar.mjs`: passed.
+- `node --check visual/tools/check-dynamics-timeline-control.mjs`: passed.
+- `node visual/tools/check-trajectory-path-view.mjs`: passed, `total: 19`,
+  `failed: 0`.
+- `node visual/tools/check-dynamics-motion-grammar.mjs`: passed, `total: 26`,
+  `failed: 0`.
+- `node visual/tools/check-dynamics-timeline-control.mjs`: passed,
+  `total: 16`, `failed: 0`.
+- `node visual/tools/check-hero-visual-briefs.mjs`: passed,
+  `dynamics-noise-hero` roles include `trajectory/path`, `property-field`,
+  `timeline-state-history-context` and `current-timeline-state`.
+- `node visual/tools/check-public-gallery-evidence.mjs`: passed,
+  `ok: true`, public dynamics evidence points to
+  `../../../docs/examples/assets/dynamics-noise/metric.visual.json`.
 
 ## Remaining Status
 
-The preview is not hero-accepted. The remaining blocker is intentionally:
+`dynamics-noise-hero` remains review-pending. The blocker is still:
 
 ```text
 visual-composition-not-human-accepted
 ```
-
-Status:
-
-- loads: yes
-- renders: yes
-- interaction and GPU picking: yes
-- accepted by automated gates: no, preview only
-- manually accepted: no
-- final preview status: review-pending

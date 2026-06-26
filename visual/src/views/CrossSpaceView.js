@@ -503,6 +503,10 @@ export class CrossSpaceView extends BaseView {
           propertyId: this.dependencePropertyId,
         }),
         edgeEmphasis: createChannel(edgeEmphasis, 1, "bridge-emphasis"),
+        endpointEmphasis: createChannel(edgeEmphasis, 1, "paired-endpoint-emphasis", {
+          propertyId: this.dependencePropertyId,
+          source: "exported-dependence-value",
+        }),
         color: createChannel(color, 4, "rgba"),
       },
       geometry: {
@@ -542,13 +546,54 @@ export class CrossSpaceView extends BaseView {
       },
     }).toDescriptor();
 
-    return applyRelationEdgeLegibilityDescriptor(descriptor, {
+    const legible = applyRelationEdgeLegibilityDescriptor(descriptor, {
       role: "dependence bridge",
       edgeCount: pairs.length,
       sourceEdgeCount: graphEdges.length,
       laneOffsetScale: 0.014,
       laneModulo: 11,
     });
+    const edgeLegibility = enrichBridgeLegibilityProfile(legible.metadata?.edgeLegibility, {
+      rankAlphaBoost: 0.28,
+      rank: {
+        strategy: "native-dependence-value-rank",
+        source: "exported-dependence-value",
+        channel: "edgeEmphasis",
+        direction: "high-emphasis-important",
+      },
+      laneBundle: {
+        strategy: "paired-observation-lanes",
+        bundleKey: "sourceId:targetId:pairSetId",
+      },
+      endpointEmphasis: {
+        strategy: "paired-endpoint-dependence",
+        source: "paired-endpoint-dependence",
+        channel: "endpointEmphasis",
+      },
+      sampling: {
+        strategy: this.bridgeRecords.length ? "exported-high-contribution-bridge-values" : "none",
+        sourceEdgeCount: graphEdges.length,
+        renderedEdgeCount: pairs.length,
+        sampled: graphEdges.length > pairs.length,
+        preservesSelectionGraph: true,
+      },
+    });
+    return {
+      ...legible,
+      geometry: {
+        ...(legible.geometry || {}),
+        edgeBundleKey: edgeLegibility.laneBundle.bundleKey,
+        edgeBundleStrategy: edgeLegibility.laneBundle.strategy,
+      },
+      material: {
+        ...(legible.material || {}),
+        edgeRankAlphaBoost: edgeLegibility.rankAlphaBoost,
+      },
+      metadata: {
+        ...(legible.metadata || {}),
+        edgeLegibility,
+      },
+    };
   }
 
   validPairs() {
@@ -569,7 +614,7 @@ export class CrossSpaceView extends BaseView {
   visibleBridgeRecords() {
     const records = this.validBridgeRecords();
     if (!this.bridgeMaxCount || records.length <= this.bridgeMaxCount) return records;
-    return records.slice(0, this.bridgeMaxCount);
+    return rankBridgeRecordsForVisibility(records, this.left, this.right).slice(0, this.bridgeMaxCount);
   }
 
   graphBridgeEdges() {
@@ -615,10 +660,15 @@ export class CrossSpaceView extends BaseView {
       renderedBridgeCount: renderedCount,
       graphEdgeCount: overrides.graphEdgeCount ?? candidateCount,
       visibleBridgeStrategy: exportedRelationCount
-        ? (capped ? "first-exported-relation-values-limit" : "exported-relation-values")
+        ? (capped ? "ranked-exported-relation-values-limit" : "exported-relation-values")
         : "all-paired-records",
       bridgeLimit: this.bridgeMaxCount,
       capped,
+      ranking: {
+        strategy: "exported-dependence-value-desc-then-pair-id",
+        source: "native-bridge-relation-or-dependence-property",
+        deterministic: true,
+      },
       valueRange: overrides.valueRange || numericRange(this.validBridgeRecords().map((pair) => dependenceValue(this.left, this.right, pair)), this.bridgeValueRange),
       selectionGraph: "full-paired-record-ids",
       nativeEvidenceOnly: true,
@@ -770,6 +820,63 @@ function sharedRecordIdPairs(left, right) {
     });
   }
   return pairs;
+}
+
+function rankBridgeRecordsForVisibility(records, left, right) {
+  return records
+    .map((pair, index) => ({
+      pair,
+      index,
+      value: Number(dependenceValue(left, right, pair)),
+      key: String(pair.pairId ?? `${pair.sourceRecordId}:${pair.targetRecordId}`),
+    }))
+    .sort((a, b) => (
+      finiteDescending(b.value) - finiteDescending(a.value)
+      || a.key.localeCompare(b.key)
+      || a.index - b.index
+    ))
+    .map((entry) => entry.pair);
+}
+
+function finiteDescending(value) {
+  return Number.isFinite(value) ? value : -Infinity;
+}
+
+function enrichBridgeLegibilityProfile(profile = {}, options = {}) {
+  const rank = {
+    ...(options.rank || {}),
+    deterministic: true,
+    tieBreak: "stable-edge-id-then-index",
+    usedFor: ["alpha-emphasis", "selection-legibility"],
+  };
+  const laneBundle = {
+    ...(options.laneBundle || {}),
+    laneStrategy: profile.laneStrategy || "none",
+    laneCount: profile.laneStrategy === "none" ? 1 : Math.max(1, Number(profile.laneModulo) || 1),
+    laneModulo: Math.max(1, Number(profile.laneModulo) || 1),
+    laneOffsetScale: Number(profile.laneOffsetScale) || 0,
+    deterministic: true,
+    preservesTopology: true,
+    geometryOnly: true,
+  };
+  return {
+    ...profile,
+    rankAlphaBoost: Number.isFinite(Number(options.rankAlphaBoost)) ? Number(options.rankAlphaBoost) : 0,
+    alphaTransfer: "density-scale-with-rank-boost",
+    rankSource: rank.source || profile.rankSource,
+    rank,
+    laneBundle,
+    endpointEmphasis: {
+      ...(options.endpointEmphasis || {}),
+      affectsPicking: false,
+      preservesEndpointIdentity: true,
+    },
+    sampling: {
+      ...(options.sampling || {}),
+      deterministic: true,
+      syntheticEdges: false,
+    },
+  };
 }
 
 function translatePositionMap(source, ids = [], offset = [0, 0, 0]) {

@@ -1,7 +1,11 @@
 import { BaseView } from "./BaseView.js";
 import { normalizePathEvidence } from "../curves/index.js";
 import { PointCloudView } from "./PointCloudView.js";
-import { TrajectoryPathView } from "./TrajectoryPathView.js";
+import {
+  VISUAL_LAYER_HIERARCHY_BANDS,
+  TrajectoryPathView,
+  createVisualLayerHierarchy,
+} from "./TrajectoryPathView.js";
 import { VisualLayer } from "./VisualLayer.js";
 import {
   createTimelineAnimationDescriptor,
@@ -344,6 +348,24 @@ export class DynamicsView extends BaseView {
     const active = this.fittedStates[this.activeStep];
     if (active) {
       const target = this.motionTargetPositions();
+      const currentStateHierarchy = createVisualLayerHierarchy({
+        band: VISUAL_LAYER_HIERARCHY_BANDS.currentState,
+        role: "current-timeline-state",
+        viewClass: "DynamicsView",
+        order: 0,
+        drawsAbove: [
+          VISUAL_LAYER_HIERARCHY_BANDS.supportField,
+          VISUAL_LAYER_HIERARCHY_BANDS.stateHistoryContext,
+          VISUAL_LAYER_HIERARCHY_BANDS.trajectoryPath,
+        ],
+        drawsBelow: [VISUAL_LAYER_HIERARCHY_BANDS.sceneLabels],
+        depthPolicy: {
+          depthTest: this.pointMaterial?.depthTest ?? null,
+          depthWrite: this.pointMaterial?.depthWrite ?? null,
+          depthBias: this.pointMaterial?.depthBias ?? null,
+        },
+        purpose: "keep the active exported timeline state above fields, history context and paths",
+      });
       const point = new PointCloudView({
         id: `${this.id}:state`,
         datasetId: this.datasetId,
@@ -373,6 +395,9 @@ export class DynamicsView extends BaseView {
           activeFieldPropertyId: this.activeFieldPropertyId(active),
           timelineFieldState: this.timelineFieldState,
           targetCoordinateId: target ? this.fittedStates[this.motionTargetStep]?.coordinateId : null,
+          visualPriority: currentStateHierarchy,
+          visualHierarchy: currentStateHierarchy,
+          semanticRenderPriority: currentStateHierarchy.sortPriority,
         },
       });
       descriptors.push(...point.toLayerDescriptors());
@@ -420,6 +445,24 @@ export class DynamicsView extends BaseView {
     const selection = new Float32Array(ids.length);
     const fieldStateSource = active.scalarValues ? active.fieldPropertySource || "selected-property" : "timeline-step-property";
     const fieldEvidence = this.dynamicsFieldEvidence(active, fieldStateSource, domain);
+    const visualHierarchy = createVisualLayerHierarchy({
+      band: VISUAL_LAYER_HIERARCHY_BANDS.supportField,
+      role: "property-field",
+      viewClass: "DynamicsView",
+      order: -3,
+      drawsBelow: [
+        VISUAL_LAYER_HIERARCHY_BANDS.stateHistoryContext,
+        VISUAL_LAYER_HIERARCHY_BANDS.trajectoryPath,
+        VISUAL_LAYER_HIERARCHY_BANDS.currentState,
+        VISUAL_LAYER_HIERARCHY_BANDS.sceneLabels,
+      ],
+      depthPolicy: {
+        depthTest: this.fieldMaterial?.depthTest ?? null,
+        depthWrite: this.fieldMaterial?.depthWrite ?? false,
+        depthBias: this.fieldMaterial?.depthBias ?? null,
+      },
+      purpose: "keep exported propagation or uncertainty fields as support below dynamics paths and current state",
+    });
 
     return new VisualLayer({
       id: `${this.id}:timeline-field`,
@@ -506,6 +549,9 @@ export class DynamicsView extends BaseView {
         fieldComposition: active.scalarValues
           ? "exported-record-property-shaped-by-exported-timeline-state"
           : "exported-timeline-step-scalar-field-state",
+        visualPriority: visualHierarchy,
+        visualHierarchy,
+        semanticRenderPriority: visualHierarchy.sortPriority,
         algorithmicComputation: false,
       },
     }).toDescriptor();
@@ -609,6 +655,25 @@ export class DynamicsView extends BaseView {
       const color = relation === "past"
         ? [0.1, 0.28, 0.43, alpha]
         : [0.75, 0.47, 0.18, alpha];
+      const order = relation === "past" ? 5 : 4;
+      const visualHierarchy = createVisualLayerHierarchy({
+        band: VISUAL_LAYER_HIERARCHY_BANDS.stateHistoryContext,
+        role: "timeline-state-history-context",
+        viewClass: "DynamicsView",
+        order,
+        drawsAbove: [VISUAL_LAYER_HIERARCHY_BANDS.supportField],
+        drawsBelow: [
+          VISUAL_LAYER_HIERARCHY_BANDS.trajectoryPath,
+          VISUAL_LAYER_HIERARCHY_BANDS.currentState,
+          VISUAL_LAYER_HIERARCHY_BANDS.sceneLabels,
+        ],
+        depthPolicy: {
+          depthTest: this.timelineContextMaterial?.depthTest ?? null,
+          depthWrite: this.timelineContextMaterial?.depthWrite ?? false,
+          depthBias: this.timelineContextMaterial?.depthBias ?? null,
+        },
+        purpose: "keep faded state-history context visible above fields but below primary paths and current state",
+      });
       const point = new PointCloudView({
         id: `${this.id}:timeline-context:${stepOrder}`,
         datasetId: this.datasetId,
@@ -637,10 +702,13 @@ export class DynamicsView extends BaseView {
           contextNormalized: stop.normalized,
           recordCount: this.recordIds.length,
           nativeEvidence: this.nativeEvidence,
+          visualPriority: visualHierarchy,
+          visualHierarchy,
+          semanticRenderPriority: visualHierarchy.sortPriority,
           algorithmicComputation: false,
         },
       }).toLayerDescriptors()[0];
-      point.order = relation === "past" ? 5 : 4;
+      point.order = order;
       descriptors.push(point);
     }
     return descriptors;

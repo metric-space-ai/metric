@@ -158,6 +158,7 @@ export function diagnoseRelationSymmetry(source, options = {}) {
  * @param {object} [input.selection]
  * @param {object} [input.tileSummary]
  * @param {object} [input.graph]
+ * @param {object} [input.renderHierarchy]
  * @param {string|null} [input.relationId]
  * @param {string|null} [input.relationName]
  * @returns {object}
@@ -178,6 +179,7 @@ export function createRelationMatrixDiagnostics(input = {}) {
     ?? null;
   const blocks = blockDiagnostics(matrix, readability, dimensions);
   const metricLawDiagnostic = metricLawDiagnosticFor(matrix);
+  const selected = normalizeSelectionState(input.selection, dimensions);
 
   return {
     schema: RELATION_MATRIX_READABILITY_DIAGNOSTICS_SCHEMA,
@@ -189,6 +191,7 @@ export function createRelationMatrixDiagnostics(input = {}) {
     blockLabelCount: blocks.labeledCount,
     blockBoundaryCount: Array.isArray(readability?.blocks?.boundaries) ? readability.blocks.boundaries.length : null,
     blocks,
+    blockBoundaryDiagnostics: blockBoundaryDiagnostics(readability, blocks, dimensions),
     tileCount: integerOrNull(readability?.tiles?.count),
     tileSize: integerOrNull(readability?.tiles?.tileSize ?? input.tileSummary?.tileSize),
     tileSummarySource,
@@ -196,11 +199,14 @@ export function createRelationMatrixDiagnostics(input = {}) {
       width: integerOrNull(input.tileSummary.width),
       height: integerOrNull(input.tileSummary.height),
     } : null,
+    tileDiagnostics: tileDiagnostics(readability, input.tileSummary),
     metricLawDiagnostic,
     metricLawDiagnosticReferences: metricLawReferenceSummary(metricLawDiagnostic),
     missingValueCount: integerOrNull(matrix.missingValueCount),
     presentValueCount: integerOrNull(matrix.presentValueCount),
-    selected: normalizeSelectionState(input.selection, dimensions),
+    selected,
+    focusDiagnostics: focusDiagnostics(selected),
+    renderHierarchy: normalizeRenderHierarchy(input.renderHierarchy),
     graph: graph ? {
       graphId: graph.id ?? null,
       relationId: graph.relationId ?? graph.edge_relation_id ?? relationId,
@@ -208,6 +214,80 @@ export function createRelationMatrixDiagnostics(input = {}) {
       graphEdgeCount: integerOrNull(graph.edgeCount ?? graph.graphEdgeCount ?? graph.edges?.length),
       native: graph.native === true,
     } : null,
+  };
+}
+
+function blockBoundaryDiagnostics(readability = {}, blocks = {}, dimensions = {}) {
+  const boundaries = Array.isArray(readability?.blocks?.boundaries) ? readability.blocks.boundaries : [];
+  return {
+    kind: "relation-matrix-block-boundary-diagnostics",
+    source: boundaries.length ? "exported-block-ranges" : "none",
+    matrixSize: integerOrNull(dimensions.size),
+    boundaryCount: boundaries.length,
+    boundaries: boundaries.map((boundary) => ({
+      index: integerOrNull(boundary.index),
+      unit: Number.isFinite(Number(boundary.unit)) ? Number(boundary.unit) : null,
+    })),
+    blockCount: integerOrNull(blocks.count),
+    labeledBlockCount: integerOrNull(blocks.labeledCount),
+    coverage: blocks.coverage || null,
+    shaderRangeLimit: integerOrNull(readability?.blocks?.shaderRangeLimit),
+    shaderBoundaryLimit: integerOrNull(readability?.blocks?.shaderBoundaryLimit),
+  };
+}
+
+function tileDiagnostics(readability = {}, tileSummary = null) {
+  const tiles = readability?.tiles || {};
+  return {
+    kind: "relation-matrix-tile-diagnostics",
+    source: tileSummary?.source ?? readability?.lod?.tileSummaryLod?.source ?? null,
+    strategy: readability?.lod?.tileSummaryLod?.strategy ?? null,
+    tileSize: integerOrNull(tiles.tileSize ?? tileSummary?.tileSize),
+    rows: integerOrNull(tiles.rows ?? tileSummary?.height),
+    columns: integerOrNull(tiles.columns ?? tileSummary?.width),
+    count: integerOrNull(tiles.count),
+    summarizedCount: integerOrNull(tiles.summarizedCount),
+    coverage: tiles.coverage ?? null,
+    rowBoundaryCount: Array.isArray(tiles.rowBoundaries) ? tiles.rowBoundaries.length : null,
+    columnBoundaryCount: Array.isArray(tiles.columnBoundaries) ? tiles.columnBoundaries.length : null,
+    summaryTexture: tileSummary ? {
+      width: integerOrNull(tileSummary.width),
+      height: integerOrNull(tileSummary.height),
+      sourceWidth: integerOrNull(tileSummary.sourceWidth),
+      sourceHeight: integerOrNull(tileSummary.sourceHeight),
+    } : null,
+  };
+}
+
+function focusDiagnostics(selected) {
+  return {
+    kind: "relation-matrix-focus-diagnostics",
+    supportedFeatures: ["row", "column", "cell"],
+    selectedState: selected?.state || "none",
+    rowActive: selected?.row?.active === true,
+    columnActive: selected?.column?.active === true,
+    cellActive: selected?.cell?.active === true,
+    presentation: {
+      row: "horizontal-band-with-edge-guides",
+      column: "vertical-band-with-edge-guides",
+      cell: "cell-fill-and-outline",
+      backdrop: "dim-unfocused-cells",
+      blockContext: "selected-row-column-block-bands",
+    },
+  };
+}
+
+function normalizeRenderHierarchy(renderHierarchy = null) {
+  return {
+    kind: "relation-matrix-render-hierarchy",
+    matrixRole: renderHierarchy?.matrixRole ?? "primary-relation-matrix",
+    matrixRenderPhase: renderHierarchy?.matrixRenderPhase ?? "screen-readable-overlay",
+    matrixPostprocessGroup: renderHierarchy?.matrixPostprocessGroup ?? "screen-readable-overlay",
+    matrixCameraDof: renderHierarchy?.matrixCameraDof ?? "bypass",
+    matrixDepthTest: renderHierarchy?.matrixDepthTest === true ? true : false,
+    graphRole: renderHierarchy?.graphRole ?? "supporting-neighborhood-graph",
+    graphExpectedRenderPhase: renderHierarchy?.graphExpectedRenderPhase ?? "scene",
+    rule: renderHierarchy?.rule ?? "graph-first-matrix-overlay",
   };
 }
 
