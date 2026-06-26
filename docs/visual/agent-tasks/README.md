@@ -41,6 +41,13 @@ set, and one validation path.
 | `visual-acceptance-gates-workstream.md` | regression, performance and screenshot gates that cannot promote smoke tests to heroes | integrated |
 | `process-curve-scene-view-consolidation.md` | process-curve command/view consolidation into one semantic engine view | integrated |
 | `native-hero-scale-evidence-upgrade-plan.md` | concrete native evidence scale upgrade plan per preview | integrated |
+| `condition-monitoring-scale-exporter.md` | scale native condition-monitoring evidence to hero-record threshold | integrated; historical report superseded by current scale gate |
+| `mixed-records-scale-exporter.md` | scale native mixed-record evidence to typed hero threshold | integrated; historical report superseded by current scale gate |
+| `cross-space-scale-exporter.md` | scale native cross-space dependency evidence to paired hero threshold | integrated; historical report superseded by current scale gate |
+| `dynamics-scale-exporter.md` | scale native finite-dynamics evidence to hero-record threshold | integrated; historical report superseded by current scale gate |
+| `mapping-dimensionality-scale-exporter.md` | scale native mapping/dimensionality evidence to hero-record threshold | integrated; historical report superseded by current scale gate |
+| `relation-matrix-hero-readability.md` | first relation-matrix readability hardening wave | integrated; superseded by composition acceptance wave |
+| `hero-acceptance-manifest-workstream.md` | explicit manifest-backed hero acceptance gate | integrated |
 | `render-path-inventory-and-deletion-map.md` | read-only inventory of remaining noncanonical render paths | integrated |
 | `legacy-render-facade-deletion.md` | delete old `metric.evidence.v1` WebGL/2D render facade from public API | integrated |
 | `process-curve-descriptor-factory-quarantine.md` | remove process-curve descriptor-factory calls from example/public paths | integrated |
@@ -132,6 +139,7 @@ node visual/tools/check-redif-preview.mjs
 node visual/tools/check-visual-regression-public-examples.mjs
 node visual/tools/check-visual-performance-large-scenes.mjs
 node visual/tools/check-visual-document.mjs <exported metric.visual.json>
+node visual/tools/check-visual-agent-tasks.mjs
 ctest --test-dir build/core -R 'visual_(export|validate)' --output-on-failure
 ctest --test-dir build/core -L 'metric_application_evidence|metric_diffusion_coordinate_pipeline|metric_mnist|metric_visual_integrity|metric_benchmark_report' --output-on-failure
 ```
