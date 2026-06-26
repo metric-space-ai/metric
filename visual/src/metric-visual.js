@@ -19,8 +19,6 @@ import {
   SolverTraceView,
   SpacePropertiesView,
 } from "./views/index.js";
-import { VisualLayer } from "./views/VisualLayer.js";
-import { createChannel, createStringChannel } from "./views/view-utils.js";
 
 const METRIC_VISUAL_API_DIAGNOSTICS_SCHEMA = "metric.visual.public_api_diagnostics.v1";
 const METRIC_VISUAL_COMMAND_DIAGNOSTICS_SCHEMA = "metric.visual.public_command_diagnostics.v1";
@@ -1402,68 +1400,6 @@ function normalizeMappingOptions(document, options = {}) {
   if (next.residualProperty && !next.scalarProperty) next.scalarProperty = next.residualProperty;
   if (next.morphDurationMs !== undefined && next.durationMs === undefined) next.durationMs = next.morphDurationMs;
   return next;
-}
-
-function pairedRecordBridgeDescriptor(left, right, options = {}) {
-  const ids = (left.recordIds || []).filter((id) => getPosition(left.positions, id) && getPosition(right.positions, id));
-  if (!ids.length) return null;
-  const sourcePosition = new Float32Array(ids.length * 3);
-  const targetPosition = new Float32Array(ids.length * 3);
-  const color = new Float32Array(ids.length * 4);
-  for (let index = 0; index < ids.length; index += 1) {
-    sourcePosition.set(getPosition(left.positions, ids[index]), index * 3);
-    targetPosition.set(getPosition(right.positions, ids[index]), index * 3);
-    color.set(options.bridgeColor || [0.28, 0.43, 0.62, 0.18], index * 4);
-  }
-  return new VisualLayer({
-    id: options.bridgeId || "cross-space:dependence-bridge",
-    kind: "paired-space-dependence",
-    primitive: "RelationEdgeLayer",
-    order: 18,
-    source: { viewKind: "paired-space", role: "dependence bridge" },
-    channels: {
-      recordId: createStringChannel(ids, "record-id"),
-      sourcePosition: createChannel(sourcePosition, 3, "source-position"),
-      targetPosition: createChannel(targetPosition, 3, "target-position"),
-      color: createChannel(color, 4, "rgba"),
-    },
-    geometry: { width: options.width ?? 1 },
-    material: { alpha: options.alpha ?? 0.58, transparent: true, depthWrite: false },
-    metadata: { role: "dependence bridge", edgeCount: ids.length, linkedBrushing: true },
-  }).toDescriptor();
-}
-
-function sharedGroundDescriptor(id, options = {}) {
-  return new VisualLayer({
-    id,
-    kind: "ground-plane",
-    primitive: "GroundPlaneLayer",
-    order: -20,
-    source: { role: "shared-stage" },
-    channels: {},
-    geometry: {
-      width: options.width ?? 4.4,
-      depth: options.depth ?? 3.2,
-      y: options.y ?? -0.58,
-      gridScale: options.gridScale ?? 8,
-    },
-    material: {
-      alpha: options.alpha ?? 0.62,
-      gridAlpha: options.gridAlpha ?? 0.28,
-      axisAlpha: options.axisAlpha ?? 0.2,
-    },
-    metadata: { role: "shared-ground" },
-  }).toDescriptor();
-}
-
-function offsetPositionMap(map, offset) {
-  for (const [id, position] of map.entries()) {
-    map.set(id, [
-      (Number(position[0]) || 0) + offset[0],
-      (Number(position[1]) || 0) + offset[1],
-      (Number(position[2]) || 0) + offset[2],
-    ]);
-  }
 }
 
 function getPosition(map, id) {

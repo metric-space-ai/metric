@@ -1,143 +1,402 @@
 # Render Path Inventory And Deletion Map
 
-Snapshot: `codex/visual-engine-evidence-exporters`, current worktree on 2026-06-25.
-The tree was already dirty and `visual/src/views/ProcessCurveSceneView.js` changed
-concurrently during inspection; this report reflects the current file contents at
-write time. This inventory did not edit source, examples, generated assets, site
-pages, tests, or GRAE10.
+Date: 2026-06-26
 
-One-engine rule:
+Scope: read-only inventory. I inspected `visual/src/metric-visual.js`, `visual/src/views/`,
+`visual/examples/*/index.html`, and `docs/site/index.html`. I ran the required
+`rg` searches; generated/embedded bundles produced very large matches, so the
+actionable findings below cite the source lines that matter. GRAE10 files were
+not changed. GRAE10 cleanup is intentionally not scheduled here.
+
+Follow-up status, same day: finding F4 was implemented after this inventory.
+The unused `metric-visual.js` facade helpers `pairedRecordBridgeDescriptor`,
+`sharedGroundDescriptor`, and `offsetPositionMap` were removed. The next
+cleanup priority is F2, wrapping or demoting the public descriptor injection
+escape hatches.
+
+Target architecture:
 
 ```text
 metric.visual.v1 evidence -> semantic view -> layer descriptors -> MetricVisualRuntime
 ```
 
-Required searches were run across `visual/src`, `visual/examples`, and
-`docs/site`; `visual/src/metric-visual.js`, `visual/src/views/`,
-`visual/examples/*/index.html`, and `docs/site/index.html` were inspected.
-`docs/site/index.html` has no active visual renderer matches.
+## Prioritized Deletion/Extraction Order
 
-## Prioritized deletion/extraction order
-
-1. Delete the legacy public exports at the bottom of `visual/src/metric-visual.js`
-   first: `loadMetricEvidence`, `assertMetricEvidence`, `MetricSelection`,
-   `MetricScene3D`, `MetricRecordGallery`, `MetricHeatmap`,
-   `MetricQueryInspector`, `MetricProcessCurveApp`, plus their raw WebGL/2D
-   helper functions. They are the highest-risk alternate render stack.
-2. Finish the remaining process-curve cleanup. `MetricVisualSurface.showProcessCurves()`
-   now uses `ProcessCurveSceneView`, but the public descriptor factory and two
-   non-GRAE10 example/probe pages still call
-   `createProcessCurveMiniatureLayerDescriptors()` directly.
-3. Convert or quarantine pages that instantiate `MetricVisualRuntime` directly:
-   `process-curve-condition-monitoring`, `miniature-hero-frame`,
-   `miniature-look-gallery`, and `native-engine-probe`.
-4. Tighten public descriptor escape hatches after the above migrations:
-   `MetricVisualSurface.setLayerDescriptors()`,
-   `MetricVisualSurface.addLayerDescriptors()`, runtime raw-descriptor fallback,
-   and `applyMiniatureSceneBundle()`.
-5. Quarantine standalone or external renderers that are not public-hero paths:
-   `miniature-field/InstancedBoxField`, GRAE10, and the embedded Babylon MNIST
-   demo. Do not touch GRAE10 without its owner.
+1. Done: delete the dead legacy descriptor helpers at the bottom of
+   `visual/src/metric-visual.js`: `pairedRecordBridgeDescriptor`,
+   `sharedGroundDescriptor`, and `offsetPositionMap`.
+2. Next: wrap or demote `MetricVisualSurface.setLayerDescriptors()` and
+   `addLayerDescriptors()`. They are public descriptor injection escape hatches
+   that let page code bypass semantic views.
+3. Wrap process-curve miniature bundle/factory exports so process-curve look
+   galleries can request a semantic process-curve scene without assembling
+   descriptors and runtimes page-locally.
+4. Quarantine direct-runtime examples (`native-engine-probe` and
+   `miniature-look-gallery`) outside public-gallery paths, or rewrite them to use
+   `createMetricVisual()` plus semantic commands.
+5. Delete/quarantine the external MNIST/Babyplots HTML demo. It is a separate
+   renderer and is not compatible with the one-engine rule.
+6. Keep the existing public hero examples that call `createMetricVisual()` and
+   `show*` commands; validate they never import `MetricVisualRuntime` directly.
 
 ## Findings
 
-### P0 - `metric-visual.js` Legacy Exports
+### F1: Canonical Public Runtime Entry
 
-| Path and line | Symbol | Current role | Classification | Why | Exact next action | Safest owner scope | Validation command |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `visual/src/metric-visual.js:35` | `createMetricVisual()` | Public entry point that loads or normalizes a visual document, creates `MetricVisualRuntime`, and returns `MetricVisualSurface`. | keep | This is the intended public gateway into the one-engine path. | Keep as the only public page entry point for heroes. | Public command API worker. | `node visual/tools/check-visual-command-api.mjs && node visual/tools/check-single-render-pipeline.mjs` |
-| `visual/src/metric-visual.js:159` | `MetricVisualSurface` | Semantic command facade over one runtime. | keep | The class is the right public surface when callers use `show*()` commands. | Keep, but remove public descriptor bypasses listed below. | Public command API worker. | `node visual/tools/check-visual-command-api.mjs` |
-| `visual/src/metric-visual.js:212` | `MetricVisualSurface.setLayerDescriptors()` / `addLayerDescriptors()` at `:229` | Publicly commits raw descriptors to the runtime. | wrap | It lets callers skip semantic views and go straight to descriptors. | Split into a private/internal commit helper, keep semantic `show*()` methods as the public API, and remove or gate direct descriptor calls. | `visual/src/metric-visual.js` only, plus command API checks. | `rg -n "\\.setLayerDescriptors\\(" visual/examples docs/site visual/src/metric-visual.js && rg -n "\\.addLayerDescriptors\\(" visual/examples docs/site visual/src/metric-visual.js` should show only internal surface/runtime plumbing after migration. |
-| `visual/src/metric-visual.js:422` | `MetricVisualSurface.showProcessCurves()` | Public semantic command now routed through `ProcessCurveSceneView`. | keep | The surface no longer imports or calls `createProcessCurveMiniatureLayerDescriptors()` and now records `this.views = [view]`. | Keep the gate that rejects reintroducing direct process-curve descriptor helpers in `metric-visual.js`. | `visual/src/metric-visual.js`, process-curve checks. | `! rg -n "createProcessCurveMiniatureLayerDescriptors" visual/src/metric-visual.js && node visual/tools/check-process-curve-scene-view.mjs && node visual/tools/check-single-render-pipeline.mjs` |
-| `visual/src/metric-visual.js:1404` | `pairedRecordBridgeDescriptor()` | Unused legacy paired-space descriptor helper. | delete | It creates descriptors outside current semantic views and is not referenced outside its definition. | Delete with the legacy block after confirming `CrossSpaceView` owns paired-space descriptors. | `visual/src/metric-visual.js` only. | `rg -n "pairedRecordBridgeDescriptor" visual/src visual/examples docs/site` returns no matches. |
-| `visual/src/metric-visual.js:1433` | `sharedGroundDescriptor()` | Unused duplicate ground descriptor helper. | delete | `CrossSpaceView.sharedGroundDescriptor()` at `visual/src/views/CrossSpaceView.js:232` is the semantic-view version. | Delete the dead helper. | `visual/src/metric-visual.js` only. | `rg -n "function sharedGroundDescriptor" visual/src/metric-visual.js` returns no matches. |
-| `visual/src/metric-visual.js:1456` | `offsetPositionMap()` | Unused legacy position mutator. | delete | No current call site; it belongs to the removed paired-space path. | Delete with the surrounding legacy helpers. | `visual/src/metric-visual.js` only. | `rg -n "offsetPositionMap" visual/src visual/examples docs/site` returns no matches. |
-| `visual/src/metric-visual.js:1488` | `loadMetricEvidence()` / `assertMetricEvidence()` at `:1498` | Fetches and validates old `metric.evidence.v1`. | delete | It bypasses `metric.visual.v1`, `loadVisualDocument()`, and current evidence adapters. | Replace the one remaining page import with `metric.visual.json` plus `createMetricVisual()`, then delete both exports. | Legacy panel removal worker. | `! rg -n "loadMetricEvidence" visual/src visual/examples docs/site && ! rg -n "assertMetricEvidence" visual/src visual/examples docs/site && ! rg -n "metric\\.evidence\\.v1" visual/src visual/examples docs/site` |
-| `visual/src/metric-visual.js:1509` | `MetricSelection` | Standalone pub/sub state for legacy panels. | delete | Current runtime has its own selection/picking state; this class only supports legacy canvases. | Delete after `process-curve-condition-monitoring` stops importing it. | Legacy panel removal worker. | `rg -n "MetricSelection" visual/src visual/examples docs/site --glob '!docs/visual/reports/*'` returns no matches. |
-| `visual/src/metric-visual.js:1529` | `MetricScene3D` | Raw WebGL scene renderer. | delete | This is a second renderer with its own shaders, buffers, picking, animation, and canvas event model. | Delete after no page imports legacy panel exports. | Legacy panel removal worker. | `! rg -n "MetricScene3D" visual/src visual/examples docs/site && ! rg -n "new MetricScene3D" visual/src visual/examples docs/site` |
-| `visual/src/metric-visual.js:1927` | `MetricRecordGallery` | 2D canvas record-gallery renderer. | delete | It renders outside semantic views and outside `MetricVisualRuntime`. | Replace with `RecordPreviewPanel`/runtime preview semantics or remove the panel. | Legacy panel removal worker. | `rg -n "MetricRecordGallery" visual/src visual/examples docs/site` returns no matches. |
-| `visual/src/metric-visual.js:1979` | `MetricHeatmap` | 2D canvas pair-value heatmap renderer. | delete | `RelationMatrixView` and `RelationMatrixLayer` are the semantic/runtime path. | Replace with `RelationMatrixView` through `createMetricVisual().showRelationMatrix*()`; delete class. | Legacy panel removal worker. | `rg -n "MetricHeatmap" visual/src visual/examples docs/site` returns no matches and `node visual/tools/check-relation-matrix-picker.mjs` passes. |
-| `visual/src/metric-visual.js:2044` | `MetricQueryInspector` | 2D canvas query/winner inspector. | delete | It is a page-local style renderer over old evidence, not a semantic view or runtime layer. | Fold useful preview payloads into `RecordPreviewPanel` or a semantic inspector view before deleting. | Preview/interaction worker after legacy panel removal. | `rg -n "MetricQueryInspector" visual/src visual/examples docs/site` returns no matches. |
-| `visual/src/metric-visual.js:2106` | `MetricProcessCurveApp` | Legacy app shell that instantiates `MetricScene3D` and panel canvases. | delete | It composes the second renderer and old 2D panels. No current external usage was found. | Delete with the legacy renderer classes. | `visual/src/metric-visual.js` only. | `! rg -n "MetricProcessCurveApp" visual/src visual/examples docs/site && ! rg -n "new MetricProcessCurveApp" visual/src visual/examples docs/site` |
-| `visual/src/metric-visual.js:2187` and `:2496` | `createPointProgram()` family, `prepare2D()`, curve/color helpers | Raw WebGL shader support and 2D canvas utilities for legacy classes. | delete | These functions exist only to support the alternate renderer/panel stack. | Delete after deleting legacy classes; do not move them to another renderer. | `visual/src/metric-visual.js` only. | `! rg -n "createPointProgram" visual/src/metric-visual.js && ! rg -n "createGroundProgram" visual/src/metric-visual.js && ! rg -n "createProjectionProgram" visual/src/metric-visual.js && ! rg -n "createMiniatureCompositeProgram" visual/src/metric-visual.js && ! rg -n "prepare2D" visual/src/metric-visual.js` |
+- Path/line: `visual/src/metric-visual.js:36`, `visual/src/metric-visual.js:52`
+- Symbol: `createMetricVisual()`
+- Current role: public entry point that normalizes evidence, owns the single
+  `MetricVisualRuntime`, attaches miniature hero style, and returns a
+  `MetricVisualSurface`.
+- Classification: keep.
+- One-engine status: satisfies the rule. This is the intended
+  evidence-to-runtime bridge; `new MetricVisualRuntime` is acceptable here
+  because the public surface owns it centrally.
+- Exact next action: keep as the only public helper that constructs
+  `MetricVisualRuntime`.
+- Safest owner scope: `visual/src/metric-visual.js`,
+  `visual/src/runtime/`, and public API tests only.
+- Validation command: `rg -n "new MetricVisualRuntime" visual/src visual/examples docs/site --glob '!visual/examples/grae10-*/*'`
+  should show this file plus explicitly quarantined/internal probes only.
 
-### P0/P1 - Process-Curve Semantic View Handoff
+### F2: Public Descriptor Injection Escape Hatch
 
-| Path and line | Symbol | Current role | Classification | Why | Exact next action | Safest owner scope | Validation command |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `visual/src/views/ProcessCurveSceneView.js:15` | `ProcessCurveSceneView` | Semantic view for process curves. | keep | It supplies the process-curve view object and owns neighborhood/matrix support for `showProcessCurves()`. | Keep using it from `MetricVisualSurface.showProcessCurves()`; migrate remaining examples to semantic commands and then narrow or privatize descriptor helpers. | `visual/src/views/ProcessCurveSceneView.js`, `visual/src/views/index.js`, targeted tests. | `node --check visual/src/views/ProcessCurveSceneView.js && node visual/tools/check-process-curve-scene-view.mjs && node visual/tools/check-views.mjs` |
-| `visual/src/views/ProcessCurveSceneView.js:387` | `createProcessCurveMiniatureLayerDescriptors()` | Public descriptor factory compatibility path. | wrap | It still exposes direct evidence -> descriptors without requiring a semantic view. | Keep only as a transitional wrapper around `ProcessCurveSceneView`, or make it private after callers migrate. | Process-curve scene-view consolidation worker. | `rg -n "createProcessCurveMiniatureLayerDescriptors" visual/src/metric-visual.js visual/examples` should return no public surface/page call sites. |
-| `visual/src/views/ProcessCurveSceneView.js:395` | `createProcessCurveLayerDescriptors()` and descriptor helper family | Internal descriptor assembly for process-curve layers. | wrap | The logic is useful, but it must stay behind `ProcessCurveSceneView.toLayerDescriptors()`. | Keep private, ensure exports do not invite page-level descriptor construction, and add a check that the public surface uses the view. | Process-curve scene-view consolidation worker. | `node visual/tools/check-process-curve-scene-view.mjs && node visual/tools/check-single-render-pipeline.mjs` |
-| `visual/examples/miniature-hero-frame/index.html:156` and `:197` | Direct `MetricVisualRuntime` plus `createProcessCurveMiniatureLayerDescriptors()` | Example page creates runtime and descriptors itself. | wrap | It uses the canonical runtime, but bypasses the public semantic command. | Convert to `createMetricVisual({ evidence }).showProcessCurves(...)` or use `ProcessCurveSceneView` only in a dev-only harness. | Example thin-shell worker, not GRAE10. | `! rg -n "MetricVisualRuntime" visual/examples/miniature-hero-frame/index.html && ! rg -n "createProcessCurveMiniatureLayerDescriptors" visual/examples/miniature-hero-frame/index.html && ! rg -n "createLayerFromDescriptor" visual/examples/miniature-hero-frame/index.html` |
-| `visual/examples/miniature-look-gallery/index.html:186` and `:235` | Look gallery direct descriptor/runtime loop | Gallery renders many runtimes from descriptor bundles. | wrap | Useful look-atlas logic, but not a public hero path and still skips public semantic commands. | Keep as an internal style gallery or convert each entry to start from `ProcessCurveSceneView`; exclude from public gallery acceptance. | Style/gallery worker. | `node visual/tools/check-single-render-pipeline.mjs` rejects public use while a targeted gallery check still passes. |
-| `visual/examples/native-engine-probe/index.html:156` | `new MetricVisualRuntime(...)` probe | Native engine probe harness. | quarantine | It is a diagnostic harness, not a public semantic page; it should not be accepted as a hero. | Move under an explicitly dev/probe-only contract or convert to `createMetricVisual()` if it remains public. | Visual diagnostics worker. | `rg -n "native-engine-probe" visual/hero-*.json docs/visual` shows it is not an accepted public hero. |
+- Path/line: `visual/src/metric-visual.js:209`,
+  `visual/src/metric-visual.js:222`, `visual/src/metric-visual.js:242`
+- Symbol: `MetricVisualSurface.setViews()`,
+  `MetricVisualSurface.setLayerDescriptors()`,
+  `MetricVisualSurface.addLayerDescriptors()`
+- Current role: direct descriptor setters on the public surface.
+- Classification: wrap.
+- One-engine status: partially violates the rule. `setViews()` is safe when it
+  receives semantic views, but it also accepts raw descriptors. `setLayerDescriptors()`
+  and `addLayerDescriptors()` let callers bypass semantic view ownership.
+- Exact next action: demote descriptor setters to internal/private API or gate
+  them behind an explicitly internal diagnostics option. Public examples should
+  use `show*` commands or semantic view objects only.
+- Safest owner scope: `visual/src/metric-visual.js` plus public API/export tests.
+- Validation command: `rg -n "setLayerDescriptors\\(|addLayerDescriptors\\(" visual/src visual/examples docs/site --glob '!visual/src/metric-visual.js'`
+  should have no public page calls after the wrap.
 
-### P1 - Page-Level Legacy Panels And Evidence
+### F3: Canonical Semantic Commands
 
-| Path and line | Symbol | Current role | Classification | Why | Exact next action | Safest owner scope | Validation command |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `visual/examples/process-curve-condition-monitoring/index.html:186` | Imports `MetricVisualRuntime` and layer factory directly | Page builds the runtime manually. | wrap | Runtime is canonical, but the page bypasses `createMetricVisual()` and semantic commands. | Convert the scene to `createMetricVisual({ evidence: metric.visual.json }).showProcessCurves()` or a dedicated semantic command. | Same worker as legacy panel removal. | `! rg -n "MetricVisualRuntime" visual/examples/process-curve-condition-monitoring/index.html && ! rg -n "createLayerFromDescriptor" visual/examples/process-curve-condition-monitoring/index.html` |
-| `visual/examples/process-curve-condition-monitoring/index.html:195` | Imports `MetricHeatmap`, `MetricQueryInspector`, `MetricRecordGallery`, `MetricSelection`, `loadMetricEvidence` | Uses legacy public exports. | delete | These are the only external references keeping the legacy export block alive. | Replace/remove panels, switch from `evidence.json` to `metric.visual.json`, then remove imports. | Legacy panel removal worker. | `! rg -n "MetricHeatmap" visual/examples/process-curve-condition-monitoring/index.html && ! rg -n "MetricQueryInspector" visual/examples/process-curve-condition-monitoring/index.html && ! rg -n "MetricRecordGallery" visual/examples/process-curve-condition-monitoring/index.html && ! rg -n "MetricSelection" visual/examples/process-curve-condition-monitoring/index.html && ! rg -n "loadMetricEvidence" visual/examples/process-curve-condition-monitoring/index.html` |
-| `visual/examples/process-curve-condition-monitoring/index.html:226` | `new MetricRecordGallery`, `new MetricQueryInspector`, `new MetricHeatmap` | Page-local 2D canvas panels. | delete | They are separate render paths and duplicate relation/preview capabilities. | Replace with runtime preview and `RelationMatrixView` or remove this legacy page from public scope. | Legacy panel removal worker. | `node visual/tools/check-runtime-picking-preview.mjs && node visual/tools/check-relation-matrix-picker.mjs` |
-| `visual/examples/process-curve-condition-monitoring/index.html:237` | `loadMetricEvidence(.../evidence.json)` | Loads old evidence schema. | delete | Public heroes must start from `metric.visual.v1`, not old `metric.evidence.v1`. | Use `docs/examples/assets/process-curve-external/metric.visual.json` or a new native export. | Native evidence/page worker. | `! rg -n "evidence\\.json" visual/examples/process-curve-condition-monitoring/index.html && ! rg -n "metric\\.evidence\\.v1" visual/examples/process-curve-condition-monitoring/index.html && ! rg -n "loadMetricEvidence" visual/examples/process-curve-condition-monitoring/index.html` |
+- Path/line: `visual/src/metric-visual.js:270`,
+  `visual/src/metric-visual.js:284`, `visual/src/metric-visual.js:291`,
+  `visual/src/metric-visual.js:298`, `visual/src/metric-visual.js:309`,
+  `visual/src/metric-visual.js:318`, `visual/src/metric-visual.js:348`,
+  `visual/src/metric-visual.js:395`, `visual/src/metric-visual.js:418`,
+  `visual/src/metric-visual.js:434`, `visual/src/metric-visual.js:450`,
+  `visual/src/metric-visual.js:474`
+- Symbol: `showMetricSpace()`, `showRelationMatrix()`,
+  `showNeighborhoodGraph()`, `showSpaceProperties()`, `showMapping()`,
+  `showDynamics()`, `showConditionMonitoring()`, `showProcessCurves()`,
+  `showMixedRecords()`, `showCrossSpace()`,
+  `showRelationMatrixNeighborhood()`, `showSolverTrace()`
+- Current role: semantic public commands that instantiate semantic view classes
+  and feed their descriptors into the runtime.
+- Classification: keep.
+- One-engine status: satisfies the rule at the public API level. The commands
+  convert normalized evidence into semantic views before reaching descriptors.
+- Exact next action: keep commands as public surface. Avoid adding any new
+  public command that assembles raw descriptors without a semantic view class.
+- Safest owner scope: individual command plus corresponding view class and hero
+  example.
+- Validation command: `rg -n "visual\\.show|show[A-Z].*\\(" visual/examples/*/index.html docs/site/index.html`
+  and check that public heroes call `createMetricVisual()` plus `show*`.
 
-### Keep - Canonical Runtime, Views, Layers, And Thin Heroes
+### F4: Legacy Facade Cross-Space Descriptor Helpers
 
-| Path and line | Symbol | Current role | Classification | Why | Exact next action | Safest owner scope | Validation command |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `visual/src/runtime/runtime.js:344` | `MetricVisualRuntime` | Canonical renderer that owns scene, camera, layers, picking, postprocess, and render loop. | keep | This is the single renderer required by the one-engine rule. | Keep; do not introduce another renderer. | Runtime owner only. | `node visual/tools/check-single-render-pipeline.mjs` |
-| `visual/src/runtime/runtime.js:524` | `setViewDescriptors()` | Runtime path from view descriptors to layer descriptors. | keep | It preserves the semantic-view entry when callers provide views. | Keep as canonical document/view ingestion path. | Runtime owner only. | `node visual/tools/check-views.mjs` |
-| `visual/src/runtime/runtime.js:542` | `setLayerDescriptors()` / `addLayerDescriptor()` | Runtime commit point for descriptors. | keep | The architecture ends at layer descriptors -> runtime; the method is acceptable inside runtime-owned APIs. | Keep, but do not let public pages call it directly. | Runtime plus command API owner. | `rg -n "setLayerDescriptors\\(" visual/examples docs/site` returns no public-page matches except quarantined/dev pages. |
-| `visual/src/runtime/runtime.js:1616` | `layerDescriptorsFromViews()` raw descriptor fallback at `:1630` | Accepts objects that already look like layer descriptors. | wrap | It can turn `setViewDescriptors()` into a descriptor bypass. | Restrict raw descriptor fallback to internal compatibility or require a semantic wrapper. | Runtime hardening worker after page migrations. | `node visual/tools/check-single-render-pipeline.mjs` with a negative fixture for raw layer descriptors in document views. |
-| `visual/src/layers/LayerFactory.js:42` | `createLayerFromDescriptor()` | Maps descriptors to layer classes. | keep | This is the layer-materialization step inside the runtime. | Keep; callers should reach it only through runtime setup. | Layer/runtime owner. | `node --check visual/src/layers/LayerFactory.js && node visual/tools/check-single-render-pipeline.mjs` |
-| `visual/src/views/BaseView.js:3` and `:33` | `BaseView.toLayerDescriptors()` contract | Base semantic view contract. | keep | This is the intended semantic view -> descriptor boundary. | Keep and require new grammars to subclass/use this contract. | Views owner. | `node visual/tools/check-views.mjs` |
-| `visual/src/views/MetricSpaceView.js:59`, `MappingView.js:23`, `DynamicsView.js:33`, `CrossSpaceView.js:21`, `MixedRecordView.js:43`, `RelationMatrixView.js:14`, `NeighborhoodGraphView.js:20`, `TrajectoryPathView.js:21`, `PropertyFieldView.js:19`, `SpacePropertiesView.js:28`, `SolverTraceView.js:13` | Semantic view classes | Canonical view-to-descriptor implementations. | keep | They satisfy the one-engine path when invoked by `MetricVisualSurface.show*()` or runtime view descriptors. | Keep; do not replace with page-local canvas/SVG fallbacks. | Views owner. | `node visual/tools/check-views.mjs && node visual/tools/check-hero-grammar-contract.mjs` |
-| `visual/src/curves/descriptors.js:15`, `:35`, `:87`, `:110`; `visual/src/relational/descriptors.js:13`, `:116`, `:175`; `visual/src/timeline/index.js:427`, `:533`, `:564` | Low-level descriptor factories | Descriptor emitters consumed by semantic views/layers. | keep | They are not renderers by themselves and are acceptable when called behind semantic views. | Keep, but checks should reject public page calls into these factories. | Curves/relational/timeline owners. | `! rg -n "create.*LayerDescriptor" visual/examples docs/site && ! rg -n "createTimeline.*Descriptor" visual/examples docs/site` |
-| `visual/src/style/miniature/composition.js:58` | `applyMiniatureSceneBundle()` | Applies staged descriptor bundles to a runtime. | wrap | It is useful internally, but it calls `runtime.setLayerDescriptors()` and is used by direct-runtime examples. | Keep for style internals after semantic-view call sites are migrated; do not expose it as a public hero path. | Miniature style owner. | `rg -n "applyBundle" visual/examples docs/site && rg -n "applyMiniatureSceneBundle" visual/examples docs/site && rg -n "createMiniature.*SceneBundle" visual/examples docs/site` only shows dev/quarantined pages. |
-| `visual/examples/condition-monitoring-hero/index.html:38`, `cross-space-dependency-hero/index.html:42`, `dynamics-noise-hero/index.html:39`, `mapping-dimensionality-hero/index.html:39`, `mixed-record-hero/index.html:37`, `relation-matrix-neighborhood/index.html:35`, `process-curve-external-hero/index.html:68` | Thin public hero pages using `createMetricVisual().show*()` | Current public command pattern. | keep | These pages start from `metric.visual.v1` evidence and call semantic commands. | Keep this as the only public hero pattern. | Public gallery worker. | `node visual/tools/check-public-gallery-evidence.mjs && node visual/tools/check-visual-regression-public-examples.mjs` |
-| `docs/site/index.html:769` | Static site index | Project page, no active visual runtime. | keep | Required inspection found no renderer or descriptor path in this page. | No action. | None. | `! rg -n "MetricVisualRuntime" docs/site/index.html && ! rg -n "MetricScene3D" docs/site/index.html && ! rg -n "create.*Descriptor" docs/site/index.html && ! rg -n "setLayerDescriptors" docs/site/index.html` |
+- Path/line: `visual/src/metric-visual.js:1407`,
+  `visual/src/metric-visual.js:1436`, `visual/src/metric-visual.js:1459`
+- Symbol: `pairedRecordBridgeDescriptor()`, `sharedGroundDescriptor()`,
+  `offsetPositionMap()`
+- Current role: legacy descriptor construction helpers left in the public facade
+  file.
+- Classification: delete.
+- One-engine status: violates ownership boundaries. Equivalent logic now belongs
+  to `CrossSpaceView` (`sharedGroundDescriptor()` at
+  `visual/src/views/CrossSpaceView.js:266` and `bridgeDescriptor()` at
+  `visual/src/views/CrossSpaceView.js:292`). These helpers are currently unused,
+  but their presence invites facade-level descriptor assembly.
+- Exact next action: done; the three functions were removed from
+  `metric-visual.js` after confirming no imports/references existed.
+- Safest owner scope: `visual/src/metric-visual.js` only.
+- Validation command: `rg -n "pairedRecordBridgeDescriptor|sharedGroundDescriptor|offsetPositionMap" visual/src/metric-visual.js visual/src/views`
+  should return only `CrossSpaceView` methods or no facade hits.
 
-### Quarantine / Standalone Renderers
+### F5: Cross-Space Semantic View
 
-| Path and line | Symbol | Current role | Classification | Why | Exact next action | Safest owner scope | Validation command |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `visual/src/miniature-field/instanced-box-field.js:78` | `InstancedBoxField` / `createInstancedBoxField()` at `:596` | Standalone WebGL field renderer with its own context and loop. | quarantine | It bypasses `MetricVisualRuntime`; no current public page usage was found, but it is exported through `visual/src/index.js`. | Either remove from public exports and delete if unused, or wrap the useful visual idea as descriptors for `InstancedBoxLayer`. | Separate miniature-field cleanup worker, not part of P0 legacy export removal. | `rg -n "InstancedBoxField" visual/src visual/examples docs/site && rg -n "createInstancedBoxField" visual/src visual/examples docs/site` shows no usage outside its module/export after cleanup. |
-| `visual/src/miniature-engine/grae10-engine.js:11`, `visual/examples/grae10-engine-module/index.html:190`, `visual/examples/grae10-metric-engine/index.html:190` | GRAE10 miniature engine | Golden/reference renderer using `metric-webgl` and custom 2D labels. | quarantine | It is explicitly outside this task's edit scope and should not be used as a public-hero fallback. | Do not touch here. Maintain as GRAE10-only until its owner schedules migration or exemption. | GRAE10 owner only. | `node visual/tools/check-grae10-golden.mjs` and `rg -n "mountGrae10MetricEngine" visual/examples docs/site` confirms limited scope. |
-| `visual/examples/mnist-dimension-reduction/index.html:41` | `new Baby.Plots(...)` | Embedded Babylon/BabyPlots demo. | quarantine | It is a generated/external-style renderer and not compatible with the one-engine rule. | Remove from public gallery routing or replace with `metric.visual.v1` plus semantic views in a separate example cleanup. | Example archival worker, not GRAE10. | `! rg -n "Baby\\.Plots" visual/examples docs/site && ! rg -n "var Baby" visual/examples docs/site` for public gallery paths after cleanup. |
-| `visual/src/interaction/record-preview.js:464` | `renderSparkline()` | 2D canvas inside runtime-managed record preview UI. | keep | This is an interaction adjunct sourced from `metric.visual.v1`, not an alternate scene renderer. | Keep, but do not use it to recreate page-level render panels. | Preview/interaction owner. | `node visual/tools/check-record-preview-presentation.mjs && node visual/tools/check-runtime-picking-preview.mjs` |
-| `visual/src/layers/BillboardLabelLayer.js:143` and `:180` | Label atlas canvas | 2D texture generation inside a runtime layer. | keep | This canvas is an implementation detail of a `MetricVisualRuntime` layer. | Keep behind `BillboardLabelLayer`. | Layer owner. | `node --check visual/src/layers/BillboardLabelLayer.js && node visual/tools/check-views.mjs` |
+- Path/line: `visual/src/views/CrossSpaceView.js:229`,
+  `visual/src/views/CrossSpaceView.js:266`,
+  `visual/src/views/CrossSpaceView.js:292`
+- Symbol: `CrossSpaceView.toLayerDescriptors()`,
+  `CrossSpaceView.sharedGroundDescriptor()`,
+  `CrossSpaceView.bridgeDescriptor()`
+- Current role: semantic owner for paired-space stage, side descriptors, and
+  dependence bridge descriptors.
+- Classification: keep.
+- One-engine status: satisfies the rule. It owns the semantic contract and
+  emits layer descriptors for runtime consumption.
+- Exact next action: keep this as the owner of paired-space bridge/ground logic;
+  delete facade duplicates in F4.
+- Safest owner scope: `visual/src/views/CrossSpaceView.js` and
+  cross-space hero/evidence fixtures.
+- Validation command: `rg -n "dependence-bridge|shared-paired-space-stage|CrossSpaceView" visual/src/views visual/examples/cross-space-dependency-hero`
+  should show the semantic owner and public hero only.
+
+### F6: Process-Curve Semantic View
+
+- Path/line: `visual/src/views/ProcessCurveSceneView.js:16`,
+  `visual/src/views/ProcessCurveSceneView.js:118`
+- Symbol: `ProcessCurveSceneView`, `ProcessCurveSceneView.toLayerDescriptors()`
+- Current role: semantic process-curve view that resolves evidence and emits
+  morph/projection/field/track/label/matrix/neighborhood descriptors.
+- Classification: keep.
+- One-engine status: satisfies the rule when reached through
+  `MetricVisualSurface.showProcessCurves()` or `showConditionMonitoring()`.
+- Exact next action: keep as canonical process-curve semantic owner.
+- Safest owner scope: `visual/src/views/ProcessCurveSceneView.js` plus
+  process-curve examples.
+- Validation command: `rg -n "showProcessCurves|showConditionMonitoring|ProcessCurveSceneView.fromVisualSpace" visual/src visual/examples docs/site`
+  should show public commands/pages, not page-local descriptor factories.
+
+### F7: Process-Curve Miniature Bundle Factory
+
+- Path/line: `visual/src/views/ProcessCurveSceneView.js:388`,
+  `visual/src/views/ProcessCurveSceneView.js:396`,
+  `visual/src/views/ProcessCurveSceneView.js:408`
+- Symbol: `createProcessCurveMiniatureLayerDescriptors()`,
+  `createProcessCurveLayerDescriptors()`,
+  `createProcessCurveMiniatureSceneBundle()`
+- Current role: helper/factory path that creates process-curve descriptors and
+  miniature scene bundles outside the public surface.
+- Classification: wrap.
+- One-engine status: risky. Internally it delegates to semantic subviews, but
+  the exported bundle factory allows callers to skip `createMetricVisual()` and
+  feed descriptors/style bundles directly into a runtime.
+- Exact next action: move bundle creation behind a semantic view or style API
+  that accepts a `ProcessCurveSceneView`/surface, not raw descriptors. Keep
+  private helpers if only `ProcessCurveSceneView.toLayerDescriptors()` calls them.
+- Safest owner scope: `visual/src/views/ProcessCurveSceneView.js`,
+  `visual/src/style/miniature/`, and the direct-runtime examples that use the
+  bundle.
+- Validation command: `rg -n "createProcessCurveMiniatureSceneBundle|createProcessCurveMiniatureLayerDescriptors|createProcessCurveLayerDescriptors" visual/src visual/examples docs/site`
+  should show no public example import after wrapping.
+
+### F8: Process-Curve Raw Label/Skyline Descriptor Construction
+
+- Path/line: `visual/src/views/ProcessCurveSceneView.js:719`,
+  `visual/src/views/ProcessCurveSceneView.js:837`
+- Symbol: `createProcessCurveLabelDescriptor()`,
+  `createProcessCurveSkylineDescriptor()`
+- Current role: process-curve-specific raw descriptor builders.
+- Classification: wrap.
+- One-engine status: acceptable only while private to `ProcessCurveSceneView`.
+  They produce raw descriptor objects instead of using dedicated semantic view
+  classes, so they should not be exported or reused by pages.
+- Exact next action: either keep private and document as view-internal, or
+  extract to `ProcessCurveLabelView` and `ProcessCurveSkylineView` if another
+  owner needs them.
+- Safest owner scope: `visual/src/views/ProcessCurveSceneView.js` only, unless
+  new view files are introduced.
+- Validation command: `rg -n "createProcessCurveLabelDescriptor|createProcessCurveSkylineDescriptor" visual/src visual/examples docs/site`
+  should show private use in `ProcessCurveSceneView.js` only.
+
+### F9: Direct Runtime Internal Probe
+
+- Path/line: `visual/examples/native-engine-probe/index.html:104`,
+  `visual/examples/native-engine-probe/index.html:161`,
+  `visual/examples/native-engine-probe/index.html:166`,
+  `visual/examples/native-engine-probe/index.html:180`,
+  `visual/examples/native-engine-probe/index.html:191`
+- Symbol: module imports, `createMiniaturePhotographicStyle()`,
+  `new MetricVisualRuntime()`, `runtime.setDocument()`, `style.applyBundle()`
+- Current role: explicitly marked internal direct-runtime diagnostic harness.
+- Classification: quarantine.
+- One-engine status: violates the public one-engine rule if linked from a public
+  hero. It constructs the runtime and applies a descriptor bundle page-locally.
+  The page metadata says `publicGallery: false`, so it can remain only as an
+  internal diagnostic.
+- Exact next action: keep out of `docs/site/index.html` and public galleries; if
+  it must become public, rewrite through `createMetricVisual()` plus a semantic
+  `showProcessCurves()` path.
+- Safest owner scope: `visual/examples/native-engine-probe/index.html` and
+  internal diagnostics docs only.
+- Validation command: `rg -n "native-engine-probe|new MetricVisualRuntime|style\\.applyBundle" docs/site visual/examples --glob '!visual/examples/grae10-*/*'`
+  should show the probe only, never public site links.
+
+### F10: Miniature Look Gallery Direct Runtime Loop
+
+- Path/line: `visual/examples/miniature-look-gallery/index.html:163`,
+  `visual/examples/miniature-look-gallery/index.html:184`,
+  `visual/examples/miniature-look-gallery/index.html:201`,
+  `visual/examples/miniature-look-gallery/index.html:207`,
+  `visual/examples/miniature-look-gallery/index.html:246`,
+  `visual/examples/miniature-look-gallery/index.html:250`
+- Symbol: `ProcessCurveSceneView.fromVisualSpace()`,
+  `sceneView.toLayerDescriptors()`, `createMiniatureLookSceneAtlas()`,
+  `new MetricVisualRuntime()`, `style.applyBundle()`
+- Current role: style/look gallery that builds descriptors once, creates many
+  runtimes, and applies style bundles page-locally.
+- Classification: wrap.
+- One-engine status: bypasses the public surface. It starts with a semantic
+  view, but then exports descriptors into a page-local atlas and runtime loop.
+- Exact next action: provide a semantic look-gallery wrapper that owns the
+  runtime creation internally, or move this page to an internal diagnostics area
+  with explicit quarantine metadata.
+- Safest owner scope: `visual/examples/miniature-look-gallery/index.html`,
+  `visual/src/style/miniature/`, and process-curve miniature APIs.
+- Validation command: `rg -n "miniature-look-gallery|new MetricVisualRuntime|toLayerDescriptors\\(\\)|createMiniatureLookSceneAtlas" visual/examples docs/site`
+  should show no public site iframe/link and no direct runtime if wrapped.
+
+### F11: External MNIST/Babyplots Demo
+
+- Path/line: `visual/examples/mnist-dimension-reduction/index.html:24`,
+  `visual/examples/mnist-dimension-reduction/index.html:58`
+- Symbol: embedded `Baby` bundle, `vis.doRender()`
+- Current role: standalone generated HTML with embedded Babyplots/Babylon-style
+  renderer and page-local render loop.
+- Classification: delete.
+- One-engine status: violates the rule. It is a separate renderer and cannot be
+  made safe by tests passing.
+- Exact next action: delete the example or quarantine it outside public visual
+  examples. If MNIST remains needed, re-export as `metric.visual.v1` evidence and
+  render with `createMetricVisual()`.
+- Safest owner scope: `visual/examples/mnist-dimension-reduction/index.html`
+  only, plus docs links if any are found.
+- Validation command: `rg -n "Baby;|Baby\\.|doRender\\(|mnist-dimension-reduction" visual docs/site`
+  should show no public render path after deletion/quarantine.
+
+### F12: Public Hero Examples Using Canonical Surface
+
+- Path/line: `visual/examples/condition-monitoring-hero/index.html:46`,
+  `visual/examples/condition-monitoring-hero/index.html:52`,
+  `visual/examples/cross-space-dependency-hero/index.html:53`,
+  `visual/examples/cross-space-dependency-hero/index.html:58`,
+  `visual/examples/dynamics-noise-hero/index.html:61`,
+  `visual/examples/dynamics-noise-hero/index.html:66`,
+  `visual/examples/mapping-dimensionality-hero/index.html:84`,
+  `visual/examples/mapping-dimensionality-hero/index.html:95`,
+  `visual/examples/mixed-record-hero/index.html:80`,
+  `visual/examples/mixed-record-hero/index.html:85`,
+  `visual/examples/process-curve-external-hero/index.html:79`,
+  `visual/examples/process-curve-external-hero/index.html:84`,
+  `visual/examples/relation-matrix-neighborhood/index.html:47`,
+  `visual/examples/relation-matrix-neighborhood/index.html:52`
+- Symbol: `createMetricVisual()` plus `visual.show*()`
+- Current role: public examples/heroes.
+- Classification: keep.
+- One-engine status: satisfies the public rule. These pages load evidence and
+  use the semantic public surface instead of constructing runtime/layers.
+- Exact next action: keep. Future page edits should not import
+  `MetricVisualRuntime` or `createLayerFromDescriptor`.
+- Safest owner scope: the individual example page and matching exported evidence.
+- Validation command: `rg -n "MetricVisualRuntime|createLayerFromDescriptor|setLayerDescriptors|toLayerDescriptors" visual/examples/*-hero/index.html visual/examples/relation-matrix-neighborhood/index.html`
+  should return no public hero matches.
+
+### F13: Process-Curve Condition Monitoring Example
+
+- Path/line: `visual/examples/process-curve-condition-monitoring/index.html:213`,
+  `visual/examples/process-curve-condition-monitoring/index.html:255`
+- Symbol: `createMetricVisual()`, `visual.showProcessCurves()`
+- Current role: process-curve example with UI controls and descriptor diagnostics.
+- Classification: keep.
+- One-engine status: render path is canonical. It inspects descriptors for UI
+  status, but it does not construct the runtime or descriptors page-locally.
+- Exact next action: keep descriptor inspection read-only; do not add page-local
+  descriptor mutation.
+- Safest owner scope: `visual/examples/process-curve-condition-monitoring/index.html`.
+- Validation command: `rg -n "new MetricVisualRuntime|createLayerFromDescriptor|setLayerDescriptors|toLayerDescriptors" visual/examples/process-curve-condition-monitoring/index.html`
+  should have no matches.
+
+### F14: Miniature Hero Frame Example
+
+- Path/line: `visual/examples/miniature-hero-frame/index.html:141`,
+  `visual/examples/miniature-hero-frame/index.html:172`,
+  `visual/examples/miniature-hero-frame/index.html:206`
+- Symbol: `createMetricVisual()`, `visual.showProcessCurves()`,
+  descriptor reporting from `visual.descriptors`
+- Current role: process-curve hero frame capture/reporting example.
+- Classification: keep.
+- One-engine status: render path is canonical. It reads descriptors after the
+  semantic command for reporting.
+- Exact next action: keep read-only descriptor reporting; do not use it as a
+  descriptor injection surface.
+- Safest owner scope: `visual/examples/miniature-hero-frame/index.html`.
+- Validation command: `rg -n "new MetricVisualRuntime|createLayerFromDescriptor|setLayerDescriptors|toLayerDescriptors" visual/examples/miniature-hero-frame/index.html`
+  should have no direct runtime/descriptors-as-input matches.
+
+### F15: Docs Site Iframe Routing
+
+- Path/line: `docs/site/index.html:420`, `docs/site/index.html:446`,
+  `docs/site/index.html:475`, `docs/site/index.html:504`,
+  `docs/site/index.html:533`, `docs/site/index.html:562`,
+  `docs/site/index.html:591`, `docs/site/index.html:620`
+- Symbol: public site `<iframe>` routes
+- Current role: public gallery shell embedding visual examples.
+- Classification: keep for canonical hero iframes; quarantine for any iframe
+  that points at non-canonical renderers.
+- One-engine status: the site itself does not render, but it can expose bypass
+  renderers. The non-GRAE gallery iframes point at canonical `createMetricVisual`
+  examples. The GRAE10 hero is outside this cleanup request and was not touched.
+- Exact next action: do not add `native-engine-probe`,
+  `miniature-look-gallery`, or `mnist-dimension-reduction` iframes here until
+  they are wrapped/deleted.
+- Safest owner scope: `docs/site/index.html` plus the specific embedded example.
+- Validation command: `rg -n "native-engine-probe|miniature-look-gallery|mnist-dimension-reduction|MetricVisualRuntime|Baby;" docs/site/index.html`
+  should return no matches.
+
+### F16: Semantic View Layer Descriptor Classes
+
+- Path/line: `visual/src/views/BaseView.js:33`,
+  `visual/src/views/VisualLayer.js:3`, `visual/src/views/PointCloudView.js:84`,
+  `visual/src/views/MetricSpaceView.js:213`,
+  `visual/src/views/RelationMatrixView.js:127`,
+  `visual/src/views/NeighborhoodGraphView.js:131`,
+  `visual/src/views/DynamicsView.js:211`,
+  `visual/src/views/TrajectoryPathView.js:174`,
+  `visual/src/views/PropertyFieldView.js:137`,
+  `visual/src/views/MixedRecordView.js:131`,
+  `visual/src/views/MappingView.js:123`,
+  `visual/src/views/SolverTraceView.js:67`
+- Symbol: `BaseView.toLayerDescriptors()`, `VisualLayer`, and concrete
+  `*View.toLayerDescriptors()` implementations
+- Current role: semantic view layer descriptor generation.
+- Classification: keep.
+- One-engine status: satisfies the rule. These are the intended middle layer
+  between evidence and runtime.
+- Exact next action: keep new rendering logic here or in similarly scoped
+  semantic view classes, not in pages or the public facade.
+- Safest owner scope: one view class per cleanup task, with matching example and
+  visual regression fixture.
+- Validation command: `rg -n "new MetricVisualRuntime|new MetricScene3D|CanvasRenderingContext2D" visual/src/views`
+  should return no matches.
 
 ## Next Three Non-Overlapping Cleanup Tasks
 
-1. **Legacy facade export deletion**
-   - Scope: `visual/src/metric-visual.js` legacy export block and
-     `visual/examples/process-curve-condition-monitoring/index.html`.
-   - Goal: remove all imports/usages of `MetricScene3D`, `MetricRecordGallery`,
-     `MetricHeatmap`, `MetricQueryInspector`, `MetricProcessCurveApp`,
-     `MetricSelection`, `loadMetricEvidence`, and `assertMetricEvidence`.
-   - Validation: `rg` commands above plus preview/relation checks.
+1. Facade cleanup: remove `pairedRecordBridgeDescriptor`,
+   `sharedGroundDescriptor`, and `offsetPositionMap` from
+   `visual/src/metric-visual.js`; separately wrap/demote public descriptor
+   setters.
+2. Process-curve miniature API cleanup: wrap
+   `createProcessCurveMiniatureSceneBundle` and direct descriptor factories so
+   look-gallery/probe pages cannot assemble runtimes from descriptors.
+3. Example quarantine/deletion: move or rewrite `native-engine-probe` and
+   `miniature-look-gallery`; delete or quarantine
+   `visual/examples/mnist-dimension-reduction/index.html`. Do not include GRAE10
+   in this task.
 
-2. **Process-curve descriptor factory quarantine**
-   - Scope: `visual/src/views/ProcessCurveSceneView.js`,
-     `visual/examples/miniature-hero-frame/index.html`,
-     `visual/examples/miniature-look-gallery/index.html` and targeted checks.
-   - Goal: remove public/example calls into
-     `createProcessCurveMiniatureLayerDescriptors()` or mark them explicitly as
-     dev-only harnesses; keep `showProcessCurves()` as the public semantic path.
-   - Validation: `node visual/tools/check-process-curve-scene-view.mjs`,
-     `node visual/tools/check-single-render-pipeline.mjs`, and targeted `rg`
-     scans showing no public page reaches process-curve descriptors directly.
+## Search Log
 
-3. **Direct runtime harness quarantine**
-   - Scope: non-GRAE10 example/probe pages and standalone exports:
-     `visual/examples/miniature-hero-frame/index.html`,
-     `visual/examples/miniature-look-gallery/index.html`,
-     `visual/examples/native-engine-probe/index.html`, and
-     `visual/src/miniature-field/*`.
-   - Goal: convert public-like pages to `createMetricVisual().show*()` or mark
-     them dev-only; remove or hide standalone renderer exports not used by the
-     runtime path.
-   - Validation: `node visual/tools/check-public-gallery-evidence.mjs`,
-     `node visual/tools/check-single-render-pipeline.mjs`, and targeted `rg`
-     scans showing no accepted public page imports `MetricVisualRuntime`,
-     `createLayerFromDescriptor`, or direct descriptor factories.
+Required searches were run:
+
+```bash
+rg -n "new MetricVisualRuntime|new MetricScene3D|CanvasRenderingContext2D|create.*Descriptor|LayerDescriptor|setLayerDescriptors|this.views = \\[\\]|this.views = \\[\\]|function .*Descriptor|class Metric" visual/src visual/examples docs/site
+rg -n "createProcessCurveMiniatureLayerDescriptors|pairedRecordBridgeDescriptor|sharedGroundDescriptor|offsetPositionMap|MetricScene3D|MetricRecordGallery|MetricHeatmap|MetricQueryInspector|loadMetricEvidence" visual/src/metric-visual.js visual/src/views visual/examples docs/site
+```
+
+Focused follow-up searches inspected `visual/src/metric-visual.js`,
+`visual/src/views`, all `visual/examples/*/index.html`, and
+`docs/site/index.html`. The broad searches also match embedded/generated bundles
+inside HTML files; those were treated as evidence for quarantine/delete only
+when they expose a non-METRIC renderer path.
