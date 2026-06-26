@@ -79,6 +79,7 @@ async function main() {
     ["residual layer carries residual magnitudes", residual?.channels?.residual?.count > 0 && residual?.channels?.residual?.semantic === "residual-magnitude", residual?.channels?.residual],
     ["residual layer samples native representatives", residual?.metadata?.nativeResidualRecordCount === 1000 && residual?.metadata?.recordCount === 120 && residual?.metadata?.residualSelection?.strategy === "representative-residual-buckets", residual?.metadata?.residualSelection],
     ["residual layer is drawn behind point structure", Number(residual?.order) < Number(point?.order ?? 0), { residualOrder: residual?.order, pointOrder: point?.order ?? 0 }],
+    ["residual layer uses shared edge legibility without lane faking", residual?.metadata?.edgeLegibility?.schema === "metric.visual.relation_edge_legibility.v1" && residual?.metadata?.edgeLegibility?.role === "residual/error" && residual?.metadata?.edgeLegibility?.laneStrategy === "none" && residual?.metadata?.edgeLegibility?.alphaSource === "per-edge-color-alpha-scaled-before-global-material-alpha", residual?.metadata?.edgeLegibility],
     ["labels help orientation", labels?.metadata?.labelCount > 0, labels?.metadata],
     ["mapping point layer declares coordinate morph", point?.animation?.mode === "coordinate-morph" && point?.channels?.targetPosition?.count === 1000, point?.animation],
     ["mapping motion timing has source hold", sourceHold.phase === "source-hold" && sourceHold.progress === 0, sourceHold],

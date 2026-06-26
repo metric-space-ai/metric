@@ -300,6 +300,8 @@ export class MixedRecordView extends BaseView {
       order: this.edgeOrder,
       width: this.edgeWidth,
       alpha: this.edgeAlpha,
+      role: "cross-type-relation-edges",
+      sourceEdgeCount: Array.isArray(this.graph?.edges) ? this.graph.edges.length : undefined,
     });
     const edgeVisualChannels = this.createRelationEdgeVisualChannels(descriptor.metadata?.graph || graph);
     return {

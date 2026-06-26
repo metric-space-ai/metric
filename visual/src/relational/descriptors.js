@@ -2,6 +2,7 @@ import { buildRelationMatrixTextureData } from "./matrix-texture.js";
 import { createRelationMatrixReadabilityProfile } from "./matrix-readability.js";
 import { createRelationMatrixDiagnostics } from "./diagnostics.js";
 import { buildGraphEdgeChannels, buildRelationNeighborhoodGraph } from "./neighborhood-graph.js";
+import { applyRelationEdgeLegibilityDescriptor } from "./edge-legibility.js";
 
 /**
  * Create a layer descriptor for relation matrix rendering.
@@ -129,7 +130,7 @@ export function createRelationGraphEdgeLayerDescriptor(source, options = {}) {
     ? source
     : buildRelationNeighborhoodGraph(source, options);
 
-  return {
+  return applyRelationEdgeLegibilityDescriptor({
     id: options.id || "relation-neighborhood-edges",
     kind: "RelationEdgeLayer",
     primitive: "RelationEdgeLayer",
@@ -168,7 +169,14 @@ export function createRelationGraphEdgeLayerDescriptor(source, options = {}) {
         respondsTo: ["record", "pair"],
       },
     },
-  };
+  }, {
+    edgeCount: graph.edgeCount,
+    sourceEdgeCount: options.sourceEdgeCount || graph.candidateCount || graph.edgeCount,
+    role: options.role || options.edgeRole || "neighborhood-graph-edges",
+    laneOffsetScale: options.laneOffsetScale,
+    laneModulo: options.laneModulo,
+    alphaScale: options.edgeDensityAlphaScale,
+  });
 }
 
 /**

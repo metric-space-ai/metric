@@ -12,6 +12,7 @@ import {
   pairValue,
   relationPairs,
 } from "../relational/relation-source.js";
+import { applyRelationEdgeLegibilityDescriptor } from "../relational/edge-legibility.js";
 
 const PAIRED_SPACE_VIEW_SCHEMA = "metric.visual.paired_space_view.v1";
 const DEFAULT_LEFT_OFFSET = Object.freeze([-1.42, 0, 0]);
@@ -475,7 +476,7 @@ export class CrossSpaceView extends BaseView {
       },
     };
 
-    return new VisualLayer({
+    const descriptor = new VisualLayer({
       id: `${this.id}:dependence-bridge`,
       kind: "paired-space-dependence",
       primitive: "RelationEdgeLayer",
@@ -540,6 +541,14 @@ export class CrossSpaceView extends BaseView {
         },
       },
     }).toDescriptor();
+
+    return applyRelationEdgeLegibilityDescriptor(descriptor, {
+      role: "dependence bridge",
+      edgeCount: pairs.length,
+      sourceEdgeCount: graphEdges.length,
+      laneOffsetScale: 0.014,
+      laneModulo: 11,
+    });
   }
 
   validPairs() {
@@ -614,6 +623,7 @@ export class CrossSpaceView extends BaseView {
       selectionGraph: "full-paired-record-ids",
       nativeEvidenceOnly: true,
       syntheticEvidence: false,
+      edgeLegibility: "shared-relation-edge-legibility-profile",
     };
   }
 }

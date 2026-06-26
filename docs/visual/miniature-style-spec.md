@@ -454,6 +454,12 @@ paths render above them, current-state point layers render above paths, and
 `order` values inside each band, but page code must not rebuild the hierarchy
 with custom render paths.
 
+`RelationEdgeLayer` descriptors may carry
+`metric.visual.relation_edge_legibility.v1`. This is a render-legibility
+contract, not an algorithmic graph transform: edge count, edge ids, pair ids and
+picking remain native evidence, while alpha and small deterministic lane offsets
+make dense exported relation structures readable inside the miniature scene.
+
 The presence of `InstancedBoxLayer` in the mapping is renderer compatibility,
 not a public box subject API.
 

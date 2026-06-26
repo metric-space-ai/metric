@@ -47,8 +47,19 @@ export class RelationEdgeLayer extends BaseLayer {
 
   upload() {
     const edgeCount = inferEdgeCount(this.channels);
-    const positions = buildEdgePositions(this.channels, edgeCount);
-    const colors = buildEdgeColors(this.channels, edgeCount);
+    const legibility = edgeLegibilityOptions(this.descriptor, edgeCount);
+    const positions = applyEdgeLaneOffsets(
+      buildEdgePositions(this.channels, edgeCount),
+      this.channels,
+      edgeCount,
+      this.descriptor,
+      legibility,
+    );
+    const colors = applyEdgeAlphaLegibility(
+      buildEdgeColors(this.channels, edgeCount),
+      edgeCount,
+      legibility,
+    );
     this.edgeCount = edgeCount;
     this.vertexCount = edgeCount * 2;
     this.edgeEntries = buildEdgeEntries(this.channels, edgeCount, this.descriptor);
@@ -249,6 +260,74 @@ function buildEdgeColors(channels, edgeCount) {
     out.set(color, index * 8 + 4);
   }
   return out;
+}
+
+function applyEdgeAlphaLegibility(colors, edgeCount, legibility = {}) {
+  const alphaScale = Number.isFinite(Number(legibility.alphaScale)) ? Number(legibility.alphaScale) : 1;
+  const minimumAlpha = Math.max(0, Math.min(1, Number(legibility.minimumAlpha) || 0));
+  if (alphaScale === 1 && minimumAlpha <= 0) return colors;
+  for (let index = 0; index < edgeCount; index += 1) {
+    const alpha = Math.max(minimumAlpha, Math.min(1, colors[index * 8 + 3] * alphaScale));
+    colors[index * 8 + 3] = alpha;
+    colors[index * 8 + 7] = alpha;
+  }
+  return colors;
+}
+
+function applyEdgeLaneOffsets(positions, channels, edgeCount, descriptor = {}, legibility = {}) {
+  const laneOffsetScale = Number(legibility.laneOffsetScale);
+  const laneModulo = Math.max(1, Math.floor(Number(legibility.laneModulo) || 1));
+  if (!(laneOffsetScale > 0) || laneModulo <= 1 || edgeCount <= 1) return positions;
+  const edgeIds = getChannelArray(getChannel(channels, ["edgeId", "edge_id", "id"]));
+  const sourceIds = getChannelArray(getChannel(channels, ["sourceId", "source_id", "rowId", "row_id"]));
+  const targetIds = getChannelArray(getChannel(channels, ["targetId", "target_id", "columnId", "column_id"]));
+  for (let index = 0; index < edgeCount; index += 1) {
+    const offset = laneOffsetForEdge(index, laneModulo, laneOffsetScale, descriptor, edgeIds, sourceIds, targetIds);
+    if (offset === 0) continue;
+    const base = index * 6;
+    const sx = positions[base];
+    const sz = positions[base + 2];
+    const tx = positions[base + 3];
+    const tz = positions[base + 5];
+    const dx = tx - sx;
+    const dz = tz - sz;
+    const length = Math.hypot(dx, dz);
+    const nx = length > 1e-6 ? -dz / length : 1;
+    const nz = length > 1e-6 ? dx / length : 0;
+    positions[base] += nx * offset;
+    positions[base + 2] += nz * offset;
+    positions[base + 3] += nx * offset;
+    positions[base + 5] += nz * offset;
+  }
+  return positions;
+}
+
+function laneOffsetForEdge(index, laneModulo, laneOffsetScale, descriptor = {}, edgeIds, sourceIds, targetIds) {
+  const key = `${descriptor.id || descriptor.primitive || "edge"}:${edgeIds?.[index] ?? ""}:${sourceIds?.[index] ?? ""}:${targetIds?.[index] ?? ""}:${index}`;
+  const lane = stableHash(key) % laneModulo;
+  const center = (laneModulo - 1) / 2;
+  return (lane - center) * laneOffsetScale;
+}
+
+function edgeLegibilityOptions(descriptor = {}, edgeCount = 0) {
+  const profile = descriptor.metadata?.edgeLegibility || descriptor.geometry?.edgeLegibility || {};
+  return {
+    edgeCount,
+    alphaScale: numberOption(descriptor.material?.edgeDensityAlphaScale, profile.alphaScale, 1),
+    minimumAlpha: numberOption(descriptor.material?.edgeMinimumAlpha, profile.minimumAlpha, 0),
+    laneOffsetScale: numberOption(descriptor.geometry?.laneOffsetScale, profile.laneOffsetScale, 0),
+    laneModulo: numberOption(descriptor.geometry?.laneModulo, profile.laneModulo, 1),
+  };
+}
+
+function stableHash(value) {
+  const text = String(value);
+  let hash = 2166136261;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
 }
 
 function buildBaseEdgeEmphasis(channels, edgeCount) {

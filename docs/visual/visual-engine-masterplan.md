@@ -187,6 +187,11 @@ Implemented native slices:
   dynamics grammars now have a central engine contract that keeps scalar
   fields below paths, paths below current records and labels above both,
   instead of depending on page-local ordering.
+- reusable relation-edge legibility profile for mixed-record cross-type edges,
+  cross-space dependence bridges and mapping residual vectors. The profile is
+  descriptor metadata consumed by `RelationEdgeLayer` for density-aware alpha
+  and deterministic world-space lane offsets while preserving native edge
+  identity, picking and exported graph counts.
 - relation-matrix diagnostics expose exported metric-law references from native
   evidence, including operator, finite/diagonal/symmetry/triangle checks, pair
   count and triangle-triplet count

@@ -18,6 +18,7 @@ import {
   scalarColor,
   valueForId,
 } from "./view-utils.js";
+import { applyRelationEdgeLegibilityDescriptor } from "../relational/edge-legibility.js";
 
 export const DEFAULT_MAPPING_MOTION_TIMING = Object.freeze({
   profile: "source-hold-quick-transition-target-hold",
@@ -338,7 +339,7 @@ export class MappingView extends BaseView {
       residualSelection,
       residualVectorLength,
     });
-    return new VisualLayer({
+    const descriptor = new VisualLayer({
       id: `${this.id}:residual-vectors`,
       kind: "residual/error-vectors",
       primitive: "RelationEdgeLayer",
@@ -387,6 +388,14 @@ export class MappingView extends BaseView {
         algorithmicComputation: false,
       },
     }).toDescriptor();
+
+    return applyRelationEdgeLegibilityDescriptor(descriptor, {
+      role: "residual/error",
+      edgeCount: count,
+      sourceEdgeCount: candidates.length,
+      laneOffsetScale: 0,
+      laneModulo: 1,
+    });
   }
 
   residualVectorEndpoint(candidate, normalizedResidual) {

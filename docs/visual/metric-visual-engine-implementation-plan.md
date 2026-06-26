@@ -95,6 +95,12 @@ This plan is authoritative only with the following current-state constraints:
   billboard labels remain the final scene-readable layer. Ribbon trajectories
   emitted by `TrajectoryPathView` carry semantic overlay metadata and bypass
   point-cloud depth rejection where the path is the primary evidence.
+- Relation-edge grammars now carry a shared edge-legibility profile. The
+  profile is descriptor metadata consumed by `RelationEdgeLayer` for
+  density-aware alpha scaling and deterministic world-space lane offsets. It is
+  used by mixed-record cross-type edges, cross-space dependence bridges and
+  mapping residual vectors without changing exported graph topology or
+  computing relations in JavaScript.
 - The mapping grammar must render residual/error evidence through
   `MappingView` descriptors. `MetricVisualSurface.showMapping()` must not add
   page-level residual fallbacks that can hide missing native residual
@@ -3070,7 +3076,12 @@ The next parallel work is engine/view capability work, not new page HTML:
    `RelationEdgeLayer`, `MixedRecordView`, `CrossSpaceView` and `MappingView`
    must lane, bundle, sample or otherwise rank relation edges and residual
    vectors so they support typed records, paired spaces and mapping residuals
-   instead of becoming visual noise.
+   instead of becoming visual noise. The first reusable engine slice is
+   implemented: relation-edge descriptors now include
+   `metric.visual.relation_edge_legibility.v1`, and `RelationEdgeLayer`
+   consumes it for density-aware alpha and deterministic lane offsets. Remaining
+   work is visual acceptance and, where necessary, grammar-specific bundling or
+   ranking for edge-heavy public previews.
 4. External process-curve scale:
    `process-curve-external-hero` remains blocked until at least 500 distinct
    real licensed source windows are available. The current local inventory has

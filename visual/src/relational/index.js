@@ -49,6 +49,12 @@ export {
 } from "./neighborhood-graph.js";
 
 export {
+  applyRelationEdgeLegibilityDescriptor,
+  createRelationEdgeLegibilityProfile,
+  RELATION_EDGE_LEGIBILITY_SCHEMA,
+} from "./edge-legibility.js";
+
+export {
   createRelationMatrixPicker,
   pickRelationMatrixCell,
 } from "./matrix-picking.js";

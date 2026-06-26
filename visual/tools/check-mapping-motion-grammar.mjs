@@ -81,6 +81,7 @@ async function main() {
     ["mapping residual vector count matches records", residual?.metadata?.recordCount === 1000, residual?.metadata],
     ["mapping residual vector layer carries record ids", residual?.channels?.recordId?.count === 1000, residual?.channels?.recordId],
     ["mapping residual vector layer carries residual magnitudes", residual?.channels?.residual?.count === 1000 && residual?.channels?.residual?.semantic === "residual-magnitude", residual?.channels?.residual],
+    ["mapping residual vectors use shared edge legibility", residual?.metadata?.edgeLegibility?.schema === "metric.visual.relation_edge_legibility.v1" && residual?.metadata?.edgeLegibility?.role === "residual/error" && residual?.metadata?.edgeLegibility?.laneStrategy === "none", residual?.metadata?.edgeLegibility],
     ["mapping residual layer declares motion evidence", residual?.metadata?.mappingEvidence?.schema === "metric.visual.mapping_motion_evidence.v1" && residual?.metadata?.diagnosticLayer === true, residual?.metadata?.mappingEvidence],
     ["mapping morph layer declares mapping grammar", point?.metadata?.mappingEvidence?.schema === "metric.visual.mapping_motion_evidence.v1" && point?.metadata?.motionGrammar === "mapping-coordinate-morph", point?.metadata],
     ["mapping declares no JavaScript algorithmic computation", point?.metadata?.algorithmicComputation === false && residual?.metadata?.algorithmicComputation === false, { point: point?.metadata, residual: residual?.metadata }],

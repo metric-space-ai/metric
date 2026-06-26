@@ -153,6 +153,20 @@ assert("relation edge composition encodes native cross-type structure without sy
     relationStructureEncoding: edges?.metadata?.relationStructureEncoding,
   });
 
+assert("relation edges use the shared legibility profile",
+  edges?.metadata?.edgeLegibility?.schema === "metric.visual.relation_edge_legibility.v1"
+    && edges?.metadata?.edgeLegibility?.role === "cross-type-relation-edges"
+    && edges?.metadata?.edgeLegibility?.sourceEdgeCount === nativeGraph.edges.length
+    && edges?.metadata?.edgeLegibility?.alphaSource === "per-edge-color-alpha-scaled-before-global-material-alpha"
+    && Number(edges?.geometry?.laneOffsetScale) > 0
+    && Number(edges?.material?.edgeDensityAlphaScale) > 0
+    && Number(edges?.material?.edgeDensityAlphaScale) <= 1,
+  {
+    edgeLegibility: edges?.metadata?.edgeLegibility,
+    geometry: edges?.geometry,
+    material: edges?.material,
+  });
+
 assert("native mixed evidence is not synthetic",
   document_.provenance?.native_export === true
     && document_.provenance?.synthetic !== true
