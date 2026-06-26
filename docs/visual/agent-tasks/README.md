@@ -68,6 +68,9 @@ set, and one validation path.
 | `condition-monitoring-composition-acceptance.md` | improve condition-monitoring field/trajectory composition through reusable engine views | integrated; still review-pending |
 | `mapping-residual-composition-acceptance.md` | make mapping morph and residual evidence readable without page-local rendering | integrated; still review-pending |
 | `relation-matrix-composition-acceptance.md` | improve relation-matrix readability, graph balance and pair preview placement | integrated; still review-pending |
+| `mixed-records-composition-acceptance.md` | make heterogeneous typed-glyph and cross-type relation structure readable | ready to assign |
+| `cross-space-composition-acceptance.md` | make paired-space dependence bridges and linked selection readable | ready to assign |
+| `dynamics-noise-composition-acceptance.md` | make finite metric dynamics trajectory, field and timeline structure readable | ready to assign |
 
 ## Next Slots
 
@@ -112,6 +115,10 @@ visual grammars and gallery assets, not from synthetic data or one-off pages:
   residuals and relation matrix readability as the baseline for the next
   acceptance wave; each follow-up task must still improve reusable engine/view
   modules, not only page layout
+- work the next composition wave through `mixed-records-composition-acceptance`,
+  `cross-space-composition-acceptance` and
+  `dynamics-noise-composition-acceptance`; these are parallel engine-view tasks,
+  not requests for page-only visual tweaks
 
 ## Shared Validation Commands
 
