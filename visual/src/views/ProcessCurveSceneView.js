@@ -659,6 +659,10 @@ function createProcessCurveTrackDescriptor(document, inputs, options) {
       relationId: null,
       graphId: null,
       timelineId: null,
+      isEvidence: false,
+      evidenceClaim: false,
+      fallback: true,
+      fallbackReason: "record-order-layout-is-not-trajectory-evidence",
     },
     curveOptions: {
       radius: finiteNumber(options.trackRadius, 0.018),
@@ -673,14 +677,19 @@ function createProcessCurveTrackDescriptor(document, inputs, options) {
     },
     metadata: {
       visualGrammar: "process-curves",
+      evidenceClaim: false,
+      fallback: true,
+      fallbackReason: "record-order-layout-is-not-trajectory-evidence",
     },
   });
   return view.toLayerDescriptors()[0];
 }
 
 function createProcessCurveGraphTrackDescriptor(document, inputs, options) {
+  if (options.useGraphTrajectory === false || options.preferGraphTrajectory === false) return null;
   const requestedGraphTrack = options.useGraphTrajectory === true
     || options.preferGraphTrajectory === true
+    || options.useGraphTrajectory == null
     || options.graphId != null
     || options.pathGraphId != null
     || options.relationId != null

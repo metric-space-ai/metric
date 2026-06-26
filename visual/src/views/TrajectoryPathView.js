@@ -174,10 +174,15 @@ export class TrajectoryPathView extends BaseView {
   toLayerDescriptors() {
     const evidence = this.buildPathEvidence();
     if (!evidence.paths.length) return [];
+    const evidenceClaim = evidence.isEvidence !== false;
 
     const nativeEvidence = {
       ...(this.nativeEvidence || {}),
       source: this.nativeEvidence?.source || evidence.source,
+      isEvidence: evidenceClaim,
+      evidenceClaim,
+      fallback: evidence.fallback === true,
+      fallbackReason: evidence.fallbackReason || null,
     };
     const descriptorOptions = this.descriptorOptions();
     const descriptor = this.descriptorFactory === "tube-ribbon" || this.mode === "tube"
@@ -202,6 +207,9 @@ export class TrajectoryPathView extends BaseView {
       ...this.metadata,
       role: "trajectory/path",
       evidenceRole: this.evidenceRole,
+      evidenceClaim,
+      fallback: evidence.fallback === true,
+      fallbackReason: evidence.fallbackReason || null,
       viewClass: "TrajectoryPathView",
       viewKind: this.sourceViewKind,
       pathSource: evidence.source,
@@ -281,6 +289,9 @@ export class TrajectoryPathView extends BaseView {
       source: this.pathSource || "record-order-layout",
       paths: recordOrder,
       recordCount: this.recordIds.length,
+      isEvidence: false,
+      fallback: true,
+      fallbackReason: "record-order-layout-is-not-trajectory-evidence",
     };
   }
 

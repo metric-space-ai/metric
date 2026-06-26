@@ -52,6 +52,9 @@ set, and one validation path.
 | `dynamics-noise-visual-acceptance.md` | visual acceptance candidate for native dynamics preview | review-pending candidate integrated |
 | `relation-matrix-visual-acceptance.md` | visual acceptance candidate for native relation-matrix preview | review-pending candidate integrated |
 | `process-curve-external-scale-exporter.md` | scale external process-curve preview only with real licensed source windows | blocked: missing real source windows |
+| `native-provenance-command-contract-hardening.md` | harden explicit native provenance and public command coverage | ready to assign |
+| `evidence-strictness-trajectory-property-residual.md` | prevent record-order, scalar-default and residual fallback evidence claims | ready to assign |
+| `project-site-visual-portfolio-redesign.md` | reshape project page as visual-first native evidence portfolio | ready to assign |
 | `project-gallery-native-evidence.md` | project-page gallery limited to accepted/native evidence | integrated |
 | `descriptor-injection-hardening.md` | remove public raw descriptor injection escape hatches | integrated |
 | `mnist-babyplot-quarantine.md` | remove old Babyplots/Babylon MNIST standalone renderer from active examples | integrated |
