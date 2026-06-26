@@ -210,14 +210,16 @@ export class MetricVisualSurface {
       if (!view) continue;
       if (typeof view.toLayerDescriptors === "function") {
         descriptors.push(...view.toLayerDescriptors());
-      } else {
+      } else if (options.__metricVisualInternalRawDescriptors === true) {
         descriptors.push(view);
+      } else {
+        throw new TypeError("MetricVisualSurface.setViews() accepts semantic view objects with toLayerDescriptors(); raw layer descriptors are internal-only.");
       }
     }
-    return this.setLayerDescriptors(descriptors, options);
+    return this._setLayerDescriptors(descriptors, options);
   }
 
-  setLayerDescriptors(descriptors, options = {}) {
+  _setLayerDescriptors(descriptors, options = {}) {
     const next = toMetricVisualArray(descriptors).filter(Boolean);
     this.descriptors = options.append ? this.descriptors.concat(next) : next;
     this.runtime.setLayerDescriptors(this.descriptors, { source: options.source || "metric-visual-surface" });
@@ -235,10 +237,6 @@ export class MetricVisualSurface {
       this.disableMappingMotion();
     }
     return this;
-  }
-
-  addLayerDescriptors(descriptors, options = {}) {
-    return this.setLayerDescriptors(descriptors, { ...options, append: true });
   }
 
   setMotion(motion = "studio-drift", options = {}) {
@@ -275,7 +273,7 @@ export class MetricVisualSurface {
       this.views.push(field);
       descriptors.splice(1, 0, ...field.toLayerDescriptors());
     }
-    this.setLayerDescriptors(descriptors, { source: "showMetricSpace", viewKind: "metric-space" });
+    this._setLayerDescriptors(descriptors, { source: "showMetricSpace", viewKind: "metric-space" });
     return this.configurePreview(options);
   }
 
@@ -300,7 +298,7 @@ export class MetricVisualSurface {
     this.views = [view, field];
     const descriptors = view.toLayerDescriptors();
     descriptors.splice(1, 0, ...field.toLayerDescriptors());
-    this.setLayerDescriptors(descriptors, { source: "showSpaceProperties", viewKind: "space-properties" });
+    this._setLayerDescriptors(descriptors, { source: "showSpaceProperties", viewKind: "space-properties" });
     return this.configurePreview(options);
   }
 
@@ -308,7 +306,7 @@ export class MetricVisualSurface {
     const view = MappingView.fromVisualSpace(this.document, normalizeMappingOptions(this.document, options));
     this.views = [view];
     const descriptors = view.toLayerDescriptors();
-    this.setLayerDescriptors(descriptors, { source: "showMapping", viewKind: "mapping" });
+    this._setLayerDescriptors(descriptors, { source: "showMapping", viewKind: "mapping" });
     this.configureMappingMotion(view, options);
     return this.configurePreview(options);
   }
@@ -338,7 +336,7 @@ export class MetricVisualSurface {
       descriptors.unshift(...field.toLayerDescriptors());
       this.views.push(field);
     }
-    this.setLayerDescriptors(descriptors, { source: "showDynamics", viewKind: "dynamics" });
+    this._setLayerDescriptors(descriptors, { source: "showDynamics", viewKind: "dynamics" });
     this.configureTimelineControl(view, normalized);
     return this.configurePreview(options);
   }
@@ -382,7 +380,7 @@ export class MetricVisualSurface {
     });
     this.views = [view];
     const descriptors = view.toLayerDescriptors();
-    this.setLayerDescriptors(descriptors, { source: "showConditionMonitoring", viewKind: "condition-monitoring" });
+    this._setLayerDescriptors(descriptors, { source: "showConditionMonitoring", viewKind: "condition-monitoring" });
     if (options.camera !== false) {
       this.setCamera(options.camera || conditionMonitoringCamera());
     }
@@ -405,7 +403,7 @@ export class MetricVisualSurface {
     const view = ProcessCurveSceneView.fromVisualSpace(this.document, normalized);
     this.views = [view];
     const descriptors = view.toLayerDescriptors();
-    this.setLayerDescriptors(descriptors, { source: "showProcessCurves", viewKind: "process-curves" });
+    this._setLayerDescriptors(descriptors, { source: "showProcessCurves", viewKind: "process-curves" });
     if (options.camera !== false) {
       this.setCamera(options.camera || processCurveCamera());
     }
@@ -441,7 +439,7 @@ export class MetricVisualSurface {
     });
     this.views = [view];
     const descriptors = view.toLayerDescriptors();
-    this.setLayerDescriptors(descriptors, { source: "showCrossSpace", viewKind: "cross-space" });
+    this._setLayerDescriptors(descriptors, { source: "showCrossSpace", viewKind: "cross-space" });
     return this.configurePreview({ ...options, preview: options.preview ?? "paired records" });
   }
 
@@ -462,7 +460,7 @@ export class MetricVisualSurface {
       size: options.pointSize ?? 1.2,
     }));
     this.views = [matrix, graph];
-    this.setLayerDescriptors([
+    this._setLayerDescriptors([
       ...graph.toLayerDescriptors(),
       ...matrix.toLayerDescriptors().map((descriptor) => ({ ...descriptor, order: 200 })),
     ], { source: "showRelationMatrixNeighborhood", viewKind: "relation-matrix-neighborhood" });

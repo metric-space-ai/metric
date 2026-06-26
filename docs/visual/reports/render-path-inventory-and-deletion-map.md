@@ -10,9 +10,11 @@ not changed. GRAE10 cleanup is intentionally not scheduled here.
 
 Follow-up status, same day: finding F4 was implemented after this inventory.
 The unused `metric-visual.js` facade helpers `pairedRecordBridgeDescriptor`,
-`sharedGroundDescriptor`, and `offsetPositionMap` were removed. The next
-cleanup priority is F2, wrapping or demoting the public descriptor injection
-escape hatches.
+`sharedGroundDescriptor`, and `offsetPositionMap` were removed. Finding F11 was
+also implemented: the active MNIST Babyplots standalone HTML page was deleted,
+and MNIST remains represented by the protected METRIC-owned GRAE10 engine page
+at `visual/examples/grae10-metric-engine/index.html`. The next cleanup priority
+is F2, wrapping or demoting the public descriptor injection escape hatches.
 
 Target architecture:
 
@@ -25,17 +27,19 @@ metric.visual.v1 evidence -> semantic view -> layer descriptors -> MetricVisualR
 1. Done: delete the dead legacy descriptor helpers at the bottom of
    `visual/src/metric-visual.js`: `pairedRecordBridgeDescriptor`,
    `sharedGroundDescriptor`, and `offsetPositionMap`.
-2. Next: wrap or demote `MetricVisualSurface.setLayerDescriptors()` and
-   `addLayerDescriptors()`. They are public descriptor injection escape hatches
-   that let page code bypass semantic views.
+2. Done: demote public descriptor injection on `MetricVisualSurface`.
+   Semantic commands now install descriptors through the internal
+   `_setLayerDescriptors()` helper, while `setViews()` only accepts semantic
+   view objects with `toLayerDescriptors()` unless an explicitly internal
+   diagnostics option is used.
 3. Wrap process-curve miniature bundle/factory exports so process-curve look
    galleries can request a semantic process-curve scene without assembling
    descriptors and runtimes page-locally.
 4. Quarantine direct-runtime examples (`native-engine-probe` and
    `miniature-look-gallery`) outside public-gallery paths, or rewrite them to use
    `createMetricVisual()` plus semantic commands.
-5. Delete/quarantine the external MNIST/Babyplots HTML demo. It is a separate
-   renderer and is not compatible with the one-engine rule.
+5. Done: delete the external MNIST/Babyplots HTML demo. It was a separate
+   renderer and was not compatible with the one-engine rule.
 6. Keep the existing public hero examples that call `createMetricVisual()` and
    `show*` commands; validate they never import `MetricVisualRuntime` directly.
 
@@ -61,22 +65,27 @@ metric.visual.v1 evidence -> semantic view -> layer descriptors -> MetricVisualR
 
 ### F2: Public Descriptor Injection Escape Hatch
 
-- Path/line: `visual/src/metric-visual.js:209`,
-  `visual/src/metric-visual.js:222`, `visual/src/metric-visual.js:242`
+- Path/line: `visual/src/metric-visual.js:207`,
+  `visual/src/metric-visual.js:222`
 - Symbol: `MetricVisualSurface.setViews()`,
-  `MetricVisualSurface.setLayerDescriptors()`,
-  `MetricVisualSurface.addLayerDescriptors()`
-- Current role: direct descriptor setters on the public surface.
-- Classification: wrap.
-- One-engine status: partially violates the rule. `setViews()` is safe when it
-  receives semantic views, but it also accepts raw descriptors. `setLayerDescriptors()`
-  and `addLayerDescriptors()` let callers bypass semantic view ownership.
-- Exact next action: demote descriptor setters to internal/private API or gate
-  them behind an explicitly internal diagnostics option. Public examples should
-  use `show*` commands or semantic view objects only.
+  `MetricVisualSurface._setLayerDescriptors()`
+- Current role: public semantic view setter plus internal descriptor installer.
+- Classification: keep with guard.
+- One-engine status: satisfies the rule at the public facade boundary.
+  `setLayerDescriptors()` and `addLayerDescriptors()` are no longer public
+  `MetricVisualSurface` methods. Public callers can use semantic `show*`
+  commands or `setViews()` with objects that implement `toLayerDescriptors()`.
+  Raw layer descriptor installation is internal-only through
+  `_setLayerDescriptors()`; the runtime method
+  `MetricVisualRuntime.setLayerDescriptors()` remains available to runtime
+  internals.
+- Exact next action: keep public examples on `createMetricVisual()` plus
+  semantic commands or semantic view objects. Do not reintroduce public raw
+  descriptor setters on `MetricVisualSurface`.
 - Safest owner scope: `visual/src/metric-visual.js` plus public API/export tests.
-- Validation command: `rg -n "setLayerDescriptors\\(|addLayerDescriptors\\(" visual/src visual/examples docs/site --glob '!visual/src/metric-visual.js'`
-  should have no public page calls after the wrap.
+- Validation command: `rg -n "setLayerDescriptors\\(|addLayerDescriptors\\(" visual/src visual/examples docs/site --glob '!visual/src/runtime/runtime.js' --glob '!visual/src/runtime/metric-webgl/**'`
+  may show the private facade helper and internal runtime usage, but must not
+  show public example or project-site calls.
 
 ### F3: Canonical Semantic Commands
 
@@ -254,14 +263,15 @@ metric.visual.v1 evidence -> semantic view -> layer descriptors -> MetricVisualR
 - Path/line: `visual/examples/mnist-dimension-reduction/index.html:24`,
   `visual/examples/mnist-dimension-reduction/index.html:58`
 - Symbol: embedded `Baby` bundle, `vis.doRender()`
-- Current role: standalone generated HTML with embedded Babyplots/Babylon-style
+- Current role: gone from active visual examples. The former page was a
+  standalone generated HTML file with an embedded Babyplots/Babylon-style
   renderer and page-local render loop.
 - Classification: delete.
 - One-engine status: violates the rule. It is a separate renderer and cannot be
   made safe by tests passing.
-- Exact next action: delete the example or quarantine it outside public visual
-  examples. If MNIST remains needed, re-export as `metric.visual.v1` evidence and
-  render with `createMetricVisual()`.
+- Exact next action: done; `visual/examples/mnist-dimension-reduction/index.html`
+  was deleted. MNIST is represented by the protected METRIC-owned GRAE10 engine
+  page at `visual/examples/grae10-metric-engine/index.html`.
 - Safest owner scope: `visual/examples/mnist-dimension-reduction/index.html`
   only, plus docs links if any are found.
 - Validation command: `rg -n "Baby;|Baby\\.|doRender\\(|mnist-dimension-reduction" visual docs/site`
@@ -382,9 +392,9 @@ metric.visual.v1 evidence -> semantic view -> layer descriptors -> MetricVisualR
    `createProcessCurveMiniatureSceneBundle` and direct descriptor factories so
    look-gallery/probe pages cannot assemble runtimes from descriptors.
 3. Example quarantine/deletion: move or rewrite `native-engine-probe` and
-   `miniature-look-gallery`; delete or quarantine
-   `visual/examples/mnist-dimension-reduction/index.html`. Do not include GRAE10
-   in this task.
+   `miniature-look-gallery`. The old MNIST Babyplots standalone page at
+   `visual/examples/mnist-dimension-reduction/index.html` has been deleted; do
+   not include GRAE10 in this cleanup task.
 
 ## Search Log
 

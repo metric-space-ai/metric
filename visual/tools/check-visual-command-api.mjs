@@ -93,6 +93,7 @@ const PUBLIC_EXAMPLE_FORBIDDEN = [
   ["manual descriptor serialization", /\.toDescriptor\s*\(/],
   ["manual descriptor conversion", /\.toLayerDescriptors\s*\(/],
   ["manual descriptor installation", /\.(?:set|add)LayerDescriptors\s*\(/],
+  ["private descriptor installation", /\._setLayerDescriptors\s*\(/],
   ["manual WebGL renderer", /\bWebGLRenderer\b|\bEffectComposer\b|\bnew\s+MGL\.(?:Scene|PerspectiveCamera|WebGLRenderer)\b/],
   ["manual canvas render context", /\.getContext\s*\(/],
   ["manual animation loop", /\brequestAnimationFrame\s*\(/],
@@ -110,6 +111,7 @@ async function main() {
   const commandResults = [];
 
   checkExportSurface(failures);
+  await checkDescriptorInjectionBoundary(failures);
   commandResults.push(...await checkCommandDiagnostics(failures));
   await checkPublicExamples(failures);
 
@@ -146,6 +148,50 @@ function checkExportSurface(failures) {
   }
 }
 
+async function checkDescriptorInjectionBoundary(failures) {
+  assert(
+    failures,
+    "MetricVisualSurface: public setLayerDescriptors method is removed",
+    typeof MetricVisualSurface.prototype.setLayerDescriptors === "undefined",
+  );
+  assert(
+    failures,
+    "MetricVisualSurface: public addLayerDescriptors method is removed",
+    typeof MetricVisualSurface.prototype.addLayerDescriptors === "undefined",
+  );
+  assert(
+    failures,
+    "MetricVisualSurface: internal descriptor helper remains available",
+    typeof MetricVisualSurface.prototype._setLayerDescriptors === "function",
+  );
+
+  const surface = createHeadlessSurface(await readJson("visual/examples/fixtures/metric-space.visual.json"));
+  const semanticView = {
+    toLayerDescriptors() {
+      return [{ id: "semantic-layer", primitive: "InstancedPointLayer", source: { viewKind: "test-view" } }];
+    },
+  };
+  surface.setViews([semanticView], { source: "setViewsBoundaryCheck", viewKind: "test-view" });
+  assert(
+    failures,
+    "MetricVisualSurface.setViews accepts semantic view objects",
+    surface.descriptors.length === 1 && surface.descriptors[0]?.id === "semantic-layer",
+    surface.descriptors,
+  );
+
+  let rejectedRawDescriptor = false;
+  try {
+    surface.setViews([{ id: "raw-layer", primitive: "InstancedPointLayer" }], { source: "rawDescriptorBoundaryCheck" });
+  } catch (error) {
+    rejectedRawDescriptor = /raw layer descriptors are internal-only/i.test(error?.message || "");
+  }
+  assert(
+    failures,
+    "MetricVisualSurface.setViews rejects raw layer descriptors",
+    rejectedRawDescriptor,
+  );
+}
+
 async function checkCommandDiagnostics(failures) {
   const metricFixture = await readJson("visual/examples/fixtures/metric-space.visual.json");
   const nativeCondition = await readJson("docs/examples/assets/condition-monitoring/metric.visual.json");
@@ -155,6 +201,7 @@ async function checkCommandDiagnostics(failures) {
   const nativeRelation = await readJson("docs/examples/assets/relation-matrix/metric.visual.json");
   const nativeDynamics = await readJson("docs/examples/assets/dynamics-noise/metric.visual.json");
   const nativeMapping = await readJson("docs/examples/assets/mapping-dimensionality/metric.visual.json");
+  const nativeSolverTrace = await readJson("docs/examples/assets/solver-trace/metric.visual.json");
   const mappingSourceCoordinate = findCoordinateId(nativeMapping, { dimension: 2, prefer: /target|latent|diffusion/i });
   const mappingTargetCoordinate = findCoordinateId(nativeMapping, { dimension: 3, prefer: /source|layout|feature/i });
   const mappingResidualProperty = findPropertyId(nativeMapping, { valueType: "scalar", prefer: /distortion|residual|error/i });
@@ -177,6 +224,8 @@ async function checkCommandDiagnostics(failures) {
   const relationCoordinate = findCoordinateId(nativeRelation, { dimension: 3, prefer: /block|layout|process/i });
   const relationId = findRelationId(nativeRelation, { prefer: /metric|aligned/i });
   const relationColor = findPropertyId(nativeRelation, { targetType: "record", valueType: "categorical", prefer: /family|block|group/i });
+  const solverTimeline = findTimelineId(nativeSolverTrace, { prefer: /jacobi|solver|trace/i });
+  const solverResidual = findPropertyId(nativeSolverTrace, { targetType: "timeline_step", valueType: "scalar", prefer: /residual/i });
 
   const cases = [
     {
@@ -311,16 +360,13 @@ async function checkCommandDiagnostics(failures) {
     {
       command: "showSolverTrace",
       viewKind: "solver-trace",
-      evidenceKind: "synthetic_fixture",
-      document: metricFixture,
+      evidenceKind: "native",
+      document: nativeSolverTrace,
+      requiredPrimitives: ["CurveRibbonLayer"],
       options: {
-        series: [
-          { iteration: 0, residual: 1 },
-          { iteration: 1, residual: 0.4 },
-          { iteration: 2, residual: 0.08 },
-          { iteration: 3, residual: 0.008 },
-        ],
-        traceLabel: "PCG residual",
+        timelineId: solverTimeline,
+        propertyId: solverResidual,
+        traceLabel: "native Jacobi residual",
         preview: false,
       },
     },

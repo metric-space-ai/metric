@@ -22,6 +22,7 @@ export class SolverTraceView extends BaseView {
     this.color = options.color || [0.94, 0.62, 0.28, 1];
     this.timelineId = options.timelineId || options.timeline_id || options.metadata?.timelineId || null;
     this.tracePropertyId = options.tracePropertyId || options.propertyId || options.property_id || null;
+    this.nativeEvidence = options.nativeEvidence || options.metadata?.nativeEvidence || null;
   }
 
   static fromVisualSpace(document, options = {}) {
@@ -60,7 +61,19 @@ export class SolverTraceView extends BaseView {
         ...(options.metadata || {}),
         timelineId: timeline?.id,
         tracePropertyId: traceProperty?.id ?? options.propertyId ?? null,
+        nativeEvidence: document?.provenance?.native_export === true ? {
+          nativeExport: true,
+          writer: document.provenance.writer || null,
+          generator: document.provenance.generator || null,
+          computedBy: document.provenance.computed_by || null,
+        } : null,
       },
+      nativeEvidence: document?.provenance?.native_export === true ? {
+        nativeExport: true,
+        writer: document.provenance.writer || null,
+        generator: document.provenance.generator || null,
+        computedBy: document.provenance.computed_by || null,
+      } : null,
     });
   }
 
@@ -147,6 +160,7 @@ export class SolverTraceView extends BaseView {
         traceLabel: this.label,
         timelineId: this.timelineId,
         tracePropertyId: this.tracePropertyId,
+        nativeEvidence: this.nativeEvidence,
         seriesCount: this.series.length,
         iterationDomain: {
           min: this.series[0]?.iteration ?? 0,
@@ -161,6 +175,7 @@ export class SolverTraceView extends BaseView {
       logScale: this.logScale,
       timelineId: this.timelineId,
       tracePropertyId: this.tracePropertyId,
+      nativeEvidence: this.nativeEvidence,
       algorithmicComputation: false,
     };
     return [descriptor];
