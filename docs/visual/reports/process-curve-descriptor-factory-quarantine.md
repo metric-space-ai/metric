@@ -27,6 +27,5 @@
 ## Direct-Runtime Pages Left
 
 - `visual/examples/miniature-look-gallery/index.html` still uses the direct runtime/style atlas harness, but its descriptors now originate from `ProcessCurveSceneView`.
-- `visual/examples/process-curve-condition-monitoring/index.html` still uses the direct runtime harness.
 - `visual/examples/native-engine-probe/index.html` still uses the direct runtime harness.
 - `visual/examples/grae10-metric-engine/` was left untouched as required.

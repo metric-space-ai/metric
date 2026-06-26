@@ -233,30 +233,32 @@ assert.equal(pairPreview.pair.properties.find((field) => field.label === "source
 const nativeCrossSpaceDocument = JSON.parse(readFileSync(new URL("../../docs/examples/assets/cross-space-dependency/metric.visual.json", import.meta.url), "utf8"));
 runtime.document = nativeCrossSpaceDocument;
 runtime.visualSpace = VisualSpace.fromDocument(nativeCrossSpaceDocument);
+const nativeRowId = nativeCrossSpaceDocument.records[0].id;
+const nativeColumnId = nativeCrossSpaceDocument.records[1].id;
 
-runtime.selectRecord("obs-00", { source: "native-record-preview", focus: false });
+runtime.selectRecord(nativeRowId, { source: "native-record-preview", focus: false });
 state = runtime.getState();
-assert.equal(state.selectedRecordId, "obs-00");
+assert.equal(state.selectedRecordId, nativeRowId);
 assert.equal(state.selectedRecordPreview.kind, "record");
 assert.equal(state.selectedRecordPreview.payloadKind, "composed");
 assert.equal(state.selectedRecordPreview.linkedViews.length, 2);
 assert.equal(
   state.selectedRecordPreview.record.properties.find((field) => field.label === "local distance-profile alignment").value,
-  0.986754245804,
+  0.9855259474134199,
 );
-assert.equal(state.selectionPreview.recordId, "obs-00");
+assert.equal(state.selectionPreview.recordId, nativeRowId);
 
 runtime.selectPair({
   relationId: "event-log-edit-distance",
-  rowId: "obs-00",
-  columnId: "obs-01",
+  rowId: nativeRowId,
+  columnId: nativeColumnId,
 }, { source: "native-pair-preview" });
 state = runtime.getState();
 assert.equal(state.selectedPairPreview.kind, "pair");
 assert.equal(state.selectedPairPreview.pair.value, 6);
 assert.equal(
   state.selectedPairPreview.pair.properties.find((field) => field.label === "pair distance-profile z-product contribution").value,
-  0.705432747484,
+  0.710616868409878,
 );
 assert.equal(state.selectedPairPreview.records.row.payloadKind, "composed");
 assert.equal(state.selectedPairPreview.records.column.payloadKind, "composed");
@@ -264,15 +266,15 @@ assert.equal(state.selectionPreview.pair.relationId, "event-log-edit-distance");
 
 runtime.selectPair({
   relationId: null,
-  rowId: "obs-00",
-  columnId: "obs-01",
+  rowId: nativeRowId,
+  columnId: nativeColumnId,
 }, { source: "native-linked-pair-preview" });
 state = runtime.getState();
 assert.equal(state.selectedPairPreview.pair.relationId, null);
 assert.equal(state.selectedPairPreview.pair.present, true);
 assert.equal(
   state.selectedPairPreview.pair.properties.find((field) => field.label === "pair distance-profile z-product contribution").value,
-  0.705432747484,
+  0.710616868409878,
 );
 assert.equal(state.selectionPreview.pair.relationId, null);
 

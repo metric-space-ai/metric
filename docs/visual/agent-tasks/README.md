@@ -39,12 +39,12 @@ set, and one validation path.
 | `preview-panel-presentation-workstream.md` | bounded record/pair preview presentation for exported payloads | integrated |
 | `relation-matrix-readability-workstream.md` | matrix readability, row/column/cell focus and large-matrix diagnostics | integrated |
 | `visual-acceptance-gates-workstream.md` | regression, performance and screenshot gates that cannot promote smoke tests to heroes | integrated |
-| `process-curve-scene-view-consolidation.md` | process-curve command/view consolidation into one semantic engine view | ready to assign |
+| `process-curve-scene-view-consolidation.md` | process-curve command/view consolidation into one semantic engine view | integrated |
 | `native-hero-scale-evidence-upgrade-plan.md` | concrete native evidence scale upgrade plan per preview | ready to assign |
 | `render-path-inventory-and-deletion-map.md` | read-only inventory of remaining noncanonical render paths | ready to assign |
-| `legacy-render-facade-deletion.md` | delete old `metric.evidence.v1` WebGL/2D render facade from public API | ready to assign |
-| `process-curve-descriptor-factory-quarantine.md` | remove process-curve descriptor-factory calls from example/public paths | ready to assign |
-| `direct-runtime-harness-quarantine.md` | quarantine direct-runtime probes and standalone renderer exports | ready to assign |
+| `legacy-render-facade-deletion.md` | delete old `metric.evidence.v1` WebGL/2D render facade from public API | integrated |
+| `process-curve-descriptor-factory-quarantine.md` | remove process-curve descriptor-factory calls from example/public paths | integrated |
+| `direct-runtime-harness-quarantine.md` | quarantine direct-runtime probes and standalone renderer exports | integrated |
 | `condition-monitoring-visual-acceptance.md` | visual acceptance candidate for native condition monitoring preview | ready to assign |
 | `mixed-records-visual-acceptance.md` | visual acceptance candidate for native mixed-record preview | ready to assign |
 | `cross-space-dependency-visual-acceptance.md` | visual acceptance candidate for native cross-space preview | ready to assign |

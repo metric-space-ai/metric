@@ -1,6 +1,6 @@
 # Direct Runtime Harness Quarantine
 
-Snapshot: `codex/visual-engine-evidence-exporters` on 2026-06-25.
+Snapshot: `codex/visual-engine-evidence-exporters` on 2026-06-26.
 
 This task kept the public METRIC Visual API centered on `createMetricVisual()`
 and semantic `show*()` commands. The canonical runtime remains intact; this work
@@ -15,11 +15,6 @@ only hides or documents direct-runtime and standalone renderer paths.
 | `visual/examples/grae10-engine-module/index.html` | protected module diagnostic | GRAE10 module smoke page; outside this task's edit scope. |
 | `visual/examples/native-engine-probe/index.html` | internal diagnostic harness | Retained as a dev-only process-curve miniature runtime probe. It now has HTML metadata, dataset flags, visible copy, and `window.metricVisualProbeMetadata` marking it as non-public. |
 | `visual/examples/miniature-look-gallery/index.html` | internal miniature style atlas | Still uses direct `MetricVisualRuntime` setup, but is not linked from the public gallery and is explicitly allow-listed by the quarantine checker. |
-| `visual/examples/process-curve-condition-monitoring/index.html` | legacy process-curve dev page | Still uses direct runtime setup, but process-curve example pages are outside this task's owner scope and it is not an accepted/public gallery hero. |
-
-`visual/examples/miniature-hero-frame/index.html` is documented in the checker as
-an internal miniature frame harness, but the current file no longer matches the
-direct-runtime patterns.
 
 ## Exports Removed Or Marked Internal
 
@@ -56,7 +51,7 @@ The checker:
 | `node visual/tools/check-views.mjs` | pass, `ok: true`, `total: 80`, `failed: 0` |
 | `node visual/tools/check-grae10-golden.mjs` | pass, GRAE10 hash `464f6a90c36c1e9c6b4ec90068500dc226740d65b251918aca567f99d64d3d5e` |
 | `rg -n "miniatureField\|InstancedBoxField\|createInstancedBoxField" visual/src/index.js visual/examples docs/site` | no matches; `rg` exited 1 because the expected result is empty |
-| `rg -n "new MetricVisualRuntime\|createLayerFromDescriptor" visual/examples docs/site` | pass with only non-public dev/probe pages: `process-curve-condition-monitoring`, `miniature-look-gallery`, and `native-engine-probe` |
+| `rg -n "new MetricVisualRuntime\|createLayerFromDescriptor" visual/examples docs/site` | pass with only non-public dev/probe pages: `miniature-look-gallery` and `native-engine-probe` |
 | `node visual/tools/check-direct-runtime-harness-quarantine.mjs` | pass, `ok: true`, no issues |
 
 Additional syntax checks also passed for:
@@ -69,8 +64,5 @@ Additional syntax checks also passed for:
 
 - Convert or further quarantine `visual/examples/miniature-look-gallery/index.html`
   when that page is in scope.
-- Convert or remove the direct runtime usage in
-  `visual/examples/process-curve-condition-monitoring/index.html` when
-  process-curve example pages are in scope.
 - Keep GRAE10 direct renderer paths under the existing GRAE10 owner/golden
   workflow; do not use them as a general public API pattern.

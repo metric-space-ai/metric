@@ -45,21 +45,9 @@ const ALLOWED_DIRECT_RUNTIME_HARNESSES = new Map([
     allowedWhenAccepted: false,
     requiredMarker: /\bdata-metric-visual-surface=["']internal-diagnostic-harness["']|\bmetricVisualProbeMetadata\b/,
   }],
-  ["visual/examples/miniature-hero-frame/index.html", {
-    category: "internal-miniature-style-frame",
-    reason: "Style/frame diagnostic that is not linked from the public project gallery.",
-    allowedWhenPublic: false,
-    allowedWhenAccepted: false,
-  }],
   ["visual/examples/miniature-look-gallery/index.html", {
     category: "internal-miniature-style-atlas",
     reason: "Style atlas diagnostic that compares miniature looks outside the public gallery.",
-    allowedWhenPublic: false,
-    allowedWhenAccepted: false,
-  }],
-  ["visual/examples/process-curve-condition-monitoring/index.html", {
-    category: "legacy-process-curve-dev-page",
-    reason: "Legacy process-curve inspection page retained outside public hero acceptance.",
     allowedWhenPublic: false,
     allowedWhenAccepted: false,
   }],
