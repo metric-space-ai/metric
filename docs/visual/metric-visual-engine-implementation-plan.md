@@ -2679,3 +2679,33 @@ Corrected status:
   review candidates, not accepted public heroes.
 - Mixed records, cross-space dependency, mapping/dimensionality and
   dynamics/noise still need their own review-candidate work order.
+
+## Implementation Checkpoint: Render Path Inventory
+
+Status date: 2026-06-26
+
+Implemented:
+
+- `docs/visual/reports/render-path-inventory-and-deletion-map.md` inventories
+  remaining direct runtime, descriptor and diagnostic render paths.
+- The public gallery path remains canonical: exported visual evidence flows
+  through semantic commands and `MetricVisualRuntime`.
+- Direct runtime construction is currently limited to protected GRAE10
+  references and internal diagnostics such as the native engine probe and
+  miniature look gallery.
+- The task registry marks `render-path-inventory-and-deletion-map` as
+  integrated.
+
+Verified:
+
+- `node visual/tools/check-direct-runtime-harness-quarantine.mjs`
+- `node visual/tools/check-legacy-render-facade-deletion.mjs`
+- `node visual/tools/check-process-curve-descriptor-factory-quarantine.mjs`
+- `node visual/tools/check-process-curve-scene-view.mjs`
+- `node visual/tools/check-native-hero-evidence-scale.mjs`
+
+Corrected status:
+
+- No new public render path was added.
+- The next cleanup tickets are runtime raw-descriptor hardening, optional style
+  atlas command wrapping, and DOM-only preview-contract classification.

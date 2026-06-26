@@ -8,13 +8,19 @@ Scope: read-only inventory. I inspected `visual/src/metric-visual.js`, `visual/s
 actionable findings below cite the source lines that matter. GRAE10 files were
 not changed. GRAE10 cleanup is intentionally not scheduled here.
 
-Follow-up status, same day: finding F4 was implemented after this inventory.
-The unused `metric-visual.js` facade helpers `pairedRecordBridgeDescriptor`,
-`sharedGroundDescriptor`, and `offsetPositionMap` were removed. Finding F11 was
-also implemented: the active MNIST Babyplots standalone HTML page was deleted,
-and MNIST remains represented by the protected METRIC-owned GRAE10 engine page
-at `visual/examples/grae10-metric-engine/index.html`. The next cleanup priority
-is F2, wrapping or demoting the public descriptor injection escape hatches.
+Follow-up status, same day: findings F2, F4 and F11 were implemented after this
+inventory. Public raw descriptor injection on `MetricVisualSurface` was demoted
+behind semantic views/internal helpers; the unused `metric-visual.js` facade
+helpers `pairedRecordBridgeDescriptor`, `sharedGroundDescriptor`, and
+`offsetPositionMap` were removed; the active MNIST Babyplots standalone HTML
+page was deleted. MNIST remains represented by the protected METRIC-owned
+GRAE10 engine page at `visual/examples/grae10-metric-engine/index.html`.
+
+Current re-check: `check-direct-runtime-harness-quarantine`,
+`check-legacy-render-facade-deletion`,
+`check-process-curve-descriptor-factory-quarantine` and
+`check-process-curve-scene-view` pass. Remaining cleanup is around internal
+diagnostics and contract pages, not public gallery bypasses.
 
 Target architecture:
 
@@ -384,17 +390,16 @@ metric.visual.v1 evidence -> semantic view -> layer descriptors -> MetricVisualR
 
 ## Next Three Non-Overlapping Cleanup Tasks
 
-1. Facade cleanup: remove `pairedRecordBridgeDescriptor`,
-   `sharedGroundDescriptor`, and `offsetPositionMap` from
-   `visual/src/metric-visual.js`; separately wrap/demote public descriptor
-   setters.
-2. Process-curve miniature API cleanup: wrap
-   `createProcessCurveMiniatureSceneBundle` and direct descriptor factories so
-   look-gallery/probe pages cannot assemble runtimes from descriptors.
-3. Example quarantine/deletion: move or rewrite `native-engine-probe` and
-   `miniature-look-gallery`. The old MNIST Babyplots standalone page at
-   `visual/examples/mnist-dimension-reduction/index.html` has been deleted; do
-   not include GRAE10 in this cleanup task.
+1. Runtime API hardening: split semantic view installation from internal
+   diagnostic raw descriptor installation in `visual/src/runtime/runtime.js`.
+   The validation target is that direct-runtime quarantine stays green while
+   public examples still render through semantic commands.
+2. Style atlas command wrapper: wrap or demote `native-engine-probe` and
+   `miniature-look-gallery` so the allow-list shrinks or remains explicitly
+   internal. Do not include protected GRAE10 in this task.
+3. Preview contract classification: keep `record-preview-contract` out of
+   generic WebGL canvas checks or classify it explicitly as a DOM-only
+   interaction contract.
 
 ## Search Log
 
