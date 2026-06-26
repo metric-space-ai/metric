@@ -92,13 +92,30 @@ docs/visual/reports/native-exporter-quality-audit-2026-06-26-subagent.md
 docs/visual/agent-tasks/visual-exporter-cli-contract.md
 docs/visual/agent-tasks/redif-native-public-evidence.md
 docs/visual/agent-tasks/relation-matrix-reproducibility-audit.md
+docs/visual/agent-tasks/redif-preview-integration.md
+docs/visual/agent-tasks/process-curve-real-data-inventory.md
 ```
 
 This follow-up is not visual polish. It is part of the evidence-library
 contract. Current state: Process-Curve, Solver-Trace, Redif and Relation-Matrix
 all produce parseable visual evidence by default; Redif is no longer labelled
 synthetic; and the checked Relation-Matrix public asset is reproducible from the
-native exporter.
+native exporter. Redif now also has a native review-pending engine preview at
+`visual/examples/redif-metric-dynamics-preview/index.html` that renders the
+exported measure-path timeline through `showDynamics()` without JavaScript
+algorithm computation.
+
+The current external process-curve scale blocker was rechecked by local
+inventory:
+
+```text
+docs/visual/reports/process-curve-real-data-inventory.md
+```
+
+The inventory found only the existing 48 real UCR-derived source windows. No
+full local UCR archive or extracted source tree was found in the required local
+search roots, so `missing-real-source-windows-for-500-record-hero` remains
+active.
 
 Scale-up implementation contracts for the native preview families are tracked
 in:

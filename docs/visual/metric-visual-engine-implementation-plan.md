@@ -2128,6 +2128,22 @@ Browser check:
 6. Add a hero to the public page only after the evidence gate and screenshot
    checks pass.
 
+Current follow-up status:
+
+- `project-site-copy-contract` is integrated. The public project page is guarded
+  by `visual/tools/check-project-site-copy-contract.mjs`, which keeps visible
+  copy in portfolio language and reserves internal review state for tooling
+  attributes.
+- `redif-preview-integration` is integrated. Redif metric-dynamics native
+  evidence is rendered by
+  `visual/examples/redif-metric-dynamics-preview/index.html` through
+  `showDynamics()` from the native
+  `docs/examples/assets/redif-metric-dynamics/metric.visual.json` asset. This
+  is an engine preview, not a public hero promotion.
+- `process-curve-real-data-inventory` is integrated. The local machine has only
+  48 distinct real UCR-derived source windows, so
+  `missing-real-source-windows-for-500-record-hero` remains the correct blocker.
+
 ## Implementation Checkpoint: Engine Command Layer
 
 Status date: 2026-06-24
@@ -2792,3 +2808,7 @@ Corrected status:
   below the 500-source-record hero target. The exact blocker is
   `missing-real-source-windows-for-500-record-hero` and is documented in
   `docs/visual/reports/process-curve-external-scale-exporter.md`.
+- The follow-up local inventory in
+  `docs/visual/reports/process-curve-real-data-inventory.md` confirms that no
+  full UCR 2021 archive or extracted source tree is available locally, so this
+  blocker cannot be cleared without external real data.

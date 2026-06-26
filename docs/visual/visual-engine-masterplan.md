@@ -246,6 +246,11 @@ Known gaps:
 - the existing UCR/process-curve evidence now has a native `metric.visual.v1`
   export and command-backed preview page; it remains preview-only until
   screenshot review accepts the visual grammar and composition
+- Redif native metric-dynamics evidence now has a review-pending engine preview
+  at `visual/examples/redif-metric-dynamics-preview/index.html`, rendered via
+  `createMetricVisual(...).showDynamics(...)` from
+  `docs/examples/assets/redif-metric-dynamics/metric.visual.json`; it is not a
+  public hero
 - six public preview families now meet their native hero evidence scale
   thresholds: condition monitoring, mixed records, cross-space dependency,
   relation matrix, finite dynamics/noise and mapping/dimensionality. They remain
@@ -254,7 +259,10 @@ Known gaps:
   by source-record count: the checked-in real UCR slices currently provide 48
   source windows plus 16 query records, while the hero target is 500 real source
   windows. The blocker is `missing-real-source-windows-for-500-record-hero` and
-  must not be bypassed with synthetic windows or query padding.
+  must not be bypassed with synthetic windows or query padding. The local data
+  inventory in `docs/visual/reports/process-curve-real-data-inventory.md`
+  confirms that no full UCR 2021 archive or extracted source tree is currently
+  available locally.
 - no full visual gallery for every METRIC algorithm family yet
 - the six native public preview families now all have visual-acceptance
   candidate pages/reports, but none has passed manual screenshot acceptance as a
@@ -295,6 +303,9 @@ Known gaps:
   `docs/visual/agent-tasks/visual-exporter-cli-contract.md`,
   `docs/visual/agent-tasks/redif-native-public-evidence.md` and
   `docs/visual/agent-tasks/relation-matrix-reproducibility-audit.md`.
+- the project page now has a copy contract gate that keeps visible public copy
+  in portfolio language while preserving internal status in tooling attributes:
+  `visual/tools/check-project-site-copy-contract.mjs`
 
 It must help users inspect:
 

@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>METRIC Visual - Redif Metric Dynamics Preview</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #182629;
+      --muted: #526266;
+      --surface: rgba(247, 249, 246, 0.9);
+      --line: rgba(53, 75, 76, 0.2);
+      --accent: #147b78;
+      --warn: #8b2f24;
+    }
+    * { box-sizing: border-box; }
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
+    body {
+      background: radial-gradient(circle at 44% 38%, #f8fbf7 0%, #e4ece5 58%, #cededb 100%);
+      color: var(--ink);
+      font: 12px/1.45 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main {
+      position: fixed;
+      inset: 0;
+    }
+    canvas {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+      touch-action: none;
+    }
+    canvas:active { cursor: grabbing; }
+    .caption {
+      position: absolute;
+      top: 22px;
+      left: 24px;
+      max-width: min(430px, calc(100vw - 48px));
+      pointer-events: none;
+      text-shadow: 0 1px 18px rgba(255, 255, 255, 0.68);
+    }
+    h1 {
+      margin: 0 0 7px;
+      font-size: 17px;
+      line-height: 1.15;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+    .caption p {
+      margin: 0;
+      max-width: 54ch;
+      color: rgba(45, 58, 61, 0.82);
+    }
+    .readout {
+      position: absolute;
+      top: 22px;
+      right: 24px;
+      display: grid;
+      gap: 6px;
+      min-width: 224px;
+      padding: 13px 14px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: 0 18px 44px rgba(28, 48, 49, 0.1);
+      color: var(--muted);
+      pointer-events: none;
+    }
+    .readout .label {
+      color: var(--ink);
+      font-weight: 700;
+    }
+    .readout .value {
+      color: var(--accent);
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    .readout .meta {
+      color: rgba(70, 83, 86, 0.84);
+      font-size: 11px;
+    }
+    .legend {
+      position: absolute;
+      left: 24px;
+      bottom: 126px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      pointer-events: none;
+    }
+    .legend .ramp {
+      width: 170px;
+      height: 9px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #1f596d, #2a967c, #d0af48, #cf5e45);
+      box-shadow: inset 0 0 0 1px rgba(31, 48, 48, 0.14);
+    }
+    .phase {
+      position: absolute;
+      right: 24px;
+      bottom: 126px;
+      color: var(--muted);
+      font-size: 10.5px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+    .loading,
+    .error {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      color: #263636;
+      text-align: center;
+    }
+    .error { color: var(--warn); }
+    .mtrc-timeline-control {
+      bottom: 18px;
+      border-color: var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: 0 18px 44px rgba(28, 48, 49, 0.1);
+    }
+    .mtrc-timeline-control input[type="range"] { accent-color: var(--accent); }
+    .mtrc-timeline-control button {
+      border-color: rgba(53, 75, 76, 0.2);
+      background: rgba(250, 252, 248, 0.78);
+    }
+    @media (max-width: 720px) {
+      .caption {
+        top: 18px;
+        left: 18px;
+        max-width: calc(100vw - 36px);
+      }
+      .readout {
+        top: auto;
+        right: 18px;
+        bottom: 154px;
+        left: 18px;
+        min-width: 0;
+      }
+      .legend {
+        right: 18px;
+        bottom: 124px;
+        left: 18px;
+      }
+      .legend .ramp {
+        flex: 1;
+        min-width: 90px;
+      }
+      .phase {
+        right: 18px;
+        bottom: 96px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene" aria-label="Native Redif metric-dynamics timeline preview"></canvas>
+    <section class="caption" aria-hidden="true">
+      <h1>Redif metric dynamics</h1>
+      <p>Native C++ Redif evidence rendered as exported metric-space state changes. Color and field evidence come from exported transport-path and entropy properties.</p>
+    </section>
+    <div class="readout" aria-hidden="true">
+      <span class="label" id="state-label">redif measure path</span>
+      <span class="value" id="state-value">loading</span>
+      <span class="meta" id="state-meta">native evidence pending</span>
+    </div>
+    <div class="legend"><span>low path</span><div class="ramp"></div><span>high path</span></div>
+    <div class="phase" id="phase">native preview</div>
+    <div class="loading" id="loading">Loading native Redif evidence...</div>
+  </main>
+
+  <script type="module">
+    import {
+      VisualSpace,
+      createMetricVisual,
+      isExplicitNativeMetricVisualExport,
+      validateVisualDocument,
+    } from "../../src/index.js";
+    import { isSyntheticMetricVisualEvidence } from "../../src/data/provenance.js";
+
+    const EVIDENCE_URL = "../../../docs/examples/assets/redif-metric-dynamics/metric.visual.json";
+    const TIMELINE_ID = "redif-measure-path";
+    const TRANSPORT_PROPERTY_ID = "redif-terminal-transport-path";
+    const ENTROPY_PROPERTY_ID = "redif-terminal-entropy";
+    const RELATION_ID = "redif-source-metric";
+
+    const canvas = document.getElementById("scene");
+    const loading = document.getElementById("loading");
+    const phaseEl = document.getElementById("phase");
+    const stateLabel = document.getElementById("state-label");
+    const stateValue = document.getElementById("state-value");
+    const stateMeta = document.getElementById("state-meta");
+    const params = new URLSearchParams(location.search);
+    const progressParam = params.get("progress");
+    const staticProgress = progressParam == null ? null : Math.max(0, Math.min(1, Number(progressParam)));
+
+    try {
+      const response = await fetch(EVIDENCE_URL);
+      if (!response.ok) throw new Error(`Native Redif evidence request failed: ${response.status}`);
+      const evidence = await response.json();
+      validateNativeRedifEvidence(evidence);
+
+      const timeline = evidence.timelines.find((entry) => entry.id === TIMELINE_ID);
+      const steps = timeline.steps;
+      const coordinateIds = steps.map((step) => step.coordinate_id).filter(Boolean);
+      const visual = await createMetricVisual({
+        canvas,
+        evidence: evidence,
+        profileId: "redif-metric-dynamics-preview-profile",
+      });
+
+      visual.showDynamics({
+        timelineId: TIMELINE_ID,
+        propertyField: TRANSPORT_PROPERTY_ID,
+        scalarProperty: ENTROPY_PROPERTY_ID,
+        colorProperty: TRANSPORT_PROPERTY_ID,
+        relationId: RELATION_ID,
+        preview: "state-history",
+        loop: staticProgress == null,
+        progress: staticProgress ?? undefined,
+        timelineProgress: staticProgress ?? undefined,
+        timelineDurationMs: 9200,
+        timelineControl: { root: canvas.parentElement },
+        fieldMode: "lifted",
+        fieldAlpha: 0.42,
+        fieldRadius: 0.24,
+        fieldLift: 0.36,
+        fieldMaterial: { contour: 0.18, glow: 0.12 },
+        pathWidth: 3.6,
+        pathAlpha: 0.72,
+        pointSize: 1.86,
+      });
+
+      const state = visual.getState();
+      const layerIds = state.descriptors.map((descriptor) => descriptor.id);
+      const pathLayers = state.descriptors.filter((descriptor) => descriptor.metadata?.evidenceRole === "trajectory/path");
+      const fieldLayers = state.descriptors.filter((descriptor) => descriptor.metadata?.evidenceRole === "timeline-ground-field");
+      updateStateReadout(staticProgress ?? 0);
+
+      visual.runtime.on?.("timelinecontrolchange", ({ state: timelineState }) => {
+        updateStateReadout(Number(timelineState?.normalized ?? timelineState?.value ?? 0));
+      });
+
+      document.documentElement.dataset.metricRedifPreview = "ready";
+      document.documentElement.dataset.metricEvidenceSource = EVIDENCE_URL;
+      document.documentElement.dataset.metricViewCommand = "showDynamics";
+      document.documentElement.dataset.metricRecordCount = String(visual.views[0].recordIds.length);
+      document.documentElement.dataset.metricTimelineIds = TIMELINE_ID;
+      document.documentElement.dataset.metricCoordinateIds = coordinateIds.join(",");
+      document.documentElement.dataset.metricPropertyIds = `${TRANSPORT_PROPERTY_ID},${ENTROPY_PROPERTY_ID}`;
+      document.documentElement.dataset.metricRelationIds = RELATION_ID;
+      document.documentElement.dataset.metricLayerIds = layerIds.join(",");
+      document.documentElement.dataset.metricPathLayers = pathLayers.map((descriptor) => descriptor.id).join(",");
+      document.documentElement.dataset.metricFieldLayers = fieldLayers.map((descriptor) => descriptor.id).join(",");
+      document.documentElement.dataset.metricMotion = staticProgress == null ? "timeline-coordinate-morph-loop" : `static-${staticProgress}`;
+      window.metricRedifPreview = { visual, runtime: visual.runtime, getState: () => visual.getState() };
+
+      loading.remove();
+      addEventListener("resize", () => {
+        const rect = canvas.getBoundingClientRect();
+        visual.runtime.resize(Math.max(1, Math.floor(rect.width)), Math.max(1, Math.floor(rect.height)));
+      });
+
+      function updateStateReadout(progress) {
+        const clamped = Math.max(0, Math.min(1, Number(progress) || 0));
+        const index = Math.round(clamped * Math.max(0, steps.length - 1));
+        const step = steps[index] || steps[0];
+        const stepLabel = Number.isFinite(Number(step?.index)) ? `Step ${step.index}` : "Step";
+        phaseEl.textContent = clamped < 0.18 ? "source atoms" : clamped > 0.82 ? "terminal measure" : "measure path";
+        stateLabel.textContent = `${stepLabel} - ${step?.coordinate_id || "exported state"}`;
+        stateValue.textContent = `${visual.views[0].recordIds.length} native records`;
+        stateMeta.textContent = `${steps.length} exported states - ${TRANSPORT_PROPERTY_ID}`;
+        document.documentElement.dataset.metricActiveTimelineStep = String(step?.index ?? index);
+        document.documentElement.dataset.metricActiveTimelineCoordinate = step?.coordinate_id || "";
+      }
+    } catch (error) {
+      console.error(error);
+      loading.className = "loading error";
+      loading.textContent = error instanceof Error ? error.message : String(error);
+      document.documentElement.dataset.metricRedifPreview = "error";
+    }
+
+    function validateNativeRedifEvidence(evidence) {
+      const validation = validateVisualDocument(evidence);
+      if (!validation.ok) {
+        throw new Error(`Native Redif evidence failed metric.visual validation: ${validation.errors[0]?.message || "unknown error"}`);
+      }
+      VisualSpace.fromDocument(evidence);
+      if (isSyntheticMetricVisualEvidence(evidence.provenance)) {
+        throw new Error("Native Redif evidence must not be synthetic.");
+      }
+      if (!isExplicitNativeMetricVisualExport(evidence.provenance)) {
+        throw new Error("Native Redif evidence is missing explicit native provenance.");
+      }
+      const diagnostic = evidence.diagnostics?.find((entry) => entry.id === "redif-native-evidence");
+      const payload = diagnostic?.payload || {};
+      const timeline = evidence.timelines?.find((entry) => entry.id === TIMELINE_ID);
+      if (!diagnostic || payload.javascript_computation !== false) {
+        throw new Error("Native Redif diagnostic evidence is missing or marked as JavaScript computation.");
+      }
+      if (!String(payload.computed_by || "").startsWith("METRIC C++ redif_")) {
+        throw new Error("Native Redif diagnostic provenance is not from the METRIC C++ Redif exporter.");
+      }
+      if (!timeline || timeline.steps?.length !== 5) {
+        throw new Error("Native Redif measure-path timeline is missing exported states.");
+      }
+      if (!evidence.properties?.some((entry) => entry.id === TRANSPORT_PROPERTY_ID)) {
+        throw new Error("Native Redif transport-path property is missing.");
+      }
+      if (!evidence.properties?.some((entry) => entry.id === ENTROPY_PROPERTY_ID)) {
+        throw new Error("Native Redif entropy property is missing.");
+      }
+      if (!evidence.relations?.some((entry) => entry.id === RELATION_ID)) {
+        throw new Error("Native Redif source metric relation is missing.");
+      }
+    }
+  </script>
+</body>
+</html>

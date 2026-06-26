@@ -62,6 +62,9 @@ set, and one validation path.
 | `descriptor-injection-hardening.md` | remove public raw descriptor injection escape hatches | integrated |
 | `mnist-babyplot-quarantine.md` | remove old Babyplots/Babylon MNIST standalone renderer from active examples | integrated |
 | `solver-trace-native-evidence.md` | back `showSolverTrace()` with native METRIC evidence or document precise blockers | integrated |
+| `project-site-copy-contract.md` | public project-page copy reads as visual portfolio, not an internal review log | integrated |
+| `redif-preview-integration.md` | native Redif visual evidence rendered through `showDynamics()` as a review-pending engine preview | integrated |
+| `process-curve-real-data-inventory.md` | read-only local inventory for real UCR source windows | integrated; blocker confirmed |
 
 ## Next Slots
 
@@ -94,6 +97,14 @@ visual grammars and gallery assets, not from synthetic data or one-off pages:
 - keep public gallery promotion behind `check-public-gallery-evidence.mjs`
 - keep every review-pending preview out of accepted-hero status until screenshot
   review explicitly accepts it
+- keep the project-page copy contract green so internal review state stays in
+  tooling attributes and not visible public copy
+- keep the Redif preview on native `metric.visual.v1` evidence and
+  `showDynamics()`; do not promote it to a public hero without a separate
+  visual brief, gallery decision and screenshot review
+- process-curve external scale remains blocked until real licensed source
+  windows are available locally or supplied externally; the current inventory
+  found only 48 real source windows
 
 ## Shared Validation Commands
 
@@ -102,6 +113,8 @@ node visual/tools/check-public-gallery-evidence.mjs
 node visual/tools/check-grae10-golden.mjs
 node visual/tools/check-views.mjs
 node visual/tools/check-cpp-export.mjs
+node visual/tools/check-project-site-copy-contract.mjs
+node visual/tools/check-redif-preview.mjs
 node visual/tools/check-visual-regression-public-examples.mjs
 node visual/tools/check-visual-performance-large-scenes.mjs
 node visual/tools/check-visual-document.mjs <exported metric.visual.json>
