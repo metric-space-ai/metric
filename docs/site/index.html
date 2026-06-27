@@ -221,6 +221,20 @@
         border: 0;
       }
 
+      .entropy-hero {
+        min-height: calc(100svh - 58px);
+        padding: 0;
+        scroll-margin-top: 58px;
+        overflow: hidden;
+        background: oklch(0.92 0.018 126);
+      }
+
+      .entropy-hero iframe {
+        width: 100%;
+        height: calc(100svh - 58px);
+        min-height: 700px;
+      }
+
       section {
         border-top: 1px solid var(--line);
       }
@@ -287,6 +301,10 @@
           background 180ms ease-out;
       }
 
+      .portfolio-item[data-preview-hidden="true"] {
+        grid-template-columns: minmax(260px, 0.42fr) minmax(0, 0.58fr);
+      }
+
       .portfolio-item:hover {
         transform: translateY(-2px);
         border-color: color-mix(in oklch, var(--accent), var(--ink) 30%);
@@ -305,6 +323,10 @@
         align-content: center;
         gap: 13px;
         padding: 20px 0;
+      }
+
+      .portfolio-item[data-preview-hidden="true"] .portfolio-main {
+        padding-left: 22px;
       }
 
       .portfolio-main h3 {
@@ -477,6 +499,11 @@
           min-height: 440px;
         }
 
+        .entropy-hero,
+        .entropy-hero iframe {
+          min-height: 560px;
+        }
+
         .preview {
           min-height: 220px;
         }
@@ -492,7 +519,8 @@
       <div class="wrap">
         <div class="brand">METRIC</div>
         <nav aria-label="Primary navigation">
-          <a href="#gallery">Gallery</a>
+          <a href="#gallery">Visual</a>
+          <a href="#entropy">Entropy</a>
           <a href="#concept">Concept</a>
           <a href="docs.html">Docs</a>
           <a class="button primary" href="https://github.com/metric-space-ai/metric">GitHub</a>
@@ -515,7 +543,7 @@
                 is the live visual reference.
               </p>
               <div class="hero-actions">
-                <a class="button primary" href="#gallery">Open gallery</a>
+                <a class="button primary" href="#gallery">View visual</a>
                 <a class="button" href="../../examples/engine/mnist_grae10_integrity.cpp">C++ source</a>
               </div>
             </div>
@@ -530,17 +558,24 @@
         </div>
       </section>
 
+      <section id="entropy" class="entropy-hero" aria-label="Continuous metric entropy analysis">
+        <iframe
+          title="Continuous entropy analysis over sliding BTAD/03 metric-space windows"
+          src="../../visual/examples/btad-entropy-window-graph/index.html?project-hero=1"
+          loading="lazy"></iframe>
+      </section>
+
       <section id="gallery" class="section">
         <div class="wrap">
           <div class="section-head">
             <div>
-              <p class="eyebrow">Portfolio</p>
-              <h2>Native metric-space visuals.</h2>
+              <p class="eyebrow">Accepted visual</p>
+              <h2>60,000 image records as one finite metric space.</h2>
             </div>
             <p>
-              Open a scene, inspect its exported JSON, or jump to the native
-              C++ source. GRAE10 is the only accepted reference; the remaining
-              scenes are native previews.
+              Each point keeps its original MNIST record identity while the
+              scene renders linked 2D and 3D coordinate states, class regions,
+              floor projections and record inspection.
             </p>
           </div>
 
@@ -551,8 +586,8 @@
             </div>
             <div>
               <p class="portfolio-copy">
-                The first viewport embeds this protected 60k reference once.
-                The source and exported data are available for inspection.
+                Open the live scene or inspect the native integrity check and
+                exported data behind the reference.
               </p>
               <div class="links" style="margin-top: 14px">
                 <a href="../../visual/examples/grae10-metric-engine/index.html">Open visual</a>
@@ -563,179 +598,8 @@
             </div>
           </div>
 
-          <div class="portfolio" aria-label="Native preview gallery">
-            <article class="portfolio-item" data-gallery-item="condition-monitoring-hero" data-evidence-status="review-pending">
-              <div class="preview">
-                <iframe
-                  title="Condition monitoring native preview"
-                  src="../../visual/examples/condition-monitoring-hero/index.html"
-                  loading="lazy"></iframe>
-              </div>
-              <div class="portfolio-main">
-                <span class="status pending">Native preview</span>
-                <h3>Condition monitoring</h3>
-                <p class="portfolio-copy">
-                  Operating windows, anomaly bands, density structure and
-                  trajectory context rendered from a native export.
-                </p>
-              </div>
-              <div class="portfolio-detail">
-                <div class="links">
-                  <a href="../../visual/examples/condition-monitoring-hero/index.html">Open visual</a>
-                  <a href="../../examples/engine/condition_monitoring_visual_export.cpp">C++ source</a>
-                  <a href="../../docs/examples/assets/condition-monitoring/metric.visual.json">Data JSON</a>
-                </div>
-              </div>
-            </article>
-
-            <article class="portfolio-item" data-gallery-item="mixed-record-hero" data-evidence-status="review-pending">
-              <div class="preview">
-                <iframe
-                  title="Mixed records native preview"
-                  src="../../visual/examples/mixed-record-hero/index.html"
-                  loading="lazy"></iframe>
-              </div>
-              <div class="portfolio-main">
-                <span class="status pending">Native preview</span>
-                <h3>Mixed records</h3>
-                <p class="portfolio-copy">
-                  Strings, curves, distributions and structured rows stay
-                  typed while relation geometry connects them in one space.
-                </p>
-              </div>
-              <div class="portfolio-detail">
-                <div class="links">
-                  <a href="../../visual/examples/mixed-record-hero/index.html">Open visual</a>
-                  <a href="../../examples/engine/mixed_finite_records_visual_export.cpp">C++ source</a>
-                  <a href="../../docs/examples/assets/mixed-records/metric.visual.json">Data JSON</a>
-                </div>
-              </div>
-            </article>
-
-            <article class="portfolio-item" data-gallery-item="cross-space-dependency-hero" data-evidence-status="review-pending">
-              <div class="preview">
-                <iframe
-                  title="Cross-space dependency native preview"
-                  src="../../visual/examples/cross-space-dependency-hero/index.html"
-                  loading="lazy"></iframe>
-              </div>
-              <div class="portfolio-main">
-                <span class="status pending">Native preview</span>
-                <h3>Cross-space dependency</h3>
-                <p class="portfolio-copy">
-                  Paired metric spaces remain separate while linked selections
-                  show how records move together.
-                </p>
-              </div>
-              <div class="portfolio-detail">
-                <div class="links">
-                  <a href="../../visual/examples/cross-space-dependency-hero/index.html">Open visual</a>
-                  <a href="../../examples/engine/cross_space_dependency_visual_export.cpp">C++ source</a>
-                  <a href="../../docs/examples/assets/cross-space-dependency/metric.visual.json">Data JSON</a>
-                </div>
-              </div>
-            </article>
-
-            <article class="portfolio-item" data-gallery-item="mapping-dimensionality-hero" data-evidence-status="review-pending">
-              <div class="preview">
-                <iframe
-                  title="Mapping and dimensionality native preview"
-                  src="../../visual/examples/mapping-dimensionality-hero/index.html"
-                  loading="lazy"></iframe>
-              </div>
-              <div class="portfolio-main">
-                <span class="status pending">Native preview</span>
-                <h3>Mapping and dimensionality</h3>
-                <p class="portfolio-copy">
-                  A coordinate state appears as a derived view, with residual
-                  and preservation overlays from the native mapping.
-                </p>
-              </div>
-              <div class="portfolio-detail">
-                <div class="links">
-                  <a href="../../visual/examples/mapping-dimensionality-hero/index.html">Open visual</a>
-                  <a href="../../examples/engine/mapping_dimensionality_visual_export.cpp">C++ source</a>
-                  <a href="../../docs/examples/assets/mapping-dimensionality/metric.visual.json">Data JSON</a>
-                </div>
-              </div>
-            </article>
-
-            <article class="portfolio-item" data-gallery-item="dynamics-noise-hero" data-evidence-status="review-pending">
-              <div class="preview">
-                <iframe
-                  title="Finite dynamics native preview"
-                  src="../../visual/examples/dynamics-noise-hero/index.html"
-                  loading="lazy"></iframe>
-              </div>
-              <div class="portfolio-main">
-                <span class="status pending">Native preview</span>
-                <h3>Finite dynamics</h3>
-                <p class="portfolio-copy">
-                  Timeline states, transitions and path traces make diffusion
-                  and reverse reconstruction visible over the finite space.
-                </p>
-              </div>
-              <div class="portfolio-detail">
-                <div class="links">
-                  <a href="../../visual/examples/dynamics-noise-hero/index.html">Open visual</a>
-                  <a href="../../examples/engine/finite_metric_dynamics_visual_export.cpp">C++ source</a>
-                  <a href="../../docs/examples/assets/dynamics-noise/metric.visual.json">Data JSON</a>
-                </div>
-              </div>
-            </article>
-
-            <article class="portfolio-item" data-gallery-item="relation-matrix-neighborhood" data-evidence-status="review-pending">
-              <div class="preview">
-                <iframe
-                  title="Relation matrix native preview"
-                  src="../../visual/examples/relation-matrix-neighborhood/index.html"
-                  loading="lazy"></iframe>
-              </div>
-              <div class="portfolio-main">
-                <span class="status pending">Native preview</span>
-                <h3>Relation matrix</h3>
-                <p class="portfolio-copy">
-                  Blocks, neighborhoods and selected cells connect pair values
-                  back to records and pair context.
-                </p>
-              </div>
-              <div class="portfolio-detail">
-                <div class="links">
-                  <a href="../../visual/examples/relation-matrix-neighborhood/index.html">Open visual</a>
-                  <a href="../../examples/engine/relation_matrix_visual_export.cpp">C++ source</a>
-                  <a href="../../docs/examples/assets/relation-matrix/metric.visual.json">Data JSON</a>
-                </div>
-              </div>
-            </article>
-
-            <article class="portfolio-item" data-gallery-item="process-curve-external-hero" data-evidence-status="review-pending">
-              <div class="preview">
-                <iframe
-                  title="External process-curve native preview"
-                  src="../../visual/examples/process-curve-external-hero/index.html"
-                  loading="lazy"></iframe>
-              </div>
-              <div class="portfolio-main">
-                <span class="status pending">Native preview</span>
-                <h3>UCR process curves</h3>
-                <p class="portfolio-copy">
-                  Real process-curve windows are rendered from a native export
-                  with aligned metric and baseline comparison.
-                </p>
-              </div>
-              <div class="portfolio-detail">
-                <div class="links">
-                  <a href="../../visual/examples/process-curve-external-hero/index.html">Open visual</a>
-                  <a href="../../examples/engine/process_curve_external_visual_export.cpp">C++ source</a>
-                  <a href="../../docs/examples/assets/process-curve-external/metric.visual.json">Data JSON</a>
-                </div>
-              </div>
-            </article>
-          </div>
-
           <p class="source-note">
-            The gallery contains one accepted reference and seven native
-            previews backed by exported C++ data.
+            Additional visuals are added only from real exported datasets.
           </p>
         </div>
       </section>
