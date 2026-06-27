@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>METRIC — Single-space MGC Morph</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink:#172326;
+      --muted:#556568;
+      --panel:rgba(248,250,246,.82);
+      --line:rgba(24,35,37,.16);
+      --accent:#1b7583;
+    }
+    * { box-sizing:border-box; }
+    html, body { width:100%; height:100%; margin:0; overflow:hidden; }
+    body {
+      background:radial-gradient(circle at 48% 42%, rgba(250,252,246,.92), rgba(229,237,232,.96) 62%, #dbe5e1 100%);
+      color:var(--ink);
+      font-family:Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main { position:fixed; inset:0; }
+    #scene { position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; cursor:grab; }
+    #scene:active { cursor:grabbing; }
+    .analysis-tag {
+      position:absolute; top:18px; left:18px; z-index:4;
+      max-width:min(560px, calc(100vw - 36px));
+      padding:10px 12px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:var(--panel);
+      backdrop-filter:blur(18px) saturate(1.08);
+      box-shadow:0 18px 48px rgba(28,42,40,.11);
+    }
+    .analysis-tag strong { display:block; margin-bottom:4px; font-size:13px; line-height:1.18; font-weight:820; }
+    .analysis-tag strong b { font-size:19px; letter-spacing:0; margin-left:3px; }
+    .analysis-tag span { display:block; color:var(--muted); font-size:11px; line-height:1.35; }
+    .analysis-tag code { display:block; margin-top:4px; color:#223236; font:650 10.5px/1.35 ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .controls {
+      position:absolute; left:50%; bottom:18px; transform:translateX(-50%); z-index:4;
+      width:min(820px, calc(100vw - 28px));
+      display:grid;
+      grid-template-columns:1fr 210px;
+      gap:9px 14px;
+      align-items:center;
+      padding:11px 12px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:rgba(249,250,246,.78);
+      backdrop-filter:blur(18px) saturate(1.08);
+      box-shadow:0 18px 56px rgba(28,42,40,.13);
+    }
+    .state-buttons { display:flex; gap:7px; flex-wrap:wrap; }
+    button {
+      min-height:34px; padding:0 11px;
+      border:1px solid rgba(24,35,37,.16);
+      border-radius:999px;
+      background:rgba(255,255,252,.68);
+      color:#223236;
+      font:760 12px/1 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+    button.active { background:#172326; color:#fff; }
+    .readout { color:#27383b; font:720 12px/1.35 ui-monospace,SFMono-Regular,Menlo,monospace; text-align:right; white-space:pre; }
+    input[type=range] { grid-column:1 / -1; width:100%; height:18px; margin:0; appearance:none; background:transparent; }
+    input[type=range]::-webkit-slider-runnable-track { height:3px; border-radius:999px; background:rgba(32,48,52,.22); }
+    input[type=range]::-webkit-slider-thumb {
+      appearance:none; width:14px; height:14px; margin-top:-5.5px; border-radius:999px;
+      background:var(--accent); border:2px solid rgba(249,250,246,.95); box-shadow:0 3px 10px rgba(22,48,54,.22);
+    }
+    body .mtrc-record-preview {
+      width:min(430px, calc(100vw - 28px));
+      padding:0;
+      overflow:hidden auto;
+      border-radius:10px;
+      background:rgba(251,251,244,.98);
+    }
+    .paired-card { display:block; }
+    .paired-card__log {
+      padding:10px 11px 8px;
+      border-bottom:1px solid rgba(24,35,37,.12);
+      font:700 12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;
+      color:#16282b;
+      overflow-wrap:anywhere;
+      background:rgba(255,255,250,.96);
+    }
+    .paired-card__curve { display:block; width:100%; height:116px; background:#07100f; }
+    .paired-card__caption {
+      display:flex; justify-content:space-between; gap:10px;
+      padding:7px 9px;
+      color:#172326;
+      font:750 11px/1.2 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+    .paired-card__caption span:last-child { color:#526166; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:10px; }
+    .loading, .error { position:absolute; inset:0; display:grid; place-items:center; z-index:6; color:#243236; }
+    .error { color:#842525; }
+    @media (max-width: 760px) {
+      .analysis-tag { top:12px; left:12px; right:12px; }
+      .controls { grid-template-columns:1fr; }
+      .readout { text-align:left; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene" aria-label="One finite metric space of paired records with MGC evidence"></canvas>
+    <section class="analysis-tag" aria-label="single-space MGC analysis">
+      <strong>Gesamt-MGC-Korrelation <b id="global-mgc">...</b></strong>
+      <span>Ein sichtbarer Metric Space aller gepaarten Records. Farbe = lokale Korrelation der beiden Distanzprofile d_X(q,*) und d_Y(q,*); beschriftet sind Minimum und Maximum.</span>
+      <code id="metric-code">mtrc::compare(log_space, curve_space, mgc_options{})</code>
+    </section>
+    <div class="controls" aria-label="metric-state morph controls">
+      <div class="state-buttons" id="state-buttons"></div>
+      <div class="readout" id="readout">loading</div>
+      <input id="morph" type="range" min="0" max="1" step="0.001" value="0" aria-label="metric morph progress">
+    </div>
+    <div class="loading" id="loading">Loading native MGC evidence...</div>
+  </main>
+  <script type="module">
+    import { createMetricVisual } from "../../src/index.js";
+
+
+    const canvas = document.getElementById("scene");
+    const loading = document.getElementById("loading");
+    const readout = document.getElementById("readout");
+    const morph = document.getElementById("morph");
+    const buttons = document.getElementById("state-buttons");
+    const code = document.getElementById("metric-code");
+
+    const globalMgc = document.getElementById("global-mgc");
+
+    const STATES = [
+      { id: "log", label: "Log-Nachbarschaften", coordinateId: "event-log-metric-3d", metric: "Event-Logs mit Edit-Distanz" },
+      { id: "curve", label: "Kurven-Nachbarschaften", coordinateId: "process-curve-metric-3d", metric: "Prozesskurven mit TWED" },
+      { id: "pair", label: "Gemeinsame Pair-Metrik", coordinateId: "paired-product-metric-3d", metric: "Produktmetrik aus Edit und TWED" },
+    ];
+
+    let visual = null;
+    let document_ = null;
+    let fromIndex = 2;
+    let toIndex = 2;
+    let animationId = 0;
+
+    try {
+      const response = await fetch("metric.visual.json", { cache: "no-store" });
+      if (!response.ok) throw new Error(`metric.visual.json ${response.status}`);
+      document_ = await response.json();
+      const diagnostic = document_.diagnostics?.find((entry) => entry.id === "single-space-mgc-operator");
+      const statistic = Number(diagnostic?.statistic);
+      const minValue = Number(diagnostic?.minimum_local_correlation);
+      const maxValue = Number(diagnostic?.maximum_local_correlation);
+      globalMgc.textContent = Number.isFinite(statistic) ? statistic.toFixed(4) : "n/a";
+      code.textContent = `optimal k=${diagnostic?.optimal_log_scale_k ?? "?"}, l=${diagnostic?.optimal_curve_scale_l ?? "?"} · min ${diagnostic?.minimum_local_correlation_record ?? "?"} ${Number.isFinite(minValue) ? minValue.toExponential(2) : "n/a"} · max ${diagnostic?.maximum_local_correlation_record ?? "?"} ${Number.isFinite(maxValue) ? maxValue.toExponential(2) : "n/a"}`;
+
+      visual = await createMetricVisual({
+        canvas,
+        evidence: document_,
+        profileId: "mgc-paired-single-space-profile",
+        runtime: {
+          camera: { fov: 36, target: [0, -0.08, 0], yaw: 0.64, pitch: 0.46, radius: 5.8 },
+          controls: { rotateSpeed: 0.0038 },
+        },
+      });
+      buildButtons();
+      renderState(2, 2, 0);
+      visual.enableRecordPreview({ mode: "record", panel: { render: renderPairedRecord } });
+      visual.setMotion("studio-drift", { start: true });
+      loading.remove();
+      document.documentElement.dataset.metricMgcSingleSpace = "ready";
+      document.documentElement.dataset.metricRecordCount = String(document_.records?.length || 0);
+      document.documentElement.dataset.metricMgcStatistic = Number.isFinite(statistic) ? statistic.toFixed(6) : "";
+      window.metricMgcSingleSpace = { visual, document: document_, getState: () => visual.getState() };
+    } catch (error) {
+      console.error(error);
+      loading.className = "loading error";
+      loading.textContent = error instanceof Error ? error.message : String(error);
+    }
+
+    morph.addEventListener("input", () => {
+      cancelAnimationFrame(animationId);
+      const progress = Number(morph.value);
+      applyProgress(progress);
+    });
+
+    function buildButtons() {
+      buttons.replaceChildren();
+      STATES.forEach((state, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = state.label;
+        button.addEventListener("click", () => morphTo(index));
+        buttons.appendChild(button);
+      });
+      updateButtonState();
+    }
+
+    function morphTo(nextIndex) {
+      if (!visual || nextIndex === toIndex) return;
+      cancelAnimationFrame(animationId);
+      fromIndex = toIndex;
+      toIndex = nextIndex;
+      renderState(fromIndex, toIndex, 0);
+      const started = performance.now();
+      const duration = 940;
+      const tick = (now) => {
+        const raw = Math.min(1, (now - started) / duration);
+        const eased = raw * raw * (3 - 2 * raw);
+        morph.value = String(eased);
+        applyProgress(eased);
+        if (raw < 1) animationId = requestAnimationFrame(tick);
+      };
+      animationId = requestAnimationFrame(tick);
+    }
+
+    function renderState(sourceIndex, targetIndex, progress) {
+      const source = STATES[sourceIndex];
+      const target = STATES[targetIndex];
+      visual.showMetricSpace({
+        spaceId: "paired-record-space",
+        coordinateId: source.coordinateId,
+        targetCoordinateId: target.coordinateId,
+        scalarProperty: "record-local-correlation",
+        colorProperty: "record-local-correlation",
+        labelProperty: "local-correlation-extreme",
+        targetRadius: 1.42,
+        pointSize: 1.55,
+        pointAlpha: 0.9,
+        groundScale: 2.35,
+        groundProjectionAlpha: 0.28,
+        loop: false,
+        progress,
+        preview: "record",
+        previewOptions: { panel: { render: renderPairedRecord } },
+      });
+      morph.value = String(progress);
+      updateReadout(progress);
+      updateButtonState();
+    }
+
+    function applyProgress(progress) {
+      visual?.applyMappingMotionProgress(progress, { render: true, phase: `${STATES[fromIndex].id}->${STATES[toIndex].id}` });
+      updateReadout(progress);
+      updateButtonState();
+    }
+
+    function updateButtonState() {
+      [...buttons.children].forEach((button, index) => {
+        button.classList.toggle("active", index === toIndex);
+      });
+    }
+
+    function updateReadout(progress) {
+      const target = STATES[toIndex];
+      readout.textContent = `${target.label}\nMorph ${progress.toFixed(3)}`;
+    }
+
+    function renderPairedRecord(preview, input = {}) {
+      const recordId = String(input.recordId || input.focusTarget?.recordId || "");
+      const record = document_.records?.find((item) => String(item.id) === recordId);
+      if (!record) return null;
+      const components = record.payload?.components || {};
+      const eventLog = components.event_log?.text || "";
+      const curve = components.process_curve?.series || [];
+      const article = document.createElement("article");
+      article.className = "paired-card";
+      const log = document.createElement("div");
+      log.className = "paired-card__log";
+      log.textContent = eventLog;
+      const curveCanvas = document.createElement("canvas");
+      curveCanvas.className = "paired-card__curve";
+      curveCanvas.width = 430;
+      curveCanvas.height = 116;
+      drawCurve(curveCanvas, curve);
+      const caption = document.createElement("div");
+      caption.className = "paired-card__caption";
+      const left = document.createElement("span");
+      left.textContent = record.id;
+      const right = document.createElement("span");
+      const idx = record.payload?.metadata?.pair_index;
+      const local = Number(record.payload?.metadata?.local_mgc_correlation);
+      const support = Number(record.payload?.metadata?.optimal_scale_support);
+      right.textContent = `p_${idx ?? "?"} · lokal ${Number.isFinite(local) ? local.toExponential(2) : "n/a"} · n=${Number.isFinite(support) ? support.toFixed(0) : "?"}`;
+      caption.append(left, right);
+      article.append(log, curveCanvas, caption);
+      return article;
+    }
+
+    function drawCurve(canvas, values) {
+      const ctx = canvas.getContext("2d");
+      const width = canvas.width;
+      const height = canvas.height;
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#07100f";
+      ctx.fillRect(0, 0, width, height);
+      const numeric = values.map(Number).filter(Number.isFinite);
+      if (numeric.length < 2) return;
+      const min = Math.min(...numeric);
+      const max = Math.max(...numeric);
+      const span = Math.max(1e-9, max - min);
+      ctx.strokeStyle = "rgba(255,255,255,.12)";
+      ctx.lineWidth = 1;
+      for (let y = 22; y < height; y += 24) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = "#6bd0dc";
+      ctx.lineWidth = 3;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      numeric.forEach((value, index) => {
+        const x = 12 + (index / (numeric.length - 1)) * (width - 24);
+        const y = height - 14 - ((value - min) / span) * (height - 28);
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    }
+  </script>
+</body>
+</html>
