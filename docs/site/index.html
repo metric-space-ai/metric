@@ -222,6 +222,7 @@
       }
 
       .entropy-hero {
+        position: relative;
         min-height: calc(100svh - 58px);
         padding: 0;
         scroll-margin-top: 58px;
@@ -230,9 +231,39 @@
       }
 
       .entropy-hero iframe {
+        display: none;
         width: 100%;
         height: calc(100svh - 58px);
         min-height: 700px;
+      }
+
+      .entropy-hero[data-loaded="true"] iframe {
+        display: block;
+      }
+
+      .entropy-loader {
+        display: grid;
+        min-height: calc(100svh - 58px);
+        place-items: center;
+        background:
+          linear-gradient(oklch(0.84 0.018 136 / 0.32) 1px, transparent 1px),
+          linear-gradient(90deg, oklch(0.84 0.018 136 / 0.32) 1px, transparent 1px),
+          oklch(0.92 0.018 126);
+        background-size: 64px 64px;
+      }
+
+      .entropy-hero[data-loaded="true"] .entropy-loader {
+        display: none;
+      }
+
+      .entropy-loader button {
+        min-height: 42px;
+        padding: 0 18px;
+        border: 1px solid color-mix(in oklch, var(--ink), transparent 74%);
+        background: var(--ink);
+        color: oklch(0.98 0.006 95);
+        font: 820 14px/1 Inter, ui-sans-serif, system-ui, sans-serif;
+        cursor: pointer;
       }
 
       section {
@@ -552,16 +583,19 @@
           <div class="hero-visual">
             <iframe
               title="Accepted 60k MNIST GRAE10 metric-space visual reference"
-              src="visual/examples/grae10-metric-engine/index.html"
+              src="visual/examples/grae10-metric-engine/index.html?project-hero=1"
               loading="eager"></iframe>
           </div>
         </div>
       </section>
 
-      <section id="entropy" class="entropy-hero" aria-label="Continuous metric entropy analysis">
+      <section id="entropy" class="entropy-hero" data-loaded="false" aria-label="Continuous metric entropy analysis">
+        <div class="entropy-loader">
+          <button id="loadEntropyVisual" type="button">Load entropy visual</button>
+        </div>
         <iframe
           title="Continuous entropy analysis over sliding BTAD/03 metric-space windows"
-          src="visual/examples/btad-entropy-window-graph/index.html?project-hero=1"
+          data-src="visual/examples/btad-entropy-window-graph/index.html?project-hero=1"
           loading="lazy"></iframe>
       </section>
 
@@ -645,5 +679,32 @@
         · <a href="docs.html">Documentation</a>
       </div>
     </footer>
+    <script>
+      (() => {
+        const section = document.getElementById("entropy");
+        const frame = section?.querySelector("iframe[data-src]");
+        const button = document.getElementById("loadEntropyVisual");
+        if (!section || !frame) return;
+        let loaded = false;
+        const loadEntropy = () => {
+          if (loaded) return;
+          loaded = true;
+          frame.src = frame.dataset.src;
+          section.dataset.loaded = "true";
+        };
+        button?.addEventListener("click", loadEntropy);
+        document.querySelectorAll('a[href="#entropy"]').forEach((link) => {
+          link.addEventListener("click", loadEntropy);
+        });
+        if (location.hash === "#entropy") loadEntropy();
+        const observer = new IntersectionObserver((entries) => {
+          if (entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.45)) {
+            loadEntropy();
+            observer.disconnect();
+          }
+        }, { threshold: [0, 0.45] });
+        observer.observe(section);
+      })();
+    </script>
   </body>
 </html>

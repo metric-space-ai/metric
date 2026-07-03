@@ -197,6 +197,9 @@
 
     const DATA_URL = "./grae10-data.json";
     const DATASET_SCHEMA = "metric.visual.grae10.dataset.v1";
+    const URL_PARAMS = new URLSearchParams(location.search);
+    const PROJECT_HERO_MODE = URL_PARAMS.has("project-hero");
+    const CAMERA_ORBIT_SPEED = PROJECT_HERO_MODE ? 0.00086 : 0.00032;
     const RECORD_COUNT = 60000;
     const LABEL_COUNT = 10;
     const GROUND_Y = 0;
@@ -253,6 +256,14 @@
       camera: { ...INITIAL_CAMERA },
       dragging: false,
       dragStart: { x: 0, y: 0, yaw: INITIAL_CAMERA.yaw, pitch: INITIAL_CAMERA.pitch },
+    };
+
+    window.__metricGrae10Probe = {
+      get cameraYaw() { return state.camera.yaw; },
+      get cameraPitch() { return state.camera.pitch; },
+      get morph() { return state.morph; },
+      get paused() { return state.paused; },
+      get heroMode() { return PROJECT_HERO_MODE; },
     };
 
     const renderer = new MGL.WebGLRenderer({
@@ -339,6 +350,7 @@
       document.documentElement.dataset.metricRecordCount = String(RECORD_COUNT);
       document.documentElement.dataset.metricDof = "BokehPass camera depth";
       document.documentElement.dataset.metricLabels = String(labelSprites.length);
+      document.documentElement.dataset.metricProjectHeroMode = PROJECT_HERO_MODE ? "true" : "false";
       animate();
     } catch (error) {
       console.error(error);
@@ -678,7 +690,7 @@
       if (!state.ready) return;
       if (!state.paused) {
         sampleTimeline(now - state.startMs - state.pausedMs);
-        state.camera.yaw += 0.00019 * Math.max(0.25, Math.min(2.4, state.camera.radius / INITIAL_CAMERA.radius));
+        state.camera.yaw += CAMERA_ORBIT_SPEED * Math.max(0.25, Math.min(2.4, state.camera.radius / INITIAL_CAMERA.radius));
       }
       updateHoverFocus();
       state.focusDistance += (state.targetFocusDistance - state.focusDistance) * 0.075;
