@@ -741,7 +741,18 @@
             button.addEventListener("click", loadVisual);
           });
           document.querySelectorAll(`a[href="#${section.id}"]`).forEach((link) => {
-            link.addEventListener("click", loadVisual);
+            link.addEventListener("click", (event) => {
+              event.preventDefault();
+              loadVisual();
+              history.pushState(null, "", `#${section.id}`);
+              const root = document.documentElement;
+              const previousScrollBehavior = root.style.scrollBehavior;
+              root.style.scrollBehavior = "auto";
+              section.scrollIntoView({ block: "start", behavior: "auto" });
+              requestAnimationFrame(() => {
+                root.style.scrollBehavior = previousScrollBehavior;
+              });
+            });
           });
           if (location.hash === `#${section.id}`) loadVisual();
           const observer = new IntersectionObserver((entries) => {
