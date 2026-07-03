@@ -5,19 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="METRIC is a native C++ framework for numerical computing with finite metric spaces: arbitrary records become computable through explicit recoding-cost metrics."
+      content="METRIC is a native C++ framework and dependency-free WebGL visual engine for finite metric spaces over records, metrics, relations, mappings and dynamics."
     />
-    <title>METRIC finite metric-space engine</title>
+    <link rel="icon" href="data:," />
+    <title>METRIC | Visual Portfolio</title>
     <style>
       :root {
         color-scheme: light;
-        --ink: #14161a;
-        --text: #303844;
-        --muted: #5e6673;
-        --line: #d8dee8;
-        --surface: #f4f6f9;
-        --panel: #ffffff;
-        --accent: #007a9a;
+        --ink: oklch(0.20 0.026 230);
+        --text: oklch(0.34 0.026 228);
+        --muted: oklch(0.50 0.020 220);
+        --line: oklch(0.84 0.020 210);
+        --paper: oklch(0.955 0.020 96);
+        --field: oklch(0.91 0.030 138);
+        --panel: oklch(0.985 0.010 96);
+        --accent: oklch(0.45 0.105 205);
+        --accepted: oklch(0.50 0.090 155);
+        --pending: oklch(0.62 0.125 62);
         font-family:
           Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
           "Segoe UI", sans-serif;
@@ -33,7 +37,11 @@
 
       body {
         margin: 0;
-        background: var(--surface);
+        background:
+          linear-gradient(oklch(0.88 0.006 230 / 0.34) 1px, transparent 1px),
+          linear-gradient(90deg, oklch(0.88 0.006 230 / 0.34) 1px, transparent 1px),
+          var(--paper);
+        background-size: 64px 64px;
         color: var(--ink);
       }
 
@@ -41,352 +49,347 @@
         color: inherit;
       }
 
-      code,
-      pre {
+      code {
         font-family: "SFMono-Regular", ui-monospace, "Cascadia Code", monospace;
       }
 
-      .topline {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        border-bottom: 1px solid var(--line);
-        background: rgba(244, 246, 249, 0.95);
+      .top {
+        position: fixed;
+        inset: 0 0 auto;
+        z-index: 20;
+        border-bottom: 1px solid color-mix(in oklch, var(--ink), transparent 88%);
+        background: color-mix(in oklch, var(--paper), transparent 8%);
         backdrop-filter: blur(14px);
       }
 
-      .inner {
-        width: min(1180px, calc(100% - 40px));
+      .wrap {
+        width: min(1460px, calc(100% - 40px));
         margin: 0 auto;
       }
 
-      .topline .inner {
+      .top .wrap {
         display: flex;
-        min-height: 70px;
+        min-height: 58px;
         align-items: center;
         justify-content: space-between;
         gap: 18px;
       }
 
       .brand {
-        font-weight: 850;
-        letter-spacing: 0.08em;
+        font-size: 15px;
+        font-weight: 900;
+        letter-spacing: 0;
       }
 
       nav {
         display: flex;
-        align-items: center;
         gap: 18px;
+        align-items: center;
         color: var(--muted);
         font-size: 14px;
       }
 
-      nav a {
+      nav a,
+      .links a,
+      .button {
         text-decoration: none;
       }
 
       .button {
         display: inline-flex;
-        min-height: 42px;
+        min-height: 40px;
         align-items: center;
         justify-content: center;
-        padding: 0 18px;
-        border: 1px solid var(--line);
-        background: var(--panel);
+        padding: 0 15px;
+        border: 1px solid color-mix(in oklch, var(--ink), transparent 78%);
+        background: color-mix(in oklch, var(--panel), transparent 6%);
         color: var(--ink);
-        font-weight: 760;
-        text-decoration: none;
+        font-size: 14px;
+        font-weight: 780;
+        transition:
+          transform 180ms ease-out,
+          border-color 180ms ease-out,
+          background 180ms ease-out;
       }
 
       .button.primary {
         border-color: var(--ink);
         background: var(--ink);
-        color: #ffffff;
+        color: oklch(0.98 0.006 95);
       }
 
-      .button:hover,
-      .button:focus-visible {
-        border-color: var(--ink);
-        outline: none;
+      .button:hover {
+        transform: translateY(-1px);
+        border-color: color-mix(in oklch, var(--accent), var(--ink) 26%);
       }
 
       .hero {
-        border-bottom: 1px solid var(--line);
-        background:
-          linear-gradient(rgba(20, 22, 26, 0.045) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(20, 22, 26, 0.045) 1px, transparent 1px),
-          var(--surface);
-        background-size: 52px 52px;
+        min-height: calc(100svh - 28px);
+        padding: 74px 0 24px;
+        overflow: hidden;
       }
 
-      .hero-grid {
+      .hero-stage {
         display: grid;
-        min-height: calc(86svh - 70px);
-        grid-template-columns: minmax(0, 0.92fr) minmax(380px, 1.08fr);
-        gap: 54px;
-        align-items: center;
-        padding: 58px 0 48px;
+        min-height: calc(100svh - 126px);
+        grid-template-columns: minmax(310px, 0.34fr) minmax(0, 0.66fr);
+        gap: clamp(18px, 3vw, 42px);
+        align-items: stretch;
+      }
+
+      .hero-copy {
+        display: flex;
+        min-height: 100%;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 28px;
+        padding: clamp(8px, 1vw, 16px) 0 10px;
+        animation: rise-in 540ms cubic-bezier(0.22, 1, 0.36, 1) both;
       }
 
       .eyebrow {
-        margin: 0 0 18px;
+        margin: 0 0 13px;
         color: var(--muted);
-        font-size: 13px;
-        font-weight: 760;
-        letter-spacing: 0.12em;
+        font-size: 12px;
+        font-weight: 850;
+        letter-spacing: 0;
         text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+        letter-spacing: 0;
       }
 
       h1 {
-        max-width: 780px;
-        margin: 0;
-        font-size: 76px;
-        line-height: 0.96;
-        letter-spacing: 0;
+        max-width: 560px;
+        font-size: clamp(64px, 7.2vw, 104px);
+        line-height: 0.84;
       }
 
       .lead {
-        max-width: 690px;
-        margin: 26px 0 0;
+        max-width: 560px;
         color: var(--text);
-        font-size: 22px;
-        line-height: 1.42;
+        font-size: clamp(20px, 2.2vw, 31px);
+        line-height: 1.2;
+      }
+
+      .hero-actions,
+      .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
       }
 
       .hero-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        margin-top: 32px;
+        margin-top: 24px;
       }
 
-      .compare-panel,
-      .plain-panel {
-        border: 1px solid var(--line);
-        background: #fff;
+      .hero-visual {
+        position: relative;
+        min-height: 620px;
+        overflow: hidden;
+        border: 1px solid color-mix(in oklch, var(--ink), transparent 78%);
+        background: oklch(0.86 0.025 136);
+        box-shadow: 0 30px 90px oklch(0.24 0.028 145 / 0.17);
+        animation: visual-in 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
       }
 
-      .hero-model {
-        display: grid;
-        gap: 18px;
+      .hero-visual::after {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        height: 112px;
+        background: linear-gradient(
+          to top,
+          oklch(0.18 0.030 230 / 0.30),
+          transparent
+        );
+        content: "";
+        pointer-events: none;
       }
 
-      .model-line {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 42px minmax(0, 1fr) 42px minmax(0, 1fr);
-        gap: 12px;
-        align-items: center;
-      }
-
-      .model-part {
-        min-height: 122px;
-        padding: 18px 0;
-        border-top: 1px solid var(--line);
-        border-bottom: 1px solid var(--line);
-      }
-
-      .model-part strong {
+      iframe {
         display: block;
-        margin-bottom: 10px;
-        font-size: 18px;
+        width: 100%;
+        height: 100%;
+        min-height: inherit;
+        border: 0;
       }
 
-      .model-part span {
-        color: var(--muted);
-        font-size: 15px;
-        line-height: 1.45;
+      .entropy-hero {
+        min-height: calc(100svh - 58px);
+        padding: 0;
+        scroll-margin-top: 58px;
+        overflow: hidden;
+        background: oklch(0.92 0.018 126);
       }
 
-      .model-arrow {
-        color: var(--accent);
-        font-size: 26px;
-        font-weight: 850;
-        text-align: center;
+      .entropy-hero iframe {
+        width: 100%;
+        height: calc(100svh - 58px);
+        min-height: 700px;
       }
 
-      .model-note {
-        max-width: 640px;
-        color: var(--muted);
-        font-size: 15px;
-        line-height: 1.55;
-      }
-
-      .compare-panel h2,
-      .plain-panel h2 {
-        padding: 24px 24px 0;
-        font-size: 28px;
-      }
-
-      .compare-row {
-        display: grid;
-        grid-template-columns: minmax(150px, 0.72fr) minmax(0, 1fr) minmax(0, 1fr);
-        gap: 18px;
-        padding: 18px 24px;
+      section {
         border-top: 1px solid var(--line);
       }
 
-      .compare-row.header {
-        color: var(--muted);
-        font-size: 13px;
-        font-weight: 760;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
+      .section {
+        padding: clamp(52px, 8vw, 96px) 0;
       }
 
-      .compare-row strong {
-        font-size: 15px;
-      }
-
-      .compare-row span {
-        color: var(--muted);
-        font-size: 14px;
-        line-height: 1.42;
-      }
-
-      .band {
-        padding: 72px 0;
-        border-bottom: 1px solid var(--line);
+      .section-head {
+        display: grid;
+        grid-template-columns: minmax(0, 0.62fr) minmax(280px, 0.38fr);
+        gap: 36px;
+        align-items: end;
+        margin-bottom: 30px;
       }
 
       h2 {
-        max-width: 880px;
-        margin: 0;
-        font-size: 44px;
-        line-height: 1.04;
-        letter-spacing: 0;
+        max-width: 900px;
+        font-size: clamp(38px, 5.2vw, 76px);
+        line-height: 0.96;
       }
 
-      .section-lead {
-        max-width: 860px;
-        margin: 20px 0 0;
-        color: var(--text);
-        font-size: 18px;
-        line-height: 1.58;
-      }
-
-      .formula {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 1px;
-        margin-top: 30px;
-        border: 1px solid var(--line);
-        background: var(--line);
-      }
-
-      .formula div {
-        min-height: 140px;
-        padding: 24px;
-        background: #fff;
-      }
-
-      .formula strong {
-        display: block;
-        margin-bottom: 12px;
-        font-size: 18px;
-      }
-
-      .formula code {
-        color: var(--accent);
-        font-size: 18px;
-        font-weight: 800;
-      }
-
-      .formula p,
-      .plain-panel p {
-        margin: 0;
+      .section-head p,
+      .portfolio-copy,
+      .concept p,
+      .source-note {
         color: var(--muted);
         font-size: 15px;
-        line-height: 1.48;
+        line-height: 1.52;
       }
 
-      .workflow {
+      .accepted-reference {
         display: grid;
-        gap: 1px;
-        margin-top: 30px;
-        border: 1px solid var(--line);
-        background: var(--line);
-      }
-
-      .step {
-        display: grid;
-        grid-template-columns: 56px minmax(170px, 0.42fr) minmax(0, 1fr);
-        gap: 20px;
-        align-items: start;
-        padding: 20px 24px;
-        background: #fff;
-      }
-
-      .step b {
-        color: var(--accent);
-        font-size: 20px;
-      }
-
-      .step strong {
-        font-size: 16px;
-      }
-
-      .step span {
-        color: var(--muted);
-        line-height: 1.45;
-      }
-
-      .pros-cons,
-      .examples {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 1px;
-        margin-top: 30px;
-        border: 1px solid var(--line);
-        background: var(--line);
-      }
-
-      .cell,
-      .example {
-        min-height: 160px;
+        grid-template-columns: minmax(250px, 0.30fr) minmax(0, 0.70fr);
+        gap: 26px;
+        align-items: end;
+        margin-bottom: 14px;
         padding: 24px;
-        background: #fff;
+        border: 1px solid color-mix(in oklch, var(--accepted), var(--line) 52%);
+        background: color-mix(in oklch, var(--field), var(--panel) 58%);
       }
 
-      .cell strong,
-      .example strong {
-        display: block;
-        margin-bottom: 12px;
-        font-size: 18px;
-      }
-
-      .cell ul {
-        margin: 0;
-        padding-left: 20px;
-        color: var(--muted);
-        line-height: 1.55;
-      }
-
-      .example p {
-        margin: 0;
-        color: var(--muted);
-        font-size: 15px;
-        line-height: 1.48;
-      }
-
-      .example a {
-        display: inline-block;
+      .accepted-reference h3 {
         margin-top: 14px;
-        font-size: 14px;
-        font-weight: 760;
+        font-size: clamp(28px, 3.2vw, 48px);
+        line-height: 0.98;
       }
 
-      pre {
-        overflow: auto;
-        margin: 30px 0 0;
-        padding: 24px;
-        background: #12151a;
-        color: #f3f6fb;
-        font-size: 14px;
-        line-height: 1.55;
+      .portfolio {
+        display: grid;
+        gap: 10px;
       }
 
-      pre code {
-        color: inherit;
+      .portfolio-item {
+        display: grid;
+        grid-template-columns: minmax(220px, 0.24fr) minmax(230px, 0.27fr) minmax(0, 0.49fr);
+        gap: 18px;
+        align-items: stretch;
+        border: 1px solid color-mix(in oklch, var(--ink), transparent 84%);
+        background: color-mix(in oklch, var(--panel), transparent 3%);
+        transition:
+          border-color 180ms ease-out,
+          transform 180ms ease-out,
+          background 180ms ease-out;
+      }
+
+      .portfolio-item[data-preview-hidden="true"] {
+        grid-template-columns: minmax(260px, 0.42fr) minmax(0, 0.58fr);
+      }
+
+      .portfolio-item:hover {
+        transform: translateY(-2px);
+        border-color: color-mix(in oklch, var(--accent), var(--ink) 30%);
+        background: color-mix(in oklch, var(--panel), var(--field) 14%);
+      }
+
+      .preview {
+        min-height: 178px;
+        overflow: hidden;
+        border-right: 1px solid color-mix(in oklch, var(--ink), transparent 86%);
+        background: oklch(0.86 0.026 138);
+      }
+
+      .portfolio-main {
+        display: grid;
+        align-content: center;
+        gap: 13px;
+        padding: 20px 0;
+      }
+
+      .portfolio-item[data-preview-hidden="true"] .portfolio-main {
+        padding-left: 22px;
+      }
+
+      .portfolio-main h3 {
+        font-size: clamp(24px, 2.4vw, 38px);
+        line-height: 1;
+      }
+
+      .portfolio-detail {
+        display: grid;
+        align-content: center;
+        gap: 14px;
+        padding: 18px 22px 18px 0;
+      }
+
+      .status {
+        width: fit-content;
+        border: 1px solid color-mix(in oklch, var(--ink), transparent 78%);
+        padding: 5px 8px;
+        color: var(--text);
+        font-size: 11px;
+        font-weight: 850;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      .status.accepted {
+        border-color: color-mix(in oklch, var(--accepted), var(--ink) 20%);
+        color: color-mix(in oklch, var(--accepted), var(--ink) 32%);
+      }
+
+      .status.pending {
+        border-color: color-mix(in oklch, var(--pending), var(--ink) 22%);
+        color: color-mix(in oklch, var(--pending), var(--ink) 40%);
+      }
+
+      .links a {
+        color: var(--accent);
+        font-size: 14px;
+        font-weight: 830;
+      }
+
+      .source-note {
+        margin-top: 18px;
+      }
+
+      .concept-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1px;
+        border: 1px solid var(--line);
+        background: var(--line);
+      }
+
+      .concept {
+        min-height: 170px;
+        padding: 22px;
+        background: color-mix(in oklch, var(--panel), transparent 5%);
+      }
+
+      .concept strong {
+        display: block;
+        margin-bottom: 10px;
+        font-size: 18px;
       }
 
       footer {
@@ -395,73 +398,130 @@
         font-size: 14px;
       }
 
-      @media (max-width: 980px) {
-        .hero-grid,
-        .formula,
-        .pros-cons,
-        .examples {
+      @keyframes rise-in {
+        from {
+          opacity: 0;
+          transform: translateY(14px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes visual-in {
+        from {
+          opacity: 0;
+          transform: translateY(18px) scale(0.992);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 1ms !important;
+          scroll-behavior: auto !important;
+          transition-duration: 1ms !important;
+        }
+      }
+
+      @media (max-width: 1100px) {
+        .hero-stage,
+        .section-head,
+        .accepted-reference,
+        .portfolio-item,
+        .concept-grid {
           grid-template-columns: 1fr;
         }
 
-        h1 {
-          font-size: 54px;
+        .hero-stage {
+          min-height: auto;
+        }
+
+        .hero-copy {
+          min-height: auto;
+        }
+
+        .hero-visual {
+          min-height: 540px;
+        }
+
+        .preview {
+          min-height: 280px;
+          border-right: 0;
+          border-bottom: 1px solid color-mix(in oklch, var(--ink), transparent 86%);
+        }
+
+        .portfolio-main,
+        .portfolio-detail {
+          padding: 22px;
+        }
+
+        .portfolio-detail {
+          padding-top: 0;
         }
       }
 
       @media (max-width: 720px) {
-        .topline .inner {
+        .top {
+          position: static;
+        }
+
+        .top .wrap,
+        nav {
           align-items: flex-start;
           flex-direction: column;
-          padding: 16px 0;
         }
 
         nav {
-          flex-wrap: wrap;
+          gap: 10px;
+          padding-bottom: 14px;
         }
 
-        .hero-grid {
-          padding: 46px 0 38px;
+        .hero {
+          padding-top: 26px;
         }
 
         h1 {
-          font-size: 41px;
-        }
-
-        h2 {
-          font-size: 31px;
+          font-size: clamp(54px, 18vw, 80px);
         }
 
         .lead {
-          font-size: 19px;
+          font-size: 20px;
         }
 
-        .compare-row,
-        .step,
-        .model-line {
-          grid-template-columns: 1fr;
-          gap: 8px;
+        .hero-visual {
+          min-height: 440px;
         }
 
-        .model-arrow {
-          text-align: left;
+        .entropy-hero,
+        .entropy-hero iframe {
+          min-height: 560px;
         }
 
-        .compare-row.header {
-          display: none;
+        .preview {
+          min-height: 220px;
+        }
+
+        .wrap {
+          width: min(100% - 28px, 1460px);
         }
       }
     </style>
   </head>
   <body>
-    <header class="topline">
-      <div class="inner">
+    <header class="top">
+      <div class="wrap">
         <div class="brand">METRIC</div>
         <nav aria-label="Primary navigation">
+          <a href="#gallery">Visual</a>
+          <a href="#entropy">Entropy</a>
           <a href="#concept">Concept</a>
-          <a href="#compute">Compute</a>
-          <a href="#spaces">Spaces</a>
-          <a href="#operators">Operators</a>
-          <a href="#examples">Applications</a>
           <a href="docs.html">Docs</a>
           <a class="button primary" href="https://github.com/metric-space-ai/metric">GitHub</a>
         </nav>
@@ -469,252 +529,120 @@
     </header>
 
     <main>
-      <section class="hero">
-        <div class="inner hero-grid">
-          <div>
-            <p class="eyebrow">Finite metric-space computing</p>
-            <h1>METRIC</h1>
-            <p class="lead">
-              METRIC makes arbitrary finite data computable by giving records a numeric transformation cost. A string, image, time series, graph, histogram, vector, or mixed industrial record becomes part of a finite metric space once the least-cost recoding path to every other record is defined.
+      <section class="hero" aria-label="METRIC visual reference">
+        <div class="wrap hero-stage">
+          <div class="hero-copy">
+            <div>
+              <p class="eyebrow">Accepted 60k MNIST GRAE10 reference</p>
+              <h1>METRIC</h1>
+            </div>
+            <div>
+              <p class="lead">
+                A native C++ framework and dependency-free WebGL engine for
+                finite metric spaces. This protected 60,000-record MNIST scene
+                is the live visual reference.
+              </p>
+              <div class="hero-actions">
+                <a class="button primary" href="#gallery">View visual</a>
+                <a class="button" href="https://github.com/metric-space-ai/metric/blob/main/examples/engine/mnist_grae10_integrity.cpp">C++ source</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-visual">
+            <iframe
+              title="Accepted 60k MNIST GRAE10 metric-space visual reference"
+              src="visual/examples/grae10-metric-engine/index.html"
+              loading="eager"></iframe>
+          </div>
+        </div>
+      </section>
+
+      <section id="entropy" class="entropy-hero" aria-label="Continuous metric entropy analysis">
+        <iframe
+          title="Continuous entropy analysis over sliding BTAD/03 metric-space windows"
+          src="visual/examples/btad-entropy-window-graph/index.html?project-hero=1"
+          loading="lazy"></iframe>
+      </section>
+
+      <section id="gallery" class="section">
+        <div class="wrap">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Accepted visual</p>
+              <h2>60,000 image records as one finite metric space.</h2>
+            </div>
+            <p>
+              Each point keeps its original MNIST record identity while the
+              scene renders linked 2D and 3D coordinate states, class regions,
+              floor projections and record inspection.
             </p>
-            <div class="hero-actions">
-              <a class="button primary" href="#concept">Core idea</a>
-              <a class="button" href="#examples">Hero applications</a>
+          </div>
+
+          <div class="accepted-reference" data-gallery-item="grae10-metric-engine" data-evidence-status="accepted">
+            <div>
+              <span class="status accepted">Accepted reference</span>
+              <h3>MNIST GRAE10</h3>
+            </div>
+            <div>
+              <p class="portfolio-copy">
+                Open the live scene or inspect the native integrity check and
+                exported data behind the reference.
+              </p>
+              <div class="links" style="margin-top: 14px">
+                <a href="visual/examples/grae10-metric-engine/index.html">Open visual</a>
+                <a href="https://github.com/metric-space-ai/metric/blob/main/examples/engine/mnist_grae10_integrity.cpp">C++ source</a>
+                <a href="visual/examples/grae10-metric-engine/grae10-data.json">Data JSON</a>
+                <a href="https://github.com/metric-space-ai/metric/blob/main/docs/examples/mnist-grae10-gallery.md">Reference note</a>
+              </div>
             </div>
           </div>
-          <div class="hero-model" aria-label="Implicit finite metric-space model">
-            <div class="model-line">
-              <div class="model-part">
-                <strong>Records</strong>
-                <span>Any finite typed data: curves, images, text, graphs, distributions, vectors, or mixed records.</span>
-              </div>
-              <div class="model-arrow">+</div>
-              <div class="model-part">
-                <strong><code>d(a, b)</code></strong>
-                <span>One function for two records: the least-cost path for recoding <code>a</code> into <code>b</code>.</span>
-              </div>
-              <div class="model-arrow">=</div>
-              <div class="model-part">
-                <strong>Implicit space</strong>
-                <span>The finite metric space exists before any matrix, graph, index, or embedding is materialized.</span>
-              </div>
+
+          <p class="source-note">
+            Additional visuals are added only from real exported datasets.
+          </p>
+        </div>
+      </section>
+
+      <section id="concept" class="section">
+        <div class="wrap">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Concept</p>
+              <h2>Records first. Metrics make them computable.</h2>
             </div>
-            <p class="model-note">
-              The user models meaning locally. METRIC handles the global computation: lazy distance calls, cache, matrix, graph, tree, sampling, correlation, entropy, and mappings.
+            <p>
+              METRIC starts from finite records and true pair metrics.
+              Coordinate views, graphs, fields and dynamics are derived from
+              that finite relation structure.
             </p>
           </div>
-        </div>
-      </section>
-
-      <section id="concept" class="band">
-        <div class="inner">
-          <h2>One pairwise function defines the whole finite space.</h2>
-          <p class="section-lead">
-            The user does not build an all-with-all model. The user defines what it costs to turn one record into another. For a finite record set, that single binary function implicitly defines every pairwise relation. METRIC can then compute only the distances an operator needs, or materialize more structure when that is the better execution plan.
-          </p>
-          <div class="workflow">
-            <div class="step">
-              <b>1</b>
-              <strong>Keep native records</strong>
-              <span>A record remains a curve, string, image, graph, histogram, vector, or structured object. It is not flattened just to satisfy an algorithm.</span>
+          <div class="concept-grid">
+            <div class="concept">
+              <strong>Records</strong>
+              <p>Images, strings, curves, distributions, graphs, vectors and structured rows enter as finite records.</p>
             </div>
-            <div class="step">
-              <b>2</b>
-              <strong>Define <code>d(a, b)</code></strong>
-              <span>The metric encodes the allowed transformation path and its costs: edit, alignment, transport, graph movement, vector displacement, or a composed domain rule.</span>
+            <div class="concept">
+              <strong>Metric</strong>
+              <p>A true metric assigns one pair value. In applications this can be read as minimal recoding effort between records.</p>
             </div>
-            <div class="step">
-              <b>3</b>
-              <strong>Get <code>(X, d)</code></strong>
-              <span>The finite set plus the metric is a finite metric space. It is a numerical object even when the records themselves are not numbers.</span>
+            <div class="concept">
+              <strong>Space</strong>
+              <p>Records plus metric become a finite space for search, entropy, correlation, mapping, monitoring and dynamics.</p>
             </div>
-            <div class="step">
-              <b>4</b>
-              <strong>Let the framework execute</strong>
-              <span>METRIC routes each operator through lazy metric calls, cached distances, matrices, graphs, trees, sampling, or mappings.</span>
+            <div class="concept">
+              <strong>Browser view</strong>
+              <p>The browser renders exported data. It does not recompute METRIC algorithms or invent missing results.</p>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section id="compute" class="band">
-        <div class="inner">
-          <h2>Explicit structures are generated when computation needs them.</h2>
-          <p class="section-lead">
-            The finite metric space is not the same thing as a precomputed distance matrix. The matrix is only one representation. A graph, tree, cache, or learned map can represent the same underlying metric-space contract. This is why the user can focus on the pairwise metric while the engine takes responsibility for explicit computation.
-          </p>
-          <div class="examples">
-            <div class="example">
-              <strong>Lazy metric calls</strong>
-              <p>Operators can ask for <code>d(a, b)</code> only when they need a value. Large spaces do not have to start as dense matrices.</p>
-            </div>
-            <div class="example">
-              <strong>Matrix cache</strong>
-              <p>Algorithms that need dense pairwise access can materialize distances and reuse them with explicit runtime diagnostics.</p>
-            </div>
-            <div class="example">
-              <strong>Graph and tree views</strong>
-              <p>Neighborhood graphs and search trees expose local geometry for search, clustering, sparsification, and scalable traversal.</p>
-            </div>
-            <div class="example">
-              <strong>Mappings</strong>
-              <p>When coordinates are useful, a mapping creates a derived metric space. The mapping is downstream of the source metric, not a substitute for it.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="spaces" class="band">
-        <div class="inner">
-          <h2>Vector spaces are included as the coordinate-cost case.</h2>
-          <p class="section-lead">
-            If the records are vectors and the metric is Euclidean distance, the recoding cost is just coordinate displacement. METRIC keeps that case. The generalization is that the cost function can also be edit cost, time-alignment cost, transport cost, graph cost, image-structure cost, or a weighted composition across fields.
-          </p>
-          <pre><code>auto space = metric::make_space(records, domain_metric);
-
-auto neighbors = metric::find_neighbors(space, query, metric::count{5});
-auto entropy = metric::operators::entropy(space);
-auto compressed = metric::compress(space, metric::count{32},
-                                   metric::strategies::farthest_first{});</code></pre>
-          <div class="examples">
-            <div class="example">
-              <strong>One mixed record</strong>
-              <p>A machine-state record can combine sensor vectors, status symbols, maintenance text, spectral histograms, and process curves through a composed metric.</p>
-            </div>
-            <div class="example">
-              <strong>Multiple spaces</strong>
-              <p>A process curve space and a quality measurement space can remain separate while their geometries are compared or correlated.</p>
-            </div>
-            <div class="example">
-              <strong>No forced joint embedding</strong>
-              <p>A neural multimodal embedding is optional. It is a mapping when useful, not a prerequisite for analysis.</p>
-            </div>
-            <div class="example">
-              <strong>Native C++ execution</strong>
-              <p>The core algorithms and metric math belong in C++. Python and other languages are adapters to the native surface.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="operators" class="band">
-        <div class="inner">
-          <h2>The operators answer different questions.</h2>
-          <p class="section-lead">
-            Once the finite metric space exists, different operators have distinct meanings. The page keeps them separate because a correlation is not a distance and a mapping is not the source metric.
-          </p>
-          <div class="examples">
-            <div class="example">
-              <strong>Record distance</strong>
-              <p>Compares two records inside one domain: edit distance for text, TWED-style alignment for curves, EMD for distributions, or a composed metric for structured records.</p>
-            </div>
-            <div class="example">
-              <strong>Space distance</strong>
-              <p>Compares whole finite geometries. <code>RiemannianDistance</code> uses induced distance or Laplacian matrices to measure distance between spaces.</p>
-            </div>
-            <div class="example">
-              <strong>Cross-space dependency</strong>
-              <p>MGC uses two aligned distance matrices and returns a dependency statistic. It is correlation over paired spaces, not a distance function.</p>
-            </div>
-            <div class="example">
-              <strong>Entropy and monitoring</strong>
-              <p>Entropy estimates local freedom in the metric geometry. That makes it useful for drift, novelty, and condition-monitoring diagnostics.</p>
-            </div>
-            <div class="example">
-              <strong>Representatives and outliers</strong>
-              <p>Medoids, representative compression, DBSCAN-style noise, and neighbor graphs expose structure without first requiring coordinates.</p>
-            </div>
-            <div class="example">
-              <strong>Mappings</strong>
-              <p>PCFA, PHATE-AE-style pipelines, and other mappings create derived spaces when coordinates, visualization, reconstruction, or out-of-sample transforms are needed.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="examples" class="band">
-        <div class="inner">
-          <h2>Hero applications are built from the same idea.</h2>
-          <p class="section-lead">
-            These are the application directions that show why finite metric spaces matter. Each starts with native records and explicit recoding costs, then uses metric-space operators to answer questions that ordinary vector-neighbor search does not express cleanly.
-          </p>
-          <div class="examples">
-            <div class="example">
-              <strong>Condition monitoring entropy</strong>
-              <p>Entropy is a diagnostic over a finite metric space. It uses local distance geometry to quantify structural freedom, useful for monitoring drift, regime changes, and novelty in process windows.</p>
-              <a href="https://github.com/metric-space-ai/metric/blob/master/docs/examples/entropy-diagnostics.md">Read demo facts</a>
-            </div>
-            <div class="example">
-              <strong>Metric-space distance</strong>
-              <p>Riemannian distance compares whole finite metric spaces through their induced distance matrices. This is the correct distance-family when the object being compared is a space.</p>
-              <a href="https://github.com/metric-space-ai/metric/blob/master/metric/distance/d-spaced/Riemannian.hpp">Read C++ surface</a>
-            </div>
-            <div class="example">
-              <strong>String edit space</strong>
-              <p>Edit distance returns the expected symbolic family for 4/4 queries. A bag-of-characters vector baseline selects anagram decoys for 4/4 queries.</p>
-              <a href="https://github.com/metric-space-ai/metric/blob/master/docs/examples/string-edit-baseline.md">Read demo facts</a>
-            </div>
-            <div class="example">
-              <strong>Histogram transport</strong>
-              <p>Transport distance returns shifted-mass matches for 4/4 queries. Coordinate-vector distance misses 4/4 by rewarding overlap instead of movement cost.</p>
-              <a href="https://github.com/metric-space-ai/metric/blob/master/docs/examples/histogram-transport-baseline.md">Read demo facts</a>
-            </div>
-            <div class="example">
-              <strong>Time-series anomaly detection</strong>
-              <p>Alignment distance returns the expected UCR anomaly-window roles for 16/16 external queries. A padded-vector baseline misses 16/16.</p>
-              <a href="https://github.com/metric-space-ai/metric/blob/master/docs/examples/process-curve-external-gallery.md">Read demo facts</a>
-            </div>
-            <div class="example">
-              <strong>Mixed industrial records</strong>
-              <p>A composed metric over numeric, categorical, text, histogram, and curve fields returns 4/4 expected records. Numeric vector shadows miss 4/4 because they discard nonnumeric semantics.</p>
-              <a href="https://github.com/metric-space-ai/metric/blob/master/docs/examples/mixed-structured-record-baseline.md">Read demo facts</a>
-            </div>
-            <div class="example">
-              <strong>Cross-space dependency</strong>
-              <p>MGC over two aligned metric spaces detects dependency while raw cross-modal vector pairing misses 9/12 records. This is correlation over paired spaces, not a space-distance function.</p>
-              <a href="https://github.com/metric-space-ai/metric/blob/master/docs/examples/cross-space-dependency-baseline.md">Read demo facts</a>
-            </div>
-            <div class="example">
-              <strong>PHATE-AE pipeline</strong>
-              <p>The native C++ demonstrator shows how engine building blocks compose: codec, distance provider, affinity kernel, diffusion operator, neural mapper, and diagnostics.</p>
-              <a href="https://github.com/metric-space-ai/metric/blob/master/docs/examples/phate-ae-pipeline-hero.md">Read demo facts</a>
-            </div>
-            <div class="example">
-              <strong>Industrial anomaly workflow</strong>
-              <p>The workflow combines typed metrics, outlier detection, grouping, cross-space dependency, and optional mappings for process-understanding tasks.</p>
-              <a href="https://github.com/metric-space-ai/metric/blob/master/docs/examples/industrial-anomaly-workflow.md">Read workflow</a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="cpp" class="band">
-        <div class="inner">
-          <h2>C++ is the implementation surface.</h2>
-          <p class="section-lead">
-            Metrics, spaces, representations, operators, mappings, diagnostics, and PHATE-AE pipeline components are native C++. Python adapts user data to selected native surfaces.
-          </p>
-          <pre><code>#include &lt;metric/distance.hpp&gt;
-#include &lt;metric/engine.hpp&gt;
-
-#include &lt;string&gt;
-#include &lt;vector&gt;
-
-std::vector&lt;std::string&gt; records = {"metric", "metrics", "matrix", "tree"};
-auto space = metric::make_space(records, metric::Edit&lt;char&gt;{});
-
-auto nearest = metric::find_neighbors(
-    space,
-    std::string("metricks"),
-    metric::count{2},
-    metric::strategies::cover_tree{});</code></pre>
         </div>
       </section>
     </main>
 
     <footer>
-      <div class="inner">
-        Documentation: <a href="docs.html">docs.html</a>. Source: <a href="https://github.com/metric-space-ai/metric">github.com/metric-space-ai/metric</a>.
+      <div class="wrap">
+        <a href="https://github.com/metric-space-ai/metric">GitHub</a>
+        · <a href="docs.html">Documentation</a>
       </div>
     </footer>
   </body>

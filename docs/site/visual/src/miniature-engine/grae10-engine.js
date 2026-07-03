@@ -1,0 +1,947 @@
+// Native METRIC miniature metric-space renderer extracted from the GRAE10 golden reference.
+// Keep visual changes in the reference example first, then port them here deliberately.
+import * as MGL from "../runtime/metric-webgl/core/metric-webgl.module.js";
+import { EffectComposer } from "../runtime/metric-webgl/postprocess/EffectComposer.js";
+import { RenderPass } from "../runtime/metric-webgl/postprocess/RenderPass.js";
+import { ShaderPass } from "../runtime/metric-webgl/postprocess/ShaderPass.js";
+import { BokehPass } from "../runtime/metric-webgl/postprocess/BokehPass.js";
+import { FXAAShader } from "../runtime/metric-webgl/shaders/FXAAShader.js";
+import { RecordPreviewPanel } from "../interaction/record-preview.js";
+
+export async function mountMetricSpaceMiniatureEngine(options = {}) {
+  const DATA_URL = options.dataUrl || "./grae10-data.json";
+  const DATASET_SCHEMA = options.schema || "metric.visual.grae10.dataset.v1";
+  const RECORD_COUNT = Number.isFinite(Number(options.recordCount)) ? Number(options.recordCount) : 60000;
+  const LABEL_COUNT = Number.isFinite(Number(options.labelCount)) ? Number(options.labelCount) : 10;
+  const GROUND_Y = Number.isFinite(Number(options.groundY)) ? Number(options.groundY) : 0;
+  const FLAT_Y = Number.isFinite(Number(options.flatY)) ? Number(options.flatY) : 0.18;
+  const PLOT_RADIUS = Number.isFinite(Number(options.plotRadius)) ? Number(options.plotRadius) : 1.78;
+  const SPACE_HEIGHT = Number.isFinite(Number(options.spaceHeight)) ? Number(options.spaceHeight) : 2.68;
+  const TARGET = vector3Option(options.target, [0, 0.88, 0]);
+  const INITIAL_CAMERA = Object.freeze({
+    yaw: numberOption(options.camera?.yaw, -0.72),
+    pitch: numberOption(options.camera?.pitch, 0.48),
+    radius: numberOption(options.camera?.radius, 7.85),
+  });
+  const CAMERA_LIMITS = Object.freeze({
+    minRadius: numberOption(options.cameraLimits?.minRadius, 5.1),
+    maxRadius: numberOption(options.cameraLimits?.maxRadius, 12.4),
+    minPitch: numberOption(options.cameraLimits?.minPitch, 0.28),
+    maxPitch: numberOption(options.cameraLimits?.maxPitch, 0.86),
+  });
+  const TIMELINE = Object.freeze(options.timeline || [
+    { name: "2D target projection", duration: 2600, from: 0, to: 0 },
+    { name: "metric-space lift", duration: 900, from: 0, to: 1 },
+    { name: "3D metric-space coordinates", duration: 4200, from: 1, to: 1 },
+    { name: "projection return", duration: 900, from: 1, to: 0 },
+    { name: "2D target projection", duration: 1800, from: 0, to: 0 },
+  ]);
+  const TIMELINE_DURATION = TIMELINE.reduce((sum, phase) => sum + phase.duration, 0);
+  const COLORS = Object.freeze(options.colors || [
+    [0.20, 0.54, 0.78],
+    [0.88, 0.28, 0.31],
+    [0.10, 0.67, 0.60],
+    [0.95, 0.55, 0.18],
+    [0.46, 0.34, 0.72],
+    [0.96, 0.42, 0.69],
+    [0.35, 0.76, 0.67],
+    [0.75, 0.77, 0.24],
+    [0.54, 0.62, 0.74],
+    [0.52, 0.62, 0.95],
+  ]);
+
+  const canvas = options.canvas || document.getElementById("metric-scene");
+  const loading = options.loading || document.getElementById("loading");
+  const status = options.status || document.getElementById("status");
+  const statusText = options.statusText || status.querySelector("span");
+  const pauseIcon = options.pauseIcon || document.querySelector("[data-pause-icon]");
+  const controlsRoot = options.controlsRoot || document;
+
+  const state = {
+    ready: false,
+    paused: false,
+    morph: 0,
+    focusLabel: -1,
+    focusDistance: 7.15,
+    targetFocusDistance: 7.15,
+    hoveredLabel: -1,
+    hoveredRecord: -1,
+    lastRecordPickMs: 0,
+    pointerMoved: false,
+    phase: TIMELINE[0].name,
+    startMs: performance.now(),
+    pauseStartedMs: 0,
+    pausedMs: 0,
+    pointer: new MGL.Vector2(-10, -10),
+    pointerClient: new MGL.Vector2(-10, -10),
+    camera: { ...INITIAL_CAMERA },
+    dragging: false,
+    dragStart: { x: 0, y: 0, yaw: INITIAL_CAMERA.yaw, pitch: INITIAL_CAMERA.pitch },
+  };
+
+  const renderer = new MGL.WebGLRenderer({
+    canvas,
+    antialias: false,
+    alpha: true,
+    powerPreference: "high-performance",
+  });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  renderer.outputEncoding = MGL.sRGBEncoding;
+  renderer.setClearColor(0xd7dccf, 0);
+
+  const scene = new MGL.Scene();
+  scene.background = new MGL.Color(0xd2ded7);
+  scene.fog = new MGL.Fog(0xd2ded7, 12.5, 23.5);
+  const labelScene = new MGL.Scene();
+
+  const camera = new MGL.PerspectiveCamera(38, 1, 0.04, 80);
+  camera.up.set(0, 1, 0);
+
+  const ambient = new MGL.AmbientLight(0xffffff, 0.44);
+  scene.add(ambient);
+  const key = new MGL.DirectionalLight(0xffffff, 0.76);
+  key.position.set(-3.2, 6.8, 4.4);
+  scene.add(key);
+  const warm = new MGL.PointLight(0xffefd2, 0.34, 18);
+  warm.position.set(3.8, 4.8, 3.2);
+  scene.add(warm);
+
+  const floorGroup = new MGL.Group();
+  scene.add(floorGroup);
+  addFloor(floorGroup);
+
+  const worldGroup = new MGL.Group();
+  scene.add(worldGroup);
+
+  const renderPass = new RenderPass(scene, camera);
+  const composer = new EffectComposer(renderer);
+  composer.addPass(renderPass);
+  const fxaaPass = new ShaderPass(FXAAShader);
+  composer.addPass(fxaaPass);
+  const bokehPass = new BokehPass(scene, camera, {
+    focus: state.focusDistance,
+    aperture: 0.00026,
+    maxblur: 0.0042,
+    width: 1,
+    height: 1,
+  });
+  bokehPass.renderToScreen = true;
+  composer.addPass(bokehPass);
+
+  const pointerRay = new MGL.Raycaster();
+  const screenPoint = new MGL.Vector3();
+  const clusterScreen = Array.from({ length: LABEL_COUNT }, () => ({ x: 0, y: 0, distance: 0, label: -1 }));
+  const clusterWorld = Array.from({ length: LABEL_COUNT }, () => new MGL.Vector3());
+  const labelSprites = [];
+  const recordProbe = new MGL.Vector3();
+  const recordPreview = new RecordPreviewPanel({ root: options.previewRoot || document.body, maxFields: 7 });
+  let pointMaterial = null;
+  let shadowMaterial = null;
+  let clusterData = null;
+  let labelCounts = [];
+  let activeBuffers = null;
+  let activeDataset = null;
+
+  try {
+    resize();
+    const dataset = await loadDataset(DATA_URL);
+    const buffers = createBuffers(dataset);
+    activeDataset = dataset;
+    activeBuffers = buffers;
+    recordPreview.setResolver(resolveRecordPreview);
+    clusterData = buffers.clusterData;
+    labelCounts = buffers.labelCounts;
+    addPointCloud(buffers);
+    addGroundProjection(buffers);
+    addClusterLabels(buffers);
+    updateCamera(0);
+    updateMorph(0);
+    updateFocusFromTarget(TARGET);
+    loading?.remove();
+    state.ready = true;
+    document.documentElement.dataset.metricGrae10Engine = "metric-webgl-runtime";
+    document.documentElement.dataset.metricRecordCount = String(RECORD_COUNT);
+    document.documentElement.dataset.metricDof = "BokehPass camera depth";
+    document.documentElement.dataset.metricLabels = String(labelSprites.length);
+    const api = {
+      scene,
+      labelScene,
+      camera,
+      renderer,
+      composer,
+      state,
+      get morph() { return state.morph; },
+      get yaw() { return state.camera.yaw; },
+      get labels() { return labelSprites.length; },
+    };
+    if (options.expose !== false) window.metricGrae10Engine = api;
+    animate();
+    return api;
+  } catch (error) {
+    console.error(error);
+    if (loading) {
+      loading.className = "error";
+      loading.textContent = error instanceof Error ? error.message : String(error);
+    }
+  }
+
+  addEventListener("resize", resize);
+  canvas.addEventListener("pointermove", onPointerMove);
+  canvas.addEventListener("pointerleave", () => {
+    state.hoveredLabel = -1;
+    state.hoveredRecord = -1;
+    state.targetFocusDistance = distanceToCamera(TARGET);
+    status.dataset.visible = "false";
+    recordPreview.hide();
+  });
+  canvas.addEventListener("pointerdown", onPointerDown);
+  addEventListener("pointerup", () => {
+    state.dragging = false;
+  });
+  canvas.addEventListener("wheel", onWheel, { passive: false });
+  controlsRoot.querySelectorAll("[data-action]").forEach((button) => {
+    button.addEventListener("click", () => runControl(button.dataset.action));
+  });
+
+  async function loadDataset(url) {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Unable to load ${url}: ${response.status}`);
+    }
+    const dataset = await response.json();
+    if (dataset.schema !== DATASET_SCHEMA) {
+      throw new Error(`Unexpected GRAE10 schema: ${dataset.schema}`);
+    }
+    if (dataset.recordCount !== RECORD_COUNT) {
+      throw new Error(`Unexpected GRAE10 record count: ${dataset.recordCount}`);
+    }
+    if (!Array.isArray(dataset.p2) || dataset.p2.length !== RECORD_COUNT * 2) {
+      throw new Error("GRAE10 p2 must contain 60,000 vec2 records.");
+    }
+    if (!Array.isArray(dataset.p3) || dataset.p3.length !== RECORD_COUNT * 3) {
+      throw new Error("GRAE10 p3 must contain 60,000 vec3 records.");
+    }
+    if (typeof dataset.labels !== "string" || dataset.labels.length !== RECORD_COUNT) {
+      throw new Error("GRAE10 labels must contain 60,000 category digits.");
+    }
+    return dataset;
+  }
+
+  function createBuffers(dataset) {
+    const sourcePositions = new Float32Array(RECORD_COUNT * 3);
+    const targetPositions = new Float32Array(RECORD_COUNT * 3);
+    const colors = new Float32Array(RECORD_COUNT * 3);
+    const sizes = new Float32Array(RECORD_COUNT);
+    const labels = new Float32Array(RECORD_COUNT);
+    const phases = new Float32Array(RECORD_COUNT);
+    const p2Fit = fit2D(dataset.p2, PLOT_RADIUS);
+    const p3Fit = fit3D(dataset.p3, PLOT_RADIUS);
+    const yExtent = minMaxStride(dataset.p3, 3, 1);
+    const labelStats = Array.from({ length: LABEL_COUNT }, () => ({
+      count: 0,
+      source: new MGL.Vector3(),
+      target: new MGL.Vector3(),
+    }));
+
+    for (let index = 0; index < RECORD_COUNT; index += 1) {
+      const label = Number(dataset.labels.charAt(index)) || 0;
+      const sourceOffset = index * 2;
+      const targetOffset = index * 3;
+      const out = index * 3;
+      const color = COLORS[label % COLORS.length];
+      const sourceX = (dataset.p2[sourceOffset] - p2Fit.centerX) * p2Fit.scale;
+      const sourceZ = (dataset.p2[sourceOffset + 1] - p2Fit.centerZ) * p2Fit.scale;
+      const targetX = (dataset.p3[targetOffset] - p3Fit.centerX) * p3Fit.scale;
+      const targetY = normalizeHeight(dataset.p3[targetOffset + 1], yExtent.min, yExtent.max);
+      const targetZ = (dataset.p3[targetOffset + 2] - p3Fit.centerZ) * p3Fit.scale;
+
+      sourcePositions[out] = sourceX;
+      sourcePositions[out + 1] = FLAT_Y;
+      sourcePositions[out + 2] = sourceZ;
+      targetPositions[out] = targetX;
+      targetPositions[out + 1] = targetY;
+      targetPositions[out + 2] = targetZ;
+      colors[out] = color[0];
+      colors[out + 1] = color[1];
+      colors[out + 2] = color[2];
+      sizes[index] = 1.95 + (label % 4) * 0.12;
+      labels[index] = label;
+      phases[index] = ((index * 0.61803398875) + label * 0.071) % 1;
+
+      const stats = labelStats[label % LABEL_COUNT];
+      stats.count += 1;
+      stats.source.add(new MGL.Vector3(sourceX, FLAT_Y, sourceZ));
+      stats.target.add(new MGL.Vector3(targetX, targetY, targetZ));
+    }
+
+    labelStats.forEach((stats) => {
+      if (stats.count > 0) {
+        stats.source.multiplyScalar(1 / stats.count);
+        stats.target.multiplyScalar(1 / stats.count);
+      }
+    });
+
+    return {
+      sourcePositions,
+      targetPositions,
+      colors,
+      sizes,
+      labels,
+      phases,
+      clusterData: labelStats,
+      labelCounts: dataset.counts || labelStats.map((stats) => stats.count),
+    };
+  }
+
+  function addPointCloud(buffers) {
+    const geometry = new MGL.BufferGeometry();
+    geometry.setAttribute("position", new MGL.BufferAttribute(buffers.sourcePositions, 3));
+    geometry.setAttribute("targetPosition", new MGL.BufferAttribute(buffers.targetPositions, 3));
+    geometry.setAttribute("colorValue", new MGL.BufferAttribute(buffers.colors, 3));
+    geometry.setAttribute("sizeValue", new MGL.BufferAttribute(buffers.sizes, 1));
+    geometry.setAttribute("labelValue", new MGL.BufferAttribute(buffers.labels, 1));
+    geometry.setAttribute("phaseValue", new MGL.BufferAttribute(buffers.phases, 1));
+    geometry.computeBoundingSphere();
+    pointMaterial = new MGL.ShaderMaterial({
+      transparent: true,
+      depthTest: true,
+      depthWrite: true,
+      vertexColors: false,
+      uniforms: {
+        uMorph: { value: 0 },
+        uTime: { value: 0 },
+        uPixelRatio: { value: Math.min(devicePixelRatio || 1, 2) },
+        uPointScale: { value: 22 },
+        uFocusLabel: { value: -1 },
+        uFocusStrength: { value: 0 },
+      },
+      vertexShader: `
+        attribute vec3 targetPosition;
+        attribute vec3 colorValue;
+        attribute float sizeValue;
+        attribute float labelValue;
+        attribute float phaseValue;
+        uniform float uMorph;
+        uniform float uTime;
+        uniform float uPixelRatio;
+        uniform float uPointScale;
+        uniform float uFocusLabel;
+        uniform float uFocusStrength;
+        varying vec3 vColor;
+        varying float vFocus;
+        varying float vShade;
+        void main() {
+          vec3 world = mix(position, targetPosition, uMorph);
+          world.y = max(world.y, 0.055);
+          vec4 mv = modelViewMatrix * vec4(world, 1.0);
+          float labelMatch = 1.0 - step(0.5, abs(labelValue - uFocusLabel));
+          vFocus = labelMatch * uFocusStrength;
+          vColor = mix(colorValue, min(colorValue * 1.28 + vec3(0.10), vec3(1.0)), vFocus);
+          vShade = 0.78 + 0.22 * sin((phaseValue + uTime * 0.00004) * 6.2831853);
+          float perspective = clamp(6.0 / max(0.01, -mv.z), 0.42, 3.2);
+          gl_PointSize = clamp(sizeValue * uPointScale * perspective * uPixelRatio * (1.0 + vFocus * 0.42), 1.15, 7.2);
+          gl_Position = projectionMatrix * mv;
+        }
+      `,
+      fragmentShader: `
+        precision highp float;
+        varying vec3 vColor;
+        varying float vFocus;
+        varying float vShade;
+        void main() {
+          vec2 uv = gl_PointCoord - vec2(0.5);
+          float radius = length(uv);
+          if (radius > 0.5) discard;
+          float sphere = sqrt(max(0.0, 1.0 - radius * radius * 4.0));
+          float edge = smoothstep(0.50, 0.32, radius);
+          vec3 lit = vColor * (0.60 + sphere * 0.44) * vShade;
+          lit += vec3(1.0, 0.92, 0.72) * pow(max(0.0, 0.42 - length(uv - vec2(-0.16, 0.18))), 2.2) * 1.65;
+          lit = mix(lit, lit + vec3(0.12, 0.10, 0.04), vFocus);
+          gl_FragColor = vec4(lit, edge * (0.76 + vFocus * 0.24));
+        }
+      `,
+    });
+    worldGroup.add(new MGL.Points(geometry, pointMaterial));
+  }
+
+  function addGroundProjection(buffers) {
+    const geometry = new MGL.BufferGeometry();
+    geometry.setAttribute("position", new MGL.BufferAttribute(buffers.sourcePositions, 3));
+    geometry.setAttribute("targetPosition", new MGL.BufferAttribute(buffers.targetPositions, 3));
+    geometry.setAttribute("colorValue", new MGL.BufferAttribute(buffers.colors, 3));
+    geometry.setAttribute("labelValue", new MGL.BufferAttribute(buffers.labels, 1));
+    shadowMaterial = new MGL.ShaderMaterial({
+      transparent: true,
+      depthTest: true,
+      depthWrite: false,
+      blending: MGL.MultiplyBlending,
+      uniforms: {
+        uMorph: { value: 0 },
+        uPixelRatio: { value: Math.min(devicePixelRatio || 1, 2) },
+        uFocusLabel: { value: -1 },
+        uFocusStrength: { value: 0 },
+      },
+      vertexShader: `
+        attribute vec3 targetPosition;
+        attribute vec3 colorValue;
+        attribute float labelValue;
+        uniform float uMorph;
+        uniform float uPixelRatio;
+        uniform float uFocusLabel;
+        uniform float uFocusStrength;
+        varying vec3 vColor;
+        varying float vAlpha;
+        void main() {
+          vec3 world = mix(position, targetPosition, uMorph);
+          float height = max(0.0, world.y);
+          world.xz += normalize(vec2(-0.55, 0.22)) * height * 0.12;
+          world.y = 0.018;
+          vec4 mv = modelViewMatrix * vec4(world, 1.0);
+          float labelMatch = 1.0 - step(0.5, abs(labelValue - uFocusLabel));
+          float focus = labelMatch * uFocusStrength;
+          vColor = mix(vec3(0.34, 0.38, 0.36), colorValue * 0.62, 0.48 + focus * 0.18);
+          vAlpha = clamp(0.030 + height * 0.034 + focus * 0.034, 0.024, 0.128);
+          float perspective = clamp(6.0 / max(0.01, -mv.z), 0.42, 2.4);
+          gl_PointSize = clamp((6.0 + height * 2.2) * perspective * uPixelRatio, 2.2, 18.0);
+          gl_Position = projectionMatrix * mv;
+        }
+      `,
+      fragmentShader: `
+        precision highp float;
+        varying vec3 vColor;
+        varying float vAlpha;
+        void main() {
+          vec2 uv = gl_PointCoord - vec2(0.5);
+          float d = dot(uv, uv);
+          if (d > 0.25) discard;
+          float alpha = smoothstep(0.25, 0.0, d) * vAlpha;
+          gl_FragColor = vec4(vColor, alpha);
+        }
+      `,
+    });
+    const projection = new MGL.Points(geometry, shadowMaterial);
+    projection.renderOrder = -1;
+    worldGroup.add(projection);
+  }
+
+  function addClusterLabels(buffers) {
+    buffers.clusterData.forEach((cluster, label) => {
+      if (!cluster.count) return;
+      const sprite = new MGL.Sprite(new MGL.SpriteMaterial({
+        map: createLabelTexture(label, buffers.labelCounts[label] || cluster.count),
+        transparent: true,
+        depthTest: false,
+        depthWrite: false,
+        opacity: 0.98,
+      }));
+      sprite.scale.set(0.88, 0.35, 1);
+      sprite.userData.label = label;
+      sprite.userData.excludeFromDofDepth = true;
+      sprite.renderOrder = 8;
+      labelSprites.push(sprite);
+      labelScene.add(sprite);
+    });
+  }
+
+  function addFloor(group) {
+    const depthFloorSize = 48;
+    const stageSize = 7.2;
+    const depthFloor = new MGL.Mesh(
+      new MGL.PlaneGeometry(depthFloorSize, depthFloorSize, 1, 1),
+      new MGL.MeshLambertMaterial({
+        color: 0xb9c5bc,
+        emissive: 0x839b98,
+        emissiveIntensity: 0.018,
+        transparent: false,
+      }),
+    );
+    depthFloor.rotation.x = -Math.PI / 2;
+    depthFloor.position.y = -0.018;
+    group.add(depthFloor);
+
+    const stage = new MGL.Mesh(
+      new MGL.PlaneGeometry(stageSize, stageSize, 1, 1),
+      new MGL.MeshLambertMaterial({
+        color: 0xcfd1bd,
+        emissive: 0xb8c6ba,
+        emissiveIntensity: 0.024,
+        transparent: true,
+        opacity: 0.86,
+      }),
+    );
+    stage.rotation.x = -Math.PI / 2;
+    stage.position.y = -0.010;
+    group.add(stage);
+
+    const grid = new MGL.GridHelper(stageSize, 16, 0x445d61, 0x849890);
+    grid.position.y = 0.006;
+    grid.material.transparent = true;
+    grid.material.opacity = 0.58;
+    grid.material.depthWrite = false;
+    group.add(grid);
+
+    const axisGeometry = new MGL.BufferGeometry();
+    axisGeometry.setAttribute("position", new MGL.Float32BufferAttribute([
+      -stageSize * 0.5, 0.018, 0, stageSize * 0.5, 0.018, 0,
+      0, 0.018, -stageSize * 0.5, 0, 0.018, stageSize * 0.5,
+    ], 3));
+    const axis = new MGL.LineSegments(axisGeometry, new MGL.LineBasicMaterial({
+      vertexColors: false,
+      color: 0x385a61,
+      transparent: true,
+      opacity: 0.50,
+      depthWrite: false,
+    }));
+    group.add(axis);
+
+    const half = stageSize * 0.5;
+    const edgeGeometry = new MGL.BufferGeometry();
+    edgeGeometry.setAttribute("position", new MGL.Float32BufferAttribute([
+      -half, 0.020, -half, half, 0.020, -half,
+      half, 0.020, -half, half, 0.020, half,
+      half, 0.020, half, -half, 0.020, half,
+      -half, 0.020, half, -half, 0.020, -half,
+    ], 3));
+    const edge = new MGL.LineSegments(edgeGeometry, new MGL.LineBasicMaterial({
+      color: 0x5e7471,
+      transparent: true,
+      opacity: 0.50,
+      depthWrite: false,
+    }));
+    group.add(edge);
+  }
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const now = performance.now();
+    if (!state.ready) return;
+    if (!state.paused) {
+      sampleTimeline(now - state.startMs - state.pausedMs);
+      state.camera.yaw += 0.00019 * Math.max(0.25, Math.min(2.4, state.camera.radius / INITIAL_CAMERA.radius));
+    }
+    updateHoverFocus();
+    state.focusDistance += (state.targetFocusDistance - state.focusDistance) * 0.075;
+    updateCamera(0.08);
+    updateMorph(state.morph);
+    pointMaterial.uniforms.uTime.value = now;
+    bokehPass.uniforms.focus.value = state.focusDistance;
+    bokehPass.uniforms.aperture.value = 0.00026;
+    bokehPass.uniforms.maxblur.value = 0.0042;
+    composer.render();
+    renderLabels();
+  }
+
+  function renderLabels() {
+    const oldAutoClear = renderer.autoClear;
+    renderer.autoClear = false;
+    renderer.clearDepth();
+    renderer.render(labelScene, camera);
+    renderer.autoClear = oldAutoClear;
+  }
+
+  function sampleTimeline(elapsedMs) {
+    let t = elapsedMs % TIMELINE_DURATION;
+    for (const phase of TIMELINE) {
+      if (t <= phase.duration) {
+        const phaseT = phase.duration > 0 ? t / phase.duration : 1;
+        const eased = smoothstep(phaseT);
+        state.morph = phase.from + (phase.to - phase.from) * eased;
+        state.phase = phase.name;
+        return;
+      }
+      t -= phase.duration;
+    }
+  }
+
+  function updateMorph(progress) {
+    pointMaterial.uniforms.uMorph.value = progress;
+    shadowMaterial.uniforms.uMorph.value = progress;
+    updateLabelPositions(progress);
+  }
+
+  function updateLabelPositions(progress) {
+    labelSprites.forEach((sprite) => {
+      const label = sprite.userData.label;
+      const cluster = clusterData[label];
+      const world = clusterWorld[label];
+      world.copy(cluster.source).lerp(cluster.target, progress);
+      const radialLength = Math.hypot(world.x, world.z);
+      const fallbackAngle = (label / LABEL_COUNT) * Math.PI * 2;
+      const offsetX = radialLength > 0.08 ? world.x / radialLength : Math.cos(fallbackAngle);
+      const offsetZ = radialLength > 0.08 ? world.z / radialLength : Math.sin(fallbackAngle);
+      world.x += offsetX * 0.26;
+      world.z += offsetZ * 0.26;
+      world.y += 0.58;
+      sprite.position.copy(world);
+      const focus = state.focusLabel === label ? 1 : 0;
+      sprite.material.opacity += ((focus ? 1.0 : 0.54) - sprite.material.opacity) * 0.12;
+      const base = focus ? 0.98 : 0.60;
+      sprite.scale.x += (base - sprite.scale.x) * 0.10;
+      sprite.scale.y += (base * 0.40 - sprite.scale.y) * 0.10;
+    });
+  }
+
+  function updateCamera(smoothing) {
+    const radius = clamp(state.camera.radius, CAMERA_LIMITS.minRadius, CAMERA_LIMITS.maxRadius);
+    const pitch = clamp(state.camera.pitch, CAMERA_LIMITS.minPitch, CAMERA_LIMITS.maxPitch);
+    const x = Math.sin(state.camera.yaw) * Math.cos(pitch) * radius;
+    const z = Math.cos(state.camera.yaw) * Math.cos(pitch) * radius;
+    const y = Math.sin(pitch) * radius;
+    const desired = new MGL.Vector3(TARGET.x + x, TARGET.y + y, TARGET.z + z);
+    if (smoothing > 0) {
+      camera.position.lerp(desired, smoothing);
+    } else {
+      camera.position.copy(desired);
+    }
+    camera.lookAt(TARGET);
+    camera.updateMatrixWorld();
+  }
+
+  function updateFocusFromTarget(target) {
+    state.targetFocusDistance = distanceToCamera(target);
+  }
+
+  function updateHoverFocus() {
+    let best = null;
+    const width = Math.max(1, canvas.clientWidth);
+    const height = Math.max(1, canvas.clientHeight);
+    labelSprites.forEach((sprite) => {
+      screenPoint.copy(sprite.position).project(camera);
+      const x = (screenPoint.x * 0.5 + 0.5) * width;
+      const y = (-screenPoint.y * 0.5 + 0.5) * height;
+      const distance = Math.hypot(x - state.pointer.x, y - state.pointer.y);
+      const entry = clusterScreen[sprite.userData.label];
+      entry.x = x;
+      entry.y = y;
+      entry.distance = distance;
+      entry.label = sprite.userData.label;
+      if (distance < 92 && (!best || distance < best.distance)) best = entry;
+    });
+
+    const nextLabel = best ? best.label : -1;
+    if (nextLabel !== state.hoveredLabel) {
+      state.hoveredLabel = nextLabel;
+      state.focusLabel = nextLabel;
+      pointMaterial.uniforms.uFocusLabel.value = nextLabel;
+      shadowMaterial.uniforms.uFocusLabel.value = nextLabel;
+    }
+    const focusStrength = nextLabel >= 0 ? 1 : 0;
+    pointMaterial.uniforms.uFocusStrength.value += (focusStrength - pointMaterial.uniforms.uFocusStrength.value) * 0.10;
+    shadowMaterial.uniforms.uFocusStrength.value += (focusStrength - shadowMaterial.uniforms.uFocusStrength.value) * 0.10;
+    if (nextLabel >= 0) {
+      const target = clusterWorld[nextLabel] || TARGET;
+      updateFocusFromTarget(target);
+      status.dataset.visible = "true";
+      status.querySelector("strong").textContent = `Cluster ${nextLabel}`;
+      statusText.textContent = `${labelCounts[nextLabel].toLocaleString("en-US")} records, ${state.phase}, focus follows scene depth.`;
+    } else {
+      updateFocusFromTarget(TARGET);
+    }
+    updateRecordPreview();
+  }
+
+  function onPointerMove(event) {
+    const rect = canvas.getBoundingClientRect();
+    state.pointer.set(event.clientX - rect.left, event.clientY - rect.top);
+    state.pointerClient.set(event.clientX, event.clientY);
+    state.pointerMoved = true;
+    recordPreview.moveTo(event.clientX, event.clientY);
+    if (state.dragging) {
+      const dx = event.clientX - state.dragStart.x;
+      const dy = event.clientY - state.dragStart.y;
+      state.camera.yaw = state.dragStart.yaw - dx * 0.006;
+      state.camera.pitch = clamp(state.dragStart.pitch + dy * 0.004, CAMERA_LIMITS.minPitch, CAMERA_LIMITS.maxPitch);
+    }
+  }
+
+  function updateRecordPreview() {
+    if (!activeBuffers || state.dragging) {
+      recordPreview.hide();
+      return;
+    }
+    const now = performance.now();
+    if (!state.pointerMoved && state.hoveredRecord >= 0) {
+      const current = projectRecord(activeBuffers, state.hoveredRecord, state.morph);
+      if (current && current.distance < 24) {
+        if (now - state.lastRecordPickMs > 180) {
+          state.lastRecordPickMs = now;
+          recordPreview.show({
+            recordIndex: state.hoveredRecord,
+            x: state.pointerClient.x,
+            y: state.pointerClient.y,
+            screenDistance: current.distance,
+            world: current.world,
+          });
+        }
+        return;
+      }
+      state.hoveredRecord = -1;
+      recordPreview.hide();
+    }
+    if (!state.pointerMoved) return;
+    if (now - state.lastRecordPickMs < 45) return;
+    state.pointerMoved = false;
+    state.lastRecordPickMs = now;
+    const hit = pickRecordUnderPointer(activeBuffers, state.morph);
+    state.hoveredRecord = hit ? hit.index : -1;
+    if (hit) {
+      recordPreview.show({
+        recordIndex: hit.index,
+        x: state.pointerClient.x,
+        y: state.pointerClient.y,
+        screenDistance: hit.distance,
+        world: hit.world,
+      });
+    } else {
+      recordPreview.hide();
+    }
+  }
+
+  function pickRecordUnderPointer(buffers, morph) {
+    const width = Math.max(1, canvas.clientWidth);
+    const height = Math.max(1, canvas.clientHeight);
+    const threshold = 15;
+    let bestIndex = -1;
+    let bestDistance = threshold;
+    for (let index = 0; index < RECORD_COUNT; index += 1) {
+      const distance = recordScreenDistance(buffers, index, morph, width, height);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestIndex = index;
+      }
+    }
+    if (bestIndex < 0) return null;
+    const bestHit = projectRecord(buffers, bestIndex, morph, width, height);
+    return bestHit ? { index: bestIndex, ...bestHit } : null;
+  }
+
+  function projectRecord(buffers, index, morph, width = Math.max(1, canvas.clientWidth), height = Math.max(1, canvas.clientHeight)) {
+    const offset = index * 3;
+    const world = [
+      lerp(buffers.sourcePositions[offset], buffers.targetPositions[offset], morph),
+      Math.max(0.055, lerp(buffers.sourcePositions[offset + 1], buffers.targetPositions[offset + 1], morph)),
+      lerp(buffers.sourcePositions[offset + 2], buffers.targetPositions[offset + 2], morph),
+    ];
+    recordProbe.set(world[0], world[1], world[2]).project(camera);
+    if (recordProbe.z < -1 || recordProbe.z > 1) return null;
+    const x = (recordProbe.x * 0.5 + 0.5) * width;
+    const y = (-recordProbe.y * 0.5 + 0.5) * height;
+    return {
+      distance: Math.hypot(x - state.pointer.x, y - state.pointer.y),
+      world,
+    };
+  }
+
+  function recordScreenDistance(buffers, index, morph, width, height) {
+    const offset = index * 3;
+    recordProbe.set(
+      lerp(buffers.sourcePositions[offset], buffers.targetPositions[offset], morph),
+      Math.max(0.055, lerp(buffers.sourcePositions[offset + 1], buffers.targetPositions[offset + 1], morph)),
+      lerp(buffers.sourcePositions[offset + 2], buffers.targetPositions[offset + 2], morph),
+    ).project(camera);
+    if (recordProbe.z < -1 || recordProbe.z > 1) return Infinity;
+    const x = (recordProbe.x * 0.5 + 0.5) * width;
+    const y = (-recordProbe.y * 0.5 + 0.5) * height;
+    return Math.hypot(x - state.pointer.x, y - state.pointer.y);
+  }
+
+  function resolveRecordPreview(input) {
+    if (!activeDataset || !activeBuffers || input?.recordIndex == null) return null;
+    const index = input.recordIndex;
+    const label = Number(activeDataset.labels.charAt(index)) || 0;
+    const p2Offset = index * 2;
+    const p3Offset = index * 3;
+    const world = input.world || [0, 0, 0];
+    return {
+      title: `Record ${index.toLocaleString("en-US")}`,
+      subtitle: `Cluster ${label}, ${state.phase}`,
+      fields: [
+        { label: "original 2D", value: [activeDataset.p2[p2Offset], activeDataset.p2[p2Offset + 1]] },
+        { label: "original 3D", value: [activeDataset.p3[p3Offset], activeDataset.p3[p3Offset + 1], activeDataset.p3[p3Offset + 2]] },
+        { label: "metric xyz", value: world },
+        { label: "morph", value: state.morph },
+        { label: "screen hit", value: input.screenDistance },
+        { label: "cluster size", value: labelCounts[label] || 0 },
+      ],
+    };
+  }
+
+  function onPointerDown(event) {
+    state.dragging = true;
+    state.dragStart.x = event.clientX;
+    state.dragStart.y = event.clientY;
+    state.dragStart.yaw = state.camera.yaw;
+    state.dragStart.pitch = state.camera.pitch;
+    canvas.setPointerCapture?.(event.pointerId);
+  }
+
+  function onWheel(event) {
+    event.preventDefault();
+    state.camera.radius = clamp(state.camera.radius * (event.deltaY > 0 ? 1.08 : 0.92), CAMERA_LIMITS.minRadius, CAMERA_LIMITS.maxRadius);
+  }
+
+  function runControl(action) {
+    if (action === "zoom-in") {
+      state.camera.radius = clamp(state.camera.radius * 0.86, CAMERA_LIMITS.minRadius, CAMERA_LIMITS.maxRadius);
+    } else if (action === "zoom-out") {
+      state.camera.radius = clamp(state.camera.radius * 1.16, CAMERA_LIMITS.minRadius, CAMERA_LIMITS.maxRadius);
+    } else if (action === "toggle-motion") {
+      state.paused = !state.paused;
+      if (state.paused) {
+        state.pauseStartedMs = performance.now();
+        pauseIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+      } else {
+        state.pausedMs += performance.now() - state.pauseStartedMs;
+        pauseIcon.innerHTML = '<path d="M8 6v12M16 6v12"/>';
+      }
+    } else if (action === "reset-camera") {
+      Object.assign(state.camera, INITIAL_CAMERA);
+    }
+  }
+
+  function resize() {
+    const width = Math.max(1, canvas.clientWidth);
+    const height = Math.max(1, canvas.clientHeight);
+    renderer.setSize(width, height, false);
+    composer.setSize(width, height);
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    fxaaPass.material.uniforms.resolution.value.x = 1 / (width * renderer.getPixelRatio());
+    fxaaPass.material.uniforms.resolution.value.y = 1 / (height * renderer.getPixelRatio());
+    bokehPass.uniforms.aspect.value = camera.aspect;
+    bokehPass.renderTargetDepth.setSize(width * renderer.getPixelRatio(), height * renderer.getPixelRatio());
+  }
+
+  function createLabelTexture(label, count) {
+    const pixelRatio = 2;
+    const width = 300;
+    const height = 110;
+    const canvas2d = document.createElement("canvas");
+    canvas2d.width = width * pixelRatio;
+    canvas2d.height = height * pixelRatio;
+    const ctx = canvas2d.getContext("2d");
+    ctx.scale(pixelRatio, pixelRatio);
+    ctx.clearRect(0, 0, width, height);
+    const color = COLORS[label];
+    const gradient = ctx.createLinearGradient(0, 0, width, height);
+    gradient.addColorStop(0, `rgba(${Math.round(color[0] * 255)}, ${Math.round(color[1] * 255)}, ${Math.round(color[2] * 255)}, 0.94)`);
+    gradient.addColorStop(1, "rgba(250, 248, 233, 0.88)");
+    roundRect(ctx, 8, 12, width - 16, height - 24, 28);
+    ctx.fillStyle = "rgba(246, 244, 229, 0.96)";
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = gradient;
+    ctx.stroke();
+    ctx.fillStyle = `rgb(${Math.round(color[0] * 210)}, ${Math.round(color[1] * 210)}, ${Math.round(color[2] * 210)})`;
+    ctx.beginPath();
+    ctx.arc(42, 55, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#203034";
+    ctx.font = "800 34px ui-sans-serif, system-ui, sans-serif";
+    ctx.fillText(`Cluster ${label}`, 66, 52);
+    ctx.font = "650 20px ui-sans-serif, system-ui, sans-serif";
+    ctx.fillStyle = "#617075";
+    ctx.fillText(`${count.toLocaleString("en-US")} records`, 68, 78);
+    const texture = new MGL.CanvasTexture(canvas2d);
+    texture.encoding = MGL.sRGBEncoding;
+    texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    return texture;
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function fit2D(values, radius) {
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minZ = Infinity;
+    let maxZ = -Infinity;
+    for (let index = 0; index < values.length; index += 2) {
+      minX = Math.min(minX, values[index]);
+      maxX = Math.max(maxX, values[index]);
+      minZ = Math.min(minZ, values[index + 1]);
+      maxZ = Math.max(maxZ, values[index + 1]);
+    }
+    const span = Math.max(maxX - minX, maxZ - minZ, 1e-6);
+    return {
+      centerX: (minX + maxX) * 0.5,
+      centerZ: (minZ + maxZ) * 0.5,
+      scale: (radius * 2) / span,
+    };
+  }
+
+  function fit3D(values, radius) {
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minZ = Infinity;
+    let maxZ = -Infinity;
+    for (let index = 0; index < values.length; index += 3) {
+      minX = Math.min(minX, values[index]);
+      maxX = Math.max(maxX, values[index]);
+      minZ = Math.min(minZ, values[index + 2]);
+      maxZ = Math.max(maxZ, values[index + 2]);
+    }
+    const span = Math.max(maxX - minX, maxZ - minZ, 1e-6);
+    return {
+      centerX: (minX + maxX) * 0.5,
+      centerZ: (minZ + maxZ) * 0.5,
+      scale: (radius * 2) / span,
+    };
+  }
+
+  function minMaxStride(values, stride, component) {
+    let min = Infinity;
+    let max = -Infinity;
+    for (let index = component; index < values.length; index += stride) {
+      min = Math.min(min, values[index]);
+      max = Math.max(max, values[index]);
+    }
+    return { min, max };
+  }
+
+  function normalizeHeight(value, min, max) {
+    const t = (value - min) / Math.max(1e-6, max - min);
+    const eased = smoothstep(t);
+    return 0.26 + eased * SPACE_HEIGHT;
+  }
+
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  function smoothstep(t) {
+    const x = clamp(t, 0, 1);
+    return x * x * (3 - 2 * x);
+  }
+
+  function distanceToCamera(point) {
+    return camera.position.distanceTo(point);
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+}
+
+export const mountGrae10MetricEngine = mountMetricSpaceMiniatureEngine;
+
+function numberOption(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function vector3Option(value, fallback) {
+  const source = Array.isArray(value) ? value : fallback;
+  return new MGL.Vector3(
+    numberOption(source[0], fallback[0]),
+    numberOption(source[1], fallback[1]),
+    numberOption(source[2], fallback[2]),
+  );
+}
