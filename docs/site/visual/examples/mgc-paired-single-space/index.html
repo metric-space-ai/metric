@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>METRIC - MGC Local Correlation Field</title>
+  <style>
+    :root { color-scheme: light; --ink:#172326; --muted:#536164; --line:rgba(24,35,37,.16); }
+    * { box-sizing:border-box; }
+    html, body { width:100%; height:100%; margin:0; overflow:hidden; }
+    body {
+      background:#eef2ee;
+      color:var(--ink);
+      font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+    main { position:fixed; inset:0; }
+    #scene { position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; cursor:grab; }
+    #scene:active { cursor:grabbing; }
+    .analysis-tag {
+      position:fixed;
+      top:18px;
+      left:18px;
+      z-index:4;
+      max-width:min(390px, calc(100vw - 36px));
+      padding:11px 13px 12px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:rgba(249,250,246,.76);
+      color:#172326;
+      backdrop-filter:blur(18px) saturate(1.08);
+      box-shadow:0 18px 48px rgba(28,42,40,.11);
+      pointer-events:none;
+    }
+    .analysis-tag strong {
+      display:block;
+      margin-bottom:4px;
+      font:800 13px/1.18 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      letter-spacing:0;
+    }
+    .analysis-tag strong b {
+      float:right;
+      font:800 13px/1.18 ui-monospace,SFMono-Regular,Menlo,monospace;
+      margin-left:18px;
+    }
+    .analysis-tag span {
+      display:block;
+      color:var(--muted);
+      font-size:11px;
+      line-height:1.38;
+    }
+    .analysis-tag .scale {
+      display:grid;
+      grid-template-columns:auto minmax(120px, 1fr) auto;
+      align-items:center;
+      gap:7px;
+      margin-top:8px;
+      color:#5a6669;
+      font:650 10px/1.1 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+    .analysis-tag .scale-bar {
+      height:7px;
+      border-radius:999px;
+      background:linear-gradient(90deg, rgba(28,132,169,.88), rgba(239,222,126,.86), rgba(210,68,54,.90));
+      box-shadow:inset 0 0 0 1px rgba(24,35,37,.10);
+    }
+    body .mtrc-record-preview {
+      width:min(360px, calc(100vw - 28px));
+      max-height:calc(100vh - 28px);
+      padding:0;
+      overflow:hidden auto;
+      border-radius:10px;
+      background:rgba(251,251,244,.98);
+      pointer-events:none;
+    }
+    .record-card { display:block; background:rgba(251,251,244,.98); }
+    .record-card__image {
+      width:100%;
+      height:auto;
+      max-height:min(40vh, 270px);
+      display:block;
+      object-fit:contain;
+      background:#070a09;
+    }
+    .record-card__caption {
+      display:grid;
+      gap:2px;
+      padding:8px 9px 7px;
+      border-top:1px solid rgba(24,35,37,.12);
+      color:#172326;
+    }
+    .record-card__caption strong {
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      font:750 11px/1.22 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      letter-spacing:0;
+    }
+    .record-card__caption span {
+      color:#526166;
+      font:650 10px/1.25 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .record-card__measure {
+      display:flex;
+      flex-wrap:wrap;
+      gap:4px;
+      padding:0 9px 9px;
+      color:#253336;
+      background:rgba(251,251,244,.98);
+    }
+    .record-card__measure span {
+      border:1px solid rgba(24,35,37,.13);
+      border-radius:999px;
+      padding:2px 6px;
+      font:650 10px/1.1 ui-monospace,SFMono-Regular,Menlo,monospace;
+      background:rgba(255,255,252,.66);
+    }
+    .loading, .error { position:absolute; inset:0; display:grid; place-items:center; z-index:6; color:#243236; }
+    .error { color:#842525; }
+    @media (max-width: 760px) {
+      .analysis-tag { top:12px; left:12px; right:12px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene" aria-label="One finite metric space of original image records with MGC local-correlation evidence"></canvas>
+    <section class="analysis-tag" aria-label="MGC-Korrelationsfeld">
+      <strong>Mehrskaliges Korrelationsfeld <b id="global-mgc">...</b></strong>
+      <span>Ein gemeinsamer metrischer Raum realer BTAD-Bildrecords.</span>
+      <span>Transparente Volumen zeigen, wo Textur- und Strukturabstände lokal gemeinsam verlaufen.</span>
+      <span class="scale" aria-hidden="true"><em>schwach</em><i class="scale-bar"></i><em>stark</em></span>
+    </section>
+    <div class="loading" id="loading">Loading native MGC evidence...</div>
+  </main>
+  <script type="module">
+    import { createMetricVisual } from "../../src/index.js";
+
+
+    const canvas = document.getElementById("scene");
+    const loading = document.getElementById("loading");
+    const globalMgc = document.getElementById("global-mgc");
+
+    let visual = null;
+    let document_ = null;
+    let diagnostic = null;
+    let baseDescriptors = [];
+    let orbitDragActive = false;
+
+    try {
+      const response = await fetch("metric.visual.json", { cache: "no-store" });
+      if (!response.ok) throw new Error(`metric.visual.json ${response.status}`);
+      document_ = await response.json();
+      diagnostic = document_.diagnostics?.find((entry) => entry.id === "single-space-mgc-operator");
+      const statistic = Number(diagnostic?.statistic);
+      globalMgc.textContent = Number.isFinite(statistic) ? statistic.toFixed(4) : "n/a";
+
+      visual = await createMetricVisual({
+        canvas,
+	        evidence: document_,
+	        profileId: "mgc-paired-single-space-profile",
+	        start: true,
+	        controls: { enabled: true, rotateSpeed: 0.0065 },
+	        profileOptions: {
+	          variant: "white",
+	          stageOptions: {
+	            background: "#eaf0eb",
+	            camera: { orbit: { autoRotate: false } },
+	            focus: photographicFocus(),
+	            postprocess: photographicPostprocess(),
+	            interaction: { pointerFocus: true, orbitDamping: true },
+	          },
+	        },
+	        runtime: {
+	          camera: { mode: "orbitInspect", fov: 38, target: [0, -0.02, 0], yaw: 0.64, pitch: 0.52, radius: 5.45 },
+	          controls: { enabled: true, rotateSpeed: 0.0065, preventDefault: true, updateFocusOnMove: true },
+	          hoverFocus: { enabled: true, thresholdPx: 58, clearOnLeave: false, clearOnMiss: false, throttleMs: 16 },
+	          inspection: { enabled: true, thresholdPx: 58, gpuRadiusPx: 8, cpuFallback: true, hover: true, click: true },
+	          focusLine: photographicFocus(),
+	          postprocess: photographicPostprocess(),
+	        }
+	      });
+      visual.showMetricSpace({
+        spaceId: "paired-record-space",
+        coordinateId: "joint-record-3d",
+        scalarProperty: "signed-optimal-scale-local-correlation",
+        colorProperty: "source-label",
+        labels: false,
+        ground: false,
+        groundProjection: false,
+        recordGlyphs: false,
+        shape: "sphere",
+        targetRadius: 1.5,
+        size: 1.85,
+        pointSize: 1.85,
+        pointAlpha: 0.93,
+        motion: false,
+        startMotion: false,
+        preview: "record",
+        previewOptions: { panel: { maxFields: 0, render: renderImageRecord } },
+      });
+      visual.enableRecordPreview({ mode: "record", panel: { maxFields: 0, render: renderImageRecord } });
+      installDirectCanvasOrbit(visual);
+      if (visual.previewPointerMoveBound) {
+        canvas.removeEventListener("pointermove", visual.previewPointerMoveBound);
+        visual.previewPointerMoveBound = null;
+      }
+      baseDescriptors = visual.descriptors.slice();
+	      const voxelDescriptor = buildCorrelationVoxelDescriptor();
+	      const recordDescriptors = baseDescriptors.map(enhanceRecordPointDescriptor);
+	      visual._setLayerDescriptors([
+	        ...(voxelDescriptor ? [voxelDescriptor] : []),
+	        ...recordDescriptors,
+      ], {
+        source: "mgc-local-correlation-field",
+        viewKind: "metric-space",
+      });
+      visual.setMotion(false);
+      window.metricMgcSingleSpace = { visual, document: document_, getState: () => visual.getState() };
+      loading.remove();
+      document.documentElement.dataset.metricMgcSingleSpace = "ready";
+      document.documentElement.dataset.metricRecordCount = String(document_.records?.length || 0);
+      document.documentElement.dataset.metricMgcStatistic = Number.isFinite(statistic) ? statistic.toFixed(6) : "";
+      document.documentElement.dataset.metricMgcVisibleMetric = "joint-record-distance";
+    } catch (error) {
+      console.error(error);
+      loading.className = "loading error";
+      loading.textContent = error instanceof Error ? error.message : String(error);
+    }
+
+    function photographicFocus() {
+      return {
+        axis: "horizontal",
+        yRatio: 0.50,
+        radiusRatio: 0.42,
+        focusBandRatio: 0.12,
+        blurRadius: 2.65,
+        blurCurve: 1.22,
+        pointer: { enabled: true, axis: "horizontal", preserveRadius: true },
+      };
+    }
+
+    function photographicPostprocess() {
+      return {
+        tiltShift: {
+          enabled: true,
+          blurRadius: 2.65,
+          gradientRadius: 170,
+          focusBandRatio: 0.12,
+          blurCurve: 1.22,
+        },
+        postFx: {
+          enabled: true,
+          bloom: {
+            enabled: true,
+            intensity: 0.055,
+            strength: 0.055,
+            threshold: 0.93,
+            radius: 0.72,
+            saturation: 0.62,
+            clamp: 0.62,
+          },
+          cameraDof: {
+            enabled: true,
+            amount: 0.30,
+            focusDistance: 5.45,
+            depthNear: 1.05,
+            depthFar: 11.5,
+            aperture: 0.18,
+            maxBlur: 1.08,
+            focalRange: 0.44,
+            quietDesaturation: 0.045,
+            quietExposure: 0.018,
+          },
+          miniatureFrame: {
+            enabled: true,
+            amount: 0.28,
+            focusClarity: 0.16,
+            focusLift: 0.018,
+            stageGlow: 0.055,
+            groundShade: 0.045,
+            edgeFade: 0.055,
+            warmth: 0.035,
+            floorRatio: 0.52,
+            floorColor: [0.86, 0.88, 0.84],
+            skyColor: [0.96, 0.965, 0.92],
+            floorSheen: 0.08,
+            backlight: 0.08,
+            stageSpotlight: 0.10,
+            stageShadow: 0.12,
+            subjectIsolation: 0.16,
+            microContrast: 0.16,
+            lensAberration: 0.002,
+            apertureVignette: 0.055,
+            focusDesaturation: 0.025,
+            shadowColor: [0.64, 0.72, 0.74],
+            highlightColor: [1.0, 0.96, 0.84],
+          },
+          grade: {
+            enabled: true,
+            exposure: 0.01,
+            contrast: 1.05,
+            saturation: 1.02,
+            vibrance: 0.055,
+            temperature: 0.02,
+            highlightCompression: 0.12,
+          },
+          vignette: {
+            enabled: true,
+            amount: 0.07,
+            radius: 0.84,
+            softness: 0.82,
+            color: [0.82, 0.86, 0.80],
+            exposurePreserve: 0.18,
+          },
+          filmGrain: { enabled: false },
+        },
+      };
+    }
+
+	    function buildCorrelationVoxelDescriptor() {
+      const voxels = diagnostic?.local_correlation_voxels || [];
+      if (!voxels.length || !visual?.views?.length) return null;
+      const fit = visual.views[0]?.fit;
+      const transform = typeof fit?.transform === "function" ? fit.transform : (value) => value;
+      const scale = Number(fit?.scale) || 1;
+      const positions = [];
+      const sizes = [];
+      const colors = [];
+      const maxSupport = Math.max(1e-9, Number(diagnostic?.local_correlation_voxel_maximum_support) || 1);
+      for (let index = 0; index < voxels.length; index += 1) {
+        const voxel = voxels[index];
+        const center = transform(voxel.center || [0, 0, 0]);
+        const normalized = clamp01(Number(voxel.normalized));
+        const support = clamp01(Number(voxel.support) / maxSupport);
+        const size = Math.max(0.02, Number(voxel.size) * scale);
+        positions.push(center[0], center[1], center[2]);
+        sizes.push(size, size, size);
+        colors.push(...correlationColor(normalized, support));
+      }
+      return {
+        id: "mgc-local-correlation-voxels",
+        kind: "local-correlation-field",
+        primitive: "InstancedBoxLayer",
+        order: 6,
+        picking: false,
+        channels: {
+          position: numericChannel(positions, 3, "position"),
+          scale: numericChannel(sizes, 3, "scale"),
+          color: numericChannel(colors, 4, "rgba"),
+        },
+        geometry: { anchor: "center" },
+        material: {
+          alphaMode: "blend",
+          transparent: true,
+          alpha: 0.54,
+          depthWrite: false,
+          backFace: "double-sided",
+          ambient: 0.54,
+          pointLight: 0.34,
+          specular: 0.12,
+          roughness: 0.74,
+          metalness: 0.02,
+          saturation: 1.08,
+          faceContrast: 0.18,
+          rimLight: 0.12,
+        },
+        animation: { mode: "none" },
+        metadata: {
+          role: "mgc-local-correlation-field",
+          picking: "disabled",
+          valueDomain: [
+            Number(diagnostic?.local_correlation_voxel_minimum),
+            Number(diagnostic?.local_correlation_voxel_maximum),
+          ],
+        },
+	      };
+	    }
+
+	    function enhanceRecordPointDescriptor(descriptor) {
+	      if (descriptor?.primitive !== "InstancedPointLayer") return descriptor;
+	      return {
+	        ...descriptor,
+	        id: descriptor.id || "mgc-record-samples",
+	        order: 18,
+	        picking: descriptor.picking || { mode: "record-id", channel: "recordId" },
+	        material: {
+	          ...(descriptor.material || {}),
+	          alphaMode: "blend",
+	          transparent: true,
+	          alpha: 0.94,
+	          depthWrite: true,
+	          shape: "disc",
+	          photographicSprite: true,
+	          spriteProfile: "grae10",
+	          pointPixelScale: 46,
+	          minPointSize: 3.4,
+	          maxPointSize: 18.5,
+	          sizeAttenuation: true,
+	          perspectiveScale: 5.9,
+	          perspectiveMin: 0.46,
+	          perspectiveMax: 3.15,
+	          focusBoost: 0.36,
+	          phasePulse: 0.035,
+	          ambient: 0.60,
+	          pointLight: 0.43,
+	          specular: 0.16,
+	          rimLight: 0.18,
+	          highlightLift: 0.16,
+	          sphereShade: 0.68,
+	          gloss: 0.24,
+	          edgeShade: 0.40,
+	          saturation: 1.02,
+	          shadowDensity: 0.42,
+	          highlightSharpness: 0.42,
+	          ambientColor: [1.0, 0.985, 0.935],
+	          lightColor: [1.0, 0.92, 0.74],
+	          focusColor: [0.96, 0.90, 0.68],
+	          shadowTint: [0.66, 0.78, 0.78],
+	        },
+	        geometry: {
+	          ...(descriptor.geometry || {}),
+	          shape: "disc",
+	          pointPixelScale: 46,
+	          minPointSize: 3.4,
+	          maxPointSize: 18.5,
+	          sizeAttenuation: true,
+	          perspectiveScale: 5.9,
+	          perspectiveMin: 0.46,
+	          perspectiveMax: 3.15,
+	        },
+	        metadata: {
+	          ...(descriptor.metadata || {}),
+	          role: "photographic-metric-record-samples",
+	        },
+	      };
+	    }
+
+    function installDirectCanvasOrbit(visual) {
+      const runtime = visual?.runtime;
+      if (!runtime?.cameraState || typeof runtime.cameraState.orbit !== "function") return;
+      runtime.controls?.setEnabled?.(false);
+      let dragging = false;
+      let lastX = 0;
+      let lastY = 0;
+      const rotateSpeed = 0.0065;
+      const endDrag = (event) => {
+        if (!dragging) return;
+        dragging = false;
+        window.setTimeout(() => { orbitDragActive = false; }, 120);
+        if (canvas.releasePointerCapture && event.pointerId !== undefined) {
+          try { canvas.releasePointerCapture(event.pointerId); } catch {}
+        }
+      };
+      canvas.addEventListener("pointerdown", (event) => {
+        if (event.button !== 0) return;
+        dragging = true;
+        orbitDragActive = true;
+        lastX = event.clientX;
+        lastY = event.clientY;
+        visual.previewPanel?.hide?.();
+        if (canvas.setPointerCapture && event.pointerId !== undefined) {
+          canvas.setPointerCapture(event.pointerId);
+        }
+        event.preventDefault();
+      }, { passive: false });
+      canvas.addEventListener("pointermove", (event) => {
+        if (!dragging) return;
+        const dx = event.clientX - lastX;
+        const dy = event.clientY - lastY;
+        lastX = event.clientX;
+        lastY = event.clientY;
+        if (Math.abs(dx) + Math.abs(dy) < 0.01) return;
+        runtime.cameraState.orbit(dx * rotateSpeed, dy * rotateSpeed);
+        runtime.cameraState.applyTo(runtime.camera);
+        runtime.camera.updateMatrices?.();
+        runtime.requestRender?.();
+        event.preventDefault();
+      }, { passive: false });
+      canvas.addEventListener("pointerup", endDrag, { passive: false });
+      canvas.addEventListener("pointercancel", endDrag, { passive: false });
+      canvas.addEventListener("pointerleave", endDrag, { passive: false });
+    }
+
+	    function channelArray(channel) {
+	      const array = channel?.array ?? channel?.values ?? channel;
+	      if (!array) return null;
+	      return ArrayBuffer.isView(array) || Array.isArray(array) ? array : null;
+	    }
+
+	    function channelItemSize(channel, fallback) {
+	      const size = Number(channel?.itemSize ?? channel?.size ?? fallback);
+	      return Number.isFinite(size) && size > 0 ? Math.floor(size) : fallback;
+	    }
+
+	    function readColor(colors, itemSize, index) {
+	      if (!colors?.length) return [0.26, 0.52, 0.62, 1];
+	      const offset = index * itemSize;
+	      return [
+	        clamp01(Number(colors[offset])),
+	        clamp01(Number(colors[offset + 1])),
+	        clamp01(Number(colors[offset + 2])),
+	        clamp01(colors[offset + 3] == null ? 1 : Number(colors[offset + 3])),
+	      ];
+	    }
+
+	    function correlationColor(normalized, support) {
+      const low = [0.05, 0.52, 0.70];
+      const mid = [0.96, 0.91, 0.62];
+      const high = [0.90, 0.30, 0.24];
+      const left = normalized < 0.5 ? low : mid;
+      const right = normalized < 0.5 ? mid : high;
+      const t = normalized < 0.5 ? normalized * 2 : (normalized - 0.5) * 2;
+      const alpha = 0.10 + 0.34 * support;
+      return [
+        left[0] + (right[0] - left[0]) * t,
+        left[1] + (right[1] - left[1]) * t,
+        left[2] + (right[2] - left[2]) * t,
+        alpha,
+      ];
+    }
+
+    function clamp01(value) {
+      return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0;
+    }
+
+    function numericChannel(values, itemSize, semantic) {
+      const array = ArrayBuffer.isView(values) ? values : new Float32Array(values);
+      return { semantic, itemSize, count: Math.floor(array.length / itemSize), array };
+    }
+
+    function renderImageRecord(preview, input = {}) {
+      if (orbitDragActive) return null;
+      const recordId = String(input.recordId || input.focusTarget?.recordId || "");
+      const record = document_.records?.find((item) => String(item.id) === recordId);
+      if (!record) return null;
+      const components = record.payload?.components || {};
+      const image = components.image || {};
+      const meta = record.payload?.metadata || {};
+      const article = document.createElement("article");
+      article.className = "record-card";
+      const img = document.createElement("img");
+      img.className = "record-card__image";
+      img.src = image.href || "";
+      img.alt = image.source_id || record.id;
+      img.loading = "eager";
+      img.decoding = "async";
+      img.addEventListener("load", () => {
+        const x = Number(input.x ?? input.clientX ?? window.innerWidth * 0.5);
+        const y = Number(input.y ?? input.clientY ?? window.innerHeight * 0.38);
+        window.metricMgcSingleSpace?.visual?.previewPanel?.moveTo?.(x, y);
+      }, { once: true });
+      const caption = document.createElement("div");
+      caption.className = "record-card__caption";
+      const title = document.createElement("strong");
+      title.textContent = compactPath(image.source_id || image.source_path || record.id);
+      const scope = document.createElement("span");
+      scope.textContent = `${image.dataset || ""}/${image.category || ""} / ${image.label || ""} / ${image.width || "?"} x ${image.height || "?"}`;
+      caption.append(title, scope);
+      article.append(img, caption);
+      return article;
+    }
+
+    function compactPath(value) {
+      return String(value || "").replace(/^.*?(BTAD\/)/, "$1");
+    }
+
+  </script>
+</body>
+</html>

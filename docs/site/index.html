@@ -221,7 +221,8 @@
         border: 0;
       }
 
-      .entropy-hero {
+      .entropy-hero,
+      .correlation-hero {
         position: relative;
         min-height: calc(100svh - 58px);
         padding: 0;
@@ -230,18 +231,24 @@
         background: oklch(0.92 0.018 126);
       }
 
-      .entropy-hero iframe {
+      .correlation-hero {
+        background: oklch(0.93 0.014 118);
+      }
+
+      .entropy-hero iframe,
+      .correlation-hero iframe {
         display: none;
         width: 100%;
         height: calc(100svh - 58px);
         min-height: 700px;
       }
 
-      .entropy-hero[data-loaded="true"] iframe {
+      .entropy-hero[data-loaded="true"] iframe,
+      .correlation-hero[data-loaded="true"] iframe {
         display: block;
       }
 
-      .entropy-loader {
+      .visual-loader {
         display: grid;
         min-height: calc(100svh - 58px);
         place-items: center;
@@ -252,11 +259,20 @@
         background-size: 64px 64px;
       }
 
-      .entropy-hero[data-loaded="true"] .entropy-loader {
+      .correlation-hero .visual-loader {
+        background:
+          linear-gradient(oklch(0.84 0.016 132 / 0.30) 1px, transparent 1px),
+          linear-gradient(90deg, oklch(0.84 0.016 132 / 0.30) 1px, transparent 1px),
+          oklch(0.93 0.014 118);
+        background-size: 64px 64px;
+      }
+
+      .entropy-hero[data-loaded="true"] .visual-loader,
+      .correlation-hero[data-loaded="true"] .visual-loader {
         display: none;
       }
 
-      .entropy-loader button {
+      .visual-loader button {
         min-height: 42px;
         padding: 0 18px;
         border: 1px solid color-mix(in oklch, var(--ink), transparent 74%);
@@ -531,7 +547,9 @@
         }
 
         .entropy-hero,
-        .entropy-hero iframe {
+        .correlation-hero,
+        .entropy-hero iframe,
+        .correlation-hero iframe {
           min-height: 560px;
         }
 
@@ -552,6 +570,7 @@
         <nav aria-label="Primary navigation">
           <a href="#gallery">Visual</a>
           <a href="#entropy">Entropy</a>
+          <a href="#correlation">Korrelation</a>
           <a href="#concept">Concept</a>
           <a href="docs.html">Docs</a>
           <a class="button primary" href="https://github.com/metric-space-ai/metric">GitHub</a>
@@ -590,12 +609,22 @@
       </section>
 
       <section id="entropy" class="entropy-hero" data-loaded="false" aria-label="Continuous metric entropy analysis">
-        <div class="entropy-loader">
-          <button id="loadEntropyVisual" type="button">Load entropy visual</button>
+        <div class="visual-loader">
+          <button type="button" data-load-visual="entropy">Load entropy visual</button>
         </div>
         <iframe
           title="Continuous entropy analysis over sliding BTAD/03 metric-space windows"
           data-src="visual/examples/btad-entropy-window-graph/index.html?project-hero=1"
+          loading="lazy"></iframe>
+      </section>
+
+      <section id="correlation" class="correlation-hero" data-loaded="false" aria-label="MGC local correlation field">
+        <div class="visual-loader">
+          <button type="button" data-load-visual="correlation">Load correlation visual</button>
+        </div>
+        <iframe
+          title="MGC local correlation field over one finite metric space"
+          data-src="visual/examples/mgc-paired-single-space/index.html?project-hero=1"
           loading="lazy"></iframe>
       </section>
 
@@ -628,6 +657,23 @@
                 <a href="https://github.com/metric-space-ai/metric/blob/main/examples/engine/mnist_grae10_integrity.cpp">C++ source</a>
                 <a href="visual/examples/grae10-metric-engine/grae10-data.json">Data JSON</a>
                 <a href="https://github.com/metric-space-ai/metric/blob/main/docs/examples/mnist-grae10-gallery.md">Reference note</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="accepted-reference" data-gallery-item="mgc-paired-single-space" data-evidence-status="accepted">
+            <div>
+              <span class="status accepted">Correlation hero</span>
+              <h3>MGC local correlation</h3>
+            </div>
+            <div>
+              <p class="portfolio-copy">
+                One finite metric space of original image records with a transparent local-correlation field from exported MGC evidence.
+              </p>
+              <div class="links" style="margin-top: 14px">
+                <a href="#correlation">Show hero</a>
+                <a href="visual/examples/mgc-paired-single-space/index.html">Open visual</a>
+                <a href="visual/examples/mgc-paired-single-space/metric.visual.json">Metric evidence</a>
               </div>
             </div>
           </div>
@@ -681,29 +727,31 @@
     </footer>
     <script>
       (() => {
-        const section = document.getElementById("entropy");
-        const frame = section?.querySelector("iframe[data-src]");
-        const button = document.getElementById("loadEntropyVisual");
-        if (!section || !frame) return;
-        let loaded = false;
-        const loadEntropy = () => {
-          if (loaded) return;
-          loaded = true;
-          frame.src = frame.dataset.src;
-          section.dataset.loaded = "true";
-        };
-        button?.addEventListener("click", loadEntropy);
-        document.querySelectorAll('a[href="#entropy"]').forEach((link) => {
-          link.addEventListener("click", loadEntropy);
+        document.querySelectorAll("section[id] iframe[data-src]").forEach((frame) => {
+          const section = frame.closest("section[id]");
+          if (!section) return;
+          let loaded = false;
+          const loadVisual = () => {
+            if (loaded) return;
+            loaded = true;
+            frame.src = frame.dataset.src;
+            section.dataset.loaded = "true";
+          };
+          section.querySelectorAll("[data-load-visual]").forEach((button) => {
+            button.addEventListener("click", loadVisual);
+          });
+          document.querySelectorAll(`a[href="#${section.id}"]`).forEach((link) => {
+            link.addEventListener("click", loadVisual);
+          });
+          if (location.hash === `#${section.id}`) loadVisual();
+          const observer = new IntersectionObserver((entries) => {
+            if (entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.45)) {
+              loadVisual();
+              observer.disconnect();
+            }
+          }, { threshold: [0, 0.45] });
+          observer.observe(section);
         });
-        if (location.hash === "#entropy") loadEntropy();
-        const observer = new IntersectionObserver((entries) => {
-          if (entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.45)) {
-            loadEntropy();
-            observer.disconnect();
-          }
-        }, { threshold: [0, 0.45] });
-        observer.observe(section);
       })();
     </script>
   </body>

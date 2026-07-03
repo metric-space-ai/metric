@@ -160,6 +160,66 @@
       color: #5b1f20;
       background: #eaded0;
     }
+
+    body .mtrc-record-preview {
+      width: auto;
+      max-height: calc(100vh - 28px);
+      padding: 0;
+      border: 0;
+      border-radius: 12px;
+      background: transparent;
+      box-shadow: none;
+      overflow: visible;
+    }
+
+    body .grae10-record-card {
+      display: block;
+      width: min(238px, calc(100vw - 28px));
+      margin: 0;
+      overflow: hidden;
+      border-radius: 12px;
+      background: rgba(250, 249, 238, 0.98);
+      box-shadow: 0 18px 42px rgba(35, 46, 44, 0.18);
+    }
+
+    body .grae10-record-card canvas {
+      position: static;
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1;
+      background: #050807;
+      image-rendering: pixelated;
+      cursor: default;
+      touch-action: auto;
+    }
+
+    body .grae10-record-card figcaption {
+      display: grid;
+      gap: 3px;
+      padding: 9px 10px 10px;
+      border-top: 1px solid rgba(36, 48, 52, 0.12);
+    }
+
+    body .grae10-record-card strong {
+      overflow: hidden;
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 820;
+      line-height: 1.18;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    body .grae10-record-card span {
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 680;
+      line-height: 1.24;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   </style>
 </head>
 <body>
@@ -197,6 +257,9 @@
 
     const DATA_URL = "./grae10-data.json";
     const DATASET_SCHEMA = "metric.visual.grae10.dataset.v1";
+    const MNIST_PREVIEW_CHUNK_SIZE = 1000;
+    const MNIST_PREVIEW_IMAGE_BYTES = 28 * 28;
+    const MNIST_PREVIEW_PATH = "./mnist-preview";
     const URL_PARAMS = new URLSearchParams(location.search);
     const PROJECT_HERO_MODE = URL_PARAMS.has("project-hero");
     const CAMERA_ORBIT_SPEED = PROJECT_HERO_MODE ? 0.00086 : 0.00032;
@@ -264,6 +327,38 @@
       get morph() { return state.morph; },
       get paused() { return state.paused; },
       get heroMode() { return PROJECT_HERO_MODE; },
+      get hoveredRecord() { return state.hoveredRecord; },
+      get loadedMnistPreviewChunks() {
+        return [...mnistPreviewChunks.values()].filter((entry) => entry.status === "ready").length;
+      },
+      previewRecord(index = 0) {
+        if (!activeBuffers) return false;
+        const recordIndex = Math.max(0, Math.min(RECORD_COUNT - 1, Math.round(Number(index) || 0)));
+        const current = projectRecord(activeBuffers, recordIndex, state.morph) || {
+          distance: 0,
+          world: [
+            activeBuffers.targetPositions[recordIndex * 3],
+            activeBuffers.targetPositions[recordIndex * 3 + 1],
+            activeBuffers.targetPositions[recordIndex * 3 + 2],
+          ],
+        };
+        state.hoveredRecord = recordIndex;
+        const x = current.x ?? window.innerWidth * 0.50;
+        const y = current.y ?? window.innerHeight * 0.50;
+        state.pointer.set(x, y);
+        state.pointerClient.set(x, y);
+        showRecordPreview({
+          recordIndex,
+          x,
+          y,
+          screenDistance: current.distance,
+          world: current.world,
+        });
+        return true;
+      },
+      get previewCanvasCount() {
+        return document.querySelectorAll(".grae10-record-card canvas").length;
+      },
     };
 
     const renderer = new MGL.WebGLRenderer({
@@ -321,7 +416,12 @@
     const clusterWorld = Array.from({ length: LABEL_COUNT }, () => new MGL.Vector3());
     const labelSprites = [];
     const recordProbe = new MGL.Vector3();
-    const recordPreview = new RecordPreviewPanel({ root: document.body, maxFields: 7 });
+    const recordPreview = new RecordPreviewPanel({
+      root: document.body,
+      maxFields: 0,
+      render: renderMnistRecordPreview,
+    });
+    const mnistPreviewChunks = new Map();
     let pointMaterial = null;
     let shadowMaterial = null;
     let clusterData = null;
@@ -838,7 +938,7 @@
         if (current && current.distance < 24) {
           if (now - state.lastRecordPickMs > 180) {
             state.lastRecordPickMs = now;
-            recordPreview.show({
+            showRecordPreview({
               recordIndex: state.hoveredRecord,
               x: state.pointerClient.x,
               y: state.pointerClient.y,
@@ -858,7 +958,7 @@
       const hit = pickRecordUnderPointer(activeBuffers, state.morph);
       state.hoveredRecord = hit ? hit.index : -1;
       if (hit) {
-        recordPreview.show({
+        showRecordPreview({
           recordIndex: hit.index,
           x: state.pointerClient.x,
           y: state.pointerClient.y,
@@ -868,6 +968,10 @@
       } else {
         recordPreview.hide();
       }
+    }
+
+    function showRecordPreview(input) {
+      recordPreview.show(input);
     }
 
     function pickRecordUnderPointer(buffers, morph) {
@@ -901,6 +1005,8 @@
       const y = (-recordProbe.y * 0.5 + 0.5) * height;
       return {
         distance: Math.hypot(x - state.pointer.x, y - state.pointer.y),
+        x,
+        y,
         world,
       };
     }
@@ -925,18 +1031,110 @@
       const p2Offset = index * 2;
       const p3Offset = index * 3;
       const world = input.world || [0, 0, 0];
+      const pixels = getMnistPreviewPixels(index);
       return {
-        title: `Record ${index.toLocaleString("en-US")}`,
-        subtitle: `Cluster ${label}, ${state.phase}`,
-        fields: [
-          { label: "original 2D", value: [activeDataset.p2[p2Offset], activeDataset.p2[p2Offset + 1]] },
-          { label: "original 3D", value: [activeDataset.p3[p3Offset], activeDataset.p3[p3Offset + 1], activeDataset.p3[p3Offset + 2]] },
-          { label: "metric xyz", value: world },
-          { label: "morph", value: state.morph },
-          { label: "screen hit", value: input.screenDistance },
-          { label: "cluster size", value: labelCounts[label] || 0 },
-        ],
+        title: `MNIST train #${String(index).padStart(5, "0")}`,
+        subtitle: `digit ${label} · ${state.phase}`,
+        pixels,
+        pixelStatus: pixels ? "ready" : "loading",
+        source2d: [activeDataset.p2[p2Offset], activeDataset.p2[p2Offset + 1]],
+        source3d: [activeDataset.p3[p3Offset], activeDataset.p3[p3Offset + 1], activeDataset.p3[p3Offset + 2]],
+        metricPosition: world,
       };
+    }
+
+    function getMnistPreviewPixels(index) {
+      const chunkIndex = Math.floor(index / MNIST_PREVIEW_CHUNK_SIZE);
+      const offset = (index % MNIST_PREVIEW_CHUNK_SIZE) * MNIST_PREVIEW_IMAGE_BYTES;
+      let entry = mnistPreviewChunks.get(chunkIndex);
+      if (entry?.status === "ready" && entry.buffer) {
+        return new Uint8Array(entry.buffer, offset, MNIST_PREVIEW_IMAGE_BYTES);
+      }
+      if (!entry) {
+        entry = { status: "loading", buffer: null };
+        mnistPreviewChunks.set(chunkIndex, entry);
+        fetch(`${MNIST_PREVIEW_PATH}/chunk-${String(chunkIndex).padStart(3, "0")}.bin`, { cache: "force-cache" })
+          .then((response) => {
+            if (!response.ok) throw new Error(`MNIST preview chunk ${chunkIndex} ${response.status}`);
+            return response.arrayBuffer();
+          })
+          .then((buffer) => {
+            entry.status = "ready";
+            entry.buffer = buffer;
+            refreshHoveredRecordPreview(chunkIndex);
+          })
+          .catch((error) => {
+            entry.status = "error";
+            entry.error = error;
+            console.warn(error);
+          });
+      }
+      return null;
+    }
+
+    function refreshHoveredRecordPreview(chunkIndex) {
+      const index = state.hoveredRecord;
+      if (index < 0 || Math.floor(index / MNIST_PREVIEW_CHUNK_SIZE) !== chunkIndex || !activeBuffers) return;
+      const current = projectRecord(activeBuffers, index, state.morph);
+      if (!current) return;
+      showRecordPreview({
+        recordIndex: index,
+        x: state.pointerClient.x,
+        y: state.pointerClient.y,
+        screenDistance: current.distance,
+        world: current.world,
+      });
+    }
+
+    function renderMnistRecordPreview(preview) {
+      const card = document.createElement("figure");
+      card.className = "grae10-record-card";
+      const image = document.createElement("canvas");
+      image.width = 28;
+      image.height = 28;
+      drawMnistPixels(image, preview.pixels);
+      const caption = document.createElement("figcaption");
+      const title = document.createElement("strong");
+      title.textContent = preview.title || "MNIST record";
+      const subtitle = document.createElement("span");
+      subtitle.textContent = preview.pixelStatus === "ready"
+        ? preview.subtitle || "original MNIST image"
+        : "loading original MNIST pixels";
+      const position = document.createElement("span");
+      position.textContent = `GRAE10 xyz ${formatPreviewVector(preview.metricPosition)}`;
+      caption.append(title, subtitle, position);
+      card.append(image, caption);
+      return card;
+    }
+
+    function drawMnistPixels(canvas2d, pixels) {
+      const ctx = canvas2d.getContext("2d");
+      ctx.clearRect(0, 0, 28, 28);
+      const image = ctx.createImageData(28, 28);
+      if (pixels?.length === MNIST_PREVIEW_IMAGE_BYTES) {
+        for (let index = 0; index < MNIST_PREVIEW_IMAGE_BYTES; index += 1) {
+          const value = pixels[index];
+          const out = index * 4;
+          image.data[out] = value;
+          image.data[out + 1] = value;
+          image.data[out + 2] = value;
+          image.data[out + 3] = 255;
+        }
+      } else {
+        for (let index = 0; index < MNIST_PREVIEW_IMAGE_BYTES; index += 1) {
+          const out = index * 4;
+          image.data[out] = 8;
+          image.data[out + 1] = 13;
+          image.data[out + 2] = 12;
+          image.data[out + 3] = 255;
+        }
+      }
+      ctx.putImageData(image, 0, 0);
+    }
+
+    function formatPreviewVector(values) {
+      if (!Array.isArray(values)) return "[n/a]";
+      return `[${values.slice(0, 3).map((value) => Number(value).toFixed(2)).join(", ")}]`;
     }
 
     function onPointerDown(event) {
