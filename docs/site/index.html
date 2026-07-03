@@ -178,6 +178,7 @@
       }
 
       .hero-actions,
+      .visual-tabs,
       .links {
         display: flex;
         flex-wrap: wrap;
@@ -186,6 +187,33 @@
 
       .hero-actions {
         margin-top: 24px;
+      }
+
+      .visual-tabs {
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        z-index: 3;
+        padding: 6px;
+        border: 1px solid color-mix(in oklch, var(--ink), transparent 78%);
+        background: color-mix(in oklch, var(--panel), transparent 12%);
+        backdrop-filter: blur(16px);
+      }
+
+      .visual-tabs button {
+        min-height: 34px;
+        padding: 0 12px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--text);
+        font: 820 12px/1 Inter, ui-sans-serif, system-ui, sans-serif;
+        cursor: pointer;
+      }
+
+      .visual-tabs button[aria-selected="true"] {
+        border-color: color-mix(in oklch, var(--ink), transparent 82%);
+        background: var(--ink);
+        color: oklch(0.98 0.006 95);
       }
 
       .hero-visual {
@@ -219,67 +247,6 @@
         height: 100%;
         min-height: inherit;
         border: 0;
-      }
-
-      .entropy-hero,
-      .correlation-hero {
-        position: relative;
-        min-height: calc(100svh - 58px);
-        padding: 0;
-        scroll-margin-top: 58px;
-        overflow: hidden;
-        background: oklch(0.92 0.018 126);
-      }
-
-      .correlation-hero {
-        background: oklch(0.93 0.014 118);
-      }
-
-      .entropy-hero iframe,
-      .correlation-hero iframe {
-        display: none;
-        width: 100%;
-        height: calc(100svh - 58px);
-        min-height: 700px;
-      }
-
-      .entropy-hero[data-loaded="true"] iframe,
-      .correlation-hero[data-loaded="true"] iframe {
-        display: block;
-      }
-
-      .visual-loader {
-        display: grid;
-        min-height: calc(100svh - 58px);
-        place-items: center;
-        background:
-          linear-gradient(oklch(0.84 0.018 136 / 0.32) 1px, transparent 1px),
-          linear-gradient(90deg, oklch(0.84 0.018 136 / 0.32) 1px, transparent 1px),
-          oklch(0.92 0.018 126);
-        background-size: 64px 64px;
-      }
-
-      .correlation-hero .visual-loader {
-        background:
-          linear-gradient(oklch(0.84 0.016 132 / 0.30) 1px, transparent 1px),
-          linear-gradient(90deg, oklch(0.84 0.016 132 / 0.30) 1px, transparent 1px),
-          oklch(0.93 0.014 118);
-        background-size: 64px 64px;
-      }
-
-      .entropy-hero[data-loaded="true"] .visual-loader,
-      .correlation-hero[data-loaded="true"] .visual-loader {
-        display: none;
-      }
-
-      .visual-loader button {
-        min-height: 42px;
-        padding: 0 18px;
-        border: 1px solid color-mix(in oklch, var(--ink), transparent 74%);
-        background: var(--ink);
-        color: oklch(0.98 0.006 95);
-        font: 820 14px/1 Inter, ui-sans-serif, system-ui, sans-serif;
-        cursor: pointer;
       }
 
       section {
@@ -546,13 +513,6 @@
           min-height: 440px;
         }
 
-        .entropy-hero,
-        .correlation-hero,
-        .entropy-hero iframe,
-        .correlation-hero iframe {
-          min-height: 560px;
-        }
-
         .preview {
           min-height: 220px;
         }
@@ -568,9 +528,9 @@
       <div class="wrap">
         <div class="brand">METRIC</div>
         <nav aria-label="Primary navigation">
-          <a href="#gallery">Visual</a>
-          <a href="#entropy">Entropy</a>
-          <a href="#correlation">Korrelation</a>
+          <a href="#visual-workbench" data-visual-choice="grae10">Visual</a>
+          <a href="#visual-workbench" data-visual-choice="entropy">Entropy</a>
+          <a href="#visual-workbench" data-visual-choice="correlation">Korrelation</a>
           <a href="#concept">Concept</a>
           <a href="docs.html">Docs</a>
           <a class="button primary" href="https://github.com/metric-space-ai/metric">GitHub</a>
@@ -583,49 +543,35 @@
         <div class="wrap hero-stage">
           <div class="hero-copy">
             <div>
-              <p class="eyebrow">Accepted 60k MNIST GRAE10 reference</p>
+              <p class="eyebrow" id="visualEyebrow">Accepted 60k MNIST GRAE10 reference</p>
               <h1>METRIC</h1>
             </div>
             <div>
-              <p class="lead">
+              <p class="lead" id="visualLead">
                 A native C++ framework and dependency-free WebGL engine for
                 finite metric spaces. This protected 60,000-record MNIST scene
                 is the live visual reference.
               </p>
               <div class="hero-actions">
-                <a class="button primary" href="#gallery">View visual</a>
+                <a class="button primary" href="#visual-workbench">View visual</a>
                 <a class="button" href="https://github.com/metric-space-ai/metric/blob/main/examples/engine/mnist_grae10_integrity.cpp">C++ source</a>
               </div>
             </div>
           </div>
 
-          <div class="hero-visual">
+          <div class="hero-visual" id="visual-workbench" data-active-visual="grae10">
+            <div class="visual-tabs" role="tablist" aria-label="Visual selection">
+              <button type="button" role="tab" aria-selected="true" data-visual-choice="grae10">GRAE10</button>
+              <button type="button" role="tab" aria-selected="false" data-visual-choice="entropy">Entropy</button>
+              <button type="button" role="tab" aria-selected="false" data-visual-choice="correlation">Korrelation</button>
+            </div>
             <iframe
+              id="visualFrame"
               title="Accepted 60k MNIST GRAE10 metric-space visual reference"
               src="visual/examples/grae10-metric-engine/index.html?project-hero=1"
               loading="eager"></iframe>
           </div>
         </div>
-      </section>
-
-      <section id="entropy" class="entropy-hero" data-loaded="false" aria-label="Continuous metric entropy analysis">
-        <div class="visual-loader">
-          <button type="button" data-load-visual="entropy">Load entropy visual</button>
-        </div>
-        <iframe
-          title="Continuous entropy analysis over sliding BTAD/03 metric-space windows"
-          data-src="visual/examples/btad-entropy-window-graph/index.html?project-hero=1"
-          loading="lazy"></iframe>
-      </section>
-
-      <section id="correlation" class="correlation-hero" data-loaded="false" aria-label="MGC local correlation field">
-        <div class="visual-loader">
-          <button type="button" data-load-visual="correlation">Load correlation visual</button>
-        </div>
-        <iframe
-          title="MGC local correlation field over one finite metric space"
-          data-src="visual/examples/mgc-paired-single-space/index.html?project-hero=1"
-          loading="lazy"></iframe>
       </section>
 
       <section id="gallery" class="section">
@@ -653,7 +599,8 @@
                 exported data behind the reference.
               </p>
               <div class="links" style="margin-top: 14px">
-                <a href="visual/examples/grae10-metric-engine/index.html">Open visual</a>
+                <a href="#visual-workbench" data-visual-choice="grae10">Show visual</a>
+                <a href="visual/examples/grae10-metric-engine/index.html">Open standalone</a>
                 <a href="https://github.com/metric-space-ai/metric/blob/main/examples/engine/mnist_grae10_integrity.cpp">C++ source</a>
                 <a href="visual/examples/grae10-metric-engine/grae10-data.json">Data JSON</a>
                 <a href="https://github.com/metric-space-ai/metric/blob/main/docs/examples/mnist-grae10-gallery.md">Reference note</a>
@@ -671,8 +618,8 @@
                 One finite metric space of original image records with a transparent local-correlation field from exported MGC evidence.
               </p>
               <div class="links" style="margin-top: 14px">
-                <a href="#correlation">Show hero</a>
-                <a href="visual/examples/mgc-paired-single-space/index.html">Open visual</a>
+                <a href="#visual-workbench" data-visual-choice="correlation">Show visual</a>
+                <a href="visual/examples/mgc-paired-single-space/index.html">Open standalone</a>
                 <a href="visual/examples/mgc-paired-single-space/metric.visual.json">Metric evidence</a>
               </div>
             </div>
@@ -727,42 +674,84 @@
     </footer>
     <script>
       (() => {
-        document.querySelectorAll("section[id] iframe[data-src]").forEach((frame) => {
-          const section = frame.closest("section[id]");
-          if (!section) return;
-          let loaded = false;
-          const loadVisual = () => {
-            if (loaded) return;
-            loaded = true;
-            frame.src = frame.dataset.src;
-            section.dataset.loaded = "true";
-          };
-          section.querySelectorAll("[data-load-visual]").forEach((button) => {
-            button.addEventListener("click", loadVisual);
+        const visuals = {
+          grae10: {
+            title: "Accepted 60k MNIST GRAE10 metric-space visual reference",
+            src: "visual/examples/grae10-metric-engine/index.html?project-hero=1",
+            eyebrow: "Accepted 60k MNIST GRAE10 reference",
+            lead: "A native C++ framework and dependency-free WebGL engine for finite metric spaces. This protected 60,000-record MNIST scene is the live visual reference.",
+          },
+          entropy: {
+            title: "Continuous entropy analysis over sliding BTAD/03 metric-space windows",
+            src: "visual/examples/btad-entropy-window-graph/index.html?project-hero=1",
+            eyebrow: "Continuous metric entropy analysis",
+            lead: "One metric-space viewport shows how the finite space changes as a sliding sample window enters and leaves the analysis.",
+          },
+          correlation: {
+            title: "MGC local correlation field over one finite metric space",
+            src: "visual/examples/mgc-paired-single-space/index.html?project-hero=1",
+            eyebrow: "MGC local correlation field",
+            lead: "A single finite metric space of original image records with the local-correlation field overlaid in the same visual volume.",
+          },
+        };
+
+        const frame = document.getElementById("visualFrame");
+        const stage = document.getElementById("visual-workbench");
+        const eyebrow = document.getElementById("visualEyebrow");
+        const lead = document.getElementById("visualLead");
+        if (!frame || !stage || !eyebrow || !lead) return;
+
+        let active = "grae10";
+        let switchToken = 0;
+
+        const scrollToStage = () => {
+          const root = document.documentElement;
+          const previousScrollBehavior = root.style.scrollBehavior;
+          root.style.scrollBehavior = "auto";
+          stage.scrollIntoView({ block: "center", behavior: "auto" });
+          requestAnimationFrame(() => {
+            root.style.scrollBehavior = previousScrollBehavior;
           });
-          document.querySelectorAll(`a[href="#${section.id}"]`).forEach((link) => {
-            link.addEventListener("click", (event) => {
-              event.preventDefault();
-              loadVisual();
-              history.pushState(null, "", `#${section.id}`);
-              const root = document.documentElement;
-              const previousScrollBehavior = root.style.scrollBehavior;
-              root.style.scrollBehavior = "auto";
-              section.scrollIntoView({ block: "start", behavior: "auto" });
-              requestAnimationFrame(() => {
-                root.style.scrollBehavior = previousScrollBehavior;
-              });
-            });
+        };
+
+        const setActiveVisual = (next, options = {}) => {
+          const visual = visuals[next] || visuals.grae10;
+          const key = visuals[next] ? next : "grae10";
+          const changed = key !== active;
+          active = key;
+          stage.dataset.activeVisual = key;
+          eyebrow.textContent = visual.eyebrow;
+          lead.textContent = visual.lead;
+          document.querySelectorAll("[data-visual-choice]").forEach((control) => {
+            const selected = control.dataset.visualChoice === key;
+            if (control.matches("button")) control.setAttribute("aria-selected", selected ? "true" : "false");
           });
-          if (location.hash === `#${section.id}`) loadVisual();
-          const observer = new IntersectionObserver((entries) => {
-            if (entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.45)) {
-              loadVisual();
-              observer.disconnect();
-            }
-          }, { threshold: [0, 0.45] });
-          observer.observe(section);
+          if (options.scroll) scrollToStage();
+          if (!changed && frame.getAttribute("src") === visual.src) return;
+          const token = ++switchToken;
+          frame.title = visual.title;
+          frame.removeAttribute("src");
+          requestAnimationFrame(() => {
+            if (token !== switchToken) return;
+            frame.src = visual.src;
+          });
+        };
+
+        document.querySelectorAll("[data-visual-choice]").forEach((control) => {
+          control.addEventListener("click", (event) => {
+            event.preventDefault();
+            const key = control.dataset.visualChoice;
+            history.replaceState(null, "", "#visual-workbench");
+            setActiveVisual(key, { scroll: !control.closest(".visual-tabs") });
+          });
         });
+
+        const hashKey = location.hash === "#entropy"
+          ? "entropy"
+          : location.hash === "#correlation"
+            ? "correlation"
+            : null;
+        if (hashKey) setActiveVisual(hashKey, { scroll: true });
       })();
     </script>
   </body>
